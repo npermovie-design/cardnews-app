@@ -17,7 +17,8 @@ var RATIOS = [
   { key:"4:5",  W:1080, H:1350 },
 ];
 
-var API_KEY = import.meta.env.VITE_API_KEY;
+var API_KEY = "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";
+
 var BG_COLORS = [
   {key:"charcoal",  color:"#1c1c1e"}, {key:"navy",  color:"#0f1629"},
   {key:"indigo",    color:"#1e1b4b"}, {key:"violet",color:"#2e1065"},
@@ -888,7 +889,6 @@ function Sidebar(props) {
         <div style={{fontSize:9, color:"rgba(255,255,255,0.2)", fontWeight:700, letterSpacing:1, padding:"3px 8px", marginBottom:2}}>MENU</div>
         {[
           {id:"home", label:"홈"},
-          {id:"make", label:"카드뉴스 만들기"},
           {id:"edit", label:"편집 및 저장", hide:!hasSlides},
         ].map(function(item) {
           if (item.hide) { return null; }
@@ -901,8 +901,12 @@ function Sidebar(props) {
           );
         })}
         <button onClick={onShowPlanner}
-          style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.07)", color:"#a5b4fc", fontSize:12, fontWeight:600, textAlign:"left", marginBottom:1, borderLeft:"3px solid rgba(99,102,241,0.3)"}}>
-          ✨ 기획 AI
+          style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.12)", color:"#a5b4fc", fontSize:12, fontWeight:700, textAlign:"left", marginBottom:1, borderLeft:"3px solid #6366f1"}}>
+          ✨ 카드뉴스 기획 AI
+        </button>
+        <button onClick={function() { setPage("make"); }}
+          style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: page === "make" ? "rgba(99,102,241,0.2)" : "transparent", color: page === "make" ? "#a5b4fc" : "rgba(255,255,255,0.5)", fontSize:12, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #6366f1" : "3px solid transparent"}}>
+          카드뉴스 만들기
         </button>
         <button onClick={onShowSaved}
           style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}>
