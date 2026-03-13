@@ -671,8 +671,34 @@ function PlannerPanel(props) {
   p = useState(""); var planErr = p[0]; var setPlanErr = p[1];
   p = useState(null); var parsedPlan = p[0]; var setParsedPlan = p[1];
   p = useState(0); var showExIdx = p[0]; var setShowExIdx = p[1];
+  p = useState("topic"); var planMode = p[0]; var setPlanMode = p[1];
+  p = useState(""); var urlInput = p[0]; var setUrlInput = p[1];
+  p = useState(false); var urlLoading = p[0]; var setUrlLoading = p[1];
+  p = useState(""); var urlErr = p[0]; var setUrlErr = p[1];
 
   var selEx = PROMPT_EXAMPLES[showExIdx];
+
+  async function runUrlPlan() {
+    if (!urlInput.trim()) { return; }
+    setUrlLoading(true); setUrlErr(""); setParsedPlan(null);
+    try {
+      var sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 URL을 주면, 해당 페이지의 핵심 내용을 분석해서 카드뉴스 슬라이드를 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
+      var userMsg = "다음 URL의 내용을 분석해서 카드뉴스 " + planCnt + "장을 기획해주세요.\nURL: " + urlInput.trim();
+      if (planNote.trim()) { userMsg = userMsg + "\n추가 요청: " + planNote; }
+      var res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:4000, system:sysMsg, messages:[{role:"user", content:userMsg}]})
+      });
+      if (!res.ok) { var e2 = await res.json().catch(function(){return{};}); setUrlErr("오류: " + ((e2.error && e2.error.message) ? e2.error.message : "다시 시도")); setUrlLoading(false); return; }
+      var data = await res.json();
+      var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
+      var clean = text.split("```json").join("").split("```").join("").trim();
+      var parsed = JSON.parse(clean);
+      setParsedPlan(parsed);
+    } catch(e3) { setUrlErr("오류: " + e3.message); }
+    finally { setUrlLoading(false); }
+  }
 
   async function runPlan() {
     if (!planTopic.trim()) { return; }
@@ -705,68 +731,99 @@ function PlannerPanel(props) {
           <div>
             <div style={{fontSize:15, fontWeight:800}}>✨ 카드뉴스 기획 AI</div>
             <div style={{fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2}}>주제와 방향을 입력하면 슬라이드 문구를 자동으로 기획해드려요</div>
+          <div style={{display:"flex",gap:4,marginTop:10}}>
+            {[{id:"topic",label:"✏️ 주제로 기획"},{id:"url",label:"🔗 URL로 기획"}].map(function(m){
+              var isA = planMode === m.id;
+              return(<button key={m.id} onClick={function(){setPlanMode(m.id);}} style={{padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:isA?800:500,background:isA?"rgba(99,102,241,0.5)":"rgba(255,255,255,0.07)",color:isA?"#fff":"rgba(255,255,255,0.45)"}}>{m.label}</button>);
+            })}
+          </div>
           </div>
           <button onClick={onClose} style={{background:"transparent", border:"none", color:"rgba(255,255,255,0.4)", fontSize:18, cursor:"pointer"}}>✕</button>
         </div>
 
         <div style={{flex:1, overflowY:"auto", display:"flex", gap:0}}>
           <div style={{width:340, flexShrink:0, padding:"16px", borderRight:"1px solid rgba(255,255,255,0.07)"}}>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
-              <div style={{display:"flex", gap:4, marginBottom:8}}>
-                {PROMPT_EXAMPLES.map(function(ex, i) {
-                  var isC = showExIdx === i;
-                  return (
-                    <button key={i} onClick={function() { setShowExIdx(i); }}
-                      style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, fontWeight: isC ? 700 : 400, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.07)", color: isC ? "#fff" : "rgba(255,255,255,0.45)"}}>
-                      {ex.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:8, padding:"10px 12px"}}>
-                <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:4}}>예시 — {selEx.label}</div>
-                <pre style={{fontSize:11, color:"rgba(255,255,255,0.7)", lineHeight:1.7, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
-                <button onClick={function() { setPlanTopic(selEx.topic); setPlanNote(selEx.prompt.split("\n").slice(1).join("\n")); }}
-                  style={{marginTop:8, padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.35)", color:"#fff", fontSize:10, fontWeight:700}}>
-                  이 예시 사용하기
+            {planMode === "url" && (
+              <div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
+                <input value={urlInput} onChange={function(e){setUrlInput(e.target.value);}} placeholder="https://blog.naver.com/..."
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:700,letterSpacing:0.6,marginBottom:5}}>추가 요청사항 (선택)</div>
+                <textarea value={planNote} onChange={function(e){setPlanNote(e.target.value);}} rows={3}
+                  placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>슬라이드 수</span>
+                  <div style={{display:"flex",gap:4}}>
+                    {[4,5,6,7,8,10].map(function(n){
+                      var isC = planCnt === n;
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"rgba(99,102,241,0.6)":"rgba(255,255,255,0.08)",color:isC?"#fff":"rgba(255,255,255,0.4)"}}>{n}</button>);
+                    })}
+                  </div>
+                </div>
+                <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
+                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
                 </button>
+                {urlErr && <div style={{fontSize:11,color:"#ff9090",marginTop:8,textAlign:"center"}}>{urlErr}</div>}
               </div>
-            </div>
-
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
-              <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
-                style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
-            </div>
-
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
-              <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
-                placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
-                style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
-            </div>
-
-            <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
-              <span style={{fontSize:11, color:"rgba(255,255,255,0.4)"}}>슬라이드 수</span>
-              <div style={{display:"flex", gap:4}}>
-                {[4,5,6,7,8,10].map(function(n) {
-                  var isC = planCnt === n;
-                  return (
-                    <button key={n} onClick={function() { setPlanCnt(n); }}
-                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
-                      {n}
+            )}
+            {planMode === "topic" && (
+              <div>
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
+                  <div style={{display:"flex", gap:4, marginBottom:8}}>
+                    {PROMPT_EXAMPLES.map(function(ex, i) {
+                      var isC = showExIdx === i;
+                      return (
+                        <button key={i} onClick={function() { setShowExIdx(i); }}
+                          style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, fontWeight: isC ? 700 : 400, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.07)", color: isC ? "#fff" : "rgba(255,255,255,0.45)"}}>
+                          {ex.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:8, padding:"10px 12px"}}>
+                    <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:4}}>예시 — {selEx.label}</div>
+                    <pre style={{fontSize:11, color:"rgba(255,255,255,0.7)", lineHeight:1.7, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
+                    <button onClick={function() { setPlanTopic(selEx.topic); setPlanNote(selEx.prompt.split("\n").slice(1).join("\n")); }}
+                      style={{marginTop:8, padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.35)", color:"#fff", fontSize:10, fontWeight:700}}>
+                      이 예시 사용하기
                     </button>
-                  );
-                })}
+                  </div>
+                </div>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
+                  <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
+                    style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
+                </div>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
+                  <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
+                    placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
+                    style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
+                </div>
+                <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
+                  <span style={{fontSize:11, color:"rgba(255,255,255,0.4)"}}>슬라이드 수</span>
+                  <div style={{display:"flex", gap:4}}>
+                    {[4,5,6,7,8,10].map(function(n) {
+                      var isC = planCnt === n;
+                      return (
+                        <button key={n} onClick={function() { setPlanCnt(n); }}
+                          style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
+                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
+                  {planLoading ? "기획 중..." : "✨ 기획 시작"}
+                </button>
+                {planErr && <div style={{fontSize:11, color:"#ff9090", marginTop:8, textAlign:"center"}}>{planErr}</div>}
               </div>
-            </div>
-
-            <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
-              style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
-              {planLoading ? "기획 중..." : "✨ 기획 시작"}
-            </button>
-            {planErr && <div style={{fontSize:11, color:"#ff9090", marginTop:8, textAlign:"center"}}>{planErr}</div>}
+            )}
           </div>
 
           <div style={{flex:1, padding:"16px", overflowY:"auto"}}>
