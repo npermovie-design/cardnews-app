@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { CardNewsApp } from "./CardNewsApp";
+import BlogGenerator from "./BlogGenerator";
 
 /* ── 색상 ── */
 const C={
@@ -1570,16 +1571,17 @@ export default function App(){
     </button>
   );
 
-  const renderPage=()=>{
-    if(page==="home")    return <HomePage navigate={navigate}/>;
-    if(page==="about")   return <AboutPage navigate={navigate}/>;
-    if(page==="cardnews")return <AiPage user={user} setUser={setUserState} navigate={navigate}/>;
-    if(isBoard)          return <BoardPage user={user}/>;
-    if(page==="pricing")  return <PricingPage navigate={navigate}/>;
-    if(page==="contact") return <ContactPage/>;
-    if(page==="admin")   return <AdminPage user={user}/>;
-    return <HomePage navigate={navigate}/>;
-  };
+const renderPage=()=>{
+  if(page==="home")    return <HomePage navigate={navigate}/>;
+  if(page==="about")   return <AboutPage navigate={navigate}/>;
+  if(page==="cardnews")return <AiPage user={user} setUser={setUserState} navigate={navigate}/>;
+  if(page==="blog")    return <BlogGenerator/>;   // ← 여기에 추가
+  if(isBoard)          return <BoardPage user={user}/>;
+  if(page==="pricing") return <PricingPage navigate={navigate}/>;
+  if(page==="contact") return <ContactPage/>;
+  if(page==="admin")   return <AdminPage user={user}/>;
+  return <HomePage navigate={navigate}/>;
+};
 
   const SNS=[
     {url:"https://open.kakao.com/o/gIw9vTFg",  label:"💬",bg:"#FEE500",tc:"#3A1D1D"},
@@ -1668,6 +1670,7 @@ export default function App(){
                 fontWeight:isAi?700:500,color:isAi?C.text:C.muted,transition:"all 0.15s"}}>
               🃏 AI 생성기
             </button>
+            <NavBtn id="blog" label="✍️ 블로그 생성기"/>
           </div>
           <div ref={boardSubRef} style={{position:"relative"}}>
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard}
