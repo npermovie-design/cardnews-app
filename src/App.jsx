@@ -802,6 +802,225 @@ function AiPage({user,setUser:setUserState,navigate}){
   );
 }
 
+function PricingPage({navigate}){
+  var plans = [
+    {
+      name:"Free",
+      price:"무료",
+      sub:"영구 무료",
+      color:"rgba(255,255,255,0.08)",
+      border:"rgba(255,255,255,0.12)",
+      badge:null,
+      features:[
+        "카드뉴스 생성 월 20회",
+        "기본 디자인 5종",
+        "PNG 다운로드",
+        "워터마크 없음",
+      ],
+      cta:"무료로 시작",
+      ctaStyle:{background:"rgba(255,255,255,0.1)",color:"#f0eeff"},
+      action: function(){}
+    },
+    {
+      name:"스타터",
+      price:"4,900원",
+      sub:"/ 월",
+      color:"rgba(124,106,255,0.08)",
+      border:"rgba(124,106,255,0.4)",
+      badge:null,
+      features:[
+        "카드뉴스 생성 월 100회",
+        "모든 디자인 프리셋",
+        "PNG + 고화질 다운로드",
+        "기획 AI 무제한 사용",
+        "보관함 최대 50개",
+      ],
+      cta:"스타터 시작하기",
+      ctaStyle:{background:"rgba(124,106,255,0.3)",color:"#f0eeff"},
+      action: function(){}
+    },
+    {
+      name:"프로",
+      price:"9,900원",
+      sub:"/ 월",
+      color:"linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.10))",
+      border:"rgba(124,106,255,0.7)",
+      badge:"인기",
+      features:[
+        "카드뉴스 생성 월 300회",
+        "모든 디자인 프리셋",
+        "PNG + 고화질 다운로드",
+        "기획 AI 무제한 사용",
+        "보관함 무제한",
+        "우선 생성 (빠른 처리)",
+        "신규 기능 우선 제공",
+      ],
+      cta:"프로 시작하기",
+      ctaStyle:{background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff"},
+      action: function(){}
+    },
+    {
+      name:"비즈니스",
+      price:"19,900원",
+      sub:"/ 월",
+      color:"rgba(255,255,255,0.05)",
+      border:"rgba(255,200,80,0.5)",
+      badge:"팀용",
+      features:[
+        "카드뉴스 생성 무제한",
+        "모든 디자인 프리셋",
+        "PNG + 고화질 다운로드",
+        "기획 AI 무제한 사용",
+        "보관함 무제한",
+        "우선 생성 (빠른 처리)",
+        "신규 기능 우선 제공",
+        "팀 공유 기능 (출시 예정)",
+        "전용 고객 지원",
+      ],
+      cta:"비즈니스 문의하기",
+      ctaStyle:{background:"rgba(255,200,80,0.2)",color:"#ffc850"},
+      action: function(){}
+    },
+  ];
+  return(
+    <div style={{minHeight:"100vh",paddingTop:80,paddingBottom:80}}>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
+
+        {/* 헤더 */}
+        <div style={{textAlign:"center",marginBottom:60}}>
+          <div style={{display:"inline-block",background:"rgba(124,106,255,0.15)",
+            border:"1px solid rgba(124,106,255,0.3)",borderRadius:20,
+            padding:"4px 16px",fontSize:12,color:"#a5b4fc",marginBottom:16,letterSpacing:1}}>
+            PRICING
+          </div>
+          <h1 style={{fontSize:"clamp(28px,5vw,48px)",fontWeight:900,
+            background:"linear-gradient(135deg,#f0eeff,#a5b4fc)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            marginBottom:16,letterSpacing:-1}}>
+            합리적인 가격으로<br/>AI 콘텐츠를 만들어보세요
+          </h1>
+          <p style={{color:"rgba(240,238,255,0.5)",fontSize:16,lineHeight:1.6}}>
+            무료로 시작하고, 필요할 때 업그레이드하세요.<br/>
+            언제든지 취소 가능합니다.
+          </p>
+        </div>
+
+        {/* 플랜 카드 */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",
+          gap:20,marginBottom:60}}>
+          {plans.map(function(plan,i){
+            return(
+              <div key={i} style={{position:"relative",borderRadius:20,
+                border:"1px solid "+plan.border,
+                background:plan.color,
+                padding:"32px 28px",
+                boxShadow:plan.badge==="인기"?"0 0 40px rgba(124,106,255,0.2)":"none",
+                transition:"transform 0.2s"}}
+                onMouseEnter={function(e){e.currentTarget.style.transform="translateY(-4px)"}}
+                onMouseLeave={function(e){e.currentTarget.style.transform="translateY(0)"}}>
+
+                {plan.badge&&(
+                  <div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",
+                    background:plan.badge==="인기"?"linear-gradient(135deg,#7c6aff,#ec4899)":"rgba(255,200,80,0.9)",
+                    color:"#fff",fontSize:11,fontWeight:800,padding:"3px 14px",
+                    borderRadius:20,letterSpacing:1,whiteSpace:"nowrap"}}>
+                    {plan.badge==="인기"?"✨ 인기":"👥 팀용"}
+                  </div>
+                )}
+
+                <div style={{marginBottom:8,fontSize:13,fontWeight:700,
+                  color:"rgba(240,238,255,0.5)",letterSpacing:1}}>
+                  {plan.name.toUpperCase()}
+                </div>
+                <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:4}}>
+                  <span style={{fontSize:32,fontWeight:900,color:"#f0eeff"}}>
+                    {plan.price}
+                  </span>
+                  <span style={{fontSize:13,color:"rgba(240,238,255,0.4)"}}>
+                    {plan.sub}
+                  </span>
+                </div>
+
+                <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",
+                  margin:"20px 0",paddingTop:20}}>
+                  {plan.features.map(function(f,j){
+                    return(
+                      <div key={j} style={{display:"flex",alignItems:"center",gap:8,
+                        marginBottom:10,fontSize:13,color:"rgba(240,238,255,0.75)"}}>
+                        <span style={{color:"#7c6aff",fontSize:14,flexShrink:0}}>✓</span>
+                        {f}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={function(){
+                    if(plan.name==="비즈니스"){ navigate("contact"); }
+                    else { navigate("cardnews"); }
+                  }}
+                  style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
+                    cursor:"pointer",fontSize:14,fontWeight:700,
+                    transition:"opacity 0.15s",
+                    background:plan.ctaStyle.background,
+                    color:plan.ctaStyle.color}}
+                  onMouseEnter={function(e){e.currentTarget.style.opacity="0.85"}}
+                  onMouseLeave={function(e){e.currentTarget.style.opacity="1"}}>
+                  {plan.cta}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* FAQ */}
+        <div style={{maxWidth:640,margin:"0 auto",textAlign:"center"}}>
+          <h2 style={{fontSize:22,fontWeight:800,color:"#f0eeff",marginBottom:32}}>
+            자주 묻는 질문
+          </h2>
+          {[
+            {q:"무료 플랜은 언제까지 사용 가능한가요?",
+             a:"영구 무료입니다. 월 20회 생성은 매월 초기화됩니다."},
+            {q:"구독 취소는 어떻게 하나요?",
+             a:"언제든지 마이페이지에서 취소할 수 있으며, 취소 후에도 남은 기간은 사용 가능합니다."},
+            {q:"생성 횟수는 언제 초기화되나요?",
+             a:"매월 1일 자정에 초기화됩니다."},
+            {q:"결제는 어떤 방법을 지원하나요?",
+             a:"카드 결제, 카카오페이, 네이버페이 등 다양한 결제 수단을 지원합니다. (준비 중)"},
+          ].map(function(item,i){
+            return(
+              <div key={i} style={{textAlign:"left",background:"rgba(255,255,255,0.04)",
+                border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,
+                padding:"20px 24px",marginBottom:12}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#f0eeff",marginBottom:8}}>
+                  Q. {item.q}
+                </div>
+                <div style={{fontSize:13,color:"rgba(240,238,255,0.55)",lineHeight:1.6}}>
+                  {item.a}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 하단 CTA */}
+        <div style={{textAlign:"center",marginTop:60}}>
+          <p style={{color:"rgba(240,238,255,0.4)",fontSize:14,marginBottom:16}}>
+            궁금한 점이 있으신가요?
+          </p>
+          <button onClick={function(){navigate("contact");}}
+            style={{background:"rgba(124,106,255,0.15)",border:"1px solid rgba(124,106,255,0.3)",
+              color:"#a5b4fc",padding:"10px 24px",borderRadius:12,fontSize:14,
+              fontWeight:700,cursor:"pointer"}}>
+            문의하기 →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function ContactPage(){
   const [form,setForm]=useState({name:"",email:"",msg:""});
   const [sent,setSent]=useState(false);
@@ -1356,6 +1575,7 @@ export default function App(){
     if(page==="about")   return <AboutPage navigate={navigate}/>;
     if(page==="cardnews")return <AiPage user={user} setUser={setUserState} navigate={navigate}/>;
     if(isBoard)          return <BoardPage user={user}/>;
+    if(page==="pricing")  return <PricingPage navigate={navigate}/>;
     if(page==="contact") return <ContactPage/>;
     if(page==="admin")   return <AdminPage user={user}/>;
     return <HomePage navigate={navigate}/>;
@@ -1460,6 +1680,7 @@ export default function App(){
               </DropMenu>
             )}
           </div>
+          <NavBtn id="pricing" label="가격정책"/>
           <NavBtn id="contact" label="문의하기"/>
         </div>
 
