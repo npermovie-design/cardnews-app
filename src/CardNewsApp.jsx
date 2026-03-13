@@ -17,7 +17,7 @@ var RATIOS = [
   { key:"4:5",  W:1080, H:1350 },
 ];
 
-var API_KEY = "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";
+var API_KEY = "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";
 
 var BG_COLORS = [
   {key:"charcoal",  color:"#1c1c1e"}, {key:"navy",  color:"#0f1629"},
