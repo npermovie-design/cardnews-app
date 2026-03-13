@@ -694,7 +694,7 @@ function PlannerPanel(props) {
       if (!pageText || pageText.length < 50) { setUrlErr("페이지 내용을 읽을 수 없어요. 다른 URL을 시도해보세요."); setUrlLoading(false); return; }
 
       // Step 2: Plan with AI
-      var sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n아래 웹페이지 내용을 분석해서 카드뉴스 슬라이드를 기획해주세요.\n반드시 JSON 형식만 반환하고 다른 설명은 쓰지 마세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
+      var sysMsg = "You are a Korean card news planning expert. Respond ONLY with a JSON object. No explanation, no markdown, no text before or after. Just the raw JSON.\nFormat: {\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
       var userMsg = "다음 웹페이지 내용으로 카드뉴스 " + planCnt + "장을 기획해주세요.\n\n[페이지 내용]\n" + pageText;
       if (planNote.trim()) { userMsg = userMsg + "\n\n[추가 요청]\n" + planNote; }
       var res = await fetch("https://api.anthropic.com/v1/messages", {
