@@ -694,7 +694,9 @@ function PlannerPanel(props) {
       var data = await res.json();
       var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
       var clean = text.split("```json").join("").split("```").join("").trim();
-      var parsed = JSON.parse(clean);
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) { setUrlErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setUrlLoading(false); return; }
+      var parsed = JSON.parse(jsonMatch[0]);
       setParsedPlan(parsed);
     } catch(e3) { setUrlErr("오류: " + e3.message); }
     finally { setUrlLoading(false); }
@@ -716,7 +718,9 @@ function PlannerPanel(props) {
       var data = await res.json();
       var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
       var clean = text.split("```json").join("").split("```").join("").trim();
-      var parsed = JSON.parse(clean);
+      var jsonMatch2 = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch2) { setPlanErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setPlanLoading(false); return; }
+      var parsed = JSON.parse(jsonMatch2[0]);
       setParsedPlan(parsed);
       setPlanResult(JSON.stringify(parsed, null, 2));
     } catch(e3) { setPlanErr("오류: " + e3.message); }
@@ -732,7 +736,7 @@ function PlannerPanel(props) {
             <div style={{fontSize:15, fontWeight:800}}>✨ 카드뉴스 기획 AI</div>
             <div style={{fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2}}>주제와 방향을 입력하면 슬라이드 문구를 자동으로 기획해드려요</div>
           <div style={{display:"flex",gap:4,marginTop:10}}>
-            {[{id:"topic",label:"✏️ 주제로 기획"},{id:"url",label:"🔗 URL로 기획"}].map(function(m){
+            {[{id:"topic",label:"✏️ 글로 기획"},{id:"url",label:"🔗 링크로 기획"}].map(function(m){
               var isA = planMode === m.id;
               return(<button key={m.id} onClick={function(){setPlanMode(m.id);}} style={{padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:isA?800:500,background:isA?"rgba(99,102,241,0.5)":"rgba(255,255,255,0.07)",color:isA?"#fff":"rgba(255,255,255,0.45)"}}>{m.label}</button>);
             })}
