@@ -683,7 +683,7 @@ function PlannerPanel(props) {
     setUrlLoading(true); setUrlErr(""); setParsedPlan(null);
     try {
       // Step 1: Crawl the URL
-      var crawlRes = await fetch("/.netlify/functions/crawl", {
+      var crawlRes = await fetch("/api/crawl", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({url: urlInput.trim()})
