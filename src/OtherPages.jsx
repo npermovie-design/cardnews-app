@@ -411,129 +411,213 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
    PricingPage
 ════════════════════════════════════════════════════════════ */
 export function PricingPage({ navigate, C }) {
-  const plans = [
-    { name: "Free", price: "무료", sub: "영구 무료", color: C.card, border: "rgba(0,0,0,0.1)", badge: null, features: ["카드뉴스 생성 월 20회", "기본 디자인 5종", "PNG 다운로드", "워터마크 없음"], cta: "무료로 시작", ctaStyle: { background: "#f5f4ff", color: C.purpleL, border: "1px solid rgba(124,106,255,0.2)" } },
-    { name: "스타터", price: "4,900원", sub: "/ 월", color: C.card, border: "rgba(124,106,255,0.3)", badge: null, features: ["카드뉴스 생성 월 100회", "모든 디자인 프리셋", "PNG + 고화질 다운로드", "기획 AI 무제한 사용", "보관함 최대 50개"], cta: "스타터 시작하기", ctaStyle: { background: "rgba(124,106,255,0.1)", color: C.purpleL, border: "1px solid rgba(124,106,255,0.25)" } },
-    { name: "프로", price: "9,900원", sub: "/ 월", color: "linear-gradient(160deg,#faf9ff 0%,#f0eeff 100%)", border: "rgba(124,106,255,0.5)", badge: "인기", features: ["카드뉴스 생성 월 300회", "모든 디자인 프리셋", "PNG + 고화질 다운로드", "기획 AI 무제한 사용", "보관함 무제한", "우선 생성 (빠른 처리)", "신규 기능 우선 제공"], cta: "프로 시작하기", ctaStyle: { background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", border: "none" } },
-    { name: "비즈니스", price: "19,900원", sub: "/ 월", color: C.card, border: "rgba(255,180,50,0.4)", badge: "팀용", features: ["카드뉴스 생성 무제한", "모든 디자인 프리셋", "PNG + 고화질 다운로드", "기획 AI 무제한 사용", "보관함 무제한", "우선 생성 (빠른 처리)", "신규 기능 우선 제공", "팀 공유 기능 (출시 예정)", "전용 고객 지원"], cta: "비즈니스 문의하기", ctaStyle: { background: "rgba(255,180,50,0.1)", color: "#b45309", border: "1px solid rgba(255,180,50,0.3)" } },
+  const PLANS = [
+    {
+      id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
+      color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
+      features: ["가입 시 50P 자동 지급","게시글 작성 10P 적립","댓글 작성 2P 적립","일일 로그인 3P 적립","포인트 소진 시 충전"],
+      btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
+      badge: null, highlight: false,
+    },
+    {
+      id: "basic", name: "Basic", price: "9,900원", points: 500, aiCount: 50,
+      color: "#4ade80", gradient: "linear-gradient(135deg,#22c55e,#4ade80)",
+      features: ["500P 즉시 충전","AI 생성 50회 분량","게시글 적립 포함","유효기간 없음"],
+      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#22c55e,#4ade80)", color: "#fff" },
+      badge: "연세 플랜", highlight: false,
+    },
+    {
+      id: "pro", name: "Pro", price: "19,900원", points: 1200, aiCount: 120,
+      color: "#6366f1", gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+      features: ["1,200P 즉시 충전","AI 생성 120회 분량","게시글 적립 포함","우선 고객 지원"],
+      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" },
+      badge: "🔥 추천", highlight: true,
+    },
+    {
+      id: "premium", name: "Premium", price: "29,900원", points: 2500, aiCount: 250,
+      color: "#f59e0b", gradient: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+      features: ["2,500P 즉시 충전","AI 생성 250회 분량","게시글 적립 포함","전담 지원"],
+      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#fff" },
+      badge: "전문가용", highlight: false,
+    },
   ];
+
+  const FAQ = [
+    { q: "포인트는 어떻게 사용하나요?", a: "AI 생성 1회에 10P가 차감됩니다. 게시글 작성(10P), 댓글(2P), 일일 로그인(3P)으로 포인트를 적립할 수 있어요." },
+    { q: "포인트 유효기간이 있나요?", a: "충전한 포인트는 유효기간이 없습니다. 적립 포인트도 동일하게 영구 사용 가능해요." },
+    { q: "결제는 어떻게 하나요?", a: "토스페이먼츠를 통해 신용카드, 카카오페이, 네이버페이 등 다양한 방법으로 결제 가능합니다." },
+    { q: "환불이 가능한가요?", a: "충전 후 사용하지 않은 포인트는 7일 이내 전액 환불 가능합니다. 문의하기로 연락해주세요." },
+  ];
+
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, paddingTop: 80, paddingBottom: 80 }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px" }}>
-        {/* ── 준비중 배너 ── */}
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(124,106,255,0.08)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "6px 20px", marginBottom: 20 }}>
-            <span style={{ fontSize: 16 }}>🔧</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: C.purpleL, letterSpacing: 1 }}>COMING SOON</span>
-          </div>
-          <h1 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, color: C.text, marginBottom: 16, letterSpacing: -1 }}>
-            가격 정책 준비 중입니다
-          </h1>
-          <p style={{ color: C.muted, fontSize: 15, lineHeight: 1.7, maxWidth: 480, margin: "0 auto 28px" }}>
-            현재 서비스 정식 출시를 준비하고 있어요.<br />
-            출시와 함께 합리적인 가격으로 찾아뵐게요!
-          </p>
-          <div style={{ display: "inline-flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "10px 18px", boxShadow: C.shadow }}>
-              <span style={{ fontSize: 18 }}>🎁</span>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.text }}>베타 기간 무료</div>
-                <div style={{ fontSize: 11, color: C.muted }}>지금은 무료로 이용 가능</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "10px 18px", boxShadow: C.shadow }}>
-              <span style={{ fontSize: 18 }}>📬</span>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.text }}>출시 알림 신청</div>
-                <div style={{ fontSize: 11, color: C.muted }}>가격 공개 시 먼저 알려드려요</div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 20px 80px" }}>
 
-        {/* ── 블러 처리된 가격 카드 ── */}
-        <div style={{ position: "relative", marginBottom: 48 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20, filter: "blur(4px)", opacity: 0.35, pointerEvents: "none", userSelect: "none" }}>
-            {plans.map((plan, i) => (
-              <div key={i} style={{ position: "relative", borderRadius: 20, border: "1px solid " + plan.border, background: plan.color, padding: "32px 28px", boxShadow: C.shadow }}>
-                {plan.badge && (
-                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.badge === "인기" ? "linear-gradient(135deg,#7c6aff,#ec4899)" : "rgba(255,180,50,0.9)", color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>
-                    {plan.badge === "인기" ? "✨ 인기" : "👥 팀용"}
-                  </div>
-                )}
-                <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: 1 }}>{plan.name.toUpperCase()}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                  <span style={{ fontSize: 32, fontWeight: 900, color: C.text }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, color: C.muted }}>{plan.sub}</span>
-                </div>
-                <div style={{ borderTop: "1px solid " + C.border, margin: "20px 0", paddingTop: 20 }}>
-                  {plan.features.map((f, j) => (
-                    <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: 13, color: C.muted }}>
-                      <span style={{ color: C.purple, fontSize: 14, flexShrink: 0 }}>✓</span>{f}
-                    </div>
-                  ))}
-                </div>
-                <button style={{ width: "100%", padding: "12px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: plan.ctaStyle.background, color: plan.ctaStyle.color, border: plan.ctaStyle.border || "none" }}>{plan.cta}</button>
-              </div>
-            ))}
-          </div>
-          {/* 블러 위 오버레이 텍스트 */}
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
-            <div style={{ fontSize: 36 }}>🔒</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>가격 정책 준비 중</div>
-            <div style={{ fontSize: 13, color: C.muted }}>정식 출시 시 공개됩니다</div>
-          </div>
-        </div>
+      {/* 헤더 */}
+      <div style={{ textAlign: "center", marginBottom: 56 }}>
+        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>✦ 요금제</div>
+        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>포인트 충전으로 무제한 사용</h2>
+        <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>게시글 작성만으로도 포인트를 무료로 적립할 수 있어요<br/>AI를 더 많이 쓰고 싶다면 포인트를 충전하세요</p>
+      </div>
 
-        <div style={{ textAlign: "center" }}>
-          <p style={{ color: C.muted, fontSize: 14, marginBottom: 16 }}>문의사항이 있으신가요?</p>
-          <button onClick={() => navigate("contact")} style={{ background: "rgba(124,106,255,0.08)", border: "1px solid rgba(124,106,255,0.2)", color: C.purpleL, padding: "10px 24px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            문의하기 →
-          </button>
+      {/* 요금제 카드 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 60 }}>
+        {PLANS.map(plan => (
+          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s" }}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+
+            {plan.badge && (
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>
+            )}
+
+            <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{plan.name}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: plan.color, marginBottom: 4 }}>{plan.price}</div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{plan.points}P 충전</div>
+            <div style={{ fontSize: 11, color: plan.color, fontWeight: 700, marginBottom: 20 }}>AI 생성 약 {plan.aiCount}회</div>
+
+            <div style={{ flex: 1, marginBottom: 20 }}>
+              {plan.features.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, marginBottom: 8, fontSize: 12, color: C.muted }}>
+                  <span style={{ color: plan.color, flexShrink: 0, marginTop: 1 }}>✓</span>
+                  {f}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => plan.id === "free" ? navigate("cardnews") : navigate("contact")}
+              style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
+              {plan.btnLabel}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* 포인트 적립 안내 */}
+      <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px 28px", marginBottom: 48 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12 }}>
+          {[
+            { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
+            { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
+            { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
+            { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
+          ].map((item, i) => (
+            <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "14px", textAlign: "center" }}>
+              <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 3 }}>{item.action}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#6366f1" }}>{item.pt}</div>
+              <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{item.desc}</div>
+            </div>
+          ))}
         </div>
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
+          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 게시글 10개 작성하면 AI 10회 사용 가능
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 20 }}>자주 묻는 질문</div>
+        {FAQ.map((item, i) => (
+          <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 22px", marginBottom: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>Q. {item.q}</div>
+            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>A. {item.a}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 
-/* ════════════════════════════════════════════════════════════
-   ContactPage
-════════════════════════════════════════════════════════════ */
 export function ContactPage({ C }) {
-  const [form, setForm] = useState({ name: "", email: "", msg: "" });
+  const [form, setForm] = useState({ name: "", email: "", subject: "", msg: "" });
   const [sent, setSent] = useState(false);
+  const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  const fs = { background: C.inputBg, border: "1px solid " + C.inputBorder, borderRadius: 10, padding: "10px 14px", color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" };
+
+  const submit = () => {
+    if (!form.name || !form.email || !form.msg) { alert("이름, 이메일, 문의 내용을 입력해주세요."); return; }
+    // 실제 메일 전송은 EmailJS or FormSpree 연동 필요 → 지금은 카카오로 유도
+    window.open("https://open.kakao.com/o/gIw9vTFg", "_blank");
+    setSent(true);
+  };
+
   return (
-    <div style={{ background: C.bg, minHeight: "100vh" }}>
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px" }}>
-        <Badge C={C}>✦ Contact</Badge>
-        <h2 style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, margin: "0 0 14px" }}>문의하기</h2>
-        <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, marginBottom: 32 }}>서비스 이용 문의, 제안 등 편하게 남겨주세요.</p>
-        <div style={{ display: "flex", gap: 10, marginBottom: 32, flexWrap: "wrap" }}>
-          {[
-            { label: "💬 카카오 단체방", url: "https://open.kakao.com/o/gIw9vTFg", bg: "#FEE500", tc: "#3A1D1D" },
-            { label: "📸 인스타그램", url: "https://www.instagram.com/nperinsight/", bg: "linear-gradient(45deg,#f09433,#dc2743,#bc1888)", tc: "#fff" },
-            { label: "▶ 유튜브", url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000", tc: "#fff" },
-          ].map(s => (
-            <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{ padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: s.bg, color: s.tc, fontSize: 12, fontWeight: 700 }}>{s.label}</button>
-          ))}
-        </div>
-        {sent ? (
-          <div style={{ textAlign: "center", padding: "52px", background: C.bg2, border: "1px solid rgba(124,106,255,0.15)", borderRadius: 20, boxShadow: C.shadow }}>
-            <div style={{ fontSize: 44, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>문의가 접수됐어요!</div>
-            <div style={{ fontSize: 14, color: C.muted, marginBottom: 20 }}>빠른 시간 내에 답변드릴게요.</div>
-            <Btn C={C} onClick={() => { setSent(false); setForm({ name: "", email: "", msg: "" }); }}>새 문의 작성</Btn>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Inp C={C} placeholder="이름 / 닉네임" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            <Inp C={C} placeholder="이메일" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            <Textarea C={C} placeholder="문의 내용을 입력해주세요..." value={form.msg} onChange={e => setForm({ ...form, msg: e.target.value })} rows={7} />
-            <Btn C={C} onClick={() => { if (!form.name.trim() || !form.email.trim() || !form.msg.trim()) return; setSent(true); }}>문의 보내기</Btn>
-          </div>
-        )}
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px 80px" }}>
+
+      <div style={{ textAlign: "center", marginBottom: 48 }}>
+        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>✦ 문의하기</div>
+        <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>무엇이든 물어보세요</h2>
+        <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7 }}>빠른 답변을 원하시면 카카오톡 오픈채팅을 이용해주세요</p>
       </div>
+
+      {/* 빠른 연락 수단 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 40 }}>
+        {[
+          { icon: "💬", title: "카카오 오픈채팅", desc: "가장 빠른 응답", sub: "평균 30분 이내", color: "#FEE500", tc: "#3A1D1D", url: "https://open.kakao.com/o/gIw9vTFg" },
+          { icon: "📸", title: "인스타그램 DM", desc: "@nperinsight", sub: "DM으로 문의", color: "linear-gradient(45deg,#f09433,#dc2743)", tc: "#fff", url: "https://www.instagram.com/nperinsight/" },
+          { icon: "▶", title: "유튜브 채널", desc: "@nperinsight", sub: "영상 댓글 문의", color: "#FF0000", tc: "#fff", url: "https://www.youtube.com/@nperinsight/videos" },
+        ].map((item, i) => (
+          <button key={i} onClick={() => window.open(item.url, "_blank")}
+            style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px", cursor: "pointer", textAlign: "left", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: C.shadow }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = C.shadow; }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: item.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: item.tc, fontWeight: 900, marginBottom: 10 }}>{item.icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 3 }}>{item.title}</div>
+            <div style={{ fontSize: 12, color: C.purpleL, marginBottom: 2, fontWeight: 600 }}>{item.desc}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>{item.sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* 문의 폼 */}
+      {!sent ? (
+        <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 28px", boxShadow: C.shadow }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>📝 문의 내용 남기기</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 24 }}>카카오 오픈채팅으로 연결되며, 이메일로도 답변드려요</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>이름 *</div>
+                <input placeholder="홍길동" value={form.name} style={fs} onChange={f("name")} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>이메일 *</div>
+                <input placeholder="example@email.com" type="email" value={form.email} style={fs} onChange={f("email")} />
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>문의 유형</div>
+              <select value={form.subject} style={{ ...fs }} onChange={f("subject")}>
+                <option value="">선택해주세요</option>
+                <option value="service">서비스 문의</option>
+                <option value="payment">결제/포인트 문의</option>
+                <option value="bug">오류/버그 신고</option>
+                <option value="partner">제휴/파트너십</option>
+                <option value="other">기타</option>
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>문의 내용 *</div>
+              <textarea placeholder="문의하실 내용을 자세히 적어주세요..." rows={5} value={form.msg} style={{ ...fs, resize: "vertical" }} onChange={f("msg")} />
+            </div>
+            <button onClick={submit}
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+              💬 카카오톡으로 문의하기
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "48px 28px", textAlign: "center", boxShadow: C.shadow }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 8 }}>카카오톡이 열렸어요!</div>
+          <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.7 }}>오픈채팅에서 문의 내용을 보내주세요<br/>빠르게 답변드릴게요 😊</div>
+          <button onClick={() => setSent(false)} style={{ marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 13 }}>다시 문의하기</button>
+        </div>
+      )}
     </div>
   );
 }

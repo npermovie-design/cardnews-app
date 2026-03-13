@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { CATS, getUser, setUser } from "./storage";
+import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
@@ -37,6 +38,23 @@ export default function App() {
     setTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch {}
   };
+
+  // Firebase Auth 상태 감지
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userData = await fetchUser(firebaseUser.uid);
+        if (userData) { setLocalUser(userData); setUserState(userData); }
+      } else {
+        const localU = getUser();
+        if (localU && !localU.uid) {
+          // 구형 로컬스토리지 유저 → 초기화
+          setLocalUser(null); setUserState(null);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -81,8 +99,11 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  const handleAuth = u => { setUser(u); setUserState(u); setShowAuth(false); };
-  const logout     = () => { setUser(null); setUserState(null); navigate("home"); };
+  const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
+  const logout = async () => {
+    try { await fbLogout(); } catch(e) {}
+    setLocalUser(null); setUserState(null); navigate("home");
+  };
 
   const isBoard = ["ai", "news", "archive", "qna"].includes(page);
   const isAi    = page === "ai";
