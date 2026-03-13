@@ -671,7 +671,7 @@ function PlannerPanel(props) {
   p = useState(""); var planErr = p[0]; var setPlanErr = p[1];
   p = useState(null); var parsedPlan = p[0]; var setParsedPlan = p[1];
   p = useState(0); var showExIdx = p[0]; var setShowExIdx = p[1];
-  p = useState("topic"); var planMode = p[0]; var setPlanMode = p[1];
+  p = useState(props.initialMode || "topic"); var planMode = p[0]; var setPlanMode = p[1];
   p = useState(""); var urlInput = p[0]; var setUrlInput = p[1];
   p = useState(false); var urlLoading = p[0]; var setUrlLoading = p[1];
   p = useState(""); var urlErr = p[0]; var setUrlErr = p[1];
@@ -682,9 +682,21 @@ function PlannerPanel(props) {
     if (!urlInput.trim()) { return; }
     setUrlLoading(true); setUrlErr(""); setParsedPlan(null);
     try {
-      var sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 URL을 주면, 해당 페이지의 핵심 내용을 분석해서 카드뉴스 슬라이드를 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
-      var userMsg = "다음 URL의 내용을 분석해서 카드뉴스 " + planCnt + "장을 기획해주세요.\nURL: " + urlInput.trim();
-      if (planNote.trim()) { userMsg = userMsg + "\n추가 요청: " + planNote; }
+      // Step 1: Crawl the URL
+      var crawlRes = await fetch("/.netlify/functions/crawl", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({url: urlInput.trim()})
+      });
+      var crawlData = await crawlRes.json();
+      if (!crawlRes.ok || crawlData.error) { setUrlErr("페이지 읽기 실패: " + (crawlData.error || "접근 불가")); setUrlLoading(false); return; }
+      var pageText = crawlData.text || "";
+      if (!pageText || pageText.length < 50) { setUrlErr("페이지 내용을 읽을 수 없어요. 다른 URL을 시도해보세요."); setUrlLoading(false); return; }
+
+      // Step 2: Plan with AI
+      var sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n아래 웹페이지 내용을 분석해서 카드뉴스 슬라이드를 기획해주세요.\n반드시 JSON 형식만 반환하고 다른 설명은 쓰지 마세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
+      var userMsg = "다음 웹페이지 내용으로 카드뉴스 " + planCnt + "장을 기획해주세요.\n\n[페이지 내용]\n" + pageText;
+      if (planNote.trim()) { userMsg = userMsg + "\n\n[추가 요청]\n" + planNote; }
       var res = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
@@ -750,6 +762,11 @@ function PlannerPanel(props) {
             {planMode === "url" && (
               <div>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
+                <div style={{fontSize:11,color:"rgba(255,200,80,0.8)",background:"rgba(255,200,80,0.08)",border:"1px solid rgba(255,200,80,0.2)",borderRadius:8,padding:"8px 12px",marginBottom:8,lineHeight:1.6}}>
+                  ⚠️ 텍스트 기반 페이지만 지원돼요<br/>
+                  뉴스기사, 공식 홈페이지 등 글 위주 페이지에 적합해요.<br/>
+                  유튜브, 인스타그램, 네이버블로그 등은 지원되지 않아요.
+                </div>
                 <input value={urlInput} onChange={function(e){setUrlInput(e.target.value);}} placeholder="https://blog.naver.com/..."
                   style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:700,letterSpacing:0.6,marginBottom:5}}>추가 요청사항 (선택)</div>
@@ -961,14 +978,27 @@ function Sidebar(props) {
             </button>
           );
         })}
-        <button onClick={onShowPlanner}
-          style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.12)", color:"#a5b4fc", fontSize:12, fontWeight:700, textAlign:"left", marginBottom:1, borderLeft:"3px solid #6366f1"}}>
-          ✨ 카드뉴스 기획 AI
-        </button>
-        <button onClick={function() { setPage("make"); }}
-          style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: page === "make" ? "rgba(99,102,241,0.2)" : "transparent", color: page === "make" ? "#a5b4fc" : "rgba(255,255,255,0.5)", fontSize:12, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #6366f1" : "3px solid transparent"}}>
-          카드뉴스 만들기
-        </button>
+        <div style={{marginBottom:2}}>
+          <div style={{padding:"6px 10px", fontSize:10, fontWeight:900, color:"#a5b4fc", letterSpacing:0.5, display:"flex", alignItems:"center", gap:5}}>
+            ✨ 카드뉴스 기획 AI
+          </div>
+          <button onClick={function(){onShowPlanner("topic");}}
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
+            onMouseEnter={function(e){e.currentTarget.style.background="rgba(99,102,241,0.1)"; e.currentTarget.style.color="#a5b4fc";}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.5)";}}>
+            ✏️ 글로 기획 AI
+          </button>
+          <button onClick={function(){onShowPlanner("link");}}
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
+            onMouseEnter={function(e){e.currentTarget.style.background="rgba(99,102,241,0.1)"; e.currentTarget.style.color="#a5b4fc";}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.5)";}}>
+            🔗 링크로 기획 AI
+          </button>
+          <button onClick={function() { setPage("make"); }}
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? "rgba(99,102,241,0.15)" : "transparent", color: page === "make" ? "#a5b4fc" : "rgba(255,255,255,0.5)", fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #6366f1" : "3px solid transparent"}}>
+            🃏 카드뉴스 바로 만들기
+          </button>
+        </div>
         <button onClick={onShowSaved}
           style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}>
           📁 내 보관함
@@ -1246,6 +1276,7 @@ export function CardNewsApp(props) {
   p = useState({}); var bgIs = p[0]; var setBgIs = p[1];
   p = useState(false); var showSaved   = p[0]; var setShowSaved   = p[1];
   p = useState(false); var showPlanner = p[0]; var setShowPlanner = p[1];
+  p = useState("topic"); var plannerMode = p[0]; var setPlannerMode = p[1];
   p = useState(function() { return getSavedWorks(); });
   var savedWorks = p[0]; var setSavedWorks = p[1];
 
@@ -1386,14 +1417,14 @@ export function CardNewsApp(props) {
       <style>{CSS}</style>
 
       {showPlanner && (
-        <PlannerPanel onClose={function() { setShowPlanner(false); }} onApplySlides={handleApplyPlanSlides}/>
+        <PlannerPanel initialMode={plannerMode} onClose={function() { setShowPlanner(false); }} onApplySlides={handleApplyPlanSlides}/>
       )}
       {showSaved && (
         <SavedWorksPanel works={savedWorks} onLoad={handleLoadWork} onDelete={handleDeleteWork} onClose={function() { setShowSaved(false); }}/>
       )}
 
       {!narrow && (
-        <Sidebar page={page} setPage={setPage} hasSlides={slides.length > 0} user={user} onlineCount={onlineCount} onShowSaved={function() { setShowSaved(true); }} onShowPlanner={function() { setShowPlanner(true); }}/>
+        <Sidebar page={page} setPage={setPage} hasSlides={slides.length > 0} user={user} onlineCount={onlineCount} onShowSaved={function() { setShowSaved(true); }} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
       )}
 
       <div style={{flex:1, display:"flex", flexDirection:"column", overflow:"hidden"}}>
@@ -1421,10 +1452,10 @@ export function CardNewsApp(props) {
 
         <div style={{flex:1, display:"flex", overflow:"hidden"}}>
           {page === "home" && (
-            <PageHome setPage={setPage} setMakeStep={setMakeStep} hasSlides={slides.length > 0} tname={tname} slideCnt={slides.length} savedWorks={savedWorks} onShowSaved={function() { setShowSaved(true); }} onShowPlanner={function() { setShowPlanner(true); }}/>
+            <PageHome setPage={setPage} setMakeStep={setMakeStep} hasSlides={slides.length > 0} tname={tname} slideCnt={slides.length} savedWorks={savedWorks} onShowSaved={function() { setShowSaved(true); }} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "make" && (
-            <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} onShowPlanner={function() { setShowPlanner(true); }}/>
+            <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "edit" && slides.length > 0 && (
             <div style={{flex:1, display:"flex", height:"100%", overflow:"hidden"}}>
