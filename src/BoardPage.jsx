@@ -129,11 +129,11 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
       <style>{BOARD_CSS}</style>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
         <div>
-          <h2 style={{ fontSize:17, fontWeight:900, color:C.text, margin:0 }}>{initial?"✏️ 수정":"✏️ 글쓰기"}</h2>
+          <h2 style={{ fontSize:17, fontWeight:900, color:C.text, margin:0 }}>{initial?"✏️ 수정":"{t.write}"}</h2>
           <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{catLabel} 게시판</div>
         </div>
         <button onClick={onCancel}
-          style={{ padding:"6px 14px", borderRadius:8, border:"1px solid "+C.border, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>← 목록</button>
+          style={{ padding:"6px 14px", borderRadius:8, border:"1px solid "+C.border, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>{t.list}</button>
       </div>
 
       <div style={{ border:"1px solid "+C.border, borderTop:"2px solid "+C.text }}>
@@ -210,7 +210,25 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
 /* ══════════════════════════════════════════════════
    BoardPage — DC인사이드 스타일
 ══════════════════════════════════════════════════ */
-export default function BoardPage({ user, C, onLoginRequest }) {
+const T = {
+  ko: {
+    write:"{t.write}", list:t.list, reply:t.reply, noPost:"{t.noPost}",
+    num:t.num, title:t.title, author:t.author, date:t.date, views:"조회",
+    comment:"댓글", commentPh:"{t.commentPh}",
+    loginComment:"댓글은 로그인 후 이용 가능합니다 →", loginLink:t.loginLink,
+    edit:"수정", del:"삭제", total:"총", posts:"개",
+  },
+  en: {
+    write:"✏️ Write", list:"List", reply:"Post", noPost:"No posts yet. Be the first! ✍️",
+    num:"No.", title:"Title", author:"Author", date:"Date", views:"Views",
+    comment:"Comments", commentPh:"Write a comment (Ctrl+Enter to post)",
+    loginComment:"Login to write comments →", loginLink:"Login",
+    edit:"Edit", del:"Delete", total:"Total", posts:"posts",
+  },
+};
+
+export default function BoardPage({ user, C, onLoginRequest, lang="ko" }) {
+  const t = T[lang] || T.ko;
   const [cat,     setCat]     = useState("board_ai");
   const [posts,   setPosts2]  = useState(getPosts);
   const [view,    setView]    = useState(null);
@@ -354,7 +372,7 @@ export default function BoardPage({ user, C, onLoginRequest }) {
               <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.muted, flexWrap:"wrap" }}>
                 <span style={{ fontWeight:700, color:C.text }}>{view.nick}</span>
                 <span>{view.date}</span>
-                <span>조회 {view.views||0}</span>
+                <span>{t.views} {view.views||0}</span>
                 <span>댓글 {(view.comments||[]).length}</span>
                 {view.edited&&<span style={{ color:C.purpleL }}>(수정됨)</span>}
                 {isOwner(view)&&(
@@ -430,7 +448,7 @@ export default function BoardPage({ user, C, onLoginRequest }) {
               <div style={{ display:"flex" }}>
                 <div style={{ padding:"9px 12px", background:BG, borderRight:"1px solid "+B, fontSize:12, fontWeight:700, color:C.text, display:"flex", alignItems:"center", flexShrink:0 }}>{user.nick}</div>
                 <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={3}
-                  placeholder="댓글을 입력해주세요 (Ctrl+Enter: 등록)"
+                  placeholder="{t.commentPh}"
                   style={{ flex:1, border:"none", outline:"none", padding:"9px 12px", fontSize:13, background:C.card, color:C.text, fontFamily:"inherit", resize:"none", lineHeight:1.7 }}
                   onKeyDown={e=>{ if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();addComment(view.id);} }}/>
                 <button onClick={()=>addComment(view.id)}
@@ -439,7 +457,7 @@ export default function BoardPage({ user, C, onLoginRequest }) {
             ) : (
               <div style={{ padding:"12px 14px", background:BG, fontSize:13, color:C.muted, textAlign:"center", cursor:"pointer" }}
                 onClick={requireLogin}>
-                댓글은 로그인 후 이용 가능합니다 → <span style={{ color:C.purpleL, fontWeight:700 }}>로그인하기</span>
+                {t.loginComment} <span style={{ color:C.purpleL, fontWeight:700 }}>로그인하기</span>
               </div>
             )}
           </div>
@@ -465,7 +483,7 @@ export default function BoardPage({ user, C, onLoginRequest }) {
             <div className="wb">
               <button onClick={()=>{ if(!user){ requireLogin(); return; } setWriting(true); }}
                 style={{ padding:"8px 20px", borderRadius:6, border:"none", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                ✏️ 글쓰기
+                {t.write}
               </button>
             </div>
           </div>
@@ -482,7 +500,7 @@ export default function BoardPage({ user, C, onLoginRequest }) {
           {/* 글 없음 */}
           {filtered.length===0&&(
             <div style={{ padding:"60px 0", textAlign:"center", color:C.muted, fontSize:14, borderBottom:"1px solid "+B }}>
-              아직 게시글이 없어요. 첫 번째 글을 남겨보세요 ✍️
+              {t.noPost}
             </div>
           )}
 
