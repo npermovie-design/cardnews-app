@@ -776,7 +776,7 @@ export function PlannerPanel(props) {
         onClick={function(e) { if (e.target === e.currentTarget && onClose) { onClose(); } }} />}
       <div style={inline
         ? {flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:innerBg}
-        : {position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"min(780px,96vw)", maxHeight:"90vh", background:panelBg, borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", display:"flex", flexDirection:"column", overflow:"hidden", zIndex:1000}}>
+        : {position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"min(780px,96vw)", maxHeight:"90vh", background:panelBg, borderRadius:16, border:"1px solid "+(isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"), boxShadow:"0 20px 60px rgba(0,0,0,0.2)", display:"flex", flexDirection:"column", overflow:"hidden", zIndex:1000}}>
         <div style={{padding:"16px 20px", borderBottom:"1px solid "+headerBdr, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
           <div>
             <div style={{fontSize:15, fontWeight:800}}>✨ 카드뉴스 기획 AI</div>
@@ -802,11 +802,11 @@ export function PlannerPanel(props) {
                   유튜브, 인스타그램, 네이버블로그 등은 지원되지 않아요.
                 </div>
                 <input value={urlInput} onChange={function(e){setUrlInput(e.target.value);}} placeholder="https://blog.naver.com/..."
-                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
+                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:textMain,fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
                 <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:5}}>추가 요청사항 (선택)</div>
                 <textarea value={planNote} onChange={function(e){setPlanNote(e.target.value);}} rows={3}
                   placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
-                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
+                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:textMain,fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
                   <span style={{fontSize:11,color:textMuted}}>슬라이드 수</span>
                   <div style={{display:"flex",gap:4}}>
@@ -850,13 +850,13 @@ export function PlannerPanel(props) {
                 <div style={{marginBottom:10}}>
                   <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
                   <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:textMain, fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
                 </div>
                 <div style={{marginBottom:10}}>
                   <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
                   <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
                     placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:textMain, fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
                 </div>
                 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
                   <span style={{fontSize:11, color:textMuted}}>슬라이드 수</span>
@@ -1030,12 +1030,7 @@ function Sidebar(props) {
           <div style={{padding:"6px 10px", fontSize:10, fontWeight:900, color:planLabel, letterSpacing:0.5, display:"flex", alignItems:"center", gap:5}}>
             ✨ 카드뉴스 기획 AI
           </div>
-          <button onClick={function(){onShowPlanner("topic");}}
-            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
-            onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color=itemText;}}>
-            ✏️ 글로 기획 AI
-          </button>
+
           <button onClick={function(){onShowPlanner("link");}}
             style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
             onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
@@ -1392,7 +1387,6 @@ export function CardNewsApp(props) {
   var winW = useWinW();
   var onlineCount = useOnlineCount();
   var narrow = winW < 880;
-  p = useState("preview"); var editTab = p[0]; var setEditTab = p[1];
 
   // initialSubPage="plan" 이면 마운트 시 PlannerPanel 자동 열기
   useEffect(function() {
@@ -1586,28 +1580,9 @@ export function CardNewsApp(props) {
             <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} theme={props.theme} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "edit" && slides.length > 0 && (
-            <div style={{flex:1, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden"}}>
-              {narrow && (
-                <div style={{display:"flex", borderBottom:"1px solid rgba(255,255,255,0.1)", flexShrink:0, background:"rgba(0,0,0,0.2)"}}>
-                  {[{id:"preview",l:"👁 미리보기"},{id:"edit",l:"🎨 편집"}].map(function(t){
-                    var isA = editTab === t.id;
-                    return (
-                      <button key={t.id} onClick={function(){ setEditTab(t.id); }}
-                        style={{flex:1, padding:"11px 0", border:"none", cursor:"pointer",
-                          background: isA ? "rgba(99,102,241,0.35)" : "transparent",
-                          color: isA ? "#a5b4fc" : "rgba(255,255,255,0.35)",
-                          fontSize:12, fontWeight:700, transition:"all 0.15s",
-                          borderBottom: isA ? "2px solid #6366f1" : "2px solid transparent"}}>
-                        {t.l}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <div style={{flex:1, display:"flex", overflow:"hidden"}}>
-                {(!narrow || editTab === "edit") && <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>}
-                {(!narrow || editTab === "preview") && <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>}
-              </div>
+            <div style={{flex:1, display:"flex", height:"100%", overflow:"hidden"}}>
+              <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
+              <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
             </div>
           )}
           {page === "edit" && slides.length === 0 && (

@@ -316,25 +316,77 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
+          {/* 대메뉴: 홈, 소개 */}
           {[
             { id: "home",  label: "홈" },
             { id: "about", label: "소개" },
-            { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
-            { id: "ai_cn",  label: "🃏 카드뉴스 생성기",   ai: "cardnews_make" },
-            { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
-            ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
-            { id: "pricing", label: "가격정책" },
-            { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
-              padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
-              background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? C.purpleL : C.muted,
-              fontSize: 16, fontWeight: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? 700 : 500,
-              borderLeft: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "3px solid #7c6aff" : "3px solid transparent",
+              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 2,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.text,
+              fontSize: 16, fontWeight: page === m.id ? 700 : 600,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
+
+          {/* 대메뉴: AI 생성기 섹션 */}
+          <div style={{ marginTop: 8, marginBottom: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1.5, padding: "4px 16px 6px", textTransform: "uppercase" }}>🤖 AI 생성기</div>
+            {[
+              { id: "ai_bl", label: "✍️ SNS 글쓰기",       ai: "blog_naver" },
+              { id: "ai_cn", label: "🃏 카드뉴스 생성기",  ai: "cardnews_make" },
+              { id: "ai_sh", label: "🎬 쇼츠영상 생성기",  ai: "shorts" },
+            ].map(m => {
+              const isActive = page === "ai" && aiMenu === m.ai;
+              return (
+                <button key={m.id} onClick={() => navigateAi(m.ai)} style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "11px 16px 11px 28px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 2,
+                  background: isActive ? "rgba(124,106,255,0.08)" : "transparent",
+                  color: isActive ? C.purpleL : C.muted,
+                  fontSize: 14, fontWeight: isActive ? 700 : 500,
+                  borderLeft: isActive ? "3px solid #7c6aff" : "3px solid transparent",
+                }}>{m.label}</button>
+              );
+            })}
+          </div>
+
+          {/* 대메뉴: 커뮤니티 섹션 */}
+          <div style={{ marginTop: 4, marginBottom: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1.5, padding: "4px 16px 6px", textTransform: "uppercase" }}>💬 커뮤니티</div>
+            {CATS.map(c => {
+              const isActive = page === c.id;
+              return (
+                <button key={c.id} onClick={() => navigate(c.id)} style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "11px 16px 11px 28px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 2,
+                  background: isActive ? "rgba(124,106,255,0.08)" : "transparent",
+                  color: isActive ? C.purpleL : C.muted,
+                  fontSize: 14, fontWeight: isActive ? 700 : 500,
+                  borderLeft: isActive ? "3px solid #7c6aff" : "3px solid transparent",
+                }}>{c.icon} {c.label}</button>
+              );
+            })}
+          </div>
+
+          {/* 대메뉴: 기타 */}
+          <div style={{ marginTop: 4, borderTop: "1px solid " + C.border, paddingTop: 8 }}>
+            {[
+              { id: "pricing", label: "가격정책" },
+              { id: "contact", label: "문의하기" },
+            ].map(m => (
+              <button key={m.id} onClick={() => navigate(m.id)} style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 2,
+                background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+                color: page === m.id ? C.purpleL : C.text,
+                fontSize: 15, fontWeight: page === m.id ? 700 : 500,
+                borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+              }}>{m.label}</button>
+            ))}
+          </div>
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
