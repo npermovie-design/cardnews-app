@@ -60,11 +60,22 @@ function RichResultView({ result, loading, isDark, cardBg, border, text, accent,
   });
   if (current.body.length > 0 || current.heading) sections.push(current);
 
-  const getImgUrl = (heading) => {
-    // loremflickr: 키워드 기반 무료 이미지 API (Unsplash source 대체)
-    const q = encodeURIComponent((heading || keyword || "nature").slice(0, 30));
+  const getImgUrl = (heading, idx) => {
+    // 소제목 텍스트로 시드 생성 (같은 제목 = 항상 같은 이미지)
     const seed = (heading||"x").split("").reduce((a,ch)=>a+ch.charCodeAt(0),0);
-    return `https://loremflickr.com/800/400/${q}?lock=${seed}`;
+    const q    = encodeURIComponent((heading || keyword || "travel").slice(0, 25));
+    const sectionIdx = (typeof idx === "number" ? idx : 0);
+
+    // img src에 직접 사용 가능한 3가지 서비스 로테이션
+    const providers = [
+      // Picsum Photos - 고품질 인물/풍경/자연 사진 (시드 고정 = 항상 같은 사진)
+      () => `https://picsum.photos/seed/${seed + sectionIdx}/800/400`,
+      // loremflickr - 키워드 매칭 사진
+      () => `https://loremflickr.com/800/400/${q}?lock=${seed}`,
+      // Picsum 다른 시드 (두 번째 picsum 컷)
+      () => `https://picsum.photos/seed/${seed + sectionIdx + 100}/800/400`,
+    ];
+    return providers[sectionIdx % providers.length]();
   };
 
   const renderLine = (line, i) => {
@@ -90,7 +101,7 @@ function RichResultView({ result, loading, isDark, cardBg, border, text, accent,
         <div key={si}>
           {sec.heading && (
             <div style={{position:"relative",overflow:"hidden"}}>
-              <img src={getImgUrl(sec.heading)} alt={sec.heading}
+              <img src={getImgUrl(sec.heading, si)} alt={sec.heading}
                 style={{width:"100%",height:sec.level===2?200:150,objectFit:"cover",display:"block"}}
                 onError={e=>e.target.style.display="none"}/>
               <div style={{
