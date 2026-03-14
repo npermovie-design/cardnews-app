@@ -770,22 +770,21 @@ export function PlannerPanel(props) {
 
   var inline = !!props.inline;
 
+  var planPlaceholderCss = isDark ? ".plan-input::placeholder{color:rgba(255,255,255,0.3)!important}" : ".plan-input::placeholder{color:rgba(0,0,0,0.35)!important}";
   return (
     <>
+      <style>{planPlaceholderCss}</style>
       {!inline && <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:999}}
         onClick={function(e) { if (e.target === e.currentTarget && onClose) { onClose(); } }} />}
       <div style={inline
         ? {flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:innerBg}
-        : {position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"min(780px,96vw)", maxHeight:"90vh", background:panelBg, borderRadius:16, border:"1px solid "+(isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"), boxShadow:"0 20px 60px rgba(0,0,0,0.2)", display:"flex", flexDirection:"column", overflow:"hidden", zIndex:1000}}>
+        : {position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"min(780px,96vw)", maxHeight:"90vh", background:panelBg, borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", display:"flex", flexDirection:"column", overflow:"hidden", zIndex:1000}}>
         <div style={{padding:"16px 20px", borderBottom:"1px solid "+headerBdr, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
           <div>
             <div style={{fontSize:15, fontWeight:800}}>✨ 카드뉴스 기획 AI</div>
             <div style={{fontSize:11, color:textMuted, marginTop:2}}>주제와 방향을 입력하면 슬라이드 문구를 자동으로 기획해드려요</div>
           <div style={{display:"flex",gap:4,marginTop:10}}>
-            {[{id:"topic",label:"✏️ 글로 기획"},{id:"url",label:"🔗 링크로 기획"}].map(function(m){
-              var isA = planMode === m.id;
-              return(<button key={m.id} onClick={function(){setPlanMode(m.id);}} style={{padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:isA?800:500,background:isA?tabActive:tabBg,color:isA?"#fff":tabText}}>{m.label}</button>);
-            })}
+            <div style={{padding:"5px 14px",borderRadius:8,fontSize:11,fontWeight:800,background:tabActive,color:"#fff",display:"inline-flex",alignItems:"center",gap:4}}>✏️ 글로 기획</div>
           </div>
           </div>
           {!inline && <button onClick={onClose} style={{background:"transparent", border:"none", color:textMuted, fontSize:18, cursor:"pointer"}}>✕</button>}
@@ -793,37 +792,7 @@ export function PlannerPanel(props) {
 
         <div style={{flex:1, overflowY:"auto", display:"flex", gap:0}}>
           <div style={{width:340, flexShrink:0, padding:"16px", borderRight:"1px solid "+divider}}>
-            {planMode === "url" && (
-              <div>
-                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
-                <div style={{fontSize:11,color:exText,background:exBg,border:"1px solid rgba(255,200,80,0.2)",borderRadius:8,padding:"8px 12px",marginBottom:8,lineHeight:1.6}}>
-                  ⚠️ 텍스트 기반 페이지만 지원돼요<br/>
-                  뉴스기사, 공식 홈페이지 등 글 위주 페이지에 적합해요.<br/>
-                  유튜브, 인스타그램, 네이버블로그 등은 지원되지 않아요.
-                </div>
-                <input value={urlInput} onChange={function(e){setUrlInput(e.target.value);}} placeholder="https://blog.naver.com/..."
-                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:textMain,fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
-                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:5}}>추가 요청사항 (선택)</div>
-                <textarea value={planNote} onChange={function(e){setPlanNote(e.target.value);}} rows={3}
-                  placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
-                  style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:textMain,fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                  <span style={{fontSize:11,color:textMuted}}>슬라이드 수</span>
-                  <div style={{display:"flex",gap:4}}>
-                    {[4,5,6,7,8,10].map(function(n){
-                      var isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
-                    })}
-                  </div>
-                </div>
-                <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
-                  {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
-                </button>
-                {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
-              </div>
-            )}
-            {planMode === "topic" && (
+            {true && (
               <div>
                 <div style={{marginBottom:12}}>
                   <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
@@ -865,7 +834,7 @@ export function PlannerPanel(props) {
                       var isC = planCnt === n;
                       return (
                         <button key={n} onClick={function() { setPlanCnt(n); }}
-                          style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+                          style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(99,102,241,0.6)" : tabBg, color: isC ? "#fff" : tabText}}>
                           {n}
                         </button>
                       );
@@ -1030,7 +999,12 @@ function Sidebar(props) {
           <div style={{padding:"6px 10px", fontSize:10, fontWeight:900, color:planLabel, letterSpacing:0.5, display:"flex", alignItems:"center", gap:5}}>
             ✨ 카드뉴스 기획 AI
           </div>
-
+          <button onClick={function(){onShowPlanner("topic");}}
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color=itemText;}}>
+            ✏️ 글로 기획 AI
+          </button>
           <button onClick={function(){onShowPlanner("link");}}
             style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
             onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
@@ -1527,6 +1501,7 @@ export function CardNewsApp(props) {
   var topText   = isLight ? "#1a1a2e"               : "#fff";
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
+  var placeholderCss = isDark ? "::placeholder{color:rgba(255,255,255,0.3)!important}" : "::placeholder{color:rgba(0,0,0,0.35)!important}";
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
