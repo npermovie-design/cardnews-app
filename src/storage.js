@@ -112,10 +112,13 @@ export const POSTS_KEY   = "nper_posts_v2";
 export const USER_KEY    = "nper_user";
 export const AI_KEY      = "nper_ai_usage";
 
+export const MEMBERS_KEY = "nper_members";
 export function getLocalUser()   { try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch { return null; } }
 export function setLocalUser(u)  { try { localStorage.setItem(USER_KEY, JSON.stringify(u)); } catch {} }
 export function getPosts()       { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || "[]"); } catch { return []; } }
 export function setPosts(p)      { try { localStorage.setItem(POSTS_KEY, JSON.stringify(p)); } catch {} }
+export function getMembers()     { try { return JSON.parse(localStorage.getItem(MEMBERS_KEY) || "[]"); } catch { return []; } }
+export function saveMembers(m)   { try { localStorage.setItem(MEMBERS_KEY, JSON.stringify(m)); } catch {} }
 
 // getUser / setUser 는 로컬스토리지 래퍼 (App.jsx 호환 유지)
 export function getUser()        { return getLocalUser(); }
