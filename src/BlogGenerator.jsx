@@ -22,14 +22,35 @@ function mdToHtml(md) {
 // ── stripMarkdown 헬퍼 ──────────────────────────────────────────────────────
 function stripMarkdown(text) {
   return text
-    .replace(/^#{1,6} /gm, "")
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/\*(.+?)\*/g, "$1")
+    // 제목 기호 제거 (# ## ### 등)
+    .replace(/^#{1,6}\s+/gm, "")
+    // 굵게 **text** → text
+    .replace(/\*\*(.+?)\*\*/gs, "$1")
+    // 이탤릭 *text* → text
+    .replace(/\*(.+?)\*/gs, "$1")
+    // 인라인 코드 `code` → code
     .replace(/`(.+?)`/g, "$1")
-    .replace(/^\s*[-*] /gm, "• ")
-    .replace(/^\d+\. /gm, "")
+    // 수평선 --- === *** 제거
+    .replace(/^[-*=]{3,}\s*$/gm, "")
+    // 리스트 기호 - / * → • (단, 줄 시작)
+    .replace(/^\s*[-*+]\s+/gm, "• ")
+    // 숫자 리스트 1. 2. → 제거
+    .replace(/^\s*\d+\.\s+/gm, "")
+    // 인용구 > 제거
+    .replace(/^>\s*/gm, "")
+    // 링크 [text](url) → text
+    .replace(/\[(.+?)\]\(.*?\)/g, "$1")
+    // 이미지 ![alt](url) → 제거
+    .replace(/!\[.*?\]\(.*?\)/g, "")
+    // 이모지 제거 (surrogate pair + BMP 이모지 모두)
     .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "")
-    .replace(/[\u2600-\u27FF]/g, "")
+    .replace(/[\u2600-\u27FF\u2B00-\u2BFF\u3000-\u303F]/g, "")
+    .replace(/[\uFE00-\uFEFF]/g, "")
+    // 남은 특수 마크다운 기호 정리
+    .replace(/_{2,}(.+?)_{2,}/gs, "$1")
+    .replace(/_(.+?)_/gs, "$1")
+    .replace(/~~(.+?)~~/gs, "$1")
+    // 3줄 이상 빈줄 → 2줄로
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -639,11 +660,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
                 style={{padding:"5px 11px",borderRadius:7,border:`1px solid ${border}`,background:copied?accentBg:"transparent",color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer"}}>
                 {copied?"✓ 복사됨":"📋 복사"}
               </button>
-              <button onClick={()=>{const b=new Blob([result],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="생성결과.txt";a.click();URL.revokeObjectURL(u);}}
+              <button onClick={()=>{const b=new Blob([stripMarkdown(result)],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="생성결과.txt";a.click();URL.revokeObjectURL(u);}}
                 style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>📄 TXT</button>
-              <button onClick={()=>{const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8}</style></head><body><pre style="white-space:pre-wrap">${result}</pre></body></html>`;const b=new Blob([html],{type:"text/html;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="생성결과.html";a.click();URL.revokeObjectURL(u);}}
+              <button onClick={()=>{const lines=result.split("\n");let blogHtml="";let inUl=false;lines.forEach(function(line){const h2=line.match(/^##\s+(.+)/);const h3=line.match(/^###\s+(.+)/);const bullet=line.match(/^[\-*•]\s+(.+)/);const bold=line.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");const cleanLine=bold.replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"");if(h2){if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=h2[1].replace(/\*\*(.+?)\*\*/g,"$1").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`<h2>${t}</h2>\n`;}else if(h3){if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=h3[1].replace(/\*\*(.+?)\*\*/g,"$1").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`<h3>${t}</h3>\n`;}else if(bullet){if(!inUl){blogHtml+="<ul>\n";inUl=true;}const t=bullet[1].replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`  <li>${t}</li>\n`;}else if(line.trim()===""){if(inUl){blogHtml+="</ul>\n";inUl=false;}blogHtml+="\n";}else{if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=cleanLine.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();if(t)blogHtml+=`<p>${t}</p>\n`;}});if(inUl)blogHtml+="</ul>\n";const b=new Blob([blogHtml.trim()],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="블로그용_HTML.txt";a.click();URL.revokeObjectURL(u);}}
                 style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 HTML</button>
-              <button onClick={()=>{const w=window.open("","_blank");w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Noto Sans KR',sans-serif;padding:30px;line-height:1.8}@media print{body{padding:0}}</style></head><body><pre style="white-space:pre-wrap">${result}</pre><script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);w.document.close();}}
+              <button onClick={()=>{const w=window.open("","_blank");const cleanPdf=stripMarkdown(result);const paraPdf=cleanPdf.split("\n\n").map(p=>p.trim()).filter(p=>p);const bodyPdf=paraPdf.map(p=>{if(p.startsWith("• ")||p.includes("\n• ")){const items=p.split("\n").filter(l=>l.trim()).map(l=>`<li>${l.replace(/^• /,"")}</li>`).join("");return`<ul>${items}</ul>`;}return`<p>${p.replace(/\n/g,"<br>")}</p>`;}).join("\n");w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Noto Sans KR',sans-serif;padding:40px;line-height:1.9;color:#000;font-size:14px}p{margin:0 0 14px}ul{margin:0 0 14px;padding-left:22px}li{margin-bottom:5px}@media print{body{padding:20px}}</style></head><body>${bodyPdf}<script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);w.document.close();}}
                 style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>🖨️ PDF</button>
             </div>
           </div>
