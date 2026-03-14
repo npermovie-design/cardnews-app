@@ -39,6 +39,28 @@ export default function App() {
     try { localStorage.setItem(THEME_KEY, next); } catch {}
   };
 
+  // 카카오 OAuth 콜백 처리
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+    const path = window.location.pathname;
+    if (path === "/oauth/kakao" && code) {
+      // 부모창에 코드 전달 후 팝업 닫기
+      if (window.opener) {
+        window.opener.postMessage({ type: "kakao_code", code }, "*");
+        window.close();
+      } else {
+        // 팝업 아닌 경우 직접 처리
+        import("./storage").then(({ fbKakaoLogin, setLocalUser }) => {
+          fbKakaoLogin(code).then(user => {
+            setLocalUser(user);
+            window.location.href = "/";
+          }).catch(() => { window.location.href = "/"; });
+        });
+      }
+    }
+  }, []);
+
   // Firebase Auth 상태 감지
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {

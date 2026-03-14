@@ -169,6 +169,78 @@ export async function fbLogin(email, pw) {
   return userData;
 }
 
+
+/** 카카오 로그인 */
+export const KAKAO_REST_KEY = "4d0f0128951fe2ff52b47d4243b1480e";
+export const KAKAO_REDIRECT = "https://www.npercontentslab.com/oauth/kakao";
+
+export function kakaoLoginRedirect() {
+  const url = "https://kauth.kakao.com/oauth/authorize"
+    + "?client_id=" + KAKAO_REST_KEY
+    + "&redirect_uri=" + encodeURIComponent(KAKAO_REDIRECT)
+    + "&response_type=code"
+    + "&prompt=login";
+  // 팝업으로 열기
+  const popup = window.open(url, "kakaoLogin", "width=500,height=600,left=" + ((window.screen.width-500)/2) + ",top=" + ((window.screen.height-600)/2));
+  return popup;
+}
+
+/** 카카오 토큰 교환 + Firebase 커스텀 토큰 로그인 (팝업 콜백 처리) */
+export async function fbKakaoLogin(code) {
+  // 1. 카카오 토큰 교환
+  const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type:   "authorization_code",
+      client_id:    KAKAO_REST_KEY,
+      redirect_uri: KAKAO_REDIRECT,
+      code,
+    }),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) throw new Error("카카오 토큰 발급 실패");
+
+  // 2. 카카오 유저 정보
+  const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
+    headers: { Authorization: "Bearer " + tokenData.access_token },
+  });
+  const kakaoUser = await userRes.json();
+  const kakaoId   = String(kakaoUser.id);
+  const nick      = kakaoUser.kakao_account?.profile?.nickname || "카카오유저";
+  const email     = kakaoUser.kakao_account?.email || (kakaoId + "@kakao.nper");
+
+  // 3. Firebase DB에 유저 저장 (uid = "kakao_" + kakaoId)
+  const uid  = "kakao_" + kakaoId;
+  const snap = await get(ref(db, "users/" + uid));
+  let userData;
+
+  if (snap.exists()) {
+    userData = snap.val();
+    const today = new Date().toLocaleDateString("ko-KR");
+    if (userData.lastLoginDate !== today) {
+      userData.points        = (userData.points || 0) + POINTS.DAILY_LOGIN;
+      userData.lastLoginDate = today;
+      userData.lastLogin     = new Date().toISOString();
+      await update(ref(db, "users/" + uid), {
+        points: userData.points, lastLoginDate: today, lastLogin: userData.lastLogin,
+      });
+    }
+  } else {
+    userData = {
+      uid, email, nick,
+      role:          "member",
+      points:        POINTS.SIGNUP,
+      joinDate:      new Date().toISOString(),
+      lastLogin:     new Date().toISOString(),
+      lastLoginDate: new Date().toLocaleDateString("ko-KR"),
+      provider:      "kakao",
+    };
+    await set(ref(db, "users/" + uid), userData);
+  }
+  return userData;
+}
+
 /** 구글 로그인/회원가입 */
 export async function fbGoogleLogin() {
   const provider = new GoogleAuthProvider();
