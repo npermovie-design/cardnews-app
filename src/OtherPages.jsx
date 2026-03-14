@@ -22,7 +22,7 @@ export function AboutPage({ navigate, C }) {
           <p style={{ marginBottom: 0 }}>SNS를 시작하고 싶지만 방법을 모르시는 분, 이미 운영 중이지만 방향이 고민되는 분, 그리고 비즈니스 성장을 위해 SNS를 제대로 활용하고 싶은 분들과 함께하고 있습니다.<span style={{ color: C.purpleL, fontWeight: 700 }}> SNS의 시작부터 성장까지, 실행을 함께하는 곳. 엔퍼가 도와드리겠습니다.</span></p>
         </div>
         <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 20 }}>엔퍼가 지원하는 서비스</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14, marginBottom: 40 }}>
           {[
             { icon: "🎓", title: "강의 사이트 운영", desc: "강사 육성 및 고객 연결을 위한 강의 플랫폼 운영" },
             { icon: "📢", title: "SNS 홍보 지원", desc: "콘텐츠 업로드를 통한 체계적인 SNS 홍보 지원" },
@@ -460,7 +460,7 @@ export function PricingPage({ navigate, C }) {
       </div>
 
       {/* 요금제 카드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 60 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 16, marginBottom: 60 }}>
         {PLANS.map(plan => (
           <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s" }}
             onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
@@ -496,7 +496,7 @@ export function PricingPage({ navigate, C }) {
       {/* 포인트 적립 안내 */}
       <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px 28px", marginBottom: 48 }}>
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
             { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
             { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
@@ -555,7 +555,7 @@ export function ContactPage({ C }) {
       </div>
 
       {/* 빠른 연락 수단 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 40 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(160px,100%),1fr))", gap: 12, marginBottom: 40 }}>
         {[
           { icon: "💬", title: "카카오 오픈채팅", desc: "가장 빠른 응답", sub: "평균 30분 이내", color: "#FEE500", tc: "#3A1D1D", url: "https://open.kakao.com/o/gIw9vTFg" },
           { icon: "📸", title: "인스타그램 DM", desc: "@nperinsight", sub: "DM으로 문의", color: "linear-gradient(45deg,#f09433,#dc2743)", tc: "#fff", url: "https://www.instagram.com/nperinsight/" },
@@ -579,7 +579,7 @@ export function ContactPage({ C }) {
           <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>📝 문의 내용 남기기</div>
           <div style={{ fontSize: 12, color: C.muted, marginBottom: 24 }}>카카오 오픈채팅으로 연결되며, 이메일로도 답변드려요</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>이름 *</div>
                 <input placeholder="홍길동" value={form.name} style={fs} onChange={f("name")} />

@@ -222,8 +222,14 @@ export default function App() {
         }
         @media(max-width:640px){
           .cta-row{flex-direction:column!important}
-          .cta-row button{width:100%!important}
+          .cta-row button{width:100%!important;text-align:center!important}
           .stat-row{gap:20px!important}
+          h1,h2{word-break:keep-all!important;letter-spacing:-0.5px!important}
+          p{word-break:keep-all!important}
+        }
+        @media(max-width:480px){
+          .cta-row button{padding:13px 20px!important;font-size:14px!important}
+          table{display:block;overflow-x:auto}
         }
       `}</style>
 

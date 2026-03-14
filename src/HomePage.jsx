@@ -7,7 +7,7 @@ export default function HomePage({ navigate, C }) {
       <section style={{
         minHeight: "100vh", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        padding: "110px 24px 80px", textAlign: "center",
+        padding: "clamp(90px,12vw,110px) clamp(16px,4vw,24px) clamp(60px,8vw,80px)", textAlign: "center",
         position: "relative", overflow: "hidden", background: C.heroBg,
       }}>
         <div style={{ position: "absolute", top: "10%", right: "5%", width: 400, height: 400, borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(60px)", pointerEvents: "none" }} />
@@ -31,7 +31,7 @@ export default function HomePage({ navigate, C }) {
             <Btn C={C} onClick={() => navigate("cardnews")}>🃏 AI 카드뉴스 바로 만들기</Btn>
             <Btn C={C} onClick={() => navigate("contact")} ghost>SNS 성장 상담 신청</Btn>
           </div>
-          <div className="stat-row" style={{ display: "flex", gap: 40, justifyContent: "center", marginTop: 64, flexWrap: "wrap" }}>
+          <div className="stat-row" style={{ display: "flex", gap: "clamp(20px,4vw,40px)", justifyContent: "center", marginTop: "clamp(40px,6vw,64px)", flexWrap: "wrap" }}>
             {[["10년+", "SNS 운영 경험"], ["AI 자동화", "콘텐츠 제작"], ["주 1회", "전략 미팅"]].map(([v, l]) => (
               <div key={l} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "clamp(18px,2.5vw,26px)", fontWeight: 900, background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{v}</div>
@@ -63,7 +63,7 @@ export default function HomePage({ navigate, C }) {
             </div>
           ))}
         </div>
-        <div style={{ background: "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: "1px solid rgba(124,106,255,0.15)", borderRadius: 18, padding: "32px", textAlign: "center" }}>
+        <div style={{ background: "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: "1px solid rgba(124,106,255,0.15)", borderRadius: 18, padding: "clamp(16px,3vw,32px)", textAlign: "center" }}>
           <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.text, lineHeight: 1.85, fontWeight: 600, margin: 0 }}>
             SNS는 단순히 글을 올리는 것이 아니라
             <span style={{ color: C.purpleL }}> 전략과 구조가 필요한 마케팅 채널</span>입니다.
@@ -75,7 +75,7 @@ export default function HomePage({ navigate, C }) {
       <SecWrap C={C}>
         <SecTitle C={C} badge="Solution" title="엔퍼는 이렇게 SNS 성장을 돕습니다"
           sub="단순 계정 관리가 아닌 AI를 활용해 콘텐츠 전략과 유입 구조를 설계합니다." />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(210px,100%),1fr))", gap: 16 }}>
           {[
             { icon: "🔍", num: "01", title: "SNS 계정 분석", desc: "현재 계정 상태와 콘텐츠 방향을 AI로 정밀 진단합니다." },
             { icon: "📐", num: "02", title: "콘텐츠 전략 설계", desc: "AI 데이터 기반으로 조회수가 나오는 콘텐츠 구조를 만듭니다." },
@@ -83,7 +83,7 @@ export default function HomePage({ navigate, C }) {
             { icon: "📅", num: "04", title: "주 1회 전략 미팅", desc: "AI 리포트로 문제를 분석하고 개선 방향을 함께 잡습니다." },
           ].map((s, i) => (
             <div key={i}
-              style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 18, padding: "28px 22px", position: "relative", overflow: "hidden", boxShadow: C.shadow, transition: "box-shadow 0.2s,transform 0.2s" }}
+              style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 18, padding: "clamp(18px,2.5vw,28px) clamp(14px,2vw,22px)", position: "relative", overflow: "hidden", boxShadow: C.shadow, transition: "box-shadow 0.2s,transform 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowHover; e.currentTarget.style.transform = "translateY(-3px)"; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = ""; }}>
               <div style={{ position: "absolute", top: 14, right: 18, fontSize: 12, fontWeight: 900, color: C.purple, opacity: 0.15, fontFamily: "monospace" }}>{s.num}</div>
@@ -98,7 +98,7 @@ export default function HomePage({ navigate, C }) {
       {/* 서비스 소개 */}
       <SecWrap C={C} bg={C.bg2}>
         <SecTitle C={C} badge="Services" title="엔퍼 서비스" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16 }}>
           {[
             { icon: "🎓", tag: "교육", title: "강사 육성 & 강의 사이트", desc: "강의 사이트를 통한 강사 육성 및 고객 연결. SNS 마케팅을 처음 시작하는 분들을 위한 기초부터 실전 강의를 제공합니다." },
             { icon: "📢", tag: "홍보", title: "SNS 콘텐츠 홍보 지원", desc: "SNS 콘텐츠 업로드를 통한 홍보 지원. AI 도구를 활용해 인스타, 블로그, 유튜브 채널을 효율적으로 운영합니다." },
@@ -170,7 +170,7 @@ export default function HomePage({ navigate, C }) {
       </SecWrap>
 
       {/* CTA */}
-      <section style={{ padding: "130px 24px", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
+      <section style={{ padding: "clamp(60px,10vw,130px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(80px)", pointerEvents: "none" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 660, margin: "0 auto" }}>
           <Badge C={C}>✦ 지금 시작하세요</Badge>

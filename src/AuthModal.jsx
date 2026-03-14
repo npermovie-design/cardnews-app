@@ -89,7 +89,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
       <style>{".nper-auth-input::placeholder{color:rgba(255,255,255,0.35)!important}"}</style>
-      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "36px 30px", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: C.toggleBg, border: "none", color: C.muted, cursor: "pointer", fontSize: 16, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
 

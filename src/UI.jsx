@@ -14,7 +14,7 @@ export const Badge = ({ children, C }) => (
 export const SecWrap = ({ children, bg, style = {}, C }) => (
   <section style={{
     position: "relative", overflow: "hidden",
-    padding: "100px 24px", background: bg || "transparent", ...style,
+    padding: "clamp(48px,8vw,100px) clamp(16px,4vw,24px)", background: bg || "transparent", ...style,
   }}>
     <div style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 1 }}>
       {children}
@@ -31,7 +31,7 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
     }}>{title}</h2>
     {sub && (
       <p style={{
-        fontSize: 16, color: C.muted, lineHeight: 1.7, maxWidth: 600,
+        fontSize: "clamp(13px,1.5vw,16px)", color: C.muted, lineHeight: 1.7, maxWidth: 600,
         margin: left ? "0" : "0 auto",
       }}>{sub}</p>
     )}
