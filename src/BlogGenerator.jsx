@@ -18,6 +18,115 @@ function mdToHtml(md) {
   return `<div class="tistory-content">\n<p>${html}</p>\n</div>`;
 }
 
+
+// ── stripMarkdown 헬퍼 ──────────────────────────────────────────────────────
+function stripMarkdown(text) {
+  return text
+    .replace(/^#{1,6} /gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/^\s*[-*] /gm, "• ")
+    .replace(/^\d+\. /gm, "")
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "")
+    .replace(/[\u2600-\u27FF]/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// ── RichResultView JSX ──────────────────────────────────────────────────────
+function RichResultView({ result, loading, isDark, cardBg, border, text, accent, keyword }) {
+  if (!result && !loading) return null;
+
+  const lines = result.split("\n");
+  const sections = [];
+  let current = { heading: null, level: 0, body: [] };
+
+  lines.forEach(line => {
+    const h2 = line.match(/^## (.+)/);
+    const h3 = line.match(/^### (.+)/);
+    if (h2 || h3) {
+      if (current.body.length > 0 || current.heading) sections.push(current);
+      const raw = (h2 || h3)[1];
+      const clean = raw
+        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"")
+        .replace(/[\u2600-\u27FF]/g,"")
+        .replace(/\*\*(.+?)\*\*/g,"$1")
+        .trim();
+      current = { heading: clean, level: h2 ? 2 : 3, body: [] };
+    } else {
+      current.body.push(line);
+    }
+  });
+  if (current.body.length > 0 || current.heading) sections.push(current);
+
+  const getImgUrl = (heading) => {
+    const q = encodeURIComponent((heading || keyword || "nature").slice(0,25));
+    const seed = (heading||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0);
+    return `https://source.unsplash.com/800x400/?${q}&sig=${seed}`;
+  };
+
+  const renderLine = (line, i) => {
+    const cleaned = line
+      .replace(/\*\*(.+?)\*\*/g,"$1")
+      .replace(/\*(.+?)\*/g,"$1")
+      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"")
+      .replace(/[\u2600-\u27FF]/g,"");
+    if (!cleaned.trim()) return <div key={i} style={{height:8}}/>;
+    const isBullet = /^[\-*•] /.test(cleaned.trim());
+    if (isBullet) return (
+      <div key={i} style={{display:"flex",gap:8,marginBottom:5}}>
+        <span style={{color:accent,flexShrink:0,marginTop:2}}>•</span>
+        <span style={{fontSize:14,lineHeight:1.85}}>{cleaned.replace(/^[\-*•] /,"")}</span>
+      </div>
+    );
+    return <p key={i} style={{margin:"0 0 7px",fontSize:14,lineHeight:1.85,color:text}}>{cleaned}</p>;
+  };
+
+  return (
+    <div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,overflow:"hidden",minHeight:120}}>
+      {sections.map((sec, si) => (
+        <div key={si}>
+          {sec.heading && (
+            <div style={{position:"relative",overflow:"hidden"}}>
+              <img src={getImgUrl(sec.heading)} alt={sec.heading}
+                style={{width:"100%",height:sec.level===2?200:150,objectFit:"cover",display:"block"}}
+                onError={e=>e.target.style.display="none"}/>
+              <div style={{
+                position:"absolute",bottom:0,left:0,right:0,
+                background:"linear-gradient(transparent,rgba(0,0,0,0.76))",
+                padding:sec.level===2?"28px 22px 16px":"20px 22px 12px",
+              }}>
+                <div style={{
+                  fontSize:sec.level===2?20:16,
+                  fontWeight:sec.level===2?900:700,
+                  color:"#fff",
+                  textShadow:"0 2px 8px rgba(0,0,0,0.5)",
+                  letterSpacing:-0.3,
+                }}>{sec.heading}</div>
+              </div>
+            </div>
+          )}
+          {sec.body.length > 0 && (
+            <div style={{padding:"14px 22px 10px",color:text}}>
+              {sec.body.map((line,li) => renderLine(line,li))}
+            </div>
+          )}
+          {si < sections.length-1 && sec.heading && (
+            <div style={{height:1,background:border,margin:"0 22px"}}/>
+          )}
+        </div>
+      ))}
+      {loading && (
+        <div style={{padding:"12px 22px"}}>
+          <span style={{display:"inline-block",width:2,height:14,background:accent,animation:"blink 1s infinite"}}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ── 플랫폼별 전체 설정 ──────────────────────────────────────────────────────
 const PLATFORMS = {
 
@@ -512,7 +621,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             <span style={{fontSize:11,background:isDark?"rgba(16,185,129,0.1)":"rgba(16,185,129,0.07)",color:"#10b981",borderRadius:6,padding:"2px 8px",fontWeight:700}}>공백 제외 {result.replace(/\s/g,"").length.toLocaleString()}자</span>
             <span style={{fontSize:11,color:muted}}>{new Blob([result]).size.toLocaleString()} byte</span>
             <div style={{marginLeft:"auto",display:"flex",gap:4}}>
-              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
+              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:stripMarkdown(result))}
                 style={{padding:"5px 11px",borderRadius:7,border:`1px solid ${border}`,background:copied?accentBg:"transparent",color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer"}}>
                 {copied?"✓ 복사됨":"📋 복사"}
               </button>
@@ -537,7 +646,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
-          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px",whiteSpace:"pre-wrap",lineHeight:1.9,fontSize:14,color:text,minHeight:120}}>{result}{loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}</div>}
+          {(viewMode==="text"||!isTistory)&&(
+            <RichResultView result={result} loading={loading} isDark={isDark} cardBg={cardBg} border={border} text={text} accent={accent} keyword={fields.keyword||""}/>
+          )}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
         </div>
