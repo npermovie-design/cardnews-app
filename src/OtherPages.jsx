@@ -152,7 +152,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1 }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label="AI 생성기 소개" icon="🏠" />
+        <Item id="home" label="홈" icon="🏠" />
 
         {/* SNS 글쓰기 그룹 */}
         <Group label="SNS 글쓰기" icon="✍️" open={blogOpen}
@@ -171,6 +171,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
+          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
           <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
         </>}
 
@@ -228,6 +229,65 @@ const BLOG_MAP = {
   blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
 };
 
+function LoginGate({ isDark, navigate, onLogin }) {
+  const bg    = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
+  const card  = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr   = isDark ? "rgba(255,255,255,0.1)"  : "#e5e3f5";
+  const text  = isDark ? "#fff"  : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
+  return (
+    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+      background:bg, padding:"40px 20px" }}>
+      <div style={{ maxWidth:420, width:"100%", textAlign:"center" }}>
+        {/* 아이콘 */}
+        <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
+        <h2 style={{ fontSize:22, fontWeight:900, color:text, marginBottom:10, letterSpacing:-0.5 }}>
+          로그인이 필요해요
+        </h2>
+        <p style={{ fontSize:14, color:muted, lineHeight:1.8, marginBottom:28 }}>
+          AI 생성기는 회원 전용 서비스예요.<br/>
+          무료로 가입하면 즉시 이용할 수 있어요!
+        </p>
+
+        {/* 혜택 카드 */}
+        <div style={{ background:card, border:"1px solid "+bdr, borderRadius:16,
+          padding:"20px 22px", marginBottom:24, textAlign:"left" }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:12 }}>🎁 가입 혜택</div>
+          {[
+            ["💎", "가입 즉시 50P 지급", "AI 5회 분량"],
+            ["✍️", "게시글 작성 시 10P", "매번 적립"],
+            ["🤖", "AI 생성기 무료 20회", "회원 전용"],
+            ["📋", "댓글·출석 포인트", "매일 적립"],
+          ].map(([ic,t,d],i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:i<3?10:0 }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>{ic}</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>{t}</div>
+                <div style={{ fontSize:11, color:muted }}>{d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 버튼들 */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <button onClick={onLogin}
+            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+              background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff",
+              fontSize:15, fontWeight:800, boxShadow:"0 8px 24px rgba(124,106,255,0.35)" }}>
+            🚀 무료 회원가입 / 로그인
+          </button>
+          <button onClick={() => setAiMenu("home")}
+            style={{ width:"100%", padding:"12px", borderRadius:12, border:"1px solid "+bdr,
+              background:"transparent", color:muted, fontSize:13, fontWeight:600, cursor:"pointer" }}>
+            ← AI 생성기 소개 보기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
@@ -235,84 +295,49 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
 
-  // AI 생성기 소개 홈
+  // 비회원 + 홈이 아닌 메뉴 → 로그인 게이트
+  if (!user && aiMenu && aiMenu !== "home") {
+    return <LoginGate isDark={isDark} navigate={navigate} setAiMenu={setAiMenu}
+      onLogin={() => {
+        // App.jsx의 setShowAuth 트리거 - navigate로 홈 갔다가 auth 열기
+        if (navigate) navigate("login_trigger");
+      }} />;
+  }
+
+  // 홈
   if (!aiMenu || aiMenu === "home") {
-    const TOOLS = [
-      { id: "blog_naver",    icon: "📝", title: "네이버 블로그",   desc: "SEO 최적화 블로그 포스트 자동 생성",  color: "#03C75A" },
-      { id: "blog_tistory",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글 자동 작성",      color: "#FF6B35" },
-      { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션 & 해시태그",        color: "#E1306C" },
-      { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란 자동 생성",         color: "#FF0000" },
-      { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",                   color: "#000000" },
-      { id: "cardnews_make", icon: "🃏", title: "카드뉴스 생성기", desc: "주제 입력 → AI 카드뉴스 자동 제작",   color: "#6366f1" },
-      { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",                           color: "#888" },
+    const MENUS = [
+      { id: "blog_naver",    icon: "📝", title: "네이버 블로그",   desc: "SEO 최적화 블로그 포스트",   darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_tistory",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글",       darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
+      { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
+      { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
+      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
-    const feats = [
-      { icon: "⚡", title: "빠른 콘텐츠 생성", desc: "주제만 입력하면 AI가 즉시 완성도 높은 글을 작성해드려요" },
-      { icon: "📱", title: "모든 SNS 지원",    desc: "블로그·인스타·유튜브·카드뉴스까지 하나의 도구로 해결" },
-      { icon: "🎯", title: "맞춤형 톤앤매너",  desc: "친근체·전문체·일기체 등 원하는 스타일로 자유롭게 생성" },
-      { icon: "💎", title: "포인트 적립",       desc: "게시글 작성·댓글·출석 체크로 AI 이용권을 무료로 쌓아요" },
-    ];
-    const bg2 = isDark ? "rgba(255,255,255,0.03)" : "#fff";
-    const bdr2 = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
     return (
-      <div style={{ flex: 1, overflowY: "auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        {/* 히어로 배너 */}
-        <div style={{ background: isDark ? "linear-gradient(135deg,rgba(99,102,241,0.25),rgba(139,92,246,0.15))" : "linear-gradient(135deg,#ede9ff,#fce7f9)", padding: "clamp(28px,5vw,52px) clamp(20px,4vw,48px)", borderBottom: `1px solid ${bdr2}` }}>
-          <div style={{ maxWidth: 680 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: isDark ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: isDark ? "#a5b4fc" : "#4f46e5", marginBottom: 16 }}>
-              🤖 AI 생성기
-            </div>
-            <h1 style={{ fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 900, color: homeText, margin: "0 0 14px", lineHeight: 1.3, letterSpacing: -0.5 }}>
-              SNS 콘텐츠, 이제 AI로<br/>더 빠르고 쉽게 만드세요
-            </h1>
-            <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: homeMuted, lineHeight: 1.8, margin: "0 0 22px", maxWidth: 520 }}>
-              엔퍼 AI 생성기는 <strong style={{ color: homeText }}>SNS를 쉽게 운영하고 싶은 모든 분</strong>을 위한 도구입니다.<br/>
-              네이버 블로그, 인스타그램, 유튜브, 카드뉴스까지 — 주제만 입력하면 AI가 완성도 높은 콘텐츠를 즉시 생성해드려요.
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => setAiMenu("blog_naver")} style={{ padding: "10px 22px", borderRadius: 10, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 13, fontWeight: 800 }}>
-                ✍️ 지금 시작하기
-              </button>
-              <button onClick={() => setAiMenu("cardnews_make")} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${isDark?"rgba(255,255,255,0.2)":"rgba(99,102,241,0.3)"}`, cursor: "pointer", background: "transparent", color: isDark ? "#a5b4fc" : "#4f46e5", fontSize: 13, fontWeight: 700 }}>
-                🃏 카드뉴스 만들기
-              </button>
-            </div>
-          </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>AI 생성기에 오신 걸 환영해요! 👋</div>
+          <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
         </div>
-
-        <div style={{ padding: "clamp(20px,4vw,36px) clamp(16px,3vw,32px)" }}>
-          {/* 특징 4가지 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(200px,100%),1fr))", gap: 12, marginBottom: 32 }}>
-            {feats.map((f, i) => (
-              <div key={i} style={{ background: bg2, border: `1px solid ${bdr2}`, borderRadius: 12, padding: "16px 14px" }}>
-                <div style={{ fontSize: 22, marginBottom: 8 }}>{f.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: homeText, marginBottom: 5 }}>{f.title}</div>
-                <div style={{ fontSize: 11, color: homeMuted, lineHeight: 1.65 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 도구 목록 */}
-          <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 800, color: homeText }}>🛠 지원 도구</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(180px,100%),1fr))", gap: 8 }}>
-            {TOOLS.map(m => (
-              <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
-                background: bg2, border: `1px solid ${bdr2}`,
-                borderRadius: 10, padding: "12px 14px", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 10,
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)"; e.currentTarget.style.background = isDark ? "rgba(99,102,241,0.1)" : "#f0f0ff"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg2; }}
-              >
-                <div style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: homeText }}>{m.title}</div>
-                  <div style={{ fontSize: 10, color: homeMuted, lineHeight: 1.5, marginTop: 2 }}>{m.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
+          {MENUS.map(m => (
+            <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
+              background: isDark ? m.darkColor : m.lightColor,
+              border: `1px solid ${cardBdr}`,
+              borderRadius: 12, padding: "16px 14px", cursor: "pointer",
+              transition: "opacity 0.15s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <div style={{ fontSize: 24, marginBottom: 7 }}>{m.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 3, color: homeText }}>{m.title}</div>
+              <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.5 }}>{m.desc}</div>
+            </div>
+          ))}
         </div>
       </div>
     );
