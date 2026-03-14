@@ -227,9 +227,9 @@ const T = {
   },
 };
 
-export default function BoardPage({ user, C, onLoginRequest, lang="ko" }) {
-  const t = T[lang] || T.ko;
-  const [cat,     setCat]     = useState("board_ai");
+export default function BoardPage({ user, C, onLoginRequest, lang="ko", t: tProp, initialCat, embedded }) {
+  const t = tProp ? tProp.board : (T[lang] || T.ko);
+  const [cat,     setCat]     = useState(initialCat || "board_ai");
   const [posts,   setPosts2]  = useState(getPosts);
   const [view,    setView]    = useState(null);
   const [editing, setEditing] = useState(null);
@@ -308,8 +308,8 @@ export default function BoardPage({ user, C, onLoginRequest, lang="ko" }) {
   const B  = C.border;
   const BG = C.bg2;
 
-  /* ── 카테고리 네비 ── */
-  const CatNav = () => (
+  /* ── 카테고리 네비 ── (embedded 모드에서는 숨김) */
+  const CatNav = () => embedded ? null : (
     <>
       <style>{BOARD_CSS}</style>
 

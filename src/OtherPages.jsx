@@ -85,7 +85,8 @@ const SNS_LINKS = [
   { label: "유튜브",   url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000" },
 ];
 
-function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
+function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang }) {
+  const t = getT(lang);
   const isDark = theme === "dark";
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
   const sideBdr  = isDark ? "rgba(255,255,255,0.07)"     : "#e5e3f5";
@@ -100,6 +101,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && aiMenu.startsWith("cardnews")));
+  const [boardOpen, setBoardOpen] = useState(!!(aiMenu && aiMenu.startsWith("board_")));
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
@@ -152,34 +154,44 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1 }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label="홈" icon="🏠" />
+        <Item id="home" label={t.sidebar.home} icon="🏠" />
 
         {/* SNS 글쓰기 그룹 */}
-        <Group label="SNS 글쓰기" icon="✍️" open={blogOpen}
+        <Group label={t.sidebar.snsWrite} icon="✍️" open={blogOpen}
           active={!!(aiMenu && aiMenu.startsWith("blog"))}
           onToggle={() => setBlogOpen(p => !p)} />
         {blogOpen && <>
-          <Item id="blog_naver"   label="네이버 블로그"   icon="📝" indent />
-          <Item id="blog_tistory" label="티스토리"        icon="📝" indent />
-          <Item id="blog_insta"   label="인스타그램 캡션" icon="📱" indent />
-          <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
-          <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
+          <Item id="blog_naver"   label={t.sidebar.naverBlog}   icon="📝" indent />
+          <Item id="blog_tistory" label={t.sidebar.tistory}      icon="📝" indent />
+          <Item id="blog_insta"   label={t.sidebar.insta}        icon="📱" indent />
+          <Item id="blog_youtube" label={t.sidebar.youtube}      icon="▶️" indent />
+          <Item id="blog_thread"  label={t.sidebar.thread}       icon="🧵" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="카드뉴스" icon="🃏" open={cardOpen}
+        <Group label={t.sidebar.cardnews} icon="🃏" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
-          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
+          <Item id="cardnews_plan" label={t.sidebar.plan}    icon="📋" indent />
+          <Item id="cardnews_make" label={t.sidebar.make}    icon="✨" indent />
         </>}
 
-        <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
+        <Item id="shorts" label={t.sidebar.shorts} icon="🎬" />
 
-        {/* 커뮤니티 */}
+        {/* 커뮤니티 + 게시판 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>COMMUNITY</div>
+          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>{t.sidebar.community}</div>
+          {/* 게시판 그룹 */}
+          <Group label={t.sidebar.board} icon="📋"
+            open={boardOpen} active={!!(aiMenu && aiMenu.startsWith("board_"))}
+            onToggle={() => setBoardOpen(p=>!p)} />
+          {boardOpen && <>
+            <Item id="board_board_ai" label={t.sidebar.boardAi}  icon="🤖" indent />
+            <Item id="board_news"     label={t.sidebar.news}      icon="📰" indent />
+            <Item id="board_archive"  label={t.sidebar.archive}   icon="📁" indent />
+            <Item id="board_qna"      label={t.sidebar.qna}       icon="💬" indent />
+          </>}
           {SNS_LINKS.map(s => (
             <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 7,
@@ -189,13 +201,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
               <div style={{ width: 10, height: 10, borderRadius: 3, background: s.bg, flexShrink: 0 }} />{s.label}
             </button>
           ))}
-          <button onClick={onQna} style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 7,
-            padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
-            background: "rgba(251,191,36,0.07)", color: "#fbbf24", fontSize: 11, textAlign: "left",
-          }}>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: "#FEE500", flexShrink: 0 }} />질문 및 건의방
-          </button>
         </div>
       </div>
 
@@ -229,80 +234,12 @@ const BLOG_MAP = {
   blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
 };
 
-function LoginGate({ isDark, navigate, onLogin }) {
-  const bg    = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
-  const card  = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr   = isDark ? "rgba(255,255,255,0.1)"  : "#e5e3f5";
-  const text  = isDark ? "#fff"  : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
-  return (
-    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
-      background:bg, padding:"40px 20px" }}>
-      <div style={{ maxWidth:420, width:"100%", textAlign:"center" }}>
-        {/* 아이콘 */}
-        <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
-        <h2 style={{ fontSize:22, fontWeight:900, color:text, marginBottom:10, letterSpacing:-0.5 }}>
-          로그인이 필요해요
-        </h2>
-        <p style={{ fontSize:14, color:muted, lineHeight:1.8, marginBottom:28 }}>
-          AI 생성기는 회원 전용 서비스예요.<br/>
-          무료로 가입하면 즉시 이용할 수 있어요!
-        </p>
-
-        {/* 혜택 카드 */}
-        <div style={{ background:card, border:"1px solid "+bdr, borderRadius:16,
-          padding:"20px 22px", marginBottom:24, textAlign:"left" }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:12 }}>🎁 가입 혜택</div>
-          {[
-            ["💎", "가입 즉시 50P 지급", "AI 5회 분량"],
-            ["✍️", "게시글 작성 시 10P", "매번 적립"],
-            ["🤖", "AI 생성기 무료 20회", "회원 전용"],
-            ["📋", "댓글·출석 포인트", "매일 적립"],
-          ].map(([ic,t,d],i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:i<3?10:0 }}>
-              <span style={{ fontSize:18, flexShrink:0 }}>{ic}</span>
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:text }}>{t}</div>
-                <div style={{ fontSize:11, color:muted }}>{d}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 버튼들 */}
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          <button onClick={onLogin}
-            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-              background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff",
-              fontSize:15, fontWeight:800, boxShadow:"0 8px 24px rgba(124,106,255,0.35)" }}>
-            🚀 무료 회원가입 / 로그인
-          </button>
-          <button onClick={() => setAiMenu("home")}
-            style={{ width:"100%", padding:"12px", borderRadius:12, border:"1px solid "+bdr,
-              background:"transparent", color:muted, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-            ← AI 생성기 소개 보기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
-
-  // 비회원 + 홈이 아닌 메뉴 → 로그인 게이트
-  if (!user && aiMenu && aiMenu !== "home") {
-    return <LoginGate isDark={isDark} navigate={navigate} setAiMenu={setAiMenu}
-      onLogin={() => {
-        // App.jsx의 setShowAuth 트리거 - navigate로 홈 갔다가 auth 열기
-        if (navigate) navigate("login_trigger");
-      }} />;
-  }
 
   // 홈
   if (!aiMenu || aiMenu === "home") {
@@ -446,7 +383,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 
       {/* 데스크톱 사이드바 */}
       <div className="ai-sidebar-desktop">
-        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} lang={lang} />
       </div>
 
       {/* 모바일 사이드바 오버레이 */}
@@ -455,7 +392,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}
             onClick={() => setSideOpen(false)} />
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, animation: "slideIn 0.2s ease", zIndex: 51 }}>
-            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} lang={lang} />
           </div>
         </div>
       )}
