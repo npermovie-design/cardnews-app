@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser, fbGoogleRedirectResult } from "./storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
@@ -38,6 +38,17 @@ export default function App() {
     setTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch {}
   };
+
+  // 구글 Redirect 로그인 결과 처리 (모바일 인앱브라우저 대응)
+  useEffect(() => {
+    fbGoogleRedirectResult().then(userData => {
+      if (userData) {
+        setUser(userData);
+        setLocalUser(userData);
+        setUserState(userData);
+      }
+    }).catch(() => {});
+  }, []);
 
   // 카카오 OAuth 콜백 처리
   useEffect(() => {
@@ -182,7 +193,7 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
-    if (isBoard)             return <BoardPage C={C} user={user} onLoginRequest={() => setShowAuth(true)} />;
+    if (isBoard)             return <BoardPage C={C} user={user} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
@@ -262,9 +273,9 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => user ? navigateAi("blog_naver")    : setShowAuth(true)} />
-                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => user ? navigateAi("shorts")        : setShowAuth(true)} />
+                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
+                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => navigateAi("cardnews_make")} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
               </DropMenu>
             )}
           </div>

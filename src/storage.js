@@ -13,6 +13,8 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from "firebase/auth";
 import {
   getDatabase,
@@ -103,7 +105,7 @@ export const PLANS = [
 
 // ── 게시판 카테고리 ───────────────────────────────────────────────────────
 export const CATS = [
-  { id: "board_ai", label: "AI & 프로그램 정보", icon: "🤖" },
+  { id: "ai",      label: "AI & 프로그램 정보", icon: "🤖" },
   { id: "news",    label: "뉴스소식",            icon: "📰" },
   { id: "archive", label: "자료실",              icon: "📁" },
   { id: "qna",     label: "질문답변",            icon: "💬" },
@@ -242,9 +244,23 @@ export async function fbKakaoLogin(code) {
 }
 
 /** 구글 로그인/회원가입 */
+// 모바일 인앱브라우저 감지 (카카오톡, 인스타, 네이버 앱 등)
+function isInAppBrowser() {
+  const ua = navigator.userAgent || "";
+  return /KAKAOTALK|Instagram|NAVER|Line|FB_IAB|FBAV|Twitter|Snapchat|TikTok/i.test(ua)
+    || (typeof window !== "undefined" && window.ReactNativeWebView != null);
+}
+
 export async function fbGoogleLogin() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
+  
+  // 모바일 인앱브라우저 → redirect 방식 (popup 차단 우회)
+  if (isInAppBrowser()) {
+    await signInWithRedirect(auth, provider);
+    return null; // redirect 후 페이지 새로고침됨
+  }
+  
   const cred = await signInWithPopup(auth, provider);
   const uid  = cred.user.uid;
   const snap = await get(ref(db, "users/" + uid));
@@ -278,6 +294,47 @@ export async function fbGoogleLogin() {
     };
     await set(ref(db, "users/" + uid), userData);
     return userData;
+  }
+}
+
+/** 구글 Redirect 결과 처리 (페이지 로드 시 호출) */
+export async function fbGoogleRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (!result) return null;
+    const uid  = result.user.uid;
+    const snap = await get(ref(db, "users/" + uid));
+    if (snap.exists()) {
+      let userData = snap.val();
+      const today = new Date().toLocaleDateString("ko-KR");
+      if (userData.lastLoginDate !== today) {
+        userData.points        = (userData.points || 0) + POINTS.DAILY_LOGIN;
+        userData.lastLoginDate  = today;
+        userData.lastLogin      = new Date().toISOString();
+        await update(ref(db, "users/" + uid), {
+          points: userData.points, lastLoginDate: today, lastLogin: userData.lastLogin,
+        });
+      }
+      return userData;
+    } else {
+      // 신규 구글 유저
+      const nick = result.user.displayName || "구글유저";
+      const email = result.user.email || "";
+      const newUser = {
+        id: uid, uid, nick, email,
+        points: POINTS.SIGNUP,
+        role: "member",
+        createdAt: new Date().toISOString(),
+        lastLoginDate: new Date().toLocaleDateString("ko-KR"),
+        lastLogin: new Date().toISOString(),
+        aiUsed: {},
+      };
+      await set(ref(db, "users/" + uid), newUser);
+      return newUser;
+    }
+  } catch (e) {
+    console.error("redirect result error:", e);
+    return null;
   }
 }
 

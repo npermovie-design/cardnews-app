@@ -486,12 +486,24 @@ export function PricingPage({ navigate, C }) {
       {/* 요금제 카드 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 16, marginBottom: 60 }}>
         {PLANS.map(plan => (
-          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s" }}
-            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s", overflow: "hidden" }}
+            onMouseEnter={e => plan.id==="free" && (e.currentTarget.style.transform = "translateY(-4px)")}
+            onMouseLeave={e => plan.id==="free" && (e.currentTarget.style.transform = "translateY(0)")}>
 
             {plan.badge && (
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap", zIndex: 2 }}>{plan.badge}</div>
+            )}
+
+            {/* 유료 플랜 블러 오버레이 */}
+            {plan.id !== "free" && (
+              <div style={{ position: "absolute", inset: 0, zIndex: 10, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", background: "rgba(0,0,0,0.35)", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <div style={{ fontSize: 28 }}>🔒</div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>결제 연동 준비중</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 1.6 }}>곧 오픈 예정이에요!<br/>문의하기로 연락해주세요</div>
+                <button onClick={() => navigate("contact")} style={{ marginTop: 4, padding: "7px 18px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  문의하기
+                </button>
+              </div>
             )}
 
             <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{plan.name}</div>
@@ -509,7 +521,7 @@ export function PricingPage({ navigate, C }) {
             </div>
 
             <button
-              onClick={() => plan.id === "free" ? navigate("cardnews") : navigate("contact")}
+              onClick={() => plan.id === "free" ? navigate("ai") : navigate("contact")}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
               {plan.btnLabel}
             </button>
