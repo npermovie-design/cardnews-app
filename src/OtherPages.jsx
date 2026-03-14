@@ -418,12 +418,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
               <span style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.45)" : "#888", whiteSpace: "nowrap" }}>{onlineCount}명</span>
             </div>
-            {!user && (
-              <button onClick={() => navigate("auth")} style={{
-                padding: "4px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-                background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
-              }}>로그인</button>
-            )}
+
           </div>
         </div>
 

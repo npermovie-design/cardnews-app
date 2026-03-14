@@ -370,8 +370,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {result&&<span style={{fontSize:11,color:muted}}>{result.length.toLocaleString()}자</span>}
-            {result&&isTistory&&viewMode==="html"&&<button onClick={()=>handleCopy(htmlResult)} style={{padding:"5px 12px",borderRadius:7,border:`1px solid ${border}`,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>{copied?"✓ 복사됨":"HTML 복사"}</button>}
-            {result&&(!isTistory||viewMode==="text")&&<button onClick={()=>handleCopy(result)} style={{padding:"5px 12px",borderRadius:7,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.15)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer"}}>{copied?"✓ 복사됨":"복사"}</button>}
+            {result&&isTistory&&["text","html","preview"].map(mode=>(
+              <button key={mode} onClick={()=>setViewMode(mode)}
+                style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {mode==="text"?"텍스트":mode==="html"?"HTML":"미리보기"}
+              </button>
+            ))}
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
@@ -383,12 +387,45 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
     );
   };
 
+  const [mobileTab, setMobileTab] = useState("input"); // "input" | "result"
+
   const content = (
     <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}.tistory-content h1,.tistory-content h2{font-size:20px;font-weight:700;margin:20px 0 10px}.tistory-content h3{font-size:16px;font-weight:700;margin:14px 0 8px}.tistory-content p{margin:8px 0;line-height:1.8}.tistory-content ul{padding-left:20px;margin:8px 0}.tistory-content li{margin:4px 0}`}</style>
-      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+      <style>{`
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        .tistory-content h1,.tistory-content h2{font-size:20px;font-weight:700;margin:20px 0 10px}
+        .tistory-content h3{font-size:16px;font-weight:700;margin:14px 0 8px}
+        .tistory-content p{margin:8px 0;line-height:1.8}
+        .tistory-content ul{padding-left:20px;margin:8px 0}
+        .tistory-content li{margin:4px 0}
+        .blog-mobile-tabs{display:none}
+        .blog-panel-left{width:380px;flex-shrink:0}
+        .blog-panel-right{flex:1}
+        @media(max-width:768px){
+          .blog-mobile-tabs{display:flex!important}
+          .blog-panel-left{width:100%!important;flex-shrink:unset}
+          .blog-panel-right{flex:1;width:100%!important}
+          .blog-desktop-split{flex-direction:column!important}
+          .blog-hide-mobile{display:none!important}
+        }
+      `}</style>
+      {/* 모바일 탭 */}
+      <div className="blog-mobile-tabs" style={{display:"none",borderBottom:`1px solid ${border}`,background:panelBg,flexShrink:0}}>
+        {[["input","✏️ 입력"],["result","📄 결과"]].map(([tab,label])=>(
+          <button key={tab} onClick={()=>setMobileTab(tab)}
+            style={{flex:1,padding:"10px",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,
+              background:mobileTab===tab?"linear-gradient(135deg,#6366f1,#8b5cf6)":"transparent",
+              color:mobileTab===tab?"#fff":muted,
+              borderBottom:mobileTab===tab?"2px solid #6366f1":"2px solid transparent"}}>
+            {label}{tab==="result"&&result&&<span style={{marginLeft:4,fontSize:10,background:"#6366f1",color:"#fff",borderRadius:8,padding:"1px 5px"}}>완료</span>}
+          </button>
+        ))}
+      </div>
+      <div className="blog-desktop-split" style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* 좌: 입력 */}
-        <div style={{width:380,flexShrink:0,background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div className={"blog-panel-left" + (mobileTab==="result" ? " blog-hide-mobile" : "")}
+          style={{background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"12px 18px",borderBottom:`1px solid ${border}`,flexShrink:0}}>
             <div style={{fontSize:14,fontWeight:800,color:text}}>{menuLabel||cfg.title}</div>
             <div style={{fontSize:11,color:muted,marginTop:2}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
@@ -496,9 +533,43 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
           </div>
         </div>
         {/* 우: 결과 */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
+        <div className={"blog-panel-right" + (mobileTab==="input" ? " blog-hide-mobile" : "")}
+          style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
           {renderResult()}
         </div>
+        {/* 플로팅 액션 버튼 - 결과 있을 때만 */}
+        {result && (
+          <div style={{padding:"12px 16px",borderTop:`1px solid ${border}`,background:panelBg,display:"flex",gap:8,flexWrap:"wrap",flexShrink:0}}>
+            <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
+              style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              {copied?"✓ 복사됨":"📋 복사"}
+            </button>
+            <button onClick={()=>{
+              const blob=new Blob([result],{type:"text/plain;charset=utf-8"});
+              const url=URL.createObjectURL(blob);
+              const a=document.createElement("a");
+              a.href=url;a.download="생성결과.txt";a.click();URL.revokeObjectURL(url);
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              📄 TXT
+            </button>
+            <button onClick={()=>{
+              const htmlContent=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;color:#333}h1,h2,h3{color:#1a1a2e}</style></head><body><pre style="white-space:pre-wrap">${result}</pre></body></html>`;
+              const blob=new Blob([htmlContent],{type:"text/html;charset=utf-8"});
+              const url=URL.createObjectURL(blob);
+              const a=document.createElement("a");
+              a.href=url;a.download="생성결과.html";a.click();URL.revokeObjectURL(url);
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              🌐 HTML
+            </button>
+            <button onClick={()=>{
+              const printWin=window.open("","_blank");
+              printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;padding:30px;line-height:1.8;color:#000}@media print{body{padding:0}}</style></head><body><pre style="white-space:pre-wrap">${result}</pre><script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+              printWin.document.close();
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              🖨️ PDF
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
