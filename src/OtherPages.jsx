@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { getT } from "./i18n";
+import BoardPage from "./BoardPage";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -85,9 +87,9 @@ const SNS_LINKS = [
   { label: "유튜브",   url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000" },
 ];
 
-function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang }) {
-  const t = getT(lang);
+function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang="ko" }) {
   const isDark = theme === "dark";
+  const t = getT(lang);
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
   const sideBdr  = isDark ? "rgba(255,255,255,0.07)"     : "#e5e3f5";
   const menuLabel= isDark ? "rgba(255,255,255,0.2)"      : "rgba(99,102,241,0.4)";
@@ -161,11 +163,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang })
           active={!!(aiMenu && aiMenu.startsWith("blog"))}
           onToggle={() => setBlogOpen(p => !p)} />
         {blogOpen && <>
-          <Item id="blog_naver"   label={t.sidebar.naverBlog}   icon="📝" indent />
-          <Item id="blog_tistory" label={t.sidebar.tistory}      icon="📝" indent />
-          <Item id="blog_insta"   label={t.sidebar.insta}        icon="📱" indent />
-          <Item id="blog_youtube" label={t.sidebar.youtube}      icon="▶️" indent />
-          <Item id="blog_thread"  label={t.sidebar.thread}       icon="🧵" indent />
+          <Item id="blog_naver"   label={t.sidebar.naverBlog}  icon="📝" indent />
+          <Item id="blog_tistory" label={t.sidebar.tistory}    icon="📝" indent />
+          <Item id="blog_insta"   label={t.sidebar.insta}      icon="📱" indent />
+          <Item id="blog_youtube" label={t.sidebar.youtube}    icon="▶️" indent />
+          <Item id="blog_thread"  label={t.sidebar.thread}     icon="🧵" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
@@ -173,8 +175,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang })
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label={t.sidebar.plan}    icon="📋" indent />
-          <Item id="cardnews_make" label={t.sidebar.make}    icon="✨" indent />
+          <Item id="cardnews_plan" label={t.sidebar.plan} icon="📋" indent />
+          <Item id="cardnews_make" label={t.sidebar.make} icon="✨" indent />
         </>}
 
         <Item id="shorts" label={t.sidebar.shorts} icon="🎬" />
@@ -185,12 +187,12 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang })
           {/* 게시판 그룹 */}
           <Group label={t.sidebar.board} icon="📋"
             open={boardOpen} active={!!(aiMenu && aiMenu.startsWith("board_"))}
-            onToggle={() => setBoardOpen(p=>!p)} />
+            onToggle={() => setBoardOpen(p => !p)} />
           {boardOpen && <>
-            <Item id="board_board_ai" label={t.sidebar.boardAi}  icon="🤖" indent />
-            <Item id="board_news"     label={t.sidebar.news}      icon="📰" indent />
-            <Item id="board_archive"  label={t.sidebar.archive}   icon="📁" indent />
-            <Item id="board_qna"      label={t.sidebar.qna}       icon="💬" indent />
+            <Item id="board_board_ai" label={t.sidebar.boardAi} icon="🤖" indent />
+            <Item id="board_news"     label={t.sidebar.news}    icon="📰" indent />
+            <Item id="board_archive"  label={t.sidebar.archive} icon="📁" indent />
+            <Item id="board_qna"      label={t.sidebar.qna}     icon="💬" indent />
           </>}
           {SNS_LINKS.map(s => (
             <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{
