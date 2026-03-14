@@ -129,11 +129,11 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
       <style>{BOARD_CSS}</style>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
         <div>
-          <h2 style={{ fontSize:17, fontWeight:900, color:C.text, margin:0 }}>{initial?"✏️ 수정":"{t.write}"}</h2>
+          <h2 style={{ fontSize:17, fontWeight:900, color:C.text, margin:0 }}>{initial?"✏️ 수정":"✏️ 글쓰기"}</h2>
           <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{catLabel} 게시판</div>
         </div>
         <button onClick={onCancel}
-          style={{ padding:"6px 14px", borderRadius:8, border:"1px solid "+C.border, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>{t.list}</button>
+          style={{ padding:"6px 14px", borderRadius:8, border:"1px solid "+C.border, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>← 목록</button>
       </div>
 
       <div style={{ border:"1px solid "+C.border, borderTop:"2px solid "+C.text }}>
@@ -212,10 +212,10 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
 ══════════════════════════════════════════════════ */
 const T = {
   ko: {
-    write:"{t.write}", list:t.list, reply:t.reply, noPost:"{t.noPost}",
-    num:t.num, title:t.title, author:t.author, date:t.date, views:"조회",
-    comment:"댓글", commentPh:"{t.commentPh}",
-    loginComment:"댓글은 로그인 후 이용 가능합니다 →", loginLink:t.loginLink,
+    write:"✏️ 글쓰기", list:"목록", reply:"등록", noPost:"아직 게시글이 없어요. 첫 번째 글을 남겨보세요 ✍️",
+    num:"번호", title:"제목", author:"글쓴이", date:"날짜", views:"조회",
+    comment:"댓글", commentPh:"댓글을 입력해주세요 (Ctrl+Enter: 등록)",
+    loginComment:"댓글은 로그인 후 이용 가능합니다 →", loginLink:"로그인하기",
     edit:"수정", del:"삭제", total:"총", posts:"개",
   },
   en: {
@@ -448,7 +448,7 @@ export default function BoardPage({ user, C, onLoginRequest, lang="ko" }) {
               <div style={{ display:"flex" }}>
                 <div style={{ padding:"9px 12px", background:BG, borderRight:"1px solid "+B, fontSize:12, fontWeight:700, color:C.text, display:"flex", alignItems:"center", flexShrink:0 }}>{user.nick}</div>
                 <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={3}
-                  placeholder="{t.commentPh}"
+                  placeholder="댓글을 입력해주세요 (Ctrl+Enter: 등록)"
                   style={{ flex:1, border:"none", outline:"none", padding:"9px 12px", fontSize:13, background:C.card, color:C.text, fontFamily:"inherit", resize:"none", lineHeight:1.7 }}
                   onKeyDown={e=>{ if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();addComment(view.id);} }}/>
                 <button onClick={()=>addComment(view.id)}
