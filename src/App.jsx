@@ -127,7 +127,7 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
-  const isBoard = ["ai", "news", "archive", "qna"].includes(page);
+  const isBoard = ["board_ai", "news", "archive", "qna"].includes(page);
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
@@ -262,6 +262,7 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
+                <DropItem id="ai" icon="🏠" label="AI 생성기 소개"  onClick={() => navigateAi("home")} />
                 <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
                 <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => navigateAi("cardnews_make")} />
                 <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
@@ -316,7 +317,7 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
-          {/* 대메뉴: 홈, 소개 */}
+          {/* 대메뉴 */}
           {[
             { id: "home",  label: "홈" },
             { id: "about", label: "소개" },
@@ -331,13 +332,14 @@ export default function App() {
             }}>{m.label}</button>
           ))}
 
-          {/* 대메뉴: AI 생성기 섹션 */}
+          {/* AI 생성기 섹션 */}
           <div style={{ marginTop: 8, marginBottom: 4 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1.5, padding: "4px 16px 6px", textTransform: "uppercase" }}>🤖 AI 생성기</div>
             {[
-              { id: "ai_bl", label: "✍️ SNS 글쓰기",       ai: "blog_naver" },
-              { id: "ai_cn", label: "🃏 카드뉴스 생성기",  ai: "cardnews_make" },
-              { id: "ai_sh", label: "🎬 쇼츠영상 생성기",  ai: "shorts" },
+              { id: "ai_intro", label: "AI 생성기 소개", ai: "home" },
+              { id: "ai_bl",    label: "✍️ SNS 글쓰기",       ai: "blog_naver" },
+              { id: "ai_cn",    label: "🃏 카드뉴스 생성기",  ai: "cardnews_make" },
+              { id: "ai_sh",    label: "🎬 쇼츠영상 생성기",  ai: "shorts" },
             ].map(m => {
               const isActive = page === "ai" && aiMenu === m.ai;
               return (
@@ -353,7 +355,7 @@ export default function App() {
             })}
           </div>
 
-          {/* 대메뉴: 커뮤니티 섹션 */}
+          {/* 커뮤니티 섹션 */}
           <div style={{ marginTop: 4, marginBottom: 4 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1.5, padding: "4px 16px 6px", textTransform: "uppercase" }}>💬 커뮤니티</div>
             {CATS.map(c => {
@@ -371,7 +373,7 @@ export default function App() {
             })}
           </div>
 
-          {/* 대메뉴: 기타 */}
+          {/* 기타 */}
           <div style={{ marginTop: 4, borderTop: "1px solid " + C.border, paddingTop: 8 }}>
             {[
               { id: "pricing", label: "가격정책" },
