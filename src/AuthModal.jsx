@@ -44,11 +44,17 @@ export default function AuthModal({ onClose, onAuth, C }) {
     } finally { setLoading(false); }
   };
 
-  const fs = { background: C.inputBg, border: "1px solid " + C.inputBorder, borderRadius: 10, padding: "10px 14px", color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" };
+  // 모달은 항상 다크 스타일로 고정 (배경이 어두운 오버레이 위)
+  const isDark = !C.inputBg || C.inputBg.includes("255,255,255");
+  const inputBg  = "rgba(255,255,255,0.08)";
+  const inputBdr = "rgba(255,255,255,0.18)";
+  const inputClr = "#fff";
+  const fs = { background: inputBg, border: "1px solid " + inputBdr, borderRadius: 10, padding: "10px 14px", color: inputClr, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" };
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.modalBg, border: "1px solid rgba(124,106,255,0.2)", borderRadius: 22, padding: "36px 30px", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
+      <style>{".nper-auth-input::placeholder{color:rgba(255,255,255,0.35)!important}"}</style>
+      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "36px 30px", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: C.toggleBg, border: "none", color: C.muted, cursor: "pointer", fontSize: 16, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
 
@@ -66,8 +72,8 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
         {tab === "login" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input placeholder="이메일" type="email" value={form.email} style={fs} onChange={f("email")} />
-            <input placeholder="비밀번호" type="password" value={form.pw} style={fs} onChange={f("pw")} onKeyDown={e => e.key === "Enter" && login()} />
+            <input placeholder="이메일" type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
+            <input placeholder="비밀번호" type="password" value={form.pw} className="nper-auth-input" style={fs} onChange={f("pw")} onKeyDown={e => e.key === "Enter" && login()} />
             {err && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
             <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "로그인 중..." : "로그인하기"}
@@ -80,10 +86,10 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
         {tab === "register" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input placeholder="닉네임 (2자 이상)" value={form.nick} style={fs} onChange={f("nick")} />
-            <input placeholder="이메일" type="email" value={form.email} style={fs} onChange={f("email")} />
-            <input placeholder="비밀번호 (8자 이상)" type="password" value={form.pw} style={fs} onChange={f("pw")} />
-            <input placeholder="비밀번호 확인" type="password" value={form.pw2} style={fs} onChange={f("pw2")} onKeyDown={e => e.key === "Enter" && register()} />
+            <input placeholder="닉네임 (2자 이상)" value={form.nick} className="nper-auth-input" style={fs} onChange={f("nick")} />
+            <input placeholder="이메일" type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
+            <input placeholder="비밀번호 (8자 이상)" type="password" value={form.pw} className="nper-auth-input" style={fs} onChange={f("pw")} />
+            <input placeholder="비밀번호 확인" type="password" value={form.pw2} className="nper-auth-input" style={fs} onChange={f("pw2")} onKeyDown={e => e.key === "Enter" && register()} />
             {err && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
             <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "가입 중..." : "회원가입하기"}
