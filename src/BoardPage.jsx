@@ -146,8 +146,6 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
 
   return (
     <div className="fpad" style={{ maxWidth:900, width:"100%", boxSizing:"border-box" }}>
-      <style>{BOARD_CSS}</style>
-
       {/* 헤더 */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
         <div>
@@ -303,42 +301,43 @@ export default function BoardPage({ user, C }) {
 
   const B = C.border, BG2 = C.bg2, PUR = C.purpleL;
 
-  /* ── 카테고리 네비 ── */
-  const CatNav = () => (
-    <>
-      <style>{BOARD_CSS}</style>
-      {/* 데스크톱 사이드바 */}
-      <aside className="board-side" style={{ width:160, flexShrink:0, borderRight:"1px solid "+B, background:C.sidebarBg, flexDirection:"column", paddingTop:4 }}>
-        <div style={{ padding:"10px 14px 6px", fontSize:10, fontWeight:700, color:C.muted, letterSpacing:1.2, textTransform:"uppercase" }}>게시판</div>
+  /* ── 모바일 탭 (상단) ── */
+  const MobileTabs = () => (
+    <div className="board-mob-tabs" style={{ borderBottom:"1px solid "+B, background:C.sidebarBg, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+      <div style={{ display:"flex", padding:"6px 10px", gap:4, whiteSpace:"nowrap" }}>
         {CATS.map(cc=>(
           <button key={cc.id} onClick={()=>changeCat(cc.id)} style={{
-            display:"flex", alignItems:"center", gap:8, width:"100%", padding:"10px 14px",
-            border:"none", cursor:"pointer", fontSize:13, fontWeight:cat===cc.id?700:500,
-            background:cat===cc.id?"rgba(124,106,255,0.1)":"transparent",
-            color:cat===cc.id?PUR:C.text,
-            borderLeft:cat===cc.id?"3px solid #7c6aff":"3px solid transparent", textAlign:"left",
-          }}><span>{cc.icon}</span>{cc.label}</button>
+            padding:"7px 13px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
+            background:cat===cc.id?"rgba(124,106,255,0.12)":C.toggleBg, color:cat===cc.id?PUR:C.muted,
+          }}>{cc.icon} {cc.label}</button>
         ))}
-      </aside>
-      {/* 모바일 가로 탭 */}
-      <div className="board-mob-tabs" style={{ borderBottom:"1px solid "+B, background:C.sidebarBg, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        <div style={{ display:"flex", padding:"6px 10px", gap:4, whiteSpace:"nowrap" }}>
-          {CATS.map(cc=>(
-            <button key={cc.id} onClick={()=>changeCat(cc.id)} style={{
-              padding:"7px 13px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
-              background:cat===cc.id?"rgba(124,106,255,0.12)":C.toggleBg, color:cat===cc.id?PUR:C.muted,
-            }}>{cc.icon} {cc.label}</button>
-          ))}
-        </div>
       </div>
-    </>
+    </div>
+  );
+
+  /* ── 데스크톱 사이드바 (board-row 안에 위치) ── */
+  const Sidebar = () => (
+    <aside className="board-side" style={{ width:160, flexShrink:0, borderRight:"1px solid "+B, background:C.sidebarBg, flexDirection:"column", paddingTop:4 }}>
+      <div style={{ padding:"10px 14px 6px", fontSize:10, fontWeight:700, color:C.muted, letterSpacing:1.2, textTransform:"uppercase" }}>게시판</div>
+      {CATS.map(cc=>(
+        <button key={cc.id} onClick={()=>changeCat(cc.id)} style={{
+          display:"flex", alignItems:"center", gap:8, width:"100%", padding:"10px 14px",
+          border:"none", cursor:"pointer", fontSize:13, fontWeight:cat===cc.id?700:500,
+          background:cat===cc.id?"rgba(124,106,255,0.1)":"transparent",
+          color:cat===cc.id?PUR:C.text,
+          borderLeft:cat===cc.id?"3px solid #7c6aff":"3px solid transparent", textAlign:"left",
+        }}><span>{cc.icon}</span>{cc.label}</button>
+      ))}
+    </aside>
   );
 
   /* ── 글쓰기/수정 ── */
   if (writing||editing) return (
     <div className="board-wrap">
-      <CatNav/>
+      <style>{BOARD_CSS}</style>
+      <MobileTabs/>
       <div className="board-row">
+        <Sidebar/>
         <div className="board-main">
           <PostForm C={C} user={user} cat={cat}
             initial={editing||undefined}
@@ -352,8 +351,10 @@ export default function BoardPage({ user, C }) {
   /* ── 글 상세 ── */
   if (view) return (
     <div className="board-wrap">
-      <CatNav/>
+      <style>{BOARD_CSS}</style>
+      <MobileTabs/>
       <div className="board-row">
+        <Sidebar/>
         <div className="board-main dpad" style={{ maxWidth:900, boxSizing:"border-box" }}>
 
           {/* 제목 영역 */}
@@ -443,8 +444,10 @@ export default function BoardPage({ user, C }) {
   const catInfo = CATS.find(c=>c.id===cat);
   return (
     <div className="board-wrap">
-      <CatNav/>
+      <style>{BOARD_CSS}</style>
+      <MobileTabs/>
       <div className="board-row">
+        <Sidebar/>
         <div className="board-main">
 
           {/* 게시판 헤더 */}
