@@ -61,9 +61,10 @@ function RichResultView({ result, loading, isDark, cardBg, border, text, accent,
   if (current.body.length > 0 || current.heading) sections.push(current);
 
   const getImgUrl = (heading) => {
-    const q = encodeURIComponent((heading || keyword || "nature").slice(0,25));
-    const seed = (heading||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0);
-    return `https://source.unsplash.com/800x400/?${q}&sig=${seed}`;
+    // loremflickr: 키워드 기반 무료 이미지 API (Unsplash source 대체)
+    const q = encodeURIComponent((heading || keyword || "nature").slice(0, 30));
+    const seed = (heading||"x").split("").reduce((a,ch)=>a+ch.charCodeAt(0),0);
+    return `https://loremflickr.com/800/400/${q}?lock=${seed}`;
   };
 
   const renderLine = (line, i) => {
