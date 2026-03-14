@@ -336,23 +336,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
+  const [sideOpen, setSideOpen] = useState(false);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
   const setAiMenu = (id) => {
     if (setAiMenuProp) setAiMenuProp(id);
     setLocalMenu(id);
+    setSideOpen(false); // 메뉴 선택 시 사이드바 닫기
   };
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
   const onlineCount = useOnlineCount();
+  const isDark = theme === "dark";
+  const topBdr = isDark ? "rgba(255,255,255,0.07)" : "#e5e3f5";
+  const topBg  = isDark ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.9)";
+  const topClr = isDark ? "rgba(255,255,255,0.35)" : "#aaa";
 
   return (
     <div style={{
       display: "flex", height: "calc(100vh - 60px)",
-      background: theme === "dark" ? "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)" : "#f4f4f8",
-      color: theme === "dark" ? "#fff" : "#1a1a2e",
+      background: isDark ? "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)" : "#f4f4f8",
+      color: isDark ? "#fff" : "#1a1a2e",
       fontFamily: "'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif",
-      overflow: "hidden",
+      overflow: "hidden", position: "relative",
     }}>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
@@ -361,44 +367,67 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         button{font-family:inherit}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+        .ai-sidebar-desktop{display:flex}
+        .ai-sidebar-mobile{display:none}
+        @media(max-width:768px){
+          .ai-sidebar-desktop{display:none!important}
+          .ai-sidebar-mobile{display:flex!important}
+        }
       `}</style>
 
-      {/* 사이드바 */}
-      <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+      {/* 데스크톱 사이드바 */}
+      <div className="ai-sidebar-desktop">
+        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+      </div>
 
-      {/* 우측 */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* 사용량 상단 바 */}
+      {/* 모바일 사이드바 오버레이 */}
+      {sideOpen && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 50 }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}
+            onClick={() => setSideOpen(false)} />
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, animation: "slideIn 0.2s ease", zIndex: 51 }}>
+            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+          </div>
+        </div>
+      )}
+
+      {/* 우측 콘텐츠 */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+        {/* 상단 바 */}
         <div style={{
-          height: 40, flexShrink: 0, display: "flex", alignItems: "center",
-          justifyContent: "space-between", padding: "0 20px",
-          borderBottom: theme === "dark" ? "1px solid rgba(255,255,255,0.07)" : "1px solid #e5e3f5",
-          background: theme === "dark" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.8)",
+          height: 44, flexShrink: 0, display: "flex", alignItems: "center",
+          justifyContent: "space-between", padding: "0 12px",
+          borderBottom: "1px solid " + topBdr, background: topBg,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 12, color: theme === "dark" ? "rgba(255,255,255,0.35)" : "#aaa" }}>🤖 AI 생성기 사용 현황</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: info.used <= freeLimit ? "#a5b4fc" : "#f87171" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* 모바일 햄버거 */}
+            <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20,
+                color: isDark ? "#fff" : "#333", padding: "4px 6px", marginRight: 4, display: "none" }}>
+              ☰
+            </button>
+            <span style={{ fontSize: 11, color: topClr, whiteSpace: "nowrap" }}>🤖 AI 생성기</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: info.used <= freeLimit ? "#a5b4fc" : "#f87171", whiteSpace: "nowrap" }}>
               {user ? "회원" : "비회원"} 무료 {Math.min(info.used, freeLimit)}/{freeLimit}회
             </span>
-            {user && <span style={{ fontSize: 12, color: "#a5b4fc", fontWeight: 700 }}>💎 {user.points || 0}P</span>}
+            {user && <span style={{ fontSize: 11, color: "#a5b4fc", fontWeight: 700, whiteSpace: "nowrap" }}>💎 {user.points || 0}P</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80", flexShrink: 0 }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: theme === "dark" ? "rgba(255,255,255,0.45)" : "#888" }}>
-                {onlineCount}명 접속중
-              </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.45)" : "#888", whiteSpace: "nowrap" }}>{onlineCount}명</span>
             </div>
             {!user && (
               <button onClick={() => navigate("auth")} style={{
-                padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-                background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700,
-              }}>로그인 / 회원가입</button>
+                padding: "4px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+              }}>로그인</button>
             )}
           </div>
         </div>
 
-        {/* 메뉴별 콘텐츠 */}
+        {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} />
         </div>

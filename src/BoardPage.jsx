@@ -123,39 +123,55 @@ export default function BoardPage({ user, C }) {
     sync(next); setView(next.find(p => p.id === postId));
   };
 
+  // 모바일: 가로 탭, 데스크톱: 세로 사이드바
   const Sidebar = () => (
-    <aside style={{ width: 200, flexShrink: 0, borderRight: "1px solid " + C.border, padding: "24px 0", background: C.sidebarBg }}>
-      {CATS.map(c => (
-        <button key={c.id} onClick={() => { setCat(c.id); setView(null); setWriting(false); setEditing(null); }}
-          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 18px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: cat === c.id ? "rgba(124,106,255,0.08)" : "transparent", color: cat === c.id ? C.purpleL : C.muted, borderLeft: cat === c.id ? "3px solid #7c6aff" : "3px solid transparent", textAlign: "left", transition: "all 0.15s" }}>
-          {c.icon} {c.label}
-        </button>
-      ))}
-    </aside>
+    <>
+      {/* 데스크톱 사이드바 */}
+      <aside style={{ width: 200, flexShrink: 0, borderRight: "1px solid " + C.border, padding: "24px 0", background: C.sidebarBg, display: "var(--board-side-display,flex)", flexDirection: "column" }}
+        className="board-sidebar-desktop">
+        {CATS.map(cc => (
+          <button key={cc.id} onClick={() => { setCat(cc.id); setView(null); setWriting(false); setEditing(null); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 18px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: cat === cc.id ? "rgba(124,106,255,0.08)" : "transparent", color: cat === cc.id ? C.purpleL : C.muted, borderLeft: cat === cc.id ? "3px solid #7c6aff" : "3px solid transparent", textAlign: "left", transition: "all 0.15s" }}>
+            {cc.icon} {cc.label}
+          </button>
+        ))}
+      </aside>
+      {/* 모바일 가로 탭 */}
+      <div className="board-sidebar-mobile" style={{ display: "none", borderBottom: "1px solid " + C.border, overflowX: "auto", background: C.sidebarBg, flexShrink: 0 }}>
+        <div style={{ display: "flex", padding: "8px 12px", gap: 6, whiteSpace: "nowrap" }}>
+          {CATS.map(cc => (
+            <button key={cc.id} onClick={() => { setCat(cc.id); setView(null); setWriting(false); setEditing(null); }}
+              style={{ padding: "7px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: cat === cc.id ? "rgba(124,106,255,0.12)" : "transparent", color: cat === cc.id ? C.purpleL : C.muted, whiteSpace: "nowrap" }}>
+              {cc.icon} {cc.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
   );
 
   if (editing) return (
-    <div style={{ display: "flex", minHeight: "calc(100vh - 64px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 64px)" }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: "32px 28px", minWidth: 0 }}>
+      <div style={{ flex: 1, padding: "clamp(16px,3vw,32px) clamp(14px,3vw,28px)", minWidth: 0 }}>
         <PostForm C={C} user={user} cat={cat} initial={editing} onSubmit={submitEdit} onCancel={() => setEditing(null)} />
       </div>
     </div>
   );
 
   if (writing) return (
-    <div style={{ display: "flex", minHeight: "calc(100vh - 64px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 64px)" }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: "32px 28px", minWidth: 0 }}>
+      <div style={{ flex: 1, padding: "clamp(16px,3vw,32px) clamp(14px,3vw,28px)", minWidth: 0 }}>
         <PostForm C={C} user={user} cat={cat} onSubmit={submitPost} onCancel={() => setWriting(false)} />
       </div>
     </div>
   );
 
   if (view) return (
-    <div style={{ display: "flex", minHeight: "calc(100vh - 64px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 64px)" }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: "36px 32px", minWidth: 0, maxWidth: 780 }}>
+      <div style={{ flex: 1, padding: "clamp(16px,3vw,36px) clamp(14px,3vw,32px)", minWidth: 0, maxWidth: "100%" }}>
         <button onClick={() => setView(null)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 13, marginBottom: 20, padding: 0, fontWeight: 600 }}>← 목록으로</button>
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 18, padding: "28px", marginBottom: 14, boxShadow: C.shadow }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -220,7 +236,7 @@ export default function BoardPage({ user, C }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 64px)" }}>
-      <div style={{ display: "flex", flex: 1 }}>
+      <div style={{ display: "flex", flex: 1, flexDirection: "column" }}>
         <Sidebar />
         <div style={{ flex: 1, padding: "32px 28px", minWidth: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
