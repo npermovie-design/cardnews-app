@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { getT, LANGS } from "./i18n";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
 import { onAuthStateChanged } from "firebase/auth";
@@ -17,37 +16,6 @@ const SNS = [
   { url: "https://www.youtube.com/@nperinsight/videos",     label: "▶",  bg: "#FF0000", tc: "#fff" },
 ];
 
-function LangSelector({ lang, changeLang, C }) {
-  const [open, setOpen] = useState(false);
-  const items = [
-    { code:"ko", flag:"🇰🇷", label:"한" },
-    { code:"en", flag:"🇺🇸", label:"EN" },
-    { code:"ja", flag:"🇯🇵", label:"JP" },
-    { code:"zh", flag:"🇨🇳", label:"CN" },
-  ];
-  const cur = items.find(l=>l.code===lang) || items[0];
-  return (
-    <div style={{ position:"relative", flexShrink:0 }}>
-      <button onClick={()=>setOpen(p=>!p)}
-        style={{ padding:"5px 10px", borderRadius:20, border:"1px solid "+C.border, background:C.toggleBg, cursor:"pointer", fontSize:12, fontWeight:700, color:C.muted, display:"flex", alignItems:"center", gap:4 }}>
-        <span>{cur.flag}</span><span>{cur.label}</span><span style={{fontSize:8,opacity:0.5}}>▼</span>
-      </button>
-      {open && <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:9990}}/>}
-      {open && (
-        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:C.card,border:"1px solid "+C.border,borderRadius:10,overflow:"hidden",zIndex:9991,minWidth:110,boxShadow:"0 8px 24px rgba(0,0,0,0.15)"}}>
-          {items.map(l=>(
-            <button key={l.code} onClick={()=>{ changeLang(l.code); setOpen(false); }}
-              style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",border:"none",background:lang===l.code?"rgba(124,106,255,0.1)":"transparent",color:lang===l.code?C.purpleL:C.text,fontSize:13,cursor:"pointer",fontWeight:lang===l.code?700:400,textAlign:"left"}}>
-              <span>{l.flag}</span><span style={{flex:1}}>{l.label}</span>
-              {lang===l.code&&<span style={{color:C.purpleL,fontSize:10}}>✓</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function App() {
   const [page,       setPage]       = useState("home");
   const [user,       setUserState]  = useState(getUser);
@@ -58,15 +26,12 @@ export default function App() {
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
-  const [lang,       setLang]       = useState(() => { try { return localStorage.getItem("nper_lang")||"ko"; } catch{return "ko";} });
-  const changeLang = code => { setLang(code); try { localStorage.setItem("nper_lang",code); } catch{} };
 
   const boardSubRef = useRef(null);
   const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
-  const t = getT(lang);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -144,7 +109,6 @@ export default function App() {
   }, []);
 
   const navigate = target => {
-    if (target === "login_trigger") { setShowAuth(true); return; }
     window.history.pushState(null, "", "#" + target);
     setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
@@ -163,7 +127,7 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
-  const isBoard = ["board_ai","news","archive","qna"].includes(page);
+  const isBoard = ["ai", "news", "archive", "qna"].includes(page);
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
@@ -217,14 +181,9 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} lang={lang} t={t} onPointsLow={() => setShowPointsLow && setShowPointsLow(true)} />;
-    if (isBoard) {
-      const catMap = {"board_ai":"board_ai","news":"news","archive":"archive","qna":"qna"};
-      const targetCat = catMap[page] || "board_ai";
-      setTimeout(()=>{ setAiMenu("board_"+targetCat); setPage("ai"); }, 0);
-      return null;
-    }
-    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onPay={(planId)=>{}} onLogin={()=>setShowAuth(true)} t={t} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (isBoard)             return <BoardPage C={C} user={user} onLoginRequest={() => setShowAuth(true)} />;
+    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
@@ -303,9 +262,9 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
-                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => navigateAi("cardnews_make")} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
+                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => user ? navigateAi("blog_naver")    : setShowAuth(true)} />
+                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => user ? navigateAi("shorts")        : setShowAuth(true)} />
               </DropMenu>
             )}
           </div>
@@ -327,7 +286,6 @@ export default function App() {
             <button key={i} onClick={() => window.open(s.url, "_blank")} style={{ width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", background: s.bg, color: s.tc, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.label}</button>
           ))}
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
-          <LangSelector lang={lang} changeLang={changeLang} C={C} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
             {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
           </button>
@@ -368,10 +326,7 @@ export default function App() {
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => {
-              if (m.ai && !user) { setShowAuth(true); setMobileOpen(false); return; }
-              m.ai ? navigateAi(m.ai) : navigate(m.id);
-            }} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",

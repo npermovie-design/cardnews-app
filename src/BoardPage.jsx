@@ -64,59 +64,7 @@ function PostForm({ user, cat, initial, onSubmit, onCancel, C }) {
 /* ════════════════════════════════════════════════════════════
    BoardPage
 ════════════════════════════════════════════════════════════ */
-const BT = {
-  ko:{ write:"✏️ 글쓰기", list:"목록", post:"등록", noPost:"아직 게시글이 없어요 ✍️",
-    num:"번호", title:"제목", author:"글쓴이", date:"날짜", views:"조회",
-    comments:"댓글", commentPh:"댓글 입력 (Ctrl+Enter: 등록)",
-    loginForComment:"댓글은 로그인 후 이용 가능합니다", loginLink:"→ 로그인",
-    edit:"수정", del:"삭제", backToList:"← 목록으로", edited:"(수정됨)",
-    confirmDelete:"정말 삭제하시겠습니까?", confirmDeleteCmt:"댓글을 삭제하시겠습니까?",
-    pointAlert:"글이 등록됐어요! 10P 적립 🎉", editPost:"✏️ 수정",
-    cancel:"취소", submit:"등록하기", editSubmit:"수정 완료",
-    titlePh:"제목을 입력해주세요", bodyPh:"내용을 입력해주세요\n\n• 유튜브/이미지 URL을 줄 단위로 입력하면 자동 표시됩니다",
-    preview:"👁 미리보기", editMode:"✏️ 편집",
-    ytInsert:"▶ 유튜브", imgInsert:"🖼 이미지 URL", bold:"B 굵게",
-    insert:"삽입", close:"닫기" },
-  en:{ write:"✏️ Write", list:"List", post:"Post", noPost:"No posts yet ✍️",
-    num:"No.", title:"Title", author:"Author", date:"Date", views:"Views",
-    comments:"Comments", commentPh:"Write a comment (Ctrl+Enter)",
-    loginForComment:"Login to write comments", loginLink:"→ Login",
-    edit:"Edit", del:"Delete", backToList:"← Back", edited:"(edited)",
-    confirmDelete:"Delete this post?", confirmDeleteCmt:"Delete comment?",
-    pointAlert:"Posted! +10P 🎉", editPost:"✏️ Edit",
-    cancel:"Cancel", submit:"Submit", editSubmit:"Save",
-    titlePh:"Enter title", bodyPh:"Enter content",
-    preview:"👁 Preview", editMode:"✏️ Edit",
-    ytInsert:"▶ YouTube", imgInsert:"🖼 Image URL", bold:"B Bold",
-    insert:"Insert", close:"Close" },
-  ja:{ write:"✏️ 投稿", list:"一覧", post:"投稿する", noPost:"まだ投稿がありません ✍️",
-    num:"番号", title:"タイトル", author:"投稿者", date:"日付", views:"閲覧",
-    comments:"コメント", commentPh:"コメントを入力 (Ctrl+Enter)",
-    loginForComment:"コメントはログイン後に可能です", loginLink:"→ ログイン",
-    edit:"編集", del:"削除", backToList:"← 一覧に戻る", edited:"(編集済み)",
-    confirmDelete:"削除しますか？", confirmDeleteCmt:"コメントを削除しますか？",
-    pointAlert:"投稿しました！10P獲得 🎉", editPost:"✏️ 編集",
-    cancel:"キャンセル", submit:"投稿する", editSubmit:"更新する",
-    titlePh:"タイトルを入力", bodyPh:"内容を入力してください",
-    preview:"👁 プレビュー", editMode:"✏️ 編集",
-    ytInsert:"▶ YouTube", imgInsert:"🖼 画像URL", bold:"B 太字",
-    insert:"挿入", close:"閉じる" },
-  zh:{ write:"✏️ 发帖", list:"列表", post:"发布", noPost:"暂无帖子 ✍️",
-    num:"编号", title:"标题", author:"作者", date:"日期", views:"浏览",
-    comments:"评论", commentPh:"写评论 (Ctrl+Enter)",
-    loginForComment:"请登录后发表评论", loginLink:"→ 登录",
-    edit:"编辑", del:"删除", backToList:"← 返回", edited:"(已编辑)",
-    confirmDelete:"确定删除？", confirmDeleteCmt:"确定删除评论？",
-    pointAlert:"发帖成功！+10P 🎉", editPost:"✏️ 编辑",
-    cancel:"取消", submit:"发布", editSubmit:"保存",
-    titlePh:"请输入标题", bodyPh:"请输入内容",
-    preview:"👁 预览", editMode:"✏️ 编辑",
-    ytInsert:"▶ YouTube", imgInsert:"🖼 图片URL", bold:"B 加粗",
-    insert:"插入", close:"关闭" },
-};
-
-export default function BoardPage({ user, C, onLoginRequest, lang="ko", t: tProp, initialCat, embedded }) {
-  const t = (tProp && tProp.board) ? tProp.board : (BT[lang] || BT.ko);
+export default function BoardPage({ user, C, onLoginRequest }) {
   const [cat, setCat]           = useState("ai");
   const [posts, setPosts2]      = useState(getPosts);
   const [view, setView]         = useState(null);
@@ -130,7 +78,7 @@ export default function BoardPage({ user, C, onLoginRequest, lang="ko", t: tProp
   const isOwner  = p => user && (user.nick === p.nick || user.role === "admin");
 
   const submitPost = (form) => {
-    if (!user) { alert("글쓰기는 회원만 가능합니다."); return; }
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!form.title.trim() || !form.body.trim()) { alert("제목과 내용을 입력해주세요."); return; }
     const newPost = { id: Date.now(), cat, nick: user.nick, userId: user.id, title: form.title, body: form.body, date: new Date().toLocaleDateString("ko-KR"), comments: [] };
     const next = [newPost, ...posts];
@@ -157,7 +105,7 @@ export default function BoardPage({ user, C, onLoginRequest, lang="ko", t: tProp
   };
 
   const addComment = (postId) => {
-    if (!user) { alert("댓글은 로그인 후 이용 가능합니다."); return; }
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!comment.trim()) return;
     const next = posts.map(p => p.id === postId ? { ...p, comments: [...p.comments, { id: Date.now(), nick: user.nick, userId: user.id, text: comment, date: new Date().toLocaleDateString("ko-KR") }] } : p);
     sync(next); setView(next.find(p => p.id === postId)); setComment("");

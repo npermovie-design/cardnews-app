@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { getT } from "./i18n";
-import BoardPage from "./BoardPage";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -87,9 +85,8 @@ const SNS_LINKS = [
   { label: "유튜브",   url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000" },
 ];
 
-function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang="ko" }) {
+function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
   const isDark = theme === "dark";
-  const t = getT(lang);
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
   const sideBdr  = isDark ? "rgba(255,255,255,0.07)"     : "#e5e3f5";
   const menuLabel= isDark ? "rgba(255,255,255,0.2)"      : "rgba(99,102,241,0.4)";
@@ -103,7 +100,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang="k
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && aiMenu.startsWith("cardnews")));
-  const [boardOpen, setBoardOpen] = useState(!!(aiMenu && aiMenu.startsWith("board_")));
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
@@ -156,44 +152,34 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang="k
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1 }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label={t.sidebar.home} icon="🏠" />
+        <Item id="home" label="홈" icon="🏠" />
 
         {/* SNS 글쓰기 그룹 */}
-        <Group label={t.sidebar.snsWrite} icon="✍️" open={blogOpen}
+        <Group label="SNS 글쓰기" icon="✍️" open={blogOpen}
           active={!!(aiMenu && aiMenu.startsWith("blog"))}
           onToggle={() => setBlogOpen(p => !p)} />
         {blogOpen && <>
-          <Item id="blog_naver"   label={t.sidebar.naverBlog}  icon="📝" indent />
-          <Item id="blog_tistory" label={t.sidebar.tistory}    icon="📝" indent />
-          <Item id="blog_insta"   label={t.sidebar.insta}      icon="📱" indent />
-          <Item id="blog_youtube" label={t.sidebar.youtube}    icon="▶️" indent />
-          <Item id="blog_thread"  label={t.sidebar.thread}     icon="🧵" indent />
+          <Item id="blog_naver"   label="네이버 블로그"   icon="📝" indent />
+          <Item id="blog_tistory" label="티스토리"        icon="📝" indent />
+          <Item id="blog_insta"   label="인스타그램 캡션" icon="📱" indent />
+          <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
+          <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label={t.sidebar.cardnews} icon="🃏" open={cardOpen}
+        <Group label="카드뉴스" icon="🃏" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label={t.sidebar.plan} icon="📋" indent />
-          <Item id="cardnews_make" label={t.sidebar.make} icon="✨" indent />
+          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
+          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
         </>}
 
-        <Item id="shorts" label={t.sidebar.shorts} icon="🎬" />
+        <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
 
-        {/* 커뮤니티 + 게시판 */}
+        {/* 커뮤니티 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>{t.sidebar.community}</div>
-          {/* 게시판 그룹 */}
-          <Group label={t.sidebar.board} icon="📋"
-            open={boardOpen} active={!!(aiMenu && aiMenu.startsWith("board_"))}
-            onToggle={() => setBoardOpen(p => !p)} />
-          {boardOpen && <>
-            <Item id="board_board_ai" label={t.sidebar.boardAi} icon="🤖" indent />
-            <Item id="board_news"     label={t.sidebar.news}    icon="📰" indent />
-            <Item id="board_archive"  label={t.sidebar.archive} icon="📁" indent />
-            <Item id="board_qna"      label={t.sidebar.qna}     icon="💬" indent />
-          </>}
+          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>COMMUNITY</div>
           {SNS_LINKS.map(s => (
             <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 7,
@@ -203,6 +189,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, lang="k
               <div style={{ width: 10, height: 10, borderRadius: 3, background: s.bg, flexShrink: 0 }} />{s.label}
             </button>
           ))}
+          <button onClick={onQna} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 7,
+            padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
+            background: "rgba(251,191,36,0.07)", color: "#fbbf24", fontSize: 11, textAlign: "left",
+          }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: "#FEE500", flexShrink: 0 }} />질문 및 건의방
+          </button>
         </div>
       </div>
 
@@ -385,7 +378,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 
       {/* 데스크톱 사이드바 */}
       <div className="ai-sidebar-desktop">
-        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} lang={lang} />
+        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
       </div>
 
       {/* 모바일 사이드바 오버레이 */}
@@ -394,7 +387,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}
             onClick={() => setSideOpen(false)} />
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, animation: "slideIn 0.2s ease", zIndex: 51 }}>
-            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} lang={lang} />
+            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
           </div>
         </div>
       )}
