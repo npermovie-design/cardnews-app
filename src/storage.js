@@ -11,6 +11,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import {
   getDatabase,
@@ -165,6 +167,46 @@ export async function fbLogin(email, pw) {
     });
   }
   return userData;
+}
+
+/** 구글 로그인/회원가입 */
+export async function fbGoogleLogin() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  const cred = await signInWithPopup(auth, provider);
+  const uid  = cred.user.uid;
+  const snap = await get(ref(db, "users/" + uid));
+
+  if (snap.exists()) {
+    // 기존 유저 → 로그인
+    let userData = snap.val();
+    const today = new Date().toLocaleDateString("ko-KR");
+    if (userData.lastLoginDate !== today) {
+      userData.points       = (userData.points || 0) + POINTS.DAILY_LOGIN;
+      userData.lastLoginDate = today;
+      userData.lastLogin     = new Date().toISOString();
+      await update(ref(db, "users/" + uid), {
+        points: userData.points, lastLoginDate: today, lastLogin: userData.lastLogin,
+      });
+    }
+    return userData;
+  } else {
+    // 신규 유저 → 자동 가입
+    const nick = cred.user.displayName || cred.user.email.split("@")[0];
+    const userData = {
+      uid,
+      email:         cred.user.email,
+      nick,
+      role:          "member",
+      points:        POINTS.SIGNUP,
+      joinDate:      new Date().toISOString(),
+      lastLogin:     new Date().toISOString(),
+      lastLoginDate: new Date().toLocaleDateString("ko-KR"),
+      provider:      "google",
+    };
+    await set(ref(db, "users/" + uid), userData);
+    return userData;
+  }
 }
 
 /** 로그아웃 */
