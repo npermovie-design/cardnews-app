@@ -1392,6 +1392,7 @@ export function CardNewsApp(props) {
   var winW = useWinW();
   var onlineCount = useOnlineCount();
   var narrow = winW < 880;
+  p = useState("preview"); var editTab = p[0]; var setEditTab = p[1];
 
   // initialSubPage="plan" 이면 마운트 시 PlannerPanel 자동 열기
   useEffect(function() {
@@ -1585,9 +1586,28 @@ export function CardNewsApp(props) {
             <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} theme={props.theme} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "edit" && slides.length > 0 && (
-            <div style={{flex:1, display:"flex", height:"100%", overflow:"hidden"}}>
-              <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
-              <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
+            <div style={{flex:1, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden"}}>
+              {narrow && (
+                <div style={{display:"flex", borderBottom:"1px solid rgba(255,255,255,0.1)", flexShrink:0, background:"rgba(0,0,0,0.2)"}}>
+                  {[{id:"preview",l:"👁 미리보기"},{id:"edit",l:"🎨 편집"}].map(function(t){
+                    var isA = editTab === t.id;
+                    return (
+                      <button key={t.id} onClick={function(){ setEditTab(t.id); }}
+                        style={{flex:1, padding:"11px 0", border:"none", cursor:"pointer",
+                          background: isA ? "rgba(99,102,241,0.35)" : "transparent",
+                          color: isA ? "#a5b4fc" : "rgba(255,255,255,0.35)",
+                          fontSize:12, fontWeight:700, transition:"all 0.15s",
+                          borderBottom: isA ? "2px solid #6366f1" : "2px solid transparent"}}>
+                        {t.l}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{flex:1, display:"flex", overflow:"hidden"}}>
+                {(!narrow || editTab === "edit") && <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>}
+                {(!narrow || editTab === "preview") && <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>}
+              </div>
             </div>
           )}
           {page === "edit" && slides.length === 0 && (
