@@ -167,11 +167,12 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="SNS 이미지 만들기" icon="🖼" open={cardOpen}
+        <Group label="카드뉴스" icon="🃏" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
+          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
+          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -235,41 +236,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
 
-  // 비회원 + 홈이 아닌 메뉴 → 로그인 유도
-  if (!user && aiMenu && aiMenu !== "home") {
-    const bg=isDark?"linear-gradient(160deg,#0f0c29,#1a1740)":"#f4f4f8";
-    const card=isDark?"rgba(255,255,255,0.04)":"#fff";
-    const bdr=isDark?"rgba(255,255,255,0.1)":"#e5e3f5";
-    const tx=isDark?"#fff":"#1a1a2e";
-    const mu=isDark?"rgba(255,255,255,0.45)":"#6c757d";
-    return (
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:bg,padding:"40px 20px"}}>
-        <div style={{maxWidth:400,width:"100%",textAlign:"center"}}>
-          <div style={{fontSize:52,marginBottom:16}}>🔒</div>
-          <h2 style={{fontSize:22,fontWeight:900,color:tx,marginBottom:10}}>로그인이 필요해요</h2>
-          <p style={{fontSize:14,color:mu,lineHeight:1.8,marginBottom:28}}>AI 생성기는 회원 전용 서비스예요.<br/>무료로 가입하면 즉시 이용할 수 있어요!</p>
-          <div style={{background:card,border:"1px solid "+bdr,borderRadius:16,padding:"20px 22px",marginBottom:24,textAlign:"left"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#a5b4fc",marginBottom:12}}>🎁 가입 혜택</div>
-            {[["💎","가입 즉시 50P","AI 5회 분량"],["✍️","게시글 10P 적립","매번"],["🤖","AI 무료 20회","회원 전용"],["📋","댓글·출석 포인트","매일"]].map(([ic,t,d],i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<3?10:0}}>
-                <span style={{fontSize:18}}>{ic}</span>
-                <div><div style={{fontSize:13,fontWeight:700,color:tx}}>{t}</div><div style={{fontSize:11,color:mu}}>{d}</div></div>
-              </div>
-            ))}
-          </div>
-          <button onClick={()=>navigate&&navigate("login_trigger")}
-            style={{width:"100%",padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:15,fontWeight:800,boxShadow:"0 8px 24px rgba(124,106,255,0.35)",marginBottom:10}}>
-            🚀 무료 회원가입 / 로그인
-          </button>
-          <button onClick={()=>setAiMenu("home")}
-            style={{width:"100%",padding:"11px",borderRadius:12,border:"1px solid "+bdr,background:"transparent",color:mu,fontSize:13,fontWeight:600,cursor:"pointer"}}>
-            ← AI 생성기 소개 보기
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
@@ -278,8 +244,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", hidden: true,   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -289,7 +255,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
           <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.filter(m => !m.hidden).map(m => (
+          {MENUS.map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
@@ -473,7 +439,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
       color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["가입 시 10P 자동 지급","게시글 작성 1P 적립","일일 로그인 1P 적립","포인트 소진 시 충전"],
+      features: ["가입 시 50P 자동 지급","게시글 작성 10P 적립","댓글 작성 2P 적립","일일 로그인 3P 적립","포인트 소진 시 충전"],
       btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
       badge: null, highlight: false,
     },
@@ -560,10 +526,10 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon: "🎁", action: "회원가입", pt: "+10P", desc: "가입 즉시" },
-            { icon: "📝", action: "게시글 작성", pt: "+1P", desc: "글 1개당" },
-            { icon: "💬", action: "댓글 작성", pt: "+0P", desc: "적립 없음" },
-            { icon: "☀️", action: "일일 로그인", pt: "+1P", desc: "하루 1회" },
+            { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
+            { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
+            { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
+            { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
           ].map((item, i) => (
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "14px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
@@ -574,7 +540,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           ))}
         </div>
         <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
-          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 포인트 충전으로 더 많이 사용 가능
+          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 게시글 10개 작성하면 AI 10회 사용 가능
         </div>
       </div>
 
