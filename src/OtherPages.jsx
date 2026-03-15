@@ -174,8 +174,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
-          <Item id="cardnews_make" label="SNS 이미지 만들기" icon="✨" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -247,8 +246,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "SNS 이미지 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_make", icon: "🖼", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -306,21 +304,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     );
   }
 
-  // 카드뉴스 - 글 기획하기 (인라인 - CardNewsApp의 기획 패널)
-  if (aiMenu === "cardnews_plan") {
-    return (
-      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
-        <PlannerPanel inline theme={theme}
-          onClose={() => {}}
-          onApplySlides={(slides) => {
-            // 기획 완료 시 cardnews_make로 이동 (localStorage에 저장 후 이동)
-            try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
-            setAiMenu("cardnews_make");
-          }}
-        />
-      </div>
-    );
-  }
+
 
   // 쇼츠 - 준비중
   if (aiMenu === "shorts") {

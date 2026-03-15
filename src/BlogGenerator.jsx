@@ -27,11 +27,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("#### ")) {
-      elements.push(<h4 key={i} style={{fontSize:14,fontWeight:800,color:textColor,margin:"16px 0 6px",letterSpacing:-0.2}}>{inlineFormat(line.slice(5),accentColor)}</h4>);
-    } else if (line.startsWith("##### ")) {
-      elements.push(<h4 key={i} style={{fontSize:13,fontWeight:700,color:textColor,margin:"12px 0 4px"}}>{inlineFormat(line.slice(6),accentColor)}</h4>);
-    } else if (line.startsWith("### ")) {
+    if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);
@@ -121,10 +117,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 검색 최적화 제목\n- 소제목으로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함`;
-      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함`;
-      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함`;
-      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함`;
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n- 검색 최적화 제목\n- 소제목으로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함`;
+      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함`;
+      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함`;
+      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함`;
       return "";
     },
   },
@@ -164,10 +160,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,500~2,000자",medium:"2,500~3,500자",long:"4,000자 이상"}[wc];
       const t={professional:"전문적이고 신뢰감 있는",friendly:"친근하고 쉬운",analytical:"분석적이고 논리적인"}[tone];
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n마크다운 형식(# 제목, ## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임`;
-      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 상세 스펙·실사용 경험·객관적 평가\n- 별점 형식 포함, 구매 가이드 제공`;
-      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 번호 매긴 단계별 설명\n- 각 단계 팁·주의사항, FAQ 포함`;
-      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도`;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3)으로 작성\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임`;
+      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 상세 스펙·실사용 경험·객관적 평가\n- 별점 형식 포함, 구매 가이드 제공`;
+      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 번호 매긴 단계별 설명\n- 각 단계 팁·주의사항, FAQ 포함`;
+      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도`;
       return "";
     },
   },
@@ -373,7 +369,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const resultBg= isDark ? "rgba(0,0,0,0.15)"          : "#f8f9fa";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"          : "#fff";
 
-  const IS = {width:"100%", padding:"10px 12px", borderRadius:9, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
+  const IS = {width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
 
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
@@ -444,7 +440,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
-          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9}}>
+          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"24px 28px",fontSize:16,color:text,minHeight:120,lineHeight:2.0}}>
             {renderMarkdown(result, isDark, text, muted, accentRaw)}
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
@@ -495,53 +491,53 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
         <div className={"blog-panel-left" + (mobileTab==="result" ? " blog-hide-mobile" : "")}
           style={{background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"12px 18px",borderBottom:`1px solid ${border}`,flexShrink:0}}>
-            <div style={{fontSize:14,fontWeight:800,color:text}}>{menuLabel||cfg.title}</div>
-            <div style={{fontSize:11,color:muted,marginTop:2}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
+            <div style={{fontSize:16,fontWeight:900,color:text,letterSpacing:-0.3}}>{menuLabel||cfg.title}</div>
+            <div style={{fontSize:12,color:muted,marginTop:3}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
           </div>
           <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
             {/* 글 타입 */}
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>글 타입 선택</div>
+              <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:8}}>글 타입 선택</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {cfg.subtypes.map(s=>{
                   const isA=subtype===s.id;
                   return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"10px",borderRadius:9,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
-                    <div style={{fontSize:16,marginBottom:3}}>{s.icon}</div>
-                    <div style={{fontSize:12,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                    <div style={{fontSize:10,color:muted,marginTop:1}}>{s.desc}</div>
+                    <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
+                    <div style={{fontSize:11,color:muted,marginTop:2}}>{s.desc}</div>
                   </button>;
                 })}
               </div>
             </div>
             {/* 예시 */}
             {examples.length>0&&<div style={{marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>예시 글감</div>
+              <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:6}}>예시 글감</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:11,cursor:"pointer"}}>{ex}</button>)}
+                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:12,cursor:"pointer"}}>{ex}</button>)}
               </div>
             </div>}
             {/* 동적 필드 */}
             {currentFields.map(fk=>{
               const fl=FIELD_LABELS[fk]; if(!fl) return null;
               return <div key={fk} style={{marginBottom:10}}>
-                <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:5}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
+                <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:6}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
                 {fl.textarea
                   ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={3} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.6}}/>
                   :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generate()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
                 }
               </div>;
             })}
-            {error&&<div style={{fontSize:11,color:"#ef4444",marginBottom:8}}>{error}</div>}
+            {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:8}}>{error}</div>}
             {/* 글 톤 */}
             <div style={{marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>글 톤</div>
+              <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:6}}>글 톤</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:11,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
               </div>
             </div>
             {/* 분량 버튼 - 플랫폼별 스타일 */}
             <div style={{marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:7}}>
+              <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:8}}>
                 {initialType==="blog_youtube"?"영상 길이":initialType==="blog_thread"?"글 개수":initialType==="blog_insta"?"글자 분량":"분량"}
               </div>
               {/* 인스타: 글자수 강조 배지 */}

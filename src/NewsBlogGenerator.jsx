@@ -11,12 +11,8 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // ## 제목 (#### 먼저 체크해야 ### 오탐 방지)
-    if (line.startsWith("#### ")) {
-      elements.push(<h4 key={i} style={{fontSize:14,fontWeight:800,color:textColor,margin:"16px 0 6px",letterSpacing:-0.2}}>{line.slice(5)}</h4>);
-    } else if (line.startsWith("##### ")) {
-      elements.push(<h4 key={i} style={{fontSize:13,fontWeight:700,color:textColor,margin:"12px 0 4px"}}>{line.slice(6)}</h4>);
-    } else if (line.startsWith("### ")) {
+    // ## 제목
+    if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{line.slice(4)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{line.slice(3)}</h2>);
@@ -71,7 +67,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
     // 일반 문단
     else if (line.trim()) {
       elements.push(
-        <p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>
+        <p key={i} style={{margin:"6px 0",lineHeight:2.0,fontSize:15,color:textColor}}>
           {inlineFormat(line, accentColor)}
         </p>
       );
@@ -191,9 +187,9 @@ ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
 작성 형식:
-- SEO 최적화된 블로그 제목 (# 제목)
+- SEO 최적화된 블로그 제목
 - 도입부 (기사 핵심 내용 소개)
-- 본론 (## 소제목, ### 세부항목 사용, #### 이상 사용 금지)
+- 본론 (소제목 포함, 상세 설명)
 - 마무리 (요약 + 독자 시사점)
 - 관련 해시태그 5~8개
 - 출처: ${newsInfo.siteName}`,
@@ -203,7 +199,7 @@ ${articleSection}
 ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
-## h2 소제목, ### 세부 항목 적극 활용 (#### 사용 금지), **강조 텍스트**, 리스트 구조화
+## h2 소제목 적극 활용, **강조 텍스트**, 리스트 구조화
 SEO 최적화, 출처 명시`,
 
       summary: `다음 뉴스 기사의 핵심 내용을 요약 정리해주세요.
@@ -378,8 +374,8 @@ ${articleSection}
                       style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${isA?accentRaw:border}`,
                         background:isA?"rgba(99,102,241,0.12)":inputBg,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
                       <div style={{fontSize:22,marginBottom:6}}>{bt.icon}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{bt.label}</div>
-                      <div style={{fontSize:11,color:muted,marginTop:2}}>{bt.desc}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{bt.label}</div>
+                      <div style={{fontSize:12,color:muted,marginTop:3}}>{bt.desc}</div>
                     </button>
                   );
                 })}
@@ -476,7 +472,7 @@ ${articleSection}
             </div>
           </div>
         )}
-        <div style={{flex:1,overflowY:"auto",padding:result?"28px 32px":"0"}}>
+        <div style={{flex:1,overflowY:"auto",padding:result?"28px 36px":"0"}}>
           {!result && !generating && (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"48px 32px",textAlign:"center"}}>
               <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>📰</div>
