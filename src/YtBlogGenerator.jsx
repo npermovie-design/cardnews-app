@@ -73,100 +73,29 @@ export default function YtBlogGenerator({ theme, embedded }) {
   const transcriptRef = useRef(null);
 
   /* ── 유튜브 정보 + 자막 가져오기 ── */
-  /* ═══════════════════════════════════════════════════════════
-     자막 추출 - 3가지 API 순차 시도
-     1. Supadata API (무료, 신뢰성 높음)
-     2. yt.lemnoslife.com (무료 비공식)
-     3. youtubetranscript.com (비공식 fallback)
-  ═══════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════
+     자막 추출 - Vercel 서버리스 함수 호출
+     /api/transcript?videoId=xxx → 서버에서 YouTube 직접 파싱
+  ═══════════════════════════════════════════════════ */
   const fetchTranscript = async (ytId) => {
-
-    /* ── API 1: Supadata (무료 50회/월, 가장 신뢰성 높음) ── */
     try {
-      setFetchStatus("자막 추출 중... (API 1/3)");
-      const res = await fetch(
-        `https://api.supadata.ai/v1/youtube/transcript?videoId=${ytId}&lang=ko`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const segments = data?.transcript || data?.segments || data?.content || [];
-        if (Array.isArray(segments) && segments.length > 3) {
-          const items = segments.map(s => ({
-            start: s.start || s.offset || 0,
-            text: s.text || s.content || ""
-          })).filter(s => s.text.trim());
-          if (items.length > 3) return { items, source: "Supadata" };
-        }
-        // 영어로 재시도
-        const res2 = await fetch(
-          `https://api.supadata.ai/v1/youtube/transcript?videoId=${ytId}&lang=en`,
-          { signal: AbortSignal.timeout(8000) }
-        );
-        if (res2.ok) {
-          const data2 = await res2.json();
-          const segs2 = data2?.transcript || data2?.segments || data2?.content || [];
-          if (Array.isArray(segs2) && segs2.length > 3) {
-            const items2 = segs2.map(s => ({ start: s.start || 0, text: s.text || s.content || "" })).filter(s => s.text.trim());
-            if (items2.length > 3) return { items: items2, source: "Supadata(EN)" };
-          }
-        }
+      setFetchStatus("자막 추출 중...");
+      const res = await fetch(`/api/transcript?videoId=${ytId}`, {
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!res.ok) throw new Error(`API 오류: ${res.status}`);
+      const data = await res.json();
+      if (data.items && data.items.length > 3) {
+        return { items: data.items, lang: data.lang, source: "vercel" };
       }
-    } catch { /* 다음 API로 */ }
-
-    /* ── API 2: yt.lemnoslife.com (무료 비공식) ── */
-    try {
-      setFetchStatus("자막 추출 중... (API 2/3)");
-      const res = await fetch(
-        `https://yt.lemnoslife.com/videos?part=transcript&id=${ytId}`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const tracks = data?.items?.[0]?.transcript?.tracks;
-        if (tracks && tracks.length > 0) {
-          // 한국어 우선
-          const track = tracks.find(t => t.languageCode?.startsWith("ko"))
-                     || tracks.find(t => t.languageCode?.startsWith("en"))
-                     || tracks[0];
-          if (track?.captions?.length > 3) {
-            const items = track.captions.map(cap => ({
-              start: cap.start || 0,
-              text: cap.text || ""
-            })).filter(s => s.text.trim());
-            if (items.length > 3) return { items, source: "lemnoslife" };
-          }
-        }
-      }
-    } catch { /* 다음 API로 */ }
-
-    /* ── API 3: youtubetranscript.com (비공식 fallback) ── */
-    try {
-      setFetchStatus("자막 추출 중... (API 3/3)");
-      // CORS 프록시 통해 youtubetranscript API 호출
-      const proxyUrl = `https://corsproxy.io/?https://youtubetranscript.com/?server_vid2=${ytId}`;
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-      if (res.ok) {
-        const text = await res.text();
-        // JSON 파싱 시도
-        try {
-          const data = JSON.parse(text);
-          if (Array.isArray(data) && data.length > 3) {
-            const items = data.map(d => ({ start: d.start || 0, text: d.text || "" })).filter(s => s.text.trim());
-            if (items.length > 3) return { items, source: "youtubetranscript" };
-          }
-        } catch {
-          // XML 파싱 시도
-          const parsed = parseXmlTranscript(text);
-          if (parsed.length > 3) return { items: parsed, source: "youtubetranscript(xml)" };
-        }
-      }
-    } catch { /* 실패 */ }
-
-    return null;
+      return null;
+    } catch (e) {
+      console.error("transcript API 오류:", e);
+      return null;
+    }
   };
 
-  const fetchVideo = async (inputUrl) => {
+    const fetchVideo = async (inputUrl) => {
     const ytId = extractYtId(inputUrl);
     if (!ytId) { setFetchErr("올바른 유튜브 URL을 입력해주세요."); return; }
 
@@ -191,7 +120,7 @@ export default function YtBlogGenerator({ theme, embedded }) {
 
       if (result && result.items.length > 0) {
         setTranscript(result.items);
-        const langInfo = result.source.includes("EN") ? "영어" : "한국어";
+        const langInfo = (result.lang || "").startsWith("en") ? "영어" : "한국어";
         setFetchErr(`✅ 자막 ${result.items.length}개 로드 성공 (${langInfo})`);
         setTimeout(() => setFetchErr(""), 4000);
       } else {
