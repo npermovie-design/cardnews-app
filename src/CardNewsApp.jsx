@@ -52,29 +52,38 @@ var EXAMPLES = [
 ];
 
 var KO_FONTS = [
-  { key:"pretendard",    label:"프리텐다드",   css:"Pretendard",          url:"https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" },
-  { key:"noto_sans",     label:"Noto Sans KR", css:"Noto Sans KR",        url:"https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" },
-  { key:"nanum_gothic",  label:"나눔고딕",      css:"Nanum Gothic",        url:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" },
-  { key:"nanum_myeongjo",label:"나눔명조",      css:"Nanum Myeongjo",      url:"https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" },
-  { key:"black_han",     label:"검정한산스",    css:"Black Han Sans",      url:"https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" },
-  { key:"jua",           label:"주아체",        css:"Jua",                 url:"https://fonts.googleapis.com/css2?family=Jua&display=swap" },
-  { key:"do_hyeon",      label:"도현체",        css:"Do Hyeon",            url:"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" },
-  { key:"gaegu",         label:"가에굴",        css:"Gaegu",               url:"https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" },
-  { key:"sans",          label:"기본 고딕",     css:"sans-serif",          url:null },
+  { key:"pretendard",     label:"프리텐다드",   css:"Pretendard, 'Apple SD Gothic Neo', sans-serif" },
+  { key:"noto_sans",      label:"Noto Sans KR", css:"'Noto Sans KR', sans-serif" },
+  { key:"nanum_gothic",   label:"나눔고딕",      css:"'Nanum Gothic', sans-serif" },
+  { key:"nanum_myeongjo", label:"나눔명조",      css:"'Nanum Myeongjo', serif" },
+  { key:"black_han",      label:"검정한산스",    css:"'Black Han Sans', sans-serif" },
+  { key:"jua",            label:"주아체",        css:"'Jua', sans-serif" },
+  { key:"do_hyeon",       label:"도현체",        css:"'Do Hyeon', sans-serif" },
+  { key:"gaegu",          label:"가에굴체",      css:"'Gaegu', cursive" },
+  { key:"default",        label:"기본 고딕",     css:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
 ];
 
-// 폰트 동적 로드
-var _loadedFonts = {};
-function loadFont(fontKey) {
-  var f = KO_FONTS.find(function(x) { return x.key === fontKey; });
-  if (!f || !f.url || _loadedFonts[fontKey]) { return; }
-  _loadedFonts[fontKey] = true;
+var KO_FONT_URLS = {
+  pretendard:     "https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css",
+  noto_sans:      "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap",
+  nanum_gothic:   "https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap",
+  nanum_myeongjo: "https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap",
+  black_han:      "https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap",
+  jua:            "https://fonts.googleapis.com/css2?family=Jua&display=swap",
+  do_hyeon:       "https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap",
+  gaegu:          "https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap",
+};
+
+// 컴포넌트 내부에서 안전하게 호출
+function loadFontSafe(key) {
+  if (typeof document === "undefined") { return; }
+  var url = KO_FONT_URLS[key]; if (!url) { return; }
+  if (document.head.querySelector('link[data-font="'+key+'"]')) { return; }
   var link = document.createElement("link");
-  link.rel = "stylesheet"; link.href = f.url;
+  link.rel = "stylesheet"; link.href = url;
+  link.setAttribute("data-font", key);
   document.head.appendChild(link);
 }
-// 기본 폰트 미리 로드
-["pretendard","noto_sans","nanum_gothic"].forEach(loadFont);
 
 var PROMPT_EXAMPLES = [
   {
@@ -121,10 +130,10 @@ function consumeOne(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
   u[k] = (u[k] || 0) + 1;
   try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e) {}
-  // storage.js와 동기화
-  var storageU = getAiUsage();
+  // storage.js 동기화
+  var su = getAiUsage();
   var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
-  setAiUsage({ ...storageU, [sk]: (storageU[sk] || 0) + 1 });
+  setAiUsage(Object.assign({}, su, {[sk]: (su[sk]||0)+1}));
 }
 
 // ─── 보관함 ──────────────────────────────────────────────────────────────────
@@ -390,7 +399,7 @@ function PresetCanvas(props) {
     <div onClick={props.onClick}
       style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #6366f1" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
-      <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.8))", padding:"14px 6px 6px", fontSize:10, fontWeight:700, color:"#fff", textAlign:"center"}}>
+      <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
         {dp.label}
         {isC && <span style={{marginLeft:4, color:"#a5b4fc"}}>✓</span>}
       </div>
@@ -543,25 +552,35 @@ function LayoutTab(props) {
 // ─── 텍스트 탭 ────────────────────────────────────────────────────────────────
 function TextTab(props) {
   var gs = props.gs; var updGs = props.updGs;
-  var curFont = KO_FONTS.find(function(f) { return f.css === (gs.fontFamily || "sans-serif"); }) || KO_FONTS[0];
+  var curFontKey = gs._fontKey || "default";
+  var curFont = KO_FONTS.find(function(f) { return f.key === curFontKey; }) || KO_FONTS[KO_FONTS.length-1];
+
+  // useEffect로 안전하게 폰트 로드
+  useEffect(function() { loadFontSafe(curFontKey); }, [curFontKey]);
+
   return (
     <div>
       <FieldLabel>폰트</FieldLabel>
-      <select value={curFont.key}
+      <select value={curFontKey}
         onChange={function(e) {
-          var f = KO_FONTS.find(function(x) { return x.key === e.target.value; });
-          if (f) { loadFont(f.key); updGs("fontFamily", f.css); }
+          var k = e.target.value;
+          var f = KO_FONTS.find(function(x) { return x.key === k; });
+          if (!f) { return; }
+          loadFontSafe(k);
+          updGs("fontFamily", f.css);
+          updGs("_fontKey", k);
         }}
-        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)",
-          borderRadius:8, padding:"7px 10px", color:"#fff", fontSize:12, outline:"none",
-          cursor:"pointer", marginBottom:10, fontFamily: curFont.css}}>
+        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
+          borderRadius:8, padding:"8px 10px", color:"#fff", fontSize:12, outline:"none",
+          cursor:"pointer", marginBottom:8}}>
         {KO_FONTS.map(function(f) {
-          return <option key={f.key} value={f.key} style={{background:"#1c1c2e", fontFamily:f.css}}>{f.label}</option>;
+          return <option key={f.key} value={f.key} style={{background:"#1c1c2e"}}>{f.label}</option>;
         })}
       </select>
-      <div style={{padding:"6px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10,
-        fontFamily: curFont.css, fontSize:13, color:"rgba(255,255,255,0.7)", textAlign:"center", lineHeight:1.6}}>
-        가나다라 ABC 123<br/><span style={{fontSize:11, color:"rgba(255,255,255,0.35)"}}>미리보기: {curFont.label}</span>
+      <div style={{padding:"8px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10,
+        fontFamily: curFont.css, fontSize:14, color:"rgba(255,255,255,0.7)", textAlign:"center", lineHeight:1.6}}>
+        가나다라 ABC 123<br/>
+        <span style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontFamily:"inherit"}}>미리보기: {curFont.label}</span>
       </div>
       <FieldLabel>제목 굵기</FieldLabel>
       <div style={{display:"flex", gap:3, marginBottom:10}}>
@@ -596,13 +615,13 @@ function EditPanel(props) {
   var curSlide = props.curSlide; var curEd = props.curEd; var updEd = props.updEd;
   var selPreset = props.selPreset; var applyPreset = props.applyPreset;
   return (
-    <div style={{width:300, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
+    <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
         <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>디자인 프리셋</div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
           {DESIGN_PRESETS.map(function(dp) {
             var isC = selPreset && selPreset.key === dp.key;
-            return <PresetCanvas key={dp.key} dp={dp} size={88} isC={isC} onClick={function() { applyPreset(dp); }}/>;
+            return <PresetCanvas key={dp.key} dp={dp} size={72} isC={isC} onClick={function() { applyPreset(dp); }}/>;
           })}
         </div>
         <Sep/>
@@ -631,42 +650,40 @@ function PreviewPanel(props) {
   var prevDis = idx === 0; var nextDis = idx === slides.length - 1;
   var msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
   return (
-    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"18px 24px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:14}}>
+    <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
       <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
         <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <div style={{fontSize:14, color:"rgba(255,255,255,0.7)", fontWeight:700}}>{tname}</div>
+          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600}}>{tname}</div>
           <div style={{display:"flex", gap:5, alignItems:"center"}}>
             <button onClick={function() { setIdx(Math.max(0, idx - 1)); }} disabled={prevDis}
-              style={{width:34, height:34, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:18, opacity: prevDis ? 0.25 : 1}}>
+              style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:16, opacity: prevDis ? 0.25 : 1}}>
               &#8249;
             </button>
             <span style={{fontSize:11, color:"rgba(255,255,255,0.35)", minWidth:38, textAlign:"center"}}>{(idx + 1) + " / " + slides.length}</span>
             <button onClick={function() { setIdx(Math.min(slides.length - 1, idx + 1)); }} disabled={nextDis}
-              style={{width:34, height:34, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: nextDis ? "not-allowed" : "pointer", fontSize:18, opacity: nextDis ? 0.25 : 1}}>
+              style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: nextDis ? "not-allowed" : "pointer", fontSize:16, opacity: nextDis ? 0.25 : 1}}>
               &#8250;
             </button>
           </div>
         </div>
 
-        <div key={idx} className="cn-popin" style={{width:"100%", display:"flex", justifyContent:"center"}}>
-          <SlideCanvas slide={merged} style={gs} bgUrl={curBg} width={previewW}/>
-        </div>
+        <SlideCanvas slide={merged} style={gs} bgUrl={curBg} width={previewW}/>
 
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
-            style={{padding:"10px 22px", borderRadius:9, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             현재 저장
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
-            style={{padding:"10px 22px", borderRadius:9, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:13, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             ZIP 전체
           </button>
           <button onClick={onSave}
-            style={{padding:"10px 16px", borderRadius:9, border:"1px solid rgba(251,191,36,0.35)", background:"rgba(251,191,36,0.08)", color:"#fbbf24", fontSize:13, fontWeight:700, cursor:"pointer"}}>
+            style={{padding:"8px 14px", borderRadius:8, border:"1px solid rgba(251,191,36,0.35)", background:"rgba(251,191,36,0.08)", color:"#fbbf24", fontSize:12, fontWeight:700, cursor:"pointer"}}>
             보관함 저장
           </button>
           <button onClick={onNew}
-            style={{padding:"10px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:13, cursor:"pointer"}}>
+            style={{padding:"8px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:12, cursor:"pointer"}}>
             새로 만들기
           </button>
         </div>
@@ -674,16 +691,15 @@ function PreviewPanel(props) {
       </div>
 
       <div style={{width:"100%", maxWidth:previewW + 40}}>
-        <div style={{fontSize:13, color:"rgba(255,255,255,0.45)", marginBottom:9, fontWeight:700}}>전체 ({slides.length}장)</div>
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:7}}>
+        <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
           {slides.map(function(s, i) {
             var sm = Object.assign({}, s, (sted[i] || {}));
             var isC = i === idx;
             return (
               <div key={i} onClick={function() { setIdx(i); }}
-                className="cn-fadein"
-                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #6366f1" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative", animationDelay: (i * 0.05) + "s"}}>
-                <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={80} thumb={true}/>
+                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #6366f1" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative"}}>
+                <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={70} thumb={true}/>
                 <div style={{position:"absolute", bottom:2, right:3, fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.85)", textShadow:"0 1px 3px rgba(0,0,0,0.9)"}}>
                   {i < 9 ? "0" + (i + 1) : "" + (i + 1)}
                 </div>
@@ -1245,7 +1261,7 @@ function PageMake(props) {
   var prevBg  = D ? "transparent"              : "#f4f4f8";
 
   return (
-    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"28px 40px 60px", maxWidth:"100%", color:text, display:"flex", flexDirection:"column"}}>
+    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
       <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
@@ -1261,7 +1277,7 @@ function PageMake(props) {
                   color: (done || active) ? stepActTxt : stepInTxt}}>
                   {done ? "✓" : st.n}
                 </div>
-                <span style={{fontSize:13, fontWeight: active ? 700 : 400,
+                <span style={{fontSize:11, fontWeight: active ? 700 : 400,
                   color: active ? text : (done ? stepLbl : stepInTxt)}}>{st.l}</span>
               </div>
               {si < 2 && <div style={{width:18, height:1, background: D ? "rgba(255,255,255,0.15)" : "#ddd"}}/>}
@@ -1273,10 +1289,10 @@ function PageMake(props) {
       {makeStep === 1 && (
         <div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
+            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
-            <div style={{fontSize:15, color:sub, marginBottom:10, fontWeight:700}}>예시 주제</div>
+            <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:12}}>
               {EXAMPLES.map(function(ex) {
                 var isC = topic === ex.text;
@@ -1285,7 +1301,7 @@ function PageMake(props) {
                     style={{padding:"5px 11px", borderRadius:14, border:"1px solid "+inputBdr,
                       background: isC ? tagAbg : tagBg,
                       color: isC ? tagAClr : tagClr,
-                      fontSize:12, cursor:"pointer", fontWeight:600}}>
+                      fontSize:11, cursor:"pointer", fontWeight:600}}>
                     {ex.label}
                   </button>
                 );
@@ -1294,17 +1310,17 @@ function PageMake(props) {
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
               placeholder="주제를 직접 입력하세요..." rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
-                borderRadius:8, padding:"11px 14px", color:text, fontSize:14,
+                borderRadius:8, padding:"9px 12px", color:text, fontSize:13,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box"}}/>
             <div style={{display:"flex", alignItems:"center", gap:8, marginTop:9}}>
-              <span style={{color:muted, fontSize:13, fontWeight:600}}>슬라이드 수</span>
+              <span style={{color:muted, fontSize:11}}>슬라이드 수</span>
               <div style={{display:"flex", gap:3}}>
                 {[3,4,5,6,7,8,10,12].map(function(n) {
                   var isC = cnt === n;
                   return (
                     <button key={n} onClick={function() { setCnt(n); }}
-                      style={{width:32, height:32, borderRadius:7, border:"none", cursor:"pointer",
-                        fontSize:12, fontWeight:700,
+                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer",
+                        fontSize:11, fontWeight:700,
                         background: isC ? "#6366f1" : (D ? "rgba(255,255,255,0.08)" : "#ede9fc"),
                         color: isC ? "#fff" : (D ? "rgba(255,255,255,0.4)" : "#6366f1")}}>
                       {n}
@@ -1328,30 +1344,28 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", flexDirection:"column", height:"100%"}}>
-          <div style={{marginBottom:14}}>
-            <div style={{fontSize:18, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
-            <div style={{fontSize:13, color:muted}}>클릭하면 오른쪽에서 미리보기 확인 (건너뛰기 가능)</div>
-          </div>
-          <div style={{display:"flex", gap:20, flex:1, minHeight:0}}>
-            {/* 좌: 프리셋 그리드 */}
-            <div style={{width:320, flexShrink:0}}>
-              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12}}>
-                {DESIGN_PRESETS.map(function(dp) {
-                  var isC = selPreset && selPreset.key === dp.key;
-                  return (
-                    <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
-                      style={{borderRadius:10, overflow:"hidden", cursor:"pointer", transition:"transform 0.15s",
-                        border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
-                        boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none",
-                        transform: isC ? "scale(1.03)" : "scale(1)"}}>
-                      <PresetCanvas dp={dp} size={96} isC={isC} onClick={function() {}}/>
-                    </div>
-                  );
-                })}
-              </div>
+        <div style={{display:"flex", gap:20, minHeight:400}}>
+          {/* 좌: 프리셋 그리드 */}
+          <div style={{flex:"0 0 auto", width:300, display:"flex", flexDirection:"column"}}>
+            <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
+            <div style={{fontSize:12, color:muted, marginBottom:14}}>클릭 시 오른쪽 미리보기 표시 (건너뛰기 가능)</div>
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16}}>
+              {DESIGN_PRESETS.map(function(dp) {
+                var isC = selPreset && selPreset.key === dp.key;
+                return (
+                  <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
+                    style={{borderRadius:10, overflow:"hidden", cursor:"pointer", transition:"transform 0.15s",
+                      border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
+                      boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none",
+                      transform: isC ? "scale(1.04)" : "scale(1)"}}>
+                    <PresetCanvas dp={dp} size={88} isC={isC} onClick={function() {}}/>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{marginTop:"auto"}}>
               {err && <div style={{padding:"7px 11px", borderRadius:7, background:errBg, color:errClr, fontSize:12, marginBottom:10}}>{err}</div>}
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"auto"}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                 <button onClick={function() { setMakeStep(1); }}
                   style={{padding:"9px 18px", borderRadius:8, border:"1px solid "+bdr,
                     background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>
@@ -1359,106 +1373,117 @@ function PageMake(props) {
                 </button>
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                   style={{padding:"11px 28px", borderRadius:10, border:"none", cursor:"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800,
-                    boxShadow:"0 6px 20px rgba(99,102,241,0.35)"}}>
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                    fontSize:14, fontWeight:800, boxShadow:"0 6px 20px rgba(99,102,241,0.35)"}}>
                   {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
                 </button>
               </div>
             </div>
-            {/* 우: 큰 미리보기 */}
-            <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-              background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.04)",
-              borderRadius:16, border:"1px solid "+bdr, padding:"20px 16px", minHeight:340}}>
-              {selPreset ? (
-                <div className="cn-fadein" style={{display:"flex", flexDirection:"column", alignItems:"center", gap:14, width:"100%"}}>
-                  <div style={{fontSize:13, fontWeight:700, color: D?"rgba(255,255,255,0.5)":"#888", marginBottom:4}}>
-                    {selPreset.label} 미리보기
+          </div>
+
+          {/* 우: 큰 미리보기 */}
+          <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.03)",
+            borderRadius:16, border:"1px solid "+bdr, padding:"20px"}}>
+            {selPreset ? (
+              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
+                <div style={{fontSize:13, fontWeight:700, color: D?"rgba(255,255,255,0.5)":"#888"}}>
+                  ✔ {selPreset.label}
+                </div>
+                <PresetCanvas dp={selPreset} size={240} isC={true} onClick={function() {}}/>
+                <div style={{display:"flex", gap:16, fontSize:12, color:muted, textAlign:"center", marginTop:4}}>
+                  <div>
+                    <div style={{fontWeight:700, color:text, marginBottom:2}}>
+                      {selPreset.textAlign === "center" ? "가운데" : "왼쪽"}
+                    </div>
+                    <div>정렬</div>
                   </div>
-                  <PresetCanvas dp={selPreset} size={260} isC={true} onClick={function() {}}/>
-                  <div style={{display:"flex", gap:12, fontSize:12, color:muted, textAlign:"center"}}>
-                    <div><div style={{fontWeight:700, color:text}}>{selPreset.textAlign === "center" ? "가운데" : "왼쪽"}</div><div>정렬</div></div>
-                    <div><div style={{fontWeight:700, color:text}}>{selPreset.hlMode === "pill" ? "뱃지" : selPreset.hlMode === "underline" ? "밑줄" : selPreset.hlMode === "box" ? "박스" : "없음"}</div><div>하이라이트</div></div>
-                    <div><div style={{fontWeight:700, color:text}}>{selPreset.titleSize}px</div><div>제목 크기</div></div>
+                  <div>
+                    <div style={{fontWeight:700, color:text, marginBottom:2}}>
+                      {selPreset.hlMode==="pill"?"뱃지":selPreset.hlMode==="underline"?"밑줄":selPreset.hlMode==="box"?"박스":"없음"}
+                    </div>
+                    <div>하이라이트</div>
+                  </div>
+                  <div>
+                    <div style={{fontWeight:700, color:text, marginBottom:2}}>{selPreset.titleSize}px</div>
+                    <div>제목 크기</div>
                   </div>
                 </div>
-              ) : (
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:48, marginBottom:12, opacity:0.3}}>🖼</div>
-                  <div style={{fontSize:14, color:muted, lineHeight:1.8}}>왼쪽에서 디자인을<br/>선택하면 미리보기가<br/>여기 표시됩니다</div>
+              </div>
+            ) : (
+              <div style={{textAlign:"center", opacity:0.45}}>
+                <div style={{fontSize:40, marginBottom:10}}>🖼</div>
+                <div style={{fontSize:14, color:muted, lineHeight:1.9}}>
+                  왼쪽에서 디자인을<br/>선택하면 크게 보여요
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {makeStep === 3 && (
-        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center"}}>
+        <div style={{textAlign:"center", padding:"32px 0"}}>
           {loading && (
-            <div className="cn-fadein" style={{width:"100%", maxWidth:480}}>
-              {/* 떠다니는 아이콘 */}
-              <div className="cn-float" style={{fontSize:80, marginBottom:20, display:"inline-block", filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏</div>
+            <div style={{width:"100%", maxWidth:460, textAlign:"center"}}>
+              <div style={{fontSize:72, marginBottom:16, display:"inline-block",
+                animation:"cn-float 3s ease-in-out infinite",
+                filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏✨</div>
               <div style={{fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:-0.5}}>
-                AI가 카드뉴스를 만들고 있어요 ✨
+                AI가 카드뉴스를 만들고 있어요
               </div>
               <div style={{fontSize:14, color:muted, marginBottom:28}}>
                 {topic} · {cnt}장 구성 중
               </div>
-              {/* 진행 단계 */}
-              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left", marginBottom:24, maxWidth:300, margin:"0 auto 24px"}}>
-                {[
-                  {label:"주제 분석 중...", done:true},
-                  {label:"슬라이드 구성 기획...", done:true},
-                  {label:"문구 생성 중...", done:false, active:true},
-                  {label:"마무리 다듬는 중...", done:false},
-                ].map(function(step, si) {
+              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left",
+                maxWidth:280, margin:"0 auto 24px"}}>
+                {[{l:"주제 분석 중...",d:true},{l:"슬라이드 구성 기획...",d:true},
+                  {l:"문구 생성 중...",a:true},{l:"마무리 다듬는 중..."}
+                ].map(function(s,i) {
                   return (
-                    <div key={si} className="cn-step-in"
-                      style={{display:"flex", alignItems:"center", gap:10, opacity: step.done||step.active ? 1 : 0.35,
-                        animationDelay: (si*0.15)+"s"}}>
-                      <div style={{width:20, height:20, borderRadius:"50%", flexShrink:0,
-                        background: step.done ? "rgba(74,222,128,0.15)" : step.active ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)",
-                        border: step.done ? "2px solid #4ade80" : step.active ? "2px solid #6366f1" : "2px solid rgba(255,255,255,0.1)",
-                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:10}}>
-                        {step.done ? <span style={{color:"#4ade80"}}>✓</span>
-                          : step.active ? <div style={{width:8, height:8, borderRadius:"50%", border:"2px solid #6366f1", borderTopColor:"transparent", animation:"cn-spin 0.8s linear infinite"}}/>
-                          : null}
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,
+                      opacity:s.d||s.a?1:0.3}}>
+                      <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
+                        background:s.d?"rgba(74,222,128,0.15)":s.a?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                        border:s.d?"2px solid #4ade80":s.a?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)"}}>
+                        {s.d?<span style={{color:"#4ade80"}}>✓</span>
+                          :s.a?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"cn-spin 0.8s linear infinite"}}/>
+                          :null}
                       </div>
-                      <span style={{fontSize:14, color: step.done ? "#4ade80" : step.active ? text : muted, fontWeight: step.active ? 700 : 400}}>
-                        {step.label}
-                      </span>
+                      <span style={{fontSize:14,color:s.d?"#4ade80":s.a?text:muted,fontWeight:s.a?700:400}}>{s.l}</span>
                     </div>
                   );
                 })}
               </div>
-              {/* 프로그레스 바 */}
-              <div style={{height:4, borderRadius:4, background:"rgba(255,255,255,0.08)", overflow:"hidden", maxWidth:300, margin:"0 auto 12px"}}>
-                <div style={{height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+              <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",
+                maxWidth:280,margin:"0 auto 10px"}}>
+                <div style={{height:"100%",borderRadius:4,
+                  background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
                   animation:"cn-progress 8s ease-out forwards"}}/>
               </div>
-              <div style={{fontSize:12, color:muted}}>보통 7~11초 소요</div>
+              <div style={{fontSize:12,color:muted}}>보통 7~11초 소요</div>
             </div>
           )}
           {!loading && err && (
-            <div className="cn-fadein">
-              <div style={{fontSize:52, marginBottom:16}}>😢</div>
-              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>생성에 실패했어요</div>
-              <div style={{fontSize:13, color:errClr, marginBottom:20}}>{err}</div>
+            <div>
+              <div style={{fontSize:12, color:errClr, marginBottom:12}}>{err}</div>
               <button onClick={function() { setMakeStep(2); }}
-                style={{padding:"12px 28px", borderRadius:10, border:"1px solid "+bdr,
-                  background:"transparent", color:muted, fontSize:14, cursor:"pointer"}}>← 다시 시도</button>
+                style={{padding:"9px 20px", borderRadius:8, border:"1px solid "+bdr,
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>다시 시도</button>
             </div>
           )}
           {!loading && !err && (
-            <div className="cn-fadein">
-              <div style={{fontSize:64, marginBottom:16, animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
-              <div style={{fontSize:22, fontWeight:900, marginBottom:8, color:text, letterSpacing:-0.5}}>생성 완료!</div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:60, marginBottom:14, display:"inline-block",
+                animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
+              <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text, letterSpacing:-0.5}}>생성 완료!</div>
               <div style={{fontSize:14, color:muted, marginBottom:28}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"16px 48px", borderRadius:14, border:"none", cursor:"pointer",
+                style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
                   background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
-                  fontSize:17, fontWeight:900, boxShadow:"0 12px 36px rgba(99,102,241,0.5)",
-                  letterSpacing:-0.3}}>
+                  fontSize:16, fontWeight:900, letterSpacing:-0.3,
+                  boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1585,10 +1610,8 @@ export function CardNewsApp(props) {
       setIdx(0); setSted({}); setBgIs({});
       if (selPreset) { applyPreset(selPreset); }
       setPage("edit"); consumeOne(user);
-      // 포인트 차감 (회원만)
-      if (user && user.uid && (user.points || 0) >= 10) {
-        try { await changePoints(user.uid, -10, "카드뉴스 생성"); } catch(e) {}
-      }
+      // 포인트 차감
+      if (user && user.uid) { try { await changePoints(user.uid, -10, "카드뉴스 생성"); } catch(e) {} }
     } catch(e3) { setErr("오류: " + e3.message); }
     finally { setLoading(false); }
   }
@@ -1645,17 +1668,11 @@ export function CardNewsApp(props) {
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
-    "@keyframes cn-fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}" +
-    "@keyframes cn-popin{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}" +
-    "@keyframes cn-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}" +
-    "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
-    ".cn-fadein{animation:cn-fadein 0.4s ease both}" +
-    ".cn-popin{animation:cn-popin 0.35s cubic-bezier(0.34,1.56,0.64,1) both}" +
-    ".cn-float{animation:cn-float 3s ease-in-out infinite}" +
     "@keyframes cn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}" +
-    "@keyframes cn-progress{from{width:0}to{width:100%}}" +
-    "@keyframes cn-step-in{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}" +
-    ".cn-step-in{animation:cn-step-in 0.4s ease both}" +
+    "@keyframes cn-progress{from{width:0%}to{width:100%}}" +
+    "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
+    "@keyframes cn-fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}" +
+    "@keyframes cn-popin{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
