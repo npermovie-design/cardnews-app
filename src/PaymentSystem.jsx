@@ -9,7 +9,7 @@ import { changePoints, fetchUser, setLocalUser } from "./storage";
    ④ Products에서 상품 3개 생성 후 Variant ID 복사
 ══════════════════════════════════════════════════════════ */
 const LS_CONFIG = {
-  apiKey:  lmsk_eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NGQ1OWNlZi1kYmI4LTRlYTUtYjE3OC1kMjU0MGZjZDY5MTkiLCJqdGkiOiI3MjFkM2JkNDM3ZjQ0YTFiNzE3NmU1NjE2OGI0NjFmNDU2ZTIwNzg3ZGMyMmIwYzcxYWVmNTBhMWJkZWQ1M2M1OWIyZDMyMTBkNWFlOGFmNiIsImlhdCI6MTc3MzU0Nzc5NS4yNjE2MjIsIm5iZiI6MTc3MzU0Nzc5NS4yNjE2MjQsImV4cCI6MTc4OTQzMDQwMC4wMzgxODYsInN1YiI6IjY3MDE2OTIiLCJzY29wZXMiOltdfQ.nmUW0vQ2HuhoI3Mos8t2lfF-vmv_D7gAY6eSqbGZtrolnKlZowGmxBwUjy6nOIsiQt0pFkFzUNboY5OQo4V2sYMwoMQbZIvx3vJilOeuAUt3dxTfwATAgxFOXCwmlRJ_dDMraAJZRMuq7RDf8ja3l-MR47RqJa810759Jq1ilxZEipNnJYjJit9BitubRurJfdtveMCqiBUJl9DXwhEsaIl4iRRk_8js69WRYg9_KPMpJchvQswZfnsVMxqkR-wMIv83NpSFhMffpS92gwIE3ehSfDBG3KA_2KU3g_h7plzvXp_0f3TuQd_6nlYN7NIcqPDrIofnwchFV_vln9C-HqLOlNX4tnE4sJCvZ-7x0iilBXo7lUy5TTfIIGylYsaCtJ9IP8NkhnQLF0pkvr7Iz2tn_Hz8McRrE9e7rMrGdF6bmoLRZtmC2N-NEcqDCBK9rVkKG1DbLyEZ6b5qbPYOftNd5M77TQNDvZZZ0tT-KFXxmv8dDhDJ5hCRGt2n7VhpUVkAoxAgrU3JlhcTykIItPS_DmNO6A0FFOV0vyZnLTQev28WbINcFGPdOeF-MwR_wQQ_JTjJyh1IE7j2Kyf2C7QBWDkMynBn0wr-3BOLRwJjM9SNpA2CfbQpPH9G4lczNbNbYkT-IR-fqRPu8d41OC9Pfp-S_h0jsc26HM-1WvY
+  apiKey:  import.meta.env.VITE_LS_API_KEY || "",  // Vercel 환경변수에서 로드
   storeId: "315475",
 };
 

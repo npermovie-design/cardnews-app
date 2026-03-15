@@ -212,7 +212,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
             </div>
           )}
         </div>
-        <div style={{ height: 3, background: usageBar, borderRadius: 2, }}>
+        <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden" }}>
           <div style={{ height: "100%", width: pct, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
         </div>
       </div>
@@ -279,7 +279,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   if (aiMenu.startsWith("blog_")) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
     return (
-      <div key={aiMenu} style={{ flex: 1, display: "flex", }}>
+      <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} />
       </div>
     );
@@ -288,7 +288,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   // 카드뉴스 - 바로 만들기
   if (aiMenu === "cardnews_make") {
     return (
-      <div key="cn_make" style={{ flex: 1, display: "flex", }}>
+      <div key="cn_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
@@ -297,7 +297,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   // 카드뉴스 - 글 기획하기 (인라인 - CardNewsApp의 기획 패널)
   if (aiMenu === "cardnews_plan") {
     return (
-      <div key="cn_plan" style={{ flex: 1, display: "flex", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
+      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
         <PlannerPanel inline theme={theme}
           onClose={() => {}}
           onApplySlides={(slides) => {
@@ -393,7 +393,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
       )}
 
       {/* 우측 콘텐츠 */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         {/* 상단 바 */}
         <div style={{
           height: 44, flexShrink: 0, display: "flex", alignItems: "center",
@@ -423,7 +423,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, display: "flex" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} />
         </div>
       </div>
@@ -434,7 +434,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 /* ════════════════════════════════════════════════════════════
    PricingPage
 ════════════════════════════════════════════════════════════ */
-export function PricingPage({ navigate, C }) {
+export function PricingPage({ navigate, C, user, onLogin }) {
   const PLANS = [
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
@@ -509,9 +509,13 @@ export function PricingPage({ navigate, C }) {
             </div>
 
             <button
-              onClick={() => plan.id === "free" ? navigate("ai") : navigate("contact")}
+              onClick={() => {
+                if (plan.id === "free") { navigate("ai"); return; }
+                if (!user) { if (onLogin) onLogin(); return; }
+                startPayment(plan.id, user);
+              }}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
-              {plan.btnLabel}
+              {plan.id === "free" ? plan.btnLabel : (!user ? "로그인 후 충전" : plan.btnLabel)}
             </button>
           </div>
         ))}

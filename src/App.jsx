@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser, fbGoogleRedirectResult } from "./storage";
+import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import { usePaymentCallback, PaymentResultModal, PointsLowModal, startPayment } from "./PaymentSystem";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
@@ -26,29 +27,20 @@ export default function App() {
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
+  const [showPointsLow, setShowPointsLow] = useState(false);
 
   const boardSubRef = useRef(null);
   const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
+  const [paymentResult, setPaymentResult] = usePaymentCallback(user, setUserState);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch {}
   };
-
-  // 구글 Redirect 로그인 결과 처리 (모바일 인앱브라우저 대응)
-  useEffect(() => {
-    fbGoogleRedirectResult().then(userData => {
-      if (userData) {
-        setUser(userData);
-        setLocalUser(userData);
-        setUserState(userData);
-      }
-    }).catch(() => {});
-  }, []);
 
   // 카카오 OAuth 콜백 처리
   useEffect(() => {
@@ -192,9 +184,9 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} onPointsLow={() => setShowPointsLow(true)} />;
     if (isBoard)             return <BoardPage C={C} user={user} />;
-    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} />;
+    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
@@ -245,6 +237,8 @@ export default function App() {
       `}</style>
 
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
+      {paymentResult && <PaymentResultModal result={paymentResult} onClose={() => setPaymentResult(null)} onNavigateAi={() => { navigate("ai"); }} C={C} />}
+      {showPointsLow && user && <PointsLowModal user={user} C={C} onClose={() => setShowPointsLow(false)} onPay={(planId) => { setShowPointsLow(false); startPayment(planId, user); }} />}
 
       {/* ── 네비게이션 ── */}
       <div style={{
