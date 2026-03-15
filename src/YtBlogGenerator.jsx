@@ -81,12 +81,22 @@ export default function YtBlogGenerator({ theme, embedded }) {
     try {
       setFetchStatus("자막 추출 중...");
       const res = await fetch(`/api/transcript?videoId=${ytId}`, {
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(30000),
       });
       if (!res.ok) throw new Error(`API 오류: ${res.status}`);
       const data = await res.json();
+
+      if (data.method === "stt") {
+        setFetchStatus(""); // STT 완료
+      }
+
       if (data.items && data.items.length > 3) {
-        return { items: data.items, lang: data.lang, source: "vercel" };
+        return {
+          items: data.items,
+          lang: data.lang,
+          method: data.method, // "caption" or "stt"
+          source: "vercel",
+        };
       }
       return null;
     } catch (e) {
@@ -121,11 +131,18 @@ export default function YtBlogGenerator({ theme, embedded }) {
       if (result && result.items.length > 0) {
         setTranscript(result.items);
         const langInfo = (result.lang || "").startsWith("en") ? "영어" : "한국어";
-        setFetchErr(`✅ 자막 ${result.items.length}개 로드 성공 (${langInfo})`);
+        const methodLabel = result.method === "auto-caption" ? " (자동생성)"
+                          : result.method === "stt" ? " (AI 음성인식)" : "";
+        setFetchErr(`✅ ${langInfo} 자막 ${result.items.length}개 로드 성공${methodLabel}`);
+        setTimeout(() => setFetchErr(""), 4000);
+      } else if (result && result.description) {
+        // 자막 없지만 영상 설명란 있음
+        setTranscript([{ start: 0, text: result.description }]);
+        setFetchErr("ℹ️ 자막 없음 - 영상 설명란으로 글 작성합니다");
         setTimeout(() => setFetchErr(""), 4000);
       } else {
         setTranscript([]);
-        setFetchErr("⚠️ 자막이 없거나 비공개 영상이에요. 영상 제목 기반으로 글을 작성합니다.");
+        setFetchErr("⚠️ 자막과 설명란 모두 없어요. 영상 제목으로만 작성합니다.");
       }
 
     } catch (e) {
