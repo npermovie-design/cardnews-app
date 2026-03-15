@@ -398,8 +398,6 @@ function StyleTab(props) {
   var gs = props.gs; var updGs = props.updGs;
   var curBg = props.curBg; var bgRef = props.bgRef;
   var handleBg = props.handleBg; var onRemoveBg = props.onRemoveBg;
-  var autoImgKw = props.autoImgKw || "";
-  var onSetBgUrl = props.onSetBgUrl || function(){};
   var overlayVal = Math.round((gs.bgOverlayOpacity !== undefined ? gs.bgOverlayOpacity : 0.5) * 100);
   return (
     <div>
@@ -423,20 +421,11 @@ function StyleTab(props) {
 
       <FieldLabel>배경 사진</FieldLabel>
       <input ref={bgRef} type="file" accept="image/*" onChange={handleBg} style={{display:"none"}}/>
-      <div style={{display:"flex", gap:6, marginBottom:8, flexWrap:"wrap"}}>
+      <div style={{display:"flex", gap:6, marginBottom:8}}>
         <button onClick={function() { if (bgRef.current) { bgRef.current.click(); } }}
-          style={{flex:1, minWidth:60, padding:"7px 0", borderRadius:7, border:"1px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:11, cursor:"pointer"}}>
-          {curBg ? "변경" : "직접 업로드"}
+          style={{flex:1, padding:"7px 0", borderRadius:7, border:"1px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:11, cursor:"pointer"}}>
+          {curBg ? "변경" : "업로드"}
         </button>
-        {autoImgKw && (
-          <button onClick={function() {
-            var kw = encodeURIComponent(autoImgKw);
-            var url = "https://source.unsplash.com/1080x1080/?"+kw+",background&sig="+Math.floor(Math.random()*1000);
-            onSetBgUrl(url);
-          }} style={{flex:1, minWidth:60, padding:"7px 0", borderRadius:7, border:"1px solid rgba(99,102,241,0.35)", background:"rgba(99,102,241,0.12)", color:"#a5b4fc", fontSize:11, cursor:"pointer", fontWeight:700}}>
-            🖼 자동 배경
-          </button>
-        )}
         {curBg && (
           <button onClick={onRemoveBg} style={{padding:"7px 12px", borderRadius:7, border:"1px solid rgba(255,80,80,0.3)", background:"rgba(255,60,60,0.08)", color:"#ff9090", fontSize:11, cursor:"pointer"}}>제거</button>
         )}
@@ -504,7 +493,6 @@ function LayoutTab(props) {
         })}
       </div>
       <SliderRow label="좌우 여백" value={gs.paddingX || 0} minV={0} maxV={40} onChange={function(v) { updGs("paddingX", v); }}/>
-      <SliderRow label="상하 여백" value={gs.paddingY || 0} minV={0} maxV={40} onChange={function(v) { updGs("paddingY", v); }}/>
       <Sep/>
       <FieldLabel>현재 슬라이드 내용</FieldLabel>
       {[{k:"title",l:"제목"},{k:"subtitle",l:"부제목"},{k:"body",l:"본문"},{k:"highlight",l:"하이라이트"}].map(function(f) {
@@ -572,9 +560,6 @@ function EditPanel(props) {
   var handleBg = props.handleBg; var onRemoveBg = props.onRemoveBg;
   var curSlide = props.curSlide; var curEd = props.curEd; var updEd = props.updEd;
   var selPreset = props.selPreset; var applyPreset = props.applyPreset;
-  // 자동 배경 이미지 관련
-  var autoImgKw = props.autoImgKw || "";
-  var onSetBgUrl = props.onSetBgUrl || function(){};
   return (
     <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
@@ -593,7 +578,7 @@ function EditPanel(props) {
         <SegBtn label="텍스트"   active={etab === "text"}   onClick={function() { setEtab("text"); }}/>
       </div>
       <div style={{flex:1, overflowY:"auto", padding:"0 10px 16px"}}>
-        {etab === "style"  && <StyleTab gs={gs} updGs={updGs} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={onRemoveBg} autoImgKw={autoImgKw} onSetBgUrl={onSetBgUrl}/>}
+        {etab === "style"  && <StyleTab gs={gs} updGs={updGs} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={onRemoveBg}/>}
         {etab === "layout" && <LayoutTab gs={gs} updGs={updGs} curSlide={curSlide} curEd={curEd} updEd={updEd}/>}
         {etab === "text"   && <TextTab gs={gs} updGs={updGs}/>}
       </div>
@@ -807,7 +792,7 @@ export function PlannerPanel(props) {
         </div>
 
         <div style={{flex:1, overflowY:"auto", display:"flex", gap:0}}>
-          <div style={{width:340, flexShrink:0, padding:"16px", borderRight:"1px solid "+divider}}>
+          <div style={{width:420, flexShrink:0, padding:"24px", borderRight:"1px solid "+divider}}>
             {planMode === "url" && (
               <div>
                 <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
@@ -823,16 +808,16 @@ export function PlannerPanel(props) {
                   placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
                   style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                  <span style={{fontSize:11,color:textMuted}}>슬라이드 수</span>
+                  <span style={{fontSize:13,color:textMuted,fontWeight:600}}>슬라이드 수</span>
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       var isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:36,height:36,borderRadius:8,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
                     })}
                   </div>
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:15,fontWeight:800,opacity:urlLoading?0.7:1}}>
                   {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
@@ -841,37 +826,37 @@ export function PlannerPanel(props) {
             {planMode === "topic" && (
               <div>
                 <div style={{marginBottom:12}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
+                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:8}}>명령어 예시</div>
                   <div style={{display:"flex", gap:4, marginBottom:8}}>
                     {PROMPT_EXAMPLES.map(function(ex, i) {
                       var isC = showExIdx === i;
                       return (
                         <button key={i} onClick={function() { setShowExIdx(i); }}
-                          style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, fontWeight: isC ? 700 : 400, background: isC ? tabActive : tabBg, color: isC ? "#fff" : tabText}}>
+                          style={{flex:1, padding:"8px 4px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight: isC ? 700 : 400, background: isC ? tabActive : tabBg, color: isC ? "#fff" : tabText}}>
                           {ex.label}
                         </button>
                       );
                     })}
                   </div>
                   <div style={{background:slideBg, border:"1px solid "+slideBdr, borderRadius:8, padding:"10px 12px"}}>
-                    <div style={{fontSize:10, color:textSub, marginBottom:4}}>예시 — {selEx.label}</div>
-                    <pre style={{fontSize:11, color:textMain, lineHeight:1.7, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
+                    <div style={{fontSize:12, color:textSub, marginBottom:6}}>예시 — {selEx.label}</div>
+                    <pre style={{fontSize:13, color:textMain, lineHeight:1.8, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
                     <button onClick={function() { setPlanTopic(selEx.topic); setPlanNote(selEx.prompt.split("\n").slice(1).join("\n")); }}
-                      style={{marginTop:8, padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", background:accentBg, color:"#fff", fontSize:10, fontWeight:700}}>
+                      style={{marginTop:10, padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", background:accentBg, color:"#fff", fontSize:13, fontWeight:700}}>
                       이 예시 사용하기
                     </button>
                   </div>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
+                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:7}}>주제 *</div>
                   <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
+                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:7}}>추가 요청사항 (선택)</div>
                   <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
                     placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"12px 16px", color:"#fff", fontSize:14, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.7}}/>
                 </div>
                 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
                   <span style={{fontSize:11, color:textMuted}}>슬라이드 수</span>
@@ -1342,94 +1327,30 @@ function PageMake(props) {
       )}
 
       {makeStep === 3 && (
-        <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 24px", minHeight:320}}>
+        <div style={{textAlign:"center", padding:"32px 0"}}>
           {loading && (
-            <div style={{textAlign:"center", width:"100%", maxWidth:400, animation:"fadeInUp 0.4s ease"}}>
-              {/* 카드 애니메이션 */}
-              <div style={{position:"relative", width:120, height:120, margin:"0 auto 24px"}}>
-                {[0,1,2].map(function(i) {
-                  return <div key={i} style={{
-                    position:"absolute", width:70, height:90, borderRadius:10,
-                    background:"linear-gradient(135deg,"+(["#6366f1","#8b5cf6","#ec4899"][i])+","+(["#8b5cf6","#ec4899","#f59e0b"][i])+")",
-                    top:i*8+"px", left:i*8+"px",
-                    boxShadow:"0 8px 24px rgba(99,102,241,0.3)",
-                    animation:"floatUp 1.8s ease-in-out infinite",
-                    animationDelay:(i*0.25)+"s",
-                    opacity: 1-i*0.15,
-                  }}>
-                    <div style={{padding:"10px 8px"}}>
-                      <div style={{height:8, borderRadius:4, background:"rgba(255,255,255,0.4)", marginBottom:5}}/>
-                      <div style={{height:5, borderRadius:3, background:"rgba(255,255,255,0.2)", marginBottom:3}}/>
-                      <div style={{height:5, borderRadius:3, background:"rgba(255,255,255,0.2)", width:"70%"}}/>
-                    </div>
-                  </div>;
-                })}
-                {/* 빙글빙글 링 */}
-                <div style={{position:"absolute", top:-10, left:-10, width:140, height:140, borderRadius:"50%",
-                  border:"2px dashed rgba(99,102,241,0.3)", animation:"rotate 3s linear infinite"}}/>
-              </div>
-
-              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>
-                AI가 카드뉴스를 만들고 있어요 ✨
-              </div>
-              <div style={{fontSize:12, color:muted, marginBottom:20, lineHeight:1.7}}>
-                {topic} · {cnt}장 구성 중
-              </div>
-
-              {/* 단계 표시 */}
-              <div style={{display:"flex", flexDirection:"column", gap:6, marginBottom:20, textAlign:"left"}}>
-                {[
-                  {step:1, label:"주제 분석 중...", done:true},
-                  {step:2, label:"슬라이드 구성 기획...", done:true},
-                  {step:3, label:"문구 생성 중...", done:false},
-                ].map(function(s) {
-                  return <div key={s.step} style={{display:"flex", alignItems:"center", gap:8, fontSize:12,
-                    color:s.done?"rgba(99,102,241,0.8)":text, fontWeight:s.done?400:700}}>
-                    {s.done
-                      ? <span style={{color:"#4ade80", fontSize:14}}>✓</span>
-                      : <div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(99,102,241,0.6)",borderTop:"2px solid transparent",animation:"rotate 0.8s linear infinite"}}/>
-                    }
-                    {s.label}
-                  </div>;
-                })}
-              </div>
-
-              {/* 프로그레스 바 */}
-              <div style={{height:4, background:"rgba(255,255,255,0.08)", borderRadius:4, overflow:"hidden"}}>
-                <div style={{height:"100%", background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
-                  borderRadius:4, animation:"progressBar "+(cnt*1.2)+"s ease-out forwards"}}/>
-              </div>
-              <div style={{fontSize:10, color:muted, marginTop:6}}>보통 {Math.round(cnt*1.2)}~{Math.round(cnt*1.8)}초 소요</div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>⚙️</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
+              <div style={{fontSize:12, color:muted}}>{cnt}장 생성 중</div>
             </div>
           )}
           {!loading && err && (
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:32, marginBottom:12}}>😓</div>
-              <div style={{fontSize:13, color:errClr, marginBottom:16, lineHeight:1.6}}>{err}</div>
+            <div>
+              <div style={{fontSize:12, color:errClr, marginBottom:12}}>{err}</div>
               <button onClick={function() { setMakeStep(2); }}
                 style={{padding:"9px 20px", borderRadius:8, border:"1px solid "+bdr,
-                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>← 다시 시도</button>
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>다시 시도</button>
             </div>
           )}
           {!loading && !err && (
-            <div style={{textAlign:"center", animation:"fadeInUp 0.5s ease"}}>
-              <div style={{fontSize:52, marginBottom:12, animation:"floatUp 2s ease-in-out infinite"}}>🎉</div>
-              <div style={{fontSize:18, fontWeight:900, marginBottom:6, color:text}}>완성됐어요!</div>
-              <div style={{fontSize:13, color:muted, marginBottom:8}}>{tname}</div>
-              <div style={{display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap", marginBottom:20}}>
-                {[...Array(Math.min(slides.length, 5))].map(function(_,i) {
-                  return <div key={i} style={{width:32, height:40, borderRadius:6,
-                    background:"linear-gradient(135deg,rgba(99,102,241,0.5),rgba(139,92,246,0.5))",
-                    border:"1px solid rgba(99,102,241,0.3)",
-                    animation:"floatUp 1.5s ease-in-out infinite",
-                    animationDelay:(i*0.15)+"s"}}/>;
-                })}
-              </div>
-              <div style={{fontSize:12, color:"rgba(99,102,241,0.8)", marginBottom:20, fontWeight:600}}>총 {slides.length}장 생성 완료 ✓</div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>🎉</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>생성 완료!</div>
+              <div style={{fontSize:12, color:muted, marginBottom:16}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"12px 32px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800,
-                  boxShadow:"0 8px 24px rgba(99,102,241,0.4)"}}>
+                style={{padding:"10px 28px", borderRadius:9, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1512,7 +1433,6 @@ export function CardNewsApp(props) {
     r.readAsDataURL(f); e.target.value = "";
   }
   function removeBg() { setBgIs(function(prev) { var n = Object.assign({}, prev); n[idx] = null; return n; }); }
-  function setBgFromUrl(url) { setBgIs(function(prev) { var n = Object.assign({}, prev); n[idx] = url; return n; }); }
 
   function handleSaveWork() {
     if (!slides.length) { return; }
@@ -1613,11 +1533,6 @@ export function CardNewsApp(props) {
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
-    "@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.97)}}" +
-    "@keyframes floatUp{0%{transform:translateY(0px)}50%{transform:translateY(-8px)}100%{transform:translateY(0px)}}" +
-    "@keyframes progressBar{from{width:0%}to{width:100%}}" +
-    "@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}" +
-    "@keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
@@ -1671,7 +1586,7 @@ export function CardNewsApp(props) {
           )}
           {page === "edit" && slides.length > 0 && (
             <div style={{flex:1, display:"flex", height:"100%", overflow:"hidden"}}>
-              <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset} autoImgKw={tname||topic} onSetBgUrl={setBgFromUrl}/>
+              <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
               <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
             </div>
           )}

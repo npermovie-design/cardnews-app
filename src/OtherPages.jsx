@@ -167,12 +167,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="카드뉴스" icon="🃏" open={cardOpen}
+        <Group label="SNS 이미지 만들기" icon="🖼" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
-          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -244,8 +243,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", hidden: true,   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -255,7 +254,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
           <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.map(m => (
+          {MENUS.filter(m => !m.hidden).map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
@@ -511,12 +510,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <button
               onClick={() => {
                 if (plan.id === "free") { navigate("ai"); return; }
-                if (!user) { if (onLogin) onLogin(); return; }
                 const varMap = {
                   basic:   "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
                   pro:     "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
                   premium: "fd18d32d-b8af-45aa-9b78-0902b139f127",
                 };
+                if (!user) { if (onLogin) onLogin(); return; }
                 window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + varMap[plan.id];
               }}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
