@@ -58,52 +58,25 @@ export const PLANS = {
 /* ══════════════════════════════════════════════════════════
    결제 시작
 ══════════════════════════════════════════════════════════ */
-export async function startPayment(planId, user) {
+export function startPayment(planId, user) {
   const plan = PLANS[planId];
   if (!plan || !user) { alert("로그인 후 결제해주세요."); return; }
 
-  const successUrl = `${window.location.origin}/?payment=success&plan=${planId}&uid=${user.uid}&points=${plan.points}`;
+  // 결제 완료 후 돌아올 URL
+  const successUrl = encodeURIComponent(
+    `${window.location.origin}/?payment=success&plan=${planId}&uid=${user.uid}&points=${plan.points}`
+  );
 
-  try {
-    const res = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LS_CONFIG.apiKey}`,
-        "Content-Type": "application/vnd.api+json",
-        "Accept": "application/vnd.api+json",
-      },
-      body: JSON.stringify({
-        data: {
-          type: "checkouts",
-          attributes: {
-            checkout_data: {
-              email: user.email || "",
-              name:  user.nick  || "",
-              custom: { uid: user.uid, plan: planId, points: String(plan.points) },
-            },
-            product_options: {
-              redirect_url: successUrl,
-              receipt_link_url: successUrl,
-              receipt_button_text: "사이트로 돌아가기",
-              receipt_thank_you_note: `${plan.name} 충전 완료! ${plan.points}P가 자동 지급됩니다.`,
-            },
-          },
-          relationships: {
-            store:   { data: { type: "stores",   id: String(LS_CONFIG.storeId) } },
-            variant: { data: { type: "variants", id: String(plan.variantId)   } },
-          },
-        },
-      }),
-    });
+  // Lemon Squeezy 직접 결제 링크 (API 키 불필요)
+  // 이메일 자동 입력 + 성공 후 리다이렉트
+  const checkoutUrl = `https://npercontentslab.lemonsqueezy.com/checkout/buy/${plan.variantId}`
+    + `?checkout[email]=${encodeURIComponent(user.email || "")}`
+    + `&checkout[custom][uid]=${user.uid}`
+    + `&checkout[custom][plan]=${planId}`
+    + `&checkout[custom][points]=${plan.points}`
+    + `&redirect_url=${successUrl}`;
 
-    const data = await res.json();
-    const url  = data?.data?.attributes?.url;
-    if (url) { window.location.href = url; }
-    else { console.error("LS 오류:", data); alert("결제창 연결 오류. 다시 시도해주세요."); }
-  } catch (e) {
-    console.error("결제 오류:", e);
-    alert("결제 연결 중 오류가 발생했습니다.");
-  }
+  window.location.href = checkoutUrl;
 }
 
 /* ══════════════════════════════════════════════════════════
