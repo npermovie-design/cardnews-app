@@ -440,7 +440,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
                   return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"14px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
                     <div style={{fontSize:22,marginBottom:6}}>{s.icon}</div>
                     <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                    <div style={{fontSize:11,color:muted,marginTop:3,lineHeight:1.5}}>{s.desc}</div>
+                    <div style={{fontSize:10,color:muted,marginTop:1}}>{s.desc}</div>
                   </button>;
                 })}
               </div>
