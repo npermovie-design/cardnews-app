@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
-import YtBlogGenerator from "./YtBlogGenerator";
+import NewsBlogGenerator from "./NewsBlogGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -166,14 +166,16 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
           <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
           <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
           <Item id="blog_yt_blog" label="유튜브로 글쓰기" icon="📺" indent />
+          <Item id="blog_news"   label="뉴스로 글쓰기"   icon="📰" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="SNS 이미지 만들기" icon="🖼" open={cardOpen}
+        <Group label="카드뉴스" icon="🃏" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
+          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
+          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -245,8 +247,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", hidden: true,   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -256,7 +258,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
           <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.filter(m => !m.hidden).map(m => (
+          {MENUS.map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
@@ -276,11 +278,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     );
   }
 
-  // 유튜브로 글쓰기 (반드시 blog_ startsWith보다 먼저!)
-  if (aiMenu === "blog_yt_blog") {
+  // 뉴스로 글쓰기
+  if (aiMenu === "blog_news") {
     return (
-      <div key="yt_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <YtBlogGenerator theme={theme} embedded />
+      <div key="news_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <NewsBlogGenerator theme={theme} embedded />
       </div>
     );
   }
@@ -444,7 +446,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 /* ════════════════════════════════════════════════════════════
    PricingPage
 ════════════════════════════════════════════════════════════ */
-export function PricingPage({ navigate, C, user, onLogin }) {
+export function PricingPage({ navigate, C }) {
   const PLANS = [
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
@@ -519,14 +521,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             </div>
 
             <button
-              onClick={() => {
-                if (plan.id === "free") { navigate("ai"); return; }
-                if (!user) { if (onLogin) onLogin(); return; }
-                const varMap = { basic:"cbb325cb-84e0-4e6d-b996-c66c8611bd11", pro:"e6cf24e6-4807-45bb-a1e2-9db5d56b3b08", premium:"fd18d32d-b8af-45aa-9b78-0902b139f127" };
-                window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + varMap[plan.id];
-              }}
+              onClick={() => plan.id === "free" ? navigate("cardnews") : navigate("contact")}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
-              {plan.id !== "free" && !user ? "로그인 후 충전" : plan.btnLabel}
+              {plan.btnLabel}
             </button>
           </div>
         ))}
