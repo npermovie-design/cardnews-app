@@ -165,6 +165,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
           <Item id="blog_insta"   label="인스타그램 캡션" icon="📱" indent />
           <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
           <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
+          <Item id="blog_yt_blog" label="유튜브로 글쓰기" icon="📺" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
@@ -520,12 +521,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <button
               onClick={() => {
                 if (plan.id === "free") { navigate("ai"); return; }
-                const varMap = {
-                  basic:   "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
-                  pro:     "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
-                  premium: "fd18d32d-b8af-45aa-9b78-0902b139f127",
-                };
                 if (!user) { if (onLogin) onLogin(); return; }
+                const varMap = { basic:"cbb325cb-84e0-4e6d-b996-c66c8611bd11", pro:"e6cf24e6-4807-45bb-a1e2-9db5d56b3b08", premium:"fd18d32d-b8af-45aa-9b78-0902b139f127" };
                 window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + varMap[plan.id];
               }}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>

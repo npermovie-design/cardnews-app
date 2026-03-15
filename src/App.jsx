@@ -263,9 +263,10 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
+                <DropItem id="ai" icon="📺" label="유튜브로 글쓰기" onClick={() => user ? navigateAi("blog_yt_blog") : setShowAuth(true)} />
+                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => user ? navigateAi("blog_naver") : setShowAuth(true)} />
                 <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => user ? navigateAi("shorts") : setShowAuth(true)} />
               </DropMenu>
             )}
           </div>

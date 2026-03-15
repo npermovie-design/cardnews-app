@@ -881,7 +881,7 @@ export function PlannerPanel(props) {
             )}
           </div>
 
-          <div style={{flex:1, padding:"16px", overflowY:"auto"}}>
+          <div style={{flex:1, padding:"24px 28px", overflowY:"auto"}}>
             {!parsedPlan && !planLoading && (
               <div style={{height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, color:textMuted, textAlign:"center", padding:"40px 20px"}}>
                 <div style={{fontSize:36}}>📋</div>
@@ -1234,15 +1234,11 @@ function PageMake(props) {
 
       {makeStep === 1 && (
         <div>
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
-            <div style={{fontSize:14, fontWeight:800, color:text}}>주제를 입력하세요</div>
-            <button onClick={onShowPlanner}
-              style={{padding:"6px 14px", borderRadius:7, border:"1px solid rgba(99,102,241,0.3)", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.08)", color:accentTxt, fontSize:11, fontWeight:700, cursor:"pointer"}}>
-              ✨ 기획 AI 사용하기
-            </button>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
-            <div style={{fontSize:10, color:sub, marginBottom:7, fontWeight:700}}>예시 주제</div>
+            <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:12}}>
               {EXAMPLES.map(function(ex) {
                 var isC = topic === ex.text;
@@ -1327,121 +1323,31 @@ function PageMake(props) {
       )}
 
       {makeStep === 3 && (
-        <div style={{textAlign:"center", padding:"40px 20px"}}>
-          <style>{`
-            @keyframes cn-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-            @keyframes cn-float { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-14px) rotate(3deg)} }
-            @keyframes cn-float2 { 0%,100%{transform:translateY(0) rotate(5deg)} 50%{transform:translateY(-10px) rotate(-5deg)} }
-            @keyframes cn-float3 { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-18px) rotate(8deg)} }
-            @keyframes cn-pulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} }
-            @keyframes cn-bar { from{width:0%} to{width:100%} }
-            @keyframes cn-dot { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
-            @keyframes cn-fadein { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-          `}</style>
-
+        <div style={{textAlign:"center", padding:"32px 0"}}>
           {loading && (
-            <div style={{animation:"cn-fadein 0.4s ease"}}>
-              {/* 카드 3장 떠다니는 애니메이션 */}
-              <div style={{position:"relative", height:160, marginBottom:28, display:"flex", alignItems:"center", justifyContent:"center"}}>
-                {/* 뒤 카드 */}
-                <div style={{position:"absolute", width:100, height:130, borderRadius:14, background:"linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2))", border:"1px solid rgba(99,102,241,0.3)", left:"calc(50% - 90px)", top:15, animation:"cn-float2 2.8s ease-in-out infinite", animationDelay:"0.3s"}}>
-                  <div style={{padding:"12px 10px"}}>
-                    <div style={{height:6, borderRadius:3, background:"rgba(99,102,241,0.4)", marginBottom:6, width:"70%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", marginBottom:4, width:"90%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", marginBottom:4, width:"80%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.10)", width:"60%"}}/>
-                  </div>
-                </div>
-                {/* 앞 카드 */}
-                <div style={{position:"absolute", width:100, height:130, borderRadius:14, background:"linear-gradient(135deg,rgba(139,92,246,0.35),rgba(236,72,153,0.25))", border:"1px solid rgba(139,92,246,0.4)", right:"calc(50% - 90px)", top:15, animation:"cn-float3 3.2s ease-in-out infinite", animationDelay:"0.6s"}}>
-                  <div style={{padding:"12px 10px"}}>
-                    <div style={{height:6, borderRadius:3, background:"rgba(236,72,153,0.5)", marginBottom:6, width:"75%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", marginBottom:4, width:"85%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.10)", width:"65%"}}/>
-                  </div>
-                </div>
-                {/* 메인 카드 */}
-                <div style={{position:"relative", zIndex:2, width:110, height:140, borderRadius:16, background:"linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow:"0 12px 40px rgba(99,102,241,0.45)", animation:"cn-float 2.4s ease-in-out infinite"}}>
-                  <div style={{padding:"16px 12px"}}>
-                    <div style={{height:8, borderRadius:4, background:"rgba(255,255,255,0.8)", marginBottom:8, width:"80%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.4)", marginBottom:5, width:"95%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.4)", marginBottom:5, width:"85%"}}/>
-                    <div style={{height:4, borderRadius:2, background:"rgba(255,255,255,0.3)", width:"70%"}}/>
-                    <div style={{marginTop:12, height:22, borderRadius:6, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center"}}>
-                      <div style={{fontSize:9, color:"rgba(255,255,255,0.8)", fontWeight:700}}>핵심 문구</div>
-                    </div>
-                  </div>
-                  {/* 스핀 아이콘 */}
-                  <div style={{position:"absolute", top:-10, right:-10, width:28, height:28, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 12px rgba(0,0,0,0.2)"}}>
-                    <div style={{width:14, height:14, border:"2.5px solid transparent", borderTopColor:"#6366f1", borderRightColor:"#8b5cf6", borderRadius:"50%", animation:"cn-spin 0.8s linear infinite"}}/>
-                  </div>
-                </div>
-              </div>
-
-              {/* 단계별 체크 */}
-              <div style={{marginBottom:20, display:"inline-block", textAlign:"left"}}>
-                {[
-                  {label:"주제 분석 중", done:true},
-                  {label:`${cnt}장 슬라이드 기획 중`, done:true},
-                  {label:"문구 AI 작성 중", done:false},
-                ].map(function(step, i) {
-                  return (
-                    <div key={i} style={{display:"flex", alignItems:"center", gap:10, marginBottom:10, animation:"cn-fadein 0.5s ease", animationDelay:(i*0.2)+"s", animationFillMode:"both"}}>
-                      <div style={{width:22, height:22, borderRadius:"50%", background: step.done ? "#6366f1" : "rgba(99,102,241,0.15)", border: step.done ? "none" : "2px solid rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0}}>
-                        {step.done
-                          ? <span style={{fontSize:11, color:"#fff"}}>✓</span>
-                          : <div style={{width:10, height:10, border:"2px solid rgba(99,102,241,0.5)", borderTopColor:"#6366f1", borderRadius:"50%", animation:"cn-spin 0.8s linear infinite"}}/>
-                        }
-                      </div>
-                      <span style={{fontSize:13, color: step.done ? text : muted, fontWeight: step.done ? 600 : 400}}>{step.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* 프로그레스 바 */}
-              <div style={{width:"100%", height:4, background:"rgba(99,102,241,0.15)", borderRadius:2, overflow:"hidden", marginBottom:12}}>
-                <div style={{height:"100%", background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)", borderRadius:2, animation:"cn-bar 3s ease-in-out infinite"}}/>
-              </div>
-
-              {/* 점 애니메이션 */}
-              <div style={{display:"flex", justifyContent:"center", gap:5}}>
-                {[0,1,2].map(function(i) {
-                  return <div key={i} style={{width:7, height:7, borderRadius:"50%", background:"#6366f1", animation:"cn-dot 1.2s ease-in-out infinite", animationDelay:(i*0.2)+"s"}}/>;
-                })}
-              </div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>⚙️</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
+              <div style={{fontSize:12, color:muted}}>{cnt}장 생성 중</div>
             </div>
           )}
-
           {!loading && err && (
-            <div style={{animation:"cn-fadein 0.3s ease"}}>
-              <div style={{fontSize:40, marginBottom:12}}>😢</div>
-              <div style={{fontSize:14, color:errClr, marginBottom:16, lineHeight:1.6}}>{err}</div>
-              {(err.includes("초과")||err.includes("사용했어요")) ? (
-                <button onClick={function(){ if(props.onPointsLow){props.onPointsLow();return;} window.location.href="/#pricing"; }}
-                  style={{padding:"13px 32px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800, boxShadow:"0 4px 20px rgba(99,102,241,0.3)", marginBottom:10, display:"block", width:"100%"}}>
-                  {user ? "💎 포인트 충전하기" : "🚀 무료 회원가입하기"}
-                </button>
-              ) : (
-                <button onClick={function() { setMakeStep(2); }}
-                  style={{padding:"11px 28px", borderRadius:10, border:"1px solid "+bdr,
-                    background:"transparent", color:muted, fontSize:14, cursor:"pointer", fontWeight:600}}>
-                  ← 다시 시도
-                </button>
-              )}
+            <div>
+              <div style={{fontSize:12, color:errClr, marginBottom:12}}>{err}</div>
+              <button onClick={function() { setMakeStep(2); }}
+                style={{padding:"9px 20px", borderRadius:8, border:"1px solid "+bdr,
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>다시 시도</button>
             </div>
           )}
-
           {!loading && !err && (
-            <div style={{animation:"cn-fadein 0.4s ease"}}>
-              <div style={{fontSize:52, marginBottom:16, animation:"cn-pulse 1.5s ease-in-out 3"}}>🎉</div>
-              <div style={{fontSize:20, fontWeight:900, marginBottom:8, color:text}}>카드뉴스 생성 완료!</div>
-              <div style={{fontSize:14, color:muted, marginBottom:28}}>{tname} · {slides.length}장</div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>🎉</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>생성 완료!</div>
+              <div style={{fontSize:12, color:muted, marginBottom:16}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"15px 44px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:16, fontWeight:800,
-                  boxShadow:"0 8px 28px rgba(99,102,241,0.45)", animation:"cn-pulse 2s ease-in-out infinite"}}>
-                ✨ 편집하러 가기 →
+                style={{padding:"10px 28px", borderRadius:9, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800}}>
+                편집하러 가기 →
               </button>
             </div>
           )}
