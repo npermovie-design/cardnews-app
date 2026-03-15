@@ -180,13 +180,11 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
             const t = pm[1].replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").trim();
             if (t.length > 25) pTags.push(t);
           }
-          const bodyText = pTags.slice(0, 40).join("
-");
+          const bodyText = pTags.slice(0, 40).join("\n");
           const title = titleM ? titleM[1].trim() : "기사 제목";
           const desc  = descM  ? descM[1].trim()  : "";
           const site  = siteM  ? siteM[1].trim()  : new URL(url).hostname;
-          const content = (desc + "
-" + bodyText).trim();
+          const content = (desc + "\n" + bodyText).trim();
           if (content.length > 80) {
             setNewsInfo({ title, siteName: site, content, contentLength: content.length, url });
             setFetchStatus("");
