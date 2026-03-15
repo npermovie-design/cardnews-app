@@ -53,24 +53,26 @@ var EXAMPLES = [
 
 
 var KO_FONTS = [
-  { key:"pretendard",     label:"프리텐다드",   css:"Pretendard, 'Apple SD Gothic Neo', sans-serif",     url:"https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" },
-  { key:"noto_sans",      label:"Noto Sans KR", css:"'Noto Sans KR', sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" },
-  { key:"nanum_gothic",   label:"나눔고딕",      css:"'Nanum Gothic', sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" },
-  { key:"nanum_myeongjo", label:"나눔명조",      css:"'Nanum Myeongjo', serif",                           url:"https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" },
-  { key:"black_han",      label:"검정한산스",    css:"'Black Han Sans', sans-serif",                      url:"https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" },
-  { key:"jua",            label:"주아체",        css:"Jua, sans-serif",                                   url:"https://fonts.googleapis.com/css2?family=Jua&display=swap" },
-  { key:"do_hyeon",       label:"도현체",        css:"'Do Hyeon', sans-serif",                            url:"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" },
-  { key:"gaegu",          label:"가에굴체",      css:"Gaegu, cursive",                                    url:"https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" },
-  { key:"default",        label:"기본 고딕",     css:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",   url:null },
+  { key:"pretendard",     label:"프리텐다드",   css:"Pretendard,'Apple SD Gothic Neo',sans-serif",      url:"https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" },
+  { key:"noto_sans",      label:"Noto Sans KR", css:"'Noto Sans KR',sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" },
+  { key:"nanum_gothic",   label:"나눔고딕",      css:"'Nanum Gothic',sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" },
+  { key:"nanum_myeongjo", label:"나눔명조",      css:"'Nanum Myeongjo',serif",                           url:"https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" },
+  { key:"black_han",      label:"검정한산스",    css:"'Black Han Sans',sans-serif",                      url:"https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" },
+  { key:"jua",            label:"주아체",        css:"Jua,sans-serif",                                   url:"https://fonts.googleapis.com/css2?family=Jua&display=swap" },
+  { key:"do_hyeon",       label:"도현체",        css:"'Do Hyeon',sans-serif",                            url:"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" },
+  { key:"gaegu",          label:"가에굴체",      css:"Gaegu,cursive",                                    url:"https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" },
+  { key:"default",        label:"기본 고딕",     css:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",  url:null },
 ];
 function loadFontSafe(key) {
-  if (typeof document === "undefined") { return; }
+  if (typeof document === "undefined") return;
   var found = null;
-  for (var i = 0; i < KO_FONTS.length; i++) { if (KO_FONTS[i].key === key) { found = KO_FONTS[i]; break; } }
-  if (!found || !found.url) { return; }
-  if (document.head.querySelector('link[data-font="' + key + '"]')) { return; }
+  for (var fi = 0; fi < KO_FONTS.length; fi++) { if (KO_FONTS[fi].key === key) { found = KO_FONTS[fi]; break; } }
+  if (!found || !found.url) return;
+  if (document.querySelector('link[data-font="' + key + '"]')) return;
   var link = document.createElement("link");
-  link.rel = "stylesheet"; link.href = found.url; link.setAttribute("data-font", key);
+  link.rel = "stylesheet";
+  link.href = found.url;
+  link.setAttribute("data-font", key);
   document.head.appendChild(link);
 }
 
@@ -121,7 +123,9 @@ function consumeOne(user) {
   try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e) {}
   var su = getAiUsage();
   var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
-  setAiUsage(Object.assign({}, su, {[sk]: (su[sk] || 0) + 1}));
+  var snu = Object.assign({}, su);
+  snu[sk] = (su[sk] || 0) + 1;
+  setAiUsage(snu);
 }
 
 // ─── 보관함 ──────────────────────────────────────────────────────────────────
@@ -540,34 +544,28 @@ function LayoutTab(props) {
 // ─── 텍스트 탭 ────────────────────────────────────────────────────────────────
 function TextTab(props) {
   var gs = props.gs; var updGs = props.updGs;
-  var _curKey = gs._fontKey || "default";
-  var _curFont = null;
-  for (var _fi = 0; _fi < KO_FONTS.length; _fi++) { if (KO_FONTS[_fi].key === _curKey) { _curFont = KO_FONTS[_fi]; break; } }
-  if (!_curFont) { _curFont = KO_FONTS[KO_FONTS.length - 1]; }
-  useEffect(function() { loadFontSafe(_curKey); }, [_curKey]);
+  var _fkey = gs._fontKey || "default";
+  var _ff = null;
+  for (var _fi = 0; _fi < KO_FONTS.length; _fi++) { if (KO_FONTS[_fi].key === _fkey) { _ff = KO_FONTS[_fi]; break; } }
+  if (!_ff) _ff = KO_FONTS[KO_FONTS.length - 1];
+  useEffect(function() { loadFontSafe(_fkey); }, [_fkey]);
   return (
     <div>
       <FieldLabel>폰트</FieldLabel>
-      <select value={_curKey}
-        onChange={function(e) {
+      <select value={_fkey} onChange={function(e) {
           var k = e.target.value;
           var found = null;
           for (var i = 0; i < KO_FONTS.length; i++) { if (KO_FONTS[i].key === k) { found = KO_FONTS[i]; break; } }
-          if (!found) { return; }
+          if (!found) return;
           loadFontSafe(k);
           updGs("fontFamily", found.css);
           updGs("_fontKey", k);
         }}
-        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
-          borderRadius:8, padding:"8px 10px", color:"#fff", fontSize:12, outline:"none", cursor:"pointer", marginBottom:8}}>
-        {KO_FONTS.map(function(f) {
-          return <option key={f.key} value={f.key} style={{background:"#1c1c2e"}}>{f.label}</option>;
-        })}
+        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"7px 10px", color:"#fff", fontSize:12, outline:"none", cursor:"pointer", marginBottom:8}}>
+        {KO_FONTS.map(function(f) { return <option key={f.key} value={f.key} style={{background:"#1c1c2e"}}>{f.label}</option>; })}
       </select>
-      <div style={{padding:"8px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10,
-        fontFamily:_curFont.css, fontSize:13, color:"rgba(255,255,255,0.7)", textAlign:"center"}}>
-        가나다라 ABC 123 &nbsp;
-        <span style={{fontSize:10, color:"rgba(255,255,255,0.3)"}}>({_curFont.label})</span>
+      <div style={{padding:"7px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10, fontFamily:_ff.css, fontSize:13, color:"rgba(255,255,255,0.7)", textAlign:"center"}}>
+        가나다라 ABC 123 <span style={{fontSize:10, color:"rgba(255,255,255,0.3)"}}>({_ff.label})</span>
       </div>
       <FieldLabel>제목 굵기</FieldLabel>
       <div style={{display:"flex", gap:3, marginBottom:10}}>
@@ -1331,8 +1329,8 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", gap:20, minHeight:380}}>
-          <div style={{width:290, flexShrink:0, display:"flex", flexDirection:"column"}}>
+        <div style={{display:"flex", gap:20, minHeight:360}}>
+          <div style={{width:286, flexShrink:0, display:"flex", flexDirection:"column"}}>
             <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
             <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
             <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
@@ -1342,8 +1340,7 @@ function PageMake(props) {
                   <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
                     style={{borderRadius:9, overflow:"hidden", cursor:"pointer",
                       border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
-                      boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none",
-                      transform: isC ? "scale(1.04)" : "scale(1)", transition:"transform 0.15s"}}>
+                      boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none"}}>
                     <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
                   </div>
                 );
@@ -1358,9 +1355,8 @@ function PageMake(props) {
                   ← 이전
                 </button>
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
-                  style={{padding:"11px 26px", borderRadius:10, border:"none", cursor:"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
-                    fontSize:14, fontWeight:800, boxShadow:"0 6px 20px rgba(99,102,241,0.3)"}}>
+                  style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
                   {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
                 </button>
               </div>
@@ -1369,28 +1365,14 @@ function PageMake(props) {
           <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
             background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
             {selPreset ? (
-              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
-                <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>✔ {selPreset.label}</div>
-                <PresetCanvas dp={selPreset} size={240} isC={true} onClick={function() {}}/>
-                <div style={{display:"flex", gap:16, fontSize:12, color:muted, textAlign:"center"}}>
-                  <div>
-                    <div style={{fontWeight:700, color:text, marginBottom:2}}>{selPreset.textAlign === "center" ? "가운데" : "왼쪽"}</div>
-                    <div>정렬</div>
-                  </div>
-                  <div>
-                    <div style={{fontWeight:700, color:text, marginBottom:2}}>{selPreset.hlMode === "pill" ? "뱃지" : selPreset.hlMode === "underline" ? "밑줄" : selPreset.hlMode === "box" ? "박스" : "없음"}</div>
-                    <div>하이라이트</div>
-                  </div>
-                  <div>
-                    <div style={{fontWeight:700, color:text, marginBottom:2}}>{selPreset.titleSize}px</div>
-                    <div>제목 크기</div>
-                  </div>
-                </div>
+              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+                <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>{"✔ " + selPreset.label}</div>
+                <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
               </div>
             ) : (
               <div style={{textAlign:"center", opacity:0.4}}>
-                <div style={{fontSize:40, marginBottom:10}}>🖼</div>
-                <div style={{fontSize:14, color:muted, lineHeight:1.9}}>왼쪽에서 디자인을<br/>선택하면 크게 보여요</div>
+                <div style={{fontSize:36, marginBottom:8}}>🖼</div>
+                <div style={{fontSize:13, color:muted}}>왼쪽에서 디자인을 선택하면<br/>여기 크게 보여요</div>
               </div>
             )}
           </div>
@@ -1400,28 +1382,10 @@ function PageMake(props) {
       {makeStep === 3 && (
         <div style={{textAlign:"center", padding:"32px 0"}}>
           {loading && (
-            <div style={{width:"100%", maxWidth:420, textAlign:"center"}}>
-              <div style={{fontSize:72, marginBottom:16, display:"inline-block", animation:"cn-float 3s ease-in-out infinite", filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏✨</div>
-              <div style={{fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px"}}>AI가 카드뉴스를 만들고 있어요</div>
-              <div style={{fontSize:14, color:muted, marginBottom:24}}>{topic} · {cnt}장 구성 중</div>
-              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left", maxWidth:280, margin:"0 auto 20px"}}>
-                {[{l:"주제 분석 중...",d:true,a:false},{l:"슬라이드 구성 기획...",d:true,a:false},{l:"문구 생성 중...",d:false,a:true},{l:"마무리 다듬는 중...",d:false,a:false}].map(function(s,i) {
-                  return (
-                    <div key={i} style={{display:"flex", alignItems:"center", gap:10, opacity:s.d||s.a ? 1 : 0.3}}>
-                      <div style={{width:20, height:20, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10,
-                        background:s.d ? "rgba(74,222,128,0.15)" : s.a ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)",
-                        border:s.d ? "2px solid #4ade80" : s.a ? "2px solid #6366f1" : "2px solid rgba(255,255,255,0.1)"}}>
-                        {s.d ? <span style={{color:"#4ade80"}}>✓</span> : s.a ? <div style={{width:8, height:8, borderRadius:"50%", border:"2px solid #6366f1", borderTopColor:"transparent", animation:"cn-spin 0.8s linear infinite"}}/> : null}
-                      </div>
-                      <span style={{fontSize:13, color:s.d ? "#4ade80" : s.a ? text : muted, fontWeight:s.a ? 700 : 400}}>{s.l}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{height:4, borderRadius:4, background:"rgba(255,255,255,0.08)", overflow:"hidden", maxWidth:280, margin:"0 auto 10px"}}>
-                <div style={{height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)", animation:"cn-progress 8s ease-out forwards"}}/>
-              </div>
-              <div style={{fontSize:12, color:muted}}>보통 7~11초 소요</div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>⚙️</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
+              <div style={{fontSize:12, color:muted}}>{cnt}장 생성 중</div>
             </div>
           )}
           {!loading && err && (
@@ -1433,14 +1397,13 @@ function PageMake(props) {
             </div>
           )}
           {!loading && !err && (
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:60, marginBottom:14, display:"inline-block", animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
-              <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>생성 완료!</div>
-              <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}장</div>
+            <div>
+              <div style={{fontSize:32, marginBottom:12}}>🎉</div>
+              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>생성 완료!</div>
+              <div style={{fontSize:12, color:muted, marginBottom:16}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
-                  fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
+                style={{padding:"10px 28px", borderRadius:9, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1567,7 +1530,7 @@ export function CardNewsApp(props) {
       setIdx(0); setSted({}); setBgIs({});
       if (selPreset) { applyPreset(selPreset); }
       setPage("edit"); consumeOne(user);
-      if (user && user.uid) { changePoints(user.uid, -10, "카드뉴스 생성").catch(function() {}); }
+      if (user && user.uid) { changePoints(user.uid, -10, "카드뉴스 생성").catch(function(e) {}); }
     } catch(e3) { setErr("오류: " + e3.message); }
     finally { setLoading(false); }
   }
@@ -1624,10 +1587,6 @@ export function CardNewsApp(props) {
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
-    "@keyframes cn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}" +
-    "@keyframes cn-progress{from{width:0%}to{width:100%}}" +
-    "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
-    "@keyframes cn-popin{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +

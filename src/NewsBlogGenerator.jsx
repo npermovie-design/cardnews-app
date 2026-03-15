@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getAiUsage, setAiUsage, changePoints } from "./storage";
+import { changePoints, getAiUsage, setAiUsage } from "./storage";
 
 
 /* ── 마크다운 → JSX 렌더러 ── */
@@ -68,7 +68,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
     // 일반 문단
     else if (line.trim()) {
       elements.push(
-        <p key={i} style={{margin:"6px 0",lineHeight:2.0,fontSize:15,color:textColor}}>
+        <p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>
           {inlineFormat(line, accentColor)}
         </p>
       );
@@ -141,64 +141,26 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
     if (!url.trim()) return;
     setFetchErr(""); setFetchStatus("기사 내용 불러오는 중...");
     setNewsInfo(null); setResult("");
-
-    // 1차: Vercel API 시도
     try {
       const res = await fetch(`/api/news?url=${encodeURIComponent(url)}`, {
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(20000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (!data.error && data.method !== "none" && data.content?.length > 50) {
-          setNewsInfo(data);
-          setFetchStatus("");
-          if (data.contentLength < 200) setFetchErr("ℹ️ 일부 내용만 가져왔어요. 그래도 글 작성은 가능해요.");
-          return;
-        }
+      if (!res.ok) throw new Error(`오류: ${res.status}`);
+      const data = await res.json();
+      if (data.error || data.method === "none") {
+        setFetchErr("⚠️ " + (data.error || "기사를 불러오지 못했어요."));
+        setFetchStatus("");
+        return;
       }
-    } catch(e) {}
-
-    // 2차: allOrigins 프록시
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const res2 = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
-      if (res2.ok) {
-        const json2 = await res2.json();
-        const html = json2.contents || "";
-        if (html.length > 500) {
-          // OG 메타에서 제목/설명 추출
-          const titleM = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
-                      || html.match(/<title[^>]*>([^<]+)<\/title>/i);
-          const descM  = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
-                      || html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
-          const siteM  = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i);
-          // 본문 p태그
-          const pTags = [];
-          const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-          let pm;
-          while ((pm = pRe.exec(html)) !== null) {
-            const t = pm[1].replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").trim();
-            if (t.length > 25) pTags.push(t);
-          }
-          const bodyText = pTags.slice(0, 40).join("\n");
-          const title = titleM ? titleM[1].trim() : "기사 제목";
-          const desc  = descM  ? descM[1].trim()  : "";
-          const site  = siteM  ? siteM[1].trim()  : new URL(url).hostname;
-          const content = (desc + "\n" + bodyText).trim();
-          if (content.length > 80) {
-            setNewsInfo({ title, siteName: site, content, contentLength: content.length, url });
-            setFetchStatus("");
-            setFetchErr("ℹ️ 일부 내용만 가져왔어요. 그래도 글 작성은 가능해요.");
-            return;
-          }
-        }
+      setNewsInfo(data);
+      setFetchStatus("");
+      if (data.contentLength < 200) {
+        setFetchErr("ℹ️ 일부 내용만 가져왔어요. 그래도 글 작성은 가능해요.");
       }
-    } catch(e2) {}
-
-    // 3차: URL만으로 AI 직접 생성 (폴백)
-    setFetchStatus("");
-    setFetchErr("");
-    setNewsInfo({ title: url, siteName: new URL(url).hostname, content: "", contentLength: 0, url, urlOnly: true });
+    } catch (e) {
+      setFetchStatus("");
+      setFetchErr("⚠️ 기사 불러오기 실패: " + e.message);
+    }
   };
 
   /* ── 블로그 글 생성 ── */
@@ -210,12 +172,8 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
     const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"핵심 요약",sns:"SNS 콘텐츠"}[blogType];
 
-    const articleSection = newsInfo.urlOnly
-      ? `[뉴스 기사 URL]
-${url}
-
-위 URL의 기사 내용을 기반으로 블로그 글을 작성해주세요. URL에서 유추할 수 있는 주제와 맥락을 활용하세요.`
-      : `[뉴스 기사 정보]
+    const articleSection = `
+[뉴스 기사 정보]
 제목: ${newsInfo.title}
 출처: ${newsInfo.siteName}
 URL: ${url}
@@ -298,13 +256,7 @@ ${articleSection}
         }
       }
     } catch { setGenErr("생성 중 오류가 발생했습니다."); }
-    finally {
-      setGenerating(false);
-      const usageData = getAiUsage();
-      const ukey = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
-      setAiUsage({ ...usageData, [ukey]: (usageData[ukey] || 0) + 1 });
-      if (user && user.uid) { try { await changePoints(user.uid, -10, "뉴스 블로그 생성"); } catch(e3){} }
-    }
+    finally { setGenerating(false); }
   };
 
   const BLOG_TYPES = [
@@ -423,8 +375,8 @@ ${articleSection}
                       style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${isA?accentRaw:border}`,
                         background:isA?"rgba(99,102,241,0.12)":inputBg,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
                       <div style={{fontSize:22,marginBottom:6}}>{bt.icon}</div>
-                      <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{bt.label}</div>
-                      <div style={{fontSize:12,color:muted,marginTop:3}}>{bt.desc}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{bt.label}</div>
+                      <div style={{fontSize:11,color:muted,marginTop:2}}>{bt.desc}</div>
                     </button>
                   );
                 })}
@@ -493,7 +445,7 @@ ${articleSection}
                 boxShadow:"0 4px 20px rgba(239,68,68,0.3)",transition:"all 0.2s"}}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : (<>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.75,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 7px",borderRadius:8}}>💎 10P</span></>)}
+                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
           </div>
@@ -521,7 +473,7 @@ ${articleSection}
             </div>
           </div>
         )}
-        <div style={{flex:1,overflowY:"auto",padding:result?"28px 36px":"0"}}>
+        <div style={{flex:1,overflowY:"auto",padding:result?"28px 32px":"0"}}>
           {!result && !generating && (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"48px 32px",textAlign:"center"}}>
               <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>📰</div>

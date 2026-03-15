@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { changePoints, getAiUsage, setAiUsage } from "./storage";
 
 const API_KEY = "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";
 
@@ -39,7 +40,7 @@ function transcriptToText(items) {
 /* ══════════════════════════════════════════════════════════
    메인 컴포넌트
 ══════════════════════════════════════════════════════════ */
-export default function YtBlogGenerator({ theme, embedded }) {
+export default function YtBlogGenerator({ theme, embedded, user }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
 
   /* 색상 */
@@ -281,8 +282,16 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
           }
         }
       }
-    } catch { setGenErr("생성 중 오류가 발생했습니다."); }
-    finally { setGenerating(false); }
+    } catch(e) { setGenErr("생성 중 오류가 발생했습니다."); }
+    finally {
+      setGenerating(false);
+      var _u = getAiUsage();
+      var _k = user ? ("member_" + (user.uid || "u")) : "guest";
+      var _nu = Object.assign({}, _u);
+      _nu[_k] = (_u[_k] || 0) + 1;
+      setAiUsage(_nu);
+      if (user && user.uid) { changePoints(user.uid, -10, "유튜브 블로그 생성").catch(function(e) {}); }
+    }
   };
 
   const handleCopy = () => {
