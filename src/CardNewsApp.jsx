@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, setLocalUser, POINTS } from "./storage";
+import { changePoints, setLocalUser, getAiUsage, setAiUsage } from "./storage";
 
 function loadJSZip() {
   return new Promise(function(resolve, reject) {
@@ -51,6 +51,31 @@ var EXAMPLES = [
   {label:"독서법",        text:"성인 자기계발 독서법"},
 ];
 
+var KO_FONTS = [
+  { key:"pretendard",    label:"프리텐다드",   css:"Pretendard",          url:"https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" },
+  { key:"noto_sans",     label:"Noto Sans KR", css:"Noto Sans KR",        url:"https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" },
+  { key:"nanum_gothic",  label:"나눔고딕",      css:"Nanum Gothic",        url:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" },
+  { key:"nanum_myeongjo",label:"나눔명조",      css:"Nanum Myeongjo",      url:"https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" },
+  { key:"black_han",     label:"검정한산스",    css:"Black Han Sans",      url:"https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" },
+  { key:"jua",           label:"주아체",        css:"Jua",                 url:"https://fonts.googleapis.com/css2?family=Jua&display=swap" },
+  { key:"do_hyeon",      label:"도현체",        css:"Do Hyeon",            url:"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" },
+  { key:"gaegu",         label:"가에굴",        css:"Gaegu",               url:"https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" },
+  { key:"sans",          label:"기본 고딕",     css:"sans-serif",          url:null },
+];
+
+// 폰트 동적 로드
+var _loadedFonts = {};
+function loadFont(fontKey) {
+  var f = KO_FONTS.find(function(x) { return x.key === fontKey; });
+  if (!f || !f.url || _loadedFonts[fontKey]) { return; }
+  _loadedFonts[fontKey] = true;
+  var link = document.createElement("link");
+  link.rel = "stylesheet"; link.href = f.url;
+  document.head.appendChild(link);
+}
+// 기본 폰트 미리 로드
+["pretendard","noto_sans","nanum_gothic"].forEach(loadFont);
+
 var PROMPT_EXAMPLES = [
   {
     label: "기본형",
@@ -96,6 +121,10 @@ function consumeOne(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
   u[k] = (u[k] || 0) + 1;
   try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e) {}
+  // storage.js와 동기화
+  var storageU = getAiUsage();
+  var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
+  setAiUsage({ ...storageU, [sk]: (storageU[sk] || 0) + 1 });
 }
 
 // ─── 보관함 ──────────────────────────────────────────────────────────────────
@@ -361,7 +390,7 @@ function PresetCanvas(props) {
     <div onClick={props.onClick}
       style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #6366f1" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
-      <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
+      <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.8))", padding:"14px 6px 6px", fontSize:10, fontWeight:700, color:"#fff", textAlign:"center"}}>
         {dp.label}
         {isC && <span style={{marginLeft:4, color:"#a5b4fc"}}>✓</span>}
       </div>
@@ -514,20 +543,25 @@ function LayoutTab(props) {
 // ─── 텍스트 탭 ────────────────────────────────────────────────────────────────
 function TextTab(props) {
   var gs = props.gs; var updGs = props.updGs;
-  var fonts = ["sans-serif","Malgun Gothic","Nanum Gothic","Georgia","Arial"];
+  var curFont = KO_FONTS.find(function(f) { return f.css === (gs.fontFamily || "sans-serif"); }) || KO_FONTS[0];
   return (
     <div>
       <FieldLabel>폰트</FieldLabel>
-      <div style={{display:"flex", flexWrap:"wrap", gap:4, marginBottom:10}}>
-        {fonts.map(function(f) {
-          var isC = (gs.fontFamily || "sans-serif") === f;
-          return (
-            <button key={f} onClick={function() { updGs("fontFamily", f); }}
-              style={{padding:"4px 9px", borderRadius:16, border:"1px solid rgba(255,255,255,0.12)", background: isC ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.05)", color: isC ? "#fff" : "rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer"}}>
-              {f}
-            </button>
-          );
+      <select value={curFont.key}
+        onChange={function(e) {
+          var f = KO_FONTS.find(function(x) { return x.key === e.target.value; });
+          if (f) { loadFont(f.key); updGs("fontFamily", f.css); }
+        }}
+        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)",
+          borderRadius:8, padding:"7px 10px", color:"#fff", fontSize:12, outline:"none",
+          cursor:"pointer", marginBottom:10, fontFamily: curFont.css}}>
+        {KO_FONTS.map(function(f) {
+          return <option key={f.key} value={f.key} style={{background:"#1c1c2e", fontFamily:f.css}}>{f.label}</option>;
         })}
+      </select>
+      <div style={{padding:"6px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10,
+        fontFamily: curFont.css, fontSize:13, color:"rgba(255,255,255,0.7)", textAlign:"center", lineHeight:1.6}}>
+        가나다라 ABC 123<br/><span style={{fontSize:11, color:"rgba(255,255,255,0.35)"}}>미리보기: {curFont.label}</span>
       </div>
       <FieldLabel>제목 굵기</FieldLabel>
       <div style={{display:"flex", gap:3, marginBottom:10}}>
@@ -568,7 +602,7 @@ function EditPanel(props) {
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
           {DESIGN_PRESETS.map(function(dp) {
             var isC = selPreset && selPreset.key === dp.key;
-            return <PresetCanvas key={dp.key} dp={dp} size={72} isC={isC} onClick={function() { applyPreset(dp); }}/>;
+            return <PresetCanvas key={dp.key} dp={dp} size={88} isC={isC} onClick={function() { applyPreset(dp); }}/>;
           })}
         </div>
         <Sep/>
@@ -1211,7 +1245,7 @@ function PageMake(props) {
   var prevBg  = D ? "transparent"              : "#f4f4f8";
 
   return (
-    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"28px 36px 60px", maxWidth:780, color:text}}>
+    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"28px 40px 60px", maxWidth:"100%", color:text, display:"flex", flexDirection:"column"}}>
       <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
@@ -1294,40 +1328,72 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div>
-          <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
-          <div style={{fontSize:13, color:muted, marginBottom:16}}>미리보기 확인 후 선택 (건너뛰기 가능)</div>
-          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:9, marginBottom:16}}>
-            {DESIGN_PRESETS.map(function(dp) {
-              var isC = selPreset && selPreset.key === dp.key;
-              return (
-                <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
-                  style={{borderRadius:10, overflow:"hidden", cursor:"pointer",
-                    border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
-                    boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none"}}>
-                  <PresetCanvas dp={dp} size={128} isC={isC} onClick={function() {}}/>
-                </div>
-              );
-            })}
+        <div style={{display:"flex", flexDirection:"column", height:"100%"}}>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:18, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
+            <div style={{fontSize:13, color:muted}}>클릭하면 오른쪽에서 미리보기 확인 (건너뛰기 가능)</div>
           </div>
-          {err && <div style={{padding:"7px 11px", borderRadius:7, background:errBg, color:errClr, fontSize:12, marginBottom:10}}>{err}</div>}
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <button onClick={function() { setMakeStep(1); }}
-              style={{padding:"8px 16px", borderRadius:8, border:"1px solid "+bdr,
-                background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>
-              ← 이전
-            </button>
-            <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
-              style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700}}>
-              {loading ? "생성 중..." : "카드뉴스 생성"}
-            </button>
+          <div style={{display:"flex", gap:20, flex:1, minHeight:0}}>
+            {/* 좌: 프리셋 그리드 */}
+            <div style={{width:320, flexShrink:0}}>
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12}}>
+                {DESIGN_PRESETS.map(function(dp) {
+                  var isC = selPreset && selPreset.key === dp.key;
+                  return (
+                    <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
+                      style={{borderRadius:10, overflow:"hidden", cursor:"pointer", transition:"transform 0.15s",
+                        border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
+                        boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none",
+                        transform: isC ? "scale(1.03)" : "scale(1)"}}>
+                      <PresetCanvas dp={dp} size={96} isC={isC} onClick={function() {}}/>
+                    </div>
+                  );
+                })}
+              </div>
+              {err && <div style={{padding:"7px 11px", borderRadius:7, background:errBg, color:errClr, fontSize:12, marginBottom:10}}>{err}</div>}
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"auto"}}>
+                <button onClick={function() { setMakeStep(1); }}
+                  style={{padding:"9px 18px", borderRadius:8, border:"1px solid "+bdr,
+                    background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>
+                  ← 이전
+                </button>
+                <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
+                  style={{padding:"11px 28px", borderRadius:10, border:"none", cursor:"pointer",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800,
+                    boxShadow:"0 6px 20px rgba(99,102,241,0.35)"}}>
+                  {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
+                </button>
+              </div>
+            </div>
+            {/* 우: 큰 미리보기 */}
+            <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+              background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.04)",
+              borderRadius:16, border:"1px solid "+bdr, padding:"20px 16px", minHeight:340}}>
+              {selPreset ? (
+                <div className="cn-fadein" style={{display:"flex", flexDirection:"column", alignItems:"center", gap:14, width:"100%"}}>
+                  <div style={{fontSize:13, fontWeight:700, color: D?"rgba(255,255,255,0.5)":"#888", marginBottom:4}}>
+                    {selPreset.label} 미리보기
+                  </div>
+                  <PresetCanvas dp={selPreset} size={260} isC={true} onClick={function() {}}/>
+                  <div style={{display:"flex", gap:12, fontSize:12, color:muted, textAlign:"center"}}>
+                    <div><div style={{fontWeight:700, color:text}}>{selPreset.textAlign === "center" ? "가운데" : "왼쪽"}</div><div>정렬</div></div>
+                    <div><div style={{fontWeight:700, color:text}}>{selPreset.hlMode === "pill" ? "뱃지" : selPreset.hlMode === "underline" ? "밑줄" : selPreset.hlMode === "box" ? "박스" : "없음"}</div><div>하이라이트</div></div>
+                    <div><div style={{fontWeight:700, color:text}}>{selPreset.titleSize}px</div><div>제목 크기</div></div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:48, marginBottom:12, opacity:0.3}}>🖼</div>
+                  <div style={{fontSize:14, color:muted, lineHeight:1.8}}>왼쪽에서 디자인을<br/>선택하면 미리보기가<br/>여기 표시됩니다</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {makeStep === 3 && (
-        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", minHeight:500}}>
+        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center"}}>
           {loading && (
             <div className="cn-fadein" style={{width:"100%", maxWidth:480}}>
               {/* 떠다니는 아이콘 */}
