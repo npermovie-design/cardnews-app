@@ -1,5 +1,104 @@
 import { useState } from "react";
 
+
+/* ── 마크다운 → JSX 렌더러 ── */
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  const elements = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // ## 제목
+    if (line.startsWith("### ")) {
+      elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{line.slice(4)}</h3>);
+    } else if (line.startsWith("## ")) {
+      elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{line.slice(3)}</h2>);
+    } else if (line.startsWith("# ")) {
+      elements.push(<h1 key={i} style={{fontSize:22,fontWeight:900,color:textColor,margin:"32px 0 12px",letterSpacing:-0.8}}>{line.slice(2)}</h1>);
+    }
+    // --- 구분선
+    else if (line.match(/^[-*]{3,}$/)) {
+      elements.push(<hr key={i} style={{border:"none",borderTop:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e9ecef"}`,margin:"20px 0"}}/>);
+    }
+    // - 또는 * 리스트
+    else if (line.match(/^[-*] /)) {
+      const items = [];
+      while (i < lines.length && lines[i].match(/^[-*] /)) {
+        items.push(<li key={i} style={{marginBottom:5,lineHeight:1.8,color:textColor}}>{inlineFormat(lines[i].slice(2), accentColor)}</li>);
+        i++;
+      }
+      elements.push(<ul key={`ul-${i}`} style={{paddingLeft:20,margin:"8px 0 12px",listStyle:"disc"}}>{items}</ul>);
+      continue;
+    }
+    // 번호 리스트
+    else if (line.match(/^\d+\. /)) {
+      const items = [];
+      while (i < lines.length && lines[i].match(/^\d+\. /)) {
+        const content = lines[i].replace(/^\d+\. /, "");
+        items.push(<li key={i} style={{marginBottom:5,lineHeight:1.8,color:textColor}}>{inlineFormat(content, accentColor)}</li>);
+        i++;
+      }
+      elements.push(<ol key={`ol-${i}`} style={{paddingLeft:22,margin:"8px 0 12px"}}>{items}</ol>);
+      continue;
+    }
+    // > 인용문
+    else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote key={i} style={{borderLeft:`4px solid ${accentColor}`,paddingLeft:14,margin:"12px 0",color:mutedColor,fontStyle:"italic",lineHeight:1.8}}>
+          {inlineFormat(line.slice(2), accentColor)}
+        </blockquote>
+      );
+    }
+    // 빈 줄
+    else if (line.trim() === "") {
+      elements.push(<div key={i} style={{height:8}}/>);
+    }
+    // 해시태그 줄
+    else if (line.trim().startsWith("#") && line.includes(" #")) {
+      elements.push(
+        <p key={i} style={{margin:"4px 0",lineHeight:1.9,fontSize:14,color:accentColor}}>
+          {line}
+        </p>
+      );
+    }
+    // 일반 문단
+    else if (line.trim()) {
+      elements.push(
+        <p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>
+          {inlineFormat(line, accentColor)}
+        </p>
+      );
+    }
+
+    i++;
+  }
+  return elements;
+}
+
+/* 인라인 포맷: **bold**, *italic*, `code` */
+function inlineFormat(text, accentColor) {
+  const parts = [];
+  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    const raw = m[0];
+    if (raw.startsWith("**")) {
+      parts.push(<strong key={m.index} style={{fontWeight:800}}>{raw.slice(2,-2)}</strong>);
+    } else if (raw.startsWith("*")) {
+      parts.push(<em key={m.index} style={{fontStyle:"italic"}}>{raw.slice(1,-1)}</em>);
+    } else if (raw.startsWith("`")) {
+      parts.push(<code key={m.index} style={{background:"rgba(99,102,241,0.12)",color:accentColor,padding:"1px 6px",borderRadius:4,fontSize:"0.9em",fontFamily:"monospace"}}>{raw.slice(1,-1)}</code>);
+    }
+    last = m.index + raw.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length ? parts : text;
+}
+
 const API_KEY = "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";
 
 export default function NewsBlogGenerator({ theme, embedded }) {
@@ -397,8 +496,8 @@ ${articleSection}
             </div>
           )}
           {result && (
-            <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",whiteSpace:"pre-wrap",lineHeight:2.1,fontSize:16,color:text,animation:"ns-fadein 0.4s ease"}}>
-              {result}
+            <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",fontSize:16,color:text,animation:"ns-fadein 0.4s ease",lineHeight:1.9}}>
+              {renderMarkdown(result, isDark, text, muted, accent)}
               {generating && <span style={{display:"inline-block",width:2,height:16,background:"#ef4444",marginLeft:2,animation:"ns-blink 1s infinite"}}/>}
             </div>
           )}
