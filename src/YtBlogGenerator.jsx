@@ -131,8 +131,8 @@ export default function YtBlogGenerator({ theme, embedded }) {
       if (result && result.items.length > 0) {
         setTranscript(result.items);
         const langInfo = (result.lang || "").startsWith("en") ? "영어" : "한국어";
-        const methodLabel = result.method === "auto-caption" ? " (자동생성)"
-                          : result.method === "stt" ? " (AI 음성인식)" : "";
+        const methodLabel = result.method === "auto-caption" ? " · 자동생성 자막"
+                          : result.method === "manual-caption" ? " · 수동 자막" : "";
         setFetchErr(`✅ ${langInfo} 자막 ${result.items.length}개 로드 성공${methodLabel}`);
         setTimeout(() => setFetchErr(""), 4000);
       } else if (result && result.description) {
