@@ -1,8 +1,7 @@
 // api/transcript.js
-// npm 패키지 없이 순수 fetch로 YouTube 자막 추출
-// 수동 자막 + 자동생성 자막(ASR) 모두 지원
+// CommonJS 방식 (Vercel 기본 호환)
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
@@ -11,13 +10,11 @@ export default async function handler(req, res) {
   if (!videoId) return res.status(400).json({ error: "videoId 필요" });
 
   try {
-    // 1. YouTube 페이지 HTML 가져오기 (서버에서는 CORS 없음!)
     const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Cache-Control": "no-cache",
       },
     });
 
@@ -28,13 +25,13 @@ export default async function handler(req, res) {
     const html = await pageRes.text();
     let captionTracks = [];
 
-    // 2-A: captionTracks 직접 정규식 추출
+    // 방법 A: 정규식으로 captionTracks 추출
     const captionMatch = html.match(/"captionTracks":(\[.*?\])/);
     if (captionMatch) {
       try { captionTracks = JSON.parse(captionMatch[1]); } catch {}
     }
 
-    // 2-B: ytInitialPlayerResponse 전체 파싱
+    // 방법 B: ytInitialPlayerResponse 파싱
     if (!captionTracks.length) {
       const iprMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
       if (iprMatch) {
@@ -45,7 +42,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2-C: innertubeApiKey 방식 (가장 확실)
+    // 방법 C: InnerTube API
     if (!captionTracks.length) {
       const apiKeyMatch = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/);
       const clientVersionMatch = html.match(/"clientVersion":"([^"]+)"/);
@@ -76,7 +73,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 자막 트랙 없음 → 설명란 fallback
+    // 자막 없음 → 설명란
     if (!captionTracks.length) {
       const descMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
       const titleMatch = html.match(/<title>([^<]+)<\/title>/);
@@ -87,7 +84,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ items: [], description, title, total: 0, method: "description-only" });
     }
 
-    // 3. 우선순위: 수동 한국어 > 수동 영어 > 자동생성 한국어 > 자동생성 영어 > 기타
+    // 우선순위 선택
     const priority = [
       t => t.languageCode === "ko" && !t.kind,
       t => t.languageCode === "en" && !t.kind,
@@ -107,7 +104,6 @@ export default async function handler(req, res) {
     const langCode = chosen.languageCode || "unknown";
     const isAuto = chosen.kind === "asr";
 
-    // 4. 자막 XML 다운로드
     const capRes = await fetch(`${chosen.baseUrl}&fmt=srv3`);
     if (!capRes.ok) {
       return res.status(200).json({ items: [], message: "자막 다운로드 실패", method: "none" });
@@ -141,4 +137,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(200).json({ items: [], message: "서버 오류: " + error.message, method: "none" });
   }
-}
+};

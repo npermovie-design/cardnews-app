@@ -80,27 +80,54 @@ export default function YtBlogGenerator({ theme, embedded }) {
   const fetchTranscript = async (ytId) => {
     try {
       setFetchStatus("자막 추출 중...");
-      const res = await fetch(`/api/transcript?videoId=${ytId}`, {
+
+      // Vercel API 엔드포인트 호출
+      const apiUrl = `/api/transcript?videoId=${ytId}`;
+      console.log("자막 API 호출:", apiUrl);
+
+      const res = await fetch(apiUrl, {
         signal: AbortSignal.timeout(30000),
       });
-      if (!res.ok) throw new Error(`API 오류: ${res.status}`);
-      const data = await res.json();
 
-      if (data.method === "stt") {
-        setFetchStatus(""); // STT 완료
+      console.log("API 응답 상태:", res.status, res.ok);
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.error("API 오류:", res.status, errText);
+        setFetchErr(`⚠️ API 오류 (${res.status}): /api/transcript 경로 확인 필요`);
+        return null;
       }
+
+      const data = await res.json();
+      console.log("API 데이터:", data.method, "items:", data.items?.length, "msg:", data.message);
 
       if (data.items && data.items.length > 3) {
         return {
           items: data.items,
           lang: data.lang,
-          method: data.method, // "caption" or "stt"
+          method: data.method,
+          description: data.description,
           source: "vercel",
         };
       }
+
+      // 자막 없지만 설명란 있음
+      if (data.description) {
+        return {
+          items: [],
+          description: data.description,
+          method: "description-only",
+          source: "vercel",
+        };
+      }
+
       return null;
     } catch (e) {
-      console.error("transcript API 오류:", e);
+      console.error("transcript API 예외:", e);
+      // API 자체가 없는 경우 - api/transcript.js 미배포
+      if (e.message.includes("Failed to fetch") || e.message.includes("404")) {
+        setFetchErr("⚠️ /api/transcript 파일이 배포되지 않았어요. api/transcript.js를 확인해주세요.");
+      }
       return null;
     }
   };
