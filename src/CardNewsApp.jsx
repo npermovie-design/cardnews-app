@@ -792,7 +792,7 @@ export function PlannerPanel(props) {
         </div>
 
         <div style={{flex:1, overflowY:"auto", display:"flex", gap:0}}>
-          <div style={{width:420, flexShrink:0, padding:"24px", borderRight:"1px solid "+divider}}>
+          <div style={{width:340, flexShrink:0, padding:"16px", borderRight:"1px solid "+divider}}>
             {planMode === "url" && (
               <div>
                 <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
@@ -808,16 +808,16 @@ export function PlannerPanel(props) {
                   placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
                   style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                  <span style={{fontSize:13,color:textMuted,fontWeight:600}}>슬라이드 수</span>
+                  <span style={{fontSize:11,color:textMuted}}>슬라이드 수</span>
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       var isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:36,height:36,borderRadius:8,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
                     })}
                   </div>
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:15,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
                   {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
@@ -826,37 +826,37 @@ export function PlannerPanel(props) {
             {planMode === "topic" && (
               <div>
                 <div style={{marginBottom:12}}>
-                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:8}}>명령어 예시</div>
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
                   <div style={{display:"flex", gap:4, marginBottom:8}}>
                     {PROMPT_EXAMPLES.map(function(ex, i) {
                       var isC = showExIdx === i;
                       return (
                         <button key={i} onClick={function() { setShowExIdx(i); }}
-                          style={{flex:1, padding:"8px 4px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight: isC ? 700 : 400, background: isC ? tabActive : tabBg, color: isC ? "#fff" : tabText}}>
+                          style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, fontWeight: isC ? 700 : 400, background: isC ? tabActive : tabBg, color: isC ? "#fff" : tabText}}>
                           {ex.label}
                         </button>
                       );
                     })}
                   </div>
                   <div style={{background:slideBg, border:"1px solid "+slideBdr, borderRadius:8, padding:"10px 12px"}}>
-                    <div style={{fontSize:12, color:textSub, marginBottom:6}}>예시 — {selEx.label}</div>
-                    <pre style={{fontSize:13, color:textMain, lineHeight:1.8, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
+                    <div style={{fontSize:10, color:textSub, marginBottom:4}}>예시 — {selEx.label}</div>
+                    <pre style={{fontSize:11, color:textMain, lineHeight:1.7, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
                     <button onClick={function() { setPlanTopic(selEx.topic); setPlanNote(selEx.prompt.split("\n").slice(1).join("\n")); }}
-                      style={{marginTop:10, padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", background:accentBg, color:"#fff", fontSize:13, fontWeight:700}}>
+                      style={{marginTop:8, padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", background:accentBg, color:"#fff", fontSize:10, fontWeight:700}}>
                       이 예시 사용하기
                     </button>
                   </div>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:7}}>주제 *</div>
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
                   <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:13, color:textSub, fontWeight:700, letterSpacing:0.2, marginBottom:7}}>추가 요청사항 (선택)</div>
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
                   <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
                     placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
-                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"12px 16px", color:"#fff", fontSize:14, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.7}}/>
+                    style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
                 </div>
                 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
                   <span style={{fontSize:11, color:textMuted}}>슬라이드 수</span>
@@ -1234,12 +1234,8 @@ function PageMake(props) {
 
       {makeStep === 1 && (
         <div>
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
+          <div style={{marginBottom:12}}>
             <div style={{fontSize:14, fontWeight:800, color:text}}>주제를 입력하세요</div>
-            <button onClick={onShowPlanner}
-              style={{padding:"6px 14px", borderRadius:7, border:"1px solid rgba(99,102,241,0.3)", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.08)", color:accentTxt, fontSize:11, fontWeight:700, cursor:"pointer"}}>
-              ✨ 기획 AI 사용하기
-            </button>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
             <div style={{fontSize:10, color:sub, marginBottom:7, fontWeight:700}}>예시 주제</div>
