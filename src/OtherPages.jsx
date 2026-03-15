@@ -167,12 +167,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="카드뉴스" icon="🃏" open={cardOpen}
+        <Group label="SNS 이미지 만들기" icon="🖼" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
-          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -279,26 +278,25 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", hidden: true,   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 22 }}>
           <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5, marginBottom: 10, color: homeText }}>AI 콘텐츠 생성기에 오신 걸 환영해요! 👋</div>
-          <p style={{ fontSize: 14, color: homeMuted, lineHeight: 1.9, marginBottom: 8, maxWidth: 680 }}>
-            AI를 활용한 블로그 글 작성과 마케팅을 더욱 쉽고 효율적으로 만들 수 있도록 다양한 서비스 툴을 제공합니다.<br/>
+          <p style={{ fontSize: 14, color: homeMuted, lineHeight: 1.9, marginBottom: 8, maxWidth: 680, margin: "0 0 8px" }}>
+            AI를 활용한 블로그 글 작성과 마케팅을 더욱 쉽고 효율적으로 만들 수 있도록 다양한 서비스 툴을 제공합니다.
             콘텐츠 기획부터 글 작성, 마케팅 전략까지 AI 기반 솔루션을 통해 누구나 빠르게 콘텐츠를 제작하고 온라인 성장을 만들어갈 수 있도록 지원합니다.
           </p>
-          <p style={{ fontSize: 13, color: homeMuted, lineHeight: 1.85, maxWidth: 680, opacity: 0.8 }}>
-            초보자부터 마케팅 전문가까지 사용할 수 있는 실전형 도구와 자료를 제공하며, 블로그 운영과 SNS 마케팅을 보다 체계적으로 실행할 수 있도록 돕습니다.<br/>
-            콘텐츠 제작의 시간을 줄이고, 더 높은 성과를 만들어낼 수 있는 AI 기반 콘텐츠 마케팅 환경을 제공합니다.
+          <p style={{ fontSize: 13, color: homeMuted, lineHeight: 1.85, maxWidth: 680, opacity: 0.75, margin: "8px 0 10px" }}>
+            초보자부터 마케팅 전문가까지 사용할 수 있는 실전형 도구와 자료를 제공하며, 콘텐츠 제작의 시간을 줄이고 더 높은 성과를 만들어낼 수 있는 AI 기반 환경을 제공합니다.
           </p>
-          <div style={{ marginTop: 14, fontSize: 12, color: homeMuted, opacity: 0.6 }}>👈 왼쪽 메뉴에서 원하는 도구를 선택해주세요</div>
+          <div style={{ fontSize: 12, color: homeMuted, opacity: 0.55 }}>👈 왼쪽 메뉴에서 원하는 도구를 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.map(m => (
+          {MENUS.filter(m => !m.hidden).map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
