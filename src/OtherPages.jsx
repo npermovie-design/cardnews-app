@@ -253,25 +253,70 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "cardnews_make", icon: "🖼", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
+    const FEATURES = [
+      { icon: "📝", title: "블로그 글 자동 작성", desc: "키워드 하나로 SEO 최적화 블로그 글을 즉시 생성", color: "#6366f1" },
+      { icon: "🔍", title: "키워드 & SEO 분석",   desc: "연관 키워드와 검색 최적화 전략을 AI로 분석", color: "#10b981" },
+      { icon: "🖼", title: "SNS 이미지 제작",      desc: "인스타그램·카드뉴스용 콘텐츠를 자동으로 제작", color: "#ec4899" },
+      { icon: "⚡", title: "빠른 콘텐츠 생산",    desc: "수십 분 걸리던 작업을 단 10초 만에 완성", color: "#f59e0b" },
+    ];
     return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>AI 생성기에 오신 걸 환영해요! 👋</div>
-          <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "32px 32px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+        {/* 히어로 섹션 */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: -0.7, marginBottom: 8, color: homeText, lineHeight: 1.3 }}>
+            AI 생성기에 오신 걸 환영해요! 👋
+          </div>
+          <div style={{ fontSize: 14, color: homeMuted, lineHeight: 1.9, maxWidth: 640, marginBottom: 20 }}>
+            AI를 활용한 블로그 글 작성과 마케팅을 더욱 쉽고 효율적으로 만들 수 있도록 다양한 서비스 툴을 제공합니다.<br/>
+            콘텐츠 기획부터 글 작성, 키워드 분석, 마케팅 전략까지 AI 기반 솔루션을 통해 누구나 빠르게 콘텐츠를 제작하고 온라인 성장을 만들어갈 수 있도록 지원합니다.
+          </div>
+          {/* 특징 카드 4개 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10, marginBottom: 28 }}>
+            {FEATURES.map((f,i) => (
+              <div key={i} style={{
+                background: isDark ? `rgba(255,255,255,0.04)` : "#fff",
+                border: `1px solid ${isDark?"rgba(255,255,255,0.07)":"#e9ecef"}`,
+                borderRadius: 14, padding: "16px 16px",
+                borderLeft: `3px solid ${f.color}`,
+                transition: "transform 0.2s",
+              }}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+                onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}
+              >
+                <div style={{ fontSize: 26, marginBottom: 8 }}>{f.icon}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: homeText, marginBottom: 4 }}>{f.title}</div>
+                <div style={{ fontSize: 11, color: homeMuted, lineHeight: 1.6 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+          {/* 설명 2 */}
+          <div style={{
+            background: isDark ? "rgba(99,102,241,0.07)" : "#f5f4ff",
+            border: `1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.2)"}`,
+            borderRadius: 14, padding: "16px 20px", marginBottom: 28,
+          }}>
+            <div style={{ fontSize: 12, color: isDark?"#a5b4fc":"#6366f1", fontWeight: 700, marginBottom: 6 }}>💡 이런 분께 추천합니다</div>
+            <div style={{ fontSize: 13, color: homeMuted, lineHeight: 2.0 }}>
+              초보자부터 마케팅 전문가까지 사용할 수 있는 실전형 도구와 자료를 제공하며, 블로그 운영과 SNS 마케팅을 보다 체계적으로 실행할 수 있도록 돕습니다.
+              콘텐츠 제작의 시간을 줄이고, 더 높은 성과를 만들어낼 수 있는 AI 기반 콘텐츠 마케팅 환경을 제공합니다.
+            </div>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
+        {/* 메뉴 그리드 */}
+        <div style={{ fontSize: 14, fontWeight: 800, color: homeText, marginBottom: 12, letterSpacing: -0.3 }}>🚀 바로 시작하기</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>
           {MENUS.map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
               borderRadius: 12, padding: "16px 14px", cursor: "pointer",
-              transition: "opacity 0.15s",
+              transition: "all 0.18s",
             }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              onMouseEnter={e=>{e.currentTarget.style.opacity="0.8";e.currentTarget.style.transform="translateY(-2px)";}}
+              onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}
             >
-              <div style={{ fontSize: 24, marginBottom: 7 }}>{m.icon}</div>
-              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 3, color: homeText }}>{m.title}</div>
+              <div style={{ fontSize: 26, marginBottom: 8 }}>{m.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4, color: homeText }}>{m.title}</div>
               <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.5 }}>{m.desc}</div>
             </div>
           ))}

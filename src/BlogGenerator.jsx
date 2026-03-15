@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { changePoints, setLocalUser } from "./storage";
 
 const API_KEY = "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";
 
@@ -338,7 +339,7 @@ const FIELD_LABELS = {
 };
 
 // ── 메인 ──────────────────────────────────────────────────────────────────
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
   const isDark = theme === "dark" || (!theme && !!embedded); // theme prop 우선, 없으면 embedded 기준
 
@@ -352,6 +353,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const [loading,    setLoading]    = useState(false);
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
+  const [titleSugg,  setTitleSugg]  = useState([]);
+  const [seoKeys,    setSeoKeys]    = useState([]);
+  const [titleLoading, setTitleLoading] = useState(false);
+  const [seoLoading,   setSeoLoading]   = useState(false);
+  const [showLoading,  setShowLoading]  = useState(false); // 풀스크린 로딩
+  const [loadStep,     setLoadStep]     = useState(0);
 
   const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p=>({...p,[k]:v}));
@@ -375,9 +382,54 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
 
   const IS = {width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
 
+  const suggestTitle = async () => {
+    if (!fields.keyword?.trim()) return;
+    setTitleLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:300,
+          messages:[{role:"user",content:`키워드: ${fields.keyword}
+블로그 플랫폼: ${cfg.title}
+
+SEO 최적화된 블로그 제목 3개만 짧게 추천해주세요. 번호 목록으로만 답하세요.`}]})
+      });
+      const data = await res.json();
+      const text = (data.content||[]).map(b=>b.text||"").join("");
+      const lines = text.split("\n").map(l=>l.replace(/^\d+\.?\s*/,"").trim()).filter(l=>l.length>2).slice(0,3);
+      setTitleSugg(lines);
+    } catch(e) {}
+    finally { setTitleLoading(false); }
+  };
+
+  const suggestSeo = async () => {
+    if (!fields.keyword?.trim()) return;
+    setSeoLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:200,
+          messages:[{role:"user",content:`메인 키워드: ${fields.keyword}
+
+연관 SEO 키워드 8개를 쉼표로만 나열하세요. 설명 없이 키워드만.`}]})
+      });
+      const data = await res.json();
+      const text = (data.content||[]).map(b=>b.text||"").join("").trim();
+      const keys = text.split(/[,，]/).map(k=>k.trim()).filter(k=>k.length>0).slice(0,8);
+      setSeoKeys(keys);
+    } catch(e) {}
+    finally { setSeoLoading(false); }
+  };
+
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
+    setShowLoading(true); setLoadStep(0);
+    const stepTimer1 = setTimeout(()=>setLoadStep(1),1500);
+    const stepTimer2 = setTimeout(()=>setLoadStep(2),4000);
+    const stepTimer3 = setTimeout(()=>setLoadStep(3),8000);
     const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -403,11 +455,78 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
         }
       }
       if (isTistory) setHtmlResult(mdToHtml(full));
+      // 포인트 차감
+      if (user?.uid) { try { await changePoints(user.uid, -10, "블로그 글 생성"); } catch(e){} }
     } catch { setError("생성 중 오류가 발생했습니다."); }
-    finally { setLoading(false); }
+    finally { setLoading(false); clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3); setLoadStep(4); setTimeout(()=>setShowLoading(false),600); }
   };
 
+  const LOADING_CSS = `
+    @keyframes bg-slide-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes bl-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes bl-progress{from{width:0}to{width:100%}}
+    @keyframes bl-step{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes bl-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @keyframes bl-blink{0%,100%{opacity:1}50%{opacity:0}}
+  `;
+
   const handleCopy = content => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+
+  // ── 풀스크린 로딩 오버레이 ──
+  const renderLoadingOverlay = () => {
+    if (!showLoading) return null;
+    const steps = ["주제 분석 중...", "글 구조 기획...", "문장 생성 중...", "마무리 다듬는 중..."];
+    const sub = cfg.subtypes.find(s=>s.id===subtype);
+    const wc = cfg.wordCounts.find(w=>w.id===wordCount);
+    return (
+      <div style={{position:"absolute",inset:0,zIndex:100,background:isDark?"rgba(10,8,24,0.97)":"rgba(248,249,250,0.98)",
+        display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:0,
+        animation:"bg-slide-in 0.3s ease both"}}>
+        <style>{LOADING_CSS}</style>
+        {/* 아이콘 */}
+        <div style={{fontSize:72,marginBottom:20,animation:"bl-float 3s ease-in-out infinite",
+          filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>
+          {sub?.icon||"✍️"}✨
+        </div>
+        <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:8,letterSpacing:-0.5}}>
+          AI가 글을 쓰고 있어요
+        </div>
+        <div style={{fontSize:14,color:muted,marginBottom:28}}>
+          {fields.keyword} · {wc?.desc||""}
+        </div>
+        {/* 체크리스트 */}
+        <div style={{display:"flex",flexDirection:"column",gap:12,textAlign:"left",marginBottom:24,width:300}}>
+          {steps.map((s,i)=>{
+            const done = loadStep > i+1;
+            const active = loadStep === i+1 || (i===0 && loadStep===0);
+            return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,
+                opacity:done||active?1:0.3,
+                animation:`bl-step 0.4s ease ${i*0.15}s both`}}>
+                <div style={{width:22,height:22,borderRadius:"50%",flexShrink:0,
+                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
+                  background:done?"rgba(74,222,128,0.15)":active?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                  border:done?"2px solid #4ade80":active?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)"}}>
+                  {done?<span style={{color:"#4ade80"}}>✓</span>
+                    :active?<div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"bl-spin 0.8s linear infinite"}}/>
+                    :null}
+                </div>
+                <span style={{fontSize:14,color:done?"#4ade80":active?text:muted,fontWeight:active?700:400}}>{s}</span>
+              </div>
+            );
+          })}
+        </div>
+        {/* 프로그레스 바 */}
+        <div style={{width:300,height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",marginBottom:10}}>
+          <div style={{height:"100%",borderRadius:4,
+            background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+            animation:"bl-progress 14s ease-out forwards"}}/>
+        </div>
+        <div style={{fontSize:12,color:muted}}>약 14~22초 소요</div>
+        <div style={{fontSize:12,color:muted,marginTop:4}}>생성이 완료되면 자동으로 결과가 표시됩니다</div>
+      </div>
+    );
+  };
 
   // ── 결과 패널 ──
   const renderResult = () => {
@@ -523,12 +642,63 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             {/* 동적 필드 */}
             {currentFields.map(fk=>{
               const fl=FIELD_LABELS[fk]; if(!fl) return null;
-              return <div key={fk} style={{marginBottom:10}}>
+              return <div key={fk} style={{marginBottom:fk==="keyword"?6:10}}>
                 <div style={{fontSize:13,fontWeight:700,color:muted,letterSpacing:0.3,marginBottom:6}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
                 {fl.textarea
                   ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={3} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.6}}/>
                   :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generate()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
                 }
+                {/* keyword 필드 아래: AI제목추천 + SEO 버튼 */}
+                {fk==="keyword" && fields.keyword?.trim() && (
+                  <div style={{marginTop:6,display:"flex",gap:5}}>
+                    <button onClick={suggestTitle} disabled={titleLoading}
+                      style={{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid rgba(99,102,241,0.3)",
+                        background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,
+                        cursor:titleLoading?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                      {titleLoading
+                        ?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"bl-spin 0.8s linear infinite"}}/>추천 중...</>
+                        :<>⭐ AI 제목 추천</>}
+                    </button>
+                    <button onClick={suggestSeo} disabled={seoLoading}
+                      style={{flex:1,padding:"7px 8px",borderRadius:8,border:"1px solid rgba(16,185,129,0.3)",
+                        background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,
+                        cursor:seoLoading?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                      {seoLoading
+                        ?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"bl-spin 0.8s linear infinite"}}/>조회 중...</>
+                        :<>🔍 SEO 키워드</>}
+                    </button>
+                  </div>
+                )}
+                {/* 제목 추천 결과 */}
+                {fk==="keyword" && titleSugg.length>0 && (
+                  <div style={{marginTop:8,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:9,padding:"10px 12px",border:"1px solid rgba(99,102,241,0.15)"}}>
+                    <div style={{fontSize:11,color:accent,fontWeight:700,marginBottom:6}}>⭐ 추천 제목 (클릭 시 적용)</div>
+                    {titleSugg.map((t,i)=>(
+                      <div key={i} onClick={()=>{setField("keyword",t);setTitleSugg([]);}}
+                        style={{fontSize:12,color:text,padding:"4px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?`1px solid ${border}`:"none",lineHeight:1.6}}
+                        onMouseEnter={e=>e.currentTarget.style.color=accentRaw}
+                        onMouseLeave={e=>e.currentTarget.style.color=text}>
+                        {t}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* SEO 키워드 결과 */}
+                {fk==="keyword" && seoKeys.length>0 && (
+                  <div style={{marginTop:8,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:9,padding:"10px 12px",border:"1px solid rgba(16,185,129,0.15)"}}>
+                    <div style={{fontSize:11,color:"#10b981",fontWeight:700,marginBottom:7}}>🔍 SEO 연관 키워드</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {seoKeys.map((k,i)=>(
+                        <span key={i} onClick={()=>setField("extra",(fields.extra?fields.extra+", ":"")+k)}
+                          style={{fontSize:11,padding:"3px 9px",borderRadius:12,
+                            background:"rgba(16,185,129,0.12)",color:"#10b981",
+                            cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>;
             })}
             {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:8}}>{error}</div>}
@@ -596,13 +766,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
           {/* 생성 버튼 */}
           <div style={{padding:"10px 18px 14px",flexShrink:0}}>
             <button onClick={generate} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):"✨ 글 생성하기"}
+              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.75,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 7px",borderRadius:8}}>💎 10P</span></>)}
             </button>
           </div>
         </div>
         {/* 우: 결과 */}
         <div className={"blog-panel-right" + (mobileTab==="input" ? " blog-hide-mobile" : "")}
-          style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
+          style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg,position:"relative"}}>
+          {renderLoadingOverlay()}
           {renderResult()}
         </div>
         {/* 플로팅 액션 버튼 - 결과 있을 때만 */}
