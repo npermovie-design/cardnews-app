@@ -473,7 +473,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
       color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["가입 시 50P 자동 지급","게시글 작성 10P 적립","댓글 작성 2P 적립","일일 로그인 3P 적립","포인트 소진 시 충전"],
+      features: ["가입 시 10P 자동 지급","게시글 작성 1P 적립","일일 로그인 1P 적립","포인트 소진 시 충전"],
       btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
       badge: null, highlight: false,
     },
@@ -560,10 +560,10 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
-            { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
-            { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
-            { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
+            { icon: "🎁", action: "회원가입", pt: "+10P", desc: "가입 즉시" },
+            { icon: "📝", action: "게시글 작성", pt: "+1P", desc: "글 1개당" },
+            { icon: "💬", action: "댓글 작성", pt: "+0P", desc: "적립 없음" },
+            { icon: "☀️", action: "일일 로그인", pt: "+1P", desc: "하루 1회" },
           ].map((item, i) => (
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "14px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
@@ -574,7 +574,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           ))}
         </div>
         <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
-          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 게시글 10개 작성하면 AI 10회 사용 가능
+          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 포인트 충전으로 더 많이 사용 가능
         </div>
       </div>
 
