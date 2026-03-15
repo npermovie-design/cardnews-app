@@ -73,60 +73,96 @@ export default function YtBlogGenerator({ theme, embedded }) {
   const transcriptRef = useRef(null);
 
   /* ── 유튜브 정보 + 자막 가져오기 ── */
-  /* ── YouTube 페이지 HTML에서 자막 트랙 URL 추출 (youtube-transcript-api 방식) ── */
-  const fetchTranscriptFromPage = async (ytId) => {
-    const PROXIES = [
-      "https://corsproxy.io/?",
-      "https://api.codetabs.com/v1/proxy?quest=",
-      "https://cors.sh/?",
-    ];
+  /* ═══════════════════════════════════════════════════════════
+     자막 추출 - 3가지 API 순차 시도
+     1. Supadata API (무료, 신뢰성 높음)
+     2. yt.lemnoslife.com (무료 비공식)
+     3. youtubetranscript.com (비공식 fallback)
+  ═══════════════════════════════════════════════════════════ */
+  const fetchTranscript = async (ytId) => {
 
-    for (const proxy of PROXIES) {
-      try {
-        // 1. YouTube 페이지 HTML 가져오기
-        const pageUrl = `${proxy}https://www.youtube.com/watch?v=${ytId}`;
-        const res = await fetch(pageUrl, {
-          headers: { "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8" },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!res.ok) continue;
-        const html = await res.text();
-
-        // 2. ytInitialPlayerResponse에서 자막 트랙 목록 추출
-        const match = html.match(/"captionTracks":(\[.*?\])/);
-        if (!match) continue;
-
-        let tracks;
-        try { tracks = JSON.parse(match[1]); } catch { continue; }
-        if (!tracks || tracks.length === 0) continue;
-
-        // 3. 언어 우선순위: 한국어 → 영어 → 자동생성 한국어 → 자동생성 영어 → 첫번째
-        const priority = ["ko", "en", "a.ko", "a.en"];
-        let chosenTrack = null;
-        for (const lang of priority) {
-          const t = tracks.find(tr =>
-            tr.languageCode === lang ||
-            (tr.vssId && tr.vssId.includes(`.${lang}`))
-          );
-          if (t) { chosenTrack = t; break; }
+    /* ── API 1: Supadata (무료 50회/월, 가장 신뢰성 높음) ── */
+    try {
+      setFetchStatus("자막 추출 중... (API 1/3)");
+      const res = await fetch(
+        `https://api.supadata.ai/v1/youtube/transcript?videoId=${ytId}&lang=ko`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const segments = data?.transcript || data?.segments || data?.content || [];
+        if (Array.isArray(segments) && segments.length > 3) {
+          const items = segments.map(s => ({
+            start: s.start || s.offset || 0,
+            text: s.text || s.content || ""
+          })).filter(s => s.text.trim());
+          if (items.length > 3) return { items, source: "Supadata" };
         }
-        if (!chosenTrack) chosenTrack = tracks[0];
-
-        // 4. 자막 XML 가져오기
-        const captionUrl = chosenTrack.baseUrl;
-        if (!captionUrl) continue;
-
-        const capRes = await fetch(`${proxy}${captionUrl}&fmt=srv3`, {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!capRes.ok) continue;
-        const xml = await capRes.text();
-        const items = parseXmlTranscript(xml);
-        if (items.length > 3) {
-          return { items, lang: chosenTrack.languageCode || "unknown" };
+        // 영어로 재시도
+        const res2 = await fetch(
+          `https://api.supadata.ai/v1/youtube/transcript?videoId=${ytId}&lang=en`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const segs2 = data2?.transcript || data2?.segments || data2?.content || [];
+          if (Array.isArray(segs2) && segs2.length > 3) {
+            const items2 = segs2.map(s => ({ start: s.start || 0, text: s.text || s.content || "" })).filter(s => s.text.trim());
+            if (items2.length > 3) return { items: items2, source: "Supadata(EN)" };
+          }
         }
-      } catch { continue; }
-    }
+      }
+    } catch { /* 다음 API로 */ }
+
+    /* ── API 2: yt.lemnoslife.com (무료 비공식) ── */
+    try {
+      setFetchStatus("자막 추출 중... (API 2/3)");
+      const res = await fetch(
+        `https://yt.lemnoslife.com/videos?part=transcript&id=${ytId}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const tracks = data?.items?.[0]?.transcript?.tracks;
+        if (tracks && tracks.length > 0) {
+          // 한국어 우선
+          const track = tracks.find(t => t.languageCode?.startsWith("ko"))
+                     || tracks.find(t => t.languageCode?.startsWith("en"))
+                     || tracks[0];
+          if (track?.captions?.length > 3) {
+            const items = track.captions.map(cap => ({
+              start: cap.start || 0,
+              text: cap.text || ""
+            })).filter(s => s.text.trim());
+            if (items.length > 3) return { items, source: "lemnoslife" };
+          }
+        }
+      }
+    } catch { /* 다음 API로 */ }
+
+    /* ── API 3: youtubetranscript.com (비공식 fallback) ── */
+    try {
+      setFetchStatus("자막 추출 중... (API 3/3)");
+      // CORS 프록시 통해 youtubetranscript API 호출
+      const proxyUrl = `https://corsproxy.io/?https://youtubetranscript.com/?server_vid2=${ytId}`;
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const text = await res.text();
+        // JSON 파싱 시도
+        try {
+          const data = JSON.parse(text);
+          if (Array.isArray(data) && data.length > 3) {
+            const items = data.map(d => ({ start: d.start || 0, text: d.text || "" })).filter(s => s.text.trim());
+            if (items.length > 3) return { items, source: "youtubetranscript" };
+          }
+        } catch {
+          // XML 파싱 시도
+          const parsed = parseXmlTranscript(text);
+          if (parsed.length > 3) return { items: parsed, source: "youtubetranscript(xml)" };
+        }
+      }
+    } catch { /* 실패 */ }
+
     return null;
   };
 
@@ -141,7 +177,7 @@ export default function YtBlogGenerator({ theme, embedded }) {
       /* 1. 영상 제목/채널 (oEmbed) */
       const oembed = await fetch(
         `https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${ytId}&format=json`
-      ).then(r=>r.ok?r.json():null).catch(()=>null);
+      ).then(r => r.ok ? r.json() : null).catch(() => null);
 
       setVideoInfo({
         title:  oembed?.title       || "유튜브 영상",
@@ -149,22 +185,18 @@ export default function YtBlogGenerator({ theme, embedded }) {
         thumb:  `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
       });
 
-      /* 2. 자막 추출 (YouTube 페이지 파싱 방식) */
-      setFetchStatus("자막 추출 중... (최대 15초)");
-
-      const result = await fetchTranscriptFromPage(ytId);
+      /* 2. 자막 추출 */
+      const result = await fetchTranscript(ytId);
+      setFetchStatus("");
 
       if (result && result.items.length > 0) {
         setTranscript(result.items);
-        setFetchStatus("");
-        // 성공 알림
-        const langLabel = result.lang.startsWith("ko") ? "한국어" : result.lang.startsWith("en") ? "영어" : result.lang;
-        setFetchErr(`✅ ${langLabel} 자막 ${result.items.length}개 로드 성공!`);
-        setTimeout(() => setFetchErr(""), 3000);
+        const langInfo = result.source.includes("EN") ? "영어" : "한국어";
+        setFetchErr(`✅ 자막 ${result.items.length}개 로드 성공 (${langInfo})`);
+        setTimeout(() => setFetchErr(""), 4000);
       } else {
         setTranscript([]);
-        setFetchStatus("");
-        setFetchErr("자막이 없는 영상이에요. 영상 제목 기반으로 글을 작성합니다.");
+        setFetchErr("⚠️ 자막이 없거나 비공개 영상이에요. 영상 제목 기반으로 글을 작성합니다.");
       }
 
     } catch (e) {
@@ -173,7 +205,7 @@ export default function YtBlogGenerator({ theme, embedded }) {
     }
   };
 
-  /* ── 블로그 글 생성 ── */
+    /* ── 블로그 글 생성 ── */
   const generate = async () => {
     if (!videoInfo) { setGenErr("먼저 유튜브 URL을 입력해주세요."); return; }
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
@@ -366,7 +398,9 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
             </div>
             {fetchErr && (
               <div style={{marginTop:8,fontSize:12,lineHeight:1.6,
-                color: fetchErr.startsWith("✅") ? "#10b981" : fetchErr.includes("없는") ? "rgba(251,191,36,0.9)" : "rgba(255,100,100,0.9)"
+                color: fetchErr.startsWith("✅") ? "#10b981"
+                     : fetchErr.startsWith("⚠️") ? "rgba(251,191,36,0.9)"
+                     : "rgba(255,100,100,0.9)"
               }}>
                 {fetchErr}
               </div>
