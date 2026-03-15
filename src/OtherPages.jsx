@@ -276,15 +276,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     );
   }
 
-  // 유튜브로 글쓰기 (blog_ 계열보다 먼저 처리)
-  if (aiMenu === "blog_yt_blog") {
-    return (
-      <div key="yt_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <YtBlogGenerator theme={theme} embedded />
-      </div>
-    );
-  }
-
   // 블로그 계열
   if (aiMenu.startsWith("blog_")) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };

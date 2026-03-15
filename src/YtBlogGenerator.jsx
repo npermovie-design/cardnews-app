@@ -92,26 +92,42 @@ export default function YtBlogGenerator({ theme, embedded }) {
         thumb:  `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
       });
 
-      /* 2. 자막 가져오기 시도 (한국어 → 영어 → 자동생성 순) */
+      /* 2. 자막 가져오기 시도 */
       setFetchStatus("자막 불러오는 중...");
 
-      // CORS 프록시를 통해 YouTube timedtext API 호출
-      const proxies = [
-        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=ko&v=${ytId}&fmt=srv3`,
-        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=en&v=${ytId}&fmt=srv3`,
-        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=ko&v=${ytId}`,
-        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=en&v=${ytId}`,
+      let items = [];
+
+      // 방법 1: YouTube Transcript API 비공식 엔드포인트들 시도
+      const langs = ["ko", "en", "a.ko", "a.en"];
+      const proxyBases = [
+        "https://corsproxy.io/?",
+        "https://api.codetabs.com/v1/proxy?quest=",
+        "https://cors-anywhere.herokuapp.com/",
       ];
 
-      let items = [];
-      for (const proxyUrl of proxies) {
-        try {
-          const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-          if (!res.ok) continue;
-          const xml = await res.text();
-          items = parseXmlTranscript(xml);
+      for (const lang of langs) {
+        if (items.length > 3) break;
+        for (const proxy of proxyBases) {
           if (items.length > 3) break;
-        } catch { continue; }
+          try {
+            const urls = [
+              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}&fmt=srv3`,
+              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}&fmt=vtt`,
+              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}`,
+            ];
+            for (const url of urls) {
+              if (items.length > 3) break;
+              try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+                if (!res.ok) continue;
+                const text = await res.text();
+                if (!text || text.length < 50) continue;
+                const parsed = parseXmlTranscript(text);
+                if (parsed.length > 3) { items = parsed; break; }
+              } catch { continue; }
+            }
+          } catch { continue; }
+        }
       }
 
       if (items.length > 0) {
@@ -120,7 +136,8 @@ export default function YtBlogGenerator({ theme, embedded }) {
       } else {
         setTranscript([]);
         setFetchStatus("");
-        setFetchErr("자막을 불러오지 못했어요. 영상 제목과 URL만으로 글을 작성합니다.");
+        // 자막 없어도 글 작성 가능 - 에러 메시지 약하게
+        setFetchErr("자막을 불러오지 못했어요. 영상 제목과 URL 기반으로 글을 작성합니다.");
       }
 
     } catch (e) {
@@ -320,7 +337,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                 {fetchStatus ? <div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/> : "불러오기"}
               </button>
             </div>
-            {fetchErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",lineHeight:1.6}}>⚠️ {fetchErr}</div>}
+            {fetchErr && <div style={{marginTop:8,fontSize:12,color:"rgba(251,191,36,0.9)",lineHeight:1.6}}>ℹ️ {fetchErr}</div>}
           </div>
 
           {/* 영상 미리보기 */}
