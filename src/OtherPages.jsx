@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
+import YtBlogGenerator from "./YtBlogGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -245,8 +246,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",
-        darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "blog_yt_blog",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 URL → 블로그 자동 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
+        darkColor: "rgba(99,102,241,0.18)", lightColor: "rgba(0,0,0,0.04)" },
+      { id: "blog_yt_blog",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 링크 → 블로그 자동 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
       { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
@@ -311,6 +312,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
         />
       </div>
     );
+  }
+
+  // 유튜브로 글쓰기
+  if (aiMenu === "blog_yt_blog") {
+    return <YtBlogGenerator theme={theme} embedded />;
   }
 
   // 쇼츠 - 준비중
@@ -437,7 +443,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 /* ════════════════════════════════════════════════════════════
    PricingPage
 ════════════════════════════════════════════════════════════ */
-export function PricingPage({ navigate, C }) {
+export function PricingPage({ navigate, C, user, onLogin }) {
   const PLANS = [
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
@@ -512,9 +518,18 @@ export function PricingPage({ navigate, C }) {
             </div>
 
             <button
-              onClick={() => plan.id === "free" ? navigate("cardnews") : navigate("contact")}
+              onClick={() => {
+                if (plan.id === "free") { navigate("ai"); return; }
+                const varMap = {
+                  basic:   "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
+                  pro:     "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
+                  premium: "fd18d32d-b8af-45aa-9b78-0902b139f127",
+                };
+                if (!user) { if (onLogin) onLogin(); return; }
+                window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + varMap[plan.id];
+              }}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
-              {plan.btnLabel}
+              {plan.id !== "free" && !user ? "로그인 후 충전" : plan.btnLabel}
             </button>
           </div>
         ))}
