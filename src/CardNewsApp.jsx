@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { changePoints, setLocalUser, POINTS } from "./storage";
 
 function loadJSZip() {
   return new Promise(function(resolve, reject) {
@@ -1326,30 +1327,72 @@ function PageMake(props) {
       )}
 
       {makeStep === 3 && (
-        <div style={{textAlign:"center", padding:"32px 0"}}>
+        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", minHeight:500}}>
           {loading && (
-            <div>
-              <div style={{fontSize:48, marginBottom:14, animation:"cn-spin 2s linear infinite", display:"inline-block"}}>⚙️</div>
-              <div style={{fontSize:16, fontWeight:800, marginBottom:6, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
-              <div style={{fontSize:13, color:muted}}>{cnt}장 생성 중</div>
+            <div className="cn-fadein" style={{width:"100%", maxWidth:480}}>
+              {/* 떠다니는 아이콘 */}
+              <div className="cn-float" style={{fontSize:80, marginBottom:20, display:"inline-block", filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏</div>
+              <div style={{fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:-0.5}}>
+                AI가 카드뉴스를 만들고 있어요 ✨
+              </div>
+              <div style={{fontSize:14, color:muted, marginBottom:28}}>
+                {topic} · {cnt}장 구성 중
+              </div>
+              {/* 진행 단계 */}
+              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left", marginBottom:24, maxWidth:300, margin:"0 auto 24px"}}>
+                {[
+                  {label:"주제 분석 중...", done:true},
+                  {label:"슬라이드 구성 기획...", done:true},
+                  {label:"문구 생성 중...", done:false, active:true},
+                  {label:"마무리 다듬는 중...", done:false},
+                ].map(function(step, si) {
+                  return (
+                    <div key={si} className="cn-step-in"
+                      style={{display:"flex", alignItems:"center", gap:10, opacity: step.done||step.active ? 1 : 0.35,
+                        animationDelay: (si*0.15)+"s"}}>
+                      <div style={{width:20, height:20, borderRadius:"50%", flexShrink:0,
+                        background: step.done ? "rgba(74,222,128,0.15)" : step.active ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)",
+                        border: step.done ? "2px solid #4ade80" : step.active ? "2px solid #6366f1" : "2px solid rgba(255,255,255,0.1)",
+                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:10}}>
+                        {step.done ? <span style={{color:"#4ade80"}}>✓</span>
+                          : step.active ? <div style={{width:8, height:8, borderRadius:"50%", border:"2px solid #6366f1", borderTopColor:"transparent", animation:"cn-spin 0.8s linear infinite"}}/>
+                          : null}
+                      </div>
+                      <span style={{fontSize:14, color: step.done ? "#4ade80" : step.active ? text : muted, fontWeight: step.active ? 700 : 400}}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* 프로그레스 바 */}
+              <div style={{height:4, borderRadius:4, background:"rgba(255,255,255,0.08)", overflow:"hidden", maxWidth:300, margin:"0 auto 12px"}}>
+                <div style={{height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+                  animation:"cn-progress 8s ease-out forwards"}}/>
+              </div>
+              <div style={{fontSize:12, color:muted}}>보통 7~11초 소요</div>
             </div>
           )}
           {!loading && err && (
-            <div>
-              <div style={{fontSize:12, color:errClr, marginBottom:12}}>{err}</div>
+            <div className="cn-fadein">
+              <div style={{fontSize:52, marginBottom:16}}>😢</div>
+              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>생성에 실패했어요</div>
+              <div style={{fontSize:13, color:errClr, marginBottom:20}}>{err}</div>
               <button onClick={function() { setMakeStep(2); }}
-                style={{padding:"9px 20px", borderRadius:8, border:"1px solid "+bdr,
-                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>다시 시도</button>
+                style={{padding:"12px 28px", borderRadius:10, border:"1px solid "+bdr,
+                  background:"transparent", color:muted, fontSize:14, cursor:"pointer"}}>← 다시 시도</button>
             </div>
           )}
           {!loading && !err && (
-            <div>
-              <div style={{fontSize:52, marginBottom:14, animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
-              <div style={{fontSize:18, fontWeight:900, marginBottom:6, color:text}}>생성 완료!</div>
-              <div style={{fontSize:13, color:muted, marginBottom:18}}>{tname} · {slides.length}장</div>
+            <div className="cn-fadein">
+              <div style={{fontSize:64, marginBottom:16, animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
+              <div style={{fontSize:22, fontWeight:900, marginBottom:8, color:text, letterSpacing:-0.5}}>생성 완료!</div>
+              <div style={{fontSize:14, color:muted, marginBottom:28}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"14px 36px", borderRadius:12, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:16, fontWeight:800, boxShadow:"0 8px 28px rgba(99,102,241,0.4)"}}>
+                style={{padding:"16px 48px", borderRadius:14, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                  fontSize:17, fontWeight:900, boxShadow:"0 12px 36px rgba(99,102,241,0.5)",
+                  letterSpacing:-0.3}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1476,6 +1519,10 @@ export function CardNewsApp(props) {
       setIdx(0); setSted({}); setBgIs({});
       if (selPreset) { applyPreset(selPreset); }
       setPage("edit"); consumeOne(user);
+      // 포인트 차감 (회원만)
+      if (user && user.uid && (user.points || 0) >= 10) {
+        try { await changePoints(user.uid, -10, "카드뉴스 생성"); } catch(e) {}
+      }
     } catch(e3) { setErr("오류: " + e3.message); }
     finally { setLoading(false); }
   }
@@ -1538,6 +1585,11 @@ export function CardNewsApp(props) {
     "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
     ".cn-fadein{animation:cn-fadein 0.4s ease both}" +
     ".cn-popin{animation:cn-popin 0.35s cubic-bezier(0.34,1.56,0.64,1) both}" +
+    ".cn-float{animation:cn-float 3s ease-in-out infinite}" +
+    "@keyframes cn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}" +
+    "@keyframes cn-progress{from{width:0}to{width:100%}}" +
+    "@keyframes cn-step-in{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}" +
+    ".cn-step-in{animation:cn-step-in 0.4s ease both}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +

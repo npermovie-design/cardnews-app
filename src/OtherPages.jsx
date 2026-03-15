@@ -111,37 +111,37 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
     const active = aiMenu === id;
     return (
       <button onClick={() => setAiMenu(id)} style={{
-        width: "100%", padding: indent ? "6px 10px 6px 26px" : "8px 10px",
+        width: "100%", padding: indent ? "8px 12px 8px 30px" : "10px 12px",
         borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
-        fontSize: indent ? 11 : 12, fontWeight: active ? 700 : 400,
+        fontSize: indent ? 13 : 14, fontWeight: active ? 700 : 400,
         borderLeft: active ? "3px solid #6366f1" : "3px solid transparent",
-        display: "flex", alignItems: "center", gap: 6, marginBottom: 1,
+        display: "flex", alignItems: "center", gap: 7, marginBottom: 2,
       }}>
-        <span style={{ fontSize: indent ? 11 : 12 }}>{icon}</span>{label}
+        <span style={{ fontSize: indent ? 13 : 14 }}>{icon}</span>{label}
       </button>
     );
   };
 
   const Group = ({ label, icon, open, onToggle, active }) => (
     <button onClick={onToggle} style={{
-      width: "100%", padding: "7px 10px", borderRadius: 8, border: "none",
+      width: "100%", padding: "10px 12px", borderRadius: 8, border: "none",
       cursor: "pointer", textAlign: "left",
       background: active ? itemActiveBg : "transparent",
       color: active ? itemActive : brandText,
-      fontSize: 11, fontWeight: 800, letterSpacing: 0.2, marginBottom: 1,
+      fontSize: 14, fontWeight: 800, letterSpacing: 0.2, marginBottom: 2,
       borderLeft: "3px solid transparent",
       display: "flex", alignItems: "center", justifyContent: "space-between",
     }}>
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span>{icon}</span>{label}</span>
-      <span style={{ fontSize: 9, opacity: 0.5, display: "inline-block", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+      <span style={{ fontSize: 11, opacity: 0.5, display: "inline-block", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
     </button>
   );
 
   return (
     <div style={{
-      width: 185, flexShrink: 0, background: sideBg,
+      width: 210, flexShrink: 0, background: sideBg,
       borderRight: `1px solid ${sideBdr}`,
       display: "flex", flexDirection: "column", height: "100%", overflowY: "auto",
     }}>
@@ -153,7 +153,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
 
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1 }}>
-        <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
+        <div style={{ fontSize: 11, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "4px 8px", marginBottom: 4 }}>MENU</div>
         <Item id="home" label="홈" icon="🏠" />
 
         {/* SNS 글쓰기 그룹 */}
@@ -182,22 +182,22 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
 
         {/* 커뮤니티 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>COMMUNITY</div>
+          <div style={{ fontSize: 11, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "4px 8px", marginBottom: 4 }}>COMMUNITY</div>
           {SNS_LINKS.map(s => (
             <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 7,
-              padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
-              background: "transparent", color: comText, fontSize: 11, textAlign: "left", marginBottom: 1,
+              padding: "9px 12px", borderRadius: 7, border: "none", cursor: "pointer",
+              background: "transparent", color: comText, fontSize: 13, textAlign: "left", marginBottom: 2,
             }}>
-              <div style={{ width: 10, height: 10, borderRadius: 3, background: s.bg, flexShrink: 0 }} />{s.label}
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: s.bg, flexShrink: 0 }} />{s.label}
             </button>
           ))}
           <button onClick={onQna} style={{
             width: "100%", display: "flex", alignItems: "center", gap: 7,
-            padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
-            background: "rgba(251,191,36,0.07)", color: "#fbbf24", fontSize: 11, textAlign: "left",
+            padding: "9px 12px", borderRadius: 7, border: "none", cursor: "pointer",
+            background: "rgba(251,191,36,0.07)", color: "#fbbf24", fontSize: 13, textAlign: "left",
           }}>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: "#FEE500", flexShrink: 0 }} />질문 및 건의방
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: "#FEE500", flexShrink: 0 }} />질문 및 건의방
           </button>
         </div>
       </div>
@@ -205,13 +205,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
       {/* 사용량 바 */}
       <div style={{ padding: "10px 12px", borderTop: `1px solid ${sideBdr}`, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 10, color: usageText }}>
+          <div style={{ fontSize: 12, color: usageText }}>
             {(user ? "회원" : "비회원") + " " + Math.min(info.used, freeLimit) + "/" + freeLimit + "회 사용"}
           </div>
           {onlineCount > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80" }} />
-              <span style={{ fontSize: 9, color: usageText }}>{onlineCount}명</span>
+              <span style={{ fontSize: 11, color: usageText }}>{onlineCount}명</span>
             </div>
           )}
         </div>
