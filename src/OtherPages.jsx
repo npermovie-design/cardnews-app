@@ -233,7 +233,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
         return (
           <div style={{ padding: "10px 12px", borderTop: `1px solid ${sideBdr}`, flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <div style={{ fontSize: 12, color: isEmpty ? "#f87171" : isLow ? "#f59e0b" : usageText, fontWeight: isEmpty ? 700 : 400 }}>
+              <div style={{ fontSize: 12, color: isEmpty ? "#f87171" : isLow ? "#f87171" : isWarn ? "#f59e0b" : usageText, fontWeight: isEmpty||isLow ? 700 : 400 }}>
                 {user ? "회원" : "비회원"} {pt.leftPt}P / {pt.totalPt}P
               </div>
               {onlineCount > 0 && (
@@ -245,13 +245,19 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
             </div>
             <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: "100%", width: pctPt, transition: "width 0.5s",
-                background: isEmpty ? "linear-gradient(90deg,#f87171,#ef4444)" : isLow ? "linear-gradient(90deg,#f59e0b,#f97316)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
+                background: isEmpty||isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : isWarn ? "linear-gradient(90deg,#f59e0b,#f97316)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
             </div>
             {isEmpty && !user && (
-              <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 600 }}>무료 포인트 소진 · 회원가입 필요</div>
+              <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 700 }}>⚠️ 무료 포인트 소진 · 회원가입 필요</div>
             )}
             {isEmpty && user && (
-              <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 600 }}>포인트 소진 · 충전 필요</div>
+              <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 700 }}>⚠️ 포인트 소진 · 충전 필요</div>
+            )}
+            {!isEmpty && isLow && (
+              <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 700 }}>🔴 1회 남음 · 곧 충전 필요!</div>
+            )}
+            {!isEmpty && !isLow && isWarn && (
+              <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 4, fontWeight: 600 }}>⚡ 포인트 부족 임박 · 충전 권장</div>
             )}
           </div>
         );
@@ -587,10 +593,11 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
             {(() => {
               const pt = getAiPoints(user, info);
               const isEmpty = !pt.canUse;
-              const isLow = pt.leftPt < 20 && pt.leftPt > 0;
+              const isLow = pt.leftPt > 0 && pt.leftPt <= 10;
+              const isWarn = pt.leftPt > 10 && pt.leftPt <= 30;
               return (
                 <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
-                  color: isEmpty ? "#f87171" : isLow ? "#f59e0b" : "#a5b4fc" }}>
+                  color: isEmpty||isLow ? "#f87171" : isWarn ? "#f59e0b" : "#a5b4fc" }}>
                   💎 {user ? "회원" : "비회원"} {pt.leftPt}P
                 </span>
               );
@@ -646,72 +653,107 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
                   </div>
                 </div>
               </div>
-              {/* 회원 정보 */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-                {[
-                  { label: "등급", value: user.role === "admin" ? "👑 관리자" : "🌟 일반회원" },
-                  { label: "보유 포인트", value: `💎 ${(user.points||0).toLocaleString()}P` },
-                  { label: "가입일", value: user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "—" },
-                  { label: "마지막 로그인", value: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "—" },
-                ].map((row, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "8px 12px", borderRadius: 9,
-                    background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff" }}>
-                    <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888" }}>{row.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isDark?"#fff":"#1a1a2e" }}>{row.value}</span>
-                  </div>
-                ))}
-                {/* 포인트 현황 */}
-                {(() => {
-                  const _i = (() => {
-                    try { const u=JSON.parse(localStorage.getItem("nper_ai_usage")||"{}"); return {used:u["member_"+(user.uid||"")]||0}; } catch{return{used:0};}
-                  })();
-                  const pt = getAiPoints(user, _i);
-                  const pctBar = Math.min((pt.usedPt / Math.max(pt.totalPt, 1)) * 100, 100);
-                  const isEmpty = !pt.canUse;
-                  const isLow = pt.leftPt < 20 && pt.leftPt > 0;
-                  return (
-                    <div style={{ padding: "8px 12px", borderRadius: 9, background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888" }}>포인트 현황</span>
-                        <span style={{ fontSize: 13, fontWeight: 700,
-                          color: isEmpty ? "#f87171" : isLow ? "#f59e0b" : isDark?"#a5b4fc":"#4f46e5" }}>
-                          {pt.leftPt}P / {pt.totalPt}P
-                        </span>
+              {/* 회원 정보 + 포인트 통합 */}
+              {(() => {
+                const _i = (() => {
+                  try { const u=JSON.parse(localStorage.getItem("nper_ai_usage")||"{}"); return {used:u["member_"+(user.uid||"")]||0}; } catch{return{used:0};}
+                })();
+                const pt = getAiPoints(user, _i);
+                const pctBar = Math.min((pt.usedPt / Math.max(pt.totalPt, 1)) * 100, 100);
+                const isEmpty = !pt.canUse;
+                const isLow = pt.leftPt > 0 && pt.leftPt <= 10; // 1회만 남음
+                const isWarn = pt.leftPt > 10 && pt.leftPt <= 30; // 2~3회 남음
+                const ptColor = isEmpty ? "#f87171" : isLow ? "#f87171" : isWarn ? "#f59e0b" : isDark?"#a5b4fc":"#4f46e5";
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                    {/* 기본 정보 행들 */}
+                    {[
+                      { label: "등급", value: user.role === "admin" ? "👑 관리자" : "🌟 일반회원" },
+                      { label: "가입일", value: user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "—" },
+                      { label: "마지막 로그인", value: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "—" },
+                    ].map((row, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "8px 12px", borderRadius: 9,
+                        background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff" }}>
+                        <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888" }}>{row.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: isDark?"#fff":"#1a1a2e" }}>{row.value}</span>
                       </div>
-                      <div style={{ height: 5, borderRadius: 5, background: isDark?"rgba(255,255,255,0.08)":"#e9ecef", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 5, width: pctBar + "%",
-                          background: isEmpty ? "linear-gradient(90deg,#f87171,#ef4444)"
-                            : isLow ? "linear-gradient(90deg,#f59e0b,#f97316)"
+                    ))}
+
+                    {/* 포인트 통합 카드 */}
+                    <div style={{ padding: "12px 14px", borderRadius: 10,
+                      background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff",
+                      border: `1px solid ${isEmpty||isLow?"rgba(248,113,113,0.2)":isWarn?"rgba(245,158,11,0.2)":isDark?"rgba(255,255,255,0.06)":"#e9ecef"}` }}>
+                      {/* 헤더 */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888", fontWeight: 600 }}>💎 포인트</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.3)":"#bbb" }}>구매 {(user.points||0)}P</span>
+                          <span style={{ fontSize: 15, fontWeight: 900, color: ptColor }}>
+                            {pt.leftPt}P 잔여
+                          </span>
+                        </div>
+                      </div>
+                      {/* 프로그레스 바 */}
+                      <div style={{ height: 6, borderRadius: 6, background: isDark?"rgba(255,255,255,0.08)":"#e9ecef", overflow: "hidden", marginBottom: 8 }}>
+                        <div style={{ height: "100%", borderRadius: 6,
+                          width: pctBar + "%",
+                          background: isEmpty||isLow ? "linear-gradient(90deg,#f87171,#ef4444)"
+                            : isWarn ? "linear-gradient(90deg,#f59e0b,#f97316)"
                             : "linear-gradient(90deg,#6366f1,#8b5cf6)",
                           transition: "width 0.5s" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.3)":"#aaa", marginTop: 5 }}>
-                        AI 생성 1회 = 10P · {pt.leftPt >= 10 ? Math.floor(pt.leftPt/10) + "회 이용 가능" : "포인트 부족"}
+                      {/* 상세 수치 */}
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.3)":"#aaa" }}>
+                          무료 {Math.min(pt.usedPt, 200)}P 사용 / 200P
+                        </span>
+                        <span style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.3)":"#aaa" }}>
+                          AI 1회 = 10P
+                        </span>
                       </div>
+                      {/* 경고 메세지 */}
+                      {isEmpty && (
+                        <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 8,
+                          background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                          <div style={{ fontSize: 12, color: "#f87171", fontWeight: 700 }}>⚠️ 포인트가 모두 소진됐어요</div>
+                          <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.45)":"#888", marginTop: 3 }}>포인트를 충전하면 계속 이용하실 수 있어요.</div>
+                        </div>
+                      )}
+                      {isLow && !isEmpty && (
+                        <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 8,
+                          background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)" }}>
+                          <div style={{ fontSize: 12, color: "#f87171", fontWeight: 700 }}>🔴 포인트가 거의 다 떨어졌어요!</div>
+                          <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.45)":"#888", marginTop: 3 }}>약 1회 생성 후 더 이상 이용이 불가해요. 지금 충전하세요.</div>
+                        </div>
+                      )}
+                      {isWarn && (
+                        <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 8,
+                          background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                          <div style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚡ 포인트가 얼마 남지 않았어요</div>
+                          <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.45)":"#888", marginTop: 3 }}>약 {Math.floor(pt.leftPt/10)}회 생성 가능 · 포인트 충전을 권장해요.</div>
+                        </div>
+                      )}
                     </div>
-                  );
-                })()}
-              </div>
-              {/* 충전 요청 (포인트 소진 시) */}
-              {!getAiPoints(user, (() => { try { const u=JSON.parse(localStorage.getItem("nper_ai_usage")||"{}"); return {used:u["member_"+(user.uid||"")]||0}; } catch{return{used:0};} })()).canUse && (
-                <div style={{ padding: "12px", borderRadius: 10,
-                  background: isDark?"rgba(248,113,113,0.08)":"#fff5f5",
-                  border: "1px solid rgba(248,113,113,0.2)", marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, color: "#f87171", fontWeight: 700, marginBottom: 6 }}>
-                    ⚠️ 무료 횟수를 모두 사용했어요
                   </div>
-                  <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.45)":"#888", marginBottom: 10, lineHeight: 1.7 }}>
-                    포인트를 충전하면 계속 이용하실 수 있어요.
+                );
+              })()}
+              {/* 충전 필요 시 버튼 강조 */}
+              {(() => {
+                const _i2 = (() => { try { const u=JSON.parse(localStorage.getItem("nper_ai_usage")||"{}"); return {used:u["member_"+(user.uid||"")]||0}; } catch{return{used:0};} })();
+                const pt2 = getAiPoints(user, _i2);
+                return (!pt2.canUse || pt2.leftPt <= 10) ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <button onClick={() => { setShowProfile(false); navigate("pricing"); }}
+                      style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none",
+                        background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                        color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer",
+                        boxShadow: "0 6px 20px rgba(124,106,255,0.35)" }}>
+                      💳 포인트 충전하기
+                    </button>
                   </div>
-                  <button onClick={() => { setShowProfile(false); navigate("pricing"); }}
-                    style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none",
-                      background: "linear-gradient(135deg,#7c6aff,#ec4899)",
-                      color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    💳 포인트 충전하기
-                  </button>
-                </div>
-              )}
+                ) : null;
+              })()}
               {/* 버튼 */}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => { setShowProfile(false); navigate("pricing"); }}
