@@ -236,6 +236,41 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
 
+  // 비회원 차단
+  if (!user && aiMenu && aiMenu !== "home") {
+    const bg=isDark?"linear-gradient(160deg,#0f0c29,#1a1740)":"#f4f4f8";
+    const card=isDark?"rgba(255,255,255,0.04)":"#fff";
+    const bdr=isDark?"rgba(255,255,255,0.1)":"#e5e3f5";
+    const tx=isDark?"#fff":"#1a1a2e";
+    const mu=isDark?"rgba(255,255,255,0.45)":"#6c757d";
+    return (
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:bg,padding:"40px 20px"}}>
+        <div style={{maxWidth:400,width:"100%",textAlign:"center"}}>
+          <div style={{fontSize:52,marginBottom:16}}>🔒</div>
+          <h2 style={{fontSize:22,fontWeight:900,color:tx,marginBottom:10}}>로그인이 필요해요</h2>
+          <p style={{fontSize:14,color:mu,lineHeight:1.8,marginBottom:28}}>AI 생성기는 회원 전용 서비스예요.<br/>무료로 가입하면 즉시 이용할 수 있어요!</p>
+          <div style={{background:card,border:"1px solid "+bdr,borderRadius:16,padding:"20px 22px",marginBottom:24,textAlign:"left"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#a5b4fc",marginBottom:12}}>🎁 가입 혜택</div>
+            {[["💎","가입 즉시 10P","AI 1회 분량"],["✍️","게시글 1P 적립","매번"],["🤖","AI 생성기 무료 이용","회원 전용"],["☀️","일일 로그인 1P","매일"]].map(([ic,t,d],i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<3?10:0}}>
+                <span style={{fontSize:18}}>{ic}</span>
+                <div><div style={{fontSize:13,fontWeight:700,color:tx}}>{t}</div><div style={{fontSize:11,color:mu}}>{d}</div></div>
+              </div>
+            ))}
+          </div>
+          <button onClick={()=>navigate&&navigate("login_trigger")}
+            style={{width:"100%",padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:15,fontWeight:800,boxShadow:"0 8px 24px rgba(124,106,255,0.35)",marginBottom:10}}>
+            🚀 무료 회원가입 / 로그인
+          </button>
+          <button onClick={()=>setAiMenu("home")}
+            style={{width:"100%",padding:"11px",borderRadius:12,border:"1px solid "+bdr,background:"transparent",color:mu,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            ← AI 생성기 소개 보기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
@@ -250,9 +285,17 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>AI 생성기에 오신 걸 환영해요! 👋</div>
-          <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5, marginBottom: 10, color: homeText }}>AI 콘텐츠 생성기에 오신 걸 환영해요! 👋</div>
+          <p style={{ fontSize: 14, color: homeMuted, lineHeight: 1.9, marginBottom: 8, maxWidth: 680 }}>
+            AI를 활용한 블로그 글 작성과 마케팅을 더욱 쉽고 효율적으로 만들 수 있도록 다양한 서비스 툴을 제공합니다.<br/>
+            콘텐츠 기획부터 글 작성, 마케팅 전략까지 AI 기반 솔루션을 통해 누구나 빠르게 콘텐츠를 제작하고 온라인 성장을 만들어갈 수 있도록 지원합니다.
+          </p>
+          <p style={{ fontSize: 13, color: homeMuted, lineHeight: 1.85, maxWidth: 680, opacity: 0.8 }}>
+            초보자부터 마케팅 전문가까지 사용할 수 있는 실전형 도구와 자료를 제공하며, 블로그 운영과 SNS 마케팅을 보다 체계적으로 실행할 수 있도록 돕습니다.<br/>
+            콘텐츠 제작의 시간을 줄이고, 더 높은 성과를 만들어낼 수 있는 AI 기반 콘텐츠 마케팅 환경을 제공합니다.
+          </p>
+          <div style={{ marginTop: 14, fontSize: 12, color: homeMuted, opacity: 0.6 }}>👈 왼쪽 메뉴에서 원하는 도구를 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
           {MENUS.map(m => (
