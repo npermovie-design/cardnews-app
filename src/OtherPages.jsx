@@ -434,12 +434,12 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 /* ════════════════════════════════════════════════════════════
    PricingPage
 ════════════════════════════════════════════════════════════ */
-export function PricingPage({ navigate, C }) {
+export function PricingPage({ navigate, C, user, onLogin }) {
   const PLANS = [
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
       color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["비회원 AI 5회 무료","가입 즉시 10P 지급","게시글 1P·로그인 1P 적립","AI 1회 = 10P 차감","포인트 충전으로 무제한"],
+      features: ["가입 시 50P 자동 지급","게시글 작성 10P 적립","댓글 작성 2P 적립","일일 로그인 3P 적립","포인트 소진 시 충전"],
       btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
       badge: null, highlight: false,
     },
@@ -469,7 +469,7 @@ export function PricingPage({ navigate, C }) {
   const FAQ = [
     { q: "포인트는 어떻게 사용하나요?", a: "AI 생성 1회에 10P가 차감됩니다. 게시글 작성(10P), 댓글(2P), 일일 로그인(3P)으로 포인트를 적립할 수 있어요." },
     { q: "포인트 유효기간이 있나요?", a: "충전한 포인트는 유효기간이 없습니다. 적립 포인트도 동일하게 영구 사용 가능해요." },
-    { q: "결제는 어떻게 하나요?", a: "국내외 신용카드(VISA, Mastercard 등)로 결제 가능합니다. 해외 사용자도 결제하실 수 있어요." },
+    { q: "결제는 어떻게 하나요?", a: "토스페이먼츠를 통해 신용카드, 카카오페이, 네이버페이 등 다양한 방법으로 결제 가능합니다." },
     { q: "환불이 가능한가요?", a: "충전 후 사용하지 않은 포인트는 7일 이내 전액 환불 가능합니다. 문의하기로 연락해주세요." },
   ];
 
@@ -511,6 +511,7 @@ export function PricingPage({ navigate, C }) {
             <button
               onClick={() => {
                 if (plan.id === "free") { navigate("ai"); return; }
+                if (!user) { if (onLogin) onLogin(); return; }
                 const varMap = {
                   basic:   "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
                   pro:     "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
@@ -519,7 +520,7 @@ export function PricingPage({ navigate, C }) {
                 window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + varMap[plan.id];
               }}
               style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
-              {plan.btnLabel}
+              {plan.id !== "free" && !user ? "로그인 후 충전" : plan.btnLabel}
             </button>
           </div>
         ))}
@@ -530,10 +531,10 @@ export function PricingPage({ navigate, C }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon: "🎁", action: "회원가입", pt: "+10P", desc: "가입 즉시" },
-            { icon: "📝", action: "게시글 작성", pt: "+1P", desc: "글 1개당" },
-            { icon: "☀️", action: "일일 로그인", pt: "+1P", desc: "하루 1회" },
-            { icon: "☀️", action: "일일 로그인", pt: "+1P", desc: "하루 1회" },
+            { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
+            { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
+            { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
+            { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
           ].map((item, i) => (
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "14px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
@@ -544,7 +545,7 @@ export function PricingPage({ navigate, C }) {
           ))}
         </div>
         <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
-          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 비회원 5회 무료 · 회원 가입 시 10P 지급
+          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 게시글 10개 작성하면 AI 10회 사용 가능
         </div>
       </div>
 
