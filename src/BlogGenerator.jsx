@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { changePoints, setLocalUser } from "./storage";
+import { changePoints, setLocalUser, getAiUsage, setAiUsage } from "./storage";
 
 const API_KEY = "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";
 
@@ -455,6 +455,10 @@ SEO 최적화된 블로그 제목 3개만 짧게 추천해주세요. 번호 목�
         }
       }
       if (isTistory) setHtmlResult(mdToHtml(full));
+      // 사용횟수 증가
+      const usage = getAiUsage();
+      const ukey = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
+      setAiUsage({ ...usage, [ukey]: (usage[ukey] || 0) + 1 });
       // 포인트 차감
       if (user?.uid) { try { await changePoints(user.uid, -10, "블로그 글 생성"); } catch(e){} }
     } catch { setError("생성 중 오류가 발생했습니다."); }
@@ -552,14 +556,35 @@ SEO 최적화된 블로그 제목 3개만 짧게 추천해주세요. 번호 목�
             ))}
             {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {result&&<span style={{fontSize:11,color:muted}}>{result.length.toLocaleString()}자</span>}
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            {result&&<span style={{fontSize:11,color:muted,marginRight:2}}>{result.length.toLocaleString()}자</span>}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
                 {mode==="text"?"텍스트":mode==="html"?"HTML":"미리보기"}
               </button>
             ))}
+            {result && <>
+              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
+                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,
+                  background:copied?(isDark?"rgba(74,222,128,0.15)":"#f0fdf4"):"transparent",
+                  color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:4}}>
+                {copied?"✓ 복사됨":"📋 복사"}
+              </button>
+              <button onClick={()=>{const blob=new Blob([result],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="생성결과.txt";a.click();URL.revokeObjectURL(url);}}
+                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                📄 TXT
+              </button>
+              <button onClick={()=>{const htmlContent=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;color:#333}h1,h2,h3{color:#1a1a2e}</style></head><body><pre style="white-space:pre-wrap">${result}</pre></body></html>`;const blob=new Blob([htmlContent],{type:"text/html;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="생성결과.html";a.click();URL.revokeObjectURL(url);}}
+                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                🌐 HTML
+              </button>
+              <button onClick={()=>{const printWin=window.open("","_blank");printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;padding:30px;line-height:1.8;color:#000}@media print{body{padding:0}}</style></head><body><pre style="white-space:pre-wrap">${result}</pre><script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);printWin.document.close();}}
+                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                🖨️ PDF
+              </button>
+            </>}
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
@@ -776,39 +801,7 @@ SEO 최적화된 블로그 제목 3개만 짧게 추천해주세요. 번호 목�
           {renderLoadingOverlay()}
           {renderResult()}
         </div>
-        {/* 플로팅 액션 버튼 - 결과 있을 때만 */}
-        {result && (
-          <div style={{padding:"12px 16px",borderTop:`1px solid ${border}`,background:panelBg,display:"flex",gap:8,flexWrap:"wrap",flexShrink:0}}>
-            <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
-              style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              {copied?"✓ 복사됨":"📋 복사"}
-            </button>
-            <button onClick={()=>{
-              const blob=new Blob([result],{type:"text/plain;charset=utf-8"});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement("a");
-              a.href=url;a.download="생성결과.txt";a.click();URL.revokeObjectURL(url);
-            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              📄 TXT
-            </button>
-            <button onClick={()=>{
-              const htmlContent=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;color:#333}h1,h2,h3{color:#1a1a2e}</style></head><body><pre style="white-space:pre-wrap">${result}</pre></body></html>`;
-              const blob=new Blob([htmlContent],{type:"text/html;charset=utf-8"});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement("a");
-              a.href=url;a.download="생성결과.html";a.click();URL.revokeObjectURL(url);
-            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              🌐 HTML
-            </button>
-            <button onClick={()=>{
-              const printWin=window.open("","_blank");
-              printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;padding:30px;line-height:1.8;color:#000}@media print{body{padding:0}}</style></head><body><pre style="white-space:pre-wrap">${result}</pre><script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
-              printWin.document.close();
-            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              🖨️ PDF
-            </button>
-          </div>
-        )}
+
       </div>
     </div>
   );

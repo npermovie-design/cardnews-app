@@ -4,7 +4,7 @@ import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AboutPage
@@ -233,7 +233,7 @@ const BLOG_MAP = {
   blog_yt_blog: { type: "blog_yt_blog",  label: "유튜브로 글쓰기" },
 };
 
-function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onRefreshUser }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -329,7 +329,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   if (aiMenu === "blog_news") {
     return (
       <div key="news_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <NewsBlogGenerator theme={theme} embedded />
+        <NewsBlogGenerator theme={theme} embedded user={user} />
       </div>
     );
   }
@@ -348,7 +348,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
     return (
       <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} />
+        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} />
       </div>
     );
   }
@@ -391,6 +391,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
   const setAiMenu = (id) => {
     if (setAiMenuProp) setAiMenuProp(id);
@@ -468,14 +469,126 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
             {user && <span style={{ fontSize: 11, color: "#a5b4fc", fontWeight: 700, whiteSpace: "nowrap" }}>💎 {user.points || 0}P</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
-              <span style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.45)" : "#888", whiteSpace: "nowrap" }}>{onlineCount}명</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px #4ade80", flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", whiteSpace: "nowrap", fontWeight: 600 }}>현재 접속중 {onlineCount}명</span>
             </div>
-
+            {user && (
+              <button onClick={() => setShowProfile(p => !p)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20,
+                  border: `1px solid ${isDark?"rgba(255,255,255,0.12)":"#e5e3f5"}`,
+                  background: isDark?"rgba(255,255,255,0.06)":"#fff",
+                  cursor: "pointer", color: isDark?"#fff":"#1a1a2e" }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                  {(user.nick||user.email||"U")[0].toUpperCase()}
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user.nick || user.email?.split("@")[0] || "프로필"}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
+        {/* 프로필 드롭다운 */}
+        {showProfile && user && (
+          <div style={{ position: "absolute", top: 44, right: 0, zIndex: 200, minWidth: 280 }}>
+            <div onClick={() => setShowProfile(false)}
+              style={{ position: "fixed", inset: 0, zIndex: -1 }} />
+            <div style={{ background: isDark ? "rgba(18,16,48,0.98)" : "#fff",
+              border: `1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e3f5"}`,
+              borderRadius: "0 0 16px 16px", boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+              padding: "20px 20px 16px" }}>
+              {/* 유저 헤더 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, paddingBottom: 16,
+                borderBottom: `1px solid ${isDark?"rgba(255,255,255,0.08)":"#f0eeff"}` }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%",
+                  background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                  {(user.nick||user.email||"U")[0].toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: isDark?"#fff":"#1a1a2e" }}>
+                    {user.nick || "사용자"}
+                  </div>
+                  <div style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888", marginTop: 2 }}>
+                    {user.email}
+                  </div>
+                </div>
+              </div>
+              {/* 회원 정보 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                {[
+                  { label: "등급", value: user.role === "admin" ? "👑 관리자" : "🌟 일반회원" },
+                  { label: "보유 포인트", value: `💎 ${(user.points||0).toLocaleString()}P` },
+                  { label: "가입일", value: user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "—" },
+                  { label: "마지막 로그인", value: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "—" },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "8px 12px", borderRadius: 9,
+                    background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff" }}>
+                    <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888" }}>{row.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isDark?"#fff":"#1a1a2e" }}>{row.value}</span>
+                  </div>
+                ))}
+                {/* 사용 횟수 */}
+                <div style={{ padding: "8px 12px", borderRadius: 9, background: isDark?"rgba(255,255,255,0.04)":"#f8f7ff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.45)":"#888" }}>무료 사용 횟수</span>
+                    <span style={{ fontSize: 13, fontWeight: 700,
+                      color: info.used >= freeLimit ? "#f87171" : isDark?"#a5b4fc":"#4f46e5" }}>
+                      {Math.min(info.used, freeLimit)}/{freeLimit}회
+                    </span>
+                  </div>
+                  <div style={{ height: 5, borderRadius: 5, background: isDark?"rgba(255,255,255,0.08)":"#e9ecef", overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 5,
+                      width: Math.min(info.used/freeLimit*100,100) + "%",
+                      background: info.used >= freeLimit
+                        ? "linear-gradient(90deg,#f87171,#ef4444)"
+                        : "linear-gradient(90deg,#6366f1,#8b5cf6)",
+                      transition: "width 0.5s" }} />
+                  </div>
+                </div>
+              </div>
+              {/* 충전 요청 (다 찼을 때) */}
+              {info.used >= freeLimit && (
+                <div style={{ padding: "12px", borderRadius: 10,
+                  background: isDark?"rgba(248,113,113,0.08)":"#fff5f5",
+                  border: "1px solid rgba(248,113,113,0.2)", marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, color: "#f87171", fontWeight: 700, marginBottom: 6 }}>
+                    ⚠️ 무료 횟수를 모두 사용했어요
+                  </div>
+                  <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.45)":"#888", marginBottom: 10, lineHeight: 1.7 }}>
+                    포인트를 충전하면 계속 이용하실 수 있어요.
+                  </div>
+                  <button onClick={() => { setShowProfile(false); navigate("pricing"); }}
+                    style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none",
+                      background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                      color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    💳 포인트 충전하기
+                  </button>
+                </div>
+              )}
+              {/* 버튼 */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => { setShowProfile(false); navigate("pricing"); }}
+                  style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e3f5"}`,
+                    background: "transparent", color: isDark?"rgba(255,255,255,0.55)":"#888",
+                    fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                  💎 포인트 충전
+                </button>
+                <button onClick={() => { setShowProfile(false); if(window.fbLogout || true) navigate("home"); }}
+                  style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none",
+                    background: "rgba(248,113,113,0.1)", color: "#f87171",
+                    fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} />
