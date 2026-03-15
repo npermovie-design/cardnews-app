@@ -73,6 +73,63 @@ export default function YtBlogGenerator({ theme, embedded }) {
   const transcriptRef = useRef(null);
 
   /* ── 유튜브 정보 + 자막 가져오기 ── */
+  /* ── YouTube 페이지 HTML에서 자막 트랙 URL 추출 (youtube-transcript-api 방식) ── */
+  const fetchTranscriptFromPage = async (ytId) => {
+    const PROXIES = [
+      "https://corsproxy.io/?",
+      "https://api.codetabs.com/v1/proxy?quest=",
+      "https://cors.sh/?",
+    ];
+
+    for (const proxy of PROXIES) {
+      try {
+        // 1. YouTube 페이지 HTML 가져오기
+        const pageUrl = `${proxy}https://www.youtube.com/watch?v=${ytId}`;
+        const res = await fetch(pageUrl, {
+          headers: { "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) continue;
+        const html = await res.text();
+
+        // 2. ytInitialPlayerResponse에서 자막 트랙 목록 추출
+        const match = html.match(/"captionTracks":(\[.*?\])/);
+        if (!match) continue;
+
+        let tracks;
+        try { tracks = JSON.parse(match[1]); } catch { continue; }
+        if (!tracks || tracks.length === 0) continue;
+
+        // 3. 언어 우선순위: 한국어 → 영어 → 자동생성 한국어 → 자동생성 영어 → 첫번째
+        const priority = ["ko", "en", "a.ko", "a.en"];
+        let chosenTrack = null;
+        for (const lang of priority) {
+          const t = tracks.find(tr =>
+            tr.languageCode === lang ||
+            (tr.vssId && tr.vssId.includes(`.${lang}`))
+          );
+          if (t) { chosenTrack = t; break; }
+        }
+        if (!chosenTrack) chosenTrack = tracks[0];
+
+        // 4. 자막 XML 가져오기
+        const captionUrl = chosenTrack.baseUrl;
+        if (!captionUrl) continue;
+
+        const capRes = await fetch(`${proxy}${captionUrl}&fmt=srv3`, {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!capRes.ok) continue;
+        const xml = await capRes.text();
+        const items = parseXmlTranscript(xml);
+        if (items.length > 3) {
+          return { items, lang: chosenTrack.languageCode || "unknown" };
+        }
+      } catch { continue; }
+    }
+    return null;
+  };
+
   const fetchVideo = async (inputUrl) => {
     const ytId = extractYtId(inputUrl);
     if (!ytId) { setFetchErr("올바른 유튜브 URL을 입력해주세요."); return; }
@@ -87,57 +144,27 @@ export default function YtBlogGenerator({ theme, embedded }) {
       ).then(r=>r.ok?r.json():null).catch(()=>null);
 
       setVideoInfo({
-        title:  oembed?.title  || "유튜브 영상",
+        title:  oembed?.title       || "유튜브 영상",
         author: oembed?.author_name || "",
         thumb:  `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
       });
 
-      /* 2. 자막 가져오기 시도 */
-      setFetchStatus("자막 불러오는 중...");
+      /* 2. 자막 추출 (YouTube 페이지 파싱 방식) */
+      setFetchStatus("자막 추출 중... (최대 15초)");
 
-      let items = [];
+      const result = await fetchTranscriptFromPage(ytId);
 
-      // 방법 1: YouTube Transcript API 비공식 엔드포인트들 시도
-      const langs = ["ko", "en", "a.ko", "a.en"];
-      const proxyBases = [
-        "https://corsproxy.io/?",
-        "https://api.codetabs.com/v1/proxy?quest=",
-        "https://cors-anywhere.herokuapp.com/",
-      ];
-
-      for (const lang of langs) {
-        if (items.length > 3) break;
-        for (const proxy of proxyBases) {
-          if (items.length > 3) break;
-          try {
-            const urls = [
-              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}&fmt=srv3`,
-              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}&fmt=vtt`,
-              `${proxy}https://www.youtube.com/api/timedtext?lang=${lang}&v=${ytId}`,
-            ];
-            for (const url of urls) {
-              if (items.length > 3) break;
-              try {
-                const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-                if (!res.ok) continue;
-                const text = await res.text();
-                if (!text || text.length < 50) continue;
-                const parsed = parseXmlTranscript(text);
-                if (parsed.length > 3) { items = parsed; break; }
-              } catch { continue; }
-            }
-          } catch { continue; }
-        }
-      }
-
-      if (items.length > 0) {
-        setTranscript(items);
+      if (result && result.items.length > 0) {
+        setTranscript(result.items);
         setFetchStatus("");
+        // 성공 알림
+        const langLabel = result.lang.startsWith("ko") ? "한국어" : result.lang.startsWith("en") ? "영어" : result.lang;
+        setFetchErr(`✅ ${langLabel} 자막 ${result.items.length}개 로드 성공!`);
+        setTimeout(() => setFetchErr(""), 3000);
       } else {
         setTranscript([]);
         setFetchStatus("");
-        // 자막 없어도 글 작성 가능 - 에러 메시지 약하게
-        setFetchErr("자막을 불러오지 못했어요. 영상 제목과 URL 기반으로 글을 작성합니다.");
+        setFetchErr("자막이 없는 영상이에요. 영상 제목 기반으로 글을 작성합니다.");
       }
 
     } catch (e) {
@@ -337,7 +364,13 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                 {fetchStatus ? <div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/> : "불러오기"}
               </button>
             </div>
-            {fetchErr && <div style={{marginTop:8,fontSize:12,color:"rgba(251,191,36,0.9)",lineHeight:1.6}}>ℹ️ {fetchErr}</div>}
+            {fetchErr && (
+              <div style={{marginTop:8,fontSize:12,lineHeight:1.6,
+                color: fetchErr.startsWith("✅") ? "#10b981" : fetchErr.includes("없는") ? "rgba(251,191,36,0.9)" : "rgba(255,100,100,0.9)"
+              }}>
+                {fetchErr}
+              </div>
+            )}
           </div>
 
           {/* 영상 미리보기 */}
