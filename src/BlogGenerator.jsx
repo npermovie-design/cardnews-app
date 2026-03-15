@@ -18,139 +18,6 @@ function mdToHtml(md) {
   return `<div class="tistory-content">\n<p>${html}</p>\n</div>`;
 }
 
-
-// ── stripMarkdown 헬퍼 ──────────────────────────────────────────────────────
-function stripMarkdown(text) {
-  return text
-    // 제목 기호 제거 (# ## ### 등)
-    .replace(/^#{1,6}\s+/gm, "")
-    // 굵게 **text** → text
-    .replace(/\*\*(.+?)\*\*/gs, "$1")
-    // 이탤릭 *text* → text
-    .replace(/\*(.+?)\*/gs, "$1")
-    // 인라인 코드 `code` → code
-    .replace(/`(.+?)`/g, "$1")
-    // 수평선 --- === *** 제거
-    .replace(/^[-*=]{3,}\s*$/gm, "")
-    // 리스트 기호 - / * → • (단, 줄 시작)
-    .replace(/^\s*[-*+]\s+/gm, "• ")
-    // 숫자 리스트 1. 2. → 제거
-    .replace(/^\s*\d+\.\s+/gm, "")
-    // 인용구 > 제거
-    .replace(/^>\s*/gm, "")
-    // 링크 [text](url) → text
-    .replace(/\[(.+?)\]\(.*?\)/g, "$1")
-    // 이미지 ![alt](url) → 제거
-    .replace(/!\[.*?\]\(.*?\)/g, "")
-    // 이모지 제거 (surrogate pair + BMP 이모지 모두)
-    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "")
-    .replace(/[\u2600-\u27FF\u2B00-\u2BFF\u3000-\u303F]/g, "")
-    .replace(/[\uFE00-\uFEFF]/g, "")
-    // 남은 특수 마크다운 기호 정리
-    .replace(/_{2,}(.+?)_{2,}/gs, "$1")
-    .replace(/_(.+?)_/gs, "$1")
-    .replace(/~~(.+?)~~/gs, "$1")
-    // 3줄 이상 빈줄 → 2줄로
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-// ── RichResultView JSX ──────────────────────────────────────────────────────
-function RichResultView({ result, loading, isDark, cardBg, border, text, accent, keyword }) {
-  if (!result && !loading) return null;
-
-  const lines = result.split("\n");
-  const sections = [];
-  let current = { heading: null, level: 0, body: [] };
-
-  lines.forEach(line => {
-    const h2 = line.match(/^## (.+)/);
-    const h3 = line.match(/^### (.+)/);
-    if (h2 || h3) {
-      if (current.body.length > 0 || current.heading) sections.push(current);
-      const raw = (h2 || h3)[1];
-      const clean = raw
-        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"")
-        .replace(/[\u2600-\u27FF]/g,"")
-        .replace(/\*\*(.+?)\*\*/g,"$1")
-        .trim();
-      current = { heading: clean, level: h2 ? 2 : 3, body: [] };
-    } else {
-      current.body.push(line);
-    }
-  });
-  if (current.body.length > 0 || current.heading) sections.push(current);
-
-  const getImgUrl = (heading, idx) => {
-    // pollinations.ai - 무료 AI 이미지 생성 (API키 불필요)
-    const seed = (heading||"x").split("").reduce((a,ch)=>a+ch.charCodeAt(0),0);
-    const prompt = encodeURIComponent(
-      `beautiful photo illustration for blog post about "${(heading||keyword||"nature").slice(0,40)}", professional photography, vivid colors, clean composition`
-    );
-    return `https://image.pollinations.ai/prompt/${prompt}?width=600&height=600&seed=${seed}&nologo=true&enhance=true`;
-  };
-
-  const renderLine = (line, i) => {
-    const cleaned = line
-      .replace(/\*\*(.+?)\*\*/g,"$1")
-      .replace(/\*(.+?)\*/g,"$1")
-      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"")
-      .replace(/[\u2600-\u27FF]/g,"");
-    if (!cleaned.trim()) return <div key={i} style={{height:8}}/>;
-    const isBullet = /^[\-*•] /.test(cleaned.trim());
-    if (isBullet) return (
-      <div key={i} style={{display:"flex",gap:8,marginBottom:5}}>
-        <span style={{color:accent,flexShrink:0,marginTop:2}}>•</span>
-        <span style={{fontSize:14,lineHeight:1.85}}>{cleaned.replace(/^[\-*•] /,"")}</span>
-      </div>
-    );
-    return <p key={i} style={{margin:"0 0 7px",fontSize:14,lineHeight:1.85,color:text}}>{cleaned}</p>;
-  };
-
-  return (
-    <div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,overflow:"hidden",minHeight:120}}>
-      {sections.map((sec, si) => (
-        <div key={si}>
-          {sec.heading && (
-            <div style={{position:"relative",overflow:"hidden"}}>
-              <img src={getImgUrl(sec.heading, si)} alt={sec.heading}
-                style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",display:"block",maxHeight:420}}
-                onError={e=>e.target.style.display="none"}/>
-              <div style={{
-                position:"absolute",bottom:0,left:0,right:0,
-                background:"linear-gradient(transparent,rgba(0,0,0,0.72))",
-                padding:"28px 22px 16px",
-              }}>
-                <div style={{
-                  fontSize:20,
-                  fontWeight:800,
-                  color:"#fff",
-                  textShadow:"0 2px 8px rgba(0,0,0,0.5)",
-                  letterSpacing:-0.3,
-                }}>{sec.heading}</div>
-              </div>
-            </div>
-          )}
-          {sec.body.length > 0 && (
-            <div style={{padding:"14px 22px 10px",color:text}}>
-              {sec.body.map((line,li) => renderLine(line,li))}
-            </div>
-          )}
-          {si < sections.length-1 && sec.heading && (
-            <div style={{height:1,background:border,margin:"0 22px"}}/>
-          )}
-        </div>
-      ))}
-      {loading && (
-        <div style={{padding:"12px 22px"}}>
-          <span style={{display:"inline-block",width:2,height:14,background:accent,animation:"blink 1s infinite"}}/>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 // ── 플랫폼별 전체 설정 ──────────────────────────────────────────────────────
 const PLATFORMS = {
 
@@ -421,20 +288,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
 
-  // ── AI 추천 기능 ──
-  const [step,          setStep]          = useState(1);
-  const [outline,       setOutline]       = useState([]);
-  const [loadingOutline,setLoadingOutline]= useState(false);
-  const [dragIdx,       setDragIdx]       = useState(null);
-  const [dragOver,      setDragOver]      = useState(null);
-  const [titleSuggs,    setTitleSuggs]    = useState([]);
-  const [loadingTitle,  setLoadingTitle]  = useState(false);
-  const [seoKws,        setSeoKws]        = useState([]);
-  const [loadingSeo,    setLoadingSeo]    = useState(false);
-  const [showTitleBox,  setShowTitleBox]  = useState(false);
-  const [showSeoBox,    setShowSeoBox]    = useState(false);
-
-  const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); setStep(1); setOutline([]); };
+  const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p=>({...p,[k]:v}));
   const currentFields = cfg.fields[subtype] || ["keyword","extra"];
   const examples = cfg.examples?.[subtype] || [];
@@ -454,7 +308,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const resultBg= isDark ? "rgba(0,0,0,0.15)"          : "#f8f9fa";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"          : "#fff";
 
-  const IS = {width:"100%", padding:"10px 12px", borderRadius:9, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
+  const IS = {width:"100%", padding:"13px 16px", borderRadius:10, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
 
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
@@ -488,202 +342,53 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
     finally { setLoading(false); }
   };
 
-  const handleCopy = async (content) => {
-    try {
-      await navigator.clipboard.writeText(content);
-    } catch {
-      // fallback: textarea 방식
-      const ta = document.createElement("textarea");
-      ta.value = content; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select(); document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
-    setCopied(true); setTimeout(()=>setCopied(false),2500);
-  };
-
-  // ── AI 제목 추천 ──
-  const suggestTitles = async () => {
-    if (!fields.keyword?.trim()) return;
-    setLoadingTitle(true); setShowTitleBox(true); setTitleSuggs([]);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:400,messages:[{role:"user",content:`블로그 제목 5개 추천. 주제: "${fields.keyword}". 번호 없이 제목만 줄바꿈으로`}]}),
-      });
-      const data = await res.json();
-      const text = (data.content||[]).map(b=>b.text||"").join("").trim();
-      setTitleSuggs(text.split("\n").filter(t=>t.trim()).slice(0,5));
-    } catch {}
-    setLoadingTitle(false);
-  };
-
-  // ── SEO 키워드 추천 ──
-  const suggestSeo = async () => {
-    if (!fields.keyword?.trim()) return;
-    setLoadingSeo(true); setShowSeoBox(true); setSeoKws([]);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:200,messages:[{role:"user",content:`SEO 키워드 10개. 주제: "${fields.keyword}". 키워드만 쉼표 구분`}]}),
-      });
-      const data = await res.json();
-      const text = (data.content||[]).map(b=>b.text||"").join("").trim();
-      setSeoKws(text.split(/[,，]/).map(k=>k.trim()).filter(k=>k).slice(0,10));
-    } catch {}
-    setLoadingSeo(false);
-  };
-
-  // ── 목차 생성 ──
-  const generateOutline = async () => {
-    if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
-    setError(""); setLoadingOutline(true); setStep(2); setOutline([]);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:600,messages:[{role:"user",content:`블로그 목차. 주제:"${fields.keyword}". JSON만 반환:[{"title":"소제목"},...] 6~8개`}]}),
-      });
-      const data = await res.json();
-      const text = (data.content||[]).map(b=>b.text||"").join("").trim();
-      const match = text.match(/\[.*\]/s);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        setOutline(parsed.map((o,i)=>({id:i,title:typeof o==="string"?o:o.title||""})));
-      }
-    } catch { setOutline([{id:0,title:"도입"},{id:1,title:"본론1"},{id:2,title:"본론2"},{id:3,title:"정리"}]); }
-    setLoadingOutline(false);
-  };
-
-  // ── 목차 포함 최종 생성 ──
-  const generateWithOutline = async () => {
-    setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false); setStep(3);
-    const outlineText = outline.length > 0 ? "\n\n목차:\n" + outline.map((o,i)=>`${i+1}. ${o.title}`).join("\n") : "";
-    const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount) + outlineText;
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:4000,stream:true,messages:[{role:"user",content:prompt}]}),
-      });
-      if (!res.ok) throw new Error("API 오류");
-      const reader = res.body.getReader(); const decoder = new TextDecoder();
-      let buf=""; let full="";
-      while (true) {
-        const {done,value} = await reader.read(); if (done) break;
-        buf += decoder.decode(value,{stream:true});
-        const lines = buf.split("\n"); buf = lines.pop();
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const d = line.slice(6).trim(); if (d==="[DONE]") continue;
-            try { const p=JSON.parse(d); if(p.type==="content_block_delta"&&p.delta?.text){full+=p.delta.text;setResult(full);} } catch{}
-          }
-        }
-      }
-      if (isTistory) setHtmlResult(mdToHtml(full));
-    } catch { setError("생성 중 오류가 발생했습니다."); setStep(2); }
-    finally { setLoading(false); }
-  };
-
-  // ── 글자수 통계 ──
-  const charStats = result ? { total:result.length, noSpace:result.replace(/\s/g,"").length, bytes:new Blob([result]).size } : null;
+  const handleCopy = content => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(()=>setCopied(false),2000); };
 
   // ── 결과 패널 ──
   const renderResult = () => {
-    if (loading) {
-      const wc = cfg.wordCounts.find(w=>w.id===wordCount);
-      const estSec = wordCount==="short"?8:wordCount==="medium"?14:22;
-      const steps = ["주제 분석 중...", "글 구조 기획...", "문장 생성 중...", "마무리 다듬는 중..."];
-      return (
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,textAlign:"center",animation:"fadeInUp 0.4s ease"}}>
-          {/* 떠다니는 문서 아이콘 */}
-          <div style={{position:"relative",marginBottom:28}}>
-            {["✍️","📝","✨"].map((em,i)=>(
-              <span key={i} style={{fontSize:36,position:i===0?"relative":"absolute",
-                top:i===0?0:[-15,15][i-1]+"px", left:i===0?0:[-20,20][i-1]+"px",
-                animation:"floatCard 2s ease-in-out infinite",
-                animationDelay:(i*0.4)+"s", display:"inline-block"}}>{em}</span>
-            ))}
-          </div>
-          <div style={{fontSize:17,fontWeight:900,color:text,marginBottom:8}}>AI가 글을 쓰고 있어요</div>
-          <div style={{fontSize:12,color:muted,marginBottom:20,lineHeight:1.7}}>
-            {fields.keyword} · {wc?.desc || "생성 중"}<br/>
-            <span style={{fontSize:11,opacity:0.7}}>약 {estSec}~{estSec+8}초 소요</span>
-          </div>
-          {/* 단계 */}
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20,width:"100%",maxWidth:260,textAlign:"left"}}>
-            {steps.map((s,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,
-                color:i<2?"rgba(99,102,241,0.7)":i===2?text:muted, fontWeight:i===2?700:400}}>
-                {i<2
-                  ? <span style={{color:"#4ade80",fontSize:13}}>✓</span>
-                  : i===2
-                    ? <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid "+accent,borderTop:"2px solid transparent",animation:"spin 0.8s linear infinite",flexShrink:0}}/>
-                    : <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.1)",flexShrink:0}}/>
-                }
-                {s}
-              </div>
-            ))}
-          </div>
-          {/* 프로그레스 바 */}
-          <div style={{width:"100%",maxWidth:280,height:4,background:isDark?"rgba(255,255,255,0.06)":"#e9ecef",borderRadius:4,overflow:"hidden"}}>
-            <div style={{height:"100%",background:"linear-gradient(90deg,"+accentRaw+",#8b5cf6)",borderRadius:4,
-              animation:"progressGrow "+estSec+"s ease-out forwards"}}/>
-          </div>
-          <div style={{fontSize:10,color:muted,marginTop:6}}>생성이 완료되면 자동으로 결과가 표시됩니다</div>
-        </div>
-      );
-    }
-    if (!result) {
+    if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);
       return (
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center"}}>
-          <div style={{fontSize:52}}>{sub?.icon||"✍️"}</div>
-          <div style={{fontSize:16,fontWeight:800,color:text}}>{sub?.label}</div>
-          <div style={{fontSize:13,color:muted,lineHeight:1.8}}>왼쪽에서 정보를 입력하고<br/>글 생성하기 버튼을 눌러주세요</div>
-          {examples.length>0&&<div style={{fontSize:11,color:muted,opacity:0.6}}>예시: {examples[0]}</div>}
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:"48px 32px",textAlign:"center"}}>
+          <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>{sub?.icon||"✍️"}</div>
+          <div>
+            <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8}}>{sub?.label||"AI 글쓰기"}</div>
+            <div style={{fontSize:14,color:muted,lineHeight:1.9,maxWidth:320}}>
+              왼쪽에서 글 타입과 정보를 입력한 후<br/>
+              <span style={{color:accentRaw,fontWeight:700}}>AI 글 생성하기</span> 버튼을 눌러주세요
+            </div>
+          </div>
+          {examples.length>0&&(
+            <div style={{padding:"10px 20px",background:isDark?"rgba(99,102,241,0.1)":"rgba(99,102,241,0.06)",borderRadius:24,fontSize:13,color:accent,fontWeight:600}}>
+              💡 예시: {examples[0]}
+            </div>
+          )}
         </div>
       );
     }
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {/* 글자수 통계 */}
-        {result && (
-          <div style={{flexShrink:0,padding:"6px 14px",borderBottom:`1px solid ${border}`,background:headerBg,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontSize:12,fontWeight:700,color:text}}>📊</span>
-            <span style={{fontSize:11,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)",color:accent,borderRadius:6,padding:"2px 8px",fontWeight:700}}>공백 포함 {result.length.toLocaleString()}자</span>
-            <span style={{fontSize:11,background:isDark?"rgba(16,185,129,0.1)":"rgba(16,185,129,0.07)",color:"#10b981",borderRadius:6,padding:"2px 8px",fontWeight:700}}>공백 제외 {result.replace(/\s/g,"").length.toLocaleString()}자</span>
-            <span style={{fontSize:11,color:muted}}>{new Blob([result]).size.toLocaleString()} byte</span>
-            <div style={{marginLeft:"auto",display:"flex",gap:4}}>
-              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:stripMarkdown(result))}
-                style={{padding:"5px 11px",borderRadius:7,border:`1px solid ${border}`,background:copied?accentBg:"transparent",color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                {copied?"✓ 복사됨":"📋 복사"}
-              </button>
-              <button onClick={()=>{const b=new Blob([stripMarkdown(result)],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="생성결과.txt";a.click();URL.revokeObjectURL(u);}}
-                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>📄 TXT</button>
-              <button onClick={()=>{const lines=result.split("\n");let blogHtml="";let inUl=false;lines.forEach(function(line){const h2=line.match(/^##\s+(.+)/);const h3=line.match(/^###\s+(.+)/);const bullet=line.match(/^[\-*•]\s+(.+)/);const bold=line.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");const cleanLine=bold.replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"");if(h2){if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=h2[1].replace(/\*\*(.+?)\*\*/g,"$1").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`<h2>${t}</h2>\n`;}else if(h3){if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=h3[1].replace(/\*\*(.+?)\*\*/g,"$1").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`<h3>${t}</h3>\n`;}else if(bullet){if(!inUl){blogHtml+="<ul>\n";inUl=true;}const t=bullet[1].replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();blogHtml+=`  <li>${t}</li>\n`;}else if(line.trim()===""){if(inUl){blogHtml+="</ul>\n";inUl=false;}blogHtml+="\n";}else{if(inUl){blogHtml+="</ul>\n";inUl=false;}const t=cleanLine.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,"").replace(/[\u2600-\u27FF]/g,"").trim();if(t)blogHtml+=`<p>${t}</p>\n`;}});if(inUl)blogHtml+="</ul>\n";const b=new Blob([blogHtml.trim()],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="블로그용_HTML.txt";a.click();URL.revokeObjectURL(u);}}
-                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌐 HTML</button>
-              <button onClick={()=>{const w=window.open("","_blank");const cleanPdf=stripMarkdown(result);const paraPdf=cleanPdf.split("\n\n").map(p=>p.trim()).filter(p=>p);const bodyPdf=paraPdf.map(p=>{if(p.startsWith("• ")||p.includes("\n• ")){const items=p.split("\n").filter(l=>l.trim()).map(l=>`<li>${l.replace(/^• /,"")}</li>`).join("");return`<ul>${items}</ul>`;}return`<p>${p.replace(/\n/g,"<br>")}</p>`;}).join("\n");w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Noto Sans KR',sans-serif;padding:40px;line-height:1.9;color:#000;font-size:14px}p{margin:0 0 14px}ul{margin:0 0 14px;padding-left:22px}li{margin-bottom:5px}@media print{body{padding:20px}}</style></head><body>${bodyPdf}<script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);w.document.close();}}
-                style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>🖨️ PDF</button>
-            </div>
-          </div>
-        )}
-        <div style={{height:40,flexShrink:0,display:"flex",alignItems:"center",padding:"0 14px",borderBottom:`1px solid ${border}`,background:headerBg}}>
+        <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:viewMode===mode?700:400,cursor:"pointer"}}>
                 {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
               </button>
             ))}
-            {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>}
-            {!result&&<span style={{fontSize:12,color:muted}}>글 생성 전</span>}
+            {!isTistory&&result&&<span style={{fontSize:15,fontWeight:800,color:text}}>📄 생성 결과</span>}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {result&&<span style={{fontSize:13,color:muted,background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",padding:"3px 10px",borderRadius:20}}>{result.length.toLocaleString()}자</span>}
+            {result&&isTistory&&["text","html","preview"].map(mode=>(
+              <button key={mode} onClick={()=>setViewMode(mode)}
+                style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {mode==="text"?"텍스트":mode==="html"?"HTML":"미리보기"}
+              </button>
+            ))}
           </div>
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
-          {(viewMode==="text"||!isTistory)&&(
-            <RichResultView result={result} loading={loading} isDark={isDark} cardBg={cardBg} border={border} text={text} accent={accent} keyword={fields.keyword||""}/>
-          )}
+        <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
+          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:14,padding:"24px 28px",whiteSpace:"pre-wrap",lineHeight:2.1,fontSize:16,color:text,minHeight:200,fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif"}}>{result}{loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}</div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
         </div>
@@ -698,22 +403,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
       <style>{`
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        @keyframes floatCard{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
-        @keyframes progressGrow{from{width:0%}to{width:100%}}
-        @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-        .tistory-content h1,.tistory-content h2{font-size:20px;font-weight:700;margin:20px 0 10px}
-        .tistory-content h3{font-size:16px;font-weight:700;margin:14px 0 8px}
-        .tistory-content p{margin:8px 0;line-height:1.8}
-        .tistory-content ul{padding-left:20px;margin:8px 0}
-        .tistory-content li{margin:4px 0}
+        .tistory-content h1,.tistory-content h2{font-size:22px;font-weight:700;margin:24px 0 12px}
+        .tistory-content h3{font-size:18px;font-weight:700;margin:16px 0 10px}
+        .tistory-content p{margin:10px 0;line-height:1.9}
+        .tistory-content ul{padding-left:20px;margin:10px 0}
+        .tistory-content li{margin:6px 0}
         .blog-mobile-tabs{display:none}
-        .blog-panel-left{width:380px;flex-shrink:0}
-        .blog-panel-right{flex:1}
-        @media(max-width:768px){
+        .blog-panel-left{width:480px;flex-shrink:0;border-right:1px solid var(--blog-border)}
+        .blog-panel-right{flex:1;min-width:0}
+        .blog-label{font-size:14px;font-weight:700;margin-bottom:8px;letter-spacing:-0.1px}
+        .blog-input-wrap{margin-bottom:22px}
+        @media(max-width:860px){
           .blog-mobile-tabs{display:flex!important}
-          .blog-panel-left{width:100%!important;flex-shrink:unset}
-          .blog-panel-right{flex:1;width:100%!important}
+          .blog-panel-left{width:100%!important;flex-shrink:unset;border-right:none!important;border-bottom:1px solid var(--blog-border)}
+          .blog-panel-right{width:100%!important}
           .blog-desktop-split{flex-direction:column!important}
           .blog-hide-mobile{display:none!important}
         }
@@ -734,93 +437,59 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
         {/* 좌: 입력 */}
         <div className={"blog-panel-left" + (mobileTab==="result" ? " blog-hide-mobile" : "")}
           style={{background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{padding:"12px 18px",borderBottom:`1px solid ${border}`,flexShrink:0}}>
-            <div style={{fontSize:14,fontWeight:800,color:text}}>{menuLabel||cfg.title}</div>
-            <div style={{fontSize:11,color:muted,marginTop:2}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
+          <div style={{padding:"22px 28px",borderBottom:`1px solid ${border}`,flexShrink:0,background:headerBg}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <div style={{width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${accentRaw},#8b5cf6)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>✍️</div>
+              <div>
+                <div style={{fontSize:19,fontWeight:900,color:text,letterSpacing:-0.5}}>{menuLabel||cfg.title}</div>
+                <div style={{fontSize:13,color:muted,marginTop:1}}>정보를 입력하면 AI가 자동으로 작성해드려요</div>
+              </div>
+            </div>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
             {/* 글 타입 */}
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>글 타입 선택</div>
+              <div class="blog-label" style={{color:muted}}>글 타입 선택</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {cfg.subtypes.map(s=>{
                   const isA=subtype===s.id;
-                  return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"10px",borderRadius:9,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
-                    <div style={{fontSize:16,marginBottom:3}}>{s.icon}</div>
-                    <div style={{fontSize:12,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                    <div style={{fontSize:10,color:muted,marginTop:1}}>{s.desc}</div>
+                  return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"14px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
+                    <div style={{fontSize:22,marginBottom:6}}>{s.icon}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
+                    <div style={{fontSize:11,color:muted,marginTop:3,lineHeight:1.5}}>{s.desc}</div>
                   </button>;
                 })}
               </div>
             </div>
             {/* 예시 */}
             {examples.length>0&&<div style={{marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>예시 글감</div>
+              <div class="blog-label" style={{color:muted}}>예시 글감</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:11,cursor:"pointer"}}>{ex}</button>)}
+                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"6px 13px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:13,cursor:"pointer"}}>{ex}</button>)}
               </div>
             </div>}
             {/* 동적 필드 */}
             {currentFields.map(fk=>{
               const fl=FIELD_LABELS[fk]; if(!fl) return null;
               return <div key={fk} style={{marginBottom:10}}>
-                <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:5}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
+                <div class="blog-label" style={{color:muted}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
                 {fl.textarea
-                  ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={3} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.6}}/>
-                  :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generateOutline()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
+                  ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={4} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.7}}/>
+                  :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generate()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
                 }
-              {/* keyword 아래 AI 추천 버튼 */}
-              {fk==="keyword" && fields.keyword?.trim() && (
-                <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
-                  <button onClick={suggestTitles} disabled={loadingTitle}
-                    style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1px solid ${border}`,background:isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.07)",color:accent,fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                    {loadingTitle?"⏳ 로딩...":"🤖 AI 제목 추천"}
-                  </button>
-                  <button onClick={suggestSeo} disabled={loadingSeo}
-                    style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1px solid ${border}`,background:isDark?"rgba(16,185,129,0.1)":"rgba(16,185,129,0.06)",color:"#10b981",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                    {loadingSeo?"⏳ 로딩...":"🔍 SEO 키워드"}
-                  </button>
-                </div>
-              )}
-              {/* AI 제목 추천 결과 */}
-              {fk==="keyword" && showTitleBox && titleSuggs.length>0 && (
-                <div style={{marginTop:6,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.2)"}`,borderRadius:9,padding:"8px 10px"}}>
-                  <div style={{fontSize:10,color:muted,marginBottom:5,fontWeight:700}}>💡 클릭하면 키워드로 적용</div>
-                  {titleSuggs.map((t,i)=>(
-                    <div key={i} onClick={()=>setField("keyword",t)} style={{fontSize:12,color:text,padding:"5px 8px",borderRadius:6,cursor:"pointer",marginBottom:2}}
-                      onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.06)":"rgba(99,102,241,0.07)"}
-                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      {t}
-                    </div>
-                  ))}
-                  <button onClick={()=>setShowTitleBox(false)} style={{fontSize:10,color:muted,background:"none",border:"none",cursor:"pointer",marginTop:2}}>닫기</button>
-                </div>
-              )}
-              {/* SEO 키워드 추천 결과 */}
-              {fk==="keyword" && showSeoBox && seoKws.length>0 && (
-                <div style={{marginTop:6,background:isDark?"rgba(16,185,129,0.06)":"rgba(16,185,129,0.04)",border:`1px solid rgba(16,185,129,0.2)`,borderRadius:9,padding:"8px 10px"}}>
-                  <div style={{fontSize:10,color:"#10b981",marginBottom:5,fontWeight:700}}>🔍 SEO 추천 키워드 (클릭 복사)</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {seoKws.map((k,i)=>(
-                      <span key={i} onClick={()=>navigator.clipboard?.writeText(k)} style={{fontSize:11,padding:"3px 9px",borderRadius:12,background:isDark?"rgba(16,185,129,0.15)":"rgba(16,185,129,0.1)",color:"#10b981",cursor:"pointer",fontWeight:600}}>#{k}</span>
-                    ))}
-                  </div>
-                  <button onClick={()=>setShowSeoBox(false)} style={{fontSize:10,color:muted,background:"none",border:"none",cursor:"pointer",marginTop:4}}>닫기</button>
-                </div>
-              )}
               </div>;
             })}
             {error&&<div style={{fontSize:11,color:"#ef4444",marginBottom:8}}>{error}</div>}
             {/* 글 톤 */}
             <div style={{marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>글 톤</div>
+              <div class="blog-label" style={{color:muted}}>글 톤</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:11,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"7px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:13,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
               </div>
             </div>
             {/* 분량 버튼 - 플랫폼별 스타일 */}
             <div style={{marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:7}}>
+              <div class="blog-label" style={{color:muted}}>
                 {initialType==="blog_youtube"?"영상 길이":initialType==="blog_thread"?"글 개수":initialType==="blog_insta"?"글자 분량":"분량"}
               </div>
               {/* 인스타: 글자수 강조 배지 */}
@@ -873,95 +542,61 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             </div>
           </div>
           {/* 생성 버튼 */}
-          <div style={{padding:"10px 18px 14px",flexShrink:0}}>
-            {/* Step 인디케이터 */}
-            <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:10,justifyContent:"center"}}>
-              {[{n:1,l:"입력"},{n:2,l:"목차"},{n:3,l:"결과"}].map((s,i)=>(
-                <div key={s.n} style={{display:"flex",alignItems:"center"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:3}}>
-                    <div style={{width:18,height:18,borderRadius:"50%",background:step>=s.n?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(255,255,255,0.08)":"#e9ecef"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:step>=s.n?"#fff":muted}}>{s.n}</div>
-                    <span style={{fontSize:10,color:step===s.n?accent:muted,fontWeight:step===s.n?700:400}}>{s.l}</span>
-                  </div>
-                  {i<2&&<div style={{width:14,height:1,background:isDark?"rgba(255,255,255,0.1)":"#e9ecef",margin:"0 3px"}}/>}
-                </div>
-              ))}
-            </div>
-            {step===1 && (
-              <button onClick={generateOutline} disabled={loadingOutline||!fields.keyword?.trim()}
-                style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loadingOutline||!fields.keyword?.trim()?"not-allowed":"pointer",
-                  background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                  color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                {loadingOutline?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>목차 구성 중...</>):(<><span>다음: 목차 구성 →</span><span style={{fontSize:10,background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"2px 7px"}}>✨ 10P</span></>)}
-              </button>
-            )}
-            {step===2 && (
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>{setStep(1);setOutline([]);}}
-                  style={{padding:"11px 16px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer"}}>← 이전</button>
-                <button onClick={generateWithOutline} disabled={loading}
-                  style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:loading?"not-allowed":"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,
-                    display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                  {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<><span>✨ 글 생성하기</span><span style={{fontSize:10,background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"2px 7px"}}>10P</span></>)}
-                </button>
-              </div>
-            )}
-            {step===3 && (
-              <button onClick={()=>{setStep(1);setResult("");setOutline([]);setHtmlResult("");}}
-                style={{width:"100%",padding:"11px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer"}}>↺ 새로 작성하기</button>
-            )}
+          <div style={{padding:"16px 28px 24px",flexShrink:0,borderTop:`1px solid ${border}`}}>
+            <button onClick={generate} disabled={loading||!fields.keyword?.trim()}
+              style={{width:"100%",padding:"16px",borderRadius:12,border:"none",
+                cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
+                background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.15)":"#e9ecef"),
+                color:fields.keyword?.trim()?"#fff":muted,
+                fontSize:16,fontWeight:800,
+                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                boxShadow:fields.keyword?.trim()?"0 4px 20px rgba(99,102,241,0.35)":"none",
+                transition:"all 0.2s"
+              }}>
+              {loading
+                ?(<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>)
+                :"✨ AI 글 생성하기"}
+            </button>
           </div>
         </div>
-        {/* 우: Step2 목차편집 or 결과 */}
+        {/* 우: 결과 */}
         <div className={"blog-panel-right" + (mobileTab==="input" ? " blog-hide-mobile" : "")}
           style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
-          {step===2 ? (
-            <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-              <div style={{padding:"12px 18px",borderBottom:`1px solid ${border}`,background:headerBg,flexShrink:0,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:14,fontWeight:800,color:text}}>📋 목차 편집</div>
-                  <div style={{fontSize:11,color:muted,marginTop:1}}>☰ 드래그로 순서 변경 · − 삭제 · 클릭하여 수정</div>
-                </div>
-              </div>
-              <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
-                {loadingOutline ? (
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:200,flexDirection:"column",gap:10}}>
-                    <div style={{width:22,height:22,border:`3px solid ${border}`,borderTop:`3px solid ${accent}`,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-                    <div style={{fontSize:13,color:muted}}>목차 생성 중...</div>
-                  </div>
-                ) : (<>
-                  {outline.map((item,i)=>(
-                    <div key={item.id} draggable
-                      onDragStart={()=>setDragIdx(i)} onDragOver={e=>{e.preventDefault();setDragOver(i);}}
-                      onDragEnd={()=>{
-                        if(dragIdx!==null&&dragOver!==null&&dragIdx!==dragOver){
-                          const n=[...outline]; const [m]=n.splice(dragIdx,1); n.splice(dragOver,0,m); setOutline(n);
-                        }
-                        setDragIdx(null); setDragOver(null);
-                      }}
-                      style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,
-                        background:dragOver===i?(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)"):(isDark?"rgba(255,255,255,0.03)":"#fff"),
-                        border:`1px solid ${dragOver===i?"rgba(99,102,241,0.4)":border}`,
-                        borderRadius:10,padding:"10px 12px",cursor:"grab",opacity:dragIdx===i?0.4:1,transition:"all 0.1s"}}>
-                      <span style={{color:muted,fontSize:13,userSelect:"none"}}>☰</span>
-                      <span style={{width:21,height:21,borderRadius:6,background:isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:accent,flexShrink:0}}>{i+1}</span>
-                      <input value={item.title} onChange={e=>{const n=[...outline];n[i]={...n[i],title:e.target.value};setOutline(n);}}
-                        onClick={e=>e.stopPropagation()}
-                        style={{flex:1,border:"none",outline:"none",background:"transparent",fontSize:13,color:text,fontFamily:"inherit",cursor:"text"}}/>
-                      <button onClick={e=>{e.stopPropagation();setOutline(outline.filter((_,j)=>j!==i));}}
-                        style={{width:21,height:21,borderRadius:5,border:`1px solid rgba(229,62,62,0.3)`,background:"transparent",color:"#e53e3e",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
-                    </div>
-                  ))}
-                  <button onClick={()=>setOutline([...outline,{id:Date.now(),title:"새 섹션"}])}
-                    style={{width:"100%",padding:"9px",borderRadius:9,border:`2px dashed ${border}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer",fontWeight:600,marginTop:4}}>
-                    + 섹션 추가
-                  </button>
-                </>)}
-              </div>
-            </div>
-          ) : renderResult()}
+          {renderResult()}
         </div>
-
+        {/* 플로팅 액션 버튼 - 결과 있을 때만 */}
+        {result && (
+          <div style={{padding:"16px 28px",borderTop:`1px solid ${border}`,background:headerBg,display:"flex",gap:10,flexWrap:"wrap",flexShrink:0}}>
+            <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
+              style={{flex:1,minWidth:80,padding:"11px 8px",borderRadius:10,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              {copied?"✓ 복사됨":"📋 복사"}
+            </button>
+            <button onClick={()=>{
+              const blob=new Blob([result],{type:"text/plain;charset=utf-8"});
+              const url=URL.createObjectURL(blob);
+              const a=document.createElement("a");
+              a.href=url;a.download="생성결과.txt";a.click();URL.revokeObjectURL(url);
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              📄 TXT
+            </button>
+            <button onClick={()=>{
+              const htmlContent=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;color:#333}h1,h2,h3{color:#1a1a2e}</style></head><body><pre style="white-space:pre-wrap">${result}</pre></body></html>`;
+              const blob=new Blob([htmlContent],{type:"text/html;charset=utf-8"});
+              const url=URL.createObjectURL(blob);
+              const a=document.createElement("a");
+              a.href=url;a.download="생성결과.html";a.click();URL.revokeObjectURL(url);
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              🌐 HTML
+            </button>
+            <button onClick={()=>{
+              const printWin=window.open("","_blank");
+              printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>생성결과</title><style>body{font-family:'Noto Sans KR',sans-serif;padding:30px;line-height:1.8;color:#000}@media print{body{padding:0}}</style></head><body><pre style="white-space:pre-wrap">${result}</pre><script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+              printWin.document.close();
+            }} style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              🖨️ PDF
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
