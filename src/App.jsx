@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
-import { usePaymentCallback, PaymentResultModal, PointsLowModal, startPayment } from "./PaymentSystem";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
@@ -27,14 +26,12 @@ export default function App() {
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
-  const [showPointsLow, setShowPointsLow] = useState(false);
 
   const boardSubRef = useRef(null);
   const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
-  const [paymentResult, setPaymentResult] = usePaymentCallback(user, setUserState);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -112,6 +109,7 @@ export default function App() {
   }, []);
 
   const navigate = target => {
+    if (target === "login_trigger") { setShowAuth(true); return; }
     window.history.pushState(null, "", "#" + target);
     setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
@@ -184,8 +182,8 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} onPointsLow={() => setShowPointsLow(true)} />;
-    if (isBoard)             return <BoardPage C={C} user={user} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (isBoard)             return <BoardPage C={C} user={user} onLoginRequest={() => setShowAuth(true)} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
@@ -237,8 +235,6 @@ export default function App() {
       `}</style>
 
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
-      {paymentResult && <PaymentResultModal result={paymentResult} onClose={() => setPaymentResult(null)} onNavigateAi={() => { navigate("ai"); }} C={C} />}
-      {showPointsLow && user && <PointsLowModal user={user} C={C} onClose={() => setShowPointsLow(false)} onPay={(planId) => { setShowPointsLow(false); startPayment(planId, user); }} />}
 
       {/* ── 네비게이션 ── */}
       <div style={{
@@ -267,9 +263,9 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
-                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => navigateAi("cardnews_make")} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
+                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => user ? navigateAi("blog_naver")    : setShowAuth(true)} />
+                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => user ? navigateAi("shorts")        : setShowAuth(true)} />
               </DropMenu>
             )}
           </div>
@@ -331,7 +327,10 @@ export default function App() {
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => {
+              if (m.ai && !user) { setShowAuth(true); setMobileOpen(false); return; }
+              m.ai ? navigateAi(m.ai) : navigate(m.id);
+            }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
