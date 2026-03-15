@@ -15,7 +15,7 @@ const LS_CONFIG = {
 
 export const PLANS = {
   basic: {
-    variantId: "1401989",
+    variantId: "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
     name: "Basic",
     price: 9900,
     priceLabel: "₩9,900",
@@ -28,7 +28,7 @@ export const PLANS = {
     features: ["500P 즉시 충전", "AI 생성 50회", "유효기간 없음", "게시글 적립 포함"],
   },
   pro: {
-    variantId: "1401993",
+    variantId: "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
     name: "Pro",
     price: 19900,
     priceLabel: "₩19,900",
@@ -41,7 +41,7 @@ export const PLANS = {
     features: ["1,200P 즉시 충전", "AI 생성 120회", "유효기간 없음", "우선 고객 지원"],
   },
   premium: {
-    variantId: "890780",
+    variantId: "fd18d32d-b8af-45aa-9b78-0902b139f127",
     name: "Premium",
     price: 29900,
     priceLabel: "₩29,900",
@@ -67,16 +67,19 @@ export function startPayment(planId, user) {
     `${window.location.origin}/?payment=success&plan=${planId}&uid=${user.uid}&points=${plan.points}`
   );
 
-  // Lemon Squeezy 직접 결제 링크 (API 키 불필요)
-  // 이메일 자동 입력 + 성공 후 리다이렉트
-  const checkoutUrl = `https://npercontentslab.lemonsqueezy.com/checkout/buy/${plan.variantId}`
-    + `?checkout[email]=${encodeURIComponent(user.email || "")}`
-    + `&checkout[custom][uid]=${user.uid}`
-    + `&checkout[custom][plan]=${planId}`
-    + `&checkout[custom][points]=${plan.points}`
-    + `&redirect_url=${successUrl}`;
-
-  window.location.href = checkoutUrl;
+  // Lemon Squeezy 직접 결제 링크
+  // variantId = 각 상품의 Share URL에서 가져온 ID
+  const baseUrl = `https://npercontentslab.lemonsqueezy.com/checkout/buy/${plan.variantId}`;
+  const params = new URLSearchParams({
+    "checkout[email]": user.email || "",
+    "checkout[custom][uid]": user.uid,
+    "checkout[custom][plan]": planId,
+    "checkout[custom][points]": String(plan.points),
+  });
+  
+  const checkoutUrl = `${baseUrl}?${params.toString()}&redirect_url=${successUrl}`;
+  console.log("결제 URL:", checkoutUrl); // 디버그용
+  window.open(checkoutUrl, "_blank"); // 새 탭으로 열기 (리다이렉트 문제 방지)
 }
 
 /* ══════════════════════════════════════════════════════════
