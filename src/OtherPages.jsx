@@ -212,7 +212,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
             </div>
           )}
         </div>
-        <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: 3, background: usageBar, borderRadius: 2, }}>
           <div style={{ height: "100%", width: pct, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
         </div>
       </div>
@@ -279,7 +279,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   if (aiMenu.startsWith("blog_")) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
     return (
-      <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div key={aiMenu} style={{ flex: 1, display: "flex", }}>
         <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} />
       </div>
     );
@@ -288,7 +288,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   // 카드뉴스 - 바로 만들기
   if (aiMenu === "cardnews_make") {
     return (
-      <div key="cn_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div key="cn_make" style={{ flex: 1, display: "flex", }}>
         <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
@@ -297,7 +297,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   // 카드뉴스 - 글 기획하기 (인라인 - CardNewsApp의 기획 패널)
   if (aiMenu === "cardnews_plan") {
     return (
-      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
+      <div key="cn_plan" style={{ flex: 1, display: "flex", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
         <PlannerPanel inline theme={theme}
           onClose={() => {}}
           onApplySlides={(slides) => {
@@ -393,7 +393,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
       )}
 
       {/* 우측 콘텐츠 */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* 상단 바 */}
         <div style={{
           height: 44, flexShrink: 0, display: "flex", alignItems: "center",
@@ -423,7 +423,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+        <div style={{ flex: 1, display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} />
         </div>
       </div>
@@ -486,24 +486,12 @@ export function PricingPage({ navigate, C }) {
       {/* 요금제 카드 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 16, marginBottom: 60 }}>
         {PLANS.map(plan => (
-          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s", overflow: "hidden" }}
-            onMouseEnter={e => plan.id==="free" && (e.currentTarget.style.transform = "translateY(-4px)")}
-            onMouseLeave={e => plan.id==="free" && (e.currentTarget.style.transform = "translateY(0)")}>
+          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s" }}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
 
             {plan.badge && (
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap", zIndex: 2 }}>{plan.badge}</div>
-            )}
-
-            {/* 유료 플랜 블러 오버레이 */}
-            {plan.id !== "free" && (
-              <div style={{ position: "absolute", inset: 0, zIndex: 10, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", background: "rgba(0,0,0,0.35)", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <div style={{ fontSize: 28 }}>🔒</div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>결제 연동 준비중</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 1.6 }}>곧 오픈 예정이에요!<br/>문의하기로 연락해주세요</div>
-                <button onClick={() => navigate("contact")} style={{ marginTop: 4, padding: "7px 18px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  문의하기
-                </button>
-              </div>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>
             )}
 
             <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{plan.name}</div>
