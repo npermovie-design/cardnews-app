@@ -263,9 +263,9 @@ export default function App() {
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => user ? navigateAi("blog_naver")    : setShowAuth(true)} />
-                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => user ? navigateAi("shorts")        : setShowAuth(true)} />
+                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
+                <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => navigateAi("cardnews_make")} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
               </DropMenu>
             )}
           </div>
@@ -321,16 +321,13 @@ export default function App() {
             { id: "home",  label: "홈" },
             { id: "about", label: "소개" },
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
-            { id: "ai_cn",  label: "🃏 카드뉴스 생성기",   ai: "cardnews_make" },
+            { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
             ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => {
-              if (m.ai && !user) { setShowAuth(true); setMobileOpen(false); return; }
-              m.ai ? navigateAi(m.ai) : navigate(m.id);
-            }} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
