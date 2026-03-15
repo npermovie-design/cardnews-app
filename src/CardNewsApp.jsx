@@ -1321,7 +1321,7 @@ function PageMake(props) {
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                   style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
                     background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                  {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
+                  {loading ? "생성 중..." : (<span>카드뉴스 생성 ✨ <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
                 </button>
               </div>
             </div>

@@ -521,7 +521,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
               }}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : "✍️ 블로그 글 작성하기"
+                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)
               }
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
