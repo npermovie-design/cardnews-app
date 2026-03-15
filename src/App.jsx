@@ -264,7 +264,7 @@ export default function App() {
             {aiSub && (
               <DropMenu>
                 <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
-                <DropItem id="ai" icon="🃏" label="카드뉴스 생성기" onClick={() => navigateAi("cardnews_make")} />
+                <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => user ? navigateAi("cardnews_make") : setShowAuth(true)} />
                 <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
               </DropMenu>
             )}
@@ -321,7 +321,7 @@ export default function App() {
             { id: "home",  label: "홈" },
             { id: "about", label: "소개" },
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
-            { id: "ai_cn",  label: "🃏 카드뉴스 생성기",   ai: "cardnews_make" },
+            { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
             ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
             { id: "pricing", label: "가격정책" },

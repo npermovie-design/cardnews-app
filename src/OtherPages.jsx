@@ -165,16 +165,14 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
           <Item id="blog_insta"   label="인스타그램 캡션" icon="📱" indent />
           <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
           <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
-          <Item id="blog_yt_blog" label="유튜브로 글쓰기" icon="📺" indent />
         </>}
 
         {/* 카드뉴스 그룹 */}
-        <Group label="카드뉴스" icon="🃏" open={cardOpen}
+        <Group label="SNS 이미지 만들기" icon="🖼" open={cardOpen}
           active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_plan" label="글 기획하기" icon="📋" indent />
-          <Item id="cardnews_make" label="바로 만들기" icon="✨" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -245,11 +243,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
       { id: "blog_tistory",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글",       darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
       { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",         darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",         darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
-      { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",
-        darkColor: "rgba(99,102,241,0.18)", lightColor: "rgba(0,0,0,0.04)" },
-      { id: "blog_yt_blog",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 링크 → 블로그 자동 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
+      { id: "cardnews_make", icon: "🖼", title: "SNS 이미지 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", hidden: true,   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -259,7 +255,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
           <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.map(m => (
+          {MENUS.filter(m => !m.hidden).map(m => (
             <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
               background: isDark ? m.darkColor : m.lightColor,
               border: `1px solid ${cardBdr}`,
@@ -275,6 +271,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // 유튜브로 글쓰기 (blog_ 계열보다 먼저 처리)
+  if (aiMenu === "blog_yt_blog") {
+    return (
+      <div key="yt_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <YtBlogGenerator theme={theme} embedded />
       </div>
     );
   }
@@ -312,11 +317,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
         />
       </div>
     );
-  }
-
-  // 유튜브로 글쓰기
-  if (aiMenu === "blog_yt_blog") {
-    return <YtBlogGenerator theme={theme} embedded />;
   }
 
   // 쇼츠 - 준비중
