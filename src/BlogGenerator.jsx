@@ -27,7 +27,11 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("### ")) {
+    if (line.startsWith("##### ")) {
+      elements.push(<h4 key={i} style={{fontSize:13,fontWeight:700,color:textColor,margin:"12px 0 4px"}}>{inlineFormat(line.slice(6),accentColor)}</h4>);
+    } else if (line.startsWith("#### ")) {
+      elements.push(<h4 key={i} style={{fontSize:14,fontWeight:800,color:textColor,margin:"16px 0 6px",letterSpacing:-0.2}}>{inlineFormat(line.slice(5),accentColor)}</h4>);
+    } else if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);

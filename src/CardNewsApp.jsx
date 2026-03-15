@@ -561,7 +561,7 @@ function EditPanel(props) {
   var curSlide = props.curSlide; var curEd = props.curEd; var updEd = props.updEd;
   var selPreset = props.selPreset; var applyPreset = props.applyPreset;
   return (
-    <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
+    <div style={{width:300, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
         <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>디자인 프리셋</div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
@@ -596,40 +596,42 @@ function PreviewPanel(props) {
   var prevDis = idx === 0; var nextDis = idx === slides.length - 1;
   var msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
   return (
-    <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
+    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"18px 24px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:14}}>
       <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
         <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600}}>{tname}</div>
+          <div style={{fontSize:14, color:"rgba(255,255,255,0.7)", fontWeight:700}}>{tname}</div>
           <div style={{display:"flex", gap:5, alignItems:"center"}}>
             <button onClick={function() { setIdx(Math.max(0, idx - 1)); }} disabled={prevDis}
-              style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:16, opacity: prevDis ? 0.25 : 1}}>
+              style={{width:34, height:34, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:18, opacity: prevDis ? 0.25 : 1}}>
               &#8249;
             </button>
             <span style={{fontSize:11, color:"rgba(255,255,255,0.35)", minWidth:38, textAlign:"center"}}>{(idx + 1) + " / " + slides.length}</span>
             <button onClick={function() { setIdx(Math.min(slides.length - 1, idx + 1)); }} disabled={nextDis}
-              style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: nextDis ? "not-allowed" : "pointer", fontSize:16, opacity: nextDis ? 0.25 : 1}}>
+              style={{width:34, height:34, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: nextDis ? "not-allowed" : "pointer", fontSize:18, opacity: nextDis ? 0.25 : 1}}>
               &#8250;
             </button>
           </div>
         </div>
 
-        <SlideCanvas slide={merged} style={gs} bgUrl={curBg} width={previewW}/>
+        <div key={idx} className="cn-popin" style={{width:"100%", display:"flex", justifyContent:"center"}}>
+          <SlideCanvas slide={merged} style={gs} bgUrl={curBg} width={previewW}/>
+        </div>
 
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"10px 22px", borderRadius:9, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             현재 저장
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"10px 22px", borderRadius:9, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:13, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             ZIP 전체
           </button>
           <button onClick={onSave}
-            style={{padding:"8px 14px", borderRadius:8, border:"1px solid rgba(251,191,36,0.35)", background:"rgba(251,191,36,0.08)", color:"#fbbf24", fontSize:12, fontWeight:700, cursor:"pointer"}}>
+            style={{padding:"10px 16px", borderRadius:9, border:"1px solid rgba(251,191,36,0.35)", background:"rgba(251,191,36,0.08)", color:"#fbbf24", fontSize:13, fontWeight:700, cursor:"pointer"}}>
             보관함 저장
           </button>
           <button onClick={onNew}
-            style={{padding:"8px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:12, cursor:"pointer"}}>
+            style={{padding:"10px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:13, cursor:"pointer"}}>
             새로 만들기
           </button>
         </div>
@@ -637,15 +639,16 @@ function PreviewPanel(props) {
       </div>
 
       <div style={{width:"100%", maxWidth:previewW + 40}}>
-        <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
+        <div style={{fontSize:13, color:"rgba(255,255,255,0.45)", marginBottom:9, fontWeight:700}}>전체 ({slides.length}장)</div>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:7}}>
           {slides.map(function(s, i) {
             var sm = Object.assign({}, s, (sted[i] || {}));
             var isC = i === idx;
             return (
               <div key={i} onClick={function() { setIdx(i); }}
-                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #6366f1" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative"}}>
-                <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={70} thumb={true}/>
+                className="cn-fadein"
+                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #6366f1" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative", animationDelay: (i * 0.05) + "s"}}>
+                <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={80} thumb={true}/>
                 <div style={{position:"absolute", bottom:2, right:3, fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.85)", textShadow:"0 1px 3px rgba(0,0,0,0.9)"}}>
                   {i < 9 ? "0" + (i + 1) : "" + (i + 1)}
                 </div>
@@ -1207,7 +1210,7 @@ function PageMake(props) {
   var prevBg  = D ? "transparent"              : "#f4f4f8";
 
   return (
-    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
+    <div className="cn-fadein" style={{flex:1, overflowY:"auto", padding:"28px 36px 60px", maxWidth:780, color:text}}>
       <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
@@ -1223,7 +1226,7 @@ function PageMake(props) {
                   color: (done || active) ? stepActTxt : stepInTxt}}>
                   {done ? "✓" : st.n}
                 </div>
-                <span style={{fontSize:11, fontWeight: active ? 700 : 400,
+                <span style={{fontSize:13, fontWeight: active ? 700 : 400,
                   color: active ? text : (done ? stepLbl : stepInTxt)}}>{st.l}</span>
               </div>
               {si < 2 && <div style={{width:18, height:1, background: D ? "rgba(255,255,255,0.15)" : "#ddd"}}/>}
@@ -1235,10 +1238,10 @@ function PageMake(props) {
       {makeStep === 1 && (
         <div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
+            <div style={{fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
-            <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
+            <div style={{fontSize:15, color:sub, marginBottom:10, fontWeight:700}}>예시 주제</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:12}}>
               {EXAMPLES.map(function(ex) {
                 var isC = topic === ex.text;
@@ -1247,7 +1250,7 @@ function PageMake(props) {
                     style={{padding:"5px 11px", borderRadius:14, border:"1px solid "+inputBdr,
                       background: isC ? tagAbg : tagBg,
                       color: isC ? tagAClr : tagClr,
-                      fontSize:11, cursor:"pointer", fontWeight:600}}>
+                      fontSize:12, cursor:"pointer", fontWeight:600}}>
                     {ex.label}
                   </button>
                 );
@@ -1256,17 +1259,17 @@ function PageMake(props) {
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
               placeholder="주제를 직접 입력하세요..." rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
-                borderRadius:8, padding:"9px 12px", color:text, fontSize:13,
+                borderRadius:8, padding:"11px 14px", color:text, fontSize:14,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box"}}/>
             <div style={{display:"flex", alignItems:"center", gap:8, marginTop:9}}>
-              <span style={{color:muted, fontSize:11}}>슬라이드 수</span>
+              <span style={{color:muted, fontSize:13, fontWeight:600}}>슬라이드 수</span>
               <div style={{display:"flex", gap:3}}>
                 {[3,4,5,6,7,8,10,12].map(function(n) {
                   var isC = cnt === n;
                   return (
                     <button key={n} onClick={function() { setCnt(n); }}
-                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer",
-                        fontSize:11, fontWeight:700,
+                      style={{width:32, height:32, borderRadius:7, border:"none", cursor:"pointer",
+                        fontSize:12, fontWeight:700,
                         background: isC ? "#6366f1" : (D ? "rgba(255,255,255,0.08)" : "#ede9fc"),
                         color: isC ? "#fff" : (D ? "rgba(255,255,255,0.4)" : "#6366f1")}}>
                       {n}
@@ -1291,8 +1294,8 @@ function PageMake(props) {
 
       {makeStep === 2 && (
         <div>
-          <div style={{fontSize:14, fontWeight:800, marginBottom:3, color:text}}>디자인 스타일 선택</div>
-          <div style={{fontSize:11, color:muted, marginBottom:14}}>미리보기 확인 후 선택 (건너뛰기 가능)</div>
+          <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
+          <div style={{fontSize:13, color:muted, marginBottom:16}}>미리보기 확인 후 선택 (건너뛰기 가능)</div>
           <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:9, marginBottom:16}}>
             {DESIGN_PRESETS.map(function(dp) {
               var isC = selPreset && selPreset.key === dp.key;
@@ -1326,9 +1329,9 @@ function PageMake(props) {
         <div style={{textAlign:"center", padding:"32px 0"}}>
           {loading && (
             <div>
-              <div style={{fontSize:32, marginBottom:12}}>⚙️</div>
-              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
-              <div style={{fontSize:12, color:muted}}>{cnt}장 생성 중</div>
+              <div style={{fontSize:48, marginBottom:14, animation:"cn-spin 2s linear infinite", display:"inline-block"}}>⚙️</div>
+              <div style={{fontSize:16, fontWeight:800, marginBottom:6, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
+              <div style={{fontSize:13, color:muted}}>{cnt}장 생성 중</div>
             </div>
           )}
           {!loading && err && (
@@ -1341,12 +1344,12 @@ function PageMake(props) {
           )}
           {!loading && !err && (
             <div>
-              <div style={{fontSize:32, marginBottom:12}}>🎉</div>
-              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>생성 완료!</div>
-              <div style={{fontSize:12, color:muted, marginBottom:16}}>{tname} · {slides.length}장</div>
+              <div style={{fontSize:52, marginBottom:14, animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
+              <div style={{fontSize:18, fontWeight:900, marginBottom:6, color:text}}>생성 완료!</div>
+              <div style={{fontSize:13, color:muted, marginBottom:18}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"10px 28px", borderRadius:9, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800}}>
+                style={{padding:"14px 36px", borderRadius:12, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:16, fontWeight:800, boxShadow:"0 8px 28px rgba(99,102,241,0.4)"}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1517,8 +1520,8 @@ export function CardNewsApp(props) {
     } catch(e2) { setDlSt({busy:false, msg:"ZIP 실패: " + e2.message}); }
   }
 
-  var previewW = narrow ? Math.min(winW - 40, 320) : Math.min(Math.floor((winW - 270) * 0.52), 430);
-  if (previewW < 240) { previewW = 240; }
+  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - 280) * 0.58), 560);
+  if (previewW < 280) { previewW = 280; }
 
   var isLight = props.theme === "light";
   var mainBg    = isLight ? "#f4f4f8"               : "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)";
@@ -1529,6 +1532,12 @@ export function CardNewsApp(props) {
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
+    "@keyframes cn-fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}" +
+    "@keyframes cn-popin{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}" +
+    "@keyframes cn-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}" +
+    "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
+    ".cn-fadein{animation:cn-fadein 0.4s ease both}" +
+    ".cn-popin{animation:cn-popin 0.35s cubic-bezier(0.34,1.56,0.64,1) both}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
