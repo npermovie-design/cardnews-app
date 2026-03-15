@@ -200,6 +200,90 @@ const PLATFORMS = {
     },
   },
 
+  blog_yt_blog: {
+    title: "유튜브로 블로그 글쓰기",
+    accentColor: "#FF0000",
+    subtypes: [
+      {id:"naver",   icon:"📝", label:"네이버 블로그",   desc:"SEO 최적화 정보성 글"},
+      {id:"tistory", icon:"🟠", label:"티스토리",        desc:"HTML 형식 블로그 글"},
+      {id:"summary", icon:"📋", label:"영상 요약",       desc:"핵심 내용 요약 정리"},
+      {id:"sns",     icon:"📱", label:"SNS 콘텐츠",      desc:"인스타·스레드용 텍스트"},
+    ],
+    tones: [
+      {id:"info",     label:"정보성"},
+      {id:"casual",   label:"친근한"},
+      {id:"pro",      label:"전문적"},
+      {id:"engaging", label:"흥미로운"},
+    ],
+    wordCounts: [
+      {id:"short",  label:"짧게",   desc:"~800자"},
+      {id:"medium", label:"보통",   desc:"~2,000자"},
+      {id:"long",   label:"길게",   desc:"~4,000자"},
+    ],
+    fields: {
+      naver:   ["keyword","extra"],
+      tistory: ["keyword","extra"],
+      summary: ["keyword","extra"],
+      sns:     ["keyword","extra"],
+    },
+    examples: {
+      naver:   ["재테크 유튜버 영상 내용","건강 정보 유튜브 영상","요리 레시피 유튜브"],
+      tistory: ["IT 기술 유튜브 강의","투자 정보 영상","자기계발 유튜브"],
+      summary: ["긴 강의 영상 요약","뉴스 영상 핵심 정리","인터뷰 영상 요약"],
+      sns:     ["유튜버 인사이트 공유","영상 핵심 포인트","트렌드 정보 영상"],
+    },
+    buildPrompt(sub, f, tone, wc) {
+      const ytUrl = f.ytUrl || "";
+      const extra = f.extra || "";
+      const t={info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
+      const len={short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[wc];
+      const transcript = f._transcript || "";
+      const base = transcript
+        ? `다음은 유튜브 영상의 자막/내용입니다:
+
+${transcript}
+
+`
+        : `유튜브 URL: ${ytUrl}
+참고 키워드: ${f.keyword||""}
+
+`;
+      if(sub==="naver")   return base + `위 유튜브 영상 내용을 바탕으로 네이버 블로그 글을 작성해주세요.
+스타일: ${t} / 분량: ${len}
+${extra}
+
+- 검색 최적화된 제목
+- 도입부 (영상 소개 및 핵심 미리보기)
+- 본론 (단계별 상세 설명, 소제목 포함)
+- 마무리 (요약 + 독자 액션 유도)
+- 관련 해시태그 5개`;
+      if(sub==="tistory") return base + `위 유튜브 영상 내용을 바탕으로 티스토리 블로그 글을 작성해주세요.
+스타일: ${t} / 분량: ${len}
+${extra}
+
+## h2 소제목 적극 활용
+**강조 텍스트** 사용
+- 리스트 활용
+SEO 최적화된 구조로 작성`;
+      if(sub==="summary") return base + `위 유튜브 영상의 핵심 내용을 요약 정리해주세요.
+분량: ${len}
+${extra}
+
+- 핵심 포인트 3~5가지
+- 각 포인트별 상세 설명
+- 전체 요약 1문단
+- 인상적인 인용구나 핵심 문장`;
+      if(sub==="sns")     return base + `위 유튜브 영상 내용으로 SNS 게시물을 작성해주세요.
+스타일: ${t}
+${extra}
+
+- 인스타그램 캡션 버전 (해시태그 포함)
+- 스레드 버전 (3~5개 연속 포스팅)
+- 핵심 인사이트 요약 (트위터/X 스타일 3개)`;
+      return "";
+    },
+  },
+
   blog_thread: {
     title: "스레드 게시물 작성",
     accentColor: "#000000",
@@ -286,13 +370,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const [viewMode,   setViewMode]   = useState("text");
   const [loading,    setLoading]    = useState(false);
   const [copied,     setCopied]     = useState(false);
+  const [ytStatus,   setYtStatus]   = useState("");
+
+  const extractYtId = (url) => {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  };
   const [error,      setError]      = useState("");
 
   const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p=>({...p,[k]:v}));
   const currentFields = cfg.fields[subtype] || ["keyword","extra"];
   const examples = cfg.examples?.[subtype] || [];
-  const isTistory = initialType === "blog_tistory";
+  const isTistory = initialType === "blog_tistory" || (initialType === "blog_yt_blog" && subtype === "tistory");
   const accentRaw = cfg.accentColor || "#6366f1";
 
   // ── 테마 변수 ──
@@ -308,12 +398,34 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
   const resultBg= isDark ? "rgba(0,0,0,0.15)"          : "#f8f9fa";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"          : "#fff";
 
-  const IS = {width:"100%", padding:"13px 16px", borderRadius:10, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
+  const IS = {width:"100%", padding:"10px 12px", borderRadius:9, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
 
   const generate = async () => {
-    if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
+    const isYtBlog = initialType === "blog_yt_blog";
+    if (isYtBlog && !fields.ytUrl?.trim()) { setError("유튜브 URL을 입력해주세요."); return; }
+    if (!isYtBlog && !fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
-    const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
+
+    // 유튜브 URL에서 자막 추출 시도
+    let ytFields = {...fields};
+    if (isYtBlog && fields.ytUrl?.trim()) {
+      const ytId = extractYtId(fields.ytUrl);
+      if (ytId) {
+        try {
+          setYtStatus("유튜브 영상 정보 분석 중...");
+          // YouTube oEmbed API로 제목 가져오기
+          const oembed = await fetch(`https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${ytId}&format=json`).then(r=>r.json()).catch(()=>null);
+          if (oembed?.title) {
+            ytFields.keyword = oembed.title;
+          }
+          // 자막은 직접 가져오기 어려우므로 영상 제목+URL로 AI가 분석
+          ytFields._transcript = "";
+          setYtStatus("");
+        } catch { setYtStatus(""); }
+      }
+    }
+
+    const prompt = cfg.buildPrompt(subtype, ytFields, tone, wordCount);
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
@@ -349,36 +461,27 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
     if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);
       return (
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:"48px 32px",textAlign:"center"}}>
-          <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>{sub?.icon||"✍️"}</div>
-          <div>
-            <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8}}>{sub?.label||"AI 글쓰기"}</div>
-            <div style={{fontSize:14,color:muted,lineHeight:1.9,maxWidth:320}}>
-              왼쪽에서 글 타입과 정보를 입력한 후<br/>
-              <span style={{color:accentRaw,fontWeight:700}}>AI 글 생성하기</span> 버튼을 눌러주세요
-            </div>
-          </div>
-          {examples.length>0&&(
-            <div style={{padding:"10px 20px",background:isDark?"rgba(99,102,241,0.1)":"rgba(99,102,241,0.06)",borderRadius:24,fontSize:13,color:accent,fontWeight:600}}>
-              💡 예시: {examples[0]}
-            </div>
-          )}
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center"}}>
+          <div style={{fontSize:52}}>{sub?.icon||"✍️"}</div>
+          <div style={{fontSize:16,fontWeight:800,color:text}}>{sub?.label}</div>
+          <div style={{fontSize:13,color:muted,lineHeight:1.8}}>왼쪽에서 정보를 입력하고<br/>글 생성하기 버튼을 눌러주세요</div>
+          {examples.length>0&&<div style={{fontSize:11,color:muted,opacity:0.6}}>예시: {examples[0]}</div>}
         </div>
       );
     }
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
+        <div style={{height:46,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 18px",borderBottom:`1px solid ${border}`,background:headerBg}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:viewMode===mode?700:400,cursor:"pointer"}}>
                 {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
               </button>
             ))}
-            {!isTistory&&result&&<span style={{fontSize:15,fontWeight:800,color:text}}>📄 생성 결과</span>}
+            {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {result&&<span style={{fontSize:13,color:muted,background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",padding:"3px 10px",borderRadius:20}}>{result.length.toLocaleString()}자</span>}
+            {result&&<span style={{fontSize:11,color:muted}}>{result.length.toLocaleString()}자</span>}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -387,8 +490,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             ))}
           </div>
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
-          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:14,padding:"24px 28px",whiteSpace:"pre-wrap",lineHeight:2.1,fontSize:16,color:text,minHeight:200,fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif"}}>{result}{loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}</div>}
+        <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
+          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px",whiteSpace:"pre-wrap",lineHeight:1.9,fontSize:14,color:text,minHeight:120}}>{result}{loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}</div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
         </div>
@@ -403,20 +506,18 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
       <style>{`
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        .tistory-content h1,.tistory-content h2{font-size:22px;font-weight:700;margin:24px 0 12px}
-        .tistory-content h3{font-size:18px;font-weight:700;margin:16px 0 10px}
-        .tistory-content p{margin:10px 0;line-height:1.9}
-        .tistory-content ul{padding-left:20px;margin:10px 0}
-        .tistory-content li{margin:6px 0}
+        .tistory-content h1,.tistory-content h2{font-size:20px;font-weight:700;margin:20px 0 10px}
+        .tistory-content h3{font-size:16px;font-weight:700;margin:14px 0 8px}
+        .tistory-content p{margin:8px 0;line-height:1.8}
+        .tistory-content ul{padding-left:20px;margin:8px 0}
+        .tistory-content li{margin:4px 0}
         .blog-mobile-tabs{display:none}
-        .blog-panel-left{width:480px;flex-shrink:0;border-right:1px solid var(--blog-border)}
-        .blog-panel-right{flex:1;min-width:0}
-        .blog-label{font-size:14px;font-weight:700;margin-bottom:8px;letter-spacing:-0.1px}
-        .blog-input-wrap{margin-bottom:22px}
-        @media(max-width:860px){
+        .blog-panel-left{width:380px;flex-shrink:0}
+        .blog-panel-right{flex:1}
+        @media(max-width:768px){
           .blog-mobile-tabs{display:flex!important}
-          .blog-panel-left{width:100%!important;flex-shrink:unset;border-right:none!important;border-bottom:1px solid var(--blog-border)}
-          .blog-panel-right{width:100%!important}
+          .blog-panel-left{width:100%!important;flex-shrink:unset}
+          .blog-panel-right{flex:1;width:100%!important}
           .blog-desktop-split{flex-direction:column!important}
           .blog-hide-mobile{display:none!important}
         }
@@ -437,44 +538,62 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
         {/* 좌: 입력 */}
         <div className={"blog-panel-left" + (mobileTab==="result" ? " blog-hide-mobile" : "")}
           style={{background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{padding:"22px 28px",borderBottom:`1px solid ${border}`,flexShrink:0,background:headerBg}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-              <div style={{width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,${accentRaw},#8b5cf6)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>✍️</div>
-              <div>
-                <div style={{fontSize:19,fontWeight:900,color:text,letterSpacing:-0.5}}>{menuLabel||cfg.title}</div>
-                <div style={{fontSize:13,color:muted,marginTop:1}}>정보를 입력하면 AI가 자동으로 작성해드려요</div>
-              </div>
-            </div>
+          <div style={{padding:"12px 18px",borderBottom:`1px solid ${border}`,flexShrink:0}}>
+            <div style={{fontSize:14,fontWeight:800,color:text}}>{menuLabel||cfg.title}</div>
+            <div style={{fontSize:11,color:muted,marginTop:2}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
             {/* 글 타입 */}
             <div style={{marginBottom:14}}>
-              <div class="blog-label" style={{color:muted}}>글 타입 선택</div>
+              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>글 타입 선택</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {cfg.subtypes.map(s=>{
                   const isA=subtype===s.id;
-                  return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"14px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
-                    <div style={{fontSize:22,marginBottom:6}}>{s.icon}</div>
-                    <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                    <div style={{fontSize:11,color:muted,marginTop:3,lineHeight:1.5}}>{s.desc}</div>
+                  return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"10px",borderRadius:9,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
+                    <div style={{fontSize:16,marginBottom:3}}>{s.icon}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
+                    <div style={{fontSize:10,color:muted,marginTop:1}}>{s.desc}</div>
                   </button>;
                 })}
               </div>
             </div>
             {/* 예시 */}
             {examples.length>0&&<div style={{marginBottom:12}}>
-              <div class="blog-label" style={{color:muted}}>예시 글감</div>
+              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>예시 글감</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"6px 13px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:13,cursor:"pointer"}}>{ex}</button>)}
+                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:11,cursor:"pointer"}}>{ex}</button>)}
               </div>
             </div>}
+            {/* YouTube URL 입력 (blog_yt_blog 전용) */}
+            {initialType==="blog_yt_blog" && (
+              <div style={{marginBottom:18}}>
+                <div class="blog-label" style={{color:muted}}>유튜브 URL <span style={{color:"#ef4444"}}>*</span></div>
+                <div style={{position:"relative"}}>
+                  <input type="text" value={fields.ytUrl||""} onChange={e=>setField("ytUrl",e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    style={{...IS, paddingLeft:"44px", borderColor: fields.ytUrl ? "#FF0000" : IS.borderColor}}/>
+                  <span style={{position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:18}}>▶️</span>
+                </div>
+                {/* URL 미리보기 */}
+                {fields.ytUrl && extractYtId(fields.ytUrl) && (
+                  <div style={{marginTop:8, borderRadius:10, overflow:"hidden", border:`1px solid ${border}`}}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${extractYtId(fields.ytUrl)}`}
+                      style={{width:"100%", height:180, border:"none", display:"block"}}
+                      allowFullScreen title="미리보기"/>
+                  </div>
+                )}
+                {ytStatus && <div style={{marginTop:6, fontSize:12, color:"#FF0000"}}>{ytStatus}</div>}
+              </div>
+            )}
+
             {/* 동적 필드 */}
             {currentFields.map(fk=>{
               const fl=FIELD_LABELS[fk]; if(!fl) return null;
               return <div key={fk} style={{marginBottom:10}}>
-                <div class="blog-label" style={{color:muted}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
+                <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:5}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
                 {fl.textarea
-                  ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={4} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.7}}/>
+                  ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={3} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.6}}/>
                   :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generate()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
                 }
               </div>;
@@ -482,14 +601,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             {error&&<div style={{fontSize:11,color:"#ef4444",marginBottom:8}}>{error}</div>}
             {/* 글 톤 */}
             <div style={{marginBottom:10}}>
-              <div class="blog-label" style={{color:muted}}>글 톤</div>
+              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:6}}>글 톤</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"7px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:13,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:11,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
               </div>
             </div>
             {/* 분량 버튼 - 플랫폼별 스타일 */}
             <div style={{marginBottom:10}}>
-              <div class="blog-label" style={{color:muted}}>
+              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:7}}>
                 {initialType==="blog_youtube"?"영상 길이":initialType==="blog_thread"?"글 개수":initialType==="blog_insta"?"글자 분량":"분량"}
               </div>
               {/* 인스타: 글자수 강조 배지 */}
@@ -542,20 +661,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
             </div>
           </div>
           {/* 생성 버튼 */}
-          <div style={{padding:"16px 28px 24px",flexShrink:0,borderTop:`1px solid ${border}`}}>
-            <button onClick={generate} disabled={loading||!fields.keyword?.trim()}
-              style={{width:"100%",padding:"16px",borderRadius:12,border:"none",
-                cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.15)":"#e9ecef"),
-                color:fields.keyword?.trim()?"#fff":muted,
-                fontSize:16,fontWeight:800,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                boxShadow:fields.keyword?.trim()?"0 4px 20px rgba(99,102,241,0.35)":"none",
-                transition:"all 0.2s"
-              }}>
-              {loading
-                ?(<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>)
-                :"✨ AI 글 생성하기"}
+          <div style={{padding:"10px 18px 14px",flexShrink:0}}>
+            <button onClick={generate} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:((initialType==="blog_yt_blog"?fields.ytUrl?.trim():fields.keyword?.trim()))?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):"✨ 글 생성하기"}
             </button>
           </div>
         </div>
@@ -566,9 +674,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme 
         </div>
         {/* 플로팅 액션 버튼 - 결과 있을 때만 */}
         {result && (
-          <div style={{padding:"16px 28px",borderTop:`1px solid ${border}`,background:headerBg,display:"flex",gap:10,flexWrap:"wrap",flexShrink:0}}>
+          <div style={{padding:"12px 16px",borderTop:`1px solid ${border}`,background:panelBg,display:"flex",gap:8,flexWrap:"wrap",flexShrink:0}}>
             <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
-              style={{flex:1,minWidth:80,padding:"11px 8px",borderRadius:10,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              style={{flex:1,minWidth:70,padding:"9px 8px",borderRadius:9,border:`1px solid ${border}`,background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
               {copied?"✓ 복사됨":"📋 복사"}
             </button>
             <button onClick={()=>{
