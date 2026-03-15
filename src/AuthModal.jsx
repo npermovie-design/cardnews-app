@@ -96,7 +96,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>엔퍼콘텐츠랩</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 50P 지급 · AI 생성 5회 무료</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 10P 지급 · AI 생성 비회원 5회 무료</div>
         </div>
 
         <div style={{ display: "flex", marginBottom: 24, background: C.toggleBg, borderRadius: 10, padding: 4 }}>
@@ -154,10 +154,10 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>🎁 가입 혜택</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
-                ✅ 가입 즉시 <b style={{ color: C.text }}>50P</b> 지급 (AI 5회 분량)<br/>
-                ✅ 게시글 작성 시 <b style={{ color: C.text }}>10P</b> 적립<br/>
-                ✅ 댓글 작성 시 <b style={{ color: C.text }}>2P</b> 적립<br/>
-                ✅ 일일 로그인 시 <b style={{ color: C.text }}>3P</b> 적립
+                ✅ 가입 즉시 <b style={{ color: C.text }}>10P</b> 지급 (AI 1회 분량)<br/>
+                ✅ 게시글 작성 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
+                ✅ 일일 로그인 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
+                ✅ 포인트 충전으로 AI 무제한 이용
               </div>
             </div>
           </div>
