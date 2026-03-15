@@ -59,29 +59,14 @@ export const PLANS = {
    결제 시작
 ══════════════════════════════════════════════════════════ */
 export function startPayment(planId, user) {
-  const plan = PLANS[planId];
-  if (!plan) { alert("플랜 정보를 찾을 수 없습니다."); return; }
-  if (!user) { alert("로그인 후 결제해주세요."); return; }
-
-  // uid 또는 id 둘 다 대응
-  const uid = user.uid || user.id || "";
-  const email = user.email || "";
-
-  // 결제 완료 후 돌아올 URL
-  const successUrl = encodeURIComponent(
-    `${window.location.origin}/?payment=success&plan=${planId}&uid=${uid}&points=${plan.points}`
-  );
-
-  // Lemon Squeezy 직접 결제 링크 (새 탭 팝업 차단 우회 → 현재 탭으로 이동)
-  const checkoutUrl = `https://npercontentslab.lemonsqueezy.com/checkout/buy/${plan.variantId}`
-    + `?checkout[email]=${encodeURIComponent(email)}`
-    + `&checkout[custom][uid]=${encodeURIComponent(uid)}`
-    + `&checkout[custom][plan]=${planId}`
-    + `&checkout[custom][points]=${plan.points}`
-    + `&redirect_url=${successUrl}`;
-
-  // 현재 탭에서 이동 (팝업 차단 없음)
-  window.location.href = checkoutUrl;
+  const varMap = {
+    basic:   "cbb325cb-84e0-4e6d-b996-c66c8611bd11",
+    pro:     "e6cf24e6-4807-45bb-a1e2-9db5d56b3b08",
+    premium: "fd18d32d-b8af-45aa-9b78-0902b139f127",
+  };
+  const variantId = varMap[planId];
+  if (!variantId) { alert("플랜 정보 오류"); return; }
+  window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + variantId;
 }
 
 /* ══════════════════════════════════════════════════════════
