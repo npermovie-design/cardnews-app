@@ -27,7 +27,11 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("### ")) {
+    if (line.startsWith("#### ")) {
+      elements.push(<h4 key={i} style={{fontSize:14,fontWeight:800,color:textColor,margin:"16px 0 6px",letterSpacing:-0.2}}>{inlineFormat(line.slice(5),accentColor)}</h4>);
+    } else if (line.startsWith("##### ")) {
+      elements.push(<h4 key={i} style={{fontSize:13,fontWeight:700,color:textColor,margin:"12px 0 4px"}}>{inlineFormat(line.slice(6),accentColor)}</h4>);
+    } else if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);
@@ -117,10 +121,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n- 검색 최적화 제목\n- 소제목으로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함`;
-      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함`;
-      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함`;
-      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함`;
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 검색 최적화 제목\n- 소제목으로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함`;
+      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함`;
+      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함`;
+      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함`;
       return "";
     },
   },
@@ -160,10 +164,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,500~2,000자",medium:"2,500~3,500자",long:"4,000자 이상"}[wc];
       const t={professional:"전문적이고 신뢰감 있는",friendly:"친근하고 쉬운",analytical:"분석적이고 논리적인"}[tone];
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3)으로 작성\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임`;
-      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 상세 스펙·실사용 경험·객관적 평가\n- 별점 형식 포함, 구매 가이드 제공`;
-      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 번호 매긴 단계별 설명\n- 각 단계 팁·주의사항, FAQ 포함`;
-      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도`;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n마크다운 형식(# 제목, ## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임`;
+      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 상세 스펙·실사용 경험·객관적 평가\n- 별점 형식 포함, 구매 가이드 제공`;
+      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 번호 매긴 단계별 설명\n- 각 단계 팁·주의사항, FAQ 포함`;
+      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3만 사용, #### 이상 사용 금지)으로 작성\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도`;
       return "";
     },
   },
