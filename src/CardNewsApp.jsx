@@ -51,31 +51,6 @@ var EXAMPLES = [
   {label:"독서법",        text:"성인 자기계발 독서법"},
 ];
 
-
-var KO_FONTS = [
-  { key:"pretendard",     label:"프리텐다드",   css:"Pretendard,'Apple SD Gothic Neo',sans-serif",      url:"https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" },
-  { key:"noto_sans",      label:"Noto Sans KR", css:"'Noto Sans KR',sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" },
-  { key:"nanum_gothic",   label:"나눔고딕",      css:"'Nanum Gothic',sans-serif",                        url:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" },
-  { key:"nanum_myeongjo", label:"나눔명조",      css:"'Nanum Myeongjo',serif",                           url:"https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" },
-  { key:"black_han",      label:"검정한산스",    css:"'Black Han Sans',sans-serif",                      url:"https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" },
-  { key:"jua",            label:"주아체",        css:"Jua,sans-serif",                                   url:"https://fonts.googleapis.com/css2?family=Jua&display=swap" },
-  { key:"do_hyeon",       label:"도현체",        css:"'Do Hyeon',sans-serif",                            url:"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" },
-  { key:"gaegu",          label:"가에굴체",      css:"Gaegu,cursive",                                    url:"https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" },
-  { key:"default",        label:"기본 고딕",     css:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",  url:null },
-];
-function loadFontSafe(key) {
-  if (typeof document === "undefined") return;
-  var found = null;
-  for (var fi = 0; fi < KO_FONTS.length; fi++) { if (KO_FONTS[fi].key === key) { found = KO_FONTS[fi]; break; } }
-  if (!found || !found.url) return;
-  if (document.querySelector('link[data-font="' + key + '"]')) return;
-  var link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = found.url;
-  link.setAttribute("data-font", key);
-  document.head.appendChild(link);
-}
-
 var PROMPT_EXAMPLES = [
   {
     label: "기본형",
@@ -121,11 +96,8 @@ function consumeOne(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
   u[k] = (u[k] || 0) + 1;
   try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e) {}
-  var su = getAiUsage();
-  var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
-  var snu = Object.assign({}, su);
-  snu[sk] = (su[sk] || 0) + 1;
-  setAiUsage(snu);
+  var su = getAiUsage(); var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
+  var snu = Object.assign({}, su); snu[sk] = (su[sk] || 0) + 1; setAiUsage(snu);
 }
 
 // ─── 보관함 ──────────────────────────────────────────────────────────────────
@@ -544,28 +516,20 @@ function LayoutTab(props) {
 // ─── 텍스트 탭 ────────────────────────────────────────────────────────────────
 function TextTab(props) {
   var gs = props.gs; var updGs = props.updGs;
-  var _fkey = gs._fontKey || "default";
-  var _ff = null;
-  for (var _fi = 0; _fi < KO_FONTS.length; _fi++) { if (KO_FONTS[_fi].key === _fkey) { _ff = KO_FONTS[_fi]; break; } }
-  if (!_ff) _ff = KO_FONTS[KO_FONTS.length - 1];
-  useEffect(function() { loadFontSafe(_fkey); }, [_fkey]);
+  var fonts = ["sans-serif","Malgun Gothic","Nanum Gothic","Georgia","Arial"];
   return (
     <div>
       <FieldLabel>폰트</FieldLabel>
-      <select value={_fkey} onChange={function(e) {
-          var k = e.target.value;
-          var found = null;
-          for (var i = 0; i < KO_FONTS.length; i++) { if (KO_FONTS[i].key === k) { found = KO_FONTS[i]; break; } }
-          if (!found) return;
-          loadFontSafe(k);
-          updGs("fontFamily", found.css);
-          updGs("_fontKey", k);
-        }}
-        style={{width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"7px 10px", color:"#fff", fontSize:12, outline:"none", cursor:"pointer", marginBottom:8}}>
-        {KO_FONTS.map(function(f) { return <option key={f.key} value={f.key} style={{background:"#1c1c2e"}}>{f.label}</option>; })}
-      </select>
-      <div style={{padding:"7px 10px", borderRadius:7, background:"rgba(255,255,255,0.04)", marginBottom:10, fontFamily:_ff.css, fontSize:13, color:"rgba(255,255,255,0.7)", textAlign:"center"}}>
-        가나다라 ABC 123 <span style={{fontSize:10, color:"rgba(255,255,255,0.3)"}}>({_ff.label})</span>
+      <div style={{display:"flex", flexWrap:"wrap", gap:4, marginBottom:10}}>
+        {fonts.map(function(f) {
+          var isC = (gs.fontFamily || "sans-serif") === f;
+          return (
+            <button key={f} onClick={function() { updGs("fontFamily", f); }}
+              style={{padding:"4px 9px", borderRadius:16, border:"1px solid rgba(255,255,255,0.12)", background: isC ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.05)", color: isC ? "#fff" : "rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer"}}>
+              {f}
+            </button>
+          );
+        })}
       </div>
       <FieldLabel>제목 굵기</FieldLabel>
       <div style={{display:"flex", gap:3, marginBottom:10}}>
@@ -1380,30 +1344,69 @@ function PageMake(props) {
       )}
 
       {makeStep === 3 && (
-        <div style={{textAlign:"center", padding:"32px 0"}}>
+        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center"}}>
           {loading && (
-            <div>
-              <div style={{fontSize:32, marginBottom:12}}>⚙️</div>
-              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>AI가 카드뉴스를 기획하고 있어요...</div>
-              <div style={{fontSize:12, color:muted}}>{cnt}장 생성 중</div>
+            <div style={{width:"100%", maxWidth:420}}>
+              <div style={{fontSize:72, marginBottom:16, display:"inline-block",
+                animation:"cn-float 3s ease-in-out infinite",
+                filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏✨</div>
+              <div style={{fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px"}}>
+                AI가 카드뉴스를 만들고 있어요
+              </div>
+              <div style={{fontSize:14, color:muted, marginBottom:24}}>{topic} · {cnt}장 구성 중</div>
+              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left",
+                maxWidth:280, margin:"0 auto 20px"}}>
+                {[{l:"주제 분석 중...",d:true},{l:"슬라이드 구성 기획...",d:true},
+                  {l:"문구 생성 중...",a:true},{l:"마무리 다듬는 중..."}
+                ].map(function(s,i) {
+                  return (
+                    <div key={i} style={{display:"flex", alignItems:"center", gap:10,
+                      opacity:s.d||s.a ? 1 : 0.3}}>
+                      <div style={{width:20, height:20, borderRadius:"50%", flexShrink:0,
+                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:10,
+                        background:s.d?"rgba(74,222,128,0.15)":s.a?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                        border:s.d?"2px solid #4ade80":s.a?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)"}}>
+                        {s.d?<span style={{color:"#4ade80"}}>✓</span>
+                          :s.a?<div style={{width:8, height:8, borderRadius:"50%",
+                            border:"2px solid #6366f1", borderTopColor:"transparent",
+                            animation:"cn-spin 0.8s linear infinite"}}/>
+                          :null}
+                      </div>
+                      <span style={{fontSize:13, color:s.d?"#4ade80":s.a?text:muted,
+                        fontWeight:s.a?700:400}}>{s.l}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{height:4, borderRadius:4, background:"rgba(255,255,255,0.08)",
+                overflow:"hidden", maxWidth:280, margin:"0 auto 10px"}}>
+                <div style={{height:"100%", borderRadius:4,
+                  background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+                  animation:"cn-progress 8s ease-out forwards"}}/>
+              </div>
+              <div style={{fontSize:12, color:muted}}>보통 7~11초 소요</div>
             </div>
           )}
           {!loading && err && (
             <div>
-              <div style={{fontSize:12, color:errClr, marginBottom:12}}>{err}</div>
+              <div style={{fontSize:52, marginBottom:14}}>😢</div>
+              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>생성에 실패했어요</div>
+              <div style={{fontSize:13, color:errClr, marginBottom:20}}>{err}</div>
               <button onClick={function() { setMakeStep(2); }}
-                style={{padding:"9px 20px", borderRadius:8, border:"1px solid "+bdr,
-                  background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>다시 시도</button>
+                style={{padding:"12px 28px", borderRadius:10, border:"1px solid "+bdr,
+                  background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>← 다시 시도</button>
             </div>
           )}
           {!loading && !err && (
-            <div>
-              <div style={{fontSize:32, marginBottom:12}}>🎉</div>
-              <div style={{fontSize:14, fontWeight:700, marginBottom:5, color:text}}>생성 완료!</div>
-              <div style={{fontSize:12, color:muted, marginBottom:16}}>{tname} · {slides.length}장</div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:60, marginBottom:14, display:"inline-block",
+                animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
+              <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>생성 완료!</div>
+              <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
-                style={{padding:"10px 28px", borderRadius:9, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800}}>
+                style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                  fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
                 편집하러 가기 →
               </button>
             </div>
@@ -1575,8 +1578,8 @@ export function CardNewsApp(props) {
     } catch(e2) { setDlSt({busy:false, msg:"ZIP 실패: " + e2.message}); }
   }
 
-  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - 280) * 0.56), 520);
-  if (previewW < 280) { previewW = 280; }
+  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - 270) * 0.62), 620);
+  if (previewW < 300) { previewW = 300; }
 
   var isLight = props.theme === "light";
   var mainBg    = isLight ? "#f4f4f8"               : "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)";
@@ -1587,6 +1590,10 @@ export function CardNewsApp(props) {
   var topMuted  = isLight ? "#888"                  : "rgba(255,255,255,0.4)";
 
   var CSS = "*{box-sizing:border-box;margin:0;padding:0}" +
+    "@keyframes cn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}" +
+    "@keyframes cn-progress{from{width:0%}to{width:100%}}" +
+    "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
+    "@keyframes cn-popin{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
     "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
