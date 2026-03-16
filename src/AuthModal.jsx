@@ -9,7 +9,31 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
+  // 인앱 브라우저(카카오/네이버 등 WebView) 감지
+  const isInAppBrowser = () => {
+    const ua = navigator.userAgent || "";
+    return /KAKAOTALK|NAVER|Instagram|FB_IAB|FBAN|FBAV|Line|Twitter|Snapchat|UCBrowser|MiuiBrowser|GSA/i.test(ua)
+      || (ua.includes("wv") && /Android/i.test(ua));
+  };
+
+  // 외부 브라우저로 강제 열기 (Chrome Intent / 범용)
+  const openInExternalBrowser = () => {
+    const url = window.location.href;
+    // Android Chrome Intent
+    if (/Android/i.test(navigator.userAgent)) {
+      window.location.href = "intent://" + url.replace(/^https?:\/\//, "") + "#Intent;scheme=https;package=com.android.chrome;end";
+      setTimeout(() => { window.location.href = url; }, 1500);
+    } else {
+      window.location.href = url;
+    }
+  };
+
   const googleLogin = async () => {
+    // 인앱 브라우저 차단 처리
+    if (isInAppBrowser()) {
+      setErr("__inapp__");
+      return;
+    }
     setErr(""); setLoading(true);
     try {
       const user = await fbGoogleLogin();
@@ -95,7 +119,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
-          <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>엔퍼콘텐츠랩</div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 10P 지급 · AI 생성 비회원 5회 무료</div>
         </div>
 
@@ -109,7 +133,23 @@ export default function AuthModal({ onClose, onAuth, C }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input placeholder="이메일" type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
             <input placeholder="비밀번호" type="password" value={form.pw} className="nper-auth-input" style={fs} onChange={f("pw")} onKeyDown={e => e.key === "Enter" && login()} />
-            {err && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
+            {err && err !== "__inapp__" && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
+            {err === "__inapp__" && (
+              <div style={{ borderRadius: 12, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", padding: "14px 16px" }}>
+                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>⚠️ 카카오 앱에서는 구글 로그인이 불가해요</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: 12 }}>
+                  Google 정책상 카카오·네이버 등 앱 내 브라우저에서는 구글 로그인이 차단됩니다.<br/>
+                  <b style={{ color: "#fff" }}>Chrome 브라우저</b>에서 직접 접속해 로그인해주세요.
+                </div>
+                <button onClick={openInExternalBrowser}
+                  style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+                  🌐 Chrome으로 열기
+                </button>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center", marginTop: 8 }}>
+                  또는 주소창에 <b style={{ color: "rgba(255,255,255,0.6)" }}>snsmakeit.com</b> 직접 입력
+                </div>
+              </div>
+            )}
             <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "로그인 중..." : "로그인하기"}
             </button>
@@ -136,7 +176,23 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <input placeholder="이메일" type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
             <input placeholder="비밀번호 (8자 이상)" type="password" value={form.pw} className="nper-auth-input" style={fs} onChange={f("pw")} />
             <input placeholder="비밀번호 확인" type="password" value={form.pw2} className="nper-auth-input" style={fs} onChange={f("pw2")} onKeyDown={e => e.key === "Enter" && register()} />
-            {err && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
+            {err && err !== "__inapp__" && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
+            {err === "__inapp__" && (
+              <div style={{ borderRadius: 12, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", padding: "14px 16px" }}>
+                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>⚠️ 카카오 앱에서는 구글 로그인이 불가해요</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: 12 }}>
+                  Google 정책상 카카오·네이버 등 앱 내 브라우저에서는 구글 로그인이 차단됩니다.<br/>
+                  <b style={{ color: "#fff" }}>Chrome 브라우저</b>에서 직접 접속해 로그인해주세요.
+                </div>
+                <button onClick={openInExternalBrowser}
+                  style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+                  🌐 Chrome으로 열기
+                </button>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center", marginTop: 8 }}>
+                  또는 주소창에 <b style={{ color: "rgba(255,255,255,0.6)" }}>snsmakeit.com</b> 직접 입력
+                </div>
+              </div>
+            )}
             <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "가입 중..." : "회원가입하기"}
             </button>
