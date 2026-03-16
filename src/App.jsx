@@ -89,8 +89,8 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
     };
-    document.addEventListener("click", fn);
-    return () => document.removeEventListener("click", fn);
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
   }, []);
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function App() {
   );
 
   const DropBtn = ({ label, open, onClick, active }) => (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} onMouseDown={e => e.stopPropagation()} style={{
       background: (active || open) ? "rgba(124,106,255,0.08)" : "transparent",
       border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 8, fontSize: 14,
       fontWeight: (active || open) ? 700 : 500,
@@ -165,7 +165,7 @@ export default function App() {
   );
 
   const DropItem = ({ id, icon, label, onClick }) => (
-    <button onClick={onClick || (() => navigate(id))} style={{
+    <button onClick={onClick || (() => navigate(id))} onMouseDown={e => e.stopPropagation()} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
       background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
@@ -273,7 +273,7 @@ export default function App() {
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={(e) => { if(e) e.stopPropagation(); setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
+                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={() => { setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
               </DropMenu>
             )}
           </div>
