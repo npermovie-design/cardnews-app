@@ -32,12 +32,20 @@ var BG_COLORS = [
 var TEXT_COLORS = ["#ffffff","#000000","#fef3c7","#dcfce7","#dbeafe","#fce7f3","#a5b4fc","#f0abfc"];
 
 var DESIGN_PRESETS = [
-  {key:"bold_dark",  label:"볼드 다크",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"minimal",    label:"미니멀",     bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
-  {key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
-  {key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"bold_dark",   label:"볼드 다크",   bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"minimal",     label:"미니멀",      bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
+  {key:"neon",        label:"네온",        bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"warm_cream",  label:"크림 웜",     bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
+  {key:"forest",      label:"포레스트",    bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"ocean",       label:"오션",        bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"rose_gold",   label:"로즈골드",    bgColor:"#fff1f2", textColor:"#881337", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.75},
+  {key:"purple_haze", label:"퍼플 헤이즈", bgColor:"#1e0a3c", textColor:"#e9d5ff", titleSize:29, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"sunset",      label:"선셋",        bgColor:"#431407", textColor:"#fed7aa", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.75},
+  {key:"sky_blue",    label:"스카이",      bgColor:"#f0f9ff", textColor:"#0c4a6e", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.8},
+  {key:"charcoal",    label:"차콜",        bgColor:"#1f2937", textColor:"#f9fafb", titleSize:29, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"mint_fresh",  label:"민트",        bgColor:"#ecfdf5", textColor:"#064e3b", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
+  {key:"gold_luxury", label:"골드 럭셔리", bgColor:"#1c1400", textColor:"#fbbf24", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"soft_pink",   label:"소프트 핑크", bgColor:"#fdf2f8", textColor:"#831843", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"bottom", hlMode:"underline", lineHeightTitle:1.4, lineHeightBody:1.8},
 ];
 
 var EXAMPLES = [
@@ -564,7 +572,7 @@ function EditPanel(props) {
   var curSlide = props.curSlide; var curEd = props.curEd; var updEd = props.updEd;
   var selPreset = props.selPreset; var applyPreset = props.applyPreset;
   return (
-    <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
+    <div style={{width:340, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
         <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>디자인 프리셋</div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
@@ -1344,10 +1352,10 @@ function PageMake(props) {
 
       {makeStep === 2 && (
         <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
-          <div style={{width: narrow ? "100%" : 286, flexShrink:0, display:"flex", flexDirection:"column"}}>
+          <div style={{width: narrow ? "100%" : 380, flexShrink:0, display:"flex", flexDirection:"column"}}>
             <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
             <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
-            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:7, marginBottom:12}}>
               {DESIGN_PRESETS.map(function(dp) {
                 var isC = selPreset && selPreset.key === dp.key;
                 return (
@@ -1355,7 +1363,7 @@ function PageMake(props) {
                     style={{borderRadius:9, overflow:"hidden", cursor:"pointer",
                       border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
                       boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none"}}>
-                    <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
+                    <PresetCanvas dp={dp} size={96} isC={isC} onClick={function() {}}/>
                   </div>
                 );
               })}
@@ -1381,7 +1389,7 @@ function PageMake(props) {
             {selPreset ? (
               <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
                 <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>{"✔ " + selPreset.label}</div>
-                <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
+                <PresetCanvas dp={selPreset} size={320} isC={true} onClick={function() {}}/>
               </div>
             ) : (
               <div style={{textAlign:"center", opacity:0.4}}>
