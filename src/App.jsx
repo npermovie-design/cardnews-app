@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
-import BoardPage from "./BoardPage";
+import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
 import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
+import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 
@@ -22,12 +22,13 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
   const [showAuth,   setShowAuth]   = useState(false);
-  const [aiSub,      setAiSub]      = useState(false);
-  const [aiMenu,     setAiMenu]     = useState("home");
   const [boardSub,   setBoardSub]   = useState(false);
   const [boardCat,   setBoardCat]   = useState("info");
+  const [aiSub,      setAiSub]      = useState(false);
+  const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
 
+  const boardSubRef = useRef(null);
   const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
@@ -86,8 +87,8 @@ export default function App() {
 
   useEffect(() => {
     const fn = e => {
-      if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
+      if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -101,7 +102,7 @@ export default function App() {
   useEffect(() => {
     const fn = () => {
       const hash = window.location.hash.replace("#", "") || "home";
-      setPage(hash); setMobileOpen(false);
+      setPage(hash); setBoardSub(false); setMobileOpen(false);
       window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", fn);
@@ -111,24 +112,23 @@ export default function App() {
   const navigate = target => {
     if (target === "login_trigger") { setShowAuth(true); return; }
     window.history.pushState(null, "", "#" + target);
-    setPage(target); setAiSub(false); setBoardSub(false); setMobileOpen(false);
+    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
   const navigateBoard = (cat) => {
     setBoardCat(cat);
-    window.history.pushState(null, "", "#community");
-    setPage("community"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    window.history.pushState(null, "", "#" + cat);
+    setPage(cat); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
   const navigateAi = (menu) => {
     setAiMenu(menu);
     window.history.pushState(null, "", "#ai");
-    setPage("ai"); setAiSub(false); setBoardSub(false); setMobileOpen(false);
+    setPage("ai"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
-
 
   const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
   const logout = async () => {
@@ -136,8 +136,8 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
+  const isBoard = ["info", "qna", "free", "review"].includes(page);
   const isAi    = page === "ai";
-  const isBoard = page === "community";
 
   /* ── 네비 버튼 컴포넌트 ── */
   const NavBtn = ({ id, label, active }) => (
@@ -151,7 +151,7 @@ export default function App() {
   );
 
   const DropBtn = ({ label, open, onClick, active }) => (
-    <button onClick={onClick} onMouseDown={e => e.stopPropagation()} style={{
+    <button onClick={onClick} style={{
       background: (active || open) ? "rgba(124,106,255,0.08)" : "transparent",
       border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 8, fontSize: 14,
       fontWeight: (active || open) ? 700 : 500,
@@ -173,7 +173,7 @@ export default function App() {
   );
 
   const DropItem = ({ id, icon, label, onClick }) => (
-    <button onClick={onClick || (() => navigate(id))} onMouseDown={e => e.stopPropagation()} style={{
+    <button onClick={onClick || (() => navigate(id))} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
       background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
@@ -259,7 +259,7 @@ export default function App() {
           <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(124,106,255,0.3)" }}>N</div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>SNS메이킷</div>
-            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>SNS MAKE IT</div>
+            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
           </div>
         </button>
 
@@ -277,15 +277,11 @@ export default function App() {
               </DropMenu>
             )}
           </div>
-
           <div ref={boardSubRef} style={{ position: "relative" }}>
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                <DropItem id="community" icon="📌" label="정보공유"   onClick={() => navigateBoard("info")} />
-                <DropItem id="community" icon="❓" label="질문답변"   onClick={() => navigateBoard("qna")} />
-                <DropItem id="community" icon="🗣" label="자유게시판" onClick={() => navigateBoard("free")} />
-                <DropItem id="community" icon="⭐" label="사용후기"   onClick={() => navigateBoard("review")} />
+                {CATS.map(c => <DropItem key={c.id} id={c.id} icon={c.icon} label={c.label} />)}
               </DropMenu>
             )}
           </div>
@@ -335,6 +331,7 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+            ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
@@ -379,10 +376,28 @@ export default function App() {
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>SNS MAKE IT</div>
+                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
                 </div>
               </div>
               <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>
+            </div>
+            <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>서비스</div>
+                {["강의 사이트 운영", "SNS 홍보 지원", "프로그램 & 자료 제공", "관리 대행"].map(s => (
+                  <div key={s} style={{ fontSize: 13, color: C.muted, marginBottom: 8 }}>{s}</div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>커뮤니티</div>
+                {CATS.map(c => (
+                  <div key={c.id} onClick={() => navigate(c.id)} style={{ fontSize: 13, color: C.muted, marginBottom: 8, cursor: "pointer", transition: "color 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
+                    onMouseLeave={e => e.currentTarget.style.color = C.muted}>
+                    {c.icon} {c.label}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div style={{ maxWidth: 1000, margin: "24px auto 0", paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
