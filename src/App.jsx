@@ -276,6 +276,17 @@ export default function App() {
             )}
           </div>
 
+          <div ref={boardSubRef} style={{ position: "relative" }}>
+            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
+            {boardSub && (
+              <DropMenu>
+                <DropItem id="community" icon="📌" label="정보공유"   onClick={() => navigateBoard("info")} />
+                <DropItem id="community" icon="❓" label="질문답변"   onClick={() => navigateBoard("qna")} />
+                <DropItem id="community" icon="🗣" label="자유게시판" onClick={() => navigateBoard("free")} />
+                <DropItem id="community" icon="⭐" label="사용후기"   onClick={() => navigateBoard("review")} />
+              </DropMenu>
+            )}
+          </div>
           <NavBtn id="pricing" label="가격정책" />
           <NavBtn id="contact" label="문의하기" />
         </div>
