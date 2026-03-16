@@ -199,7 +199,7 @@ const SNS_LINKS = [
   { label: "유튜브",   url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000" },
 ];
 
-function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
+function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigate, onLogout }) {
   const isDark = theme === "dark";
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
   const sideBdr  = isDark ? "rgba(255,255,255,0.07)"     : "#e5e3f5";
@@ -315,29 +315,140 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
         </div>
       </div>
 
-      {/* 포인트 사용량 바 */}
-      <div style={{ padding: "10px 12px", borderTop: `1px solid ${sideBdr}`, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 12, color: info.used >= freeLimit ? "#f87171" : usageText, fontWeight: info.used >= freeLimit ? 700 : 400 }}>
-            {(user ? "회원" : "비회원") + " 💎 " + Math.max(0, freeLimit - info.used) * 10 + "P 잔여"}
-          </div>
-          {onlineCount > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80" }} />
-              <span style={{ fontSize: 11, color: usageText }}>{onlineCount}명</span>
+      {/* 하단 프로필 카드 */}
+      <div style={{ borderTop: `1px solid ${sideBdr}`, flexShrink: 0 }}>
+        {user ? (
+          <SidebarProfile user={user} info={info} freeLimit={freeLimit} pct={pct}
+            isDark={isDark} sideBdr={sideBdr} navigate={navigate} onLogout={onLogout}
+            onlineCount={onlineCount} usageText={usageText} usageBar={usageBar} />
+        ) : (
+          <div style={{ padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: usageText }}>비회원 💎 {Math.max(0, freeLimit - info.used) * 10}P 잔여</div>
+              {onlineCount > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80" }} />
+                  <span style={{ fontSize: 10, color: usageText }}>{onlineCount}명</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: pct, background: info.used >= freeLimit ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
-        </div>
-        {info.used >= freeLimit && !user && (
-          <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 700 }}>⚠️ 무료 포인트 소진 · 회원가입 필요</div>
-        )}
-        {info.used >= freeLimit && user && (
-          <div style={{ fontSize: 10, color: "#f87171", marginTop: 4, fontWeight: 700 }}>⚠️ 포인트 소진 · 충전 필요</div>
+            <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden", marginBottom: 6 }}>
+              <div style={{ height: "100%", width: pct, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
+            </div>
+            <div style={{ fontSize: 10, color: "#a5b4fc", textAlign: "center" }}>
+              로그인하면 20회 무료 + 포인트 적립
+            </div>
+          </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── 사이드바 프로필 카드 컴포넌트 ──────────────────────────────────────────────
+function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate, onLogout, onlineCount, usageText, usageBar }) {
+  const [open, setOpen] = useState(false);
+  const ptLeft = Math.max(0, (freeLimit - info.used) * 10) + (user.points || 0);
+  const ptTotal = freeLimit * 10 + (user.points || 0);
+  const ptPct = Math.min((ptLeft / Math.max(ptTotal, 1)) * 100, 100);
+  const isLow = ptLeft > 0 && ptLeft <= 10;
+  const isEmpty = ptLeft <= 0;
+  const ptColor = isEmpty || isLow ? "#f87171" : "#a5b4fc";
+  const nick = user.nick || user.email?.split("@")[0] || "사용자";
+  const initial = nick[0]?.toUpperCase() || "U";
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#f5f5f5";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e3f5";
+
+  return (
+    <div>
+      {/* 팝업 메뉴 */}
+      {open && (
+        <div style={{ position: "absolute", bottom: 60, left: 8, right: 8, zIndex: 200,
+          background: isDark ? "rgba(18,16,58,0.98)" : "#fff",
+          border: `1px solid ${bdr}`, borderRadius: 14, padding: "8px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+          {/* 회원 정보 헤더 */}
+          <div style={{ padding: "10px 12px", marginBottom: 4, borderBottom: `1px solid ${bdr}` }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 2 }}>{nick}</div>
+            <div style={{ fontSize: 11, color: muted }}>{user.email}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6,
+                background: user.role === "admin" ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.12)",
+                color: user.role === "admin" ? "#fbbf24" : "#a5b4fc", fontWeight: 700 }}>
+                {user.role === "admin" ? "👑 관리자" : "🌟 일반회원"}
+              </span>
+              <span style={{ fontSize: 10, color: ptColor, fontWeight: 700 }}>💎 {ptLeft}P 잔여</span>
+            </div>
+          </div>
+          {/* 포인트 바 */}
+          <div style={{ padding: "8px 12px", marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+              <span style={{ fontSize: 11, color: muted }}>포인트 현황</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: ptColor }}>{ptLeft}P / {ptTotal}P</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.08)" : "#e9ecef", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 5, width: ptPct + "%",
+                background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)",
+                transition: "width 0.5s" }} />
+            </div>
+            <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>AI 생성 1회 = 10P · {ptLeft >= 10 ? Math.floor(ptLeft/10) + "회 가능" : "포인트 부족"}</div>
+            {isLow && <div style={{ fontSize: 10, color: "#f87171", marginTop: 3, fontWeight: 700 }}>🔴 포인트가 거의 다 됐어요!</div>}
+          </div>
+          {/* 메뉴 버튼들 */}
+          {[
+            { icon: "💎", label: "포인트 충전", action: () => { navigate("pricing"); setOpen(false); } },
+            { icon: "📁", label: "내 보관함", action: () => { setOpen(false); } },
+            { icon: "📋", label: "가입일 " + (user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-"), action: null },
+          ].map((m, i) => (
+            m.action ? (
+              <button key={i} onClick={m.action}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "none",
+                  background: "transparent", color: text, fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <span>{m.icon}</span>{m.label}
+              </button>
+            ) : (
+              <div key={i} style={{ padding: "8px 12px", fontSize: 11, color: muted, display: "flex", gap: 8 }}>
+                <span>{m.icon}</span>{m.label}
+              </div>
+            )
+          ))}
+          <div style={{ borderTop: `1px solid ${bdr}`, marginTop: 4, paddingTop: 4 }}>
+            <button onClick={() => { setOpen(false); if (onLogout) { onLogout(); } else { try { import("./storage").then(({fbLogout})=>{fbLogout().catch(()=>{});window.location.reload();}); } catch(e) { window.location.reload(); } } }}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "none",
+                background: "transparent", color: "#f87171", fontSize: 12, fontWeight: 700,
+                cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+              🚪 로그아웃
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 버튼 */}
+      <button onClick={() => setOpen(p => !p)}
+        style={{ width: "100%", padding: "10px 12px", background: open ? (isDark ? "rgba(255,255,255,0.05)" : "#f0f0f8") : "transparent",
+          border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, position: "relative",
+          background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, fontWeight: 900, color: "#fff" }}>
+          {initial}
+          <div style={{ position: "absolute", bottom: 0, right: 0, width: 9, height: 9,
+            borderRadius: "50%", background: "#4ade80",
+            border: `2px solid ${isDark ? "#0f0c29" : "#fff"}` }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nick}</div>
+          <div style={{ fontSize: 10, color: ptColor, fontWeight: 600 }}>💎 {ptLeft}P 잔여</div>
+        </div>
+        <span style={{ fontSize: 10, color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
+      </button>
     </div>
   );
 }
@@ -709,7 +820,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   return null;
 }
 
-export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp }) {
+export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
@@ -753,7 +864,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 
       {/* 데스크톱 사이드바 */}
       <div className="ai-sidebar-desktop">
-        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} navigate={navigate} onLogout={onLogout} />
       </div>
 
       {/* 모바일 사이드바 오버레이 */}
@@ -762,7 +873,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}
             onClick={() => setSideOpen(false)} />
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, animation: "slideIn 0.2s ease", zIndex: 51 }}>
-            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} />
+            <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} navigate={navigate} onLogout={onLogout} />
           </div>
         </div>
       )}
@@ -782,17 +893,13 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
                 color: isDark ? "#fff" : "#333", padding: "4px 6px", marginRight: 4, display: "none" }}>
               ☰
             </button>
-            <span style={{ fontSize: 11, color: topClr, whiteSpace: "nowrap" }}>🤖 AI 생성기</span>
-            <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", color: info.used >= freeLimit ? "#f87171" : "#a5b4fc" }}>
-              💎 {user ? "회원" : "비회원"} {Math.max(0, (freeLimit - info.used) * 10)}P
-            </span>
+            <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>🤖 AI 생성기</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px #4ade80", flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", whiteSpace: "nowrap", fontWeight: 600 }}>현재 접속중 {onlineCount}명</span>
             </div>
-
           </div>
         </div>
 

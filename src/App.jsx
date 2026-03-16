@@ -182,7 +182,7 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
     if (isBoard)             return <BoardPage C={C} user={user} onLoginRequest={() => setShowAuth(true)} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
