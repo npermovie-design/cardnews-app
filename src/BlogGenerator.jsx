@@ -416,6 +416,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
     const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
+    var _savedFull = "";
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
@@ -425,7 +426,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full=""; let _savedFull="";
+      let buf=""; let full="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;

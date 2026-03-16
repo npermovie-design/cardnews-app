@@ -167,6 +167,7 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
   const generate = async () => {
     if (!newsInfo) { setGenErr("먼저 기사 URL을 입력해주세요."); return; }
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
+    var _nfFull = "";
 
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
@@ -240,7 +241,7 @@ ${articleSection}
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full=""; let _nfFull="";
+      let buf=""; let full="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;

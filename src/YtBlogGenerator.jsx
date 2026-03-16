@@ -183,6 +183,7 @@ export default function YtBlogGenerator({ theme, embedded, user }) {
   const generate = async () => {
     if (!videoInfo) { setGenErr("먼저 유튜브 URL을 입력해주세요."); return; }
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
+    var _nfFull = "";
 
     const transcriptText = transcript.length > 0
       ? transcriptToText(transcript).slice(0, 6000)
@@ -263,7 +264,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full=""; let _nfFull="";
+      let buf=""; let full="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;
