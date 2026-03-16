@@ -9,6 +9,7 @@ import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
+import ArchivePage from "./ArchivePage";
 
 const SNS = [
   { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
@@ -27,12 +28,14 @@ export default function App() {
   const [boardCat,   setBoardCat]   = useState("info");
   const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
+  const [archiveSub, setArchiveSub] = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
   const aiSubRef    = useRef(null);
+  const archiveSubRef = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -93,6 +96,7 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
+      if (archiveSubRef.current && !archiveSubRef.current.contains(e.target)) setArchiveSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -125,7 +129,7 @@ export default function App() {
     if (target === "login_trigger") { setShowAuth(true); return; }
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
-    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage(target); setBoardSub(false); setAiSub(false); setArchiveSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -211,6 +215,7 @@ export default function App() {
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
+    if (page === "archive")    return <ArchivePage C={C} theme={theme} user={user} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
   };
@@ -291,6 +296,14 @@ export default function App() {
                 <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
                 <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => navigateAi("cardnews_make")} />
                 <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
+              </DropMenu>
+            )}
+          </div>
+          <div ref={archiveSubRef} style={{ position: "relative" }}>
+            <DropBtn label="📂 자료실" open={archiveSub} active={page === "archive"} onClick={() => setArchiveSub(s => !s)} />
+            {archiveSub && (
+              <DropMenu>
+                <DropItem id="archive" icon="🎬" label="영상자료실" onClick={() => { navigate("archive"); setArchiveSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -429,6 +442,7 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+            { id: "archive", label: "🎬 영상자료실", archive: true },
             { id: "info",   label: "📌 정보공유",   board: "info"   },
             { id: "qna",    label: "❓ 질문답변",   board: "qna"    },
             { id: "free",   label: "🗣 자유게시판", board: "free"   },
@@ -436,7 +450,7 @@ export default function App() {
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.archive ? "archive" : m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
