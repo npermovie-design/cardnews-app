@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
 import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
-import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 
@@ -22,12 +21,10 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
   const [showAuth,   setShowAuth]   = useState(false);
-  const [boardSub,   setBoardSub]   = useState(false);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
 
-  const boardSubRef = useRef(null);
   const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
@@ -86,7 +83,6 @@ export default function App() {
 
   useEffect(() => {
     const fn = e => {
-      if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
     };
     document.addEventListener("mousedown", fn);
@@ -101,7 +97,7 @@ export default function App() {
   useEffect(() => {
     const fn = () => {
       const hash = window.location.hash.replace("#", "") || "home";
-      setPage(hash); setBoardSub(false); setMobileOpen(false);
+      setPage(hash); setMobileOpen(false);
       window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", fn);
@@ -111,23 +107,17 @@ export default function App() {
   const navigate = target => {
     if (target === "login_trigger") { setShowAuth(true); return; }
     window.history.pushState(null, "", "#" + target);
-    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage(target); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
   const navigateAi = (menu) => {
     setAiMenu(menu);
     window.history.pushState(null, "", "#ai");
-    setPage("ai"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage("ai"); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
-  const navigateBoard = (catId) => {
-    setBoardInitCat(catId);
-    window.history.pushState(null, "", "#board_" + catId);
-    setPage("board"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
-    window.scrollTo(0, 0);
-  };
 
   const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
   const logout = async () => {
@@ -135,7 +125,6 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
-  const isBoard = page === "board";
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
@@ -175,8 +164,8 @@ export default function App() {
     <button onClick={onClick || (() => navigate(id))} onMouseDown={e => e.stopPropagation()} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
-      background: (page === id || (page === "board" && boardInitCat === id)) ? "rgba(124,106,255,0.08)" : "transparent",
-      color: (page === id || (page === "board" && boardInitCat === id)) ? C.purpleL : C.muted,
+      background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
+      color: page === id ? C.purpleL : C.muted,
       fontSize: 13, fontWeight: 600, textAlign: "left", transition: "background 0.15s",
     }}
       onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
@@ -190,7 +179,6 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
-    if (isBoard)             return <BoardPage key={boardInitCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardInitCat} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
@@ -276,14 +264,7 @@ export default function App() {
               </DropMenu>
             )}
           </div>
-          <div ref={boardSubRef} style={{ position: "relative" }}>
-            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
-            {boardSub && (
-              <DropMenu>
-                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={() => navigateBoard(cc.id)} />)}
-              </DropMenu>
-            )}
-          </div>
+
           <NavBtn id="pricing" label="가격정책" />
           <NavBtn id="contact" label="문의하기" />
         </div>
@@ -330,7 +311,6 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
-            ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
@@ -379,24 +359,7 @@ export default function App() {
                 </div>
               </div>
               <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>
-            </div>
-            <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>서비스</div>
-                {["강의 사이트 운영", "SNS 홍보 지원", "프로그램 & 자료 제공", "관리 대행"].map(s => (
-                  <div key={s} style={{ fontSize: 13, color: C.muted, marginBottom: 8 }}>{s}</div>
-                ))}
-              </div>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>커뮤니티</div>
-                {CATS.map(c => (
-                  <div key={c.id} onClick={() => navigate(c.id)} style={{ fontSize: 13, color: C.muted, marginBottom: 8, cursor: "pointer", transition: "color 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
-                    onMouseLeave={e => e.currentTarget.style.color = C.muted}>
-                    {c.icon} {c.label}
-                  </div>
-                ))}
-              </div>
+            </div></div>
             </div>
           </div>
           <div style={{ maxWidth: 1000, margin: "24px auto 0", paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
