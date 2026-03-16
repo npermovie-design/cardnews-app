@@ -122,6 +122,13 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  const navigateBoard = (catId) => {
+    setBoardInitCat(catId);
+    window.history.pushState(null, "", "#" + catId);
+    setPage(catId); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    window.scrollTo(0, 0);
+  };
+
   const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
   const logout = async () => {
     try { await fbLogout(); } catch(e) {}
@@ -273,7 +280,7 @@ export default function App() {
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={() => { setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
+                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={() => navigateBoard(cc.id)} />)}
               </DropMenu>
             )}
           </div>
