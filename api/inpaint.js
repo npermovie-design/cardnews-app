@@ -24,6 +24,7 @@ export default async function handler(req, res) {
 
   try {
     // 1. Replicate 예측 생성
+    // stability-ai/stable-diffusion-inpainting 최신 버전
     const createRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -31,14 +32,14 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "c28b92a7ecd66eee4aefcd8a94eb9e1d126641c4e5a0b47cc7a0f47b4b7f6a39",
+        version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
         input: {
           image,
           mask,
-          prompt:             "seamless background, clean image, no watermark",
-          negative_prompt:    "watermark, logo, text, mark, symbol, star",
-          num_inference_steps: 25,
-          guidance_scale:     7.5,
+          prompt:              "seamless background texture, clean image, no watermark, no logo",
+          negative_prompt:     "watermark, logo, text, mark, symbol, sparkle, star",
+          num_inference_steps: 20,
+          guidance_scale:      8,
         },
       }),
     });
