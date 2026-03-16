@@ -124,8 +124,8 @@ export default function App() {
 
   const navigateBoard = (catId) => {
     setBoardInitCat(catId);
-    window.history.pushState(null, "", "#" + catId);
-    setPage(catId); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    window.history.pushState(null, "", "#board_" + catId);
+    setPage("board"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -135,7 +135,7 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
-  const isBoard = ["ai", "news", "archive", "qna"].includes(page);
+  const isBoard = page === "board";
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
@@ -175,8 +175,8 @@ export default function App() {
     <button onClick={onClick || (() => navigate(id))} onMouseDown={e => e.stopPropagation()} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
-      background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
-      color: page === id ? C.purpleL : C.muted,
+      background: (page === id || (page === "board" && boardInitCat === id)) ? "rgba(124,106,255,0.08)" : "transparent",
+      color: (page === id || (page === "board" && boardInitCat === id)) ? C.purpleL : C.muted,
       fontSize: 13, fontWeight: 600, textAlign: "left", transition: "background 0.15s",
     }}
       onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
