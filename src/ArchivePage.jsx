@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "./storage";
 import { ref, get, set, push, remove, update } from "firebase/database";
 
@@ -145,141 +145,193 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme, user }) {
    영상 카드
 ═══════════════════════════════════════════════════════════ */
 function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
-  const [hovered, setHovered] = useState(false);
+  const [hovered,     setHovered]     = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const thumb = v.thumbnail || ytThumb(v.videoUrl) || null;
+  const [hoverPos,    setHoverPos]    = useState({ x: 0, y: 0 });
+  const cardRef = useRef(null);
+
+  const thumb   = v.thumbnail || ytThumb(v.videoUrl) || null;
   const catInfo = CATEGORIES.find(c => c.id === v.category) || CATEGORIES[CATEGORIES.length - 1];
-  const text  = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
-  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const text    = isDark ? "#fff"                   : "#1a1a2e";
+  const muted   = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const cardBg  = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+
+  const onMouseMove = (e) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  /* ── 풀스크린 미리보기 모달 ── */
+  const PreviewModal = () => (
+    <div onClick={() => setPreviewOpen(false)} style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "rgba(0,0,0,0.88)", backdropFilter: "blur(10px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: "100%", maxWidth: 860, borderRadius: 18, overflow: "hidden",
+        background: "#000", boxShadow: "0 32px 80px rgba(0,0,0,0.8)",
+        animation: "fadeIn 0.2s ease",
+      }}>
+        {extractYtId(v.videoUrl) ? (
+          <iframe src={`https://www.youtube.com/embed/${extractYtId(v.videoUrl)}?autoplay=1`}
+            style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+            allowFullScreen allow="autoplay" />
+        ) : v.videoUrl?.includes("drive.google.com") ? (
+          <iframe src={v.videoUrl}
+            style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+            allowFullScreen allow="autoplay" />
+        ) : (
+          <video src={v.videoUrl} controls autoPlay
+            style={{ width: "100%", aspectRatio: "16/9", display: "block", background: "#000" }} />
+        )}
+        <div style={{ padding: "18px 22px", background: isDark ? "#16132e" : "#fff", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: text, marginBottom: 5 }}>{v.title}</div>
+            {v.description && <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>{v.description}</div>}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            {v.downloadUrl && (
+              <a href={v.downloadUrl} target="_blank" rel="noopener noreferrer"
+                style={{ padding: "9px 18px", borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                ⬇️ 다운로드
+              </a>
+            )}
+            {isAdmin && (
+              <button onClick={e => { e.stopPropagation(); setPreviewOpen(false); onEdit(v); }}
+                style={{ padding: "9px 14px", borderRadius: 9, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>✏️ 수정</button>
+            )}
+            {isAdmin && (
+              <button onClick={e => { e.stopPropagation(); setPreviewOpen(false); onDelete(v.key); }}
+                style={{ padding: "9px 14px", borderRadius: 9, border: "none", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🗑 삭제</button>
+            )}
+            <button onClick={() => setPreviewOpen(false)}
+              style={{ padding: "9px 14px", borderRadius: 9, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>✕ 닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── 호버 미니 프리뷰 툴팁 ── */
+  const HoverPreview = () => {
+    if (!hovered || previewOpen) return null;
+    const isRight = hoverPos.x > 140;
+    return (
+      <div style={{
+        position: "absolute",
+        bottom: "calc(100% + 10px)",
+        left: isRight ? "auto" : "50%",
+        right: isRight ? 0 : "auto",
+        transform: isRight ? "none" : "translateX(-50%)",
+        zIndex: 500,
+        width: 240, background: isDark ? "#1e1c3a" : "#fff",
+        border: `1px solid ${bdr}`, borderRadius: 12,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+        overflow: "hidden",
+        pointerEvents: "none",
+        animation: "fadeIn 0.15s ease",
+      }}>
+        {/* 썸네일 */}
+        <div style={{ aspectRatio: "16/9", background: "#000", overflow: "hidden" }}>
+          {thumb
+            ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🎬</div>
+          }
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, paddingLeft: 2 }}>▶</div>
+          </div>
+        </div>
+        {/* 제목/설명 */}
+        <div style={{ padding: "10px 12px" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</div>
+          {v.description && <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description}</div>}
+          <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
+            <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, background: "rgba(99,102,241,0.12)", color: "#a5b4fc", fontWeight: 700 }}>▶ 클릭해서 재생</span>
+            {v.downloadUrl && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, background: "rgba(74,222,128,0.12)", color: "#4ade80", fontWeight: 700 }}>⬇️ 다운로드 가능</span>}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
-      {previewOpen && (
-        <div onClick={() => setPreviewOpen(false)} style={{
-          position: "fixed", inset: 0, zIndex: 9999,
-          background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)",
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            width: "100%", maxWidth: 800, borderRadius: 16, overflow: "hidden",
-            background: "#000", boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
-          }}>
-            {extractYtId(v.videoUrl) ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${extractYtId(v.videoUrl)}?autoplay=1`}
-                style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
-                allowFullScreen allow="autoplay"
-              />
-            ) : v.videoUrl?.includes("drive.google.com") ? (
-              <iframe
-                src={v.videoUrl}
-                style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
-                allowFullScreen allow="autoplay"
-              />
-            ) : (
-              <video src={v.videoUrl} controls autoPlay
-                style={{ width: "100%", aspectRatio: "16/9", display: "block", background: "#000" }} />
-            )}
-            <div style={{ padding: "16px 20px", background: isDark ? "#1a1730" : "#fff" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>{v.title}</div>
-              {v.description && <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>{v.description}</div>}
-              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                {v.downloadUrl && (
-                  <a href={v.downloadUrl} download target="_blank" rel="noopener noreferrer"
-                    style={{ padding: "9px 20px", borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>
-                    ⬇️ 다운로드
-                  </a>
-                )}
-                <button onClick={() => setPreviewOpen(false)}
-                  style={{ padding: "9px 16px", borderRadius: 9, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>
-                  닫기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {previewOpen && <PreviewModal />}
 
-      <div
+      <div ref={cardRef}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onMouseMove={onMouseMove}
         style={{
-          background: cardBg, border: `1px solid ${bdr}`, borderRadius: 14,
-          overflow: "hidden", display: "flex", flexDirection: "column",
-          transition: "transform 0.15s, box-shadow 0.15s",
-          transform: hovered ? "translateY(-3px)" : "none",
-          boxShadow: hovered ? "0 8px 28px rgba(99,102,241,0.18)" : "none",
-          cursor: "pointer",
+          position: "relative",
+          background: cardBg, border: `1px solid ${hovered ? "rgba(99,102,241,0.4)" : bdr}`,
+          borderRadius: 14, overflow: "visible",
+          display: "flex", flexDirection: "column",
+          transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
+          transform: hovered ? "translateY(-4px)" : "none",
+          boxShadow: hovered ? "0 12px 36px rgba(99,102,241,0.22)" : "none",
         }}
       >
-        {/* 썸네일 */}
-        <div onClick={() => setPreviewOpen(true)} style={{ position: "relative", aspectRatio: "16/9", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", overflow: "hidden" }}>
-          {thumb ? (
-            <img src={thumb} alt={v.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>🎬</div>
-          )}
-          {/* 재생 버튼 오버레이 */}
-          <div style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            background: hovered ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.25)", transition: "background 0.15s",
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.9)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, paddingLeft: 3,
-              transform: hovered ? "scale(1.1)" : "scale(1)", transition: "transform 0.15s",
-            }}>▶</div>
+        {/* 호버 미니 프리뷰 */}
+        <HoverPreview />
+
+        {/* 썸네일 영역 */}
+        <div onClick={() => setPreviewOpen(true)}
+          style={{ position: "relative", aspectRatio: "16/9", borderRadius: "14px 14px 0 0", overflow: "hidden", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", cursor: "pointer" }}>
+          {thumb
+            ? <img src={thumb} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s", transform: hovered ? "scale(1.05)" : "scale(1)" }} />
+            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>🎬</div>
+          }
+          {/* 재생 오버레이 */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: hovered ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.2)", transition: "background 0.2s" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: hovered ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.82)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, paddingLeft: 3, transition: "all 0.2s", transform: hovered ? "scale(1.12)" : "scale(1)", boxShadow: hovered ? "0 4px 20px rgba(99,102,241,0.5)" : "none" }}>▶</div>
           </div>
           {/* 카테고리 뱃지 */}
-          <div style={{
-            position: "absolute", top: 8, left: 8,
-            background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
-            borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 700, color: "#fff",
-          }}>
+          <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
             {catInfo.icon} {catInfo.label}
           </div>
           {v.isFree === false && (
-            <div style={{
-              position: "absolute", top: 8, right: 8,
-              background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
-              borderRadius: 6, padding: "3px 8px", fontSize: 10, fontWeight: 800, color: "#fff",
-            }}>👑 멤버 전용</div>
+            <div style={{ position: "absolute", top: 8, right: 8, background: "linear-gradient(135deg,#f59e0b,#fbbf24)", borderRadius: 6, padding: "3px 8px", fontSize: 10, fontWeight: 800, color: "#fff" }}>
+              👑 멤버 전용
+            </div>
+          )}
+          {/* 관리자 삭제 버튼 - 호버 시 표시 */}
+          {isAdmin && hovered && (
+            <div style={{ position: "absolute", bottom: 8, right: 8, display: "flex", gap: 4 }}>
+              <button onClick={e => { e.stopPropagation(); onEdit(v); }}
+                style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "rgba(255,255,255,0.9)", color: "#6366f1", fontSize: 11, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}>
+                ✏️
+              </button>
+              <button onClick={e => { e.stopPropagation(); onDelete(v.key); }}
+                style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "rgba(239,68,68,0.9)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}>
+                🗑
+              </button>
+            </div>
           )}
         </div>
 
-        {/* 정보 */}
-        <div style={{ padding: "14px 14px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+        {/* 카드 하단 정보 */}
+        <div style={{ padding: "12px 14px 14px", flex: 1, display: "flex", flexDirection: "column", borderRadius: "0 0 14px 14px", overflow: "hidden", background: cardBg }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 4, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
             {v.title}
           </div>
           {v.description && (
-            <div style={{ fontSize: 12, color: muted, lineHeight: 1.6, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            <div style={{ fontSize: 12, color: muted, lineHeight: 1.6, marginBottom: 8, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
               {v.description}
             </div>
           )}
-          <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setPreviewOpen(true)}
-                style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                ▶ 미리보기
-              </button>
-              {v.downloadUrl && (
-                <a href={v.downloadUrl} download target="_blank" rel="noopener noreferrer"
-                  style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "#a5b4fc" : "#6366f1", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  ⬇️ 다운로드
-                </a>
-              )}
-            </div>
-            {isAdmin && (
-              <div style={{ display: "flex", gap: 4 }}>
-                <button onClick={e => { e.stopPropagation(); onEdit(v); }}
-                  style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>수정</button>
-                <button onClick={e => { e.stopPropagation(); onDelete(v.key); }}
-                  style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>삭제</button>
-              </div>
+          <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
+            <button onClick={() => setPreviewOpen(true)}
+              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              ▶ 재생
+            </button>
+            {v.downloadUrl && (
+              <a href={v.downloadUrl} target="_blank" rel="noopener noreferrer"
+                style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "#a5b4fc" : "#6366f1", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                ⬇️ 다운로드
+              </a>
             )}
           </div>
         </div>
