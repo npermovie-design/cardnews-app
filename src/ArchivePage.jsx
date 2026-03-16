@@ -493,6 +493,8 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   메인 콘텐츠
 ═══════════════════════════════════════════════════════════ */
 function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   const isDark  = theme === "dark";
