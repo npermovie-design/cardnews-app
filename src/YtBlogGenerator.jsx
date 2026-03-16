@@ -263,7 +263,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full=""; let _nfFull=""; let _nfFull="";
+      let buf=""; let full=""; let _nfFull="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;
