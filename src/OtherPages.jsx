@@ -964,7 +964,7 @@ export function PricingPage({ navigate, C }) {
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
       color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["가입 시 50P 자동 지급","게시글 작성 10P 적립","댓글 작성 2P 적립","일일 로그인 3P 적립","포인트 소진 시 충전"],
+      features: ["가입 시 50P 자동 지급","게시글 작성 1P 적립","댓글 작성 포인트 없음","일일 로그인 3P 적립","포인트 소진 시 충전"],
       btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
       badge: null, highlight: false,
     },
@@ -992,7 +992,7 @@ export function PricingPage({ navigate, C }) {
   ];
 
   const FAQ = [
-    { q: "포인트는 어떻게 사용하나요?", a: "AI 생성 1회에 10P가 차감됩니다. 게시글 작성(10P), 댓글(2P), 일일 로그인(3P)으로 포인트를 적립할 수 있어요." },
+    { q: "포인트는 어떻게 사용하나요?", a: "AI 생성 1회에 10P가 차감됩니다. 게시글 작성(1P), 일일 로그인(3P)으로 포인트를 적립할 수 있어요." },
     { q: "포인트 유효기간이 있나요?", a: "충전한 포인트는 유효기간이 없습니다. 적립 포인트도 동일하게 영구 사용 가능해요." },
     { q: "결제는 어떻게 하나요?", a: "토스페이먼츠를 통해 신용카드, 카카오페이, 네이버페이 등 다양한 방법으로 결제 가능합니다." },
     { q: "환불이 가능한가요?", a: "충전 후 사용하지 않은 포인트는 7일 이내 전액 환불 가능합니다. 문의하기로 연락해주세요." },

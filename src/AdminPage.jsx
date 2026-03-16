@@ -341,7 +341,7 @@ export default function AdminPage({ C, user: adminUser }) {
               { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
               { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
               { label: "AI 1회 비용",      value: "10P", color: "#f59e0b" },
-              { label: "글쓰기 적립",      value: "10P", color: "#34d399" },
+              { label: "글쓰기 적립",      value: "1P", color: "#34d399" },
             ].map(r => (
               <div key={r.label} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 12, padding: "18px 20px", boxShadow: C.shadow }}>
                 <div style={{ fontSize: 22, fontWeight: 900, color: r.color, marginBottom: 4 }}>{r.value}</div>
