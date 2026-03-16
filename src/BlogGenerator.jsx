@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { changePoints, getAiUsage, setAiUsage } from "./storage";
 
 const API_KEY = "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";
@@ -354,6 +354,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [titleLoading, setTitleLoading] = useState(false);
   const [seoLoading,   setSeoLoading]   = useState(false);
 
+  // 이탈 방지
+  useEffect(() => {
+    const handler = (e) => {
+      if (loading) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [loading]);
+
+  // 다시 생성하기 확인
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const handleGenerateClick = () => {
+    if (result && !loading) {
+      setShowRegenConfirm(true);
+    } else {
+      generate();
+    }
+  };
+
   const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p=>({...p,[k]:v}));
   const currentFields = cfg.fields[subtype] || ["keyword","extra"];
@@ -456,7 +475,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           var _saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
           var _title = fields.keyword || "제목 없음";
           var _newSave = { id: Date.now().toString(), type: subtype, title: _title,
-            content: _savedFull, date: new Date().toLocaleDateString("ko-KR") };
+            content: cleanText(_savedFull), date: new Date().toLocaleDateString("ko-KR") };
           _saves.unshift(_newSave);
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_saves.slice(0, 100)));
         } catch(e) {}
@@ -464,6 +483,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
+  const cleanText = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/#{1,6}\s*/g, "")
+      .replace(/^---+$/gm, "")
+      .replace(/^___+$/gm, "")
+      .replace(/^===+$/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
   const cleanForCopy = (text) => {
     return text
       .replace(/\*\*([^*]+)\*\*/g, "$1")
@@ -584,6 +617,26 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   const content = (
     <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}>
+      {/* 다시 생성 확인 모달 */}
+      {showRegenConfirm && (
+        <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+          <div style={{background:isDark?"rgba(18,16,58,0.98)":"#fff",border:"1px solid rgba(124,106,255,0.25)",borderRadius:20,padding:"36px 32px",maxWidth:380,width:"90%",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}}>
+            <div style={{fontSize:44,marginBottom:14}}>🔄</div>
+            <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:8}}>다시 생성하시겠습니까?</div>
+            <div style={{fontSize:13,color:muted,lineHeight:1.8,marginBottom:24}}>현재 생성된 글이 사라지고<br/>처음부터 다시 시작합니다.</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setShowRegenConfirm(false)}
+                style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                취소
+              </button>
+              <button onClick={()=>{ setShowRegenConfirm(false); setResult(""); setHtmlResult(""); generate(); }}
+                style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                다시 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
@@ -752,7 +805,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>
           {/* 생성 버튼 */}
           <div style={{padding:"10px 18px 14px",flexShrink:0}}>
-            <button onClick={generate} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <button onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
               {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<span>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
             </button>
           </div>

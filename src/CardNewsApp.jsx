@@ -1423,20 +1423,23 @@ function PageMake(props) {
 // ─── 메인 앱 ──────────────────────────────────────────────────────────────────
 export function CardNewsApp(props) {
   var user = props.user; var p;
-  p = useState(props.initialSubPage || "home");  var page = p[0]; var setPage = p[1];
+  p = useState(function(){ try{var cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.slides&&cc.slides.length)return"edit";}catch(e){}return props.initialSubPage||"home";}); var page=p[0];var setPage=p[1];
   p = useState(1);       var makeStep  = p[0]; var setMakeStep  = p[1];
-  p = useState("");      var topic     = p[0]; var setTopic     = p[1];
+  p = useState(function(){ try{var cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.topic)return cc.topic;}catch(e){}return"";}); var topic=p[0];var setTopic=p[1];
   p = useState(6);       var cnt       = p[0]; var setCnt       = p[1];
   p = useState(null);    var selPreset = p[0]; var setSelPreset = p[1];
-  p = useState([]);      var slides    = p[0]; var setSlides    = p[1];
+  p = useState(function(){ try{var cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.slides&&cc.slides.length)return cc.slides;}catch(e){}return[];}); var slides=p[0];var setSlides=p[1];
   p = useState(0);       var idx       = p[0]; var setIdx       = p[1];
   p = useState(false);   var loading   = p[0]; var setLoading   = p[1];
   p = useState("");      var err       = p[0]; var setErr       = p[1];
-  p = useState("");      var tname     = p[0]; var setTname     = p[1];
+  p = useState(function(){ try{var cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.tname)return cc.tname;}catch(e){}return"";}); var tname=p[0];var setTname=p[1];
   p = useState("style"); var etab      = p[0]; var setEtab      = p[1];
   p = useState({busy:false, msg:""});
   var dlSt = p[0]; var setDlSt = p[1];
-  p = useState({bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left", textValign:"middle", hlMode:"pill", ratio:"1:1", fontFamily:"sans-serif", bgOverlayOpacity:0.5, paddingX:0, lineHeightTitle:1.35, lineHeightBody:1.7});
+  p = useState(function() {
+    try { var cached = JSON.parse(localStorage.getItem("sns_cn_cache") || "null"); if (cached && cached.gs) return cached.gs; } catch(e) {}
+    return {bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left", textValign:"middle", hlMode:"pill", ratio:"1:1", fontFamily:"sans-serif", bgOverlayOpacity:0.5, paddingX:0, lineHeightTitle:1.35, lineHeightBody:1.7};
+  });
   var gs = p[0]; var setGs = p[1];
   p = useState({}); var sted = p[0]; var setSted = p[1];
   p = useState({}); var bgIs = p[0]; var setBgIs = p[1];
@@ -1450,6 +1453,22 @@ export function CardNewsApp(props) {
   var winW = useWinW();
   var onlineCount = useOnlineCount();
   var narrow = winW < 880;
+
+  // 생성 중 이탈 방지
+  useEffect(function() {
+    function handler(e) {
+      if (loading) { e.preventDefault(); e.returnValue = ""; }
+    }
+    window.addEventListener("beforeunload", handler);
+    return function() { window.removeEventListener("beforeunload", handler); };
+  }, [loading]);
+
+  // 슬라이드 변경 시 localStorage 캐시
+  useEffect(function() {
+    if (slides.length > 0) {
+      try { localStorage.setItem("sns_cn_cache", JSON.stringify({ slides: slides, gs: gs, topic: topic, tname: tname })); } catch(e) {}
+    }
+  }, [slides, gs]);
 
   // initialSubPage="plan" 이면 마운트 시 PlannerPanel 자동 열기
   useEffect(function() {
@@ -1667,7 +1686,7 @@ export function CardNewsApp(props) {
                 <>
                   {/* 모바일: 미리보기 상단, 편집패널 하단 스크롤 */}
                   <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"12px 16px 8px", background:"rgba(0,0,0,0.2)", borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
+                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm("다시 생성하시겠습니까?\n현재 카드뉴스가 초기화됩니다.")) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
                   </div>
                   <div style={{flex:1, overflowY:"auto"}}>
                     <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
@@ -1676,7 +1695,7 @@ export function CardNewsApp(props) {
               ) : (
                 <>
                   <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
-                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
+                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm("다시 생성하시겠습니까?\n현재 카드뉴스가 초기화됩니다.")) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={previewW}/>
                 </>
               )}
             </div>
