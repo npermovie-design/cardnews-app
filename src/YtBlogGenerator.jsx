@@ -263,7 +263,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full="";
+      let buf=""; let full=""; let _nfFull=""; let _nfFull="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;
@@ -276,7 +276,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
             try {
               const p = JSON.parse(d);
               if (p.type==="content_block_delta"&&p.delta?.text) {
-                full += p.delta.text; setResult(full);
+                full += p.delta.text; _nfFull = full; setResult(full);
               }
             } catch {}
           }
@@ -291,6 +291,16 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       _nu[_k] = (_u[_k] || 0) + 1;
       setAiUsage(_nu);
       if (user && user.uid) { changePoints(user.uid, -10, "유튜브 블로그 생성").catch(function(e) {}); }
+      // 보관함 자동저장
+      if (typeof _nfFull !== "undefined" && _nfFull && _nfFull.length > 50) {
+        try {
+          var _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          _sv.unshift({ id: Date.now().toString(), type: "blog_yt_blog",
+            title: typeof ytInfo !== "undefined" && ytInfo?.title ? ytInfo.title : "유튜브 블로그",
+            content: _nfFull, date: new Date().toLocaleDateString("ko-KR") });
+          localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_sv.slice(0, 100)));
+        } catch(e) {}
+      }
     }
   };
 
@@ -521,7 +531,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
               }}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)
+                : "✍️ 블로그 글 작성하기"
               }
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}

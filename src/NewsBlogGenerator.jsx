@@ -240,7 +240,7 @@ ${articleSection}
       if (!res.ok) throw new Error("API 오류");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf=""; let full="";
+      let buf=""; let full=""; let _nfFull="";
       while (true) {
         const {done,value} = await reader.read();
         if (done) break;
@@ -250,13 +250,30 @@ ${articleSection}
           if (line.startsWith("data: ")) {
             try {
               const p = JSON.parse(line.slice(6).trim());
-              if (p.type==="content_block_delta"&&p.delta?.text) { full+=p.delta.text; setResult(full); }
+              if (p.type==="content_block_delta"&&p.delta?.text) { full+=p.delta.text; _nfFull=full; setResult(full); }
             } catch {}
           }
         }
       }
     } catch { setGenErr("생성 중 오류가 발생했습니다."); }
-    finally { setGenerating(false); }
+    finally {
+      setGenerating(false);
+      var _u = getAiUsage();
+      var _k = user ? ("member_" + (user.uid || "u")) : "guest";
+      var _nu = Object.assign({}, _u);
+      _nu[_k] = (_u[_k] || 0) + 1;
+      setAiUsage(_nu);
+      if (user && user.uid) { changePoints(user.uid, -10, "NewsBlogGenerator 생성").catch(function(e) {}); }
+      // 보관함 자동저장
+      if (_nfFull && _nfFull.length > 50) {
+        try {
+          var _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          _sv.unshift({ id: Date.now().toString(), type: "blog_news", title: newsInfo?.title || "뉴스 블로그",
+            content: _nfFull, date: new Date().toLocaleDateString("ko-KR") });
+          localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_sv.slice(0, 100)));
+        } catch(e) {}
+      }
+    }
   };
 
   const BLOG_TYPES = [

@@ -1536,6 +1536,20 @@ export function CardNewsApp(props) {
       if (selPreset) { applyPreset(selPreset); }
       setPage("edit"); consumeOne(user);
       if (user && user.uid) { changePoints(user.uid, -10, "카드뉴스 생성").catch(function(e) {}); }
+      // 보관함 자동저장
+      try {
+        var _slides = parsed.slides || [];
+        var _tname  = parsed.topic || topic;
+        var _thumb  = "";
+        try {
+          var _tc = document.createElement("canvas");
+          drawSlide(_tc, Object.assign({}, _slides[0]), gs, null);
+          _thumb = _tc.toDataURL("image/jpeg", 0.5);
+        } catch(te) {}
+        saveWork({ id: Date.now().toString(), topic: _tname, count: _slides.length,
+          date: new Date().toLocaleDateString("ko-KR"), thumb: _thumb,
+          slides: _slides, gs: gs, sted: {} });
+      } catch(se) {}
     } catch(e3) { setErr("오류: " + e3.message); }
     finally { setLoading(false); }
   }
