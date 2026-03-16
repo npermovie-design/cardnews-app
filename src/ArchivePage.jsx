@@ -318,7 +318,7 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
   );
 }
 
-  });
+function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
   const [saving, setSaving] = useState(false);
 
   const text    = isDark ? "#fff"                   : "#1a1a2e";
