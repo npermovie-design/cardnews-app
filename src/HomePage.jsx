@@ -120,29 +120,30 @@ export default function HomePage({ navigate, C }) {
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 820 }}>
           <div style={{ opacity: 1, transform: "none", animation: "none" }}>
-            <Badge C={C}>🤖 AI 기반 콘텐츠 생성 플랫폼</Badge>
+            <Badge C={C}>🚀 SNS 콘텐츠 자동 생성 플랫폼</Badge>
           </div>
 
           <h1 style={{ fontSize: "clamp(28px,5.5vw,66px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -2, color: C.text, margin: "0 0 12px" }}>
             <TypeWriter
               texts={[
-                "블로그 글, AI로 3분만에",
-                "카드뉴스, 클릭 몇 번으로",
-                "SNS 마케팅, 더 쉽고 빠르게",
-                "콘텐츠 제작, AI가 도와드려요",
+                "SNS 콘텐츠, 이제 AI가 만들어드려요",
+                "블로그 글, 3분만에 자동 완성",
+                "카드뉴스, 클릭 몇 번으로 끝",
+                "SNS를 쉽게 만들고 싶다면 여기서",
               ]}
               speed={55} pause={2200}
             />
           </h1>
           <h2 style={{ fontSize: "clamp(22px,4vw,52px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -1.5, color: C.text, margin: "0 0 28px" }}>
-            SNS메이킷 AI로{" "}
+            SNS 콘텐츠 제작,{" "}
             <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              지금 바로 시작하세요
+              SNS메이킷이 대신해드려요
             </span>
           </h2>
           <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.muted, lineHeight: 1.9, maxWidth: 560, margin: "0 auto 16px" }}>
-            네이버 블로그·티스토리·인스타·유튜브 대본까지<br/>
-            AI가 자동으로 작성해드려요. <b style={{ color: C.purpleL }}>비회원도 5회 무료!</b>
+            SNS 콘텐츠 만드는 게 막막하고 시간이 없으신가요?<br/>
+            블로그·인스타·유튜브·카드뉴스까지 <b style={{ color: C.purpleL }}>AI가 전부 자동 생성</b>해드려요.<br/>
+            <b style={{ color: C.purpleL }}>비회원 5회 무료 · 가입 즉시 10P 지급!</b>
           </p>
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
@@ -175,8 +176,8 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ AI 도구 소개 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="AI Tools" title="어떤 콘텐츠든 AI가 만들어드려요"
-          sub="블로그부터 SNS 이미지까지, SNS메이킷 AI로 콘텐츠 제작 시간을 90% 줄이세요." />
+        <SecTitle C={C} badge="AI Tools" title="어떤 SNS 콘텐츠든 AI가 만들어드려요"
+          sub="SNS 콘텐츠 제작이 어렵고 시간이 걸리셨나요? 블로그·인스타·카드뉴스까지, SNS메이킷 AI로 제작 시간을 90% 줄이세요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "📝", title: "네이버 블로그", desc: "SEO 최적화된 정보성 블로그 글을 키워드 하나로 자동 생성", tag: "인기", color: "#22c55e" },
@@ -226,7 +227,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Reviews" title="실제 사용자 후기" sub="SNS메이킷 AI를 사용해본 분들의 생생한 후기예요." />
+        <SecTitle C={C} badge="Reviews" title="실제 사용자 후기" sub="SNS메이킷을 사용해본 분들의 생생한 후기예요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 16 }}>
           {[
             { name: "김블로그", job: "네이버 블로그 운영자", avatar: "🙋‍♀️", rating: 5, platform: "네이버 블로그", text: "예전엔 글 하나 쓰는데 2~3시간 걸렸는데 이제 30분이면 돼요. SEO 키워드도 알아서 넣어줘서 상위 노출도 잘 되고 있어요. 진짜 신세계입니다 ㅋㅋ", result: "글 작성 시간 85% 단축" },
@@ -302,7 +303,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 차별점 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Why Nper AI" title="왜 SNS메이킷 AI인가요?" />
+        <SecTitle C={C} badge="Why SNS메이킷" title="왜 SNS메이킷 AI인가요?" sub="SNS 콘텐츠 제작의 어려움을 해결하기 위해 만들었습니다." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 12 }}>
           {[
             { icon: "⚡", title: "빠른 생성 속도", desc: "평균 30초~3분 이내 콘텐츠 완성. 직접 쓰는 것보다 10배 이상 빠릅니다." },
