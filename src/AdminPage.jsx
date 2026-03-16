@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { getPosts, setPosts, getMembers, saveMembers } from "./storage";
+import { useState, useEffect } from "react";
+import { getPosts, setPosts, getMembers, saveMembers, db, changePoints } from "./storage";
+import { ref, get, update, remove } from "firebase/database";
 import { Btn, Inp } from "./UI";
 
 const ADMIN_PW = "nper2025admin";
@@ -7,17 +8,36 @@ const FREE_GUEST  = 5;
 const FREE_MEMBER = 20;
 
 export default function AdminPage({ C, user: adminUser }) {
-  const [pw, setPw]       = useState("");
-  const [auth, setAuth]   = useState(false);
-  const [tab, setTab]     = useState("members");
+  const [pw, setPw]        = useState("");
+  const [auth, setAuth]    = useState(false);
+  const [tab, setTab]      = useState("members");
   const [posts, setPosts2] = useState(getPosts());
-  const [members, setMembers2] = useState(getMembers());
-  const [search, setSearch] = useState("");
-  const [toast, setToast] = useState("");
-  // 포인트 입력 상태
+  const [members, setMembers2] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [search, setSearch]   = useState("");
+  const [toast, setToast]     = useState("");
   const [ptInputs, setPtInputs] = useState({});
-  // 비회원 사용횟수 탭
   const [guestSearch, setGuestSearch] = useState("");
+
+  // Firebase에서 회원 목록 로드
+  const loadMembers = async () => {
+    setLoadingMembers(true);
+    try {
+      const snap = await get(ref(db, "users"));
+      if (snap.exists()) {
+        const obj = snap.val();
+        const list = Object.values(obj).sort((a, b) =>
+          new Date(b.joinDate || 0) - new Date(a.joinDate || 0)
+        );
+        setMembers2(list);
+      } else {
+        setMembers2([]);
+      }
+    } catch(e) { console.error("회원 로드 실패:", e); }
+    setLoadingMembers(false);
+  };
+
+  useEffect(() => { if (auth) loadMembers(); }, [auth]);
 
   const isDark = C.bg?.includes("0a") || C.bg?.includes("#10") || C.bg?.includes("242");
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
@@ -25,47 +45,50 @@ export default function AdminPage({ C, user: adminUser }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  const syncMembers = (next) => { saveMembers(next); setMembers2(next); };
-
-  // ── 포인트 지급
-  const grantPoints = (id, pts) => {
+  // ── 포인트 지급 (Firebase)
+  const grantPoints = async (uid, pts) => {
     if (!pts || isNaN(pts)) { showToast("포인트를 입력하세요"); return; }
-    const next = members.map(m => m.id === id ? { ...m, points: (m.points || 0) + Number(pts) } : m);
-    syncMembers(next);
-    showToast("+" + pts + "P 지급 완료!");
-    setPtInputs(p => ({ ...p, [id]: "" }));
-  };
-
-  // ── 포인트 초기화
-  const resetPoints = (id) => {
-    if (!window.confirm("이 회원의 포인트를 0으로 초기화할까요?")) return;
-    const next = members.map(m => m.id === id ? { ...m, points: 0 } : m);
-    syncMembers(next);
-    showToast("포인트 초기화 완료");
-  };
-
-  // ── 포인트 직접 설정
-  const setPoints = (id, pts) => {
-    if (!pts || isNaN(pts)) return;
-    const next = members.map(m => m.id === id ? { ...m, points: Number(pts) } : m);
-    syncMembers(next);
-    showToast(pts + "P 설정 완료!");
-    setPtInputs(p => ({ ...p, [id]: "" }));
-  };
-
-  // ── 회원 탈퇴 (삭제)
-  const deleteMember = (id, nick) => {
-    if (!window.confirm(`"${nick}" 회원을 탈퇴 처리하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
-    const next = members.filter(m => m.id !== id);
-    syncMembers(next);
-    // AI 사용 기록도 초기화
     try {
-      const usage = JSON.parse(localStorage.getItem("nper_ai_usage") || "{}");
-      const key = "member_" + id;
-      delete usage[key];
-      localStorage.setItem("nper_ai_usage", JSON.stringify(usage));
-    } catch(e) {}
-    showToast(`"${nick}" 회원 탈퇴 처리 완료`);
+      const snap = await get(ref(db, "users/" + uid));
+      if (!snap.exists()) return;
+      const cur = snap.val().points || 0;
+      const next = cur + Number(pts);
+      await update(ref(db, "users/" + uid), { points: next });
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
+      showToast("+" + pts + "P 지급 완료!");
+      setPtInputs(p => ({ ...p, [uid]: "" }));
+    } catch(e) { showToast("오류: " + e.message); }
+  };
+
+  // ── 포인트 초기화 (Firebase)
+  const resetPoints = async (uid) => {
+    if (!window.confirm("이 회원의 포인트를 0으로 초기화할까요?")) return;
+    try {
+      await update(ref(db, "users/" + uid), { points: 0 });
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: 0 } : m));
+      showToast("포인트 초기화 완료");
+    } catch(e) { showToast("오류: " + e.message); }
+  };
+
+  // ── 포인트 직접 설정 (Firebase)
+  const setPoints = async (uid, pts) => {
+    if (!pts || isNaN(pts)) return;
+    try {
+      await update(ref(db, "users/" + uid), { points: Number(pts) });
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: Number(pts) } : m));
+      showToast(pts + "P 설정 완료!");
+      setPtInputs(p => ({ ...p, [uid]: "" }));
+    } catch(e) { showToast("오류: " + e.message); }
+  };
+
+  // ── 회원 탈퇴 (Firebase)
+  const deleteMember = async (uid, nick) => {
+    if (!window.confirm(`"${nick}" 회원을 탈퇴 처리하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
+    try {
+      await remove(ref(db, "users/" + uid));
+      setMembers2(prev => prev.filter(m => m.uid !== uid));
+      showToast(`"${nick}" 회원 탈퇴 처리 완료`);
+    } catch(e) { showToast("오류: " + e.message); }
   };
 
   // ── AI 사용 초기화
@@ -137,7 +160,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: 0 }}>⚙️ 관리자 페이지</h2>
-        <span style={{ fontSize: 12, color: C.muted, background: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6", padding: "4px 12px", borderRadius: 20 }}>회원 {members.length}명 · 게시글 {posts.length}개</span>
+        <span style={{ fontSize: 12, color: C.muted, background: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6", padding: "4px 12px", borderRadius: 20 }}>회원 {loadingMembers ? "로딩중..." : members.length + "명"} · 게시글 {posts.length}개</span>
       </div>
 
       {/* 탭 */}
@@ -165,11 +188,13 @@ export default function AdminPage({ C, user: adminUser }) {
             <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>검색 결과가 없어요</div>
           )}
 
-          {filteredMembers.map(m => {
-            const mUsed = usage["member_" + m.id] || 0;
-            const ptVal = ptInputs[m.id] || "";
+          {loadingMembers && <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>⏳ 회원 목록 불러오는 중...</div>}
+          {!loadingMembers && filteredMembers.map(m => {
+            const uid = m.uid || m.id || "";
+            const mUsed = usage["member_" + uid] || 0;
+            const ptVal = ptInputs[uid] || "";
             return (
-              <div key={m.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px", marginBottom: 10, boxShadow: C.shadow }}>
+              <div key={m.uid||m.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px", marginBottom: 10, boxShadow: C.shadow }}>
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -204,7 +229,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     {/* 빠른 지급 버튼 */}
                     {[50, 100, 200, 500, 1000].map(pts => (
-                      <button key={pts} onClick={() => grantPoints(m.id, pts)} style={{
+                      <button key={pts} onClick={() => grantPoints(uid, pts)} style={{
                         padding: "6px 12px", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 700,
                         border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: C.purpleL }}>
                         +{pts}P
@@ -213,24 +238,24 @@ export default function AdminPage({ C, user: adminUser }) {
                     {/* 직접 입력 지급 */}
                     <div style={{ display: "flex", gap: 6 }}>
                       <input value={ptVal} type="number" placeholder="직접 입력"
-                        onChange={e => setPtInputs(p => ({ ...p, [m.id]: e.target.value }))}
+                        onChange={e => setPtInputs(p => ({ ...p, [uid]: e.target.value }))}
                         style={{ width: 90, padding: "6px 10px", borderRadius: 8, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 12, outline: "none" }} />
-                      <button onClick={() => grantPoints(m.id, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: C.purpleL, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>지급</button>
-                      <button onClick={() => setPoints(m.id, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, cursor: "pointer" }}>설정</button>
+                      <button onClick={() => grantPoints(uid, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: C.purpleL, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>지급</button>
+                      <button onClick={() => setPoints(uid, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, cursor: "pointer" }}>설정</button>
                     </div>
                   </div>
                 </div>
 
                 {/* 액션 버튼 */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => resetPoints(m.id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={() => resetPoints(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                     🔄 포인트 초기화
                   </button>
-                  <button onClick={() => resetMemberUsage(m.id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={() => resetMemberUsage(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                     🔄 AI 횟수 초기화
                   </button>
                   {m.role !== "admin" && (
-                    <button onClick={() => deleteMember(m.id, m.nick)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                       🗑 회원 탈퇴
                     </button>
                   )}
