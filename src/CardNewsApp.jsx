@@ -1211,6 +1211,51 @@ function PageMake(props) {
   var errClr  = D ? "#ff9090"                  : "#e03e3e";
   var prevBg  = D ? "transparent"              : "#f4f4f8";
 
+  // 포인트/횟수 소진 체크
+  var _pu = (function(){ try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+  var _pk = props.user ? ("member_" + (props.user.uid || "u")) : "guest";
+  var _pused = _pu[_pk] || 0;
+  var _plim = props.user ? 20 : 5;
+  var _ppts = props.user ? (props.user.points || 0) : 0;
+  var _pEx = _pused >= _plim && _ppts < 10;
+
+  if (_pEx) {
+    return (
+      <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center"}}>
+        <div style={{maxWidth:380, width:"100%"}}>
+          <div style={{fontSize:56, marginBottom:14}}>💎</div>
+          <div style={{fontSize:19, fontWeight:900, color:text, marginBottom:8}}>
+            {!props.user ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+          </div>
+          <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
+            {!props.user
+              ? "비회원 무료 5회를 모두 사용하셨어요.
+회원가입 후 20회 추가 무료를 받으세요!"
+              : "카드뉴스 생성에 포인트가 필요해요.
+포인트를 충전하거나 관리자에게 문의해주세요."}
+          </div>
+          <div style={{display:"flex", flexDirection:"column", gap:10}}>
+            {!props.user ? (
+              <button onClick={function(){ window.location.hash = "#home"; }}
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:800}}>
+                🚀 회원가입 / 로그인하기
+              </button>
+            ) : (
+              <button onClick={function(){ window.location.hash = "#pricing"; }}
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
+                💎 포인트 충전하기
+              </button>
+            )}
+            <button onClick={function(){ window.open("https://open.kakao.com/o/gIw9vTFg","_blank"); }}
+              style={{width:"100%", padding:"11px", borderRadius:12, border:"1px solid "+bdr, background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>
+              💬 관리자에게 문의하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
       <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>

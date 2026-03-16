@@ -102,6 +102,53 @@ function inlineFormat(text, accentColor) {
 
 const API_KEY = "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";
 
+
+// ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
+function PointsExhausted({ isDark, isGuest, title }) {
+  const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e9ecef";
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"40px 24px", textAlign:"center", background:bg }}>
+      <div style={{ maxWidth:420, width:"100%" }}>
+        <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
+        <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+        </div>
+        <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
+          {isGuest
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+          }
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {isGuest ? (
+            <button onClick={() => { window.location.hash = "#home"; }}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
+              🚀 회원가입 / 로그인하기
+            </button>
+          ) : (
+            <button onClick={() => { window.location.hash = "#pricing"; }}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+                background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
+              💎 포인트 충전하기
+            </button>
+          )}
+          <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
+            style={{ width:"100%", padding:"12px", borderRadius:12,
+              border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, cursor:"pointer" }}>
+            💬 관리자에게 문의하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NewsBlogGenerator({ theme, embedded, user }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
   const text    = isDark ? "#fff"                   : "#1a1a2e";
@@ -480,6 +527,13 @@ ${articleSection}
       </div>
 
       {/* ── 우측: 결과 패널 ── */}
+      {(() => {
+        const _u2 = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+        const _k2 = user ? ("member_" + (user.uid || "u")) : "guest";
+        const _ex = (_u2[_k2]||0) >= (user?20:5) && (user?(user.points||0):0) < 10;
+        if (_ex && !generating && !result) return <PointsExhausted isDark={isDark} isGuest={!user} title="뉴스 블로그" />;
+        return null;
+      })()}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
         {result && (
           <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>

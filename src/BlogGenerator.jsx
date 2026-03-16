@@ -335,6 +335,76 @@ const FIELD_LABELS = {
 };
 
 // ── 메인 ──────────────────────────────────────────────────────────────────
+
+// ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
+function PointsExhausted({ isDark, isGuest, title, onContact }) {
+  const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e9ecef";
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"40px 24px", textAlign:"center", background: bg }}>
+      <div style={{ maxWidth:420, width:"100%" }}>
+        <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
+        <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px" }}>
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+        </div>
+        <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
+          {isGuest
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b> + 포인트 적립 혜택을 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+          }
+        </div>
+        {/* 혜택 카드 */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
+          {(isGuest ? [
+            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 50P 지급" },
+            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 10P" },
+            { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
+            { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
+          ] : [
+            { icon:"💳", title:"포인트 충전", desc:"Basic 9,900원 / 500P" },
+            { icon:"🔥", title:"Pro 플랜", desc:"19,900원 / 1,200P" },
+            { icon:"📝", title:"무료 적립", desc:"게시글 작성 10P" },
+            { icon:"💬", title:"관리자 문의", desc:"무료 포인트 요청" },
+          ]).map((item, i) => (
+            <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
+              <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:3 }}>{item.title}</div>
+              <div style={{ fontSize:11, color:muted }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        {/* 버튼들 */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {isGuest ? (
+            <button onClick={() => window.location.hash = "#home"}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800,
+                boxShadow:"0 8px 24px rgba(124,106,255,0.35)" }}>
+              🚀 회원가입 / 로그인하기
+            </button>
+          ) : (
+            <button onClick={() => window.location.hash = "#pricing"}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+                background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800,
+                boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
+              💎 포인트 충전하기
+            </button>
+          )}
+          <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
+            style={{ width:"100%", padding:"12px", borderRadius:12,
+              border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, fontWeight:600, cursor:"pointer" }}>
+            💬 관리자에게 문의하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
   const isDark = theme === "dark" || (!theme && !!embedded); // theme prop 우선, 없으면 embedded 기준
@@ -365,6 +435,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // 다시 생성하기 확인
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  // 포인트/횟수 상태 (렌더 시 체크)
+  const _getUsageState = () => {
+    const _u = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+    const _k = user ? ("member_" + (user.uid || "u")) : "guest";
+    const _used = _u[_k] || 0;
+    const _lim = user ? 20 : 5;
+    const _pts = user ? (user.points || 0) : 0;
+    return { used: _used, limit: _lim, points: _pts, exhausted: _used >= _lim && _pts < 10, isGuest: !user };
+  };
   const handleGenerateClick = () => {
     if (result && !loading) {
       setShowRegenConfirm(true);
@@ -529,6 +608,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 결과 패널 ──
   const renderResult = () => {
+    // 포인트/횟수 소진 체크
+    const _us = _getUsageState();
+    if (!loading && !result && _us.exhausted) {
+      return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title="블로그 글" />;
+    }
     // 풀스크린 로딩 오버레이
     if (loading) {
       return (
