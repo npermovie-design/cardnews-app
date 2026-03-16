@@ -413,6 +413,60 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             })()}
           </div>
         </div>
+        {/* 이전글 / 다음글 / 목록 네비게이션 */}
+        {(() => {
+          const catPosts = [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>b.id-a.id);
+          const curIdx   = catPosts.findIndex(p=>p.id===view.id);
+          const prevPost = curIdx > 0 ? catPosts[curIdx - 1] : null;
+          const nextPost = curIdx < catPosts.length - 1 ? catPosts[curIdx + 1] : null;
+          const NavRow = ({ icon, label, post, side }) => (
+            <button
+              onClick={() => post ? openPost(post) : null}
+              disabled={!post}
+              style={{
+                flex: 1, display:"flex", alignItems:"center",
+                gap: 10, padding:"14px 18px",
+                background: post ? (isDark?"rgba(255,255,255,0.02)":"#fff") : (isDark?"rgba(255,255,255,0.01)":"#fafafa"),
+                border:"none", cursor: post ? "pointer" : "default",
+                justifyContent: side === "right" ? "flex-end" : "flex-start",
+                transition:"background 0.15s",
+                borderRadius: side === "left" ? "12px 0 0 12px" : side === "right" ? "0 12px 12px 0" : 0,
+              }}
+              onMouseEnter={e=>{ if(post) e.currentTarget.style.background=isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)"; }}
+              onMouseLeave={e=>{ if(post) e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fff"; }}>
+              {side === "left" && <span style={{fontSize:16,color:post?C.purpleL:C.muted,opacity:post?1:0.3}}>‹</span>}
+              <div style={{textAlign: side === "right" ? "right" : "left", minWidth:0}}>
+                <div style={{fontSize:11,color:post?C.purpleL:C.muted,fontWeight:700,marginBottom:3,opacity:post?1:0.4}}>{icon} {label}</div>
+                <div style={{fontSize:13,color:post?C.text:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220,opacity:post?1:0.35}}>
+                  {post ? post.title : "없음"}
+                </div>
+              </div>
+              {side === "right" && <span style={{fontSize:16,color:post?C.purpleL:C.muted,opacity:post?1:0.3}}>›</span>}
+            </button>
+          );
+          return (
+            <div style={{display:"flex",marginTop:12,marginBottom:4,border:"1px solid "+bdr,borderRadius:12,overflow:"hidden"}}>
+              <NavRow icon="▲" label="이전글" post={prevPost} side="left"/>
+              <button
+                onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}}
+                style={{
+                  width:80,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
+                  background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",
+                  borderLeft:"1px solid "+bdr, borderRight:"1px solid "+bdr,
+                  border:"none",
+                  borderLeft:"1px solid "+bdr, borderRight:"1px solid "+bdr,
+                  cursor:"pointer", padding:"14px 8px", transition:"background 0.15s",
+                }}
+                onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(99,102,241,0.16)":"rgba(99,102,241,0.1)"}
+                onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)"}>
+                <span style={{fontSize:16}}>☰</span>
+                <span style={{fontSize:11,color:C.purpleL,fontWeight:700}}>목록</span>
+              </button>
+              <NavRow icon="▼" label="다음글" post={nextPost} side="right"/>
+            </div>
+          );
+        })()}
+
         {/* 댓글 */}
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden"}}>
           <div style={{padding:"18px 24px",borderBottom:"1px solid "+bdr}}>
