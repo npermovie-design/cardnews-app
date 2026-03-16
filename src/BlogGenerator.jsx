@@ -452,7 +452,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
-  const handleCopy = content => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  const cleanForCopy = (text) => {
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/#{1,6}\s*/g, "")
+      .replace(/^---+$/gm, "")
+      .replace(/^___+$/gm, "")
+      .replace(/^===+$/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+  const handleCopy = content => {
+    const cleaned = cleanForCopy(content);
+    navigator.clipboard.writeText(cleaned);
+    setCopied(true);
+    setTimeout(()=>setCopied(false),2000);
+  };
 
   // ── 결과 패널 ──
   const renderResult = () => {
