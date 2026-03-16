@@ -1229,10 +1229,8 @@ function PageMake(props) {
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
-              ? "비회원 무료 5회를 모두 사용하셨어요.
-회원가입 후 20회 추가 무료를 받으세요!"
-              : "카드뉴스 생성에 포인트가 필요해요.
-포인트를 충전하거나 관리자에게 문의해주세요."}
+              ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 20회 추가 무료를 받으세요!</>
+              : <>카드뉴스 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>}
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
