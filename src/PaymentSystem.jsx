@@ -66,7 +66,7 @@ export function startPayment(planId, user) {
   };
   const variantId = varMap[planId];
   if (!variantId) { alert("플랜 정보 오류"); return; }
-  window.location.href = "https://npercontentslab.lemonsqueezy.com/checkout/buy/" + variantId;
+  window.location.href = "https://snsmakeit.lemonsqueezy.com/checkout/buy/" + variantId;
 }
 
 /* ══════════════════════════════════════════════════════════

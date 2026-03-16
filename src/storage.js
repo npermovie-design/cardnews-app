@@ -172,7 +172,7 @@ export async function fbLogin(email, pw) {
 
 /** 카카오 로그인 */
 export const KAKAO_REST_KEY = "4d0f0128951fe2ff52b47d4243b1480e";
-export const KAKAO_REDIRECT = "https://www.npercontentslab.com/oauth/kakao";
+export const KAKAO_REDIRECT = "https://www.snsmakeit.com/oauth/kakao";
 
 export function kakaoLoginRedirect() {
   const url = "https://kauth.kakao.com/oauth/authorize"

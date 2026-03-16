@@ -250,8 +250,8 @@ export default function App() {
         <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, marginRight: 16, flexShrink: 0 }}>
           <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(124,106,255,0.3)" }}>N</div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>엔퍼콘텐츠랩</div>
-            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>SNS메이킷</div>
+            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>SNS MAKE IT</div>
           </div>
         </button>
 
@@ -367,8 +367,8 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>엔퍼콘텐츠랩</div>
-                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
+                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>SNS MAKE IT</div>
                 </div>
               </div>
               <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>
@@ -393,7 +393,7 @@ export default function App() {
             </div>
           </div>
           <div style={{ maxWidth: 1000, margin: "24px auto 0", paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <span style={{ fontSize: 12, color: C.muted }}>© 2025 엔퍼콘텐츠랩 · All rights reserved.</span>
+            <span style={{ fontSize: 12, color: C.muted }}>© 2025 SNS메이킷 · All rights reserved.</span>
             <span style={{ fontSize: 12, color: C.muted, cursor: "pointer" }} onClick={() => navigate("admin")}>관리자</span>
           </div>
         </footer>

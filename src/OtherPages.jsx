@@ -14,16 +14,16 @@ export function AboutPage({ navigate, C }) {
     <div>
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "48px 24px" }}>
         <Badge C={C}>✦ About</Badge>
-        <h2 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 900, color: C.text, letterSpacing: -1, margin: "0 0 32px" }}>엔퍼(NPER) 소개</h2>
+        <h2 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 900, color: C.text, letterSpacing: -1, margin: "0 0 32px" }}>SNS메이킷 소개</h2>
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", marginBottom: 40, lineHeight: 2, fontSize: 15, color: C.muted, boxShadow: C.shadow }}>
-          <p style={{ marginBottom: 16 }}>안녕하세요. SNS의 실행을 도와드리는 <span style={{ color: C.text, fontWeight: 700 }}>엔퍼(NPER)</span>입니다.</p>
+          <p style={{ marginBottom: 16 }}>안녕하세요. SNS의 실행을 도와드리는 <span style={{ color: C.text, fontWeight: 700 }}>SNS메이킷</span>입니다.</p>
           <p style={{ marginBottom: 16 }}>많은 분들이 SNS가 중요하다는 것은 알고 있지만, 막상 어떻게 시작해야 할지 몰라서 고민하는 경우가 많습니다. 계정을 만들어도 어떤 콘텐츠를 올려야 하는지, 어떤 방향으로 운영해야 하는지, 그리고 꾸준히 실행하는 방법까지 혼자 해결하기는 쉽지 않습니다.</p>
-          <p style={{ marginBottom: 16 }}>엔퍼는 바로 그<span style={{ color: C.purpleL, fontWeight: 700 }}> "실행의 과정"</span>을 함께 만들어가는 팀입니다. 단순히 이론만 전달하는 교육이 아니라, 실제 비즈니스에 도움이 되는 SNS 운영 전략을 함께 설계하고 실행까지 이어지도록 돕는 것을 목표로 하고 있습니다.</p>
+          <p style={{ marginBottom: 16 }}>SNS메이킷은 바로 그<span style={{ color: C.purpleL, fontWeight: 700 }}> "실행의 과정"</span>을 함께 만들어가는 팀입니다. 단순히 이론만 전달하는 교육이 아니라, 실제 비즈니스에 도움이 되는 SNS 운영 전략을 함께 설계하고 실행까지 이어지도록 돕는 것을 목표로 하고 있습니다.</p>
           <p style={{ marginBottom: 16 }}>계정의 현재 상태를 분석하고, 업종과 브랜드에 맞는 콘텐츠 방향을 설정하며, 블로그·유튜브·인스타그램 등 다양한 채널을 활용해 브랜드가 성장할 수 있는 SNS 구조를 만들어드립니다.</p>
-          <p style={{ marginBottom: 16 }}>엔퍼는 단순한 계정 관리 서비스가 아니라<span style={{ color: C.text, fontWeight: 700 }}> 브랜드의 SNS 성장을 함께 만들어가는 파트너</span>가 되고자 합니다.</p>
-          <p style={{ marginBottom: 0 }}>SNS를 시작하고 싶지만 방법을 모르시는 분, 이미 운영 중이지만 방향이 고민되는 분, 그리고 비즈니스 성장을 위해 SNS를 제대로 활용하고 싶은 분들과 함께하고 있습니다.<span style={{ color: C.purpleL, fontWeight: 700 }}> SNS의 시작부터 성장까지, 실행을 함께하는 곳. 엔퍼가 도와드리겠습니다.</span></p>
+          <p style={{ marginBottom: 16 }}>SNS메이킷은 단순한 계정 관리 서비스가 아니라<span style={{ color: C.text, fontWeight: 700 }}> 브랜드의 SNS 성장을 함께 만들어가는 파트너</span>가 되고자 합니다.</p>
+          <p style={{ marginBottom: 0 }}>SNS를 시작하고 싶지만 방법을 모르시는 분, 이미 운영 중이지만 방향이 고민되는 분, 그리고 비즈니스 성장을 위해 SNS를 제대로 활용하고 싶은 분들과 함께하고 있습니다.<span style={{ color: C.purpleL, fontWeight: 700 }}> SNS의 시작부터 성장까지, 실행을 함께하는 곳. SNS메이킷이 도와드리겠습니다.</span></p>
         </div>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 20 }}>엔퍼가 지원하는 서비스</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 20 }}>SNS메이킷이 지원하는 서비스</h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14, marginBottom: 40 }}>
           {[
             { icon: "🎓", title: "강의 사이트 운영", desc: "강사 육성 및 고객 연결을 위한 강의 플랫폼 운영" },
@@ -147,7 +147,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
     }}>
       {/* 브랜드 */}
       <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}` }}>
-        <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>엔퍼</div>
+        <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
         <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>AI 콘텐츠 생성기</div>
       </div>
 

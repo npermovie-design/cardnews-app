@@ -1011,7 +1011,7 @@ function Sidebar(props) {
   return (
     <div style={{width:185, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0}}>
       <div style={{padding:"18px 14px 10px", borderBottom:"1px solid "+sideBdr}}>
-        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>엔퍼</div>
+        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>SNS메이킷</div>
         <div style={{fontSize:9, color:brandSub, marginTop:1}}>카드뉴스 AI v2.2</div>
       </div>
       <div style={{padding:"8px 8px", flex:1, display:"flex", flexDirection:"column"}}>
@@ -1321,7 +1321,7 @@ function PageMake(props) {
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                   style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
                     background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                  {loading ? "생성 중..." : (<span>카드뉴스 생성 ✨ <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
+                  {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
                 </button>
               </div>
             </div>
@@ -1618,7 +1618,7 @@ export function CardNewsApp(props) {
       <div style={{flex:1, display:"flex", flexDirection:"column", overflow:"hidden"}}>
         {narrow && (
           <div style={{height:44, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 14px", borderBottom:"1px solid "+topBarBdr, background:topBarBg, flexShrink:0}}>
-            <span style={{fontSize:13, fontWeight:900, color:topText}}>엔퍼 카드뉴스</span>
+            <span style={{fontSize:13, fontWeight:900, color:topText}}>SNS메이킷 카드뉴스</span>
             <div style={{display:"flex", gap:5}}>
               <button onClick={function() { setShowPlanner(true); }}
                 style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.25)", color:"#a5b4fc", fontSize:10, fontWeight:700}}>

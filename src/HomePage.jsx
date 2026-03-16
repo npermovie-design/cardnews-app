@@ -135,7 +135,7 @@ export default function HomePage({ navigate, C }) {
             />
           </h1>
           <h2 style={{ fontSize: "clamp(22px,4vw,52px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -1.5, color: C.text, margin: "0 0 28px" }}>
-            엔퍼 AI 생성기로{" "}
+            SNS메이킷 AI로{" "}
             <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               지금 바로 시작하세요
             </span>
@@ -176,7 +176,7 @@ export default function HomePage({ navigate, C }) {
       {/* ══ AI 도구 소개 ══ */}
       <SecWrap C={C} bg={C.bg2}>
         <SecTitle C={C} badge="AI Tools" title="어떤 콘텐츠든 AI가 만들어드려요"
-          sub="블로그부터 SNS 이미지까지, 엔퍼의 AI 도구로 콘텐츠 제작 시간을 90% 줄이세요." />
+          sub="블로그부터 SNS 이미지까지, SNS메이킷 AI로 콘텐츠 제작 시간을 90% 줄이세요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "📝", title: "네이버 블로그", desc: "SEO 최적화된 정보성 블로그 글을 키워드 하나로 자동 생성", tag: "인기", color: "#22c55e" },
@@ -226,7 +226,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Reviews" title="실제 사용자 후기" sub="엔퍼 AI를 사용해본 분들의 생생한 후기예요." />
+        <SecTitle C={C} badge="Reviews" title="실제 사용자 후기" sub="SNS메이킷 AI를 사용해본 분들의 생생한 후기예요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 16 }}>
           {[
             { name: "김블로그", job: "네이버 블로그 운영자", avatar: "🙋‍♀️", rating: 5, platform: "네이버 블로그", text: "예전엔 글 하나 쓰는데 2~3시간 걸렸는데 이제 30분이면 돼요. SEO 키워드도 알아서 넣어줘서 상위 노출도 잘 되고 있어요. 진짜 신세계입니다 ㅋㅋ", result: "글 작성 시간 85% 단축" },
@@ -302,7 +302,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 차별점 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Why Nper AI" title="왜 엔퍼 AI 생성기인가요?" />
+        <SecTitle C={C} badge="Why Nper AI" title="왜 SNS메이킷 AI인가요?" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 12 }}>
           {[
             { icon: "⚡", title: "빠른 생성 속도", desc: "평균 30초~3분 이내 콘텐츠 완성. 직접 쓰는 것보다 10배 이상 빠릅니다." },
