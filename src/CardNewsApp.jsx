@@ -1234,7 +1234,7 @@ function PageMake(props) {
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
-              <button onClick={function(){ window.location.hash = "#home"; }}
+              <button onClick={function(){ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
                 style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:800}}>
                 🚀 회원가입 / 로그인하기
               </button>

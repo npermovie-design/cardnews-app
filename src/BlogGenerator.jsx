@@ -380,7 +380,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
         {/* 버튼들 */}
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {isGuest ? (
-            <button onClick={() => window.location.hash = "#home"}
+            <button onClick={() => { if(onLogin) onLogin(); }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(124,106,255,0.35)" }}>

@@ -862,6 +862,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
+  // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
+  useEffect(function() {
+    window.__onLoginRequest = onLoginRequest || function(){};
+    return function() { delete window.__onLoginRequest; };
+  }, [onLoginRequest]);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
   const setAiMenu = (id) => {
     if (setAiMenuProp) setAiMenuProp(id);
