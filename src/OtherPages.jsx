@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -214,6 +214,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && aiMenu.startsWith("cardnews")));
+  const [aiImgOpen, setAiImgOpen] = useState(!!(aiMenu && aiMenu.startsWith("aiimg")));
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
@@ -293,6 +294,14 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
+
+        {/* AI 이미지 그룹 */}
+        <Group label="AI 이미지" icon="🤖" open={aiImgOpen}
+          active={!!(aiMenu && aiMenu.startsWith("aiimg"))}
+          onToggle={() => setAiImgOpen(p => !p)} />
+        {aiImgOpen && <>
+          <Item id="aiimg_gemini" label="제미나이 리무버" icon="✦" indent />
+        </>}
 
         {/* 커뮤니티 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
@@ -753,7 +762,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
       { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
+      { id: "shorts",          icon: "🎬", title: "쇼츠영상 생성기",   desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
+      { id: "aiimg_gemini",    icon: "✦",  title: "제미나이 리무버",    desc: "AI 이미지 워터마크 제거",  darkColor: "rgba(234,179,8,0.15)",   lightColor: "rgba(234,179,8,0.07)"   },
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -835,6 +845,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
+  // 제미나이 리무버
+  if (aiMenu === "aiimg_gemini") {
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <GeminiRemover isDark={isDark} />
+      </div>
+    );
+  }
+
   // 쇼츠 - 준비중
   if (aiMenu === "shorts") {
     return (
@@ -857,6 +876,244 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
   }
 
   return null;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   GeminiRemover – Gemini AI 이미지 워터마크 제거
+════════════════════════════════════════════════════════════ */
+function GeminiRemover({ isDark }) {
+  const [imgSrc,   setImgSrc]   = useState(null);
+  const [result,   setResult]   = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [info,     setInfo]     = useState("");
+  const fileRef  = useRef(null);
+  const canvasRef = useRef(null);
+
+  const text  = isDark ? "#fff"                   : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const cardBg= isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const accent = "#eab308";
+
+  /* 워터마크 제거 로직 (Canvas 기반 inpainting) */
+  const removeWatermark = useCallback((file) => {
+    setLoading(true); setResult(null); setInfo("");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImgSrc(e.target.result);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+
+        const W = img.width;
+        const H = img.height;
+
+        /* Gemini 워터마크 위치: 우하단 약 60×60px 영역 */
+        const markSize = Math.round(Math.min(W, H) * 0.055); // 이미지 크기 비례
+        const margin   = Math.round(Math.min(W, H) * 0.01);
+        const x0 = W - markSize - margin;
+        const y0 = H - markSize - margin;
+
+        /* 워터마크 영역 픽셀 데이터 */
+        const imgData = ctx.getImageData(0, 0, W, H);
+        const data    = imgData.data;
+
+        /* 주변 픽셀 평균으로 inpainting */
+        const radius = markSize + 10;
+        for (let py = y0; py < y0 + markSize; py++) {
+          for (let px = x0; px < x0 + markSize; px++) {
+            let r = 0, g = 0, b = 0, a = 0, cnt = 0;
+            /* 주변 픽셀 샘플링 (워터마크 영역 제외) */
+            for (let dy = -radius; dy <= radius; dy += 3) {
+              for (let dx = -radius; dx <= radius; dx += 3) {
+                const nx = px + dx; const ny = py + dy;
+                if (nx < x0 || nx >= x0 + markSize ||
+                    ny < y0 || ny >= y0 + markSize) {
+                  if (nx >= 0 && nx < W && ny >= 0 && ny < H) {
+                    const i = (ny * W + nx) * 4;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const w = 1 / (dist + 1);
+                    r += data[i]   * w;
+                    g += data[i+1] * w;
+                    b += data[i+2] * w;
+                    a += data[i+3] * w;
+                    cnt += w;
+                  }
+                }
+              }
+            }
+            if (cnt > 0) {
+              const i = (py * W + px) * 4;
+              data[i]   = Math.round(r / cnt);
+              data[i+1] = Math.round(g / cnt);
+              data[i+2] = Math.round(b / cnt);
+              data[i+3] = Math.round(a / cnt);
+            }
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        /* 결과 추가 부드럽게 (가우시안 블러 근사) */
+        ctx.filter = "blur(0.5px)";
+        const tmp = document.createElement("canvas");
+        tmp.width = W; tmp.height = H;
+        const tctx = tmp.getContext("2d");
+        tctx.drawImage(canvas, 0, 0);
+        ctx.filter = "none";
+        ctx.clearRect(x0 - 2, y0 - 2, markSize + 4, markSize + 4);
+        ctx.drawImage(tmp, x0 - 2, y0 - 2, markSize + 4, markSize + 4,
+                          x0 - 2, y0 - 2, markSize + 4, markSize + 4);
+
+        const resultUrl = canvas.toDataURL("image/png");
+        setResult(resultUrl);
+        setInfo(`✅ 완료! (${W}×${H}px · 우하단 ${markSize}×${markSize}px 영역 제거)`);
+        setLoading(false);
+      };
+      img.onerror = () => { setInfo("❌ 이미지를 불러올 수 없어요"); setLoading(false); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const onFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) {
+      setInfo("❌ 이미지 파일만 업로드 가능해요"); return;
+    }
+    removeWatermark(file);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault(); setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  };
+
+  const download = () => {
+    if (!result) return;
+    const a = document.createElement("a");
+    a.href = result;
+    a.download = "gemini_removed.png";
+    a.click();
+  };
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 24px 60px" }}>
+
+      {/* 헤더 */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#eab308,#f59e0b)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:"#fff" }}>✦</div>
+          <div>
+            <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5 }}>제미나이 리무버</div>
+            <div style={{ fontSize:12, color:muted }}>Gemini AI 이미지 우하단 워터마크(✦) 자동 제거</div>
+          </div>
+        </div>
+
+        {/* 안내 배너 */}
+        <div style={{ background: isDark?"rgba(234,179,8,0.07)":"rgba(234,179,8,0.06)", border:"1px solid rgba(234,179,8,0.2)", borderRadius:12, padding:"12px 16px", display:"flex", gap:10, alignItems:"flex-start" }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>💡</span>
+          <div style={{ fontSize:12, color:isDark?"#fde68a":"#92400e", lineHeight:1.7 }}>
+            <b>Gemini AI</b>가 생성한 이미지 우하단의 <b style={{ color:"#eab308" }}>✦ 반짝이 로고</b>를 자동으로 감지해서 제거합니다.<br/>
+            이미지를 드래그하거나 클릭해서 업로드하면 바로 처리됩니다.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap:16 }}>
+
+        {/* 업로드 영역 */}
+        <div>
+          <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8 }}>
+            {imgSrc ? "원본 이미지" : "이미지 업로드"}
+          </div>
+          <div
+            onClick={() => !loading && fileRef.current?.click()}
+            onDrop={onDrop}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            style={{
+              border: `2px dashed ${dragOver ? accent : bdr}`,
+              borderRadius: 14, background: dragOver ? "rgba(234,179,8,0.06)" : cardBg,
+              cursor: loading ? "wait" : "pointer",
+              transition: "all 0.15s", overflow:"hidden",
+              minHeight: imgSrc ? "auto" : 240,
+              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            }}
+            onMouseEnter={e => { if (!imgSrc) e.currentTarget.style.borderColor = accent; }}
+            onMouseLeave={e => { if (!imgSrc) e.currentTarget.style.borderColor = bdr; }}
+          >
+            {imgSrc ? (
+              <div style={{ position:"relative", width:"100%" }}>
+                <img src={imgSrc} alt="원본" style={{ width:"100%", display:"block", borderRadius:12 }} />
+                <div style={{ position:"absolute", bottom:8, right:8, background:"rgba(0,0,0,0.7)", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#fff", fontWeight:700 }}>
+                  원본 (✦ 있음)
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign:"center", padding:40 }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>🖼</div>
+                <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:6 }}>클릭 또는 드래그</div>
+                <div style={{ fontSize:12, color:muted }}>JPG, PNG, WebP 지원</div>
+              </div>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }}
+            onChange={e => { const f = e.target.files[0]; if (f) onFile(f); e.target.value = ""; }} />
+
+          {/* 다시 업로드 버튼 */}
+          {imgSrc && !loading && (
+            <button onClick={() => { setImgSrc(null); setResult(null); setInfo(""); }}
+              style={{ marginTop:8, width:"100%", padding:"8px", borderRadius:9, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
+              🔄 다른 이미지 업로드
+            </button>
+          )}
+        </div>
+
+        {/* 결과 영역 */}
+        {(loading || result) && (
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8 }}>처리 결과</div>
+            <div style={{ border:`1px solid ${bdr}`, borderRadius:14, background:cardBg, overflow:"hidden", minHeight:240, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+              {loading ? (
+                <div style={{ textAlign:"center", padding:40 }}>
+                  <div style={{ fontSize:36, marginBottom:12, animation:"spin 1s linear infinite", display:"inline-block" }}>⚙️</div>
+                  <div style={{ fontSize:14, color:text, fontWeight:700, marginBottom:4 }}>워터마크 제거 중...</div>
+                  <div style={{ fontSize:12, color:muted }}>우하단 ✦ 로고 감지 & 인페인팅</div>
+                </div>
+              ) : result ? (
+                <div style={{ position:"relative", width:"100%" }}>
+                  <img src={result} alt="결과" style={{ width:"100%", display:"block", borderRadius:12 }} />
+                  <div style={{ position:"absolute", bottom:8, right:8, background:"rgba(34,197,94,0.85)", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#fff", fontWeight:700 }}>
+                    ✅ 제거 완료
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {result && (
+              <button onClick={download}
+                style={{ marginTop:8, width:"100%", padding:"11px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#eab308,#f59e0b)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 16px rgba(234,179,8,0.35)" }}>
+                ⬇️ PNG 다운로드
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 상태 메시지 */}
+      {info && (
+        <div style={{ marginTop:12, padding:"10px 16px", borderRadius:10, background: info.startsWith("✅") ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)", border:`1px solid ${info.startsWith("✅") ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`, fontSize:12, color: info.startsWith("✅") ? "#4ade80" : "#f87171", fontWeight:600 }}>
+          {info}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest }) {
