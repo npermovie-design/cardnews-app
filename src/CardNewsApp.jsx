@@ -1244,7 +1244,7 @@ function PageMake(props) {
                 💎 포인트 충전하기
               </button>
             )}
-            <button onClick={function(){ window.open("https://open.kakao.com/o/gIw9vTFg","_blank"); }}
+            <button onClick={function(){ window.location.hash = "#contact"; }}
               style={{width:"100%", padding:"11px", borderRadius:12, border:"1px solid "+bdr, background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>
               💬 관리자에게 문의하기
             </button>

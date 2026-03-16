@@ -394,7 +394,7 @@ function PointsExhausted({ isDark, isGuest, title, onContact }) {
               💎 포인트 충전하기
             </button>
           )}
-          <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
+          <button onClick={() => { window.location.hash = "#contact"; }}
             style={{ width:"100%", padding:"12px", borderRadius:12,
               border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, fontWeight:600, cursor:"pointer" }}>
             💬 관리자에게 문의하기

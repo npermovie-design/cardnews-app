@@ -1150,7 +1150,7 @@ export function ContactPage({ C }) {
             </div>
             <button onClick={submit}
               style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
-              💬 카카오톡으로 문의하기
+              💬 문의 남기기
             </button>
           </div>
         </div>
