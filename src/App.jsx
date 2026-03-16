@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { CATS, getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
@@ -281,7 +281,10 @@ export default function App() {
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                {CATS.map(c => <DropItem key={c.id} id={c.id} icon={c.icon} label={c.label} />)}
+                <DropItem id="community" icon="📌" label="정보공유"   onClick={() => { navigateBoard("info");   setBoardSub(false); }} />
+                <DropItem id="community" icon="❓" label="질문답변"   onClick={() => { navigateBoard("qna");    setBoardSub(false); }} />
+                <DropItem id="community" icon="🗣" label="자유게시판" onClick={() => { navigateBoard("free");   setBoardSub(false); }} />
+                <DropItem id="community" icon="⭐" label="사용후기"   onClick={() => { navigateBoard("review"); setBoardSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -331,11 +334,14 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
-            ...CATS.map(c => ({ id: c.id, label: c.icon + " " + c.label })),
+            { id: "info",   label: "📌 정보공유",   board: "info"   },
+            { id: "qna",    label: "❓ 질문답변",   board: "qna"    },
+            { id: "free",   label: "🗣 자유게시판", board: "free"   },
+            { id: "review", label: "⭐ 사용후기",   board: "review" },
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
@@ -390,11 +396,16 @@ export default function App() {
               </div>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>커뮤니티</div>
-                {CATS.map(c => (
-                  <div key={c.id} onClick={() => navigate(c.id)} style={{ fontSize: 13, color: C.muted, marginBottom: 8, cursor: "pointer", transition: "color 0.15s" }}
+                {[
+                  {id:"info",icon:"📌",label:"정보공유"},
+                  {id:"qna",icon:"❓",label:"질문답변"},
+                  {id:"free",icon:"🗣",label:"자유게시판"},
+                  {id:"review",icon:"⭐",label:"사용후기"},
+                ].map(cc => (
+                  <div key={cc.id} onClick={() => { navigateBoard(cc.id); setMobileOpen(false); }} style={{ fontSize: 14, color: C.muted, padding: "6px 0", cursor: "pointer" }}
                     onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                     onMouseLeave={e => e.currentTarget.style.color = C.muted}>
-                    {c.icon} {c.label}
+                    {cc.icon} {cc.label}
                   </div>
                 ))}
               </div>
