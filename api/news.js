@@ -1,353 +1,38 @@
-/* ═══════════════════════════════════════════════════════════
-   api/news.js  ·  Vercel Serverless — 뉴스 기사 크롤러
-   GET /api/news?url=https://...
-   ═══════════════════════════════════════════════════════════ */
+// api/news.js - Vercel Serverless Function
+// 뉴스 기사 크롤러: CORS 우회 + 본문 추출
 
-export default async function handler(req, res) {
-  // CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
+export const config = { runtime: "edge" };
 
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: "url 파라미터가 필요합니다." });
+// 지원 언론사 파서 목록
+const PARSERS = [
+  { name: "네이버뉴스",  host: "n.news.naver.com",    sel: "#dic_area" },
+  { name: "네이버뉴스",  host: "news.naver.com",       sel: "#dic_area" },
+  { name: "다음뉴스",    host: "v.daum.net",            sel: ".article_view" },
+  { name: "조선일보",    host: "www.chosun.com",        sel: ".article-body" },
+  { name: "중앙일보",    host: "www.joongang.co.kr",   sel: "#article_body" },
+  { name: "동아일보",    host: "www.donga.com",         sel: ".article_txt" },
+  { name: "한겨레",      host: "www.hani.co.kr",        sel: ".article-text" },
+  { name: "연합뉴스",    host: "www.yna.co.kr",         sel: ".article" },
+  { name: "KBS",         host: "news.kbs.co.kr",        sel: "#cont_newstext" },
+  { name: "MBC",         host: "imnews.imbc.com",       sel: ".news_txt" },
+  { name: "SBS",         host: "news.sbs.co.kr",        sel: "#textBody" },
+  { name: "매일경제",    host: "www.mk.co.kr",          sel: ".news_cnt_detail_wrap" },
+  { name: "한국경제",    host: "www.hankyung.com",      sel: "#articletxt" },
+  { name: "사이버타임즈",host: "cybertimes.co.kr",      sel: ".article-body,.view_con,.news_view" },
+];
 
-  let targetUrl;
-  try {
-    targetUrl = new URL(decodeURIComponent(url));
-  } catch {
-    return res.status(400).json({ error: "올바르지 않은 URL입니다." });
-  }
-
-  try {
-    const html = await fetchHtml(targetUrl.href);
-    const data = parseArticle(html, targetUrl.href);
-
-    if (!data.content || data.content.length < 50) {
-      return res.status(200).json({ error: "기사 본문을 추출할 수 없습니다. 다른 URL을 시도해주세요." });
-    }
-
-    return res.status(200).json(data);
-  } catch (e) {
-    console.error("news api error:", e);
-    return res.status(200).json({ error: "기사를 불러오지 못했습니다: " + e.message });
-  }
+function getSiteName(hostname) {
+  const p = PARSERS.find(p => hostname.includes(p.host.replace("www.", "")));
+  return p ? p.name : hostname;
 }
 
-/* ── HTML 가져오기 ── */
-async function fetchHtml(url) {
-  const headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Cache-Control": "no-cache",
-    "Referer": "https://www.google.com/",
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const response = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
-    clearTimeout(timeout);
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const buffer = await response.arrayBuffer();
-
-    // 인코딩 감지 (EUC-KR 대응)
-    let text;
-    try {
-      text = new TextDecoder("utf-8").decode(buffer);
-      if (text.includes("â€") || text.includes("ê°")) {
-        text = new TextDecoder("euc-kr").decode(buffer);
-      }
-    } catch {
-      text = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
-    }
-    return text;
-  } catch (e) {
-    clearTimeout(timeout);
-    throw e;
-  }
-}
-
-/* ── 기사 파싱 ── */
-function parseArticle(html, url) {
-  const hostname = new URL(url).hostname;
-
-  // 제목 추출
-  const title = extractTitle(html);
-
-  // 사이트명 추출
-  const siteName = extractSiteName(html, hostname);
-
-  // OG 이미지
-  const image = extractMeta(html, "og:image");
-
-  // 본문 추출 (사이트별)
-  let content = "";
-  if (hostname.includes("naver.com")) {
-    content = extractBySelectors(html, [
-      'div[id="dic_area"]',
-      'div[class*="newsct_article"]',
-      'div[class*="article_body"]',
-      'div[id="articleBodyContents"]',
-    ]);
-  } else if (hostname.includes("daum.net") || hostname.includes("news.daum")) {
-    content = extractBySelectors(html, [
-      'div[class*="article_view"]',
-      'div[id="harmonyContainer"]',
-      'section[class*="article_body"]',
-    ]);
-  } else if (hostname.includes("chosun.com")) {
-    content = extractBySelectors(html, [
-      'div[class*="article-body"]',
-      'section[class*="article-body"]',
-      'div[id="fusion-app"]',
-    ]);
-  } else if (hostname.includes("joongang") || hostname.includes("joins.com")) {
-    content = extractBySelectors(html, [
-      'div[id="article_body"]',
-      'div[class*="article_body"]',
-    ]);
-  } else if (hostname.includes("donga.com")) {
-    content = extractBySelectors(html, [
-      'div[id="article_txt"]',
-      'div[class*="article_txt"]',
-    ]);
-  } else if (hostname.includes("hani.co.kr")) {
-    content = extractBySelectors(html, [
-      'div[class*="article-text"]',
-      'div[itemprop="articleBody"]',
-    ]);
-  } else if (hostname.includes("yonhap") || hostname.includes("yna.co.kr")) {
-    content = extractBySelectors(html, [
-      'div[class*="article-txt"]',
-      'div[id="articleWrap"]',
-    ]);
-  } else if (hostname.includes("kbs.co.kr")) {
-    content = extractBySelectors(html, [
-      'div[id="cont_newstext"]',
-      'div[class*="detail-body"]',
-    ]);
-  } else if (hostname.includes("mbc.co.kr")) {
-    content = extractBySelectors(html, [
-      'div[class*="news_content"]',
-      'div[id="content"]',
-    ]);
-  } else if (hostname.includes("sbs.co.kr")) {
-    content = extractBySelectors(html, [
-      'div[class*="article_cont"]',
-      'div[id="article_body"]',
-    ]);
-  } else if (hostname.includes("mk.co.kr") || hostname.includes("매일경제")) {
-    content = extractBySelectors(html, [
-      'div[id="article_body"]',
-      'div[class*="art_body"]',
-    ]);
-  } else if (hostname.includes("hankyung.com")) {
-    content = extractBySelectors(html, [
-      'div[id="articletxt"]',
-      'div[class*="article-body"]',
-    ]);
-  }
-
-  // 범용 폴백
-  if (!content || content.length < 100) {
-    content = extractBySelectors(html, [
-      'article',
-      'div[itemprop="articleBody"]',
-      'div[class*="article_body"]',
-      'div[class*="article-body"]',
-      'div[class*="news_content"]',
-      'div[class*="content_article"]',
-      'div[id*="article"]',
-      'div[class*="body_text"]',
-    ]);
-  }
-
-  // 마지막 폴백: 본문 영역 추정
-  if (!content || content.length < 100) {
-    content = extractBodyFallback(html);
-  }
-
-  // 텍스트 정제
-  content = cleanText(content);
-
-  return {
-    title:        title || "제목 없음",
-    siteName:     siteName || hostname,
-    content:      content,
-    contentLength: content.length,
-    image:        image || null,
-    url,
-    method:       content.length > 100 ? "success" : "partial",
-  };
-}
-
-/* ── 제목 추출 ── */
-function extractTitle(html) {
-  const og = extractMeta(html, "og:title");
-  if (og) return og;
-  const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  return m ? m[1].trim() : "";
-}
-
-/* ── 사이트명 추출 ── */
-function extractSiteName(html, hostname) {
-  const og = extractMeta(html, "og:site_name");
-  if (og) return og;
-  const siteMap = {
-    "naver.com":    "네이버뉴스",
-    "daum.net":     "다음뉴스",
-    "chosun.com":   "조선일보",
-    "joongang":     "중앙일보",
-    "donga.com":    "동아일보",
-    "hani.co.kr":   "한겨레",
-    "yna.co.kr":    "연합뉴스",
-    "kbs.co.kr":    "KBS",
-    "mbc.co.kr":    "MBC",
-    "sbs.co.kr":    "SBS",
-    "mk.co.kr":     "매일경제",
-    "hankyung.com": "한국경제",
-    "cybertimes":   "사이버타임즈",
-  };
-  for (const [k, v] of Object.entries(siteMap)) {
-    if (hostname.includes(k)) return v;
-  }
-  return hostname.replace("www.", "");
-}
-
-/* ── OG 메타 추출 ── */
-function extractMeta(html, property) {
-  const re = new RegExp(`<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["']`, "i");
-  const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${property}["']`, "i");
-  const m = html.match(re) || html.match(re2);
-  return m ? m[1].trim() : "";
-}
-
-/* ── CSS 셀렉터 스타일 추출 (정규식 기반) ── */
-function extractBySelectors(html, selectors) {
-  for (const sel of selectors) {
-    const content = extractByCssSelector(html, sel);
-    if (content && content.length > 50) return content;
-  }
-  return "";
-}
-
-function extractByCssSelector(html, selector) {
-  // div[id="xxx"] 또는 div[class*="xxx"] 또는 article, section
-  let tagMatch, attrType, attrVal;
-
-  const idMatch      = selector.match(/^(\w+)\[id=["']([^"']+)["']\]$/);
-  const classMatch   = selector.match(/^(\w+)\[class\*=["']([^"']+)["']\]$/);
-  const tagOnlyMatch = selector.match(/^(\w+)$/);
-  const attrMatch    = selector.match(/^(\w+)\[(\w+)=["']([^"']+)["']\]$/);
-  const itempropMatch= selector.match(/^(\w+)\[itemprop=["']([^"']+)["']\]$/);
-
-  if (idMatch) {
-    const [, tag, id] = idMatch;
-    const re = new RegExp(`<${tag}[^>]+id=["']${id}["'][^>]*>`, "i");
-    const m = html.match(re);
-    if (m) return extractTagContent(html, m.index, tag);
-  } else if (classMatch) {
-    const [, tag, cls] = classMatch;
-    const re = new RegExp(`<${tag}[^>]+class=["'][^"']*${cls}[^"']*["'][^>]*>`, "i");
-    const m = html.match(re);
-    if (m) return extractTagContent(html, m.index, tag);
-  } else if (itempropMatch) {
-    const [, tag, prop] = itempropMatch;
-    const re = new RegExp(`<${tag}[^>]+itemprop=["']${prop}["'][^>]*>`, "i");
-    const m = html.match(re);
-    if (m) return extractTagContent(html, m.index, tag);
-  } else if (attrMatch) {
-    const [, tag, attr, val] = attrMatch;
-    const re = new RegExp(`<${tag}[^>]+${attr}=["']${val}["'][^>]*>`, "i");
-    const m = html.match(re);
-    if (m) return extractTagContent(html, m.index, tag);
-  } else if (tagOnlyMatch) {
-    const tag = tagOnlyMatch[1];
-    const re = new RegExp(`<${tag}[\\s>]`, "i");
-    const m = html.match(re);
-    if (m) return extractTagContent(html, m.index, tag);
-  }
-  return "";
-}
-
-/* ── 태그 내용 추출 (중첩 처리) ── */
-function extractTagContent(html, startIndex, tag) {
-  const openTag = new RegExp(`<${tag}[\\s>]`, "gi");
-  const closeTag = new RegExp(`</${tag}>`, "gi");
-
-  let depth = 0;
-  let i = startIndex;
-  let end = -1;
-
-  openTag.lastIndex = startIndex;
-  closeTag.lastIndex = startIndex;
-
-  // 시작 태그 찾기
-  const firstOpen = html.indexOf("<" + tag, startIndex);
-  if (firstOpen < 0) return "";
-
-  const tagEnd = html.indexOf(">", firstOpen);
-  if (tagEnd < 0) return "";
-
-  depth = 1;
-  let pos = tagEnd + 1;
-
-  // 최대 500KB만 처리
-  const limit = Math.min(pos + 500000, html.length);
-
-  while (pos < limit && depth > 0) {
-    const nextOpen  = html.indexOf("<" + tag, pos);
-    const nextClose = html.indexOf("</" + tag + ">", pos);
-
-    if (nextClose < 0) break;
-
-    if (nextOpen > 0 && nextOpen < nextClose) {
-      depth++;
-      pos = nextOpen + tag.length + 1;
-    } else {
-      depth--;
-      if (depth === 0) { end = nextClose; break; }
-      pos = nextClose + tag.length + 3;
-    }
-  }
-
-  if (end < 0) end = Math.min(startIndex + 20000, html.length);
-  return html.slice(firstOpen, end + tag.length + 3);
-}
-
-/* ── 본문 폴백: p태그 모음 ── */
-function extractBodyFallback(html) {
-  const mainStart = Math.max(
-    html.indexOf("<main"),
-    html.indexOf('<div id="content'),
-    html.indexOf('<div class="content'),
-  );
-  const searchHtml = mainStart > 0 ? html.slice(mainStart, mainStart + 100000) : html;
-
-  const pTags = [];
-  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-  let m;
-  while ((m = re.exec(searchHtml)) !== null) {
-    const text = m[1].replace(/<[^>]+>/g, "").trim();
-    if (text.length > 20) pTags.push(text);
-  }
-  return pTags.join("\n");
-}
-
-/* ── 텍스트 정제 ── */
-function cleanText(html) {
-  if (!html) return "";
+// 간단한 HTML → 텍스트 변환 (정규식 기반)
+function htmlToText(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
     .replace(/<\/div>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
@@ -355,8 +40,152 @@ function cleanText(html) {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#\d+;/g, "")
+    .replace(/&#39;/g, "'")
     .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+// 제목 추출
+function extractTitle(html) {
+  const og = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+  if (og) return og[1].trim();
+  const title = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (title) return title[1].replace(/\s*[-|–—]\s*.*$/, "").trim();
+  return "";
+}
+
+// 본문 추출: CSS 선택자 기반 (간단 구현)
+function extractBySelector(html, selector) {
+  // 여러 선택자 시도
+  const selectors = selector.split(",").map(s => s.trim());
+  for (const sel of selectors) {
+    const id = sel.startsWith("#") ? sel.slice(1) : null;
+    const cls = sel.startsWith(".") ? sel.slice(1) : null;
+    let match = null;
+    if (id) {
+      const re = new RegExp(`id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/(?:div|article|section)`, "i");
+      match = html.match(re);
+    } else if (cls) {
+      const re = new RegExp(`class=["'][^"']*${cls}[^"']*["'][^>]*>([\\s\\S]*?)<\\/(?:div|article|section)`, "i");
+      match = html.match(re);
+    }
+    if (match && match[1] && match[1].length > 100) {
+      return htmlToText(match[1]);
+    }
+  }
+  return null;
+}
+
+// 본문 자동 추출 (article 태그 → p 태그 누적)
+function extractAutoContent(html) {
+  // article 태그 내용 우선
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (articleMatch) {
+    const text = htmlToText(articleMatch[1]);
+    if (text.length > 300) return text;
+  }
+  // p 태그 누적
+  const pTags = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+  const texts = pTags.map(m => htmlToText(m[1])).filter(t => t.length > 20);
+  if (texts.length >= 3) return texts.join("\n\n");
+  return null;
+}
+
+export default async function handler(req) {
+  const { searchParams } = new URL(req.url);
+  const targetUrl = searchParams.get("url");
+
+  if (!targetUrl) {
+    return new Response(JSON.stringify({ error: "URL이 필요합니다" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
+  let hostname = "";
+  try {
+    hostname = new URL(targetUrl).hostname;
+  } catch {
+    return new Response(JSON.stringify({ error: "올바른 URL 형식이 아닙니다" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
+  // ── 방법 1: 직접 fetch ──
+  let html = "";
+  let method = "direct";
+  try {
+    const res = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "Referer": "https://www.google.com/",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.ok) {
+      html = await res.text();
+    }
+  } catch (e) {
+    method = "proxy";
+  }
+
+  // ── 방법 2: allorigins 프록시 ──
+  if (!html || html.length < 500) {
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.contents && data.contents.length > 200) {
+          html = data.contents;
+          method = "proxy";
+        }
+      }
+    } catch (e) {
+      method = "failed";
+    }
+  }
+
+  if (!html || html.length < 200) {
+    return new Response(JSON.stringify({
+      error: "기사를 불러오지 못했습니다. 지원하지 않는 언론사이거나 접근이 제한된 URL입니다.",
+      method: "none",
+    }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
+  // ── 본문 추출 ──
+  const title = extractTitle(html);
+  const siteName = getSiteName(hostname);
+  const parser = PARSERS.find(p => hostname.includes(p.host.replace("www.", "")));
+
+  let content = null;
+  if (parser) {
+    content = extractBySelector(html, parser.sel);
+  }
+  if (!content || content.length < 100) {
+    content = extractAutoContent(html);
+  }
+  if (!content || content.length < 50) {
+    content = htmlToText(html).slice(0, 5000);
+  }
+
+  return new Response(JSON.stringify({
+    title,
+    siteName,
+    url: targetUrl,
+    content: content.slice(0, 8000),
+    contentLength: content.length,
+    method,
+  }), {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store",
+    },
+  });
 }
