@@ -29,6 +29,44 @@ async function updateVideo(key, data) {
   await update(ref(db, `${DB_PATH}/${key}`), data);
 }
 
+/* VideoPlayer – 유튜브 / 드라이브 / 직접영상 자체 재생 */
+function getDriveFileId(url) {
+  if (!url) return null;
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1) return m1[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return m2[1];
+  return null;
+}
+
+function VideoPlayer({ url, autoPlay }) {
+  const ytId    = extractYtId(url);
+  const driveId = getDriveFileId(url);
+  const s = { width:"100%", aspectRatio:"16/9", border:"none", display:"block", background:"#000" };
+
+  if (ytId) return (
+    <iframe
+      src={"https://www.youtube.com/embed/"+ytId+"?autoplay="+(autoPlay?1:0)+"&rel=0"}
+      style={s} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen />
+  );
+
+  if (driveId) {
+    const src = "https://drive.google.com/file/d/"+driveId+"/preview";
+    return (
+      <div style={{ position:"relative", background:"#000" }}>
+        <iframe src={src} style={s} allow="autoplay" allowFullScreen
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms" />
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.55))", padding:"20px 12px 8px", pointerEvents:"none" }}>
+          <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>Google Drive 플레이어</span>
+        </div>
+      </div>
+    );
+  }
+
+  return <video src={url} controls autoPlay={autoPlay} style={{ ...s }} />;
+}
+
 /* ─── 카테고리 ─────────────────────────────────────────── */
 const CATEGORIES = [
   { id: "all",     label: "전체",    icon: "📂" },
@@ -151,18 +189,7 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
         background: "#000", boxShadow: "0 32px 80px rgba(0,0,0,0.8)",
         animation: "fadeIn 0.2s ease",
       }}>
-        {extractYtId(v.videoUrl) ? (
-          <iframe src={`https://www.youtube.com/embed/${extractYtId(v.videoUrl)}?autoplay=1`}
-            style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
-            allowFullScreen allow="autoplay" />
-        ) : v.videoUrl?.includes("drive.google.com") ? (
-          <iframe src={v.videoUrl}
-            style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
-            allowFullScreen allow="autoplay" />
-        ) : (
-          <video src={v.videoUrl} controls autoPlay
-            style={{ width: "100%", aspectRatio: "16/9", display: "block", background: "#000" }} />
-        )}
+        <VideoPlayer url={v.videoUrl} autoPlay={true} />
         <div style={{ padding: "18px 22px", background: isDark ? "#16132e" : "#fff", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 800, color: text, marginBottom: 5 }}>{v.title}</div>
