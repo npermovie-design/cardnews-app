@@ -31,12 +31,8 @@ async function updateVideo(key, data) {
 
 /* ─── 카테고리 ─────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: "all",     label: "전체",          icon: "📂" },
-  { id: "tutorial",label: "강의/튜토리얼", icon: "🎓" },
-  { id: "sns",     label: "SNS 활용",      icon: "📱" },
-  { id: "ai",      label: "AI 도구",       icon: "🤖" },
-  { id: "marketing",label: "마케팅",       icon: "📣" },
-  { id: "etc",     label: "기타",          icon: "📁" },
+  { id: "all",     label: "전체",    icon: "📂" },
+  { id: "synth",   label: "합성영상", icon: "🎬" },
 ];
 
 /* ─── 유틸: 유튜브 썸네일 추출 ───────────────────────── */
