@@ -24,6 +24,8 @@ export default function App() {
   const [showAuth,   setShowAuth]   = useState(false);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
+  const [boardSub,   setBoardSub]   = useState(false);
+  const [boardCat,   setBoardCat]   = useState("info");
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const aiSubRef    = useRef(null);
