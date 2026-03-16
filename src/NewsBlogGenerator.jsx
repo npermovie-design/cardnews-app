@@ -176,6 +176,29 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
 
+  const cleanForCopy = (text) => {
+    return text
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/^[-_=]{3,}\s*$/gm, "")
+      .replace(/^>\s*/gm, "")
+      .replace(/\d️⃣/g, "")
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+      .replace(/[\u{2600}-\u{27BF}]/gu, "")
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+      .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
+      .replace(/\uFE0F/g, "")
+      .replace(/\u200D/g, "")
+      .replace(/[✦✧★☆♦◆◇▶▷►◀◁◄□■●○◉]/g, "")
+      .replace(/^[•·▪▫◦‣⁃]\s*/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const IS = {
     width:"100%", padding:"13px 16px", borderRadius:10,
     border:`1.5px solid ${inputBdr}`, background:inputBg,
@@ -540,7 +563,7 @@ ${articleSection}
           <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
             <span style={{fontSize:15,fontWeight:800,color:text}}>📄 작성 결과</span>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
+              <button onClick={()=>{navigator.clipboard.writeText(cleanForCopy(result));setCopied(true);setTimeout(()=>setCopied(false),2000);}}
                 style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>
                 {copied?"✓ 복사됨":"📋 복사"}
               </button>

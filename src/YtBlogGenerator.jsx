@@ -118,6 +118,29 @@ export default function YtBlogGenerator({ theme, embedded, user }) {
   const [generating,  setGenerating]  = useState(false);
   const [genErr,      setGenErr]      = useState("");
   const [copied,      setCopied]      = useState(false);
+
+  const cleanForCopy = (text) => {
+    return text
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/^[-_=]{3,}\s*$/gm, "")
+      .replace(/^>\s*/gm, "")
+      .replace(/\d️⃣/g, "")
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+      .replace(/[\u{2600}-\u{27BF}]/gu, "")
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+      .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
+      .replace(/\uFE0F/g, "")
+      .replace(/\u200D/g, "")
+      .replace(/[✦✧★☆♦◆◇▶▷►◀◁◄□■●○◉]/g, "")
+      .replace(/^[•·▪▫◦‣⁃]\s*/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
   const transcriptRef = useRef(null);
 
   /* ── 유튜브 정보 + 자막 가져오기 ── */
@@ -363,7 +386,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(result).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+    navigator.clipboard.writeText(cleanForCopy(result)).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
   };
 
   const IS = {

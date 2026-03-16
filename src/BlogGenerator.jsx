@@ -593,14 +593,36 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
   const cleanForCopy = (text) => {
     return text
+      // 마크다운 헤딩 (#, ##, ###)
+      .replace(/^#{1,6}\s+/gm, "")
+      // 볼드/이탤릭 (**텍스트**, *텍스트*)
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
-      .replace(/#{1,6}\s*/g, "")
-      .replace(/^---+$/gm, "")
-      .replace(/^___+$/gm, "")
-      .replace(/^===+$/gm, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // 인라인 코드
       .replace(/`([^`]+)`/g, "$1")
+      // 링크 [텍스트](url) → 텍스트
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // 수평선 (---, ___, ===)
+      .replace(/^[-_=]{3,}\s*$/gm, "")
+      // 인용 (> 텍스트)
+      .replace(/^>\s*/gm, "")
+      // 숫자 이모지 (1️⃣, 2️⃣ 등)
+      .replace(/\d️⃣/g, "")
+      // 이모지 전체 제거
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+      .replace(/[\u{2600}-\u{27BF}]/gu, "")
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+      .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
+      .replace(/[\u{20D0}-\u{20FF}]/gu, "")
+      // 변형 선택자 (이모지 스킨톤 등)
+      .replace(/\uFE0F/g, "")
+      .replace(/\u200D/g, "")
+      // 기타 특수 유니코드 기호 (✦ ✧ ★ ☆ ♦ 등)
+      .replace(/[✦✧★☆♦◆◇▶▷►◀◁◄□■●○◉]/g, "")
+      // 줄 앞의 특수기호 대시 (- 불릿은 유지, 순수 기호만 제거)
+      .replace(/^[•·▪▫◦‣⁃]\s*/gm, "")
+      // 연속 빈줄 정리
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   };
