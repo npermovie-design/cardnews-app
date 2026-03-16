@@ -1175,6 +1175,8 @@ function PageHome(props) {
 
 // ─── 만들기 페이지 ────────────────────────────────────────────────────────────
 function PageMake(props) {
+  var winW = useWinW();
+  var narrow = winW < 880;
   var topic = props.topic; var setTopic = props.setTopic;
   var cnt = props.cnt; var setCnt = props.setCnt;
   var makeStep = props.makeStep; var setMakeStep = props.setMakeStep;
