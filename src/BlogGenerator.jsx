@@ -433,6 +433,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
+    // 사용 횟수 체크 (비회원 5회, 회원 20회)
+    const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+    const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
+    const _aiUsed = _aiUsage[_aiKey] || 0;
+    const _aiLimit = user ? 20 : 5;
+    const _aiPoints = user ? (user.points || 0) : 0;
+    if (_aiUsed >= _aiLimit && _aiPoints < 10) {
+      setError(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
+      return;
+    }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
     const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
     var _savedFull = "";

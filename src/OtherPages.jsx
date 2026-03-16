@@ -255,7 +255,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     <div style={{
       width: 210, flexShrink: 0, background: sideBg,
       borderRight: `1px solid ${sideBdr}`,
-      display: "flex", flexDirection: "column", height: "100%", overflowY: "auto",
+      display: "flex", flexDirection: "column", height: "100%", overflow: "visible",
+      position: "relative",
     }}>
       {/* 브랜드 */}
       <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}` }}>
@@ -264,7 +265,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       </div>
 
       {/* 메뉴 */}
-      <div style={{ padding: "8px", flex: 1 }}>
+      <div style={{ padding: "8px", flex: 1, overflowY: "auto", overflowX: "visible" }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label="홈" icon="🏠" />
         <Item id="library" label="보관함" icon="📁" />
@@ -336,7 +337,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
               <div style={{ height: "100%", width: pct, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
             </div>
             <div style={{ fontSize: 10, color: "#a5b4fc", textAlign: "center" }}>
-              로그인하면 20회 무료 + 포인트 적립
+              비회원 5회 무료 · 로그인하면 20회
             </div>
           </div>
         )}
@@ -389,8 +390,8 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
       {/* 팝업 - 가제트AI 스타일 */}
       {open && (
         <div style={{
-          position: "absolute", bottom: "calc(100% + 8px)", left: 8,
-          width: 260, zIndex: 200,
+          position: "fixed", bottom: 60, left: 10,
+          width: 260, zIndex: 9999,
           background: popupBg,
           border: `1px solid ${bdr}`,
           borderRadius: 16,

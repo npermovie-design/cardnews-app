@@ -166,6 +166,15 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
   /* ── 블로그 글 생성 ── */
   const generate = async () => {
     if (!newsInfo) { setGenErr("먼저 기사 URL을 입력해주세요."); return; }
+    const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+    const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
+    const _aiUsed = _aiUsage[_aiKey] || 0;
+    const _aiLimit = user ? 20 : 5;
+    const _aiPoints = user ? (user.points || 0) : 0;
+    if (_aiUsed >= _aiLimit && _aiPoints < 10) {
+      setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
+      return;
+    }
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
     var _nfFull = "";
 
