@@ -182,7 +182,7 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
     if (isBoard)             return <BoardPage key={boardInitCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardInitCat} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
@@ -273,7 +273,7 @@ export default function App() {
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={() => { setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
+                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={(e) => { e.stopPropagation(); setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
               </DropMenu>
             )}
           </div>

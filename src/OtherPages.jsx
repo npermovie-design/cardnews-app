@@ -786,7 +786,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   if (aiMenu === "blog_news") {
     return (
       <div key="news_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <NewsBlogGenerator theme={theme} embedded user={user} />
+        <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
   }
@@ -795,7 +795,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   if (aiMenu === "blog_yt_blog") {
     return (
       <div key="yt_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <YtBlogGenerator theme={theme} embedded user={user} />
+        <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
   }
@@ -805,7 +805,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
     return (
       <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} />
+        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
   }
@@ -859,7 +859,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   return null;
 }
 
-export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout }) {
+export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;

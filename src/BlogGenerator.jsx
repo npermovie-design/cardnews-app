@@ -337,7 +337,7 @@ const FIELD_LABELS = {
 // ── 메인 ──────────────────────────────────────────────────────────────────
 
 // ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
-function PointsExhausted({ isDark, isGuest, title, onContact }) {
+function PointsExhausted({ isDark, isGuest, title, onLogin }) {
   const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
   const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const text = isDark ? "#fff" : "#1a1a2e";
@@ -405,7 +405,7 @@ function PointsExhausted({ isDark, isGuest, title, onContact }) {
   );
 }
 
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
   const isDark = theme === "dark" || (!theme && !!embedded); // theme prop 우선, 없으면 embedded 기준
 
@@ -611,7 +611,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 포인트/횟수 소진 체크
     const _us = _getUsageState();
     if (!loading && !result && _us.exhausted) {
-      return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title="블로그 글" />;
+      return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title="블로그 글"
+        onLogin={() => { if(onLoginRequest) onLoginRequest(); }} />;
     }
     // 풀스크린 로딩 오버레이
     if (loading) {
