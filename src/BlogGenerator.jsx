@@ -348,6 +348,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [viewMode,   setViewMode]   = useState("text");
   const [loading,    setLoading]    = useState(false);
   const [copied,     setCopied]     = useState(false);
+  const resultRef = { current: "" };
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
   const [seoKeys,    setSeoKeys]    = useState([]);
@@ -449,6 +450,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       _newU2[_k2] = (_u2[_k2] || 0) + 1;
       setAiUsage(_newU2);
       if (user && user.uid) { changePoints(user.uid, -10, "블로그 글 생성").catch(function(e) {}); }
+      // 보관함 자동저장
+      if (resultRef.current && resultRef.current.length > 50) {
+        try {
+          var _saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          var _title = fields.keyword || "제목 없음";
+          var _newSave = { id: Date.now().toString(), type: subtype, title: _title,
+            content: resultRef.current, date: new Date().toLocaleDateString("ko-KR") };
+          _saves.unshift(_newSave);
+          localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_saves.slice(0, 100)));
+        } catch(e) {}
+      }
     }
   };
 

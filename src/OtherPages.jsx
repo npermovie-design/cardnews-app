@@ -267,6 +267,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount }) {
       <div style={{ padding: "8px", flex: 1 }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label="홈" icon="🏠" />
+        <Item id="library" label="보관함" icon="📁" />
 
         {/* SNS 글쓰기 그룹 */}
         <Group label="SNS 글쓰기" icon="✍️" open={blogOpen}
@@ -351,12 +352,246 @@ const BLOG_MAP = {
   blog_yt_blog: { type: "blog_yt_blog",  label: "유튜브로 글쓰기" },
 };
 
+
+// ── 블로그 글 저장/불러오기 헬퍼 ──────────────────────────────────────────────
+const BLOG_SAVES_KEY = "sns_blog_saves_v1";
+function getBlogSaves() { try { return JSON.parse(localStorage.getItem(BLOG_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function saveBlogWork(item) {
+  const list = getBlogSaves().filter(x => x.id !== item.id);
+  list.unshift(item);
+  try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(list.slice(0, 100))); } catch(e) {}
+}
+function deleteBlogWork(id) {
+  try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(getBlogSaves().filter(x => x.id !== id))); } catch(e) {}
+}
+const CARD_SAVES_KEY = "nper_saved_works_v2";
+function getCardSaves() { try { return JSON.parse(localStorage.getItem(CARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function deleteCardWork(id) {
+  try { localStorage.setItem(CARD_SAVES_KEY, JSON.stringify(getCardSaves().filter(x => x.id !== id))); } catch(e) {}
+}
+
+// ── LibraryPage 컴포넌트 ──────────────────────────────────────────────────────
+function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const [tab, setTab] = useState("blog");
+  const [blogList, setBlogList] = useState(getBlogSaves);
+  const [cardList, setCardList] = useState(getCardSaves);
+  const [search, setSearch] = useState("");
+  const [selectedBlog, setSelectedBlog] = useState(null);
+
+  const text  = homeText;
+  const muted = homeMuted;
+  const bdr   = cardBdr;
+  const bg    = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+  const accent = "#6366f1";
+
+  const filteredBlog = blogList.filter(x =>
+    !search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.type||"").includes(search)
+  );
+  const filteredCard = cardList.filter(x =>
+    !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
+  );
+  const total = blogList.length + cardList.length;
+
+  const typeLabel = {
+    blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
+    blog_youtube:"유튜브", blog_thread:"스레드", blog_news:"뉴스블로그",
+    blog_yt_blog:"유튜브블로그"
+  };
+  const typeColor = {
+    blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#ec4899",
+    blog_youtube:"#ef4444", blog_thread:"#6366f1", blog_news:"#06b6d4",
+    blog_yt_blog:"#ef4444"
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      {/* 헤더 */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
+        <div>
+          <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>📁 내 보관함</div>
+          <div style={{ fontSize:13, color:muted }}>총 {total}개 저장됨 · 자동 저장됩니다</div>
+        </div>
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="검색..."
+          style={{ padding:"8px 14px", borderRadius:9, border:`1px solid ${bdr}`, background:inputBg,
+            color:text, fontSize:13, outline:"none", width:180 }} />
+      </div>
+
+      {/* 탭 */}
+      <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
+        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"]].map(([id, label]) => (
+          <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
+            style={{ padding:"7px 16px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+              background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
+              color: tab===id ? (isDark?"#fff":accent) : muted,
+              boxShadow: tab===id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
+            {label}
+            <span style={{ marginLeft:6, fontSize:11, opacity:0.7 }}>
+              {id==="blog" ? blogList.length : cardList.length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* 블로그 목록 */}
+      {tab === "blog" && (
+        <>
+          {filteredBlog.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>✍️</div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 글이 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>글 생성 후 자동으로 여기 저장됩니다</div>
+              <button onClick={()=>setAiMenu("blog_naver")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                블로그 글 작성하기 →
+              </button>
+            </div>
+          ) : selectedBlog ? (
+            /* 글 상세 보기 */
+            <div>
+              <button onClick={()=>setSelectedBlog(null)}
+                style={{ marginBottom:14, padding:"7px 14px", borderRadius:8, border:`1px solid ${bdr}`,
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
+                ← 목록으로
+              </button>
+              <div style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:16, padding:"24px 28px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                  <span style={{ fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:6,
+                    background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", color:typeColor[selectedBlog.type]||accent }}>
+                    {typeLabel[selectedBlog.type]||"블로그"}
+                  </span>
+                  <span style={{ fontSize:11, color:muted }}>{selectedBlog.date}</span>
+                </div>
+                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:20 }}>{selectedBlog.title}</div>
+                <div style={{ fontSize:14, color:isDark?"rgba(255,255,255,0.75)":"#333", lineHeight:2,
+                  whiteSpace:"pre-wrap", background: isDark?"rgba(255,255,255,0.03)":"#f9f9f9",
+                  borderRadius:12, padding:"20px 22px", border:`1px solid ${bdr}` }}>
+                  {selectedBlog.content}
+                </div>
+                <div style={{ display:"flex", gap:8, marginTop:16 }}>
+                  <button onClick={()=>{ navigator.clipboard.writeText(selectedBlog.content); }}
+                    style={{ padding:"9px 18px", borderRadius:9, border:`1px solid ${bdr}`,
+                      background:"transparent", color:accent, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    📋 복사
+                  </button>
+                  <button onClick={()=>{ deleteBlogWork(selectedBlog.id); setBlogList(getBlogSaves()); setSelectedBlog(null); }}
+                    style={{ padding:"9px 18px", borderRadius:9, border:"1px solid rgba(248,113,113,0.3)",
+                      background:"transparent", color:"#f87171", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    🗑 삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {filteredBlog.map(item => (
+                <div key={item.id} onClick={()=>setSelectedBlog(item)}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:12,
+                    padding:"14px 18px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:14,
+                    transition:"opacity 0.1s" }}
+                  onMouseEnter={e=>e.currentTarget.style.opacity="0.8"}
+                  onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+                      <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:5,
+                        background: isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",
+                        color: typeColor[item.type]||muted }}>
+                        {typeLabel[item.type]||"블로그"}
+                      </span>
+                      <span style={{ fontSize:11, color:muted }}>{item.date}</span>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4,
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {item.title}
+                    </div>
+                    <div style={{ fontSize:12, color:muted, overflow:"hidden", textOverflow:"ellipsis",
+                      whiteSpace:"nowrap", lineHeight:1.6 }}>
+                      {item.content?.slice(0,80)}...
+                    </div>
+                  </div>
+                  <button onClick={e=>{ e.stopPropagation(); deleteBlogWork(item.id); setBlogList(getBlogSaves()); }}
+                    style={{ flexShrink:0, padding:"4px 10px", borderRadius:7, border:"none",
+                      background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
+                    삭제
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 카드뉴스 목록 */}
+      {tab === "card" && (
+        <>
+          {filteredCard.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🖼</div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 카드뉴스가 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스 편집 화면에서 저장하면 여기 표시됩니다</div>
+              <button onClick={()=>setAiMenu("cardnews_make")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                카드뉴스 만들기 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
+              {filteredCard.map(item => (
+                <div key={item.id}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:14, overflow:"hidden",
+                    display:"flex", flexDirection:"column" }}>
+                  {item.thumb ? (
+                    <img src={item.thumb} alt={item.topic}
+                      style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
+                  ) : (
+                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)",
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🃏</div>
+                  )}
+                  <div style={{ padding:"12px 12px 10px" }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4,
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {item.topic || "제목 없음"}
+                    </div>
+                    <div style={{ fontSize:11, color:muted, marginBottom:10 }}>
+                      {item.count}장 · {item.date}
+                    </div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={()=>setAiMenu("cardnews_make")}
+                        style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
+                          background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                        열기
+                      </button>
+                      <button onClick={()=>{ deleteCardWork(item.id); setCardList(getCardSaves()); }}
+                        style={{ padding:"6px 10px", borderRadius:7, border:"none",
+                          background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function AiContent({ aiMenu, user, setAiMenu, navigate, theme }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
+
+  // 보관함
+  if (aiMenu === "library") {
+    return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} />;
+  }
 
   // 홈
   if (!aiMenu || aiMenu === "home") {
