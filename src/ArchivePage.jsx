@@ -154,6 +154,12 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
                 style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
                 allowFullScreen allow="autoplay"
               />
+            ) : v.videoUrl?.includes("drive.google.com") ? (
+              <iframe
+                src={v.videoUrl}
+                style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+                allowFullScreen allow="autoplay"
+              />
             ) : (
               <video src={v.videoUrl} controls autoPlay
                 style={{ width: "100%", aspectRatio: "16/9", display: "block", background: "#000" }} />
@@ -270,92 +276,216 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
 ═══════════════════════════════════════════════════════════ */
 function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
   const [form, setForm] = useState({
-    title: editItem?.title || "",
+    title:       editItem?.title       || "",
     description: editItem?.description || "",
-    category: editItem?.category || "tutorial",
-    videoUrl: editItem?.videoUrl || "",
-    thumbnail: editItem?.thumbnail || "",
+    category:    editItem?.category    || "synth",
+    videoUrl:    editItem?.videoUrl    || "",
+    thumbnail:   editItem?.thumbnail   || "",
     downloadUrl: editItem?.downloadUrl || "",
-    isFree: editItem?.isFree !== false,
+    isFree:      editItem?.isFree !== false,
   });
   const [saving, setSaving] = useState(false);
-  const text  = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.4)" : "#888";
-  const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
 
-  const inp = { padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit" };
+  const text    = isDark ? "#fff"                   : "#1a1a2e";
+  const muted   = isDark ? "rgba(255,255,255,0.4)"  : "#888";
+  const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
+  const cardBg  = isDark ? "rgba(255,255,255,0.03)" : "#f8f8fb";
+  const accent  = "#6366f1";
+
+  const inp = {
+    padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`,
+    background: inputBg, color: text, fontSize: 13, outline: "none",
+    width: "100%", boxSizing: "border-box", fontFamily: "inherit",
+  };
+
+  /* 구글 드라이브 공유 링크 → 직접 재생 가능한 URL로 변환 */
+  const convertDriveUrl = (url) => {
+    if (!url) return url;
+    // https://drive.google.com/file/d/FILE_ID/view → embed URL
+    const m = url.match(/\/file\/d\/([^/]+)/);
+    if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+    return url;
+  };
+
+  /* 구글 드라이브 썸네일 자동 추출 */
+  const getDriveThumb = (url) => {
+    if (!url) return null;
+    const m = url.match(/\/file\/d\/([^/]+)/);
+    if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+    return null;
+  };
+
+  const isDriveUrl = (url) => url && url.includes("drive.google.com");
 
   const save = async () => {
-    if (!form.title.trim() || !form.videoUrl.trim()) { alert("제목과 영상 URL은 필수입니다."); return; }
+    if (!form.title.trim())    { alert("제목을 입력해주세요."); return; }
+    if (!form.videoUrl.trim()) { alert("영상 URL을 입력해주세요."); return; }
     setSaving(true);
     try {
+      const finalForm = { ...form };
+      // 구글 드라이브 링크면 embed URL로 변환
+      if (isDriveUrl(form.videoUrl)) {
+        finalForm.videoUrl = convertDriveUrl(form.videoUrl);
+        // 썸네일 없으면 자동 설정
+        if (!finalForm.thumbnail) {
+          finalForm.thumbnail = getDriveThumb(form.videoUrl) || "";
+        }
+      }
       if (editItem?.key) {
-        await updateVideo(editItem.key, form);
+        await updateVideo(editItem.key, finalForm);
       } else {
-        await addVideo(form);
+        await addVideo(finalForm);
       }
       onSaved();
     } catch (e) { alert("저장 실패: " + e.message); }
     setSaving(false);
   };
 
+  const videoType = extractYtId(form.videoUrl) ? "youtube"
+    : isDriveUrl(form.videoUrl) ? "drive" : form.videoUrl ? "direct" : null;
+
+  const typeColors = { youtube: "#ef4444", drive: "#4285f4", direct: "#10b981" };
+  const typeLabels = {
+    youtube: "✅ 유튜브 영상 인식됨 · 썸네일 자동 적용",
+    drive:   "✅ 구글 드라이브 링크 인식됨 · 썸네일 자동 적용",
+    direct:  "✅ 직접 링크 입력됨",
+  };
+
   return (
     <div style={{ maxWidth: 640, padding: "28px 0 60px" }}>
+      {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        {editItem && <button onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 18 }}>←</button>}
+        {editItem && (
+          <button onClick={onCancel}
+            style={{ background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 18 }}>←</button>
+        )}
         <h2 style={{ fontSize: 20, fontWeight: 900, color: text, margin: 0 }}>
-          {editItem ? "영상 수정" : "⬆️ 영상 업로드"}
+          {editItem ? "✏️ 영상 수정" : "⬆️ 영상 등록"}
         </h2>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* 업로드 가이드 배너 */}
+      {!editItem && (
+        <div style={{
+          background: isDark ? "rgba(66,133,244,0.08)" : "rgba(66,133,244,0.05)",
+          border: "1px solid rgba(66,133,244,0.2)",
+          borderRadius: 12, padding: "14px 16px", marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#4285f4", marginBottom: 8 }}>
+            📁 구글 드라이브 업로드 방법
+          </div>
+          <ol style={{ fontSize: 12, color: muted, lineHeight: 2.1, margin: 0, paddingLeft: 18 }}>
+            <li>구글 드라이브에 영상 파일 업로드</li>
+            <li>파일 우클릭 → <b style={{ color: text }}>공유</b> → <b style={{ color: text }}>링크 복사</b></li>
+            <li>일반 액세스를 <b style={{ color: "#4285f4" }}>링크가 있는 모든 사용자</b>로 변경</li>
+            <li>복사한 링크를 아래 <b style={{ color: text }}>영상 URL</b>에 붙여넣기</li>
+          </ol>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+        {/* 제목 */}
         <div>
           <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>제목 *</div>
-          <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+          <input value={form.title}
+            onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
             placeholder="영상 제목을 입력하세요" style={inp} />
         </div>
+
+        {/* 영상 URL */}
+        <div>
+          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>
+            영상 URL *
+            <span style={{ fontWeight: 400, fontSize: 10, marginLeft: 6 }}>
+              (유튜브 링크 또는 구글 드라이브 공유 링크)
+            </span>
+          </div>
+          <input value={form.videoUrl}
+            onChange={e => setForm(p => ({ ...p, videoUrl: e.target.value }))}
+            placeholder="https://drive.google.com/file/d/... 또는 https://youtu.be/..."
+            style={inp} />
+          {videoType && (
+            <div style={{ marginTop: 6, fontSize: 11, color: typeColors[videoType], fontWeight: 600 }}>
+              {typeLabels[videoType]}
+            </div>
+          )}
+        </div>
+
+        {/* 다운로드 URL */}
+        <div>
+          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>
+            다운로드 URL
+            <span style={{ fontWeight: 400, fontSize: 10, marginLeft: 6 }}>(선택 · 구글 드라이브 공유 링크 그대로 붙여넣기)</span>
+          </div>
+          <input value={form.downloadUrl}
+            onChange={e => setForm(p => ({ ...p, downloadUrl: e.target.value }))}
+            placeholder="https://drive.google.com/file/d/... (비워두면 다운로드 버튼 미표시)"
+            style={inp} />
+        </div>
+
+        {/* 썸네일 URL */}
+        <div>
+          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>
+            썸네일 URL
+            <span style={{ fontWeight: 400, fontSize: 10, marginLeft: 6 }}>(선택 · 유튜브·드라이브는 자동 적용)</span>
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input value={form.thumbnail}
+              onChange={e => setForm(p => ({ ...p, thumbnail: e.target.value }))}
+              placeholder="https://... (비워두면 자동 썸네일)" style={{ ...inp }} />
+            {form.thumbnail && (
+              <img src={form.thumbnail} alt="thumb"
+                style={{ width: 64, height: 40, objectFit: "cover", borderRadius: 6, flexShrink: 0, border: `1px solid ${bdr}` }} />
+            )}
+          </div>
+        </div>
+
+        {/* 카테고리 */}
         <div>
           <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>카테고리</div>
-          <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={inp}>
+          <select value={form.category}
+            onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={inp}>
             {CATEGORIES.filter(c => c.id !== "all").map(c => (
               <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
             ))}
           </select>
         </div>
+
+        {/* 설명 */}
         <div>
-          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>영상 URL * (유튜브 or 직접 링크)</div>
-          <input value={form.videoUrl} onChange={e => setForm(p => ({ ...p, videoUrl: e.target.value }))}
-            placeholder="https://www.youtube.com/watch?v=... 또는 직접 영상 URL" style={inp} />
-          {extractYtId(form.videoUrl) && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#4ade80" }}>✅ 유튜브 영상 인식됨 · 썸네일 자동 적용</div>
-          )}
-        </div>
-        <div>
-          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>썸네일 URL (선택 · 유튜브는 자동)</div>
-          <input value={form.thumbnail} onChange={e => setForm(p => ({ ...p, thumbnail: e.target.value }))}
-            placeholder="https://... (빈칸이면 유튜브 자동 썸네일)" style={inp} />
-        </div>
-        <div>
-          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>다운로드 URL (선택 · 구글드라이브 등)</div>
-          <input value={form.downloadUrl} onChange={e => setForm(p => ({ ...p, downloadUrl: e.target.value }))}
-            placeholder="https://drive.google.com/... 또는 파일 직접 링크" style={inp} />
-        </div>
-        <div>
-          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>설명 (선택)</div>
-          <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>설명 <span style={{ fontWeight: 400 }}>(선택)</span></div>
+          <textarea value={form.description}
+            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
             placeholder="영상에 대한 설명을 입력하세요" rows={3}
             style={{ ...inp, resize: "vertical" }} />
         </div>
-        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <input type="checkbox" checked={form.isFree} onChange={e => setForm(p => ({ ...p, isFree: e.target.checked }))}
-            style={{ width: 16, height: 16, accentColor: "#6366f1" }} />
-          <span style={{ fontSize: 13, color: text, fontWeight: 600 }}>무료 공개 (체크 해제 시 멤버 전용 표시)</span>
+
+        {/* 공개 설정 */}
+        <label style={{
+          display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+          padding: "12px 14px", borderRadius: 10, background: cardBg, border: `1px solid ${bdr}`,
+        }}>
+          <input type="checkbox" checked={form.isFree}
+            onChange={e => setForm(p => ({ ...p, isFree: e.target.checked }))}
+            style={{ width: 16, height: 16, accentColor: accent }} />
+          <div>
+            <div style={{ fontSize: 13, color: text, fontWeight: 700 }}>무료 공개</div>
+            <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>체크 해제 시 👑 멤버 전용으로 표시됩니다</div>
+          </div>
         </label>
+
+        {/* 버튼 */}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          {editItem && <button onClick={onCancel} style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>취소</button>}
+          {editItem && (
+            <button onClick={onCancel}
+              style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>
+              취소
+            </button>
+          )}
           <button onClick={save} disabled={saving}
-            style={{ padding: "11px 28px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "저장 중..." : editItem ? "✅ 수정 완료" : "⬆️ 업로드"}
+            style={{ padding: "11px 28px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, minWidth: 120 }}>
+            {saving ? "저장 중..." : editItem ? "✅ 수정 완료" : "✅ 등록하기"}
           </button>
         </div>
       </div>
@@ -363,8 +493,6 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   메인 콘텐츠
 ═══════════════════════════════════════════════════════════ */
 function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   const isDark  = theme === "dark";
