@@ -112,30 +112,7 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme, user }) {
           <Item key={c.id} icon={c.icon} label={c.label} isCat catId={c.id} />
         ))}
 
-        {/* 관리자: role=admin 이거나 adminAuth 상태 */}
-        {(user?.role === "admin" || user?.email?.includes("admin")) && (
-          <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-            <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>ADMIN</div>
-            <Item id="upload" label="영상 업로드" icon="⬆️" />
-          </div>
-        )}
-        {/* role이 없어도 일반 관리자 비번으로 접근 가능 */}
-        {!user?.role?.includes("admin") && !user?.email?.includes("admin") && user && (
-          <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-            <button onClick={() => {
-              const pw = prompt("관리자 비밀번호를 입력하세요:");
-              if (pw === "nper2025admin") setMenu("upload");
-              else if (pw !== null) alert("비밀번호가 틀렸습니다.");
-            }} style={{
-              width: "100%", padding: "7px 10px", borderRadius: 8, border: "none",
-              cursor: "pointer", textAlign: "left",
-              background: "transparent", color: menuLabel,
-              fontSize: 12, display: "flex", alignItems: "center", gap: 6,
-            }}>
-              🔐 관리자 업로드
-            </button>
-          </div>
-        )}
+
       </div>
     </div>
   );

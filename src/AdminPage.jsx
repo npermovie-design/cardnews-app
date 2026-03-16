@@ -1,7 +1,46 @@
 import { useState, useEffect } from "react";
 import { getPosts, setPosts, getMembers, saveMembers, db, changePoints } from "./storage";
-import { ref, get, update, remove } from "firebase/database";
+import { ref, get, set, push, update, remove } from "firebase/database";
 import { Btn, Inp } from "./UI";
+
+/* ── 영상자료실 Firebase 헬퍼 ── */
+const VID_PATH = "archive/videos";
+async function fetchVideos() {
+  const snap = await get(ref(db, VID_PATH));
+  if (!snap.exists()) return [];
+  return Object.entries(snap.val())
+    .map(([key, val]) => ({ key, ...val }))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+async function saveVideo(data) {
+  const r = push(ref(db, VID_PATH));
+  await set(r, { ...data, createdAt: Date.now() });
+}
+async function editVideo(key, data) {
+  await update(ref(db, `${VID_PATH}/${key}`), data);
+}
+async function removeVideo(key) {
+  await remove(ref(db, `${VID_PATH}/${key}`));
+}
+function extractYtId(url) {
+  const m = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+  return m ? m[1] : null;
+}
+function ytThumb(url) {
+  const id = extractYtId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+}
+function convertDriveUrl(url) {
+  if (!url) return url;
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+  return url;
+}
+function getDriveThumb(url) {
+  if (!url) return null;
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : null;
+}
 
 const ADMIN_PW = "nper2025admin";
 const FREE_GUEST  = 5;
@@ -37,7 +76,56 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingMembers(false);
   };
 
-  useEffect(() => { if (auth) loadMembers(); }, [auth]);
+  useEffect(() => { if (auth) { loadMembers(); loadVideos(); } }, [auth]);
+
+  // 영상 목록 로드
+  const [videos, setVideos]       = useState([]);
+  const [vidLoading, setVidLoading] = useState(false);
+  const [vidForm, setVidForm]     = useState({ title:"", videoUrl:"", downloadUrl:"", thumbnail:"", description:"", category:"synth", isFree:true });
+  const [vidEdit, setVidEdit]     = useState(null); // 수정 중인 영상 key
+  const [vidFormOpen, setVidFormOpen] = useState(false);
+
+  const loadVideos = async () => {
+    setVidLoading(true);
+    try { setVideos(await fetchVideos()); } catch(e) {}
+    setVidLoading(false);
+  };
+
+  const resetVidForm = () => setVidForm({ title:"", videoUrl:"", downloadUrl:"", thumbnail:"", description:"", category:"synth", isFree:true });
+
+  const submitVideo = async () => {
+    if (!vidForm.title.trim() || !vidForm.videoUrl.trim()) { alert("제목과 영상 URL은 필수입니다."); return; }
+    const finalForm = { ...vidForm };
+    if (finalForm.videoUrl.includes("drive.google.com") && !finalForm.videoUrl.includes("/preview")) {
+      finalForm.videoUrl = convertDriveUrl(finalForm.videoUrl);
+    }
+    if (!finalForm.thumbnail) {
+      finalForm.thumbnail = ytThumb(finalForm.videoUrl) || getDriveThumb(finalForm.videoUrl) || "";
+    }
+    try {
+      if (vidEdit) {
+        await editVideo(vidEdit, finalForm);
+        showToast("영상 수정 완료!");
+      } else {
+        await saveVideo(finalForm);
+        showToast("영상 등록 완료! 🎬");
+      }
+      resetVidForm(); setVidEdit(null); setVidFormOpen(false);
+      loadVideos();
+    } catch(e) { alert("저장 실패: " + e.message); }
+  };
+
+  const deleteVideo = async (key, title) => {
+    if (!window.confirm(`"${title}" 영상을 삭제할까요?`)) return;
+    try { await removeVideo(key); showToast("영상 삭제 완료"); loadVideos(); }
+    catch(e) { alert("삭제 실패: " + e.message); }
+  };
+
+  const startEditVideo = (v) => {
+    setVidForm({ title: v.title||"", videoUrl: v.videoUrl||"", downloadUrl: v.downloadUrl||"", thumbnail: v.thumbnail||"", description: v.description||"", category: v.category||"synth", isFree: v.isFree !== false });
+    setVidEdit(v.key);
+    setVidFormOpen(true);
+  };
 
   const isDark = C.bg?.includes("0a") || C.bg?.includes("#10") || C.bg?.includes("242");
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
@@ -165,7 +253,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4, width: "fit-content" }}>
-        {[["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
+        {[["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "9px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -355,6 +443,106 @@ export default function AdminPage({ C, user: adminUser }) {
               <button onClick={() => deletePost(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>삭제</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ─────────────── 영상 관리 ─────────────── */}
+      {tab === "videos" && (
+        <div>
+          {/* 헤더 + 추가 버튼 */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+            <div style={{ fontSize:14, color:C.muted }}>총 <b style={{ color:C.text }}>{videos.length}개</b>의 영상</div>
+            <button onClick={() => { resetVidForm(); setVidEdit(null); setVidFormOpen(p=>!p); }}
+              style={{ padding:"9px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              {vidFormOpen && !vidEdit ? "✕ 닫기" : "+ 영상 추가"}
+            </button>
+          </div>
+
+          {/* 등록/수정 폼 */}
+          {vidFormOpen && (
+            <div style={{ background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:16, padding:"22px 24px", marginBottom:20 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>{vidEdit ? "✏️ 영상 수정" : "➕ 새 영상 등록"}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:12 }}>
+                {[
+                  { label:"제목 *", key:"title", placeholder:"영상 제목" },
+                  { label:"영상 URL * (유튜브 or 구글드라이브)", key:"videoUrl", placeholder:"https://drive.google.com/file/d/... 또는 https://youtu.be/..." },
+                  { label:"다운로드 URL (선택)", key:"downloadUrl", placeholder:"https://drive.google.com/..." },
+                  { label:"썸네일 URL (선택·자동)", key:"thumbnail", placeholder:"비워두면 자동 적용" },
+                  { label:"설명 (선택)", key:"description", placeholder:"영상 설명" },
+                ].map(f => (
+                  <div key={f.key}>
+                    <div style={{ fontSize:11, color:C.muted, fontWeight:700, marginBottom:4 }}>{f.label}</div>
+                    <input value={vidForm[f.key]} onChange={e => setVidForm(p=>({...p,[f.key]:e.target.value}))}
+                      placeholder={f.placeholder}
+                      style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+                    {f.key==="videoUrl" && vidForm.videoUrl && (
+                      <div style={{ fontSize:11, marginTop:4, color: extractYtId(vidForm.videoUrl)?"#4ade80":vidForm.videoUrl.includes("drive")?"#60a5fa":"#a3a3a3", fontWeight:600 }}>
+                        {extractYtId(vidForm.videoUrl) ? "✅ 유튜브 인식" : vidForm.videoUrl.includes("drive") ? "✅ 구글드라이브 인식" : "🔗 직접 링크"}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:16, marginTop:14 }}>
+                <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13, color:C.text }}>
+                  <input type="checkbox" checked={vidForm.isFree} onChange={e=>setVidForm(p=>({...p,isFree:e.target.checked}))}
+                    style={{ accentColor:"#6366f1" }} />
+                  무료 공개
+                </label>
+                <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
+                  <button onClick={() => { setVidFormOpen(false); setVidEdit(null); resetVidForm(); }}
+                    style={{ padding:"9px 20px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>취소</button>
+                  <button onClick={submitVideo}
+                    style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    {vidEdit ? "✅ 수정 완료" : "✅ 등록하기"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 영상 목록 */}
+          {vidLoading && <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>⏳ 불러오는 중...</div>}
+          {!vidLoading && videos.length === 0 && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>
+              <div style={{ fontSize:40, marginBottom:10 }}>🎬</div>
+              <div style={{ fontSize:14, color:C.text, fontWeight:700 }}>등록된 영상이 없어요</div>
+            </div>
+          )}
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {videos.map(v => {
+              const thumb = v.thumbnail || ytThumb(v.videoUrl) || null;
+              return (
+                <div key={v.key} style={{ background:C.card, border:"1px solid "+bdr, borderRadius:14, padding:"14px 18px", display:"flex", alignItems:"center", gap:14, boxShadow:C.shadow }}>
+                  {/* 썸네일 */}
+                  <div style={{ width:96, height:54, borderRadius:8, overflow:"hidden", flexShrink:0, background:"rgba(99,102,241,0.1)" }}>
+                    {thumb
+                      ? <img src={thumb} alt={v.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🎬</div>
+                    }
+                  </div>
+                  {/* 정보 */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.title}</div>
+                    <div style={{ fontSize:11, color:C.muted, display:"flex", gap:8, flexWrap:"wrap" }}>
+                      <span>{v.category || "synth"}</span>
+                      <span>{v.isFree !== false ? "🟢 무료" : "👑 멤버전용"}</span>
+                      {v.downloadUrl && <span>⬇️ 다운로드 있음</span>}
+                      <span style={{ color:"rgba(255,255,255,0.2)" }}>|</span>
+                      <span style={{ maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", opacity:0.5 }}>{v.videoUrl}</span>
+                    </div>
+                  </div>
+                  {/* 액션 버튼 */}
+                  <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                    <button onClick={() => startEditVideo(v)}
+                      style={{ padding:"7px 14px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.purpleL, fontSize:12, fontWeight:600, cursor:"pointer" }}>✏️ 수정</button>
+                    <button onClick={() => deleteVideo(v.key, v.title)}
+                      style={{ padding:"7px 14px", borderRadius:9, border:"none", background:"rgba(239,68,68,0.1)", color:"#ef4444", fontSize:12, fontWeight:700, cursor:"pointer" }}>🗑 삭제</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
