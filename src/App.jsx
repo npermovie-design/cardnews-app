@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { getUser, setUser, setLocalUser, fbLogout, auth, fetchUser } from "./storage";
+import BoardPage from "./BoardPage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
@@ -84,6 +85,7 @@ export default function App() {
   useEffect(() => {
     const fn = e => {
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
+      if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -107,14 +109,21 @@ export default function App() {
   const navigate = target => {
     if (target === "login_trigger") { setShowAuth(true); return; }
     window.history.pushState(null, "", "#" + target);
-    setPage(target); setAiSub(false); setMobileOpen(false);
+    setPage(target); setAiSub(false); setBoardSub(false); setMobileOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const navigateBoard = (cat) => {
+    setBoardCat(cat);
+    window.history.pushState(null, "", "#community");
+    setPage("community"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
   const navigateAi = (menu) => {
     setAiMenu(menu);
     window.history.pushState(null, "", "#ai");
-    setPage("ai"); setAiSub(false); setMobileOpen(false);
+    setPage("ai"); setAiSub(false); setBoardSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -126,6 +135,7 @@ export default function App() {
   };
 
   const isAi    = page === "ai";
+  const isBoard = page === "community";
 
   /* ── 네비 버튼 컴포넌트 ── */
   const NavBtn = ({ id, label, active }) => (
@@ -179,6 +189,7 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
