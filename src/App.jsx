@@ -24,6 +24,7 @@ export default function App() {
   const [showAuth,   setShowAuth]   = useState(false);
   const [boardSub,   setBoardSub]   = useState(false);
   const [boardCat,   setBoardCat]   = useState("info");
+  const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
@@ -95,8 +96,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "") || "home";
-    if (hash !== "home") setPage(hash);
+    const rawPath = window.location.pathname.replace(/^\//, "") || "home";
+    const segments = rawPath.split("/");
+    const mainSeg = segments[0];
+    const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1] : null;
+    if (postId) setPendingPostId(postId);
+    // /community/info → page=community, boardCat=info
+    if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
+      setBoardCat(segments[1]);
+    }
+    if (mainSeg && mainSeg !== "home") setPage(mainSeg);
   }, []);
 
   useEffect(() => {
@@ -111,21 +120,26 @@ export default function App() {
 
   const navigate = target => {
     if (target === "login_trigger") { setShowAuth(true); return; }
-    window.history.pushState(null, "", "#" + target);
+    const urlTarget = target === "home" ? "/" : "/" + target;
+    window.history.pushState(null, "", urlTarget);
     setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
   const navigateBoard = (cat) => {
     setBoardCat(cat);
-    window.history.pushState(null, "", "#" + cat);
-    setPage(cat); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    window.history.pushState(null, "", "/community/" + cat);
+    setPage("community"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
+  };
+  const navigatePost = (postId) => {
+    const cat = boardCat || "info";
+    window.history.pushState(null, "", "/community/" + cat + "/post-" + postId);
   };
 
   const navigateAi = (menu) => {
     setAiMenu(menu);
-    window.history.pushState(null, "", "#ai");
+    window.history.pushState(null, "", "/ai");
     setPage("ai"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
@@ -136,7 +150,7 @@ export default function App() {
     setLocalUser(null); setUserState(null); navigate("home");
   };
 
-  const isBoard = ["info", "qna", "free", "review"].includes(page);
+  const isBoard = page === "community";
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
@@ -191,7 +205,7 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
-    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} />;
+    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;

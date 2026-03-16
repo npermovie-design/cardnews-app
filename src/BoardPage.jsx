@@ -204,7 +204,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark }) {
 }
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
-export default function BoardPage({ user, C, onLoginRequest, initialCat }) {
+export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost }) {
   const [subCat,  setSubCat]  = useState(initialCat || "info");
   const [posts,   setPostsS]  = useState(getPosts);
   const [view,    setView]    = useState(null);
@@ -228,6 +228,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat }) {
   };
 
   useEffect(()=>{ if(initialCat) setSubCat(initialCat); },[initialCat]);
+
+  // URL에서 특정 게시글 직접 열기
+  useEffect(()=>{
+    if(pendingPostId){
+      const allPosts = getPosts();
+      const found = allPosts.find(p=>String(p.id)===String(pendingPostId));
+      if(found){
+        const next=allPosts.map(pp=>pp.id===found.id?{...pp,views:(pp.views||0)+1}:pp);
+        setPosts(next); setPostsS(next); setView(next.find(pp=>pp.id===found.id));
+        if(found.subCat||found.cat) setSubCat(found.subCat||found.cat);
+      }
+      if(onPendingPostClear) onPendingPostClear();
+    }
+  },[pendingPostId]);
 
   const sync = next=>{ setPosts(next); setPostsS(next); };
   const own  = p=>user&&(user.nick===p.nick||user.role==="admin");
@@ -282,6 +296,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat }) {
   const openPost = p => {
     const next=posts.map(pp=>pp.id===p.id?{...pp,views:(pp.views||0)+1}:pp);
     sync(next); setView(next.find(pp=>pp.id===p.id));
+    // URL에 게시글 ID 반영
+    const cat = p.subCat||p.cat||subCat;
+    window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
   };
 
   const like = id => {
@@ -304,7 +321,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat }) {
 
   /* 공유 */
   const sharePost = post => {
-    const url = window.location.origin + window.location.pathname + "#community";
+    const url = window.location.origin + "/community/"+(p.subCat||p.cat||subCat)+"/post-"+p.id;
     if(navigator.share){ navigator.share({title:post.title,text:post.title,url}); }
     else { navigator.clipboard.writeText(url); showToast("🔗 링크가 복사됐어요","info"); }
   };
@@ -336,7 +353,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat }) {
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#6366f1",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
       <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
-        <button onClick={()=>setView(null)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
+        <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
           <div style={{padding:"24px 28px 20px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
