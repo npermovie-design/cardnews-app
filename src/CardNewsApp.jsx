@@ -173,18 +173,32 @@ function wrapText(ctx, text, maxW) {
   for (var pi = 0; pi < paras.length; pi++) {
     var para = paras[pi];
     if (!para) { lines.push(""); continue; }
-    var words = para.split(" ");
-    var cur = "";
-    for (var wi = 0; wi < words.length; wi++) {
-      var word = words[wi];
-      var test = cur ? cur + " " + word : word;
-      if (ctx.measureText(test).width > maxW && cur) {
-        lines.push(cur); cur = word;
-      } else {
-        cur = test;
+    // 한글 포함 여부 체크 → 글자 단위 래핑
+    var hasKorean = /[\uAC00-\uD7A3]/.test(para);
+    if (hasKorean) {
+      // 글자 단위 + 공백 단위 혼합 래핑
+      var cur = "";
+      for (var ci = 0; ci < para.length; ci++) {
+        var ch = para[ci];
+        var test = cur + ch;
+        if (ctx.measureText(test).width > maxW && cur) {
+          lines.push(cur); cur = ch;
+        } else { cur = test; }
       }
+      if (cur) { lines.push(cur); }
+    } else {
+      // 영문: 단어 단위 래핑
+      var words = para.split(" ");
+      var cur2 = "";
+      for (var wi = 0; wi < words.length; wi++) {
+        var word = words[wi];
+        var test2 = cur2 ? cur2 + " " + word : word;
+        if (ctx.measureText(test2).width > maxW && cur2) {
+          lines.push(cur2); cur2 = word;
+        } else { cur2 = test2; }
+      }
+      if (cur2) { lines.push(cur2); }
     }
-    if (cur) { lines.push(cur); }
   }
   return lines.length ? lines : [""];
 }
@@ -353,7 +367,7 @@ function SlideCanvas(props) {
   var rObj = RATIOS[0];
   for (var ri = 0; ri < RATIOS.length; ri++) { if (RATIOS[ri].key === (style.ratio || "1:1")) { rObj = RATIOS[ri]; break; } }
   return (
-    <div style={{width:width, height:Math.round(width * rObj.H / rObj.W), borderRadius:thumb ? 6 : 12, overflow:"hidden", boxShadow:thumb ? "none" : "0 8px 40px rgba(0,0,0,0.55)", flexShrink:0}}>
+    <div style={{width:Math.min(width, width), maxWidth:"100%", height:Math.round(width * rObj.H / rObj.W), borderRadius:thumb ? 6 : 12, overflow:"hidden", boxShadow:thumb ? "none" : "0 8px 40px rgba(0,0,0,0.55)", flexShrink:0}}>
       <canvas ref={cRef} style={{width:"100%", height:"100%", display:"block"}}/>
     </div>
   );
@@ -608,8 +622,8 @@ function PreviewPanel(props) {
   var prevDis = idx === 0; var nextDis = idx === slides.length - 1;
   var msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
   return (
-    <div style={{flex:1, overflowY:"auto", overflowX:"hidden", padding:"14px 12px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
-      <div style={{width:"100%", maxWidth:previewW + 24, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+    <div style={{flex:1, overflowY:"auto", overflowX:"hidden", padding:"14px 12px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, minWidth:0}}>
+      <div style={{width:"100%", maxWidth:previewW, display:"flex", flexDirection:"column", alignItems:"center", gap:10, minWidth:0}}>
         <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", minWidth:0, overflow:"hidden"}}>
           <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0, marginRight:8}}>{tname}</div>
           <div style={{display:"flex", gap:5, alignItems:"center", flexShrink:0}}>
@@ -648,7 +662,7 @@ function PreviewPanel(props) {
         {dlSt.msg && <div style={{fontSize:11, color:msgCol, textAlign:"center"}}>{dlSt.msg}</div>}
       </div>
 
-      <div style={{width:"100%", maxWidth:previewW + 24}}>
+      <div style={{width:"100%", maxWidth:previewW}}>
         <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
         <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
           {slides.map(function(s, i) {
@@ -1352,7 +1366,7 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
+        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row", overflow:"hidden"}}>
           <div style={{width: narrow ? "100%" : 380, flexShrink:0, display:"flex", flexDirection:"column"}}>
             <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
             <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
@@ -1386,11 +1400,12 @@ function PageMake(props) {
             </div>
           </div>
           {!narrow && <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-            background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
+            background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px",
+            overflow:"hidden", minWidth:0}}>
             {selPreset ? (
-              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:"100%"}}>
                 <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>{"✔ " + selPreset.label}</div>
-                <PresetCanvas dp={selPreset} size={320} isC={true} onClick={function() {}}/>
+                <PresetCanvas dp={selPreset} size={Math.min(280, 280)} isC={true} onClick={function() {}}/>
               </div>
             ) : (
               <div style={{textAlign:"center", opacity:0.4}}>
@@ -1670,9 +1685,13 @@ export function CardNewsApp(props) {
     } catch(e2) { setDlSt({busy:false, msg:"ZIP 실패: " + e2.message}); }
   }
 
-  var sidebarW = 340;
-  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - sidebarW - 60) * 0.68), 580);
-  if (previewW < 280) { previewW = 280; }
+  var editPanelW = 340;
+  var outerSideW = props.embedded ? 210 : 0; // AiSidebar
+  var totalSide  = editPanelW + outerSideW;
+  var previewW   = narrow
+    ? Math.min(winW - 40, 380)
+    : Math.min(Math.floor((winW - totalSide - 80)), 560);
+  if (previewW < 260) { previewW = 260; }
 
   var isLight = props.theme === "light";
   var mainBg    = isLight ? "#f4f4f8"               : "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)";
