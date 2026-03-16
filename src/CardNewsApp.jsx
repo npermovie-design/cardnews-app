@@ -269,10 +269,11 @@ function drawSlide(canvas, slide, style, bgImgEl) {
   else { startY = Math.round((CH - totalH) / 2); }
   var y = Math.max(minY, startY);
 
-  // 텍스트 정렬 헬퍼
+  // 텍스트 정렬 헬퍼 (padX 안에서 정렬 → 넘침 방지)
   function getX(lineW) {
-    if (al === "center") { return Math.round((CW - lineW) / 2); }
-    if (al === "right")  { return CW - padX - lineW; }
+    var safeW = Math.min(lineW, maxW);
+    if (al === "center") { return Math.round(padX + (maxW - safeW) / 2); }
+    if (al === "right")  { return CW - padX - safeW; }
     return padX;
   }
   function drawLines(ls, fnt, color, alpha, lineH) {
@@ -316,7 +317,7 @@ function drawSlide(canvas, slide, style, bgImgEl) {
     }
     var pad2 = Math.round(hSz * 1.2);
     var blockH = hlLines.length * Math.round(hSz * 1.55) + Math.round(hSz * 0.5);
-    var boxX = getX(mxW + pad2 * 2) - Math.round(hSz * 0.1);
+    var boxX = getX(mxW + pad2 * 2);
     if (hlMode === "pill") {
       ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = tc;
       ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, Math.round(hSz * 0.7));
@@ -607,11 +608,11 @@ function PreviewPanel(props) {
   var prevDis = idx === 0; var nextDis = idx === slides.length - 1;
   var msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
   return (
-    <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
-      <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
-        <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600}}>{tname}</div>
-          <div style={{display:"flex", gap:5, alignItems:"center"}}>
+    <div style={{flex:1, overflowY:"auto", overflowX:"hidden", padding:"14px 12px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
+      <div style={{width:"100%", maxWidth:previewW + 24, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+        <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", minWidth:0, overflow:"hidden"}}>
+          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0, marginRight:8}}>{tname}</div>
+          <div style={{display:"flex", gap:5, alignItems:"center", flexShrink:0}}>
             <button onClick={function() { setIdx(Math.max(0, idx - 1)); }} disabled={prevDis}
               style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:16, opacity: prevDis ? 0.25 : 1}}>
               &#8249;
@@ -647,7 +648,7 @@ function PreviewPanel(props) {
         {dlSt.msg && <div style={{fontSize:11, color:msgCol, textAlign:"center"}}>{dlSt.msg}</div>}
       </div>
 
-      <div style={{width:"100%", maxWidth:previewW + 40}}>
+      <div style={{width:"100%", maxWidth:previewW + 24}}>
         <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
         <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
           {slides.map(function(s, i) {
@@ -1669,8 +1670,9 @@ export function CardNewsApp(props) {
     } catch(e2) { setDlSt({busy:false, msg:"ZIP 실패: " + e2.message}); }
   }
 
-  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - 270) * 0.62), 620);
-  if (previewW < 300) { previewW = 300; }
+  var sidebarW = 340;
+  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - sidebarW - 60) * 0.68), 580);
+  if (previewW < 280) { previewW = 280; }
 
   var isLight = props.theme === "light";
   var mainBg    = isLight ? "#f4f4f8"               : "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)";
