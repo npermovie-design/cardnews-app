@@ -30,6 +30,16 @@ async function updateVideo(key, data) {
 }
 
 /* VideoPlayer – 유튜브 / 드라이브 / 직접영상 자체 재생 */
+function getDirectDownloadUrl(url) {
+  if (!url) return url;
+  // 구글 드라이브 → 직접 다운로드 URL로 변환
+  const m = url.match(/[/]file[/]d[/]([a-zA-Z0-9_-]+)/);
+  if (m) return "https://drive.google.com/uc?export=download&id=" + m[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return "https://drive.google.com/uc?export=download&id=" + m2[1];
+  return url; // 드라이브 아니면 원본 URL 그대로
+}
+
 function getDriveFileId(url) {
   if (!url) return null;
   const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -197,7 +207,7 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             {v.downloadUrl && (
-              <a href={v.downloadUrl} target="_blank" rel="noopener noreferrer"
+              <a href={getDirectDownloadUrl(v.downloadUrl)} download target="_blank" rel="noopener noreferrer"
                 style={{ padding: "9px 18px", borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
                 ⬇️ 다운로드
               </a>
@@ -332,7 +342,7 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
               ▶ 재생
             </button>
             {v.downloadUrl && (
-              <a href={v.downloadUrl} target="_blank" rel="noopener noreferrer"
+              <a href={getDirectDownloadUrl(v.downloadUrl)} download target="_blank" rel="noopener noreferrer"
                 style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "#a5b4fc" : "#6366f1", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
                 ⬇️ 다운로드
               </a>
