@@ -301,9 +301,26 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
   };
 
+  // 추천 토글 - 게시글당 1회, 재클릭 시 취소
+  const getUserKey = () => user ? (user.uid || user.nick || "user") : ("guest_" + (localStorage.getItem("nper_guest_key") || (() => { const k = Math.random().toString(36).slice(2); localStorage.setItem("nper_guest_key", k); return k; })()));
   const like = id => {
-    const next=posts.map(p=>p.id===id?{...p,likes:(p.likes||0)+1}:p);
+    const uKey = getUserKey();
+    const next = posts.map(p => {
+      if (p.id !== id) return p;
+      const likedBy = p.likedBy || [];
+      const alreadyLiked = likedBy.includes(uKey);
+      return {
+        ...p,
+        likes: alreadyLiked ? Math.max(0, (p.likes||0)-1) : (p.likes||0)+1,
+        likedBy: alreadyLiked ? likedBy.filter(k=>k!==uKey) : [...likedBy, uKey]
+      };
+    });
     sync(next); setView(next.find(p=>p.id===id));
+  };
+  const isLiked = (post) => {
+    if (!post) return false;
+    const uKey = getUserKey();
+    return (post.likedBy||[]).includes(uKey);
   };
 
   const addComment = postId => {
@@ -380,12 +397,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             <RichBody html={view.body} C={C}/>
           </div>
           <div style={{padding:"16px 28px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
-            <button onClick={()=>like(view.id)}
-              style={{padding:"11px 36px",borderRadius:28,border:"2px solid "+C.purpleL,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",color:C.purpleL,fontSize:15,fontWeight:800,cursor:"pointer",transition:"all 0.15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.background=C.purpleL;e.currentTarget.style.color="#fff";}}
-              onMouseLeave={e=>{e.currentTarget.style.background=isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)";e.currentTarget.style.color=C.purpleL;}}>
-              👍 추천 {view.likes||0}
-            </button>
+            {(() => {
+              const liked = isLiked(view);
+              return (
+                <button onClick={()=>like(view.id)}
+                  style={{padding:"11px 36px",borderRadius:28,
+                    border:"2px solid "+(liked?"#f59e0b":C.purpleL),
+                    background:liked?(isDark?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.08)"):(isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)"),
+                    color:liked?"#f59e0b":C.purpleL,fontSize:15,fontWeight:800,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=liked?"rgba(245,158,11,0.3)":C.purpleL;if(!liked)e.currentTarget.style.color="#fff";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background=liked?(isDark?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.08)"):(isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)");e.currentTarget.style.color=liked?"#f59e0b":C.purpleL;}}>
+                  {liked?"✅ 추천함":"👍 추천"} {view.likes||0}
+                </button>
+              );
+            })()}
           </div>
         </div>
         {/* 댓글 */}
