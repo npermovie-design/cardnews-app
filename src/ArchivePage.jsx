@@ -90,7 +90,13 @@ function extractYtId(url) {
 }
 function ytThumb(url) {
   const id = extractYtId(url);
-  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+  // 2.jpg = 영상 중간지점 썸네일, maxresdefault = 고화질 16:9
+  // maxresdefault가 없는 경우 대비해 img 태그에서 오류시 2.jpg로 폴백
+  return id ? "https://img.youtube.com/vi/" + id + "/maxresdefault.jpg" : null;
+}
+function ytThumbMid(id) {
+  // 영상 중간 지점 (2.jpg = ~50% 지점, 소형 120x90)
+  return "https://img.youtube.com/vi/" + id + "/2.jpg";
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -203,7 +209,7 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
       }}
     >
       {/* ── 영상 영역 (2배 크기: paddingTop 112.5% = 16:9 × 2) ── */}
-      <div style={{ position:"relative", width:"100%", paddingTop:"112.5%", background:"#000", borderRadius:"14px 14px 0 0", overflow:"hidden" }}>
+      <div style={{ position:"relative", width:"100%", paddingTop:"56.25%", background:"#000", borderRadius:"14px 14px 0 0", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0 }}>
 
           {playing ? (
@@ -242,7 +248,17 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
               style={{ position:"absolute", inset:0, cursor:"pointer" }}
             >
               {thumb
-                ? <img src={thumb} alt={v.title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+                ? <img
+                    src={thumb}
+                    alt={v.title}
+                    onError={e => {
+                      // maxresdefault 없으면 중간지점(2.jpg) → hqdefault 순으로 폴백
+                      const ytId2 = extractYtId(v.videoUrl);
+                      if (ytId2 && e.target.src.includes("maxresdefault")) {
+                        e.target.src = "https://img.youtube.com/vi/" + ytId2 + "/hqdefault.jpg";
+                      }
+                    }}
+                    style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
                 : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", fontSize:52 }}>🎬</div>
               }
               {/* 오버레이 */}
@@ -336,7 +352,7 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
   const getDriveThumb = (url) => {
     if (!url) return null;
     const m = url.match(/\/file\/d\/([^/]+)/);
-    if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+    if (m) return "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w640-h360-c";
     return null;
   };
 
