@@ -126,7 +126,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {isGuest ? (
-            <button onClick={() => { window.location.hash = "#home"; }}
+            <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
               🚀 회원가입 / 로그인하기
@@ -218,7 +218,8 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
     const _aiUsed = _aiUsage[_aiKey] || 0;
     const _aiLimit = user ? 20 : 5;
     const _aiPoints = user ? (user.points || 0) : 0;
-    if (_aiUsed >= _aiLimit && _aiPoints < 10) {
+    // 비회원: 5회 초과 시 차단 / 회원: 20회 초과 + 포인트 확실히 0일 때만 차단
+    if (!user ? (_aiUsed >= _aiLimit) : (_aiUsed >= _aiLimit && _aiPoints === 0 && user.uid)) {
       setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
       return;
     }

@@ -442,7 +442,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _used = _u[_k] || 0;
     const _lim = user ? 20 : 5;
     const _pts = user ? (user.points || 0) : 0;
-    return { used: _used, limit: _lim, points: _pts, exhausted: _used >= _lim && _pts < 10, isGuest: !user };
+    // 회원은 포인트 정보가 로컬에 없을 수 있으므로: 비회원만 엄격 체크
+    const isGuest = !user;
+    const exhausted = isGuest
+      ? (_used >= _lim)                                        // 비회원: 5회 초과
+      : (_used >= _lim && _pts === 0 && user && user.uid);    // 회원: 20회 초과 + 포인트 확실히 0
+    return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
     if (result && !loading) {

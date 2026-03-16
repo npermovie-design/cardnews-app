@@ -1216,8 +1216,13 @@ function PageMake(props) {
   var _pk = props.user ? ("member_" + (props.user.uid || "u")) : "guest";
   var _pused = _pu[_pk] || 0;
   var _plim = props.user ? 20 : 5;
+  // 로그인 회원은 포인트 데이터가 로컬에 없을 수 있으므로 usage 기준으로만 체크
+  // 회원이면 포인트 충전 여부를 알 수 없으므로 횟수 초과 시만 소진 화면 표시
   var _ppts = props.user ? (props.user.points || 0) : 0;
-  var _pEx = _pused >= _plim && _ppts < 10;
+  // 회원이 20회 초과했더라도 points > 0이면 사용 가능, points 정보 없으면 허용
+  var _pEx = props.user
+    ? (_pused >= _plim && _ppts === 0 && props.user.uid)  // 회원: 20회 초과 + 포인트 확실히 0
+    : (_pused >= _plim);  // 비회원: 5회 초과
 
   if (_pEx) {
     return (
