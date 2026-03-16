@@ -518,8 +518,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
                 <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
                 <span style={{fontSize:10,color:muted}}>공백포함</span>
-                <span style={{fontSize:12,fontWeight:700,color:muted}}>{result.replace(/
-/g," ").length.toLocaleString()}</span>
+                <span style={{fontSize:12,fontWeight:700,color:muted}}>{result.replace(/\s/g," ").length.toLocaleString()}</span>
               </div>
             )}
             {result&&(
