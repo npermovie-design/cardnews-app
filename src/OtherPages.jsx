@@ -356,98 +356,136 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
   const ptColor = isEmpty || isLow ? "#f87171" : "#a5b4fc";
   const nick = user.nick || user.email?.split("@")[0] || "사용자";
   const initial = nick[0]?.toUpperCase() || "U";
-  const bg = isDark ? "rgba(255,255,255,0.04)" : "#f5f5f5";
   const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e3f5";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.1)" : "#ebebf0";
+  const popupBg = isDark ? "#1a1730" : "#fff";
+  const menuHover = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f8";
+
+  const MenuItem = ({ icon, label, sub, onClick, danger, disabled }) => (
+    <button onClick={onClick} disabled={disabled}
+      style={{ width: "100%", padding: "11px 16px", border: "none", borderRadius: 9,
+        background: "transparent", cursor: disabled ? "default" : "pointer",
+        textAlign: "left", display: "flex", alignItems: "center", gap: 12,
+        color: danger ? "#f87171" : text, fontSize: 14, fontWeight: 500 }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = danger ? "rgba(248,113,113,0.08)" : menuHover; }}
+      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+      <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{icon}</span>
+      <div>
+        <div>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: muted, marginTop: 1 }}>{sub}</div>}
+      </div>
+    </button>
+  );
 
   return (
-    <div>
-      {/* 팝업 메뉴 */}
+    <div style={{ position: "relative" }}>
+      {/* 오버레이 */}
       {open && (
-        <div style={{ position: "absolute", bottom: 60, left: 8, right: 8, zIndex: 200,
-          background: isDark ? "rgba(18,16,58,0.98)" : "#fff",
-          border: `1px solid ${bdr}`, borderRadius: 14, padding: "8px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
-          {/* 회원 정보 헤더 */}
-          <div style={{ padding: "10px 12px", marginBottom: 4, borderBottom: `1px solid ${bdr}` }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 2 }}>{nick}</div>
-            <div style={{ fontSize: 11, color: muted }}>{user.email}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6,
-                background: user.role === "admin" ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.12)",
-                color: user.role === "admin" ? "#fbbf24" : "#a5b4fc", fontWeight: 700 }}>
-                {user.role === "admin" ? "👑 관리자" : "🌟 일반회원"}
-              </span>
-              <span style={{ fontSize: 10, color: ptColor, fontWeight: 700 }}>💎 {ptLeft}P 잔여</span>
-            </div>
-          </div>
-          {/* 포인트 바 */}
-          <div style={{ padding: "8px 12px", marginBottom: 4 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-              <span style={{ fontSize: 11, color: muted }}>포인트 현황</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: ptColor }}>{ptLeft}P / {ptTotal}P</span>
-            </div>
-            <div style={{ height: 5, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.08)" : "#e9ecef", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 5, width: ptPct + "%",
-                background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)",
-                transition: "width 0.5s" }} />
-            </div>
-            <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>AI 생성 1회 = 10P · {ptLeft >= 10 ? Math.floor(ptLeft/10) + "회 가능" : "포인트 부족"}</div>
-            {isLow && <div style={{ fontSize: 10, color: "#f87171", marginTop: 3, fontWeight: 700 }}>🔴 포인트가 거의 다 됐어요!</div>}
-          </div>
-          {/* 메뉴 버튼들 */}
-          {[
-            { icon: "💎", label: "포인트 충전", action: () => { navigate("pricing"); setOpen(false); } },
-            { icon: "📁", label: "내 보관함", action: () => { setOpen(false); } },
-            { icon: "📋", label: "가입일 " + (user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-"), action: null },
-          ].map((m, i) => (
-            m.action ? (
-              <button key={i} onClick={m.action}
-                style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "none",
-                  background: "transparent", color: text, fontSize: 12, fontWeight: 600,
-                  cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-                onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <span>{m.icon}</span>{m.label}
-              </button>
-            ) : (
-              <div key={i} style={{ padding: "8px 12px", fontSize: 11, color: muted, display: "flex", gap: 8 }}>
-                <span>{m.icon}</span>{m.label}
+        <div onClick={() => setOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 199 }} />
+      )}
+
+      {/* 팝업 - 가제트AI 스타일 */}
+      {open && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: 8,
+          width: 260, zIndex: 200,
+          background: popupBg,
+          border: `1px solid ${bdr}`,
+          borderRadius: 16,
+          boxShadow: "0 16px 48px rgba(0,0,0,0.25)",
+          overflow: "hidden",
+        }}>
+          {/* 상단 프로필 헤더 */}
+          <div style={{ padding: "20px 16px 16px", borderBottom: `1px solid ${bdr}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 20, fontWeight: 900, color: "#fff" }}>
+                {initial}
               </div>
-            )
-          ))}
-          <div style={{ borderTop: `1px solid ${bdr}`, marginTop: 4, paddingTop: 4 }}>
-            <button onClick={() => { setOpen(false); if (onLogout) { onLogout(); } else { try { import("./storage").then(({fbLogout})=>{fbLogout().catch(()=>{});window.location.reload();}); } catch(e) { window.location.reload(); } } }}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "none",
-                background: "transparent", color: "#f87171", fontSize: 12, fontWeight: 700,
-                cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-              🚪 로그아웃
-            </button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: text }}>{nick}</span>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, fontWeight: 700,
+                    background: user.role === "admin" ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.12)",
+                    color: user.role === "admin" ? "#fbbf24" : "#a5b4fc" }}>
+                    {user.role === "admin" ? "관리자" : "일반회원"}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+              </div>
+            </div>
+            {/* 포인트 현황 */}
+            <div style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#f7f7fb",
+              borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                <span style={{ fontSize: 12, color: muted }}>포인트 현황</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: ptColor }}>💎 {ptLeft.toLocaleString()}P</span>
+              </div>
+              <div style={{ height: 5, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.08)" : "#e0e0eb", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 5, width: ptPct + "%",
+                  background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
+              </div>
+              <div style={{ fontSize: 11, color: muted, marginTop: 5 }}>
+                AI 1회=10P · {ptLeft >= 10 ? Math.floor(ptLeft/10) + "회 생성 가능" : "⚠️ 포인트 부족"}
+              </div>
+            </div>
+          </div>
+
+          {/* 메뉴 목록 */}
+          <div style={{ padding: "8px" }}>
+            <MenuItem icon="💎" label="포인트 충전"
+              sub={`현재 ${ptLeft.toLocaleString()}P 보유`}
+              onClick={() => { navigate("pricing"); setOpen(false); }} />
+            <MenuItem icon="📁" label="내 보관함"
+              sub="생성한 글·카드뉴스 확인"
+              onClick={() => { setOpen(false); }} />
+            <MenuItem icon="📅" label="가입일"
+              sub={user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-"}
+              disabled={true} />
+            <MenuItem icon="📧" label="마지막 로그인"
+              sub={user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "-"}
+              disabled={true} />
+          </div>
+
+          {/* 구분선 + 로그아웃 */}
+          <div style={{ borderTop: `1px solid ${bdr}`, padding: "8px" }}>
+            <MenuItem icon="🚪" label="로그아웃" danger={true}
+              onClick={() => { setOpen(false); if (onLogout) onLogout(); }} />
           </div>
         </div>
       )}
 
-      {/* 프로필 버튼 */}
+      {/* 하단 프로필 버튼 */}
       <button onClick={() => setOpen(p => !p)}
-        style={{ width: "100%", padding: "10px 12px", background: open ? (isDark ? "rgba(255,255,255,0.05)" : "#f0f0f8") : "transparent",
-          border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, position: "relative",
+        style={{ width: "100%", padding: "12px 14px",
+          background: open ? (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f8") : "transparent",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 10,
+          transition: "background 0.15s" }}
+        onMouseEnter={e => { if (!open) e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "#f5f5f8"; }}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.background = "transparent"; }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, position: "relative",
           background: "linear-gradient(135deg,#7c6aff,#ec4899)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 14, fontWeight: 900, color: "#fff" }}>
+          fontSize: 15, fontWeight: 900, color: "#fff" }}>
           {initial}
-          <div style={{ position: "absolute", bottom: 0, right: 0, width: 9, height: 9,
+          <div style={{ position: "absolute", bottom: 1, right: 1, width: 9, height: 9,
             borderRadius: "50%", background: "#4ade80",
-            border: `2px solid ${isDark ? "#0f0c29" : "#fff"}` }} />
+            border: `2px solid ${isDark ? "#12102a" : "#fff"}` }} />
         </div>
         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nick}</div>
-          <div style={{ fontSize: 10, color: ptColor, fontWeight: 600 }}>💎 {ptLeft}P 잔여</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: text,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nick}</div>
+          <div style={{ fontSize: 11, color: ptColor, fontWeight: 600 }}>💎 {ptLeft.toLocaleString()}P 잔여</div>
         </div>
-        <span style={{ fontSize: 10, color: muted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
+          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
       </button>
     </div>
   );
