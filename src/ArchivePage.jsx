@@ -181,6 +181,13 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
   const ytId    = extractYtId(v.videoUrl);
   const driveId = getDriveFileId(v.videoUrl);
 
+  // 플레이어 src (클릭 시 바로 세팅)
+  const playerSrc = ytId
+    ? "https://www.youtube.com/embed/" + ytId + "?autoplay=1&rel=0"
+    : driveId
+      ? "https://drive.google.com/file/d/" + driveId + "/preview"
+      : null;
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -195,124 +202,107 @@ function VideoCard({ v, isDark, bdr, onDelete, isAdmin, onEdit }) {
         boxShadow: hovered ? "0 10px 32px rgba(99,102,241,0.2)" : "none",
       }}
     >
-      {/* ── 영상/썸네일 영역 (항상 16:9 고정) ── */}
-      <div style={{ position:"relative", width:"100%", paddingTop:"56.25%", background:"#000", borderRadius:"14px 14px 0 0", overflow:"hidden" }}>
+      {/* ── 영상 영역 (2배 크기: paddingTop 112.5% = 16:9 × 2) ── */}
+      <div style={{ position:"relative", width:"100%", paddingTop:"112.5%", background:"#000", borderRadius:"14px 14px 0 0", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0 }}>
 
-          {/* 플레이어 (playing=true 일 때만 표시, DOM은 항상 유지) */}
-          <div style={{ position:"absolute", inset:0, display: playing ? "block" : "none", zIndex:2 }}>
-            {ytId && (
-              <iframe
-                src={playing ? "https://www.youtube.com/embed/" + ytId + "?autoplay=1&rel=0" : ""}
-                style={{ width:"100%", height:"100%", border:"none", display:"block" }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            )}
-            {driveId && !ytId && (
-              <iframe
-                src={playing ? "https://drive.google.com/file/d/" + driveId + "/preview" : ""}
-                style={{ width:"100%", height:"100%", border:"none", display:"block" }}
-                allow="autoplay" allowFullScreen
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-              />
-            )}
-            {!ytId && !driveId && v.videoUrl && (
-              <video
-                src={v.videoUrl} controls autoPlay={playing}
-                onEnded={() => setPlaying(false)}
-                style={{ width:"100%", height:"100%", display:"block", background:"#000" }}
-              />
-            )}
-            {/* 닫기 버튼 */}
-            <button onClick={() => setPlaying(false)} style={{
-              position:"absolute", top:8, right:8, zIndex:10,
-              width:28, height:28, borderRadius:"50%",
-              background:"rgba(0,0,0,0.65)", border:"none",
-              color:"#fff", fontSize:13, cursor:"pointer",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              backdropFilter:"blur(4px)",
-            }}>✕</button>
-          </div>
-
-          {/* 썸네일 (playing=false 일 때) */}
-          <div
-            onClick={() => setPlaying(true)}
-            style={{ position:"absolute", inset:0, cursor:"pointer", display: playing ? "none" : "block", zIndex:1 }}
-          >
-            {thumb
-              ? <img src={thumb} alt={v.title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.3s", transform: hovered ? "scale(1.05)" : "scale(1)" }} />
-              : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", fontSize:40 }}>🎬</div>
-            }
-            {/* 재생 오버레이 */}
-            <div style={{ position:"absolute", inset:0, background: hovered ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.18)", transition:"background 0.2s", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <div style={{
-                width:52, height:52, borderRadius:"50%",
-                background: hovered ? "#fff" : "rgba(255,255,255,0.82)",
+          {playing ? (
+            /* ── 플레이어 ── */
+            <div style={{ position:"absolute", inset:0, zIndex:2 }}>
+              {playerSrc ? (
+                <iframe
+                  src={playerSrc}
+                  style={{ width:"100%", height:"100%", border:"none", display:"block" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+                />
+              ) : (
+                /* 직접 mp4 */
+                <video
+                  src={v.videoUrl} controls autoPlay
+                  onEnded={() => setPlaying(false)}
+                  style={{ width:"100%", height:"100%", display:"block", background:"#000" }}
+                />
+              )}
+              {/* 닫기 */}
+              <button onClick={() => setPlaying(false)} style={{
+                position:"absolute", top:10, right:10, zIndex:10,
+                width:32, height:32, borderRadius:"50%",
+                background:"rgba(0,0,0,0.7)", border:"none",
+                color:"#fff", fontSize:14, cursor:"pointer",
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:22, paddingLeft:4,
-                transform: hovered ? "scale(1.12)" : "scale(1)",
-                transition:"all 0.2s",
-                boxShadow: hovered ? "0 4px 20px rgba(99,102,241,0.5)" : "none",
-              }}>▶</div>
+                backdropFilter:"blur(4px)",
+              }}>✕</button>
             </div>
-            {/* 카테고리 뱃지 */}
-            <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,0.65)", backdropFilter:"blur(4px)", borderRadius:6, padding:"3px 8px", fontSize:11, fontWeight:700, color:"#fff" }}>
-              {catInfo.icon} {catInfo.label}
+          ) : (
+            /* ── 썸네일 (클릭 → 바로 플레이어) ── */
+            <div
+              onClick={() => setPlaying(true)}
+              style={{ position:"absolute", inset:0, cursor:"pointer" }}
+            >
+              {thumb
+                ? <img src={thumb} alt={v.title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", transition:"transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+                : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", fontSize:52 }}>🎬</div>
+              }
+              {/* 오버레이 */}
+              <div style={{ position:"absolute", inset:0, background: hovered ? "rgba(0,0,0,0.38)" : "rgba(0,0,0,0.15)", transition:"background 0.2s", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{
+                  width:64, height:64, borderRadius:"50%",
+                  background: hovered ? "#fff" : "rgba(255,255,255,0.85)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:26, paddingLeft:5,
+                  transform: hovered ? "scale(1.1)" : "scale(1)",
+                  transition:"all 0.2s",
+                  boxShadow: hovered ? "0 6px 24px rgba(99,102,241,0.55)" : "0 2px 10px rgba(0,0,0,0.3)",
+                }}>▶</div>
+              </div>
+              {/* 카테고리 뱃지 */}
+              <div style={{ position:"absolute", top:10, left:10, background:"rgba(0,0,0,0.65)", backdropFilter:"blur(4px)", borderRadius:6, padding:"4px 10px", fontSize:12, fontWeight:700, color:"#fff" }}>
+                {catInfo.icon} {catInfo.label}
+              </div>
+              {v.isFree === false && (
+                <div style={{ position:"absolute", top:10, right:10, background:"linear-gradient(135deg,#f59e0b,#fbbf24)", borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:800, color:"#fff" }}>
+                  👑 멤버 전용
+                </div>
+              )}
+              {/* 관리자 버튼 */}
+              {isAdmin && hovered && (
+                <div style={{ position:"absolute", bottom:10, right:10, display:"flex", gap:5 }}>
+                  <button onClick={e => { e.stopPropagation(); onEdit(v); }}
+                    style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"rgba(255,255,255,0.92)", color:"#6366f1", fontSize:12, fontWeight:700, cursor:"pointer" }}>✏️</button>
+                  <button onClick={e => { e.stopPropagation(); onDelete(v.key); }}
+                    style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"rgba(239,68,68,0.92)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>🗑</button>
+                </div>
+              )}
             </div>
-            {v.isFree === false && (
-              <div style={{ position:"absolute", top:8, right:8, background:"linear-gradient(135deg,#f59e0b,#fbbf24)", borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:800, color:"#fff" }}>
-                👑 멤버 전용
-              </div>
-            )}
-            {/* 관리자 버튼 */}
-            {isAdmin && hovered && (
-              <div style={{ position:"absolute", bottom:8, right:8, display:"flex", gap:4 }}>
-                <button onClick={e => { e.stopPropagation(); onEdit(v); }}
-                  style={{ padding:"5px 10px", borderRadius:7, border:"none", background:"rgba(255,255,255,0.9)", color:"#6366f1", fontSize:11, fontWeight:700, cursor:"pointer" }}>✏️</button>
-                <button onClick={e => { e.stopPropagation(); onDelete(v.key); }}
-                  style={{ padding:"5px 10px", borderRadius:7, border:"none", background:"rgba(239,68,68,0.9)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>🗑</button>
-              </div>
-            )}
-          </div>
+          )}
 
         </div>
       </div>
 
-      {/* ── 카드 하단 정보 ── */}
-      <div style={{ padding:"12px 14px 14px", flex:1, display:"flex", flexDirection:"column", background:cardBg }}>
-        <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:4, lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+      {/* ── 카드 하단 ── */}
+      <div style={{ padding:"12px 14px 14px", display:"flex", flexDirection:"column", gap:6, background:cardBg }}>
+        <div style={{ fontSize:14, fontWeight:800, color:text, lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
           {v.title}
         </div>
         {v.description && (
-          <div style={{ fontSize:12, color:muted, lineHeight:1.6, marginBottom:8, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:1, WebkitBoxOrient:"vertical" }}>
+          <div style={{ fontSize:12, color:muted, lineHeight:1.6, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:1, WebkitBoxOrient:"vertical" }}>
             {v.description}
           </div>
         )}
-        <div style={{ marginTop:"auto", display:"flex", gap:6 }}>
-          <button
-            onClick={() => setPlaying(p => !p)}
+        {v.downloadUrl && (
+          <a href={getDirectDownloadUrl(v.downloadUrl)} download target="_blank" rel="noopener noreferrer"
             style={{
-              flex:1, padding:"8px 0", borderRadius:8, border:"none",
-              background: playing ? "rgba(239,68,68,0.12)" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              color: playing ? "#ef4444" : "#fff",
-              fontSize:12, fontWeight:700, cursor:"pointer", transition:"all 0.15s",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+              padding:"8px 0", borderRadius:8,
+              border:"1px solid " + bdr, background:"transparent",
+              color: isDark ? "#a5b4fc" : "#6366f1",
+              fontSize:12, fontWeight:700, textDecoration:"none",
             }}>
-            {playing ? "⏹ 정지" : "▶ 재생"}
-          </button>
-          {v.downloadUrl && (
-            <a href={getDirectDownloadUrl(v.downloadUrl)} download target="_blank" rel="noopener noreferrer"
-              style={{
-                flex:1, padding:"8px 0", borderRadius:8,
-                border:"1px solid " + bdr, background:"transparent",
-                color: isDark ? "#a5b4fc" : "#6366f1",
-                fontSize:12, fontWeight:700, textDecoration:"none",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:3,
-              }}>
-              ⬇️ 다운로드
-            </a>
-          )}
-        </div>
+            ⬇️ 다운로드
+          </a>
+        )}
       </div>
     </div>
   );
