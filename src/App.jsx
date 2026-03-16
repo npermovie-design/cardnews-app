@@ -89,8 +89,8 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
     };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
+    document.addEventListener("click", fn);
+    return () => document.removeEventListener("click", fn);
   }, []);
 
   useEffect(() => {
@@ -273,7 +273,7 @@ export default function App() {
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
-                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={(e) => { e.stopPropagation(); setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
+                {CATS.map(cc => <DropItem key={cc.id} id={cc.id} icon={cc.icon} label={cc.label} onClick={(e) => { if(e) e.stopPropagation(); setBoardInitCat(cc.id); setPage(cc.id); window.history.pushState(null,"","#"+cc.id); setBoardSub(false); setAiSub(false); setMobileOpen(false); window.scrollTo(0,0); }} />)}
               </DropMenu>
             )}
           </div>
