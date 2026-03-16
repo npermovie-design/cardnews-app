@@ -456,6 +456,34 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 결과 패널 ──
   const renderResult = () => {
+    // 풀스크린 로딩 오버레이
+    if (loading) {
+      return (
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",padding:"40px 24px",textAlign:"center"}}>
+          <div style={{fontSize:64,marginBottom:16,display:"inline-block",animation:"bl-float 3s ease-in-out infinite",filter:"drop-shadow(0 8px 20px rgba(99,102,241,0.4))"}}>✍️✨</div>
+          <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8,letterSpacing:"-0.5px"}}>AI가 글을 작성하고 있어요</div>
+          <div style={{fontSize:13,color:muted,marginBottom:24}}>{fields.keyword} · {cfg.title}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,textAlign:"left",maxWidth:260,margin:"0 auto 20px"}}>
+            {[{l:"주제 분석 중...",d:true},{l:"구조 기획 중...",d:true},{l:"본문 작성 중...",a:true},{l:"마무리 다듬는 중..."}].map(function(s,i){
+              return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.d||s.a?1:0.3}}>
+                  <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
+                    background:s.d?"rgba(74,222,128,0.15)":s.a?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                    border:s.d?"2px solid #4ade80":s.a?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)"}}>
+                    {s.d?<span style={{color:"#4ade80"}}>✓</span>:s.a?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
+                  </div>
+                  <span style={{fontSize:13,color:s.d?"#4ade80":s.a?text:muted,fontWeight:s.a?700:400}}>{s.l}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",maxWidth:260,margin:"0 auto 10px"}}>
+            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",animation:"bl-progress 12s ease-out forwards"}}/>
+          </div>
+          <div style={{fontSize:12,color:muted}}>보통 20~60초 소요</div>
+        </div>
+      );
+    }
     if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);
       return (
@@ -478,8 +506,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             ))}
             {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
             {result&&<span style={{fontSize:11,color:muted}}>{result.length.toLocaleString()}자</span>}
+            {result&&(
+              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
+                style={{padding:"4px 12px",borderRadius:7,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
+                  background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
+                  color:copied?"#4ade80":accent,fontSize:11,fontWeight:700,cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:4}}>
+                {copied?"✓ 복사됨":"📋 복사"}
+              </button>
+            )}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -507,6 +544,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       <style>{`
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes bl-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes bl-progress{from{width:0%}to{width:100%}}
+        @keyframes bl-fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes bl-popin{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
         .tistory-content h1,.tistory-content h2{font-size:20px;font-weight:700;margin:20px 0 10px}
         .tistory-content h3{font-size:16px;font-weight:700;margin:14px 0 8px}
         .tistory-content p{margin:8px 0;line-height:1.8}

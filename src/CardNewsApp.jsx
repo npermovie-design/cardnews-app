@@ -1011,7 +1011,7 @@ function Sidebar(props) {
   return (
     <div style={{width:185, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0}}>
       <div style={{padding:"18px 14px 10px", borderBottom:"1px solid "+sideBdr}}>
-        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>SNS메이킷</div>
+        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>엔퍼</div>
         <div style={{fontSize:9, color:brandSub, marginTop:1}}>카드뉴스 AI v2.2</div>
       </div>
       <div style={{padding:"8px 8px", flex:1, display:"flex", flexDirection:"column"}}>
@@ -1293,8 +1293,8 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", gap:20, minHeight:360}}>
-          <div style={{width:286, flexShrink:0, display:"flex", flexDirection:"column"}}>
+        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
+          <div style={{width: narrow ? "100%" : 286, flexShrink:0, display:"flex", flexDirection:"column"}}>
             <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
             <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
             <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
@@ -1326,7 +1326,7 @@ function PageMake(props) {
               </div>
             </div>
           </div>
-          <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+          {!narrow && <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
             background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
             {selPreset ? (
               <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
@@ -1339,7 +1339,7 @@ function PageMake(props) {
                 <div style={{fontSize:13, color:muted}}>왼쪽에서 디자인을 선택하면<br/>여기 크게 보여요</div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       )}
 
@@ -1646,9 +1646,23 @@ export function CardNewsApp(props) {
             <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} theme={props.theme} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "edit" && slides.length > 0 && (
-            <div style={{flex:1, display:"flex", height:"100%", overflow:"hidden"}}>
-              <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
-              <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
+            <div style={{flex:1, display:"flex", flexDirection: narrow ? "column" : "row", height:"100%", overflow:"hidden"}}>
+              {narrow ? (
+                <>
+                  {/* 모바일: 미리보기 상단, 편집패널 하단 스크롤 */}
+                  <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"12px 16px 8px", background:"rgba(0,0,0,0.2)", borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
+                  </div>
+                  <div style={{flex:1, overflowY:"auto"}}>
+                    <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
+                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { setPage("make"); setMakeStep(1); }} onSave={handleSaveWork} previewW={previewW}/>
+                </>
+              )}
             </div>
           )}
           {page === "edit" && slides.length === 0 && (
