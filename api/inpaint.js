@@ -41,15 +41,15 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
+        // kandinsky-2-inpainting: NSFW 필터 없음, 빠름, 고품질
+        version: "c109cc9a2b5f3c988ac7b4f4c40f74cfe51d12e3a9d21dce4cf62cf9244fd93f",
         input: {
           image,
-          mask: finalMask,
-          prompt:              "background, clean surface, high quality photo",
-          negative_prompt:     "watermark, text, symbol",
-          num_inference_steps: 20,
-          guidance_scale:      7,
-          safety_checker:      false,
+          mask:                finalMask,
+          prompt:              "clean background, seamless texture, high quality",
+          negative_prompt:     "watermark, text, logo, symbol, blurry",
+          num_inference_steps: 75,
+          guidance_scale:      4,
         },
       }),
     });
