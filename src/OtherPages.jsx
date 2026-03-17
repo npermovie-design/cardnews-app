@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import DetailPageGenerator from "./DetailPageGenerator";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -294,7 +293,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
-        <Item id="detail_page" label="상세페이지 생성기" icon="🛍" />
 
         {/* 커뮤니티 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
@@ -517,6 +515,11 @@ function deleteBlogWork(id) {
   try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(getBlogSaves().filter(x => x.id !== id))); } catch(e) {}
 }
 const CARD_SAVES_KEY = "nper_saved_works_v2";
+const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
+function getDetailSaves() { try { return JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function deleteDetailSave(id) {
+  try { localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(getDetailSaves().filter(x => x.id !== id))); } catch(e) {}
+}
 function getCardSaves() { try { return JSON.parse(localStorage.getItem(CARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteCardWork(id) {
   try { localStorage.setItem(CARD_SAVES_KEY, JSON.stringify(getCardSaves().filter(x => x.id !== id))); } catch(e) {}
@@ -527,6 +530,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const [tab, setTab] = useState("blog");
   const [blogList, setBlogList] = useState(getBlogSaves);
   const [cardList, setCardList] = useState(getCardSaves);
+  const [detailList, setDetailList] = useState(getDetailSaves);
   const [search, setSearch] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
 
@@ -543,7 +547,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
   );
-  const total = blogList.length + cardList.length;
+  const total = blogList.length + cardList.length + detailList.length;
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
@@ -572,7 +576,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
 
       {/* 탭 */}
       <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
-        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"]].map(([id, label]) => (
+        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"], ["detail","🛍 상세페이지","detail"]].map(([id, label]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
             style={{ padding:"7px 16px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
               background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
@@ -580,7 +584,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
               boxShadow: tab===id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
             {label}
             <span style={{ marginLeft:6, fontSize:11, opacity:0.7 }}>
-              {id==="blog" ? blogList.length : cardList.length}
+              {id==="blog" ? blogList.length : id==="card" ? cardList.length : detailList.length}
             </span>
           </button>
         ))}
@@ -729,6 +733,69 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
           )}
         </>
       )}
+
+      {/* 상세페이지 탭 */}
+      {tab === "detail" && (
+        <>
+          {detailList.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🛍</div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 상세페이지가 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>상세페이지 생성 후 자동으로 여기 저장됩니다</div>
+              <button onClick={()=>setAiMenu("detail_page")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                상세페이지 만들기 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14 }}>
+              {detailList.map(item => (
+                <div key={item.id} style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, background:bg }}>
+                  {/* 썸네일 */}
+                  <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
+                    {item.thumbnail ? (
+                      <img src={item.thumbnail} alt=""
+                        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                    ) : (
+                      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>
+                    )}
+                    <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
+                      fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>
+                      {item.count}장
+                    </div>
+                  </div>
+                  {/* 정보 */}
+                  <div style={{ padding:"12px 14px" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4,
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName}</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:11, color:muted }}>{item.catLabel} · {item.date}</span>
+                      <button onClick={()=>{
+                        if(window.confirm(`"${item.productName}" 를 삭제할까요?`)){
+                          deleteDetailSave(item.id); setDetailList(getDetailSaves());
+                        }
+                      }} style={{ fontSize:10, color:muted, background:"transparent", border:`1px solid ${bdr}`,
+                        borderRadius:5, padding:"2px 7px", cursor:"pointer" }}>삭제</button>
+                    </div>
+                    {/* 이미지 미리보기 스트립 */}
+                    {item.images?.length > 1 && (
+                      <div style={{ display:"flex", gap:4, marginTop:8, overflowX:"auto" }}>
+                        {item.images.slice(1,5).map((img, i) => (
+                          <img key={i} src={img} alt="" style={{ width:36, height:36, objectFit:"cover", borderRadius:5, flexShrink:0 }} />
+                        ))}
+                        {item.images.length > 5 && (
+                          <div style={{ width:36, height:36, borderRadius:5, background:`${bdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:muted, flexShrink:0 }}>+{item.images.length-5}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -833,15 +900,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
             setAiMenu("cardnews_make");
           }}
         />
-      </div>
-    );
-  }
-
-  // 상세페이지 생성기
-  if (aiMenu === "detail_page") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }

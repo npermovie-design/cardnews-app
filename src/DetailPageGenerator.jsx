@@ -240,13 +240,15 @@ export default function DetailPageGenerator({ isDark }) {
   const [err,        setErr]        = useState("");
   const [curIdx,     setCurIdx]     = useState(0);
   const [saving,     setSaving]     = useState(false);
+  const [saveMsg,    setSaveMsg]    = useState("");
+  const [isGenDone,  setIsGenDone]  = useState(false);
   const [aiSugg,     setAiSugg]     = useState(null);
   const [suggesting, setSuggesting] = useState(false);
   const refFileRef = useRef(null);
   const productFileRef = useRef(null);
 
   const text    = isDark ? "#fff"                   : "#1a1a2e";
-  const muted   = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const muted   = isDark ? "rgba(255,255,255,0.65)" : "#888";
   const cardBg  = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const bdr     = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f8f8f8";
@@ -273,11 +275,36 @@ export default function DetailPageGenerator({ isDark }) {
     r.readAsDataURL(file);
   };
 
+  // 보관함 저장
+  const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
+  const getDetailSaves = () => { try { return JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } };
+  const saveToLibrary = (productName, images, catLabel) => {
+    try {
+      const saves = getDetailSaves();
+      const item = {
+        id: Date.now().toString(),
+        productName,
+        catLabel,
+        date: new Date().toLocaleDateString("ko-KR"),
+        count: images.filter(Boolean).length,
+        thumbnail: images.find(Boolean) || null,
+        images: images.filter(Boolean),
+      };
+      saves.unshift(item);
+      localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(saves.slice(0, 50)));
+      return true;
+    } catch(e) { return false; }
+  };
+
   // ── 전체 생성 ────────────────────────────────────────────────
   const generate = async () => {
     if (!form.productName.trim()) { setErr("상품명을 입력해주세요"); return; }
     if (!form.features.trim())    { setErr("핵심 특징을 입력해주세요"); return; }
-    setErr(""); setLoading(true); setSlides([]); setRendered([]);
+    setErr(""); setLoading(true); setSlides([]); setRendered([]); setIsGenDone(false); setSaveMsg("");
+
+    // 이탈 방지 가드
+    const beforeUnload = (e) => { e.preventDefault(); e.returnValue = "이미지 생성 중입니다. 페이지를 나가면 생성이 중단됩니다."; };
+    window.addEventListener("beforeunload", beforeUnload);
 
     try {
       // 1단계: Claude로 텍스트 생성
@@ -306,9 +333,14 @@ export default function DetailPageGenerator({ isDark }) {
         await new Promise(r => setTimeout(r, 50));
       }
 
-      setStep(3); setCurIdx(0);
+      setStep(3); setCurIdx(0); setIsGenDone(true);
+      // 보관함 자동 저장
+      const saved = saveToLibrary(form.productName, results, cat.label);
+      setSaveMsg(saved ? "✅ 보관함에 저장됐어요!" : "");
+      window.removeEventListener("beforeunload", beforeUnload);
     } catch (e) {
       setErr("생성 실패: " + e.message);
+      window.removeEventListener("beforeunload", beforeUnload);
     } finally {
       setLoading(false);
     }
@@ -373,8 +405,8 @@ export default function DetailPageGenerator({ isDark }) {
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 6 }}>상세페이지 만들기</div>
         <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>
-          <b style={{ color: text }}>Nano Banana (Gemini 2.5 Flash Image)</b>로 슬라이드를 완성된 이미지로 직접 생성해요.<br />
-          한국어 텍스트를 이미지 안에 자연스럽게 렌더링 · Canvas 없음
+          <b style={{ color: text }}>Gemini AI</b>로 슬라이드를 완성된 이미지로 직접 생성해요.<br />
+          한국어 텍스트를 이미지 안에 자연스럽게 렌더링
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 10 }}>
@@ -407,13 +439,13 @@ export default function DetailPageGenerator({ isDark }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: text }}>슬라이드 수</div>
-              <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{SLIDE_TYPES.slice(0, pageCount).map(t => t.label).join(" · ")}</div>
+              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginTop: 2 }}>{SLIDE_TYPES.slice(0, pageCount).map(t => t.label).join(" · ")}</div>
             </div>
             <div style={{ fontSize: 26, fontWeight: 900, color: cat.accent }}>{pageCount}장</div>
           </div>
           <input type="range" min={3} max={20} value={pageCount} onChange={e => setPageCount(Number(e.target.value))} style={{ width: "100%", accentColor: cat.accent }} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: muted, marginTop: 4 }}>
-            <span>3장</span><span>20장 (최대)</span>
+            <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>3장</span><span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>20장 (최대)</span>
           </div>
         </div>
 
@@ -422,7 +454,7 @@ export default function DetailPageGenerator({ isDark }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
             📸 상품 이미지 <span style={{ color: muted, fontWeight: 400 }}>(선택 — 최대 10장, AI 생성 시 참조)</span>
           </div>
-          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginBottom: 8, lineHeight: 1.6 }}>
             판매할 제품/서비스 사진을 올리면 AI가 실제 상품을 참고해서 이미지를 생성해요
           </div>
           <div
@@ -459,7 +491,7 @@ export default function DetailPageGenerator({ isDark }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
             참고 이미지 <span style={{ color: muted, fontWeight: 400 }}>(선택 — 이 느낌으로 생성)</span>
           </div>
-          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginBottom: 8, lineHeight: 1.6 }}>
             원하는 상세페이지를 올리면 AI가 색감·분위기·레이아웃 스타일을 분석해서 동일하게 생성해요
           </div>
           <div onClick={() => refFileRef.current?.click()}
@@ -543,24 +575,60 @@ export default function DetailPageGenerator({ isDark }) {
 
         <button onClick={generate} disabled={loading || analyzing}
           style={{ padding: "15px", borderRadius: 12, border: "none", cursor: loading ? "wait" : "pointer", background: loading ? `${cat.accent}55` : cat.accent, color: "#fff", fontSize: 15, fontWeight: 900, opacity: loading || analyzing ? 0.7 : 1 }}>
-          {loading ? (progress.msg || "생성 중...") : `Nano Banana로 ${pageCount}장 이미지 생성`}
+          {loading ? (progress.msg || "생성 중...") : `이미지 ${pageCount}장 생성하기`}
         </button>
 
-        {/* 진행 바 */}
+        {/* 생성 로딩 오버레이 애니메이션 */}
         {loading && progress.total > 0 && (
-          <div style={{ padding: "14px 18px", borderRadius: 12, background: cardBg, border: `1px solid ${bdr}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: muted, marginBottom: 10 }}>
-              <span>{progress.msg}</span>
-              <span style={{ fontWeight: 700, color: cat.accent }}>{Math.round((progress.cur / progress.total) * 100)}%</span>
+          <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${cat.accent}40`, background: isDark ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.95)" }}>
+            {/* 애니메이션 헤더 */}
+            <div style={{ background: `linear-gradient(135deg, ${cat.accent}22, ${cat.accent}08)`, padding: "24px 24px 20px", textAlign: "center", borderBottom: `1px solid ${cat.accent}20` }}>
+              {/* 회전 링 애니메이션 */}
+              <div style={{ position: "relative", width: 72, height: 72, margin: "0 auto 16px" }}>
+                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${cat.accent}20` }} />
+                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid transparent`, borderTopColor: cat.accent, animation: "spin 1s linear infinite" }} />
+                <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: `2px solid transparent`, borderTopColor: `${cat.accent}60`, animation: "spin 1.5s linear infinite reverse" }} />
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🎨</div>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 6 }}>
+                상세페이지 이미지 생성 중
+              </div>
+              <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.55)" : "#888" }}>
+                {progress.msg}
+              </div>
             </div>
-            <div style={{ height: 6, borderRadius: 3, background: isDark ? "rgba(255,255,255,0.08)" : "#e8e8e8" }}>
-              <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${cat.accent}, ${cat.accent}bb)`, width: `${(progress.cur / progress.total) * 100}%`, transition: "width 0.5s ease" }} />
-            </div>
-            <div style={{ fontSize: 11, color: muted, marginTop: 8 }}>
-              Nano Banana가 한국어 텍스트를 포함한 완성 이미지를 생성 중이에요 (장당 약 10~20초)
+            {/* 진행 바 */}
+            <div style={{ padding: "16px 24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}>
+                <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#666" }}>{progress.cur} / {progress.total} 완료</span>
+                <span style={{ fontWeight: 800, color: cat.accent }}>{Math.round((progress.cur / progress.total) * 100)}%</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "#e8e8e8", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 4, background: `linear-gradient(90deg, ${cat.accent}, ${cat.accent}bb)`, width: `${(progress.cur / progress.total) * 100}%`, transition: "width 0.5s ease", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 1.5s ease-in-out infinite" }} />
+                </div>
+              </div>
+              {/* 슬라이드 도트 */}
+              <div style={{ display: "flex", gap: 6, marginTop: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                {Array.from({ length: progress.total }).map((_, i) => (
+                  <div key={i} style={{
+                    width: 10, height: 10, borderRadius: "50%",
+                    background: i < progress.cur ? cat.accent : (i === progress.cur ? `${cat.accent}60` : (isDark ? "rgba(255,255,255,0.1)" : "#ddd")),
+                    transition: "all 0.3s",
+                    boxShadow: i < progress.cur ? `0 0 6px ${cat.accent}80` : "none",
+                  }} />
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.4)" : "#aaa", marginTop: 12, textAlign: "center" }}>
+                페이지를 벗어나면 생성이 중단됩니다
+              </div>
             </div>
           </div>
         )}
+        <style>{`
+          @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
       </div>
     </div>
   );
@@ -570,11 +638,17 @@ export default function DetailPageGenerator({ isDark }) {
     const currentPng = rendered[curIdx];
     return (
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "20px 20px 60px" }}>
+        {/* 보관함 저장 알림 */}
+        {saveMsg && (
+          <div style={{ marginBottom: 12, padding: "10px 16px", borderRadius: 10, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", fontSize: 13, color: "#4ade80", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+            {saveMsg}
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setStep(2)} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>← 수정</button>
-            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); }}
-              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>새로 만들기</button>
+            <button onClick={() => setStep(2)} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>← 수정</button>
+            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); setSaveMsg(""); }}
+              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>새로 만들기</button>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setCurIdx(Math.max(0, curIdx - 1))} disabled={curIdx === 0}
