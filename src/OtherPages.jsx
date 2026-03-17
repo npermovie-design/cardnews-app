@@ -4,6 +4,7 @@ import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
+import DetailPageGenerator from "./DetailPageGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -286,10 +287,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 이미지 그룹 */}
         <Group label="SNS 이미지" icon="🖼" open={cardOpen}
-          active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
+          active={!!(aiMenu && (aiMenu.startsWith("cardnews") || aiMenu === "detail_page"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기"   icon="✨" indent />
+          <Item id="detail_page"  label="상세페이지 만들기" icon="🛍" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -900,6 +902,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
             setAiMenu("cardnews_make");
           }}
         />
+      </div>
+    );
+  }
+
+  // 상세페이지 만들기
+  if (aiMenu === "detail_page") {
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }
