@@ -239,7 +239,10 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
       : `카테고리: ${cat.label}. 디자인 스타일: ${cat.styleHint}.`,
     !styleTemplate && refStyle ? `참고 이미지 스타일: ${refStyle}` : "",
     `상품명: ${productName}. 첨부된 참조 이미지의 실제 제품을 최대한 반영해주세요.`,
-    `출력 비율: ${imgW}x${imgH} (${imgW > imgH ? "가로형 landscape" : imgW < imgH ? "세로형 portrait" : "정사각형 square"}). 워터마크 없음. 고품질 상업 이미지.`,
+    `출력 비율: ${imgW}x${imgH} (${imgW > imgH ? "가로형 landscape" : imgW < imgH ? "세로형 portrait" : "정사각형 square"}).`,
+    `[필수 품질] 실제 상업 사진과 전문 그래픽 디자인 합성 스타일. 고해상도 사진 퀄리티. 워터마크 없음.`,
+    `[절대 사용 금지] 클립아트, 이모지, 아이콘, 벡터 일러스트, 만화, 카툰, 플랫 디자인 아이콘, 뱃지, 메달 그래픽, 체크마크 아이콘, 온도계 일러스트, 핸드셰이크 일러스트, 돋보기 아이콘, 트럭 클립아트 등 어떠한 일러스트/아이콘 요소도 절대 포함하지 마세요. 실제 사진이 아닌 일러스트는 모두 금지.`,
+    `[스타일 강제] 실제 프로 포토그래퍼가 촬영한 상업 사진, 실제 제품 사진, 실제 사람/음식/공간 사진만 사용. 텍스트는 디자인된 폰트 레이아웃으로만.`,
   ].filter(Boolean).join(" ");
 
   // 슬라이드별 레이아웃 지시
@@ -248,7 +251,7 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
 
     intro: `브랜드 소개 레이아웃. 좌측 55%는 흰 배경의 텍스트 영역, 우측 45%는 ${productName} 라이프스타일 사진. 좌측 상단에 작은 영문 섹션 라벨, 그 아래 한국어 큰 제목 "${h}", 본문 "${body}". 좌측 상단에 얇은 가로선 포인트.`,
 
-    feature: `핵심 특징 레이아웃. 상단에 섹션 라벨과 한국어 제목 "${h}". 하단에 3개의 카드가 나란히: 각 카드에 번호(01, 02, 03), 굵은 제목, 설명 텍스트. ${productName} 특징을 강조하는 아이콘이나 일러스트.`,
+    feature: `핵심 특징 레이아웃. 상단에 섹션 라벨과 한국어 제목 "${h}". 하단에 3개의 카드가 나란히: 각 카드에 번호(01, 02, 03), 굵은 제목, 설명 텍스트. 각 카드 배경에 제품 관련 실제 사진(클로즈업 디테일 샷) 부드럽게 처리.`,
 
     detail1: `상세 설명 레이아웃. 상단 50%: ${productName} 클로즈업 고퀄리티 사진. 하단 50%: 흰 배경에 섹션 라벨, 한국어 제목 "${h}", 본문 텍스트 "${body}". 깔끔한 타이포그래피.`,
 
@@ -256,15 +259,15 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
 
     comparison: `비교 레이아웃. 상단에 제목 "${h}". 중앙에 좌우로 나뉜 카드: 왼쪽 "BEFORE"(회색 배경, 기존 문제점), 오른쪽 "AFTER"(${cat.accent} 강조색 배경, 흰 텍스트, 해결책). 하단에 차별점 목록.`,
 
-    howto: `사용 방법 레이아웃. 상단에 제목 "${h}". 단계별 리스트: 큰 번호(01, 02, 03)와 각 단계 제목, 설명. ${productName} 사용 장면 이미지. 직관적이고 따라하기 쉬운 느낌.`,
+    howto: `사용 방법 레이아웃. 상단에 제목 "${h}". 단계별 리스트: 큰 번호(01, 02, 03)와 각 단계 제목, 설명. ${productName} 실제 사용 장면 사진. 직관적이고 따라하기 쉬운 느낌.`,
 
     ingredient: `구성/성분 레이아웃. 좌측에 성분 리스트(각 항목: 왼쪽 포인트 라인 + 성분명 + 설명). 우측에 ${productName} 제품 사진. 상단에 제목 "${h}". 신뢰감 있는 디자인.`,
 
-    quality: `품질 인증 레이아웃. 배경에 ${productName} 품질을 보여주는 사진. 오버레이. 상단에 섹션 라벨과 제목 "${h}". 인증 마크나 배지 디자인 요소. 본문 "${body}". 신뢰와 고급스러움.`,
+    quality: `품질 인증 레이아웃. 배경에 ${productName} 품질을 보여주는 사진. 오버레이. 상단에 섹션 라벨과 제목 "${h}". 신뢰감 있는 고품질 배경 사진. 본문 "${body}". 신뢰와 고급스러움. 어떠한 배지나 아이콘 없이 타이포와 사진으로만 구성.`,
 
     review: `고객 후기 레이아웃. 상단에 제목 "${h}". 3개의 후기 카드: 각각 별점(★★★★★), 이탤릭체 후기 텍스트, 구매자 닉네임. 따뜻하고 신뢰감 있는 디자인.`,
 
-    trust: `신뢰 지표 레이아웃. 상단에 제목 "${h}". 3개의 수치 카드: 큰 볼드 숫자 + 설명 텍스트. 하단에 인증/보증 문구. ${productName} 브랜드 이미지. 데이터 기반 신뢰감.`,
+    trust: `신뢰 지표 레이아웃. 상단에 제목 "${h}". 3개의 수치 카드: 큰 볼드 숫자 + 설명 텍스트. 하단에 인증/보증 문구. ${productName} 브랜드 사진. 데이터 기반 신뢰감. 숫자와 텍스트 중심 디자인.`,
 
     faq: `FAQ 레이아웃. 상단에 제목 "${h}". 3~4개의 질문-답변 항목이 세로로 나열. 각 항목: 강조색 "Q" + 질문, "A" + 답변. 깔끔하고 읽기 쉬운 타이포그래피.`,
 
@@ -272,7 +275,7 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
 
     package: `구성품 안내 레이아웃. 상단에 제목 "${h}". ${productName} 구성품들이 배치된 플랫레이(flat lay) 사진. 각 구성품에 선과 텍스트로 설명. 깔끔한 화이트 배경.`,
 
-    delivery: `배송 안내 레이아웃. 상단에 제목 "${h}". 배송 단계를 화살표와 아이콘으로 시각화. 각 단계별 설명 텍스트. 안심되고 신뢰감 있는 디자인.`,
+    delivery: `배송 안내 레이아웃. 상단에 제목 "${h}". 배송/물류 관련 실제 사진(포장 장면 등)을 배경으로, 단계별 텍스트 레이아웃. 각 단계별 설명 텍스트. 안심되고 신뢰감 있는 디자인.`,
 
     event: `이벤트/혜택 레이아웃. 강렬한 배경(${cat.accent} 계열 색). 중앙에 큰 제목 "${h}". 할인율/혜택을 강조하는 흰색 배지나 박스. 긴박감을 주는 문구. 시선을 끄는 임팩트.`,
 
@@ -506,7 +509,9 @@ export default function DetailPageGenerator({ isDark }) {
           const prodImg = productImages.length > 0
             ? productImages[i % productImages.length]?.dataUrl
             : null;
-          let raw = await generateSlideImage(prompt, prodImg);
+          // 클립아트/아이콘 방지 네거티브 프롬프트 추가
+          const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons, NO handshake illustrations, NO thermometer clipart, NO truck clipart, NO magnifying glass icons. Only real commercial photography and professional graphic design typography.";
+          let raw = await generateSlideImage(prompt + NEGATIVE, prodImg);
           // 요청 크기로 리사이즈
           if (raw && (imgW !== 1000 || imgH !== 1000)) {
             raw = await resizeImage(raw, imgW, imgH);
@@ -539,8 +544,9 @@ export default function DetailPageGenerator({ isDark }) {
     setLoading(true);
     setProgress({ msg: `재생성 중... ${slides[idx].label}`, cur: 1, total: 1 });
     try {
-      const prompt = buildPrompt(slides[idx], cat, form.productName, refStyle);
-      const img = await generateSlideImage(prompt);
+      const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons. Only real commercial photography and professional graphic design typography.";
+      const prompt = buildPrompt(slides[idx], cat, form.productName, refStyle, imgW, imgH, selStyle);
+      const img = await generateSlideImage(prompt + NEGATIVE);
       setRendered(prev => { const r = [...prev]; r[idx] = img; return r; });
     } catch (e) { setErr("재생성 실패: " + e.message); }
     setLoading(false);
