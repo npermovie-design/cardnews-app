@@ -59,11 +59,12 @@ function buildPrompt(slide, cat, productName, refStyle) {
   const cta  = slide.cta         || "지금 구매하기";
 
   // 공통 스타일 지시
+  const hasProductImg = false; // 이미지는 API 레벨에서 전달됨
   const base = [
     `한국 프리미엄 온라인 쇼핑몰 상세페이지 이미지를 생성해주세요.`,
     `카테고리: ${cat.label}. 디자인 스타일: ${cat.styleHint}.`,
     refStyle ? `참고 이미지 스타일: ${refStyle}` : "",
-    `상품명: ${productName}.`,
+    `상품명: ${productName}. 첨부된 참조 이미지의 실제 제품을 최대한 반영해주세요.`,
     `1:1 정사각형 포맷. 워터마크 없음. 고품질 상업 이미지.`,
   ].filter(Boolean).join(" ");
 
@@ -119,15 +120,20 @@ function buildPrompt(slide, cat, productName, refStyle) {
 // ══════════════════════════════════════════════════════════════
 
 // Nano Banana (gemini-2.5-flash-image) 이미지 생성
-async function generateSlideImage(prompt) {
+async function generateSlideImage(prompt, productDataUrl = null) {
+  let productImageB64 = null, productImageMime = null;
+  if (productDataUrl) {
+    productImageMime = productDataUrl.split(":")[1]?.split(";")[0] || "image/jpeg";
+    productImageB64  = productDataUrl.split(",")[1] || null;
+  }
   const res = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, productImageB64, productImageMime }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "이미지 생성 실패");
-  return data.image; // base64 data URL
+  return data.image;
 }
 
 // Claude로 슬라이드 텍스트 콘텐츠 생성
@@ -226,6 +232,7 @@ export default function DetailPageGenerator({ isDark }) {
   const [analyzing,  setAnalyzing]  = useState(false);
   const [pageCount,  setPageCount]  = useState(5);
   const [form,       setForm]       = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
+  const [productImages, setProductImages] = useState([]);  // 상품 이미지들
   const [slides,     setSlides]     = useState([]);
   const [rendered,   setRendered]   = useState([]);     // base64 PNG 배열
   const [loading,    setLoading]    = useState(false);
@@ -236,6 +243,7 @@ export default function DetailPageGenerator({ isDark }) {
   const [aiSugg,     setAiSugg]     = useState(null);
   const [suggesting, setSuggesting] = useState(false);
   const refFileRef = useRef(null);
+  const productFileRef = useRef(null);
 
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#888";
@@ -243,6 +251,12 @@ export default function DetailPageGenerator({ isDark }) {
   const bdr     = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f8f8f8";
   const cat     = CATEGORIES.find(c => c.key === selCat) || CATEGORIES[0];
+
+  const handleProductImages = (files) => {
+    Promise.all(Array.from(files).slice(0,10).map(f => new Promise(res => {
+      const r = new FileReader(); r.onload = e => res({ name:f.name, dataUrl:e.target.result }); r.readAsDataURL(f);
+    }))).then(imgs => setProductImages(p => [...p, ...imgs].slice(0,10)));
+  };
 
   const handleRef = (file) => {
     if (!file) return;
@@ -279,7 +293,11 @@ export default function DetailPageGenerator({ isDark }) {
         setProgress({ msg: `이미지 생성 중... ${i + 1}/${slidesData.length} — ${s.label}`, cur: i + 1, total: slidesData.length });
         try {
           const prompt = buildPrompt(s, cat, form.productName, refStyle);
-          results[i] = await generateSlideImage(prompt);
+          // 슬라이드별 상품 이미지 순환 배정 (있을 경우)
+          const prodImg = productImages.length > 0
+            ? productImages[i % productImages.length]?.dataUrl
+            : null;
+          results[i] = await generateSlideImage(prompt, prodImg);
         } catch (e) {
           console.warn(`슬라이드 ${i + 1} 실패:`, e.message);
           results[i] = null;
@@ -397,6 +415,43 @@ export default function DetailPageGenerator({ isDark }) {
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: muted, marginTop: 4 }}>
             <span>3장</span><span>20장 (최대)</span>
           </div>
+        </div>
+
+        {/* 상품 이미지 업로드 */}
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
+            📸 상품 이미지 <span style={{ color: muted, fontWeight: 400 }}>(선택 — 최대 10장, AI 생성 시 참조)</span>
+          </div>
+          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.6 }}>
+            판매할 제품/서비스 사진을 올리면 AI가 실제 상품을 참고해서 이미지를 생성해요
+          </div>
+          <div
+            onClick={() => productFileRef.current?.click()}
+            onDrop={e => { e.preventDefault(); handleProductImages(e.dataTransfer.files); }}
+            onDragOver={e => e.preventDefault()}
+            style={{ border: `1.5px dashed ${productImages.length ? cat.accent : bdr}`, borderRadius: 12, padding: productImages.length ? "14px" : "20px", cursor: "pointer", background: productImages.length ? `${cat.accent}06` : cardBg, transition: "all 0.12s" }}>
+            {productImages.length ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                {productImages.map((img, i) => (
+                  <div key={i} style={{ position: "relative" }}>
+                    <img src={img.dataUrl} alt="" style={{ width: 68, height: 68, objectFit: "cover", borderRadius: 9, display: "block", border: `1px solid ${bdr}` }} />
+                    <button onClick={e => { e.stopPropagation(); setProductImages(p => p.filter((_, j) => j !== i)); }}
+                      style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                  </div>
+                ))}
+                {productImages.length < 10 && (
+                  <div style={{ width: 68, height: 68, borderRadius: 9, border: `1.5px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: muted }}>+</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 3 }}>제품/서비스 이미지 클릭 또는 드래그</div>
+                <div style={{ fontSize: 11, color: muted }}>JPG, PNG — AI가 이 이미지를 보고 생성해요</div>
+              </div>
+            )}
+          </div>
+          <input ref={productFileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
+            onChange={e => { handleProductImages(e.target.files); e.target.value = ""; }} />
         </div>
 
         {/* 참고 이미지 */}
@@ -518,7 +573,7 @@ export default function DetailPageGenerator({ isDark }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={() => setStep(2)} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>← 수정</button>
-            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); }}
+            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); }}
               style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>새로 만들기</button>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
