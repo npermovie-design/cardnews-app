@@ -772,8 +772,7 @@ ${kw}
       });
       const data = await res.json();
       const txt = data.content?.[0]?.text || "";
-      const parsed = JSON.parse(txt.replace(/```json
-?/g,"").replace(/```/g,"").trim());
+      const parsed = JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
       setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, ...parsed, aiLoading:false} : s));
     } catch(e) {
       setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, aiLoading:false} : s));
