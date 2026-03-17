@@ -631,8 +631,7 @@ export default function DetailPageGenerator({ isDark }) {
       });
       const data = await res.json();
       const text_ = data.content?.[0]?.text || "";
-      const clean = text_.replace(/```json
-?/g,"").replace(/```/g,"").trim();
+      const clean = text_.replace(/```json\n?/g,"").replace(/```/g,"").trim();
       setAiSugg(JSON.parse(clean));
     } catch(e) { console.error(e); }
     setSuggesting(false);
