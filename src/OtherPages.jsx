@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import GeminiRemover from "./GeminiRemover";
+import DetailPageGenerator from "./DetailPageGenerator";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -215,7 +215,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && aiMenu.startsWith("cardnews")));
-  const [aiImgOpen, setAiImgOpen] = useState(!!(aiMenu && aiMenu.startsWith("aiimg")));
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
@@ -294,15 +293,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
-        {/* AI 이미지 그룹 */}
-        <Group label="AI 이미지" icon="🤖" open={aiImgOpen}
-          active={!!(aiMenu && aiMenu.startsWith("aiimg"))}
-          onToggle={() => setAiImgOpen(p => !p)} />
-        {aiImgOpen && <>
-          <Item id="aiimg_gemini" label="제미나이 리무버" icon="✦" indent />
-        </>}
-
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
+        <Item id="detail_page" label="상세페이지 생성기" icon="🛍" />
 
         {/* 커뮤니티 */}
         <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
@@ -763,8 +755,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",         darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
       { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",     darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획",   darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "shorts",          icon: "🎬", title: "쇼츠영상 생성기",   desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
-      { id: "aiimg_gemini",    icon: "✦",  title: "제미나이 리무버",    desc: "AI 이미지 워터마크 제거",  darkColor: "rgba(234,179,8,0.15)",   lightColor: "rgba(234,179,8,0.07)"   },
+      { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -846,11 +837,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 제미나이 리무버
-  if (aiMenu === "aiimg_gemini") {
+  // 상세페이지 생성기
+  if (aiMenu === "detail_page") {
     return (
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <GeminiRemover isDark={isDark} />
+        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }
@@ -878,7 +869,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
 
   return null;
 }
-
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest }) {
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
