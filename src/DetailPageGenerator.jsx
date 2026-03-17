@@ -12,6 +12,141 @@ import { useState, useRef } from "react";
 
 const CLAUDE_KEY = "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";
 
+// ── 스타일 템플릿 10종 ───────────────────────────────────────
+const STYLE_TEMPLATES = [
+  {
+    id: "dark_luxury",
+    label: "다크 럭셔리",
+    desc: "어두운 배경, 골드 포인트",
+    // 미리보기 CSS
+    preview: {
+      bg: "linear-gradient(135deg,#1a1208,#0d0d0d)",
+      accent: "#c9a84c",
+      textColor: "#fff",
+      subColor: "rgba(201,168,76,0.7)",
+      pattern: "diagonal",
+    },
+    prompt: "프리미엄 럭셔리 브랜드 스타일. 깊고 어두운 배경(#0d0d0d ~ #1a1208 그라데이션), 골드(#c9a84c) 포인트 컬러, 굵고 세련된 세리프 타이포그래피, 드라마틱한 스팟 조명, 고급 소재 질감, 샴페인 골드 라인과 장식 요소. 럭셔리 명품 브랜드 상세페이지 느낌.",
+  },
+  {
+    id: "minimal_white",
+    label: "미니멀 화이트",
+    desc: "깔끔한 여백, 에디토리얼",
+    preview: {
+      bg: "#ffffff",
+      accent: "#1a1a1a",
+      textColor: "#1a1a1a",
+      subColor: "#888",
+      pattern: "clean",
+    },
+    prompt: "극도로 미니멀한 에디토리얼 디자인. 순백색 배경, 검정 타이포그래피, 넓은 여백, 얇은 라인 사용, 모노크롬 팔레트, 산세리프 볼드 폰트, 여백이 디자인 요소가 되는 스타일. 하이엔드 패션 매거진 레이아웃.",
+  },
+  {
+    id: "warm_beige",
+    label: "감성 내추럴",
+    desc: "베이지/크림, 따뜻한 감성",
+    preview: {
+      bg: "linear-gradient(135deg,#f5ede0,#ede3d5)",
+      accent: "#8b6f4e",
+      textColor: "#3d2b1f",
+      subColor: "#9e8070",
+      pattern: "organic",
+    },
+    prompt: "따뜻하고 감성적인 내추럴 라이프스타일 스타일. 크림/베이지 배경(#f5ede0), 따뜻한 갈색 계열 타이포, 자연광 느낌의 포근한 조명, 린넨 질감, 식물이나 나무 소품 요소, 핸드라이팅 폰트 믹스. 핸드메이드/홈리빙 브랜드 감성.",
+  },
+  {
+    id: "bold_graphic",
+    label: "트렌디 그래픽",
+    desc: "굵은 타이포, 강렬한 컬러",
+    preview: {
+      bg: "linear-gradient(135deg,#ff2d55,#ff6b35)",
+      accent: "#fff200",
+      textColor: "#ffffff",
+      subColor: "rgba(255,255,255,0.85)",
+      pattern: "bold",
+    },
+    prompt: "대담하고 트렌디한 그래픽 디자인. 강렬한 오렌지/레드 그라데이션 배경, 노란색 포인트, 초대형 볼드 타이포그래피, 기하학적 도형 요소, 팝아트 느낌, 비대칭 레이아웃, 겹치는 텍스트와 이미지. 밀레니얼/Z세대 타겟 브랜드.",
+  },
+  {
+    id: "food_warm",
+    label: "식욕자극 푸드",
+    desc: "따뜻한 앰버, 클로즈업 질감",
+    preview: {
+      bg: "linear-gradient(135deg,#3d1500,#6b2e00)",
+      accent: "#ff8c00",
+      textColor: "#fff8f0",
+      subColor: "rgba(255,200,100,0.8)",
+      pattern: "texture",
+    },
+    prompt: "식욕을 강하게 자극하는 푸드 사진 스타일. 어두운 앰버/브라운 배경, 따뜻한 오렌지 조명, 증기와 질감이 살아있는 클로즈업 사진, 레스토랑 분위기 조명, 식재료의 신선한 색감 강조, 컴포트 푸드 감성. 미쉐린 레스토랑 수준의 푸드 포토그래피.",
+  },
+  {
+    id: "clean_health",
+    label: "클린 헬스케어",
+    desc: "화이트/그린, 신뢰감 있는",
+    preview: {
+      bg: "linear-gradient(135deg,#f0faf5,#e6f7ee)",
+      accent: "#00875a",
+      textColor: "#1a3a28",
+      subColor: "#4d8c6f",
+      pattern: "grid",
+    },
+    prompt: "깔끔하고 신뢰감 있는 헬스케어/건강 브랜드 스타일. 순백에 가까운 그린 틴트 배경, 에메랄드 그린 포인트, 의료/과학적 신뢰감, 격자 패턴, 깔끔한 산세리프 폰트, 자연 성분 이미지(식물/허브), 데이터 인포그래픽 요소.",
+  },
+  {
+    id: "pastel_soft",
+    label: "파스텔 소프트",
+    desc: "연한 파스텔, 귀엽고 사랑스러운",
+    preview: {
+      bg: "linear-gradient(135deg,#fce4ec,#f8bbd0)",
+      accent: "#e91e8c",
+      textColor: "#4a1528",
+      subColor: "#c2185b",
+      pattern: "dots",
+    },
+    prompt: "부드럽고 사랑스러운 파스텔 스타일. 연한 핑크/라벤더 파스텔 배경, 귀여운 일러스트 요소, 둥글고 부드러운 폰트, 작은 하트/별/꽃 장식 요소, 보케 효과, 소녀감성 뷰티/라이프스타일. 화사하고 밝은 컬러 팔레트.",
+  },
+  {
+    id: "tech_dark",
+    label: "테크 다크",
+    desc: "다크 배경, 블루 글로우",
+    preview: {
+      bg: "linear-gradient(135deg,#050d1a,#0a1f3d)",
+      accent: "#00d4ff",
+      textColor: "#e8f4f8",
+      subColor: "rgba(0,212,255,0.7)",
+      pattern: "circuit",
+    },
+    prompt: "미래지향적인 테크/IT 브랜드 스타일. 딥 네이비 블랙 배경(#050d1a), 시안/블루 글로우 조명, 회로 패턴이나 그리드 요소, 홀로그래픽 느낌, 날카롭고 각진 레이아웃, 데이터 시각화 요소, SF 느낌의 미래적 디자인.",
+  },
+  {
+    id: "vintage_retro",
+    label: "빈티지 레트로",
+    desc: "크라프트지, 복고풍 감성",
+    preview: {
+      bg: "linear-gradient(135deg,#f5e6c8,#e8d5a3)",
+      accent: "#8b2500",
+      textColor: "#3d1a00",
+      subColor: "#6b4226",
+      pattern: "noise",
+    },
+    prompt: "빈티지/레트로 크라프트 스타일. 크라프트지 질감 배경(#f5e6c8), 빈티지 레드/번트 오렌지 포인트, 복고풍 세리프 타이포그래피, 오래된 사진 필터(세피아 틴트), 배지/스탬프/씰 디자인 요소, 수작업 느낌의 테두리와 라인. 아르티장/로컬 브랜드 감성.",
+  },
+  {
+    id: "premium_black",
+    label: "프리미엄 블랙",
+    desc: "순수 블랙, 하이 콘트라스트",
+    preview: {
+      bg: "#000000",
+      accent: "#ffffff",
+      textColor: "#ffffff",
+      subColor: "rgba(255,255,255,0.6)",
+      pattern: "minimal_dark",
+    },
+    prompt: "극한의 프리미엄 블랙 스타일. 순수 검정 배경, 흰색과 회색만 사용한 모노크롬, 제품이 유일한 컬러 요소, 초강렬 명암 대비, 미니멀한 텍스트, 고급 스포츠카 브랜드 느낌의 광택 질감, 절제된 럭셔리. 애플/포르쉐 수준의 프리미엄 브랜드.",
+  },
+];
+
 // ── 사이즈 프리셋 ────────────────────────────────────────────
 const SIZE_PRESETS = [
   { label: "세로형",    w: 860,  h: 1100, icon: "📱", desc: "쇼핑몰 상세 세로형" },
@@ -83,7 +218,7 @@ const SLIDE_TYPES = [
 // ══════════════════════════════════════════════════════════════
 // Nano Banana 프롬프트 빌더 (슬라이드 타입별 한국어)
 // ══════════════════════════════════════════════════════════════
-function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000) {
+function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000, styleTemplateId = null) {
   const h    = slide.headline    || "";
   const sub  = slide.subheadline || "";
   const body = slide.body        || "";
@@ -92,10 +227,17 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
 
   // 공통 스타일 지시
   const hasProductImg = false; // 이미지는 API 레벨에서 전달됨
+  // 스타일 템플릿 적용
+  const styleTemplate = styleTemplateId
+    ? STYLE_TEMPLATES.find(t => t.id === styleTemplateId)
+    : null;
+
   const base = [
     `한국 프리미엄 온라인 쇼핑몰 상세페이지 이미지를 생성해주세요.`,
-    `카테고리: ${cat.label}. 디자인 스타일: ${cat.styleHint}.`,
-    refStyle ? `참고 이미지 스타일: ${refStyle}` : "",
+    styleTemplate
+      ? `디자인 스타일: ${styleTemplate.prompt}`
+      : `카테고리: ${cat.label}. 디자인 스타일: ${cat.styleHint}.`,
+    !styleTemplate && refStyle ? `참고 이미지 스타일: ${refStyle}` : "",
     `상품명: ${productName}. 첨부된 참조 이미지의 실제 제품을 최대한 반영해주세요.`,
     `출력 비율: ${imgW}x${imgH} (${imgW > imgH ? "가로형 landscape" : imgW < imgH ? "세로형 portrait" : "정사각형 square"}). 워터마크 없음. 고품질 상업 이미지.`,
   ].filter(Boolean).join(" ");
@@ -265,6 +407,7 @@ export default function DetailPageGenerator({ isDark }) {
   const [pageCount,  setPageCount]  = useState(5);
   const [form,       setForm]       = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
   const [productImages, setProductImages] = useState([]);  // 상품 이미지들
+  const [selStyle,  setSelStyle]  = useState(null);         // STYLE_TEMPLATES id (null = 선택 안 함)
   const [selSize,   setSelSize]   = useState(0);           // SIZE_PRESETS 인덱스
   const [customW,   setCustomW]   = useState(860);
   const [customH,   setCustomH]   = useState(1100);
@@ -358,7 +501,7 @@ export default function DetailPageGenerator({ isDark }) {
         const s = slidesData[i];
         setProgress({ msg: `이미지 생성 중... ${i + 1}/${slidesData.length} — ${s.label}`, cur: i + 1, total: slidesData.length });
         try {
-          const prompt = buildPrompt(s, cat, form.productName, refStyle, imgW, imgH);
+          const prompt = buildPrompt(s, cat, form.productName, refStyle, imgW, imgH, selStyle);
           // 슬라이드별 상품 이미지 순환 배정 (있을 경우)
           const prodImg = productImages.length > 0
             ? productImages[i % productImages.length]?.dataUrl
@@ -491,6 +634,81 @@ export default function DetailPageGenerator({ isDark }) {
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: muted, marginTop: 4 }}>
             <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>3장</span><span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>20장 (최대)</span>
           </div>
+        </div>
+
+        {/* 스타일 템플릿 선택 */}
+        <div style={{ padding: "16px 18px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: text }}>스타일 템플릿</div>
+              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", marginTop: 2 }}>
+                선택하면 이 스타일로 이미지를 생성해요 · 참고 이미지보다 우선 적용
+              </div>
+            </div>
+            {selStyle && (
+              <button onClick={() => setSelStyle(null)}
+                style={{ fontSize: 11, color: muted, background: "transparent", border: `1px solid ${bdr}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>
+                선택 해제
+              </button>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+            {STYLE_TEMPLATES.map(t => {
+              const isSelected = selStyle === t.id;
+              const prev = t.preview;
+              return (
+                <button key={t.id} onClick={() => setSelStyle(isSelected ? null : t.id)}
+                  style={{ border: `2px solid ${isSelected ? cat.accent : "transparent"}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", background: "transparent", padding: 0, transition: "all 0.15s", position: "relative",
+                    boxShadow: isSelected ? `0 0 0 3px ${cat.accent}40` : "none" }}>
+                  {/* 스타일 미리보기 카드 */}
+                  <div style={{ width: "100%", paddingBottom: "130%", position: "relative", background: prev.bg }}>
+                    {/* 패턴 오버레이 */}
+                    {prev.pattern === "diagonal" && (
+                      <div style={{ position:"absolute",inset:0,backgroundImage:`repeating-linear-gradient(45deg,${prev.accent}10 0,${prev.accent}10 1px,transparent 0,transparent 50%)`,backgroundSize:"8px 8px" }}/>
+                    )}
+                    {prev.pattern === "dots" && (
+                      <div style={{ position:"absolute",inset:0,backgroundImage:`radial-gradient(circle,${prev.accent}20 1px,transparent 1px)`,backgroundSize:"8px 8px" }}/>
+                    )}
+                    {prev.pattern === "circuit" && (
+                      <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(${prev.accent}15 1px,transparent 1px),linear-gradient(90deg,${prev.accent}15 1px,transparent 1px)`,backgroundSize:"10px 10px" }}/>
+                    )}
+                    {/* 가상 레이아웃 요소들 */}
+                    <div style={{ position:"absolute",inset:0,padding:"8px 7px",display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
+                      {/* 상단 이미지 플레이스홀더 */}
+                      <div style={{ flex:1,borderRadius:4,background:`${prev.accent}18`,marginBottom:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <div style={{ width:"60%",height:"70%",borderRadius:3,background:`${prev.accent}25` }}/>
+                      </div>
+                      {/* 텍스트 라인들 */}
+                      <div style={{ height:4,borderRadius:2,background:prev.accent,width:"50%",marginBottom:4 }}/>
+                      <div style={{ height:3,borderRadius:1,background:prev.textColor,width:"80%",opacity:0.7,marginBottom:2 }}/>
+                      <div style={{ height:2,borderRadius:1,background:prev.subColor,width:"60%",marginBottom:4 }}/>
+                      {/* CTA 버튼 */}
+                      <div style={{ height:8,borderRadius:3,background:prev.accent,width:"100%" }}/>
+                    </div>
+                    {/* 선택됨 체크 */}
+                    {isSelected && (
+                      <div style={{ position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:cat.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900 }}>✓</div>
+                    )}
+                  </div>
+                  {/* 라벨 */}
+                  <div style={{ padding:"6px 4px", background: isDark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.9)" }}>
+                    <div style={{ fontSize:10,fontWeight:isSelected?800:600,color:isSelected?cat.accent:text,lineHeight:1.3 }}>{t.label}</div>
+                    <div style={{ fontSize:9,color:muted,lineHeight:1.3,marginTop:1 }}>{t.desc}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {/* 선택된 스타일 설명 */}
+          {selStyle && (() => {
+            const st = STYLE_TEMPLATES.find(t => t.id === selStyle);
+            return st ? (
+              <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 9, background: `${cat.accent}10`, border: `1px solid ${cat.accent}30` }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: cat.accent, marginBottom: 4 }}>✓ {st.label} 스타일 선택됨</div>
+                <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.6 }}>{st.desc} 느낌으로 이미지를 생성해요</div>
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {/* 이미지 크기 설정 */}
@@ -748,7 +966,7 @@ export default function DetailPageGenerator({ isDark }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={() => setStep(2)} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>← 수정</button>
-            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); setSaveMsg(""); setSelSize(0); setCustomW(860); setCustomH(1100); }}
+            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); setSaveMsg(""); setSelSize(0); setCustomW(860); setCustomH(1100); setSelStyle(null); }}
               style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>새로 만들기</button>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
