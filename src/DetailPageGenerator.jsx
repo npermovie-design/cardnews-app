@@ -399,35 +399,42 @@ async function getAiSuggestions(catLabel, form) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 메인 컴포넌트
+// 메인 컴포넌트 - 3단계 위저드
 // ══════════════════════════════════════════════════════════════
 export default function DetailPageGenerator({ isDark }) {
-  const [step,       setStep]       = useState(1);
+  // ── 위저드 단계 ─────────────────────────────────────────────
+  const [wizStep, setWizStep] = useState(1); // 1:상품입력 2:디자인 3:생성결과
+
+  // ── Step 1: 상품 입력 ───────────────────────────────────────
   const [selCat,     setSelCat]     = useState(null);
-  const [refImg,     setRefImg]     = useState(null);
-  const [refStyle,   setRefStyle]   = useState("");
-  const [analyzing,  setAnalyzing]  = useState(false);
-  const [pageCount,  setPageCount]  = useState(5);
   const [form,       setForm]       = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
-  const [productImages, setProductImages] = useState([]);  // 상품 이미지들
-  const [selStyle,  setSelStyle]  = useState(null);         // STYLE_TEMPLATES id (null = 선택 안 함)
-  const [selSize,   setSelSize]   = useState(0);           // SIZE_PRESETS 인덱스
-  const [customW,   setCustomW]   = useState(860);
-  const [customH,   setCustomH]   = useState(1100);
-  const [slides,     setSlides]     = useState([]);
-  const [rendered,   setRendered]   = useState([]);     // base64 PNG 배열
-  const [loading,    setLoading]    = useState(false);
-  const [progress,   setProgress]   = useState({ msg:"", cur:0, total:0 });
-  const [err,        setErr]        = useState("");
-  const [curIdx,     setCurIdx]     = useState(0);
-  const [saving,     setSaving]     = useState(false);
-  const [saveMsg,    setSaveMsg]    = useState("");
-  const [isGenDone,  setIsGenDone]  = useState(false);
+  const [productImages, setProductImages] = useState([]);
   const [aiSugg,     setAiSugg]     = useState(null);
   const [suggesting, setSuggesting] = useState(false);
-  const refFileRef = useRef(null);
+  const [pageCount,  setPageCount]  = useState(5);
   const productFileRef = useRef(null);
 
+  // ── Step 2: 디자인 선택 ─────────────────────────────────────
+  const [selStyle,  setSelStyle]  = useState(null);
+  const [selSize,   setSelSize]   = useState(0);
+  const [customW,   setCustomW]   = useState(860);
+  const [customH,   setCustomH]   = useState(1100);
+  const [refImg,    setRefImg]    = useState(null);
+  const [refStyle,  setRefStyle]  = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const refFileRef = useRef(null);
+
+  // ── Step 3: 생성 결과 ───────────────────────────────────────
+  const [slides,    setSlides]    = useState([]);
+  const [rendered,  setRendered]  = useState([]);
+  const [loading,   setLoading]   = useState(false);
+  const [progress,  setProgress]  = useState({ msg:"", cur:0, total:0 });
+  const [err,       setErr]       = useState("");
+  const [curIdx,    setCurIdx]    = useState(0);
+  const [saving,    setSaving]    = useState(false);
+  const [saveMsg,   setSaveMsg]   = useState("");
+
+  // ── 공통 ────────────────────────────────────────────────────
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.65)" : "#888";
   const cardBg  = isDark ? "rgba(255,255,255,0.04)" : "#fff";
@@ -438,11 +445,15 @@ export default function DetailPageGenerator({ isDark }) {
   const imgW    = preset.w != null ? preset.w : (parseInt(customW) || 860);
   const imgH    = preset.h != null ? preset.h : (parseInt(customH) || 1100);
   const imgRatio = imgW / imgH;
+  const accentColor = selCat ? cat.accent : "#6366f1";
 
+  const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color: isDark?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+
+  // ── 핸들러 ──────────────────────────────────────────────────
   const handleProductImages = (files) => {
     Promise.all(Array.from(files).slice(0,10).map(f => new Promise(res => {
       const r = new FileReader(); r.onload = e => res({ name:f.name, dataUrl:e.target.result }); r.readAsDataURL(f);
-    }))).then(imgs => setProductImages(p => [...p, ...imgs].slice(0,10)));
+    }))).then(imgs => setProductImages(p => [...p,...imgs].slice(0,10)));
   };
 
   const handleRef = (file) => {
@@ -451,597 +462,498 @@ export default function DetailPageGenerator({ isDark }) {
     r.onload = async (e) => {
       setRefImg(e.target.result); setAnalyzing(true);
       try {
-        const b64  = e.target.result.split(",")[1];
-        const mime = e.target.result.split(":")[1].split(";")[0];
+        const b64 = e.target.result.split(",")[1], mime = e.target.result.split(":")[1].split(";")[0];
         setRefStyle(await analyzeRefImage(b64, mime));
-      } catch { setRefStyle("분석 실패"); }
+      } catch { setRefStyle(""); }
       setAnalyzing(false);
     };
     r.readAsDataURL(file);
   };
 
-  // 보관함 저장
-  const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
-  const getDetailSaves = () => { try { return JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } };
-  const saveToLibrary = (productName, images, catLabel) => {
-    try {
-      const saves = getDetailSaves();
-      const item = {
-        id: Date.now().toString(),
-        productName,
-        catLabel,
-        date: new Date().toLocaleDateString("ko-KR"),
-        count: images.filter(Boolean).length,
-        thumbnail: images.find(Boolean) || null,
-        images: images.filter(Boolean),
-      };
-      saves.unshift(item);
-      localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(saves.slice(0, 50)));
-      return true;
-    } catch(e) { return false; }
+  const getSugg = async () => {
+    if (!selCat || !form.productName) return;
+    setSuggesting(true); setAiSugg(null);
+    try { setAiSugg(await getAiSuggestions(cat.label, form)); }
+    catch(e) { console.error(e); }
+    setSuggesting(false);
   };
 
-  // ── 전체 생성 ────────────────────────────────────────────────
-  const generate = async () => {
-    if (!form.productName.trim()) { setErr("상품명을 입력해주세요"); return; }
-    if (!form.features.trim())    { setErr("핵심 특징을 입력해주세요"); return; }
-    setErr(""); setLoading(true); setSlides([]); setRendered([]); setIsGenDone(false); setSaveMsg("");
-
-    // 이탈 방지 가드
-    const beforeUnload = (e) => { e.preventDefault(); e.returnValue = "이미지 생성 중입니다. 페이지를 나가면 생성이 중단됩니다."; };
-    window.addEventListener("beforeunload", beforeUnload);
-
+  // 보관함 저장
+  const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
+  const saveToLibrary = (images) => {
     try {
-      // 1단계: Claude로 텍스트 생성
-      setProgress({ msg: "슬라이드 텍스트 구성 중...", cur: 0, total: pageCount });
-      const textData = await generateSlideTexts({ category: selCat, ...form, pageCount, refStyle });
+      const saves = JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]");
+      saves.unshift({ id:Date.now().toString(), productName:form.productName, catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:images.filter(Boolean).length, thumbnail:images.find(Boolean)||null, images:images.filter(Boolean) });
+      localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(saves.slice(0,50)));
+    } catch(e) {}
+  };
+
+  // 생성 실행
+  const generate = async () => {
+    setErr(""); setLoading(true); setSlides([]); setRendered([]); setSaveMsg("");
+    const beforeUnload = (e) => { e.preventDefault(); e.returnValue="이미지 생성 중입니다."; };
+    window.addEventListener("beforeunload", beforeUnload);
+    try {
+      setProgress({ msg:"슬라이드 텍스트 구성 중...", cur:0, total:pageCount });
+      const textData = await generateSlideTexts({ category:selCat, ...form, pageCount, refStyle });
       const slidesData = textData.slides || [];
       setSlides(slidesData);
 
-      // 2단계: 각 슬라이드를 Nano Banana로 이미지 생성
+      const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons. Only real commercial photography and professional graphic design typography.";
       const results = new Array(slidesData.length).fill(null);
       for (let i = 0; i < slidesData.length; i++) {
         const s = slidesData[i];
-        setProgress({ msg: `이미지 생성 중... ${i + 1}/${slidesData.length} — ${s.label}`, cur: i + 1, total: slidesData.length });
+        setProgress({ msg:`이미지 생성 중... (${i+1}/${slidesData.length}) — ${s.label}`, cur:i+1, total:slidesData.length });
         try {
-          const prompt = buildPrompt(s, cat, form.productName, refStyle, imgW, imgH, selStyle);
-          // 슬라이드별 상품 이미지 순환 배정 (있을 경우)
-          const prodImg = productImages.length > 0
-            ? productImages[i % productImages.length]?.dataUrl
-            : null;
-          // 클립아트/아이콘 방지 네거티브 프롬프트 추가
-          const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons, NO handshake illustrations, NO thermometer clipart, NO truck clipart, NO magnifying glass icons. Only real commercial photography and professional graphic design typography.";
-          let raw = await generateSlideImage(prompt + NEGATIVE, prodImg);
-          // 요청 크기로 리사이즈
-          if (raw && (imgW !== 1000 || imgH !== 1000)) {
-            raw = await resizeImage(raw, imgW, imgH);
-          }
+          const prompt = buildPrompt(s, cat, form.productName, refStyle, imgW, imgH, selStyle) + NEGATIVE;
+          const prodImg = productImages.length > 0 ? productImages[i % productImages.length]?.dataUrl : null;
+          let raw = await generateSlideImage(prompt, prodImg);
+          if (raw && (imgW !== 1000 || imgH !== 1000)) raw = await resizeImage(raw, imgW, imgH);
           results[i] = raw;
-        } catch (e) {
-          console.warn(`슬라이드 ${i + 1} 실패:`, e.message);
-          results[i] = null;
-        }
+        } catch(e) { results[i] = null; }
         setRendered([...results]);
         await new Promise(r => setTimeout(r, 50));
       }
-
-      setStep(3); setCurIdx(0); setIsGenDone(true);
-      // 보관함 자동 저장
-      const saved = saveToLibrary(form.productName, results, cat.label);
-      setSaveMsg(saved ? "✅ 보관함에 저장됐어요!" : "");
-      window.removeEventListener("beforeunload", beforeUnload);
-    } catch (e) {
-      setErr("생성 실패: " + e.message);
-      window.removeEventListener("beforeunload", beforeUnload);
-    } finally {
-      setLoading(false);
-    }
+      saveToLibrary(results);
+      setSaveMsg("✅ 보관함에 저장됐어요!");
+      setWizStep(3); setCurIdx(0);
+    } catch(e) { setErr("생성 실패: " + e.message); }
+    finally { setLoading(false); window.removeEventListener("beforeunload", beforeUnload); }
   };
 
-  // 단일 슬라이드 재생성
   const regenerateOne = async (idx) => {
     if (!slides[idx]) return;
     setLoading(true);
-    setProgress({ msg: `재생성 중... ${slides[idx].label}`, cur: 1, total: 1 });
+    const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics. Only real commercial photography and professional graphic design typography.";
     try {
-      const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons. Only real commercial photography and professional graphic design typography.";
-      const prompt = buildPrompt(slides[idx], cat, form.productName, refStyle, imgW, imgH, selStyle);
-      const img = await generateSlideImage(prompt + NEGATIVE);
-      setRendered(prev => { const r = [...prev]; r[idx] = img; return r; });
-    } catch (e) { setErr("재생성 실패: " + e.message); }
+      const prompt = buildPrompt(slides[idx], cat, form.productName, refStyle, imgW, imgH, selStyle) + NEGATIVE;
+      const img = await generateSlideImage(prompt);
+      setRendered(prev => { const r=[...prev]; r[idx]=img; return r; });
+    } catch(e) { setErr("재생성 실패: " + e.message); }
     setLoading(false);
   };
 
   const saveCurrent = () => {
-    const png = rendered[curIdx]; if (!png) return;
+    const png = rendered[curIdx]; if(!png) return;
     const a = document.createElement("a");
-    a.href = png;
-    a.download = `${form.productName || "slide"}_${String(curIdx + 1).padStart(2, "0")}_${slides[curIdx]?.label || "slide"}.png`;
-    a.click();
+    a.href=png; a.download=`${form.productName||"slide"}_${String(curIdx+1).padStart(2,"0")}_${slides[curIdx]?.label||"slide"}.png`; a.click();
   };
-
   const saveAll = async () => {
-    if (!rendered.some(Boolean)) return; setSaving(true);
-    if (!window.JSZip) {
-      await new Promise((res, rej) => {
-        const s = document.createElement("script");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
-        s.onload = res; s.onerror = rej; document.head.appendChild(s);
-      });
-    }
+    if(!rendered.some(Boolean)) return; setSaving(true);
+    if(!window.JSZip) await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
     const zip = new window.JSZip();
-    rendered.forEach((png, i) => {
-      if (!png) return;
-      const arr = Uint8Array.from(atob(png.split(",")[1]), c => c.charCodeAt(0));
-      zip.file(`${String(i + 1).padStart(2, "0")}_${slides[i]?.label || "slide"}.png`, arr);
-    });
-    const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${form.productName || "detail"}_slides.zip`;
-    a.click();
+    rendered.forEach((png,i)=>{ if(!png) return; const arr=Uint8Array.from(atob(png.split(",")[1]),c=>c.charCodeAt(0)); zip.file(`${String(i+1).padStart(2,"0")}_${slides[i]?.label||"slide"}.png`,arr); });
+    const blob = await zip.generateAsync({type:"blob",compression:"DEFLATE"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`${form.productName||"detail"}_slides.zip`; a.click();
     setSaving(false);
   };
 
-  const getSugg = async () => {
-    setSuggesting(true); setAiSugg(null);
-    try { setAiSugg(await getAiSuggestions(cat.label, form)); }
-    catch (e) { console.error(e); }
-    setSuggesting(false);
+  const resetAll = () => {
+    setWizStep(1); setSelCat(null); setForm({productName:"",features:"",price:"",cta:"지금 구매하기",target:"",extra:""});
+    setProductImages([]); setSelStyle(null); setSelSize(0); setCustomW(860); setCustomH(1100);
+    setRefImg(null); setRefStyle(""); setSlides([]); setRendered([]); setSaveMsg(""); setErr(""); setAiSugg(null);
   };
 
-  const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-
-  // ── Step 1: 카테고리 ────────────────────────────────────────
-  if (step === 1) return (
-    <div style={{ maxWidth: 820, margin: "0 auto", padding: "28px 24px 60px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 6 }}>상세페이지 만들기</div>
-        <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>
-          <b style={{ color: text }}>Gemini AI</b>로 슬라이드를 완성된 이미지로 직접 생성해요.<br />
-          한국어 텍스트를 이미지 안에 자연스럽게 렌더링
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 10 }}>
-        {CATEGORIES.map(c => (
-          <button key={c.key} onClick={() => { setSelCat(c.key); setStep(2); }}
-            style={{ padding: "24px 18px", borderRadius: 14, border: `1.5px solid ${bdr}`, background: cardBg, cursor: "pointer", textAlign: "left", transition: "all 0.12s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 4px 16px ${c.accent}25`; e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: c.accent, letterSpacing: 2.5, marginBottom: 12 }}>{c.label.toUpperCase()}</div>
-            <div style={{ width: 32, height: 3, background: c.accent, borderRadius: 2 }} />
-          </button>
-        ))}
+  // ── 위저드 진행 바 ──────────────────────────────────────────
+  const WizHeader = () => (
+    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
+        {[["1","상품 입력"],["2","디자인 선택"],["3","AI 생성"]].map(([n, label], i) => {
+          const step = parseInt(n);
+          const done = wizStep > step;
+          const active = wizStep === step;
+          return (
+            <div key={n} style={{ display:"flex", alignItems:"center", flex: i<2?1:"auto" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, cursor: done?"pointer":"default" }}
+                onClick={() => { if(done && step < wizStep) setWizStep(step); }}>
+                <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:900,
+                  background: done ? accentColor : active ? accentColor : isDark?"rgba(255,255,255,0.1)":"#e5e5e5",
+                  color: done||active ? "#fff" : muted, transition:"all 0.2s", flexShrink:0 }}>
+                  {done ? "✓" : n}
+                </div>
+                <span style={{ fontSize:13, fontWeight: active?800:500, color: active?text:muted, whiteSpace:"nowrap" }}>{label}</span>
+              </div>
+              {i < 2 && <div style={{ flex:1, height:2, background: done?accentColor:isDark?"rgba(255,255,255,0.1)":"#e5e5e5", margin:"0 12px", transition:"all 0.3s", minWidth:20 }}/>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 
-  // ── Step 2: 입력 ────────────────────────────────────────────
-  if (step === 2) return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 24px 60px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <button onClick={() => setStep(1)} style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>← 카테고리</button>
-        <span style={{ fontSize: 16, fontWeight: 800, color: text }}>{cat.label}</span>
-        <div style={{ width: 24, height: 3, background: cat.accent, borderRadius: 1 }} />
-      </div>
+  // ══════════════════════════════════════════════════════════════
+  // STEP 1: 상품 입력
+  // ══════════════════════════════════════════════════════════════
+  if (wizStep === 1) {
+    const canNext = selCat && form.productName.trim() && form.features.trim();
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <WizHeader />
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px" }}>
 
-      <div style={{ display: "grid", gap: 14 }}>
+          {/* 페이지 제목 */}
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>상품 정보를 입력하세요</div>
+            <div style={{ fontSize:13, color:muted }}>입력한 내용을 바탕으로 AI가 상세페이지 슬라이드를 구성해요</div>
+          </div>
 
-        {/* 슬라이드 수 */}
-        <div style={{ padding: "14px 18px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: text }}>슬라이드 수</div>
-              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginTop: 2 }}>{SLIDE_TYPES.slice(0, pageCount).map(t => t.label).join(" · ")}</div>
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: cat.accent }}>{pageCount}장</div>
-          </div>
-          <input type="range" min={3} max={20} value={pageCount} onChange={e => setPageCount(Number(e.target.value))} style={{ width: "100%", accentColor: cat.accent }} />
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: muted, marginTop: 4 }}>
-            <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>3장</span><span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#888" }}>20장 (최대)</span>
-          </div>
-        </div>
-
-        {/* 스타일 템플릿 선택 */}
-        <div style={{ padding: "16px 18px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: text }}>스타일 템플릿</div>
-              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", marginTop: 2 }}>
-                선택하면 이 스타일로 이미지를 생성해요 · 참고 이미지보다 우선 적용
-              </div>
-            </div>
-            {selStyle && (
-              <button onClick={() => setSelStyle(null)}
-                style={{ fontSize: 11, color: muted, background: "transparent", border: `1px solid ${bdr}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>
-                선택 해제
-              </button>
-            )}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-            {STYLE_TEMPLATES.map(t => {
-              const isSelected = selStyle === t.id;
-              const prev = t.preview;
-              return (
-                <button key={t.id} onClick={() => setSelStyle(isSelected ? null : t.id)}
-                  style={{ border: `2px solid ${isSelected ? cat.accent : "transparent"}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", background: "transparent", padding: 0, transition: "all 0.15s", position: "relative",
-                    boxShadow: isSelected ? `0 0 0 3px ${cat.accent}40` : "none" }}>
-                  {/* 스타일 미리보기 카드 */}
-                  <div style={{ width: "100%", paddingBottom: "130%", position: "relative", background: prev.bg }}>
-                    {/* 패턴 오버레이 */}
-                    {prev.pattern === "diagonal" && (
-                      <div style={{ position:"absolute",inset:0,backgroundImage:`repeating-linear-gradient(45deg,${prev.accent}10 0,${prev.accent}10 1px,transparent 0,transparent 50%)`,backgroundSize:"8px 8px" }}/>
-                    )}
-                    {prev.pattern === "dots" && (
-                      <div style={{ position:"absolute",inset:0,backgroundImage:`radial-gradient(circle,${prev.accent}20 1px,transparent 1px)`,backgroundSize:"8px 8px" }}/>
-                    )}
-                    {prev.pattern === "circuit" && (
-                      <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(${prev.accent}15 1px,transparent 1px),linear-gradient(90deg,${prev.accent}15 1px,transparent 1px)`,backgroundSize:"10px 10px" }}/>
-                    )}
-                    {/* 가상 레이아웃 요소들 */}
-                    <div style={{ position:"absolute",inset:0,padding:"8px 7px",display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
-                      {/* 상단 이미지 플레이스홀더 */}
-                      <div style={{ flex:1,borderRadius:4,background:`${prev.accent}18`,marginBottom:6,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <div style={{ width:"60%",height:"70%",borderRadius:3,background:`${prev.accent}25` }}/>
-                      </div>
-                      {/* 텍스트 라인들 */}
-                      <div style={{ height:4,borderRadius:2,background:prev.accent,width:"50%",marginBottom:4 }}/>
-                      <div style={{ height:3,borderRadius:1,background:prev.textColor,width:"80%",opacity:0.7,marginBottom:2 }}/>
-                      <div style={{ height:2,borderRadius:1,background:prev.subColor,width:"60%",marginBottom:4 }}/>
-                      {/* CTA 버튼 */}
-                      <div style={{ height:8,borderRadius:3,background:prev.accent,width:"100%" }}/>
-                    </div>
-                    {/* 선택됨 체크 */}
-                    {isSelected && (
-                      <div style={{ position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:cat.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900 }}>✓</div>
-                    )}
-                  </div>
-                  {/* 라벨 */}
-                  <div style={{ padding:"6px 4px", background: isDark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.9)" }}>
-                    <div style={{ fontSize:10,fontWeight:isSelected?800:600,color:isSelected?cat.accent:text,lineHeight:1.3 }}>{t.label}</div>
-                    <div style={{ fontSize:9,color:muted,lineHeight:1.3,marginTop:1 }}>{t.desc}</div>
-                  </div>
+          {/* 카테고리 선택 */}
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>카테고리 *</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:8 }}>
+              {CATEGORIES.map(c=>(
+                <button key={c.key} onClick={()=>setSelCat(c.key)}
+                  style={{ padding:"12px 10px", borderRadius:10, border:`1.5px solid ${selCat===c.key?c.accent:bdr}`, background: selCat===c.key?`${c.accent}15`:cardBg, cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=c.accent}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=selCat===c.key?c.accent:bdr}>
+                  <div style={{ fontSize:11, fontWeight:800, color:selCat===c.key?c.accent:text, letterSpacing:1 }}>{c.label.toUpperCase()}</div>
                 </button>
-              );
-            })}
-          </div>
-          {/* 선택된 스타일 설명 */}
-          {selStyle && (() => {
-            const st = STYLE_TEMPLATES.find(t => t.id === selStyle);
-            return st ? (
-              <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 9, background: `${cat.accent}10`, border: `1px solid ${cat.accent}30` }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: cat.accent, marginBottom: 4 }}>✓ {st.label} 스타일 선택됨</div>
-                <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.6 }}>{st.desc} 느낌으로 이미지를 생성해요</div>
-              </div>
-            ) : null;
-          })()}
-        </div>
-
-        {/* 이미지 크기 설정 */}
-        <div style={{ padding: "14px 18px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: text }}>이미지 크기</div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: cat.accent }}>
-              {imgW} × {imgH} px
+              ))}
             </div>
           </div>
-          {/* 프리셋 버튼들 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 12 }}>
-            {SIZE_PRESETS.map((p, i) => (
-              <button key={i} onClick={() => setSelSize(i)}
-                style={{ padding: "8px 4px", borderRadius: 9, border: `1.5px solid ${selSize === i ? cat.accent : bdr}`,
-                  background: selSize === i ? `${cat.accent}15` : "transparent",
-                  color: selSize === i ? cat.accent : isDark ? "rgba(255,255,255,0.65)" : "#555",
-                  fontSize: 11, fontWeight: selSize === i ? 800 : 500, cursor: "pointer", transition: "all 0.12s",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                <span style={{ fontSize: 16 }}>{p.icon}</span>
-                <span>{p.label}</span>
-                {p.w != null && <span style={{ fontSize: 9, opacity: 0.7 }}>{p.w}×{p.h}</span>}
+
+          {/* 슬라이드 수 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>슬라이드 수</div>
+              <div style={{ fontSize:22, fontWeight:900, color:accentColor }}>{pageCount}장</div>
+            </div>
+            <input type="range" min={3} max={20} value={pageCount} onChange={e=>setPageCount(Number(e.target.value))} style={{ width:"100%", accentColor }}/>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:muted, marginTop:4 }}>
+              <span>3장</span><span>20장</span>
+            </div>
+            <div style={{ fontSize:11, color:muted, marginTop:6, lineHeight:1.5 }}>
+              {SLIDE_TYPES.slice(0,pageCount).map(t=>t.label).join(" · ")}
+            </div>
+          </div>
+
+          {/* 상품 이미지 */}
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4 }}>
+              상품 이미지 <span style={{ color:muted, fontWeight:400 }}>(선택 — 최대 10장, AI가 참고해서 생성)</span>
+            </div>
+            <div onClick={()=>productFileRef.current?.click()}
+              onDrop={e=>{e.preventDefault();handleProductImages(e.dataTransfer.files);}}
+              onDragOver={e=>e.preventDefault()}
+              style={{ border:`1.5px dashed ${productImages.length?accentColor:bdr}`, borderRadius:12, padding:productImages.length?"14px":"24px", cursor:"pointer", background:productImages.length?`${accentColor}06`:cardBg, transition:"all 0.12s" }}>
+              {productImages.length ? (
+                <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                  {productImages.map((img,i)=>(
+                    <div key={i} style={{ position:"relative" }}>
+                      <img src={img.dataUrl} alt="" style={{ width:64,height:64,objectFit:"cover",borderRadius:8,display:"block" }}/>
+                      <button onClick={e=>{e.stopPropagation();setProductImages(p=>p.filter((_,j)=>j!==i));}}
+                        style={{ position:"absolute",top:-5,right:-5,width:16,height:16,borderRadius:"50%",background:"#ef4444",color:"#fff",border:"none",cursor:"pointer",fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+                    </div>
+                  ))}
+                  {productImages.length<10 && <div style={{ width:64,height:64,borderRadius:8,border:`1.5px dashed ${bdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,color:muted }}>+</div>}
+                </div>
+              ) : (
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:13,fontWeight:600,color:text,marginBottom:3 }}>제품/서비스 이미지 클릭 또는 드래그</div>
+                  <div style={{ fontSize:11,color:muted }}>JPG, PNG (최대 10장)</div>
+                </div>
+              )}
+            </div>
+            <input ref={productFileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={e=>{handleProductImages(e.target.files);e.target.value="";}}/>
+          </div>
+
+          {/* 텍스트 입력 */}
+          {[
+            { key:"productName", label:"상품명 *",    ph:"예: 프리미엄 한우 1++ 등심 선물 세트" },
+            { key:"features",    label:"핵심 특징 *", ph:"예: 1++ 등급, 냉장 당일 배송, 고급 포장", ta:true },
+            { key:"price",       label:"가격",         ph:"예: 89,000원 (2인 세트)" },
+            { key:"cta",         label:"CTA 문구",     ph:"예: 지금 주문하기" },
+            { key:"target",      label:"타겟 고객",    ph:"예: 레스토랑 퀄리티를 집에서 즐기고 싶은 3040" },
+            { key:"extra",       label:"추가 정보",    ph:"예: 드라이에이징 30일, 인증 등급", ta:true },
+          ].map(({ key, label, ph, ta })=>(
+            <div key={key} style={{ marginBottom:14 }}>
+              <div style={{ fontSize:13,fontWeight:700,color:text,marginBottom:6 }}>{label}</div>
+              {ta ? <textarea value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph} rows={3} style={{ ...inputStyle,resize:"vertical",lineHeight:1.7 }}/>
+                  : <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph} style={inputStyle}/>}
+            </div>
+          ))}
+
+          {/* AI 추천 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:aiSugg?14:0 }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:700,color:text }}>AI 문구 추천</div>
+                <div style={{ fontSize:11,color:muted,marginTop:2 }}>입력 내용 기반으로 자동 추천</div>
+              </div>
+              <button onClick={getSugg} disabled={suggesting||!selCat}
+                style={{ padding:"8px 16px",borderRadius:8,border:"none",cursor:suggesting||!selCat?"not-allowed":"pointer",background:`${accentColor}18`,color:accentColor,fontSize:12,fontWeight:800,opacity:suggesting||!selCat?0.5:1 }}>
+                {suggesting?"추천 중...":"AI 추천"}
               </button>
-            ))}
-          </div>
-          {/* 선택된 프리셋 설명 or 직접 입력 */}
-          {preset.w != null ? (
-            <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", textAlign: "center" }}>
-              {preset.desc} · {preset.w}×{preset.h}px
             </div>
-          ) : (
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", marginBottom: 4 }}>가로 (px)</div>
-                <input type="number" value={customW} onChange={e => setCustomW(Number(e.target.value))}
-                  min={100} max={4000} step={10}
-                  style={{ ...inputStyle, textAlign: "center", fontWeight: 700 }} />
-              </div>
-              <div style={{ fontSize: 18, color: muted, paddingTop: 18 }}>×</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", marginBottom: 4 }}>세로 (px)</div>
-                <input type="number" value={customH} onChange={e => setCustomH(Number(e.target.value))}
-                  min={100} max={4000} step={10}
-                  style={{ ...inputStyle, textAlign: "center", fontWeight: 700 }} />
-              </div>
-            </div>
-          )}
-          {/* 비율 미리보기 */}
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.4)" : "#aaa" }}>비율 미리보기</div>
-            <div style={{ width: Math.min(60, 60 * imgRatio), height: Math.min(60, 60 / imgRatio),
-              background: `${cat.accent}30`, border: `1.5px solid ${cat.accent}60`, borderRadius: 3 }} />
-            <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#777" }}>
-              {imgW > imgH ? "가로형" : imgW < imgH ? "세로형" : "정사각형"}
-              {" · "}비율 {(imgW/imgH).toFixed(2)}:1
-            </div>
-          </div>
-        </div>
-
-        {/* 상품 이미지 업로드 */}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
-            📸 상품 이미지 <span style={{ color: muted, fontWeight: 400 }}>(선택 — 최대 10장, AI 생성 시 참조)</span>
-          </div>
-          <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginBottom: 8, lineHeight: 1.6 }}>
-            판매할 제품/서비스 사진을 올리면 AI가 실제 상품을 참고해서 이미지를 생성해요
-          </div>
-          <div
-            onClick={() => productFileRef.current?.click()}
-            onDrop={e => { e.preventDefault(); handleProductImages(e.dataTransfer.files); }}
-            onDragOver={e => e.preventDefault()}
-            style={{ border: `1.5px dashed ${productImages.length ? cat.accent : bdr}`, borderRadius: 12, padding: productImages.length ? "14px" : "20px", cursor: "pointer", background: productImages.length ? `${cat.accent}06` : cardBg, transition: "all 0.12s" }}>
-            {productImages.length ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                {productImages.map((img, i) => (
-                  <div key={i} style={{ position: "relative" }}>
-                    <img src={img.dataUrl} alt="" style={{ width: 68, height: 68, objectFit: "cover", borderRadius: 9, display: "block", border: `1px solid ${bdr}` }} />
-                    <button onClick={e => { e.stopPropagation(); setProductImages(p => p.filter((_, j) => j !== i)); }}
-                      style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            {aiSugg && (
+              <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                {[{key:"productName",items:aiSugg.productNames,label:"상품명"},{key:"cta",items:aiSugg.ctas,label:"CTA"},{key:"target",items:aiSugg.targets,label:"타겟"},{key:"extra",items:aiSugg.extras,label:"추가정보"}]
+                  .filter(r=>r.items?.length>0).map(({ key,items,label })=>(
+                  <div key={key}>
+                    <div style={{ fontSize:10,fontWeight:700,color:muted,letterSpacing:1,marginBottom:5 }}>{label}</div>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
+                      {items.map((v,i)=>(<button key={i} onClick={()=>setForm(p=>({...p,[key]:v}))} style={{ padding:"5px 12px",borderRadius:6,border:`1px solid ${accentColor}35`,background:`${accentColor}08`,color:text,fontSize:12,cursor:"pointer" }}>{v}</button>))}
+                    </div>
                   </div>
                 ))}
-                {productImages.length < 10 && (
-                  <div style={{ width: 68, height: 68, borderRadius: 9, border: `1.5px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: muted }}>+</div>
-                )}
-              </div>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 3 }}>제품/서비스 이미지 클릭 또는 드래그</div>
-                <div style={{ fontSize: 11, color: muted }}>JPG, PNG — AI가 이 이미지를 보고 생성해요</div>
+                <div style={{ fontSize:10,color:muted }}>클릭하면 입력란에 바로 적용</div>
               </div>
             )}
           </div>
-          <input ref={productFileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
-            onChange={e => { handleProductImages(e.target.files); e.target.value = ""; }} />
-        </div>
 
-        {/* 참고 이미지 */}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
-            참고 이미지 <span style={{ color: muted, fontWeight: 400 }}>(선택 — 이 느낌으로 생성)</span>
-          </div>
-          <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#888", marginBottom: 8, lineHeight: 1.6 }}>
-            원하는 상세페이지를 올리면 AI가 색감·분위기·레이아웃 스타일을 분석해서 동일하게 생성해요
-          </div>
-          <div onClick={() => refFileRef.current?.click()}
-            style={{ border: `1.5px dashed ${refImg ? cat.accent : bdr}`, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", gap: 14, alignItems: "center", background: cardBg, transition: "all 0.12s" }}>
-            {refImg ? (
-              <>
-                <img src={refImg} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10, flexShrink: 0, border: `1px solid ${bdr}` }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {analyzing
-                    ? <div style={{ fontSize: 12, color: muted }}>스타일 분석 중...</div>
-                    : refStyle
-                      ? <><div style={{ fontSize: 11, fontWeight: 700, color: cat.accent, marginBottom: 4 }}>✓ 스타일 분석 완료 — 이 느낌으로 생성돼요</div><div style={{ fontSize: 11, color: muted, lineHeight: 1.55, display: "-webkit-box", overflow: "hidden", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{refStyle}</div></>
-                      : null}
-                </div>
-                <button onClick={e => { e.stopPropagation(); setRefImg(null); setRefStyle(""); }} style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>제거</button>
-              </>
-            ) : (
-              <div style={{ textAlign: "center", width: "100%", padding: "8px 0" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 4 }}>클릭해서 참고 이미지 업로드</div>
-                <div style={{ fontSize: 11, color: muted }}>이 스타일과 비슷하게 만들어드려요</div>
-              </div>
-            )}
-          </div>
-          <input ref={refFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { handleRef(e.target.files[0]); e.target.value = ""; }} />
-        </div>
-
-        {/* 텍스트 입력 */}
-        {[
-          { key: "productName", label: "상품명 *",    ph: "예: 블랙앵거스 티본스테이크 프리미엄 세트" },
-          { key: "features",    label: "핵심 특징 *", ph: "예: 1++ 등급, 두께 5cm, 당일 냉장 배송", ta: true },
-          { key: "price",       label: "가격",         ph: "예: 89,000원 (2인 세트)" },
-          { key: "cta",         label: "CTA 문구",     ph: "예: 지금 주문하기" },
-          { key: "target",      label: "타겟 고객",    ph: "예: 레스토랑 퀄리티를 집에서 즐기고 싶은 3040" },
-          { key: "extra",       label: "추가 정보",    ph: "예: 드라이에이징 30일, 마르블링 최상급 인증", ta: true },
-        ].map(({ key, label, ph, ta }) => (
-          <div key={key}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 6 }}>{label}</div>
-            {ta
-              ? <textarea value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} rows={3} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
-              : <input value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} style={inputStyle} />}
-          </div>
-        ))}
-
-        {/* AI 추천 */}
-        <div style={{ padding: "14px 18px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: aiSugg ? 14 : 0 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: text }}>AI 문구 추천</div>
-              <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>입력값 기반으로 자동 추천</div>
-            </div>
-            <button onClick={getSugg} disabled={suggesting} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: suggesting ? "wait" : "pointer", background: `${cat.accent}18`, color: cat.accent, fontSize: 12, fontWeight: 800, opacity: suggesting ? 0.6 : 1 }}>
-              {suggesting ? "추천 중..." : "AI 추천"}
+          {/* 다음 버튼 */}
+          <div style={{ display:"flex", justifyContent:"flex-end" }}>
+            <button onClick={() => { if(canNext) setWizStep(2); }} disabled={!canNext}
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?accentColor:`${accentColor}40`, color:"#fff", fontSize:15, fontWeight:900, transition:"all 0.15s", display:"flex",alignItems:"center",gap:8 }}>
+              다음 → <span style={{ fontSize:12,opacity:0.8 }}>디자인 선택</span>
             </button>
           </div>
-          {aiSugg && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { key: "productName", items: aiSugg.productNames, label: "상품명" },
-                { key: "cta",         items: aiSugg.ctas,          label: "CTA 문구" },
-                { key: "target",      items: aiSugg.targets,        label: "타겟 고객" },
-                { key: "extra",       items: aiSugg.extras,         label: "추가 정보" },
-              ].filter(r => r.items?.length > 0).map(({ key, items, label }) => (
-                <div key={key}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: muted, letterSpacing: 1, marginBottom: 6 }}>{label}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {items.map((v, i) => (
-                      <button key={i} onClick={() => setForm(p => ({ ...p, [key]: v }))}
-                        style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${cat.accent}35`, background: `${cat.accent}08`, color: text, fontSize: 12, cursor: "pointer" }}>
-                        {v}
-                      </button>
-                    ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 2: 디자인 선택
+  // ══════════════════════════════════════════════════════════════
+  if (wizStep === 2) {
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <WizHeader />
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"0 28px 80px" }}>
+
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
+            <div style={{ fontSize:13, color:muted }}>선택 안 해도 카테고리 기본 스타일로 생성돼요</div>
+          </div>
+
+          {/* 스타일 템플릿 */}
+          <div style={{ marginBottom:28 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:text }}>스타일 템플릿 <span style={{ fontSize:12, color:muted, fontWeight:400 }}>— 선택 시 해당 스타일로 생성</span></div>
+              {selStyle && <button onClick={()=>setSelStyle(null)} style={{ fontSize:11,color:muted,background:"transparent",border:`1px solid ${bdr}`,borderRadius:6,padding:"4px 10px",cursor:"pointer" }}>선택 해제</button>}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10 }}>
+              {STYLE_TEMPLATES.map(t=>{
+                const isSelected = selStyle===t.id;
+                const prev = t.preview;
+                return (
+                  <button key={t.id} onClick={()=>setSelStyle(isSelected?null:t.id)}
+                    style={{ border:`2px solid ${isSelected?accentColor:"transparent"}`, borderRadius:14, overflow:"hidden", cursor:"pointer", background:"transparent", padding:0, transition:"all 0.15s", boxShadow: isSelected?`0 0 0 3px ${accentColor}40`:`0 2px 8px rgba(0,0,0,0.15)` }}>
+                    {/* 미리보기 */}
+                    <div style={{ width:"100%", paddingBottom:"130%", position:"relative", background:prev.bg }}>
+                      {prev.pattern==="diagonal" && <div style={{ position:"absolute",inset:0,backgroundImage:`repeating-linear-gradient(45deg,${prev.accent}10 0,${prev.accent}10 1px,transparent 0,transparent 50%)`,backgroundSize:"8px 8px" }}/>}
+                      {prev.pattern==="dots"     && <div style={{ position:"absolute",inset:0,backgroundImage:`radial-gradient(circle,${prev.accent}20 1px,transparent 1px)`,backgroundSize:"8px 8px" }}/>}
+                      {prev.pattern==="circuit"  && <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(${prev.accent}15 1px,transparent 1px),linear-gradient(90deg,${prev.accent}15 1px,transparent 1px)`,backgroundSize:"10px 10px" }}/>}
+                      <div style={{ position:"absolute",inset:0,padding:"8px 7px",display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
+                        <div style={{ flex:1,borderRadius:4,background:`${prev.accent}18`,marginBottom:6,display:"flex",alignItems:"center",justifyContent:"center" }}>
+                          <div style={{ width:"60%",height:"70%",borderRadius:3,background:`${prev.accent}25` }}/>
+                        </div>
+                        <div style={{ height:4,borderRadius:2,background:prev.accent,width:"50%",marginBottom:4 }}/>
+                        <div style={{ height:3,borderRadius:1,background:prev.textColor,width:"80%",opacity:0.7,marginBottom:2 }}/>
+                        <div style={{ height:2,borderRadius:1,background:prev.subColor,width:"60%",marginBottom:4 }}/>
+                        <div style={{ height:8,borderRadius:3,background:prev.accent,width:"100%" }}/>
+                      </div>
+                      {isSelected && <div style={{ position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:accentColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",fontWeight:900 }}>✓</div>}
+                    </div>
+                    <div style={{ padding:"7px 6px", background:isDark?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)" }}>
+                      <div style={{ fontSize:11,fontWeight:isSelected?800:600,color:isSelected?accentColor:text }}>{t.label}</div>
+                      <div style={{ fontSize:9,color:muted,marginTop:1 }}>{t.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {selStyle && (() => {
+              const st = STYLE_TEMPLATES.find(t=>t.id===selStyle);
+              return st ? (
+                <div style={{ marginTop:12,padding:"10px 14px",borderRadius:9,background:`${accentColor}10`,border:`1px solid ${accentColor}30` }}>
+                  <div style={{ fontSize:12,fontWeight:700,color:accentColor,marginBottom:3 }}>✓ {st.label} 스타일 선택됨</div>
+                  <div style={{ fontSize:11,color:muted,lineHeight:1.6 }}>{st.desc} 느낌으로 이미지를 생성해요</div>
+                </div>
+              ) : null;
+            })()}
+          </div>
+
+          {/* 이미지 크기 */}
+          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div style={{ fontSize:13,fontWeight:700,color:text }}>이미지 크기</div>
+              <div style={{ fontSize:14,fontWeight:900,color:accentColor }}>{imgW} × {imgH} px</div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
+              {SIZE_PRESETS.map((p,i)=>(
+                <button key={i} onClick={()=>setSelSize(i)}
+                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?accentColor:bdr}`,background:selSize===i?`${accentColor}15`:"transparent",color:selSize===i?accentColor:isDark?"rgba(255,255,255,0.65)":"#555",fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",transition:"all 0.12s",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                  <span style={{ fontSize:16 }}>{p.icon}</span>
+                  <span>{p.label}</span>
+                  {p.w!=null && <span style={{ fontSize:9,opacity:0.7 }}>{p.w}×{p.h}</span>}
+                </button>
+              ))}
+            </div>
+            {preset.w==null ? (
+              <div style={{ display:"flex",gap:8,alignItems:"center" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>가로 (px)</div>
+                  <input type="number" value={customW} onChange={e=>setCustomW(Number(e.target.value))} min={100} max={4000} step={10} style={{ ...inputStyle,textAlign:"center",fontWeight:700 }}/>
+                </div>
+                <div style={{ fontSize:18,color:muted,paddingTop:18 }}>×</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>세로 (px)</div>
+                  <input type="number" value={customH} onChange={e=>setCustomH(Number(e.target.value))} min={100} max={4000} step={10} style={{ ...inputStyle,textAlign:"center",fontWeight:700 }}/>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize:11,color:muted,textAlign:"center" }}>{preset.desc} · {preset.w}×{preset.h}px</div>
+            )}
+            {/* 비율 미리보기 */}
+            <div style={{ marginTop:12,display:"flex",alignItems:"center",gap:10 }}>
+              <div style={{ fontSize:10,color:muted }}>비율</div>
+              <div style={{ width:Math.min(56,56*imgRatio),height:Math.min(56,56/imgRatio),background:`${accentColor}25`,border:`1.5px solid ${accentColor}50`,borderRadius:3 }}/>
+              <div style={{ fontSize:11,color:muted }}>{imgW>imgH?"가로형":imgW<imgH?"세로형":"정사각형"} · {(imgW/imgH).toFixed(2)}:1</div>
+            </div>
+          </div>
+
+          {/* 참고 이미지 */}
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:13,fontWeight:700,color:text,marginBottom:4 }}>
+              참고 이미지 <span style={{ color:muted,fontWeight:400 }}>(선택 — 이 스타일로 생성)</span>
+            </div>
+            <div style={{ fontSize:11,color:muted,marginBottom:8,lineHeight:1.6 }}>마음에 드는 상세페이지를 올리면 AI가 색감·분위기를 분석해서 비슷하게 만들어요</div>
+            <div onClick={()=>refFileRef.current?.click()}
+              style={{ border:`1.5px dashed ${refImg?accentColor:bdr}`,borderRadius:12,padding:"14px 18px",cursor:"pointer",display:"flex",gap:14,alignItems:"center",background:cardBg,transition:"all 0.12s" }}>
+              {refImg ? (
+                <>
+                  <img src={refImg} alt="" style={{ width:68,height:68,objectFit:"cover",borderRadius:9,flexShrink:0 }}/>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    {analyzing ? <div style={{ fontSize:12,color:muted }}>분석 중...</div>
+                      : refStyle ? <><div style={{ fontSize:11,fontWeight:700,color:accentColor,marginBottom:3 }}>✓ 스타일 분석 완료</div><div style={{ fontSize:11,color:muted,lineHeight:1.55,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" }}>{refStyle}</div></> : null}
+                  </div>
+                  <button onClick={e=>{e.stopPropagation();setRefImg(null);setRefStyle("");}} style={{ padding:"5px 10px",borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",flexShrink:0 }}>제거</button>
+                </>
+              ) : <div style={{ textAlign:"center",width:"100%",padding:"6px 0" }}>
+                  <div style={{ fontSize:13,fontWeight:600,color:text,marginBottom:3 }}>참고 이미지 업로드</div>
+                  <div style={{ fontSize:11,color:muted }}>이 스타일과 비슷하게 만들어드려요</div>
+                </div>}
+            </div>
+            <input ref={refFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e=>{handleRef(e.target.files[0]);e.target.value="";}}/>
+          </div>
+
+          {/* 이전/생성 버튼 */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <button onClick={()=>setWizStep(1)}
+              style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>
+              ← 이전
+            </button>
+            <button onClick={()=>{ setWizStep(3); generate(); }}
+              style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
+              이미지 {pageCount}장 생성하기 →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 3: 생성 + 결과
+  // ══════════════════════════════════════════════════════════════
+  if (wizStep === 3) {
+    const slideTypes = SLIDE_TYPES.slice(0, slides?.length || 0);
+    const currentPng = rendered[curIdx];
+
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <WizHeader />
+        <div style={{ maxWidth:1080, margin:"0 auto", padding:"0 20px 60px" }}>
+
+          {/* 생성 중 오버레이 */}
+          {loading && progress.total > 0 && (
+            <div style={{ borderRadius:16,overflow:"hidden",border:`1px solid ${accentColor}40`,background:isDark?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)",marginBottom:20 }}>
+              <div style={{ background:`linear-gradient(135deg,${accentColor}22,${accentColor}08)`,padding:"24px 24px 20px",textAlign:"center",borderBottom:`1px solid ${accentColor}20` }}>
+                <div style={{ position:"relative",width:72,height:72,margin:"0 auto 16px" }}>
+                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${accentColor}20` }}/>
+                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid transparent`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
+                  <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
+                  <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
+                </div>
+                <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>상세페이지 이미지 생성 중</div>
+                <div style={{ fontSize:12,color:muted }}>{progress.msg}</div>
+              </div>
+              <div style={{ padding:"16px 24px" }}>
+                <div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8 }}>
+                  <span style={{ color:muted }}>{progress.cur} / {progress.total} 완료</span>
+                  <span style={{ fontWeight:800,color:accentColor }}>{Math.round((progress.cur/progress.total)*100)}%</span>
+                </div>
+                <div style={{ height:8,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8",overflow:"hidden" }}>
+                  <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},${accentColor}bb)`,width:`${(progress.cur/progress.total)*100}%`,transition:"width 0.5s ease",position:"relative",overflow:"hidden" }}>
+                    <div style={{ position:"absolute",inset:0,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)",animation:"shimmer 1.5s ease-in-out infinite" }}/>
                   </div>
                 </div>
-              ))}
-              <div style={{ fontSize: 10, color: muted }}>클릭하면 입력란에 바로 적용</div>
+                <div style={{ display:"flex",gap:5,marginTop:12,justifyContent:"center",flexWrap:"wrap" }}>
+                  {Array.from({length:progress.total}).map((_,i)=>(
+                    <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s",boxShadow:i<progress.cur?`0 0 5px ${accentColor}80`:"none" }}/>
+                  ))}
+                </div>
+                <div style={{ fontSize:11,color:isDark?"rgba(255,255,255,0.35)":"#bbb",marginTop:10,textAlign:"center" }}>페이지를 벗어나면 생성이 중단됩니다</div>
+              </div>
             </div>
           )}
-        </div>
 
-        {err && <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: 12, color: "#f87171" }}>{err}</div>}
-
-        <button onClick={generate} disabled={loading || analyzing}
-          style={{ padding: "15px", borderRadius: 12, border: "none", cursor: loading ? "wait" : "pointer", background: loading ? `${cat.accent}55` : cat.accent, color: "#fff", fontSize: 15, fontWeight: 900, opacity: loading || analyzing ? 0.7 : 1 }}>
-          {loading ? (progress.msg || "생성 중...") : `이미지 ${pageCount}장 생성 (${imgW}×${imgH})`}
-        </button>
-
-        {/* 생성 로딩 오버레이 애니메이션 */}
-        {loading && progress.total > 0 && (
-          <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${cat.accent}40`, background: isDark ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.95)" }}>
-            {/* 애니메이션 헤더 */}
-            <div style={{ background: `linear-gradient(135deg, ${cat.accent}22, ${cat.accent}08)`, padding: "24px 24px 20px", textAlign: "center", borderBottom: `1px solid ${cat.accent}20` }}>
-              {/* 회전 링 애니메이션 */}
-              <div style={{ position: "relative", width: 72, height: 72, margin: "0 auto 16px" }}>
-                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${cat.accent}20` }} />
-                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid transparent`, borderTopColor: cat.accent, animation: "spin 1s linear infinite" }} />
-                <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: `2px solid transparent`, borderTopColor: `${cat.accent}60`, animation: "spin 1.5s linear infinite reverse" }} />
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🎨</div>
+          {/* 상단 바 */}
+          {!loading && (
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8 }}>
+              {saveMsg && <div style={{ width:"100%",padding:"9px 14px",borderRadius:9,background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",fontSize:13,color:"#4ade80",fontWeight:600 }}>{saveMsg}</div>}
+              <div style={{ display:"flex",gap:6 }}>
+                <button onClick={()=>setWizStep(2)} style={{ padding:"7px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>← 디자인 수정</button>
+                <button onClick={resetAll} style={{ padding:"7px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>처음부터</button>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 6 }}>
-                상세페이지 이미지 생성 중
-              </div>
-              <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.55)" : "#888" }}>
-                {progress.msg}
+              <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                <button onClick={()=>setCurIdx(Math.max(0,curIdx-1))} disabled={curIdx===0} style={{ width:30,height:30,borderRadius:7,border:`1px solid ${bdr}`,background:cardBg,color:text,cursor:curIdx===0?"not-allowed":"pointer",opacity:curIdx===0?0.3:1,fontSize:18 }}>‹</button>
+                <span style={{ fontSize:12,color:muted,minWidth:44,textAlign:"center" }}>{curIdx+1} / {slides.length||0}</span>
+                <button onClick={()=>setCurIdx(Math.min(slides.length-1,curIdx+1))} disabled={curIdx===slides.length-1} style={{ width:30,height:30,borderRadius:7,border:`1px solid ${bdr}`,background:cardBg,color:text,cursor:curIdx===slides.length-1?"not-allowed":"pointer",opacity:curIdx===slides.length-1?0.3:1,fontSize:18 }}>›</button>
               </div>
             </div>
-            {/* 진행 바 */}
-            <div style={{ padding: "16px 24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}>
-                <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#666" }}>{progress.cur} / {progress.total} 완료</span>
-                <span style={{ fontWeight: 800, color: cat.accent }}>{Math.round((progress.cur / progress.total) * 100)}%</span>
-              </div>
-              <div style={{ height: 8, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "#e8e8e8", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 4, background: `linear-gradient(90deg, ${cat.accent}, ${cat.accent}bb)`, width: `${(progress.cur / progress.total) * 100}%`, transition: "width 0.5s ease", position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 1.5s ease-in-out infinite" }} />
+          )}
+
+          {slides.length > 0 && (
+            <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+              {/* 메인 */}
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ fontSize:10,fontWeight:800,color:accentColor,letterSpacing:2,marginBottom:8 }}>{slideTypes[curIdx]?.label?.toUpperCase()}</div>
+                <div style={{ width:"100%",aspectRatio:`${imgW}/${imgH}`,borderRadius:16,overflow:"hidden",boxShadow:"0 16px 56px rgba(0,0,0,0.28)",background:isDark?"#111":"#eee",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  {currentPng
+                    ? <img src={currentPng} alt="slide" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                    : <div style={{ textAlign:"center" }}>
+                        {!loading && <><div style={{ fontSize:13,color:muted,marginBottom:8 }}>이미지 생성 실패</div>
+                        <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:8,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}
+                      </div>}
+                </div>
+                <div style={{ display:"flex",gap:8,marginTop:10 }}>
+                  <button onClick={saveCurrent} disabled={!currentPng} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:currentPng?"pointer":"not-allowed",background:accentColor,color:"#fff",fontSize:13,fontWeight:800,opacity:currentPng?1:0.4 }}>이 슬라이드 저장</button>
+                  {currentPng && !loading && <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"11px 16px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>🔄 재생성</button>}
+                  <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>{saving?"ZIP 저장 중...":"전체 ZIP"}</button>
                 </div>
               </div>
-              {/* 슬라이드 도트 */}
-              <div style={{ display: "flex", gap: 6, marginTop: 14, justifyContent: "center", flexWrap: "wrap" }}>
-                {Array.from({ length: progress.total }).map((_, i) => (
-                  <div key={i} style={{
-                    width: 10, height: 10, borderRadius: "50%",
-                    background: i < progress.cur ? cat.accent : (i === progress.cur ? `${cat.accent}60` : (isDark ? "rgba(255,255,255,0.1)" : "#ddd")),
-                    transition: "all 0.3s",
-                    boxShadow: i < progress.cur ? `0 0 6px ${cat.accent}80` : "none",
-                  }} />
+              {/* 섬네일 */}
+              <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
+                {slides.map((s,i)=>(
+                  <div key={i} onClick={()=>setCurIdx(i)} style={{ cursor:"pointer",borderRadius:9,overflow:"hidden",border:i===curIdx?`2.5px solid ${accentColor}`:`2.5px solid transparent`,transition:"all 0.12s",width:100 }}>
+                    {rendered[i]
+                      ? <img src={rendered[i]} alt="" style={{ width:100,height:Math.round(100*imgH/imgW),display:"block",objectFit:"cover" }}/>
+                      : <div style={{ width:100,height:Math.round(100*imgH/imgW),background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                          <div style={{ width:18,height:18,borderRadius:"50%",border:`2px solid ${accentColor}50`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
+                        </div>}
+                    <div style={{ fontSize:9,color:i===curIdx?accentColor:muted,textAlign:"center",padding:"3px 2px",fontWeight:i===curIdx?800:400,background:isDark?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.9)",lineHeight:1.3 }}>{s.label}</div>
+                  </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.4)" : "#aaa", marginTop: 12, textAlign: "center" }}>
-                페이지를 벗어나면 생성이 중단됩니다
-              </div>
             </div>
-          </div>
-        )}
-        <style>{`
-          @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    </div>
-  );
+          )}
 
-  // ── Step 3: 결과 ────────────────────────────────────────────
-  if (step === 3) {
-    const currentPng = rendered[curIdx];
-    return (
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "20px 20px 60px" }}>
-        {/* 보관함 저장 알림 */}
-        {saveMsg && (
-          <div style={{ marginBottom: 12, padding: "10px 16px", borderRadius: 10, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", fontSize: 13, color: "#4ade80", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
-            {saveMsg}
-          </div>
-        )}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setStep(2)} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>← 수정</button>
-            <button onClick={() => { setStep(1); setSlides([]); setRendered([]); setRefImg(null); setRefStyle(""); setForm({ productName: "", features: "", price: "", cta: "지금 구매하기", target: "", extra: "" }); setProductImages([]); setSaveMsg(""); setSelSize(0); setCustomW(860); setCustomH(1100); setSelStyle(null); }}
-              style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.7)" : "#555", fontSize: 12, cursor: "pointer" }}>새로 만들기</button>
-          </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <button onClick={() => setCurIdx(Math.max(0, curIdx - 1))} disabled={curIdx === 0}
-              style={{ width: 30, height: 30, borderRadius: 7, border: `1px solid ${bdr}`, background: cardBg, color: text, cursor: curIdx === 0 ? "not-allowed" : "pointer", opacity: curIdx === 0 ? 0.3 : 1, fontSize: 18 }}>‹</button>
-            <span style={{ fontSize: 12, color: muted, minWidth: 44, textAlign: "center" }}>{curIdx + 1} / {slides.length}</span>
-            <button onClick={() => setCurIdx(Math.min(slides.length - 1, curIdx + 1))} disabled={curIdx === slides.length - 1}
-              style={{ width: 30, height: 30, borderRadius: 7, border: `1px solid ${bdr}`, background: cardBg, color: text, cursor: curIdx === slides.length - 1 ? "not-allowed" : "pointer", opacity: curIdx === slides.length - 1 ? 0.3 : 1, fontSize: 18 }}>›</button>
-          </div>
+          {err && <div style={{ marginTop:12,padding:"10px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"#f87171" }}>{err}</div>}
         </div>
-
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-          {/* 메인 이미지 */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: cat.accent, letterSpacing: 2, marginBottom: 8 }}>
-              {slides[curIdx]?.label?.toUpperCase()}
-            </div>
-            <div style={{ width: "100%", aspectRatio: `${imgW}/${imgH}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 16px 56px rgba(0,0,0,0.28)", background: isDark ? "#111" : "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {currentPng
-                ? <img src={currentPng} alt="slide" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-                : <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 13, color: muted, marginBottom: 8 }}>이미지 생성 실패</div>
-                    <button onClick={() => regenerateOne(curIdx)} disabled={loading}
-                      style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: cat.accent, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      다시 생성
-                    </button>
-                  </div>
-              }
-            </div>
-
-            {/* 저장 + 재생성 */}
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button onClick={saveCurrent} disabled={!currentPng}
-                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", cursor: currentPng ? "pointer" : "not-allowed", background: cat.accent, color: "#fff", fontSize: 13, fontWeight: 800, opacity: currentPng ? 1 : 0.4 }}>
-                이 슬라이드 저장
-              </button>
-              {currentPng && (
-                <button onClick={() => regenerateOne(curIdx)} disabled={loading}
-                  style={{ padding: "11px 18px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>
-                  🔄 재생성
-                </button>
-              )}
-              <button onClick={saveAll} disabled={!rendered.some(Boolean) || saving}
-                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.1)" : "#2c2c2c", color: "#fff", fontSize: 13, fontWeight: 800, opacity: rendered.some(Boolean) && !saving ? 1 : 0.4 }}>
-                {saving ? "ZIP 저장 중..." : "전체 ZIP"}
-              </button>
-            </div>
-          </div>
-
-          {/* 섬네일 목록 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
-            {slides.map((s, i) => (
-              <div key={i} onClick={() => setCurIdx(i)}
-                style={{ cursor: "pointer", borderRadius: 9, overflow: "hidden", border: i === curIdx ? `2.5px solid ${cat.accent}` : `2.5px solid transparent`, transition: "all 0.12s", width: 100, flexShrink: 0 }}>
-                {rendered[i]
-                  ? <img src={rendered[i]} alt="" style={{ width: 100, height: Math.round(100 * imgH / imgW), display: "block", objectFit: "cover" }} />
-                  : <div style={{ width: 100, height: Math.round(100 * imgH / imgW), background: isDark ? "rgba(255,255,255,0.05)" : "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${cat.accent}50`, borderTopColor: cat.accent, animation: "spin 1s linear infinite" }} />
-                    </div>
-                }
-                <div style={{ fontSize: 9, color: i === curIdx ? cat.accent : muted, textAlign: "center", padding: "3px 2px", fontWeight: i === curIdx ? 800 : 400, background: isDark ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.9)", lineHeight: 1.3 }}>
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}`}</style>
       </div>
     );
   }
