@@ -9,6 +9,7 @@ import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
+import ArchivePage from "./ArchivePage";
 
 const SNS = [
   { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
@@ -28,11 +29,13 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
+  const [archiveSub, setArchiveSub] = useState(false);
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
-  const aiSubRef    = useRef(null);
+  const aiSubRef       = useRef(null);
+  const archiveSubRef  = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -93,6 +96,7 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
+      if (archiveSubRef.current && !archiveSubRef.current.contains(e.target)) setArchiveSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -211,6 +215,7 @@ export default function App() {
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
+    if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
   };
@@ -276,6 +281,7 @@ export default function App() {
           <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(124,106,255,0.3)" }}>N</div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>SNS메이킷</div>
+            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
           </div>
         </button>
 
@@ -290,6 +296,14 @@ export default function App() {
                 <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
                 <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => navigateAi("cardnews_make")} />
                 <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
+              </DropMenu>
+            )}
+          </div>
+          <div ref={archiveSubRef} style={{ position: "relative" }}>
+            <DropBtn label="📂 자료실" open={archiveSub} active={page === "archive"} onClick={() => setArchiveSub(s => !s)} />
+            {archiveSub && (
+              <DropMenu>
+                <DropItem id="archive" icon="🎬" label="영상 자료실" onClick={() => { navigate("archive"); setArchiveSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -428,6 +442,7 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+            { id: "archive", label: "🎬 영상 자료실", page: "archive" },
             { id: "info",   label: "📌 정보공유",   board: "info"   },
             { id: "qna",    label: "❓ 질문답변",   board: "qna"    },
             { id: "free",   label: "🗣 자유게시판", board: "free"   },
@@ -435,7 +450,7 @@ export default function App() {
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : m.page ? (navigate(m.page) || setMobileOpen(false)) : navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
@@ -476,7 +491,8 @@ export default function App() {
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-                      </div>
+                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
+                </div>
               </div>
               <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>
             </div>
