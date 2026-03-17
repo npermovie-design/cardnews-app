@@ -452,8 +452,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 style={{
                   width:80,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
                   background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",
-                  borderLeft:"1px solid "+bdr, borderRight:"1px solid "+bdr,
-                  border:"none",
+                  borderTop:"none", borderBottom:"none",
                   borderLeft:"1px solid "+bdr, borderRight:"1px solid "+bdr,
                   cursor:"pointer", padding:"14px 8px", transition:"background 0.15s",
                 }}
