@@ -403,7 +403,7 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 export default function DetailPageGenerator({ isDark }) {
   // ── 위저드 단계 ─────────────────────────────────────────────
-  const [wizStep, setWizStep] = useState(1); // 1:상품입력 2:디자인 3:생성결과
+  const [wizStep, setWizStep] = useState(1); // 1:상품입력 2:슬라이드기획 3:디자인 4:생성결과
 
   // ── Step 1: 상품 입력 ───────────────────────────────────────
   const [selCat,     setSelCat]     = useState(null);
@@ -411,6 +411,8 @@ export default function DetailPageGenerator({ isDark }) {
   const [productImages, setProductImages] = useState([]);
   const [aiSugg,     setAiSugg]     = useState(null);
   const [suggesting, setSuggesting] = useState(false);
+  const [slideContents, setSlideContents] = useState([]); // [{id, label, headline, body, keyword, aiLoading}]
+  const [planGenLoading, setPlanGenLoading] = useState(false);
   const [pageCount,  setPageCount]  = useState(5);
   const productFileRef = useRef(null);
 
@@ -496,8 +498,32 @@ export default function DetailPageGenerator({ isDark }) {
     window.addEventListener("beforeunload", beforeUnload);
     try {
       setProgress({ msg:"슬라이드 텍스트 구성 중...", cur:0, total:pageCount });
-      const textData = await generateSlideTexts({ category:selCat, ...form, pageCount, refStyle });
-      const slidesData = textData.slides || [];
+      let slidesData;
+      // 사용자가 슬라이드 기획을 입력한 경우 반영
+      if (slideContents.length > 0) {
+        slidesData = slideContents.map(sc => ({
+          id: sc.id, label: sc.label,
+          headline: sc.headline || "",
+          subheadline: sc.subheadline || "",
+          body: sc.body || "",
+          badge: sc.badge || "",
+          cta: form.cta || "지금 구매하기",
+        }));
+        // 비어있는 슬라이드는 AI로 채우기
+        const emptySlides = slidesData.filter(s => !s.headline);
+        if (emptySlides.length > 0) {
+          try {
+            const fillData = await generateSlideTexts({ category:selCat, ...form, pageCount, refStyle });
+            fillData.slides?.forEach(fs => {
+              const idx = slidesData.findIndex(s => s.id === fs.id && !s.headline);
+              if (idx >= 0) slidesData[idx] = { ...slidesData[idx], ...fs };
+            });
+          } catch(e) {}
+        }
+      } else {
+        const textData = await generateSlideTexts({ category:selCat, ...form, pageCount, refStyle });
+        slidesData = textData.slides || [];
+      }
       setSlides(slidesData);
 
       const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics, NO badge graphics, NO medal icons, NO flat design icons. Only real commercial photography and professional graphic design typography.";
@@ -517,7 +543,7 @@ export default function DetailPageGenerator({ isDark }) {
       }
       saveToLibrary(results);
       setSaveMsg("✅ 보관함에 저장됐어요!");
-      setWizStep(3); setCurIdx(0);
+      setWizStep(4); setCurIdx(0);
     } catch(e) { setErr("생성 실패: " + e.message); }
     finally { setLoading(false); window.removeEventListener("beforeunload", beforeUnload); }
   };
@@ -554,14 +580,14 @@ export default function DetailPageGenerator({ isDark }) {
   const resetAll = () => {
     setWizStep(1); setSelCat(null); setForm({productName:"",features:"",price:"",cta:"지금 구매하기",target:"",extra:""});
     setProductImages([]); setSelStyle(null); setSelSize(0); setCustomW(860); setCustomH(1100);
-    setRefImg(null); setRefStyle(""); setSlides([]); setRendered([]); setSaveMsg(""); setErr(""); setAiSugg(null);
+    setRefImg(null); setRefStyle(""); setSlides([]); setRendered([]); setSaveMsg(""); setErr(""); setAiSugg(null); setSlideContents([]);
   };
 
   // ── 위저드 진행 바 ──────────────────────────────────────────
   const WizHeader = () => (
     <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
-        {[["1","상품 입력"],["2","디자인 선택"],["3","AI 생성"]].map(([n, label], i) => {
+        {[["1","상품 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","AI 생성"]].map(([n, label], i) => {
           const step = parseInt(n);
           const done = wizStep > step;
           const active = wizStep === step;
@@ -576,7 +602,7 @@ export default function DetailPageGenerator({ isDark }) {
                 </div>
                 <span style={{ fontSize:13, fontWeight: active?800:500, color: active?text:muted, whiteSpace:"nowrap" }}>{label}</span>
               </div>
-              {i < 2 && <div style={{ flex:1, height:2, background: done?accentColor:isDark?"rgba(255,255,255,0.1)":"#e5e5e5", margin:"0 12px", transition:"all 0.3s", minWidth:20 }}/>}
+              {i < 3 && <div style={{ flex:1, height:2, background: done?accentColor:isDark?"rgba(255,255,255,0.1)":"#e5e5e5", margin:"0 12px", transition:"all 0.3s", minWidth:16 }}/>}
             </div>
           );
         })}
@@ -706,9 +732,16 @@ export default function DetailPageGenerator({ isDark }) {
 
           {/* 다음 버튼 */}
           <div style={{ display:"flex", justifyContent:"flex-end" }}>
-            <button onClick={() => { if(canNext) setWizStep(2); }} disabled={!canNext}
+            <button onClick={() => {
+              if (!canNext) return;
+              // slideContents 초기화 (슬라이드 수 변경 반영)
+              setSlideContents(SLIDE_TYPES.slice(0, pageCount).map(t => ({
+                id: t.id, label: t.label, headline:"", subheadline:"", body:"", keyword:"", aiLoading:false
+              })));
+              setWizStep(2);
+            }} disabled={!canNext}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?accentColor:`${accentColor}40`, color:"#fff", fontSize:15, fontWeight:900, transition:"all 0.15s", display:"flex",alignItems:"center",gap:8 }}>
-              다음 → <span style={{ fontSize:12,opacity:0.8 }}>디자인 선택</span>
+              다음 → <span style={{ fontSize:12,opacity:0.8 }}>슬라이드 기획</span>
             </button>
           </div>
         </div>
@@ -717,9 +750,152 @@ export default function DetailPageGenerator({ isDark }) {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // STEP 2: 디자인 선택
+  // ── AI 슬라이드별 추천 함수 ──────────────────────────────────
+  const suggestSlide = async (idx) => {
+    const sc = slideContents[idx];
+    if (!sc || !selCat) return;
+    setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, aiLoading:true} : s));
+    try {
+      const cat_ = CATEGORIES.find(c => c.key === selCat);
+      const kw = sc.keyword ? `키워드: ${sc.keyword}` : "";
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400,
+          messages:[{role:"user", content:`쇼핑몰 상세페이지 카피라이터.
+상품: ${form.productName} (${cat_?.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}
+슬라이드: ${sc.label} (${sc.id})
+${kw}
+이 슬라이드의 카피를 작성해주세요. JSON만 응답:
+{"headline":"헤드라인(14자 이내)","subheadline":"서브헤드라인(22자 이내, 없으면 빈 문자열)","body":"본문(50자 이내, 없으면 빈 문자열)","badge":"배지텍스트(8자 이내, 없으면 빈 문자열)"}`}]
+        }),
+      });
+      const data = await res.json();
+      const txt = data.content?.[0]?.text || "";
+      const parsed = JSON.parse(txt.replace(/```json
+?/g,"").replace(/```/g,"").trim());
+      setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, ...parsed, aiLoading:false} : s));
+    } catch(e) {
+      setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, aiLoading:false} : s));
+    }
+  };
+
+  const suggestAllSlides = async () => {
+    setPlanGenLoading(true);
+    for (let i = 0; i < slideContents.length; i++) {
+      await suggestSlide(i);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setPlanGenLoading(false);
+  };
+
+  // STEP 2: 슬라이드 기획
   // ══════════════════════════════════════════════════════════════
   if (wizStep === 2) {
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <WizHeader />
+        <div style={{ maxWidth:860, margin:"0 auto", padding:"0 28px 80px" }}>
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
+            <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>
+              각 슬라이드의 문구를 직접 입력하거나, AI 추천을 받아 수정해보세요.<br/>
+              비워두면 AI가 자동으로 채워줘요.
+            </div>
+          </div>
+
+          {/* 전체 AI 추천 버튼 */}
+          <div style={{ display:"flex", gap:8, marginBottom:20, padding:"12px 16px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, alignItems:"center", justifyContent:"space-between" }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>전체 AI 추천</div>
+              <div style={{ fontSize:11, color:muted, marginTop:2 }}>모든 슬라이드 내용을 AI가 한 번에 추천해드려요</div>
+            </div>
+            <button onClick={suggestAllSlides} disabled={planGenLoading}
+              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planGenLoading?"wait":"pointer", background:accentColor, color:"#fff", fontSize:13, fontWeight:800, opacity:planGenLoading?0.6:1, flexShrink:0, whiteSpace:"nowrap" }}>
+              {planGenLoading ? "추천 중..." : "✨ 전체 자동 추천"}
+            </button>
+          </div>
+
+          {/* 슬라이드별 입력 */}
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {slideContents.map((sc, i) => (
+              <div key={i} style={{ borderRadius:14, border:`1.5px solid ${bdr}`, background:cardBg, overflow:"hidden", transition:"border-color 0.15s" }}>
+                {/* 슬라이드 헤더 */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)", borderBottom:`1px solid ${bdr}` }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ width:24, height:24, borderRadius:7, background:`${accentColor}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:accentColor }}>
+                      {i+1}
+                    </div>
+                    <div>
+                      <span style={{ fontSize:13, fontWeight:800, color:text }}>{sc.label}</span>
+                      {sc.headline && <span style={{ marginLeft:8, fontSize:11, color:accentColor, fontWeight:600 }}>✓ 입력됨</span>}
+                    </div>
+                  </div>
+                  <button onClick={()=>suggestSlide(i)} disabled={sc.aiLoading||planGenLoading}
+                    style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${accentColor}40`, background:`${accentColor}10`, color:accentColor, fontSize:11, fontWeight:700, cursor:sc.aiLoading||planGenLoading?"wait":"pointer", opacity:sc.aiLoading||planGenLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
+                    {sc.aiLoading
+                      ? <><div style={{ width:10,height:10,borderRadius:"50%",border:`1.5px solid ${accentColor}50`,borderTopColor:accentColor,animation:"spin 0.8s linear infinite" }}/> 추천 중</>
+                      : "✦ AI 추천"}
+                  </button>
+                </div>
+
+                {/* 입력 폼 */}
+                <div style={{ padding:"14px 16px", display:"grid", gap:10 }}>
+                  {/* 키워드 */}
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5, letterSpacing:0.5 }}>키워드 (AI 추천 시 반영)</div>
+                    <input
+                      value={sc.keyword||""}
+                      onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,keyword:e.target.value}:s))}
+                      placeholder={`예: ${i===0?"강렬한 첫인상, 신뢰감":i===slideContents.length-1?"할인, 긴박감, CTA":"특징 강조, 차별점"}`}
+                      style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, outline:"none", boxSizing:"border-box" }}
+                    />
+                  </div>
+                  {/* 헤드라인 */}
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5, letterSpacing:0.5 }}>헤드라인 <span style={{ fontWeight:400 }}>(14자 이내)</span></div>
+                    <input
+                      value={sc.headline||""}
+                      onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))}
+                      placeholder="비워두면 AI가 자동으로 채워줘요"
+                      style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${sc.headline?`${accentColor}50`:bdr}`, background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:13, fontWeight:600, outline:"none", boxSizing:"border-box" }}
+                    />
+                  </div>
+                  {/* 본문 - 간략히 */}
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5, letterSpacing:0.5 }}>본문 <span style={{ fontWeight:400 }}>(50자 이내, 선택)</span></div>
+                    <input
+                      value={sc.body||""}
+                      onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,body:e.target.value}:s))}
+                      placeholder="비워두면 AI가 자동으로 채워줘요"
+                      style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, outline:"none", boxSizing:"border-box" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 이전/다음 버튼 */}
+          <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
+            <button onClick={()=>setWizStep(1)}
+              style={{ padding:"12px 28px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+              ← 이전
+            </button>
+            <button onClick={()=>setWizStep(3)}
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer", background:accentColor, color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
+              다음 → <span style={{ fontSize:12, opacity:0.8 }}>디자인 선택</span>
+            </button>
+          </div>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  // STEP 3: 디자인 선택
+  // ══════════════════════════════════════════════════════════════
+  if (wizStep === 3) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader />
@@ -844,11 +1020,11 @@ export default function DetailPageGenerator({ isDark }) {
 
           {/* 이전/생성 버튼 */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <button onClick={()=>setWizStep(1)}
+            <button onClick={()=>setWizStep(2)}
               style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>
               ← 이전
             </button>
-            <button onClick={()=>{ setWizStep(3); generate(); }}
+            <button onClick={()=>{ setWizStep(4); generate(); }}
               style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
               이미지 {pageCount}장 생성하기 →
             </button>
@@ -859,9 +1035,9 @@ export default function DetailPageGenerator({ isDark }) {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // STEP 3: 생성 + 결과
+  // STEP 4: 생성 + 결과
   // ══════════════════════════════════════════════════════════════
-  if (wizStep === 3) {
+  if (wizStep === 4) {
     const slideTypes = SLIDE_TYPES.slice(0, slides?.length || 0);
     const currentPng = rendered[curIdx];
 
@@ -908,7 +1084,7 @@ export default function DetailPageGenerator({ isDark }) {
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8 }}>
               {saveMsg && <div style={{ width:"100%",padding:"9px 14px",borderRadius:9,background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",fontSize:13,color:"#4ade80",fontWeight:600 }}>{saveMsg}</div>}
               <div style={{ display:"flex",gap:6 }}>
-                <button onClick={()=>setWizStep(2)} style={{ padding:"7px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>← 디자인 수정</button>
+                <button onClick={()=>setWizStep(3)} style={{ padding:"7px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>← 디자인 수정</button>
                 <button onClick={resetAll} style={{ padding:"7px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>처음부터</button>
               </div>
               <div style={{ display:"flex",gap:6,alignItems:"center" }}>
