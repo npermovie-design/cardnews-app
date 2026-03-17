@@ -5,16 +5,13 @@ import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
+import ArchivePage from "./ArchivePage";
 import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 
-const SNS = [
-  { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
-  { url: "https://www.instagram.com/nperinsight/",          label: "📸", bg: "linear-gradient(45deg,#f09433,#dc2743,#bc1888)", tc: "#fff" },
-  { url: "https://www.youtube.com/@nperinsight/videos",     label: "▶",  bg: "#FF0000", tc: "#fff" },
-];
+
 
 export default function App() {
   const [page,       setPage]       = useState("home");
@@ -28,11 +25,13 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
+  const [archiveSub, setArchiveSub] = useState(false);
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
   const aiSubRef    = useRef(null);
+  const archiveSubRef = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -93,6 +92,7 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
+      if (archiveSubRef.current && !archiveSubRef.current.contains(e.target)) setArchiveSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -125,7 +125,7 @@ export default function App() {
     if (target === "login_trigger") { setShowAuth(true); return; }
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
-    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage(target); setBoardSub(false); setAiSub(false); setArchiveSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -207,6 +207,7 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
+    if (page === "archive")  return <ArchivePage theme={theme} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
@@ -285,7 +286,7 @@ export default function App() {
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
           <div ref={aiSubRef} style={{ position: "relative" }}>
-            <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
+            <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => { setAiSub(s => !s); setArchiveSub(false); setBoardSub(false); }} />
             {aiSub && (
               <DropMenu>
                 <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
@@ -294,8 +295,16 @@ export default function App() {
               </DropMenu>
             )}
           </div>
+          <div ref={archiveSubRef} style={{ position: "relative" }}>
+            <DropBtn label="📂 자료실" open={archiveSub} active={page === "archive"} onClick={() => { setArchiveSub(s => !s); setBoardSub(false); setAiSub(false); }} />
+            {archiveSub && (
+              <DropMenu>
+                <DropItem id="archive" icon="📁" label="전체 자료" onClick={() => { navigate("archive"); setArchiveSub(false); }} />
+              </DropMenu>
+            )}
+          </div>
           <div ref={boardSubRef} style={{ position: "relative" }}>
-            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
+            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => { setBoardSub(s => !s); setArchiveSub(false); setAiSub(false); }} />
             {boardSub && (
               <DropMenu>
                 <DropItem id="community" icon="📌" label="정보공유"   onClick={() => { navigateBoard("info");   setBoardSub(false); }} />
@@ -311,10 +320,7 @@ export default function App() {
 
         {/* 오른쪽: SNS + 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-          {SNS.map((s, i) => (
-            <button key={i} onClick={() => window.open(s.url, "_blank")} style={{ width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", background: s.bg, color: s.tc, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.label}</button>
-          ))}
-          <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
+
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
             {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
           </button>
@@ -360,27 +366,29 @@ export default function App() {
                     {/* 포인트 바 */}
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                        <span style={{ color: C.muted }}>포인트 잔액</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}P</span>
+                        <span style={{ color: C.muted }}>크레딧 잔액</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}cr</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 1회=10P · {Math.floor((user.points||0)/10)}회 생성 가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI글=10cr · 이미지=30cr · {Math.floor((user.points||0)/30)}장 생성가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
                       { icon: "💎", label: "크레딧 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
+                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스 확인", action: () => { navigate("ai"); setProfileOpen(false); } },
+                      { icon: "📅", label: "가입일", sub: user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-", action: null },
+                      { icon: "🕐", label: "마지막 로그인", sub: user.lastLoginDate || "-", action: null },
                       ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("admin"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
-                      <button key={i} onClick={m.action}
+                      <button key={i} onClick={m.action || undefined} disabled={!m.action}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
-                          cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
-                        onMouseEnter={e=>e.currentTarget.style.background=theme==="dark"?"rgba(255,255,255,0.06)":"#f5f5f8"}
+                          cursor: m.action ? "pointer" : "default", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
+                        onMouseEnter={e=>{ if(m.action) e.currentTarget.style.background=theme==="dark"?"rgba(255,255,255,0.06)":"#f5f5f8"; }}
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                         <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{m.icon}</span>
                         <div>
@@ -425,7 +433,8 @@ export default function App() {
         }}>
           {[
             { id: "home",  label: "홈" },
-            { id: "about", label: "소개" },
+            { id: "about",   label: "소개" },
+            { id: "archive", label: "📂 자료실" },
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
@@ -450,7 +459,7 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>{user.points || 0}P</div>
+                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>{(user.points||0).toLocaleString()}cr</div>
                 </div>
                 <button onClick={logout} style={{ padding: "8px 16px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 13 }}>로그아웃</button>
               </div>

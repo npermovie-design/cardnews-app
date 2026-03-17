@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Btn } from "./UI";
+import { Btn, Badge } from "./UI";
 
 export function AboutPage({ navigate, C }) {
   return (

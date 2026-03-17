@@ -44,60 +44,62 @@ export { auth, db };
 
 // ── 포인트 상수 ───────────────────────────────────────────────────────────
 export const POINTS = {
-  SIGNUP:      200,  // 가입 시 (Free 플랜 200 크레딧)
-  DAILY_LOGIN: 3,    // 일일 로그인
+  SIGNUP:      10,   // 가입 시
+  DAILY_LOGIN: 1,    // 일일 로그인
   POST_WRITE:  1,    // 게시글 작성
   COMMENT:     0,    // 댓글 작성 (적립 없음)
-  AI_USE:      -10,  // AI 생성 1회 (블로그/카드뉴스)
-  AI_IMG_USE:  -30,  // AI 이미지 생성 1회 (상세페이지 슬라이드 1장)
+  AI_USE:      -10,  // AI 생성 1회
 };
 
 export const PLANS = [
   {
-    id: "free", type: "subscription",
-    name: "Free", price: 0, priceUSD: 0,
-    credits: 200, label: "무료",
-    color: "#888", gradient: "linear-gradient(135deg,#555,#333)",
-    features: ["200 크레딧", "회원가입 시 200 크레딧 무료", "5분당 1회 생성 제한", "한 번에 1장 생성 가능", "AI 업스케일링", "고해상도 변환"],
-    btnLabel: "현재 플랜", highlight: false,
+    id: "free",
+    name: "Free",
+    price: 0,
+    points: 50,
+    label: "무료",
+    color: "#888",
+    features: ["가입 시 50P 지급", "게시글 작성 시 10P 적립", "AI 생성 1회 = 10P 차감", "포인트 소진 시 충전 필요"],
+    btnLabel: "현재 플랜",
+    highlight: false,
   },
   {
-    id: "basic", type: "subscription",
-    name: "Basic", price: 9900, priceUSD: 9,
-    credits: 4500, label: "₩9,900/월",
-    color: "#4ade80", gradient: "linear-gradient(135deg,#14532d,#166534)",
+    id: "basic",
+    name: "Basic",
+    price: 9900,
+    points: 500,
+    label: "9,900원",
+    color: "#4ade80",
+    features: ["500P 충전", "AI 생성 50회 분량", "게시글 적립 포함", "유효기간 없음"],
+    btnLabel: "충전하기",
+    highlight: false,
     badge: "연세 플랜",
-    features: ["4,500 크레딧", "⚡ 생성 쿨타임 없음", "한 번에 4장까지 생성 가능", "AI 업스케일링", "피부보정(기본)", "고해상도 변환", "실시간 처리"],
-    btnLabel: "구독하기", highlight: false,
   },
   {
-    id: "deluxe", type: "subscription",
-    name: "Deluxe", price: 19900, priceUSD: 19,
-    credits: 9500, label: "₩19,900/월",
-    color: "#38bdf8", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1)",
-    badge: "추천",
-    features: ["9,500 크레딧", "⚡ 생성 쿨타임 없음", "한 번에 4장까지 생성 가능", "AI 업스케일링", "피부보정(기본)", "피부보정(메이크업)", "고해상도 변환", "실시간 처리", "무제한 업로드"],
-    btnLabel: "구독하기", highlight: true,
+    id: "pro",
+    name: "Pro",
+    price: 19900,
+    points: 1200,
+    label: "19,900원",
+    color: "#6366f1",
+    features: ["1,200P 충전", "AI 생성 120회 분량", "게시글 적립 포함", "우선 지원"],
+    btnLabel: "충전하기",
+    highlight: true,
+    badge: "🔥 추천",
   },
   {
-    id: "premium", type: "subscription",
-    name: "Premium", price: 29900, priceUSD: 29,
-    credits: 14500, label: "₩29,900/월",
-    color: "#f59e0b", gradient: "linear-gradient(135deg,#78350f,#92400e)",
-    features: ["14,500 크레딧", "⚡ 생성 쿨타임 없음", "한 번에 4장까지 생성 가능", "AI 업스케일링", "피부보정(기본)", "피부보정(메이크업)", "고해상도 변환", "실시간 처리", "무제한 업로드", "베타기능(무료)"],
-    btnLabel: "구독하기", highlight: false,
+    id: "premium",
+    name: "Premium",
+    price: 29900,
+    points: 2500,
+    label: "29,900원",
+    color: "#f59e0b",
+    features: ["2,500P 충전", "AI 생성 250회 분량", "게시글 적립 포함", "전담 지원"],
+    btnLabel: "충전하기",
+    highlight: false,
+    badge: "전문가용",
   },
 ];
-
-// 단건 구매 패키지
-export const CREDIT_PACKS = [
-  { id: "pack5",  priceUSD: 5,  price: 6900,  credits: 1500, label: "₩6,900"  },
-  { id: "pack10", priceUSD: 10, price: 13900, credits: 3000, label: "₩13,900" },
-  { id: "pack15", priceUSD: 15, price: 20900, credits: 4800, label: "₩20,900" },
-  { id: "pack20", priceUSD: 20, price: 27900, credits: 6450, label: "₩27,900" },
-  { id: "pack30", priceUSD: 30, price: 41900, credits: 9750, label: "₩41,900" },
-];
-
 
 // ── 게시판 카테고리 ───────────────────────────────────────────────────────
 export const CATS = [
@@ -313,8 +315,6 @@ export function setAiUsage(u){ try { localStorage.setItem(AI_KEY, JSON.stringify
 
 export const FREE_GUEST  = 5;
 export const FREE_MEMBER = 20;
-export const CREDIT_PER_TEXT_AI  = 10;   // 블로그/카드뉴스 1회
-export const CREDIT_PER_IMG_SLIDE = 30;  // 상세페이지 슬라이드 1장
 
 export function getAiLeft(user) {
   const usage  = getAiUsage();

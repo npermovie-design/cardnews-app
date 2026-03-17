@@ -336,7 +336,7 @@ const FIELD_LABELS = {
 
 // ── 메인 ──────────────────────────────────────────────────────────────────
 
-// ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
+// ── 크레딧 소진 화면 ──────────────────────────────────────────────────────────
 function PointsExhausted({ isDark, isGuest, title, onLogin }) {
   const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
   const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
@@ -349,26 +349,26 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px" }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b> + 포인트 적립 혜택을 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b> + 크레딧 적립 혜택을 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         {/* 혜택 카드 */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
-            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 50P 지급" },
-            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 10P" },
-            { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
-            { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
+            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 200cr 지급" },
+            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 1cr" },
+            { icon:"🔄", title:"일일 로그인", desc:"매일 3cr 적립" },
+            { icon:"♾️", title:"AI 무제한", desc:"크레딧 충전으로" },
           ] : [
-            { icon:"💳", title:"포인트 충전", desc:"Basic 9,900원 / 500P" },
-            { icon:"🔥", title:"Pro 플랜", desc:"19,900원 / 1,200P" },
-            { icon:"📝", title:"무료 적립", desc:"게시글 작성 10P" },
-            { icon:"💬", title:"관리자 문의", desc:"무료 포인트 요청" },
+            { icon:"💳", title:"크레딧 충전", desc:"Basic ₩9,900 / 4,500cr" },
+            { icon:"🔥", title:"Deluxe 플랜", desc:"₩19,900 / 9,500cr" },
+            { icon:"📝", title:"무료 적립", desc:"게시글 작성 1cr" },
+            { icon:"💬", title:"관리자 문의", desc:"무료 크레딧 요청" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
               <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>
@@ -391,7 +391,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
-              💎 포인트 충전하기
+              💎 크레딧 충전하기
             </button>
           )}
           <button onClick={() => { window.location.hash = "#contact"; }}
@@ -435,18 +435,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // 다시 생성하기 확인
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
-  // 포인트/횟수 상태 (렌더 시 체크)
+  // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
     const _u = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _k = user ? ("member_" + (user.uid || "u")) : "guest";
     const _used = _u[_k] || 0;
     const _lim = user ? 20 : 5;
     const _pts = user ? (user.points || 0) : 0;
-    // 회원은 포인트 정보가 로컬에 없을 수 있으므로: 비회원만 엄격 체크
+    // 회원은 크레딧 정보가 로컬에 없을 수 있으므로: 비회원만 엄격 체크
     const isGuest = !user;
-    const exhausted = isGuest
-      ? (_used >= _lim)                                        // 비회원: 5회 초과
-      : (_used >= _lim && _pts === 0 && user && user.uid);    // 회원: 20회 초과 + 포인트 확실히 0
+    // 로그인 회원은 차단 없음, 비회원만 5회 초과 차단
+    const exhausted = isGuest ? (_used >= _lim) : false;
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
@@ -524,7 +523,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _aiLimit = user ? 20 : 5;
     const _aiPoints = user ? (user.points || 0) : 0;
     if (_aiUsed >= _aiLimit && _aiPoints < 10) {
-      setError(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
+      setError(user ? "무료 횟수(20회)를 모두 사용했어요. 크레딧을 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
       return;
     }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
@@ -593,36 +592,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
   const cleanForCopy = (text) => {
     return text
-      // 마크다운 헤딩 (#, ##, ###)
-      .replace(/^#{1,6}\s+/gm, "")
-      // 볼드/이탤릭 (**텍스트**, *텍스트*)
-      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
-      // 인라인 코드
-      .replace(/`([^`]+)`/g, "$1")
-      // 링크 [텍스트](url) → 텍스트
+      .replace(/#{1,6}\s*/g, "")
+      .replace(/^---+$/gm, "")
+      .replace(/^___+$/gm, "")
+      .replace(/^===+$/gm, "")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      // 수평선 (---, ___, ===)
-      .replace(/^[-_=]{3,}\s*$/gm, "")
-      // 인용 (> 텍스트)
-      .replace(/^>\s*/gm, "")
-      // 숫자 이모지 (1️⃣, 2️⃣ 등)
-      .replace(/\d️⃣/g, "")
-      // 이모지 전체 제거
-      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-      .replace(/[\u{2600}-\u{27BF}]/gu, "")
-      .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-      .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
-      .replace(/[\u{20D0}-\u{20FF}]/gu, "")
-      // 변형 선택자 (이모지 스킨톤 등)
-      .replace(/\uFE0F/g, "")
-      .replace(/\u200D/g, "")
-      // 기타 특수 유니코드 기호 (✦ ✧ ★ ☆ ♦ 등)
-      .replace(/[✦✧★☆♦◆◇▶▷►◀◁◄□■●○◉]/g, "")
-      // 줄 앞의 특수기호 대시 (- 불릿은 유지, 순수 기호만 제거)
-      .replace(/^[•·▪▫◦‣⁃]\s*/gm, "")
-      // 연속 빈줄 정리
+      .replace(/`([^`]+)`/g, "$1")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   };
@@ -635,7 +612,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 결과 패널 ──
   const renderResult = () => {
-    // 포인트/횟수 소진 체크
+    // 크레딧/횟수 소진 체크
     const _us = _getUsageState();
     if (!loading && !result && _us.exhausted) {
       return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title="블로그 글"
@@ -928,7 +905,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {/* 생성 버튼 */}
           <div style={{padding:"10px 18px 14px",flexShrink:0}}>
             <button onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<span>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
+              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<span>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10cr</span></span>)}
             </button>
           </div>
         </div>

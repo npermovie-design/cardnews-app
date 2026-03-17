@@ -41,11 +41,7 @@ function useOnlineCount() {
   return count;
 }
 
-const SNS_LINKS = [
-  { label: "카카오톡", url: "https://open.kakao.com/o/gIw9vTFg",           bg: "#FEE500" },
-  { label: "인스타",   url: "https://www.instagram.com/nperinsight/",      bg: "#E1306C" },
-  { label: "유튜브",   url: "https://www.youtube.com/@nperinsight/videos", bg: "#FF0000" },
-];
+
 
 function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigate, onLogout }) {
   const isDark = theme === "dark";
@@ -143,26 +139,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
 
-        {/* 커뮤니티 */}
-        <div style={{ borderTop: `1px solid ${sideBdr}`, marginTop: 8, paddingTop: 8 }}>
-          <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>COMMUNITY</div>
-          {SNS_LINKS.map(s => (
-            <button key={s.label} onClick={() => window.open(s.url, "_blank")} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 7,
-              padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
-              background: "transparent", color: comText, fontSize: 11, textAlign: "left", marginBottom: 1,
-            }}>
-              <div style={{ width: 10, height: 10, borderRadius: 3, background: s.bg, flexShrink: 0 }} />{s.label}
-            </button>
-          ))}
-          <button onClick={onQna} style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 7,
-            padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer",
-            background: "rgba(251,191,36,0.07)", color: "#fbbf24", fontSize: 11, textAlign: "left",
-          }}>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: "#FEE500", flexShrink: 0 }} />질문 및 건의방
-          </button>
-        </div>
+
       </div>
 
       {/* 하단 프로필 카드 */}
@@ -174,7 +151,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         ) : (
           <div style={{ padding: "10px 12px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: usageText }}>비회원 💎 {Math.max(0, freeLimit - info.used) * 10}P 잔여</div>
+              <div style={{ fontSize: 11, color: usageText }}>비회원 💎 잔여 {Math.max(0,freeLimit-info.used)*10}cr</div>
               {onlineCount > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                   <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80" }} />
@@ -330,7 +307,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: text,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nick}</div>
-          <div style={{ fontSize: 11, color: ptColor, fontWeight: 600 }}>💎 {ptLeft.toLocaleString()}P 잔여</div>
+          <div style={{ fontSize: 11, color: ptColor, fontWeight: 600 }}>💎 {ptLeft.toLocaleString()}cr 잔여</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
           style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
@@ -747,6 +724,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
             setAiMenu("cardnews_make");
           }}
         />
+      </div>
+    );
+  }
+
+  // 상세페이지 만들기
+  if (aiMenu === "detail_page") {
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }

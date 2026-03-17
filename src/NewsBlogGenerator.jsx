@@ -116,12 +116,12 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
             ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+            : <><b style={{color:text}}>{title}</b> 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -135,7 +135,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 포인트 충전하기
+              💎 크레딧 충전하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
@@ -175,29 +175,6 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
   const [generating, setGenerating] = useState(false);
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
-
-  const cleanForCopy = (text) => {
-    return text
-      .replace(/^#{1,6}\s+/gm, "")
-      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
-      .replace(/\*\*([^*]+)\*\*/g, "$1")
-      .replace(/\*([^*]+)\*/g, "$1")
-      .replace(/`([^`]+)`/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/^[-_=]{3,}\s*$/gm, "")
-      .replace(/^>\s*/gm, "")
-      .replace(/\d️⃣/g, "")
-      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-      .replace(/[\u{2600}-\u{27BF}]/gu, "")
-      .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-      .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
-      .replace(/\uFE0F/g, "")
-      .replace(/\u200D/g, "")
-      .replace(/[✦✧★☆♦◆◇▶▷►◀◁◄□■●○◉]/g, "")
-      .replace(/^[•·▪▫◦‣⁃]\s*/gm, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-  };
 
   const IS = {
     width:"100%", padding:"13px 16px", borderRadius:10,
@@ -242,8 +219,9 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
     const _aiLimit = user ? 20 : 5;
     const _aiPoints = user ? (user.points || 0) : 0;
     // 비회원: 5회 초과 시 차단 / 회원: 20회 초과 + 포인트 확실히 0일 때만 차단
-    if (!user ? (_aiUsed >= _aiLimit) : (_aiUsed >= _aiLimit && _aiPoints === 0 && user.uid)) {
-      setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
+    // 로그인 회원 차단 없음, 비회원만 5회 초과 차단
+    if (!user && _aiUsed >= _aiLimit) {
+      setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 크레딧을 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
       return;
     }
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
@@ -543,7 +521,7 @@ ${articleSection}
                 boxShadow:"0 4px 20px rgba(239,68,68,0.3)",transition:"all 0.2s"}}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>)}
+                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10cr</span></span>)}
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
           </div>
@@ -563,7 +541,7 @@ ${articleSection}
           <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
             <span style={{fontSize:15,fontWeight:800,color:text}}>📄 작성 결과</span>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{navigator.clipboard.writeText(cleanForCopy(result));setCopied(true);setTimeout(()=>setCopied(false),2000);}}
+              <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
                 style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>
                 {copied?"✓ 복사됨":"📋 복사"}
               </button>

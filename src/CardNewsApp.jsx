@@ -90,7 +90,9 @@ function getUsage() { try { return JSON.parse(localStorage.getItem(USAGE_KEY) ||
 function getLeft(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
   var used = u[k] || 0; var lim = user ? FREE_MEMBER : FREE_GUEST;
-  return { used: used, limit: lim, canUse: used < lim };
+  // 로그인 회원은 크레딧 있으면 무조건 허용, 비회원만 횟수 제한
+  var canUse = user ? true : (used < lim);
+  return { used: used, limit: lim, canUse: canUse };
 }
 function consumeOne(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
@@ -1216,13 +1218,11 @@ function PageMake(props) {
   var _pk = props.user ? ("member_" + (props.user.uid || "u")) : "guest";
   var _pused = _pu[_pk] || 0;
   var _plim = props.user ? 20 : 5;
-  // 로그인 회원은 포인트 데이터가 로컬에 없을 수 있으므로 usage 기준으로만 체크
-  // 회원이면 포인트 충전 여부를 알 수 없으므로 횟수 초과 시만 소진 화면 표시
   var _ppts = props.user ? (props.user.points || 0) : 0;
-  // 회원이 20회 초과했더라도 points > 0이면 사용 가능, points 정보 없으면 허용
-  var _pEx = props.user
-    ? (_pused >= _plim && _ppts === 0 && props.user.uid)  // 회원: 20회 초과 + 포인트 확실히 0
-    : (_pused >= _plim);  // 비회원: 5회 초과
+  // 회원: uid 있고 포인트가 명확히 0이고 20회 초과한 경우만 소진 화면
+  // 포인트 정보가 없거나(undefined) 로드 안된 경우 → 허용 (사용 가능으로 처리)
+  // 로그인 회원 = 차단 없음 (크레딧은 생성 시 차감), 비회원만 5회 초과 시 차단
+  var _pEx = props.user ? false : (_pused >= _plim);
 
   if (_pEx) {
     return (
@@ -1230,12 +1230,12 @@ function PageMake(props) {
         <div style={{maxWidth:380, width:"100%"}}>
           <div style={{fontSize:56, marginBottom:14}}>💎</div>
           <div style={{fontSize:19, fontWeight:900, color:text, marginBottom:8}}>
-            {!props.user ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+            {!props.user ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
               ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 20회 추가 무료를 받으세요!</>
-              : <>카드뉴스 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>}
+              : <>카드뉴스 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>}
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
@@ -1246,7 +1246,7 @@ function PageMake(props) {
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
                 style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                💎 포인트 충전하기
+                💎 크레딧 충전하기
               </button>
             )}
             <button onClick={function(){ window.location.hash = "#contact"; }}
@@ -1260,27 +1260,26 @@ function PageMake(props) {
   }
 
   return (
-    <div style={{flex:1, overflowY:"auto", color:text}}>
-    <div style={{maxWidth:860, margin:"0 auto", padding:"28px 32px 80px"}}>
-      <div style={{display:"flex", alignItems:"center", marginBottom:28, gap:0}}>
+    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
+      <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
           return (
             <div key={st.n} style={{display:"flex", alignItems:"center", gap:5}}>
               <div style={{display:"flex", alignItems:"center", gap:5, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
-                <div style={{width:30, height:30, borderRadius:"50%",
+                <div style={{width:21, height:21, borderRadius:"50%",
                   background: done ? stepDone : (active ? stepAct : stepInact),
                   border: active ? "2px solid #6366f1" : "2px solid transparent",
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:12, fontWeight:800,
+                  fontSize:9, fontWeight:700,
                   color: (done || active) ? stepActTxt : stepInTxt}}>
                   {done ? "✓" : st.n}
                 </div>
-                <span style={{fontSize:14, fontWeight: active ? 800 : 500,
+                <span style={{fontSize:11, fontWeight: active ? 700 : 400,
                   color: active ? text : (done ? stepLbl : stepInTxt)}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{flex:1, height:2, background: D ? "rgba(255,255,255,0.15)" : "#e0e0e0", margin:"0 10px"}}/>}
+              {si < 2 && <div style={{width:18, height:1, background: D ? "rgba(255,255,255,0.15)" : "#ddd"}}/>}
             </div>
           );
         })}
@@ -1289,8 +1288,7 @@ function PageMake(props) {
       {makeStep === 1 && (
         <div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:24, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:6}}>주제를 입력하세요</div>
-          <div style={{fontSize:14, color:muted}}>만들고 싶은 카드뉴스의 주제나 내용을 입력해주세요</div>
+            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
             <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
@@ -1299,10 +1297,10 @@ function PageMake(props) {
                 var isC = topic === ex.text;
                 return (
                   <button key={ex.label} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"7px 14px", borderRadius:14, border:"1px solid "+inputBdr,
+                    style={{padding:"5px 11px", borderRadius:14, border:"1px solid "+inputBdr,
                       background: isC ? tagAbg : tagBg,
                       color: isC ? tagAClr : tagClr,
-                      fontSize:13, cursor:"pointer", fontWeight:600}}>
+                      fontSize:11, cursor:"pointer", fontWeight:600}}>
                     {ex.label}
                   </button>
                 );
@@ -1311,17 +1309,17 @@ function PageMake(props) {
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
               placeholder="주제를 직접 입력하세요..." rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
-                borderRadius:8, padding:"11px 14px", color:text, fontSize:15,
+                borderRadius:8, padding:"9px 12px", color:text, fontSize:13,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box"}}/>
             <div style={{display:"flex", alignItems:"center", gap:8, marginTop:9}}>
-              <span style={{color:muted, fontSize:13, fontWeight:600}}>슬라이드 수</span>
+              <span style={{color:muted, fontSize:11}}>슬라이드 수</span>
               <div style={{display:"flex", gap:3}}>
                 {[3,4,5,6,7,8,10,12].map(function(n) {
                   var isC = cnt === n;
                   return (
                     <button key={n} onClick={function() { setCnt(n); }}
-                      style={{width:36, height:36, borderRadius:8, border:"none", cursor:"pointer",
-                        fontSize:13, fontWeight:700,
+                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer",
+                        fontSize:11, fontWeight:700,
                         background: isC ? "#6366f1" : (D ? "rgba(255,255,255,0.08)" : "#ede9fc"),
                         color: isC ? "#fff" : (D ? "rgba(255,255,255,0.4)" : "#6366f1")}}>
                       {n}
@@ -1337,7 +1335,7 @@ function PageMake(props) {
                 cursor: canGo ? "pointer" : "not-allowed",
                 background: canGo ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
-                fontSize:15, fontWeight:800, padding:"13px 36px"}}>
+                fontSize:13, fontWeight:700}}>
               다음 →
             </button>
           </div>
@@ -1347,8 +1345,8 @@ function PageMake(props) {
       {makeStep === 2 && (
         <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
           <div style={{width: narrow ? "100%" : 286, flexShrink:0, display:"flex", flexDirection:"column"}}>
-            <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>디자인 스타일 선택</div>
-            <div style={{fontSize:13, color:muted, marginBottom:16}}>클릭하면 오른쪽 크게 보여요 · 건너뛰기 가능</div>
+            <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
+            <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
             <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
               {DESIGN_PRESETS.map(function(dp) {
                 var isC = selPreset && selPreset.key === dp.key;
@@ -1371,9 +1369,9 @@ function PageMake(props) {
                   ← 이전
                 </button>
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
-                  style={{padding:"13px 36px", borderRadius:10, border:"none", cursor:"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900}}>
-                  {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
+                  style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
+                  {loading ? "생성 중..." : <span>카드뉴스 생성 ✨ <span style={{fontSize:11, opacity:0.8, background:"rgba(255,255,255,0.15)", padding:"1px 6px", borderRadius:8, marginLeft:4}}>💎 10cr</span></span>}
                 </button>
               </div>
             </div>
@@ -1465,7 +1463,6 @@ function PageMake(props) {
           )}
         </div>
       )}
-    </div>
     </div>
   );
 }
@@ -1584,7 +1581,7 @@ export function CardNewsApp(props) {
   async function generate() {
     if (!topic.trim()) { return; }
     var left = getLeft(user);
-    if (!left.canUse) { setErr(user ? "무료 횟수 초과" : "비회원 " + FREE_GUEST + "회 초과"); return; }
+    if (!left.canUse) { setErr(user ? "크레딧 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
     setLoading(true); setErr("");
     try {
       var sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\"}]}";
