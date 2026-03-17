@@ -32,20 +32,12 @@ var BG_COLORS = [
 var TEXT_COLORS = ["#ffffff","#000000","#fef3c7","#dcfce7","#dbeafe","#fce7f3","#a5b4fc","#f0abfc"];
 
 var DESIGN_PRESETS = [
-  {key:"bold_dark",   label:"볼드 다크",   bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"minimal",     label:"미니멀",      bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
-  {key:"neon",        label:"네온",        bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"warm_cream",  label:"크림 웜",     bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
-  {key:"forest",      label:"포레스트",    bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"ocean",       label:"오션",        bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"rose_gold",   label:"로즈골드",    bgColor:"#fff1f2", textColor:"#881337", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.75},
-  {key:"purple_haze", label:"퍼플 헤이즈", bgColor:"#1e0a3c", textColor:"#e9d5ff", titleSize:29, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"sunset",      label:"선셋",        bgColor:"#431407", textColor:"#fed7aa", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.75},
-  {key:"sky_blue",    label:"스카이",      bgColor:"#f0f9ff", textColor:"#0c4a6e", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.8},
-  {key:"charcoal",    label:"차콜",        bgColor:"#1f2937", textColor:"#f9fafb", titleSize:29, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"mint_fresh",  label:"민트",        bgColor:"#ecfdf5", textColor:"#064e3b", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
-  {key:"gold_luxury", label:"골드 럭셔리", bgColor:"#1c1400", textColor:"#fbbf24", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"soft_pink",   label:"소프트 핑크", bgColor:"#fdf2f8", textColor:"#831843", titleSize:27, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"bottom", hlMode:"underline", lineHeightTitle:1.4, lineHeightBody:1.8},
+  {key:"bold_dark",  label:"볼드 다크",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"minimal",    label:"미니멀",     bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
+  {key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
+  {key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
 ];
 
 var EXAMPLES = [
@@ -173,32 +165,18 @@ function wrapText(ctx, text, maxW) {
   for (var pi = 0; pi < paras.length; pi++) {
     var para = paras[pi];
     if (!para) { lines.push(""); continue; }
-    // 한글 포함 여부 체크 → 글자 단위 래핑
-    var hasKorean = /[\uAC00-\uD7A3]/.test(para);
-    if (hasKorean) {
-      // 글자 단위 + 공백 단위 혼합 래핑
-      var cur = "";
-      for (var ci = 0; ci < para.length; ci++) {
-        var ch = para[ci];
-        var test = cur + ch;
-        if (ctx.measureText(test).width > maxW && cur) {
-          lines.push(cur); cur = ch;
-        } else { cur = test; }
+    var words = para.split(" ");
+    var cur = "";
+    for (var wi = 0; wi < words.length; wi++) {
+      var word = words[wi];
+      var test = cur ? cur + " " + word : word;
+      if (ctx.measureText(test).width > maxW && cur) {
+        lines.push(cur); cur = word;
+      } else {
+        cur = test;
       }
-      if (cur) { lines.push(cur); }
-    } else {
-      // 영문: 단어 단위 래핑
-      var words = para.split(" ");
-      var cur2 = "";
-      for (var wi = 0; wi < words.length; wi++) {
-        var word = words[wi];
-        var test2 = cur2 ? cur2 + " " + word : word;
-        if (ctx.measureText(test2).width > maxW && cur2) {
-          lines.push(cur2); cur2 = word;
-        } else { cur2 = test2; }
-      }
-      if (cur2) { lines.push(cur2); }
     }
+    if (cur) { lines.push(cur); }
   }
   return lines.length ? lines : [""];
 }
@@ -283,11 +261,10 @@ function drawSlide(canvas, slide, style, bgImgEl) {
   else { startY = Math.round((CH - totalH) / 2); }
   var y = Math.max(minY, startY);
 
-  // 텍스트 정렬 헬퍼 (padX 안에서 정렬 → 넘침 방지)
+  // 텍스트 정렬 헬퍼
   function getX(lineW) {
-    var safeW = Math.min(lineW, maxW);
-    if (al === "center") { return Math.round(padX + (maxW - safeW) / 2); }
-    if (al === "right")  { return CW - padX - safeW; }
+    if (al === "center") { return Math.round((CW - lineW) / 2); }
+    if (al === "right")  { return CW - padX - lineW; }
     return padX;
   }
   function drawLines(ls, fnt, color, alpha, lineH) {
@@ -331,7 +308,7 @@ function drawSlide(canvas, slide, style, bgImgEl) {
     }
     var pad2 = Math.round(hSz * 1.2);
     var blockH = hlLines.length * Math.round(hSz * 1.55) + Math.round(hSz * 0.5);
-    var boxX = getX(mxW + pad2 * 2);
+    var boxX = getX(mxW + pad2 * 2) - Math.round(hSz * 0.1);
     if (hlMode === "pill") {
       ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = tc;
       ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, Math.round(hSz * 0.7));
@@ -367,7 +344,7 @@ function SlideCanvas(props) {
   var rObj = RATIOS[0];
   for (var ri = 0; ri < RATIOS.length; ri++) { if (RATIOS[ri].key === (style.ratio || "1:1")) { rObj = RATIOS[ri]; break; } }
   return (
-    <div style={{width:Math.min(width, width), maxWidth:"100%", height:Math.round(width * rObj.H / rObj.W), borderRadius:thumb ? 6 : 12, overflow:"hidden", boxShadow:thumb ? "none" : "0 8px 40px rgba(0,0,0,0.55)", flexShrink:0}}>
+    <div style={{width:width, height:Math.round(width * rObj.H / rObj.W), borderRadius:thumb ? 6 : 12, overflow:"hidden", boxShadow:thumb ? "none" : "0 8px 40px rgba(0,0,0,0.55)", flexShrink:0}}>
       <canvas ref={cRef} style={{width:"100%", height:"100%", display:"block"}}/>
     </div>
   );
@@ -587,7 +564,7 @@ function EditPanel(props) {
   var curSlide = props.curSlide; var curEd = props.curEd; var updEd = props.updEd;
   var selPreset = props.selPreset; var applyPreset = props.applyPreset;
   return (
-    <div style={{width:340, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
+    <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
         <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>디자인 프리셋</div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
@@ -622,11 +599,11 @@ function PreviewPanel(props) {
   var prevDis = idx === 0; var nextDis = idx === slides.length - 1;
   var msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
   return (
-    <div style={{flex:1, overflowY:"auto", overflowX:"hidden", padding:"14px 12px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, minWidth:0}}>
-      <div style={{width:"100%", maxWidth:previewW, display:"flex", flexDirection:"column", alignItems:"center", gap:10, minWidth:0}}>
-        <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", minWidth:0, overflow:"hidden"}}>
-          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0, marginRight:8}}>{tname}</div>
-          <div style={{display:"flex", gap:5, alignItems:"center", flexShrink:0}}>
+    <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
+      <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+        <div style={{width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <div style={{fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600}}>{tname}</div>
+          <div style={{display:"flex", gap:5, alignItems:"center"}}>
             <button onClick={function() { setIdx(Math.max(0, idx - 1)); }} disabled={prevDis}
               style={{width:30, height:30, borderRadius:7, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.06)", color:"#fff", cursor: prevDis ? "not-allowed" : "pointer", fontSize:16, opacity: prevDis ? 0.25 : 1}}>
               &#8249;
@@ -662,7 +639,7 @@ function PreviewPanel(props) {
         {dlSt.msg && <div style={{fontSize:11, color:msgCol, textAlign:"center"}}>{dlSt.msg}</div>}
       </div>
 
-      <div style={{width:"100%", maxWidth:previewW}}>
+      <div style={{width:"100%", maxWidth:previewW + 40}}>
         <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
         <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
           {slides.map(function(s, i) {
@@ -1283,26 +1260,27 @@ function PageMake(props) {
   }
 
   return (
-    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
-      <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
+    <div style={{flex:1, overflowY:"auto", color:text}}>
+    <div style={{maxWidth:860, margin:"0 auto", padding:"28px 32px 80px"}}>
+      <div style={{display:"flex", alignItems:"center", marginBottom:28, gap:0}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
           return (
             <div key={st.n} style={{display:"flex", alignItems:"center", gap:5}}>
               <div style={{display:"flex", alignItems:"center", gap:5, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
-                <div style={{width:21, height:21, borderRadius:"50%",
+                <div style={{width:30, height:30, borderRadius:"50%",
                   background: done ? stepDone : (active ? stepAct : stepInact),
                   border: active ? "2px solid #6366f1" : "2px solid transparent",
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:9, fontWeight:700,
+                  fontSize:12, fontWeight:800,
                   color: (done || active) ? stepActTxt : stepInTxt}}>
                   {done ? "✓" : st.n}
                 </div>
-                <span style={{fontSize:11, fontWeight: active ? 700 : 400,
+                <span style={{fontSize:14, fontWeight: active ? 800 : 500,
                   color: active ? text : (done ? stepLbl : stepInTxt)}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{width:18, height:1, background: D ? "rgba(255,255,255,0.15)" : "#ddd"}}/>}
+              {si < 2 && <div style={{flex:1, height:2, background: D ? "rgba(255,255,255,0.15)" : "#e0e0e0", margin:"0 10px"}}/>}
             </div>
           );
         })}
@@ -1311,7 +1289,8 @@ function PageMake(props) {
       {makeStep === 1 && (
         <div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
+            <div style={{fontSize:24, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:6}}>주제를 입력하세요</div>
+          <div style={{fontSize:14, color:muted}}>만들고 싶은 카드뉴스의 주제나 내용을 입력해주세요</div>
           </div>
           <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
             <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
@@ -1320,10 +1299,10 @@ function PageMake(props) {
                 var isC = topic === ex.text;
                 return (
                   <button key={ex.label} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"5px 11px", borderRadius:14, border:"1px solid "+inputBdr,
+                    style={{padding:"7px 14px", borderRadius:14, border:"1px solid "+inputBdr,
                       background: isC ? tagAbg : tagBg,
                       color: isC ? tagAClr : tagClr,
-                      fontSize:11, cursor:"pointer", fontWeight:600}}>
+                      fontSize:13, cursor:"pointer", fontWeight:600}}>
                     {ex.label}
                   </button>
                 );
@@ -1332,17 +1311,17 @@ function PageMake(props) {
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
               placeholder="주제를 직접 입력하세요..." rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
-                borderRadius:8, padding:"9px 12px", color:text, fontSize:13,
+                borderRadius:8, padding:"11px 14px", color:text, fontSize:15,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box"}}/>
             <div style={{display:"flex", alignItems:"center", gap:8, marginTop:9}}>
-              <span style={{color:muted, fontSize:11}}>슬라이드 수</span>
+              <span style={{color:muted, fontSize:13, fontWeight:600}}>슬라이드 수</span>
               <div style={{display:"flex", gap:3}}>
                 {[3,4,5,6,7,8,10,12].map(function(n) {
                   var isC = cnt === n;
                   return (
                     <button key={n} onClick={function() { setCnt(n); }}
-                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer",
-                        fontSize:11, fontWeight:700,
+                      style={{width:36, height:36, borderRadius:8, border:"none", cursor:"pointer",
+                        fontSize:13, fontWeight:700,
                         background: isC ? "#6366f1" : (D ? "rgba(255,255,255,0.08)" : "#ede9fc"),
                         color: isC ? "#fff" : (D ? "rgba(255,255,255,0.4)" : "#6366f1")}}>
                       {n}
@@ -1358,7 +1337,7 @@ function PageMake(props) {
                 cursor: canGo ? "pointer" : "not-allowed",
                 background: canGo ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
-                fontSize:13, fontWeight:700}}>
+                fontSize:15, fontWeight:800, padding:"13px 36px"}}>
               다음 →
             </button>
           </div>
@@ -1366,11 +1345,11 @@ function PageMake(props) {
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row", overflow:"hidden"}}>
-          <div style={{width: narrow ? "100%" : 380, flexShrink:0, display:"flex", flexDirection:"column"}}>
-            <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
-            <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
-            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:7, marginBottom:12}}>
+        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
+          <div style={{width: narrow ? "100%" : 286, flexShrink:0, display:"flex", flexDirection:"column"}}>
+            <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>디자인 스타일 선택</div>
+            <div style={{fontSize:13, color:muted, marginBottom:16}}>클릭하면 오른쪽 크게 보여요 · 건너뛰기 가능</div>
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
               {DESIGN_PRESETS.map(function(dp) {
                 var isC = selPreset && selPreset.key === dp.key;
                 return (
@@ -1378,7 +1357,7 @@ function PageMake(props) {
                     style={{borderRadius:9, overflow:"hidden", cursor:"pointer",
                       border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
                       boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none"}}>
-                    <PresetCanvas dp={dp} size={96} isC={isC} onClick={function() {}}/>
+                    <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
                   </div>
                 );
               })}
@@ -1392,20 +1371,19 @@ function PageMake(props) {
                   ← 이전
                 </button>
                 <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
-                  style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
+                  style={{padding:"13px 36px", borderRadius:10, border:"none", cursor:"pointer",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900}}>
                   {loading ? "생성 중..." : "카드뉴스 생성 ✨"}
                 </button>
               </div>
             </div>
           </div>
           {!narrow && <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-            background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px",
-            overflow:"hidden", minWidth:0}}>
+            background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
             {selPreset ? (
-              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:"100%"}}>
+              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
                 <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>{"✔ " + selPreset.label}</div>
-                <PresetCanvas dp={selPreset} size={Math.min(280, 280)} isC={true} onClick={function() {}}/>
+                <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
               </div>
             ) : (
               <div style={{textAlign:"center", opacity:0.4}}>
@@ -1487,6 +1465,7 @@ function PageMake(props) {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }
@@ -1685,13 +1664,8 @@ export function CardNewsApp(props) {
     } catch(e2) { setDlSt({busy:false, msg:"ZIP 실패: " + e2.message}); }
   }
 
-  var editPanelW = 340;
-  var outerSideW = props.embedded ? 210 : 0; // AiSidebar
-  var totalSide  = editPanelW + outerSideW;
-  var previewW   = narrow
-    ? Math.min(winW - 40, 380)
-    : Math.min(Math.floor((winW - totalSide - 80)), 560);
-  if (previewW < 260) { previewW = 260; }
+  var previewW = narrow ? Math.min(winW - 40, 380) : Math.min(Math.floor((winW - 270) * 0.62), 620);
+  if (previewW < 300) { previewW = 300; }
 
   var isLight = props.theme === "light";
   var mainBg    = isLight ? "#f4f4f8"               : "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)";

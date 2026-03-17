@@ -435,6 +435,7 @@ export default function DetailPageGenerator({ isDark }) {
   const [curIdx,    setCurIdx]    = useState(0);
   const [saving,    setSaving]    = useState(false);
   const [regenIdx,  setRegenIdx]  = useState(null);  // 개별 재생성 중인 슬라이드 인덱스
+  const [slotSaveMsg, setSlotSaveMsg] = useState({});  // {idx: "✅"} 슬라이드별 저장 메시지
   const [saveMsg,   setSaveMsg]   = useState("");
 
   // ── 공통 ────────────────────────────────────────────────────
@@ -488,7 +489,20 @@ export default function DetailPageGenerator({ isDark }) {
       const saves = JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]");
       saves.unshift({ id:Date.now().toString(), productName:form.productName, catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:images.filter(Boolean).length, thumbnail:images.find(Boolean)||null, images:images.filter(Boolean) });
       localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(saves.slice(0,50)));
-    } catch(e) {}
+      return true;
+    } catch(e) { return false; }
+  };
+  // 현재 슬라이드 한 장만 보관함에 저장
+  const saveOneToLibrary = (idx) => {
+    const png = rendered[idx];
+    const slide = slides[idx];
+    if (!png || !slide) return false;
+    try {
+      const saves = JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]");
+      saves.unshift({ id:Date.now().toString(), productName:`${form.productName} — ${slide.label}`, catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:1, thumbnail:png, images:[png] });
+      localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(saves.slice(0,50)));
+      return true;
+    } catch(e) { return false; }
   };
 
   // 생성 실행
@@ -1107,10 +1121,37 @@ ${kw}
                         <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:8,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}
                       </div>}
                 </div>
-                <div style={{ display:"flex",gap:8,marginTop:10 }}>
-                  <button onClick={saveCurrent} disabled={!currentPng} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:currentPng?"pointer":"not-allowed",background:accentColor,color:"#fff",fontSize:13,fontWeight:800,opacity:currentPng?1:0.4 }}>이 슬라이드 저장</button>
-                  {currentPng && !loading && <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"11px 16px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>🔄 재생성</button>}
-                  <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>{saving?"ZIP 저장 중...":"전체 ZIP"}</button>
+                {/* AI 이미지 글 깨짐 안내 */}
+                <div style={{ marginTop:10, padding:"9px 13px", borderRadius:9, background:isDark?"rgba(255,200,0,0.07)":"rgba(180,120,0,0.06)", border:`1px solid ${isDark?"rgba(255,200,0,0.2)":"rgba(180,120,0,0.15)"}`, display:"flex", gap:8, alignItems:"flex-start" }}>
+                  <span style={{ fontSize:13, flexShrink:0 }}>💡</span>
+                  <div style={{ fontSize:11, color:isDark?"rgba(255,220,80,0.85)":"rgba(100,70,0,0.8)", lineHeight:1.65 }}>
+                    AI가 직접 생성한 이미지이므로 <b>이미지 내 텍스트가 깨지거나 어색하게 표시될 수 있어요.</b> 결과가 마음에 들지 않으면 재생성해보세요.
+                  </div>
+                </div>
+                <div style={{ display:"flex",gap:8,marginTop:8 }}>
+                  {/* PNG 다운로드 */}
+                  <button onClick={saveCurrent} disabled={!currentPng}
+                    style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:currentPng?"pointer":"not-allowed",background:accentColor,color:"#fff",fontSize:13,fontWeight:800,opacity:currentPng?1:0.4 }}>
+                    PNG 저장
+                  </button>
+                  {/* 보관함 저장 */}
+                  <button onClick={()=>{
+                    if (saveOneToLibrary(curIdx)) {
+                      setSlotSaveMsg(p=>({...p,[curIdx]:"✅ 보관함 저장!"}));
+                      setTimeout(()=>setSlotSaveMsg(p=>({...p,[curIdx]:""})), 2500);
+                    }
+                  }} disabled={!currentPng}
+                    style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${accentColor}`,background:`${accentColor}15`,color:accentColor,fontSize:13,fontWeight:800,cursor:currentPng?"pointer":"not-allowed",opacity:currentPng?1:0.4 }}>
+                    {slotSaveMsg[curIdx] || "📁 보관함"}
+                  </button>
+                  {currentPng && !loading && (
+                    <button onClick={()=>regenerateOne(curIdx)}
+                      style={{ padding:"11px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>🔄</button>
+                  )}
+                  <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving}
+                    style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>
+                    {saving?"ZIP 저장 중...":"전체 ZIP"}
+                  </button>
                 </div>
               </div>
               {/* 섬네일 + 슬라이드별 재생성 */}
@@ -1140,18 +1181,24 @@ ${kw}
                         </div>
                       </div>
                       {/* 슬라이드명 + 재생성 버튼 */}
-                      <div style={{ padding:"4px 5px 5px", background:isDark?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:3 }}>
+                      <div style={{ padding:"4px 5px 5px", background:isDark?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:2 }}>
                         <div style={{ fontSize:9, color:isActive?accentColor:muted, fontWeight:isActive?800:500, lineHeight:1.2, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {s.label}
+                          {slotSaveMsg[i] ? <span style={{ color:"#4ade80", fontSize:8 }}>{slotSaveMsg[i]}</span> : s.label}
                         </div>
+                        {/* 보관함 저장 버튼 */}
+                        <button
+                          onClick={e => { e.stopPropagation(); if(hasImg && !isRegen) { saveOneToLibrary(i); setSlotSaveMsg(p=>({...p,[i]:"✅"})); setTimeout(()=>setSlotSaveMsg(p=>({...p,[i]:""})), 2500); } }}
+                          disabled={!hasImg || isRegen}
+                          title={`${s.label} 보관함 저장`}
+                          style={{ flexShrink:0, width:20, height:20, borderRadius:5, border:`1px solid ${bdr}`, background:"transparent", color:muted, cursor:hasImg&&!isRegen?"pointer":"not-allowed", fontSize:9, display:"flex", alignItems:"center", justifyContent:"center", opacity:hasImg&&!isRegen?1:0.3, padding:0 }}>
+                          📁
+                        </button>
                         {/* 재생성 버튼 */}
                         <button
                           onClick={e => { e.stopPropagation(); regenerateOne(i); }}
                           disabled={isRegen || regenIdx !== null || loading}
                           title={`${s.label} 재생성`}
-                          style={{ flexShrink:0, width:20, height:20, borderRadius:5, border:`1px solid ${isActive?accentColor:bdr}`, background:"transparent", color:isActive?accentColor:muted, cursor:isRegen||regenIdx!==null||loading?"not-allowed":"pointer", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center", opacity:isRegen||regenIdx!==null||loading?0.4:1, transition:"all 0.12s", padding:0 }}
-                          onMouseEnter={e => { if(!isRegen&&regenIdx===null&&!loading) { e.currentTarget.style.background=`${accentColor}15`; e.currentTarget.style.borderColor=accentColor; } }}
-                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=isActive?accentColor:bdr; }}>
+                          style={{ flexShrink:0, width:20, height:20, borderRadius:5, border:`1px solid ${isActive?accentColor:bdr}`, background:"transparent", color:isActive?accentColor:muted, cursor:isRegen||regenIdx!==null||loading?"not-allowed":"pointer", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center", opacity:isRegen||regenIdx!==null||loading?0.4:1, transition:"all 0.12s", padding:0 }}>
                           {isRegen ? "⟳" : "↺"}
                         </button>
                       </div>
