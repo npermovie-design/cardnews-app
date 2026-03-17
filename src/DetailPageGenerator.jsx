@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { changePoints } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    상세페이지 만들기 v7
@@ -401,7 +402,7 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트 - 3단계 위저드
 // ══════════════════════════════════════════════════════════════
-export default function DetailPageGenerator({ isDark }) {
+export default function DetailPageGenerator({ isDark, user }) {
   // ── 위저드 단계 ─────────────────────────────────────────────
   const [wizStep, setWizStep] = useState(1); // 1:상품입력 2:슬라이드기획 3:디자인 4:생성결과
 
@@ -551,6 +552,10 @@ export default function DetailPageGenerator({ isDark }) {
           let raw = await generateSlideImage(prompt, prodImg);
           if (raw && (imgW !== 1000 || imgH !== 1000)) raw = await resizeImage(raw, imgW, imgH);
           results[i] = raw;
+          // 이미지 생성 성공 시 30 크레딧 차감
+          if (raw && user?.uid) {
+            changePoints(user.uid, -30, `상세페이지 이미지 생성 (${s.label})`).catch(()=>{});
+          }
         } catch(e) { results[i] = null; }
         setRendered([...results]);
         await new Promise(r => setTimeout(r, 50));
@@ -572,6 +577,9 @@ export default function DetailPageGenerator({ isDark }) {
       let img = await generateSlideImage(prompt, prodImg);
       if (img && (imgW !== 1000 || imgH !== 1000)) img = await resizeImage(img, imgW, imgH);
       setRendered(prev => { const r=[...prev]; r[idx]=img; return r; });
+      if (img && user?.uid) {
+        changePoints(user.uid, -30, `상세페이지 재생성 (${slides[idx]?.label})`).catch(()=>{});
+      }
     } catch(e) { setErr("재생성 실패: " + e.message); }
     setRegenIdx(null);
   };
@@ -1037,10 +1045,16 @@ ${kw}
               style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>
               ← 이전
             </button>
-            <button onClick={()=>{ setWizStep(4); generate(); }}
-              style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
-              이미지 {pageCount}장 생성하기 →
-            </button>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:12, color:muted, marginBottom:6 }}>
+                예상 차감: <b style={{ color:accentColor }}>{pageCount * 30} 크레딧</b>
+                {user && <span style={{ marginLeft:8, color:muted }}>· 보유 {(user.points||0).toLocaleString()} cr</span>}
+              </div>
+              <button onClick={()=>{ setWizStep(4); generate(); }}
+                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
+                이미지 {pageCount}장 생성하기 →
+              </button>
+            </div>
           </div>
         </div>
       </div>

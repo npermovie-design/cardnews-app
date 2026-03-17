@@ -147,7 +147,7 @@ export function AboutPage({ navigate, C }) {
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>지금 바로 시작해보세요</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             회원가입 없이 5회 무료 체험 가능해요.<br/>
-            가입하면 즉시 10P 지급 + AI 생성기 풀 이용 가능!
+            가입하면 즉시 200 크레딧 지급 + AI 생성기 풀 이용 가능!
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <Btn C={C} onClick={() => navigate("ai")}>✨ AI 생성기 무료 체험</Btn>
@@ -433,7 +433,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                   background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
               </div>
               <div style={{ fontSize: 11, color: muted, marginTop: 5 }}>
-                AI 1회=10P · {ptLeft >= 10 ? Math.floor(ptLeft/10) + "회 생성 가능" : "⚠️ 포인트 부족"}
+                AI글=10cr · 이미지슬라이드=30cr · {ptLeft >= 10 ? "잔여 " + ptLeft.toLocaleString() + "cr" : "⚠️ 크레딧 부족"}
               </div>
             </div>
           </div>
@@ -1044,7 +1044,7 @@ export function PricingPage({ navigate, C }) {
     {
       id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
       color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["가입 시 50P 자동 지급","게시글 작성 1P 적립","댓글 작성 포인트 없음","일일 로그인 3P 적립","포인트 소진 시 충전"],
+      features: ["가입 시 200 크레딧 자동 지급","게시글 작성 1 크레딧 적립","댓글 작성 포인트 없음","일일 로그인 3 크레딧 적립","크레딧 소진 시 충전"],
       btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
       badge: null, highlight: false,
     },
@@ -1058,7 +1058,7 @@ export function PricingPage({ navigate, C }) {
     {
       id: "pro", name: "Pro", price: "19,900원", points: 1200, aiCount: 120,
       color: "#6366f1", gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-      features: ["1,200P 즉시 충전","AI 생성 120회 분량","게시글 적립 포함","우선 고객 지원"],
+      features: ["9,500 크레딧 즉시 충전","AI 생성 950회 분량","게시글 적립 포함","우선 고객 지원"],
       btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" },
       badge: "🔥 추천", highlight: true,
     },
@@ -1127,7 +1127,7 @@ export function PricingPage({ navigate, C }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon: "🎁", action: "회원가입", pt: "+50P", desc: "가입 즉시" },
+            { icon: "🎁", action: "회원가입", pt: "+200cr", desc: "가입 즉시" },
             { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
             { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
             { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
