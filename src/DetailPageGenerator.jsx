@@ -432,6 +432,7 @@ export default function DetailPageGenerator({ isDark }) {
   const [err,       setErr]       = useState("");
   const [curIdx,    setCurIdx]    = useState(0);
   const [saving,    setSaving]    = useState(false);
+  const [regenIdx,  setRegenIdx]  = useState(null);  // 개별 재생성 중인 슬라이드 인덱스
   const [saveMsg,   setSaveMsg]   = useState("");
 
   // ── 공통 ────────────────────────────────────────────────────
@@ -522,15 +523,17 @@ export default function DetailPageGenerator({ isDark }) {
   };
 
   const regenerateOne = async (idx) => {
-    if (!slides[idx]) return;
-    setLoading(true);
+    if (!slides[idx] || regenIdx !== null) return;
+    setRegenIdx(idx);
     const NEGATIVE = " CRITICAL: NO clipart, NO icons, NO emoji, NO cartoon illustrations, NO vector graphics. Only real commercial photography and professional graphic design typography.";
     try {
+      const prodImg = productImages.length > 0 ? productImages[idx % productImages.length]?.dataUrl : null;
       const prompt = buildPrompt(slides[idx], cat, form.productName, refStyle, imgW, imgH, selStyle) + NEGATIVE;
-      const img = await generateSlideImage(prompt);
+      let img = await generateSlideImage(prompt, prodImg);
+      if (img && (imgW !== 1000 || imgH !== 1000)) img = await resizeImage(img, imgW, imgH);
       setRendered(prev => { const r=[...prev]; r[idx]=img; return r; });
     } catch(e) { setErr("재생성 실패: " + e.message); }
-    setLoading(false);
+    setRegenIdx(null);
   };
 
   const saveCurrent = () => {
@@ -935,18 +938,51 @@ export default function DetailPageGenerator({ isDark }) {
                   <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>{saving?"ZIP 저장 중...":"전체 ZIP"}</button>
                 </div>
               </div>
-              {/* 섬네일 */}
-              <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
-                {slides.map((s,i)=>(
-                  <div key={i} onClick={()=>setCurIdx(i)} style={{ cursor:"pointer",borderRadius:9,overflow:"hidden",border:i===curIdx?`2.5px solid ${accentColor}`:`2.5px solid transparent`,transition:"all 0.12s",width:100 }}>
-                    {rendered[i]
-                      ? <img src={rendered[i]} alt="" style={{ width:100,height:Math.round(100*imgH/imgW),display:"block",objectFit:"cover" }}/>
-                      : <div style={{ width:100,height:Math.round(100*imgH/imgW),background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                          <div style={{ width:18,height:18,borderRadius:"50%",border:`2px solid ${accentColor}50`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
-                        </div>}
-                    <div style={{ fontSize:9,color:i===curIdx?accentColor:muted,textAlign:"center",padding:"3px 2px",fontWeight:i===curIdx?800:400,background:isDark?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.9)",lineHeight:1.3 }}>{s.label}</div>
-                  </div>
-                ))}
+              {/* 섬네일 + 슬라이드별 재생성 */}
+              <div style={{ display:"flex", flexDirection:"column", gap:6, flexShrink:0, width:110 }}>
+                {slides.map((s, i) => {
+                  const isRegen = regenIdx === i;
+                  const isActive = curIdx === i;
+                  const hasImg = !!rendered[i];
+                  return (
+                    <div key={i} style={{ borderRadius:10, overflow:"hidden", border:`2px solid ${isActive ? accentColor : "transparent"}`, transition:"all 0.12s", background: isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                      {/* 썸네일 이미지 클릭 → 선택 */}
+                      <div onClick={()=>setCurIdx(i)} style={{ cursor:"pointer", position:"relative" }}>
+                        {hasImg && !isRegen
+                          ? <img src={rendered[i]} alt="" style={{ width:"100%", height:Math.round(110*imgH/imgW), display:"block", objectFit:"cover" }}/>
+                          : <div style={{ width:"100%", height:Math.round(110*imgH/imgW), background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              {isRegen
+                                ? <div style={{ textAlign:"center" }}>
+                                    <div style={{ width:20,height:20,borderRadius:"50%",border:`2px solid ${accentColor}50`,borderTopColor:accentColor,animation:"spin 1s linear infinite",margin:"0 auto 4px" }}/>
+                                    <div style={{ fontSize:9,color:accentColor,fontWeight:700 }}>생성중</div>
+                                  </div>
+                                : <div style={{ width:16,height:16,borderRadius:"50%",border:`2px solid ${accentColor}40`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
+                              }
+                            </div>}
+                        {/* 슬라이드 번호 배지 */}
+                        <div style={{ position:"absolute",top:4,left:4,width:18,height:18,borderRadius:5,background:isActive?accentColor:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff" }}>
+                          {i+1}
+                        </div>
+                      </div>
+                      {/* 슬라이드명 + 재생성 버튼 */}
+                      <div style={{ padding:"4px 5px 5px", background:isDark?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:3 }}>
+                        <div style={{ fontSize:9, color:isActive?accentColor:muted, fontWeight:isActive?800:500, lineHeight:1.2, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {s.label}
+                        </div>
+                        {/* 재생성 버튼 */}
+                        <button
+                          onClick={e => { e.stopPropagation(); regenerateOne(i); }}
+                          disabled={isRegen || regenIdx !== null || loading}
+                          title={`${s.label} 재생성`}
+                          style={{ flexShrink:0, width:20, height:20, borderRadius:5, border:`1px solid ${isActive?accentColor:bdr}`, background:"transparent", color:isActive?accentColor:muted, cursor:isRegen||regenIdx!==null||loading?"not-allowed":"pointer", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center", opacity:isRegen||regenIdx!==null||loading?0.4:1, transition:"all 0.12s", padding:0 }}
+                          onMouseEnter={e => { if(!isRegen&&regenIdx===null&&!loading) { e.currentTarget.style.background=`${accentColor}15`; e.currentTarget.style.borderColor=accentColor; } }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=isActive?accentColor:bdr; }}>
+                          {isRegen ? "⟳" : "↺"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
