@@ -98,31 +98,6 @@ export const CREDIT_PACKS = [
   { id: "pack30", priceUSD: 30, price: 41900, credits: 9750, label: "₩41,900" },
 ];
 
-// ── 게시판 카테고리
-
-// ── 게시판 카테고리, "고해상도 변환", "실시간 처리", "무제한 업로드"],
-    btnLabel: "구독하기", highlight: true,
-  },
-  {
-    id: "premium", type: "subscription",
-    name: "Premium", price: 29900, priceUSD: 29,
-    credits: 14500, label: "₩29,900/월",
-    color: "#f59e0b", gradient: "linear-gradient(135deg,#78350f,#92400e)",
-    features: ["14,500 크레딧", "⚡ 생성 쿨타임 없음", "한 번에 4장까지 생성 가능", "AI 업스케일링", "피부보정(기본)", "피부보정(메이크업)", "고해상도 변환", "실시간 처리", "무제한 업로드", "베타기능(무료)"],
-    btnLabel: "구독하기", highlight: false,
-  },
-];
-
-// 단건 구매 패키지
-export const CREDIT_PACKS = [
-  { id: "pack5",  priceUSD: 5,  price: 6900,  credits: 1500, label: "₩6,900"  },
-  { id: "pack10", priceUSD: 10, price: 13900, credits: 3000, label: "₩13,900" },
-  { id: "pack15", priceUSD: 15, price: 20900, credits: 4800, label: "₩20,900" },
-  { id: "pack20", priceUSD: 20, price: 27900, credits: 6450, label: "₩27,900" },
-  { id: "pack30", priceUSD: 30, price: 41900, credits: 9750, label: "₩41,900" },
-];
-
-// ── 게시판 카테고리
 
 // ── 게시판 카테고리 ───────────────────────────────────────────────────────
 export const CATS = [
