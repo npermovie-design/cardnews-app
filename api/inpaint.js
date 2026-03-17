@@ -45,10 +45,11 @@ export default async function handler(req, res) {
         input: {
           image,
           mask: finalMask,
-          prompt:              "seamless background texture, clean image, no watermark, no logo",
-          negative_prompt:     "watermark, logo, text, mark, symbol, sparkle, star",
+          prompt:              "background, clean surface, high quality photo",
+          negative_prompt:     "watermark, text, symbol",
           num_inference_steps: 20,
-          guidance_scale:      8,
+          guidance_scale:      7,
+          safety_checker:      false,
         },
       }),
     });
