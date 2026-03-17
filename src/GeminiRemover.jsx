@@ -330,7 +330,17 @@ export default function GeminiRemover({ isDark }) {
           ))}
         </div>
 
-
+        {/* 면책 안내 */}
+        <div style={{ background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)",
+          border:`1px solid ${bdr}`, borderRadius:10,
+          padding:"10px 14px", display:"flex", gap:8, alignItems:"flex-start", marginTop:8 }}>
+          <span style={{ fontSize:13, flexShrink:0 }}>⚠️</span>
+          <div style={{ fontSize:11, color:muted, lineHeight:1.75 }}>
+            이미지에 따라 <b style={{ color:text }}>완벽하게 제거되지 않을 수 있어요.</b>{" "}
+            배경이 복잡하거나 워터마크 영역이 큰 경우 흔적이 남을 수 있습니다.
+            결과가 만족스럽지 않으면 <b style={{ color:text }}>빠른 모드</b> 또는 수동 영역 조정을 시도해보세요.
+          </div>
+        </div>
 
       </div>
 

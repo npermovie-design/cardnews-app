@@ -1,4 +1,5 @@
-// api/inpaint.js - Replicate inpainting (NSFW 없음)
+// api/inpaint.js
+// advimman/lama - 모델명 엔드포인트 (버전 해시 불필요, 항상 최신)
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -14,31 +15,35 @@ export default async function handler(req, res) {
   if (!image || !mask) return res.status(400).json({ error: "image와 mask가 필요합니다" });
 
   try {
-    // edreed512/lama - LaMa inpainting, NSFW 없음, 워터마크 제거 특화
-    // version hash: Replicate 공식 검증된 버전
-    const createRes = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: "8758f1a52d6a5a5a0fac3fce35ca9c7f15e0bdf56148649e100a7b0b68b2cf17",
-        input: { image, mask },
-      }),
-    });
+    // 모델명 엔드포인트 → 버전 해시 없이 항상 최신 버전 자동 사용
+    const createRes = await fetch(
+      "https://api.replicate.com/v1/models/advimman/lama/predictions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "wait=30",
+        },
+        body: JSON.stringify({
+          input: { image, mask },
+        }),
+      }
+    );
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(() => ({}));
       if (createRes.status === 429) {
         return res.status(429).json({ error: "rate_limit", detail: err.detail || "" });
       }
-      return res.status(createRes.status).json({ error: err.detail || "Replicate 요청 실패" });
+      return res.status(createRes.status).json({
+        error: err.detail || err.message || `요청 실패 (${createRes.status})`,
+      });
     }
 
     const prediction = await createRes.json();
 
-    // 이미 완료된 경우
+    // Prefer: wait 로 인해 바로 완료된 경우
     if (prediction.status === "succeeded") {
       const output = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
       return res.status(200).json({ output });
@@ -49,7 +54,7 @@ export default async function handler(req, res) {
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 2000));
       const pollRes = await fetch(pollUrl, {
-        headers: { "Authorization": `Token ${apiKey}` },
+        headers: { "Authorization": `Bearer ${apiKey}` },
       });
       const poll = await pollRes.json();
       if (poll.status === "succeeded") {
