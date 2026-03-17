@@ -4,7 +4,6 @@ import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
-import DetailPageGenerator from "./DetailPageGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -287,11 +286,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 이미지 그룹 */}
         <Group label="SNS 이미지" icon="🖼" open={cardOpen}
-          active={!!(aiMenu && (aiMenu.startsWith("cardnews") || aiMenu === "detail_page"))}
+          active={!!(aiMenu && aiMenu.startsWith("cardnews"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_make" label="카드뉴스 만들기"   icon="✨" indent />
-          <Item id="detail_page"  label="상세페이지 만들기" icon="🛍" indent />
+          <Item id="cardnews_make" label="카드뉴스 만들기" icon="✨" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -425,23 +423,23 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             <div style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#f7f7fb",
               borderRadius: 10, padding: "10px 12px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-                <span style={{ fontSize: 12, color: muted }}>포인트 현황</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: ptColor }}>💎 {ptLeft.toLocaleString()}P</span>
+                <span style={{ fontSize: 12, color: muted }}>크레딧 현황</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: ptColor }}>💎 {ptLeft.toLocaleString()} cr</span>
               </div>
               <div style={{ height: 5, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.08)" : "#e0e0eb", overflow: "hidden" }}>
                 <div style={{ height: "100%", borderRadius: 5, width: ptPct + "%",
                   background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
               </div>
               <div style={{ fontSize: 11, color: muted, marginTop: 5 }}>
-                AI글=10cr · 이미지슬라이드=30cr · {ptLeft >= 10 ? "잔여 " + ptLeft.toLocaleString() + "cr" : "⚠️ 크레딧 부족"}
+                AI글=10 · 이미지=30cr {ptLeft >= 30 ? " · " + Math.floor(ptLeft/30) + "장 생성가능" : ptLeft >= 10 ? " · 텍스트만 가능" : " · ⚠️ 크레딧 부족"}
               </div>
             </div>
           </div>
 
           {/* 메뉴 목록 */}
           <div style={{ padding: "8px" }}>
-            <MenuItem icon="💎" label="포인트 충전"
-              sub={`현재 ${ptLeft.toLocaleString()}P 보유`}
+            <MenuItem icon="💎" label="크레딧 충전"
+              sub={`현재 ${ptLeft.toLocaleString()} 크레딧 보유`}
               onClick={() => { navigate("pricing"); setOpen(false); }} />
             <MenuItem icon="📁" label="내 보관함"
               sub="생성한 글·카드뉴스 확인"
@@ -517,11 +515,6 @@ function deleteBlogWork(id) {
   try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(getBlogSaves().filter(x => x.id !== id))); } catch(e) {}
 }
 const CARD_SAVES_KEY = "nper_saved_works_v2";
-const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
-function getDetailSaves() { try { return JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } }
-function deleteDetailSave(id) {
-  try { localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(getDetailSaves().filter(x => x.id !== id))); } catch(e) {}
-}
 function getCardSaves() { try { return JSON.parse(localStorage.getItem(CARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteCardWork(id) {
   try { localStorage.setItem(CARD_SAVES_KEY, JSON.stringify(getCardSaves().filter(x => x.id !== id))); } catch(e) {}
@@ -532,7 +525,6 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const [tab, setTab] = useState("blog");
   const [blogList, setBlogList] = useState(getBlogSaves);
   const [cardList, setCardList] = useState(getCardSaves);
-  const [detailList, setDetailList] = useState(getDetailSaves);
   const [search, setSearch] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
 
@@ -549,7 +541,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
   );
-  const total = blogList.length + cardList.length + detailList.length;
+  const total = blogList.length + cardList.length;
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
@@ -578,7 +570,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
 
       {/* 탭 */}
       <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
-        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"], ["detail","🛍 상세페이지","detail"]].map(([id, label]) => (
+        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"]].map(([id, label]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
             style={{ padding:"7px 16px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
               background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
@@ -586,7 +578,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
               boxShadow: tab===id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
             {label}
             <span style={{ marginLeft:6, fontSize:11, opacity:0.7 }}>
-              {id==="blog" ? blogList.length : id==="card" ? cardList.length : detailList.length}
+              {id==="blog" ? blogList.length : cardList.length}
             </span>
           </button>
         ))}
@@ -735,69 +727,6 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
           )}
         </>
       )}
-
-      {/* 상세페이지 탭 */}
-      {tab === "detail" && (
-        <>
-          {detailList.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🛍</div>
-              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 상세페이지가 없어요</div>
-              <div style={{ fontSize:13, lineHeight:1.8 }}>상세페이지 생성 후 자동으로 여기 저장됩니다</div>
-              <button onClick={()=>setAiMenu("detail_page")}
-                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
-                상세페이지 만들기 →
-              </button>
-            </div>
-          ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14 }}>
-              {detailList.map(item => (
-                <div key={item.id} style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, background:bg }}>
-                  {/* 썸네일 */}
-                  <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
-                    {item.thumbnail ? (
-                      <img src={item.thumbnail} alt=""
-                        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
-                    ) : (
-                      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>
-                    )}
-                    <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
-                      fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>
-                      {item.count}장
-                    </div>
-                  </div>
-                  {/* 정보 */}
-                  <div style={{ padding:"12px 14px" }}>
-                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4,
-                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName}</div>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                      <span style={{ fontSize:11, color:muted }}>{item.catLabel} · {item.date}</span>
-                      <button onClick={()=>{
-                        if(window.confirm(`"${item.productName}" 를 삭제할까요?`)){
-                          deleteDetailSave(item.id); setDetailList(getDetailSaves());
-                        }
-                      }} style={{ fontSize:10, color:muted, background:"transparent", border:`1px solid ${bdr}`,
-                        borderRadius:5, padding:"2px 7px", cursor:"pointer" }}>삭제</button>
-                    </div>
-                    {/* 이미지 미리보기 스트립 */}
-                    {item.images?.length > 1 && (
-                      <div style={{ display:"flex", gap:4, marginTop:8, overflowX:"auto" }}>
-                        {item.images.slice(1,5).map((img, i) => (
-                          <img key={i} src={img} alt="" style={{ width:36, height:36, objectFit:"cover", borderRadius:5, flexShrink:0 }} />
-                        ))}
-                        {item.images.length > 5 && (
-                          <div style={{ width:36, height:36, borderRadius:5, background:`${bdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:muted, flexShrink:0 }}>+{item.images.length-5}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }
@@ -902,15 +831,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
             setAiMenu("cardnews_make");
           }}
         />
-      </div>
-    );
-  }
-
-  // 상세페이지 만들기
-  if (aiMenu === "detail_page") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }
@@ -1039,109 +959,175 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 /* ════════════════════════════════════════════════════════════
    PricingPage
 ════════════════════════════════════════════════════════════ */
-export function PricingPage({ navigate, C }) {
-  const PLANS = [
+export function PricingPage({ navigate, C, user, onLogin }) {
+  const [tab, setTab] = useState("subscription");
+  const isDark = C?.border?.includes("255");
+
+  // 월 구독 플랜
+  const SUBSCRIPTION_PLANS = [
     {
-      id: "free", name: "Free", price: "무료", points: 50, aiCount: 5,
-      color: "#888", gradient: "linear-gradient(135deg,#888,#aaa)",
-      features: ["가입 시 200 크레딧 자동 지급","게시글 작성 1 크레딧 적립","댓글 작성 포인트 없음","일일 로그인 3 크레딧 적립","크레딧 소진 시 충전"],
-      btnLabel: "무료 시작", btnStyle: { background: "transparent", border: "1px solid #888", color: "#888" },
+      id: "free", name: "Free", priceUSD: 0, price: "무료",
+      credits: 200, color: "#888", gradient: "linear-gradient(135deg,#555,#333)",
       badge: null, highlight: false,
+      features: ["200 크레딧","회원가입 시 200 크레딧 무료","5분당 1회 생성 제한","한 번에 1장 생성 가능","AI 업스케일링","고해상도 변환"],
+      btnLabel: user ? "현재 플랜" : "무료 시작", active: !user?.plan || user?.plan === "free",
     },
     {
-      id: "basic", name: "Basic", price: "9,900원", points: 500, aiCount: 50,
-      color: "#4ade80", gradient: "linear-gradient(135deg,#22c55e,#4ade80)",
-      features: ["500P 즉시 충전","AI 생성 50회 분량","게시글 적립 포함","유효기간 없음"],
-      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#22c55e,#4ade80)", color: "#fff" },
+      id: "basic", name: "Basic", priceUSD: 9, price: "₩9,900",
+      credits: 4500, color: "#4ade80", gradient: "linear-gradient(135deg,#14532d,#166534)",
       badge: "연세 플랜", highlight: false,
+      features: ["4,500 크레딧","⚡ 생성 쿨타임 없음","한 번에 4장까지 생성","AI 업스케일링","피부보정(기본)","고해상도 변환","실시간 처리"],
+      btnLabel: "Upgrade Plan",
     },
     {
-      id: "pro", name: "Pro", price: "19,900원", points: 1200, aiCount: 120,
-      color: "#6366f1", gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-      features: ["9,500 크레딧 즉시 충전","AI 생성 950회 분량","게시글 적립 포함","우선 고객 지원"],
-      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" },
-      badge: "🔥 추천", highlight: true,
+      id: "deluxe", name: "Deluxe", priceUSD: 19, price: "₩19,900",
+      credits: 9500, color: "#38bdf8", gradient: "linear-gradient(135deg,#0c4a6e,#0369a1)",
+      badge: "추천", highlight: true,
+      features: ["9,500 크레딧","⚡ 생성 쿨타임 없음","한 번에 4장까지 생성","AI 업스케일링","피부보정(기본+메이크업)","고해상도 변환","실시간 처리","무제한 업로드"],
+      btnLabel: "Upgrade Plan",
     },
     {
-      id: "premium", name: "Premium", price: "29,900원", points: 2500, aiCount: 250,
-      color: "#f59e0b", gradient: "linear-gradient(135deg,#f59e0b,#fbbf24)",
-      features: ["2,500P 즉시 충전","AI 생성 250회 분량","게시글 적립 포함","전담 지원"],
-      btnLabel: "충전하기", btnStyle: { background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#fff" },
-      badge: "전문가용", highlight: false,
+      id: "premium", name: "Premium", priceUSD: 29, price: "₩29,900",
+      credits: 14500, color: "#f59e0b", gradient: "linear-gradient(135deg,#78350f,#92400e)",
+      badge: null, highlight: false,
+      features: ["14,500 크레딧","⚡ 생성 쿨타임 없음","한 번에 4장까지 생성","AI 업스케일링","피부보정(기본+메이크업)","고해상도 변환","실시간 처리","무제한 업로드","베타기능(무료)"],
+      btnLabel: "Upgrade Plan",
     },
+  ];
+
+  // 단건 구매
+  const CREDIT_PACKS = [
+    { priceUSD: 5,  price: "₩6,900",  credits: 1500 },
+    { priceUSD: 10, price: "₩13,900", credits: 3000 },
+    { priceUSD: 15, price: "₩20,900", credits: 4800 },
+    { priceUSD: 20, price: "₩27,900", credits: 6450 },
+    { priceUSD: 30, price: "₩41,900", credits: 9750 },
   ];
 
   const FAQ = [
-    { q: "포인트는 어떻게 사용하나요?", a: "AI 생성 1회에 10P가 차감됩니다. 게시글 작성(1P), 일일 로그인(3P)으로 포인트를 적립할 수 있어요." },
-    { q: "포인트 유효기간이 있나요?", a: "충전한 포인트는 유효기간이 없습니다. 적립 포인트도 동일하게 영구 사용 가능해요." },
-    { q: "결제는 어떻게 하나요?", a: "토스페이먼츠를 통해 신용카드, 카카오페이, 네이버페이 등 다양한 방법으로 결제 가능합니다." },
-    { q: "환불이 가능한가요?", a: "충전 후 사용하지 않은 포인트는 7일 이내 전액 환불 가능합니다. 문의하기로 연락해주세요." },
+    { q: "크레딧은 어떻게 사용하나요?", a: "블로그/카드뉴스 AI 생성 1회에 10 크레딧, 상세페이지 슬라이드 1장 생성에 30 크레딧이 차감됩니다." },
+    { q: "크레딧 유효기간이 있나요?", a: "충전한 크레딧은 유효기간이 없습니다. 게시글 작성(1cr), 일일 로그인(3cr)으로 무료 적립도 가능해요." },
+    { q: "결제는 어떻게 하나요?", a: "신용카드, 카카오페이, 네이버페이 등 다양한 방법으로 결제 가능합니다." },
+    { q: "환불이 가능한가요?", a: "충전 후 사용하지 않은 크레딧은 7일 이내 전액 환불 가능합니다. 문의하기로 연락해주세요." },
   ];
 
+  const userCredits = user?.points || 0;
+
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 20px 80px" }}>
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px 80px" }}>
 
       {/* 헤더 */}
-      <div style={{ textAlign: "center", marginBottom: 56 }}>
+      <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>✦ 요금제</div>
-        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>포인트 충전으로 무제한 사용</h2>
-        <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>게시글 작성만으로도 포인트를 무료로 적립할 수 있어요<br/>AI를 더 많이 쓰고 싶다면 포인트를 충전하세요</p>
-      </div>
-
-      {/* 요금제 카드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 16, marginBottom: 60 }}>
-        {PLANS.map(plan => (
-          <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "28px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.2s" }}
-            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
-
-            {plan.badge && (
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>
-            )}
-
-            <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{plan.name}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: plan.color, marginBottom: 4 }}>{plan.price}</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{plan.points}P 충전</div>
-            <div style={{ fontSize: 11, color: plan.color, fontWeight: 700, marginBottom: 20 }}>AI 생성 약 {plan.aiCount}회</div>
-
-            <div style={{ flex: 1, marginBottom: 20 }}>
-              {plan.features.map((f, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, marginBottom: 8, fontSize: 12, color: C.muted }}>
-                  <span style={{ color: plan.color, flexShrink: 0, marginTop: 1 }}>✓</span>
-                  {f}
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => plan.id === "free" ? navigate("cardnews") : navigate("contact")}
-              style={{ ...plan.btnStyle, padding: "11px", borderRadius: 11, border: plan.btnStyle.border || "none", cursor: "pointer", fontSize: 13, fontWeight: 700, width: "100%" }}>
-              {plan.btnLabel}
-            </button>
+        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>크레딧으로 자유롭게 사용하세요</h2>
+        <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
+          AI 글쓰기 · 카드뉴스 = <b style={{ color: C.text }}>10 크레딧</b> &nbsp;·&nbsp;
+          상세페이지 슬라이드 1장 = <b style={{ color: C.text }}>30 크레딧</b>
+        </p>
+        {user && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 16, padding: "8px 20px", borderRadius: 20, background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)" }}>
+            <span style={{ fontSize: 13, color: "#818cf8" }}>내 크레딧</span>
+            <span style={{ fontSize: 20, fontWeight: 900, color: "#6366f1" }}>{userCredits.toLocaleString()} cr</span>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* 포인트 적립 안내 */}
-      <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px 28px", marginBottom: 48 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
+      {/* 탭 */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
+        <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
+          {[["subscription","월 구독"],["oneoff","단건구매"]].map(([id,label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              style={{ padding: "10px 28px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700,
+                background: tab === id ? (isDark ? "#1e3a5f" : "#fff") : "transparent",
+                color: tab === id ? (isDark ? "#38bdf8" : C.text) : C.muted,
+                boxShadow: tab === id ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 월 구독 플랜 */}
+      {tab === "subscription" && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(210px,100%),1fr))", gap: 16, marginBottom: 56 }}>
+          {SUBSCRIPTION_PLANS.map(plan => {
+            const isActive = user?.plan === plan.id || (plan.id === "free" && !user?.plan);
+            return (
+              <div key={plan.id} style={{ position: "relative", background: C.card, border: plan.highlight ? "2px solid " + plan.color : "1px solid " + C.border, borderRadius: 20, padding: "32px 22px", display: "flex", flexDirection: "column", boxShadow: plan.highlight ? "0 0 32px rgba(56,189,248,0.2)" : C.shadow, transition: "transform 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+                {plan.badge && (
+                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: plan.gradient, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge}</div>
+                )}
+                <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>{plan.name}</div>
+                <div style={{ fontSize: 40, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 4 }}>${plan.priceUSD}</div>
+                <div style={{ fontSize: 13, color: C.muted, marginBottom: 6 }}>{plan.price}{plan.priceUSD > 0 ? "/월" : ""}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: plan.color, marginBottom: 20 }}>
+                  {plan.credits.toLocaleString()} 크레딧
+                </div>
+                <div style={{ flex: 1, marginBottom: 20 }}>
+                  {plan.features.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, marginBottom: 9, fontSize: 13, color: C.muted }}>
+                      <span style={{ color: plan.color, flexShrink: 0 }}>✓</span>{f}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!user) { onLogin?.(); return; }
+                    if (plan.id !== "free" && !isActive) navigate("contact");
+                  }}
+                  style={{ padding: "12px", borderRadius: 11, border: isActive ? ("1px solid " + C.border) : "none", cursor: isActive ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%",
+                    background: isActive ? (isDark ? "rgba(255,255,255,0.07)" : "#f0f0f5") : plan.gradient,
+                    color: isActive ? C.muted : "#fff" }}>
+                  {!user ? "로그인 후 이용" : isActive ? "Active" : plan.btnLabel}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 단건 구매 */}
+      {tab === "oneoff" && (
+        <div style={{ marginBottom: 56 }}>
+          <p style={{ textAlign: "center", fontSize: 14, color: C.muted, marginBottom: 28 }}>구독 없이 크레딧만 구매 · 유효기간 없음</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, maxWidth: 680, margin: "0 auto" }}>
+            {CREDIT_PACKS.map((pack, i) => (
+              <div key={i} style={{ borderRadius: 16, border: "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 44, fontWeight: 900, color: "#38bdf8" }}>${pack.priceUSD}</div>
+                <div style={{ fontSize: 13, color: C.muted }}>{pack.credits.toLocaleString()} 크레딧</div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{pack.price}</div>
+                <button
+                  onClick={() => { if (!user) { onLogin?.(); return; } navigate("contact"); }}
+                  style={{ width: "100%", padding: "11px", borderRadius: 9, border: "none", cursor: "pointer", background: "#3b82f6", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+                  구매하기
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 크레딧 적립 안내 */}
+      <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px", marginBottom: 48 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 크레딧 적립 방법</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12, marginBottom: 16 }}>
           {[
-            { icon: "🎁", action: "회원가입", pt: "+200cr", desc: "가입 즉시" },
-            { icon: "📝", action: "게시글 작성", pt: "+10P", desc: "글 1개당" },
-            { icon: "💬", action: "댓글 작성", pt: "+2P", desc: "댓글 1개당" },
-            { icon: "☀️", action: "일일 로그인", pt: "+3P", desc: "하루 1회" },
+            { icon: "🎁", action: "회원가입", cr: "+200cr", desc: "가입 즉시" },
+            { icon: "📝", action: "게시글 작성", cr: "+1cr",   desc: "글 1개당" },
+            { icon: "☀️", action: "일일 로그인", cr: "+3cr",   desc: "하루 1회" },
           ].map((item, i) => (
-            <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "14px", textAlign: "center" }}>
+            <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 3 }}>{item.action}</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#6366f1" }}>{item.pt}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: "#6366f1" }}>{item.cr}</div>
               <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{item.desc}</div>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
-          💡 <b style={{ color: C.text }}>AI 1회 생성 = 10P</b> 차감 · 게시글 10개 작성하면 AI 10회 사용 가능
+        <div style={{ padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 12, color: C.muted }}>
+          💡 <b style={{ color: C.text }}>AI 글쓰기/카드뉴스 = 10 크레딧</b> · <b style={{ color: C.text }}>상세페이지 슬라이드 1장 = 30 크레딧</b>
         </div>
       </div>
 
@@ -1158,7 +1144,6 @@ export function PricingPage({ navigate, C }) {
     </div>
   );
 }
-
 
 export function ContactPage({ C }) {
   const [form, setForm] = useState({ name: "", email: "", subject: "", msg: "" });

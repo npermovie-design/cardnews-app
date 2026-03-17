@@ -9,7 +9,6 @@ import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
-import ArchivePage from "./ArchivePage";
 
 const SNS = [
   { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
@@ -29,13 +28,11 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
-  const [archiveSub, setArchiveSub] = useState(false);
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
-  const aiSubRef       = useRef(null);
-  const archiveSubRef  = useRef(null);
+  const aiSubRef    = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -96,7 +93,6 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
-      if (archiveSubRef.current && !archiveSubRef.current.contains(e.target)) setArchiveSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -215,7 +211,6 @@ export default function App() {
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
-    if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
   };
@@ -299,14 +294,6 @@ export default function App() {
               </DropMenu>
             )}
           </div>
-          <div ref={archiveSubRef} style={{ position: "relative" }}>
-            <DropBtn label="📂 자료실" open={archiveSub} active={page === "archive"} onClick={() => setArchiveSub(s => !s)} />
-            {archiveSub && (
-              <DropMenu>
-                <DropItem id="archive" icon="🎬" label="영상 자료실" onClick={() => { navigate("archive"); setArchiveSub(false); }} />
-              </DropMenu>
-            )}
-          </div>
           <div ref={boardSubRef} style={{ position: "relative" }}>
             <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
@@ -344,7 +331,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}P</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}cr</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 
@@ -386,7 +373,7 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "💎", label: "크레딧 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("admin"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
@@ -442,7 +429,6 @@ export default function App() {
             { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
             { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
             { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
-            { id: "archive", label: "🎬 영상 자료실", page: "archive" },
             { id: "info",   label: "📌 정보공유",   board: "info"   },
             { id: "qna",    label: "❓ 질문답변",   board: "qna"    },
             { id: "free",   label: "🗣 자유게시판", board: "free"   },
@@ -450,7 +436,7 @@ export default function App() {
             { id: "pricing", label: "가격정책" },
             { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : m.page ? (navigate(m.page) || setMobileOpen(false)) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.id)} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
