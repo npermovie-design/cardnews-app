@@ -7,69 +7,45 @@ import { useState, useRef, useCallback } from "react";
    - API 키는 Vercel 환경변수로 서버에만 보관
 ════════════════════════════════════════════════════════════ */
 
-/* ── 워터마크 탐지 (Canvas 기반) ───────────────────────── */
+/* ── Gemini 워터마크 고정 위치 계산 ─────────────────────
+   Gemini ✦ 는 항상 우하단 고정 위치에 삽입됨
+   분석 결과: 이미지 우측 끝에서 약 1~3%, 하단 끝에서 약 1~4%
+   크기: 이미지 단변의 약 3~5%
+──────────────────────────────────────────────────────── */
 function detectWatermark(imageData, W, H) {
   const data = imageData.data;
-  const scanW = Math.max(80, Math.round(W * 0.10));
-  const scanH = Math.max(80, Math.round(H * 0.10));
-  const scanX = W - scanW;
-  const scanY = H - scanH;
 
-  const pixels = [];
-  for (let py = scanY; py < H; py++) {
-    for (let px = scanX; px < W; px++) {
-      const i   = (py * W + px) * 4;
-      const brt = (data[i] + data[i+1] + data[i+2]) / 3;
-      pixels.push({ px, py, brt });
-    }
-  }
+  // Gemini 고정 위치: 우하단 모서리 기준
+  // 여유있게 크게 잡아서 확실히 커버
+  const markSz  = Math.round(Math.min(W, H) * 0.05);   // 단변의 5%
+  const marginX = Math.round(W * 0.008);
+  const marginY = Math.round(H * 0.008);
 
-  const borderPx = pixels.filter(
-    p => p.px < scanX + scanW * 0.35 || p.py < scanY + scanH * 0.35
-  );
-  const bgMean = borderPx.reduce((s, p) => s + p.brt, 0) / Math.max(1, borderPx.length);
-  const threshold = Math.max(15, bgMean * 0.10);
-
-  const diffPx = pixels.filter(p => p.brt - bgMean > threshold);
-
-  if (diffPx.length < 3) {
-    const sz = Math.round(Math.min(W, H) * 0.022);
-    return {
-      x: W - sz - Math.round(W * 0.012),
-      y: H - sz - Math.round(H * 0.012),
-      w: sz, h: sz,
-    };
-  }
-
-  diffPx.sort((a, b) => (b.px + b.py) - (a.px + a.py));
-  const top = diffPx.slice(0, Math.min(60, diffPx.length));
-  const xs  = top.map(p => p.px);
-  const ys  = top.map(p => p.py);
-  const pad = Math.round(Math.min(W, H) * 0.008);
   return {
-    x: Math.max(0, Math.min(...xs) - pad),
-    y: Math.max(0, Math.min(...ys) - pad),
-    w: Math.min(W, Math.max(...xs) - Math.min(...xs) + pad * 2 + 4),
-    h: Math.min(H, Math.max(...ys) - Math.min(...ys) + pad * 2 + 4),
+    x: W - markSz - marginX,
+    y: H - markSz - marginY,
+    w: markSz,
+    h: markSz,
   };
 }
 
-/* ── 마스크 이미지 생성 (흰=제거, 검=유지) ─────────────── */
-function buildMask(W, H, box, blur = 4) {
+/* ── 마스크 생성 (흰=제거 영역, 검=유지 영역) ───────────── */
+function buildMask(W, H, box, blur = 8) {
   const c   = document.createElement("canvas");
   c.width   = W; c.height = H;
   const ctx = c.getContext("2d");
+  // 전체 검정
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, W, H);
-  // 박스 약간 확장
-  const pad = blur + 4;
+  // 제거 영역: 박스보다 넉넉히 키워서 확실히 커버
+  const pad = Math.round(Math.min(W, H) * 0.015) + blur;
   ctx.filter = `blur(${blur}px)`;
   ctx.fillStyle = "#fff";
   ctx.fillRect(
     Math.max(0, box.x - pad),
     Math.max(0, box.y - pad),
-    Math.min(W, box.w + pad * 2),
-    Math.min(H, box.h + pad * 2)
+    Math.min(W - Math.max(0, box.x - pad), box.w + pad * 2),
+    Math.min(H - Math.max(0, box.y - pad), box.h + pad * 2)
   );
   ctx.filter = "none";
   return c.toDataURL("image/png");
@@ -179,14 +155,14 @@ export default function GeminiRemover({ isDark }) {
       rCanvas.getContext("2d").drawImage(canvas, 0, 0, rW, rH);
       const imageB64 = rCanvas.toDataURL("image/png");
 
-      // 리사이즈된 마스크
+      // 리사이즈된 마스크 - 여유있게 크게
       const scaledBox = {
         x: Math.round(box.x * scaleX),
         y: Math.round(box.y * scaleY),
-        w: Math.max(8, Math.round(box.w * scaleX)),
-        h: Math.max(8, Math.round(box.h * scaleY)),
+        w: Math.max(16, Math.round(box.w * scaleX)),
+        h: Math.max(16, Math.round(box.h * scaleY)),
       };
-      const maskB64 = buildMask(rW, rH, scaledBox, 6);
+      const maskB64 = buildMask(rW, rH, scaledBox, 10);
       setMaskSrc(maskB64);
 
       // 2. Replicate 호출
@@ -207,13 +183,9 @@ export default function GeminiRemover({ isDark }) {
       const finalCanvas = document.createElement("canvas");
       finalCanvas.width  = W; finalCanvas.height = H;
       const fCtx = finalCanvas.getContext("2d");
-      fCtx.drawImage(canvas, 0, 0);                              // 원본
-      // 처리된 부분(박스)만 원본 크기로 덮어씌우기
-      fCtx.drawImage(
-        resultImg,
-        scaledBox.x, scaledBox.y, scaledBox.w, scaledBox.h,   // 소스(리사이즈 결과에서)
-        box.x,       box.y,       box.w,        box.h          // 원본 크기로 복원
-      );
+      fCtx.drawImage(canvas, 0, 0); // 원본 전체
+      // AI 처리된 결과 전체를 원본 위에 덮어씌우기 (전체 합성)
+      fCtx.drawImage(resultImg, 0, 0, W, H);
 
       setResult(finalCanvas.toDataURL("image/png"));
       setInfo(`✅ AI 제거 완료! (${W}×${H}px)`);

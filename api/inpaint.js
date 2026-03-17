@@ -17,9 +17,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "서버 API 키가 설정되지 않았습니다" });
   }
 
-  const { image, mask } = req.body;
-  if (!image || !mask) {
-    return res.status(400).json({ error: "image와 mask가 필요합니다" });
+  const { image, mask, width, height } = req.body;
+  if (!image) {
+    return res.status(400).json({ error: "image가 필요합니다" });
+  }
+
+  // mask가 없으면 Gemini 고정 위치로 자동 생성
+  let finalMask = mask;
+  if (!finalMask && width && height) {
+    finalMask = buildGeminiMask(width, height);
+  }
+  if (!finalMask) {
+    return res.status(400).json({ error: "mask 또는 width/height가 필요합니다" });
   }
 
   try {
@@ -35,7 +44,7 @@ export default async function handler(req, res) {
         version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
         input: {
           image,
-          mask,
+          mask: finalMask,
           prompt:              "seamless background texture, clean image, no watermark, no logo",
           negative_prompt:     "watermark, logo, text, mark, symbol, sparkle, star",
           num_inference_steps: 20,
