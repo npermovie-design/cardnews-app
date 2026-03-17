@@ -37,10 +37,37 @@ export default async function handler(req, res) {
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(() => ({}));
-      return res.status(createRes.status).json({ error: err.detail || "Replicate 요청 실패" });
+      // 요청 제한(429) 자동 재시도
+      if (createRes.status === 429) {
+        const retryAfter = parseInt(createRes.headers.get("retry-after") || "10", 10);
+        await new Promise(r => setTimeout(r, (retryAfter + 2) * 1000));
+        const retry = await fetch("https://api.replicate.com/v1/predictions", {
+          method: "POST",
+          headers: { "Authorization": `Token ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
+            input: {
+              image, mask,
+              prompt:              "clean background, seamless texture, high quality, natural",
+              negative_prompt:     "watermark, logo, text, symbol, mark, sparkle",
+              num_inference_steps: 20,
+              guidance_scale:      7.5,
+            },
+          }),
+        });
+        if (!retry.ok) {
+          const retryErr = await retry.json().catch(() => ({}));
+          return res.status(429).json({ error: "rate_limit", detail: retryErr.detail || "잠시 후 다시 시도해주세요" });
+        }
+        const retryData = await retry.json();
+        // 재시도 성공 시 prediction ID로 이어서 폴링
+        Object.assign(prediction, retryData);
+      } else {
+        return res.status(createRes.status).json({ error: err.detail || "Replicate 요청 실패" });
+      }
     }
 
-    const prediction = await createRes.json();
+    const prediction = createRes.ok ? await createRes.json() : {};
     const pollUrl    = `https://api.replicate.com/v1/predictions/${prediction.id}`;
 
     // 폴링 (최대 120초)

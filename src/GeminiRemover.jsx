@@ -45,14 +45,31 @@ function buildMask(W, H, box, blur = 8) {
 }
 
 /* ── 서버리스 함수 경유 호출 (/api/inpaint) ─────────────── */
-async function callInpaintAPI(imageB64, maskB64) {
-  const res = await fetch("/api/inpaint", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image: imageB64, mask: maskB64 }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+async function callInpaintAPI(imageB64, maskB64, onCountdown) {
+  const doRequest = async () => {
+    const res = await fetch("/api/inpaint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: imageB64, mask: maskB64 }),
+    });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  };
+
+  let { ok, status, data } = await doRequest();
+
+  // 429 Rate limit → 카운트다운 후 자동 재시도 (최대 3회)
+  for (let attempt = 0; attempt < 3 && (status === 429 || data.error === "rate_limit"); attempt++) {
+    const wait = 12; // 12초 대기
+    for (let t = wait; t > 0; t--) {
+      if (onCountdown) onCountdown(t);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    if (onCountdown) onCountdown(0);
+    ({ ok, status, data } = await doRequest());
+  }
+
+  if (!ok) throw new Error(data.error || `HTTP ${status}`);
   return data.output;
 }
 
@@ -65,6 +82,7 @@ export default function GeminiRemover({ isDark }) {
   const [result,    setResult]    = useState(null);
   const [loading,   setLoading]   = useState(false);
   const [step,      setStep]      = useState("");   // 진행 단계 메시지
+  const [countdown, setCountdown] = useState(0);    // 재시도 카운트다운
   const [info,      setInfo]      = useState("");
   const [dragOver,  setDragOver]  = useState(false);
   const [markBox,   setMarkBox]   = useState(null);
@@ -163,7 +181,11 @@ export default function GeminiRemover({ isDark }) {
 
       // 2. Replicate AI 호출
       setStep("🤖 AI 인페인팅 요청 중... (10~30초)");
-      const outputUrl = await callInpaintAPI(imageB64, maskB64);
+      const outputUrl = await callInpaintAPI(imageB64, maskB64, (t) => {
+        setCountdown(t);
+        if (t > 0) setStep(`⏳ 요청 제한 중... ${t}초 후 자동 재시도`);
+        else setStep("🔄 재시도 중...");
+      });
 
       // 3. AI 결과 패치를 원본 원래 크기로 복원 후 합성
       setStep("🖼 원본 해상도로 합성 중...");
@@ -259,7 +281,7 @@ export default function GeminiRemover({ isDark }) {
   const reset = () => {
     setImgSrc(null); setResult(null); setInfo(""); setMarkBox(null);
     setManualBox(null); setShowAdj(false); setMaskSrc(null);
-    setLoading(false); setStep(""); setTab("ai");
+    setLoading(false); setStep(""); setTab("ai"); setCountdown(0);
     origImgRef.current = null;
   };
 
@@ -418,17 +440,33 @@ export default function GeminiRemover({ isDark }) {
               display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
               {loading ? (
                 <div style={{ textAlign:"center", padding:40 }}>
-                  <div style={{ fontSize:40, marginBottom:12, animation:"spin 1.2s linear infinite", display:"inline-block" }}>🤖</div>
-                  <div style={{ fontSize:14, color:text, fontWeight:700, marginBottom:6 }}>{step || "처리 중..."}</div>
-                  <div style={{ fontSize:11, color:muted, lineHeight:1.8 }}>
-                    AI가 배경 패턴을 학습하여 자연스럽게 복원합니다<br/>
-                    보통 10~30초 소요
-                  </div>
-                  {/* 진행 바 애니메이션 */}
-                  <div style={{ width:200, height:4, background:isDark?"rgba(255,255,255,0.1)":"#e0e0e0", borderRadius:4, overflow:"hidden", margin:"16px auto 0" }}>
-                    <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6)", animation:"progress 2s ease-in-out infinite" }} />
-                  </div>
-                  <style>{`@keyframes progress{0%{width:0%}50%{width:70%}100%{width:100%}}`}</style>
+                  {/* 카운트다운 중일 때 */}
+                  {countdown > 0 ? (
+                    <>
+                      <div style={{ fontSize:44, marginBottom:10, fontWeight:900, color:"#eab308", lineHeight:1 }}>{countdown}</div>
+                      <div style={{ fontSize:13, color:text, fontWeight:700, marginBottom:4 }}>잠시 후 자동 재시도</div>
+                      <div style={{ fontSize:11, color:muted, lineHeight:1.8 }}>
+                        요청이 많아 대기 중입니다<br/>
+                        자동으로 재시도하니 기다려주세요 😊
+                      </div>
+                      <div style={{ width:200, height:4, background:isDark?"rgba(255,255,255,0.1)":"#e0e0e0", borderRadius:4, overflow:"hidden", margin:"14px auto 0" }}>
+                        <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#eab308,#f59e0b)", width:`${(countdown/12)*100}%`, transition:"width 1s linear" }} />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize:40, marginBottom:12, animation:"spin 1.2s linear infinite", display:"inline-block" }}>🤖</div>
+                      <div style={{ fontSize:14, color:text, fontWeight:700, marginBottom:6 }}>{step || "처리 중..."}</div>
+                      <div style={{ fontSize:11, color:muted, lineHeight:1.8 }}>
+                        AI가 배경 패턴을 학습하여 자연스럽게 복원합니다<br/>
+                        보통 10~30초 소요
+                      </div>
+                      <div style={{ width:200, height:4, background:isDark?"rgba(255,255,255,0.1)":"#e0e0e0", borderRadius:4, overflow:"hidden", margin:"16px auto 0" }}>
+                        <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6)", animation:"progress 2s ease-in-out infinite" }} />
+                      </div>
+                      <style>{`@keyframes progress{0%{width:0%}50%{width:70%}100%{width:100%}}`}</style>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div style={{ position:"relative", width:"100%" }}>
