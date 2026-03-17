@@ -496,9 +496,14 @@ export default function DetailPageGenerator({ isDark }) {
   const [curIdx,    setCurIdx]    = useState(0);
   const [saving,    setSaving]    = useState(false);
   const [saveMsg,   setSaveMsg]   = useState("");
+  const [savingAll, setSavingAll] = useState(false);
+  const [saveAllMsg,setSaveAllMsg]= useState("");
+  const [aiSugg,    setAiSugg]    = useState(null);   // AI 추천 결과
+  const [suggesting,setSuggesting]= useState(false);
   const fileRef    = useRef(null);
   const refFileRef = useRef(null);
   const slideRef   = useRef(null);
+  const slideInnerRefs = useRef({});
 
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#888";
@@ -550,6 +555,88 @@ export default function DetailPageGenerator({ isDark }) {
   };
 
   const updSlide = (idx, d) => setSlides(p => p.map((s,i) => i===idx ? d : s));
+
+  // ── 전체 슬라이드 ZIP 저장 ───────────────────────────────────
+  // 방식: 현재 슬라이드를 순서대로 전환 → 각각 캡처 → ZIP
+  const saveAllSlides = async () => {
+    if (!slides || slides.length === 0) return;
+    setSavingAll(true);
+    const h2c = await loadH2C();
+    if (!window.JSZip) {
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = new window.JSZip();
+    const origIdx = curIdx;
+    try {
+      for (let i = 0; i < slides.length; i++) {
+        setSaveAllMsg(`저장 중... ${i+1} / ${slides.length}`);
+        setCurIdx(i);
+        // DOM 업데이트 대기
+        await new Promise(res => setTimeout(res, 400));
+        if (!slideRef.current) continue;
+        const target = slideRef.current.querySelector("[data-slide-inner]") || slideRef.current;
+        const canvas = await h2c(target, {
+          scale: 2, useCORS: true, allowTaint: true,
+          backgroundColor: "#ffffff",
+          width: 800, height: target.scrollHeight || 800,
+          logging: false,
+        });
+        const b64 = canvas.toDataURL("image/png").split(",")[1];
+        const arr = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const label = ALL_SLIDE_TYPES[i]?.label || "slide";
+        zip.file(`${String(i+1).padStart(2,"0")}_${label}.png`, arr);
+      }
+      const blob = await zip.generateAsync({ type:"blob", compression:"DEFLATE", compressionOptions:{ level:6 } });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${form.productName||"detail"}_slides.zip`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setSaveAllMsg("✅ ZIP 저장 완료!");
+      setCurIdx(origIdx);
+    } catch(e) {
+      setSaveAllMsg("저장 실패: " + e.message);
+      setCurIdx(origIdx);
+    }
+    setSavingAll(false);
+    setTimeout(() => setSaveAllMsg(""), 4000);
+  };
+
+  // ── AI 추천 ───────────────────────────────────────────────────
+  const getAiSuggestions = async () => {
+    if (!selCat) return;
+    const cat_ = CATEGORIES.find(c => c.key === selCat);
+    setSuggesting(true); setAiSugg(null);
+    try {
+      const prompt = `한국 쇼핑몰 카피라이터입니다.
+카테고리: ${cat_.label}
+현재 입력값: 상품명="${form.productName}", 특징="${form.features}", 가격="${form.price}"
+
+아래 JSON만 응답 (다른 텍스트 없음):
+{
+  "productNames": ["추천 상품명1 (16자)", "추천 상품명2 (16자)", "추천 상품명3 (16자)"],
+  "ctas": ["CTA1 (12자)", "CTA2 (12자)", "CTA3 (12자)"],
+  "targets": ["타겟1 (24자)", "타겟2 (24자)"],
+  "extras": ["추가정보1 (30자)", "추가정보2 (30자)"],
+  "features": ["핵심특징 추천 문구 (기존 내용 보강, 40자)"]
+}`;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "x-api-key":API_KEY, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
+        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800, messages:[{ role:"user", content:prompt }] }),
+      });
+      const data = await res.json();
+      const text_ = data.content?.[0]?.text || "";
+      const clean = text_.replace(/```json
+?/g,"").replace(/```/g,"").trim();
+      setAiSugg(JSON.parse(clean));
+    } catch(e) { console.error(e); }
+    setSuggesting(false);
+  };
 
   // ── 저장 (html2canvas) ──────────────────────────────────────
   const saveSlide = async () => {
@@ -711,6 +798,93 @@ export default function DetailPageGenerator({ isDark }) {
           </div>
         ))}
 
+        {/* AI 추천 버튼 */}
+        <div style={{ padding:"14px 16px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: aiSugg ? 16 : 0 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>AI 추천</div>
+              <div style={{ fontSize:11, color:muted, marginTop:2 }}>입력한 내용을 바탕으로 문구를 추천해드려요</div>
+            </div>
+            <button onClick={getAiSuggestions} disabled={suggesting}
+              style={{ padding:"8px 16px", borderRadius:8, border:"none", cursor:suggesting?"wait":"pointer",
+                background:`${cat.accent}15`, color:cat.accent, fontSize:12, fontWeight:800, opacity:suggesting?0.6:1, flexShrink:0 }}>
+              {suggesting ? "추천 중..." : "✦ AI 추천 받기"}
+            </button>
+          </div>
+          {aiSugg && (
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {aiSugg.productNames?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>상품명 추천</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {aiSugg.productNames.map((n,i)=>(
+                      <button key={i} onClick={()=>setForm(p=>({...p,productName:n}))}
+                        style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${cat.accent}40`, background:`${cat.accent}08`, color:text, fontSize:12, cursor:"pointer", transition:"all 0.1s" }}
+                        onMouseEnter={e=>e.currentTarget.style.background=`${cat.accent}18`}
+                        onMouseLeave={e=>e.currentTarget.style.background=`${cat.accent}08`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiSugg.features?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>핵심 특징 추천</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {aiSugg.features.map((n,i)=>(
+                      <button key={i} onClick={()=>setForm(p=>({...p,features:n}))}
+                        style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${cat.accent}40`, background:`${cat.accent}08`, color:text, fontSize:12, cursor:"pointer" }}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiSugg.ctas?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>CTA 문구 추천</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {aiSugg.ctas.map((c_,i)=>(
+                      <button key={i} onClick={()=>setForm(p=>({...p,cta:c_}))}
+                        style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${cat.accent}40`, background:`${cat.accent}08`, color:text, fontSize:12, cursor:"pointer" }}>
+                        {c_}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiSugg.targets?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>타겟 고객 추천</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {aiSugg.targets.map((t_,i)=>(
+                      <button key={i} onClick={()=>setForm(p=>({...p,target:t_}))}
+                        style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${cat.accent}40`, background:`${cat.accent}08`, color:text, fontSize:12, cursor:"pointer" }}>
+                        {t_}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiSugg.extras?.length > 0 && (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>추가 정보 추천</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {aiSugg.extras.map((e_,i)=>(
+                      <button key={i} onClick={()=>setForm(p=>({...p,extra:e_}))}
+                        style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${cat.accent}40`, background:`${cat.accent}08`, color:text, fontSize:12, cursor:"pointer" }}>
+                        {e_}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{ fontSize:11, color:muted }}>항목을 클릭하면 입력란에 자동으로 적용돼요</div>
+            </div>
+          )}
+        </div>
+
         {err && <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"#f87171" }}>{err}</div>}
 
         <button onClick={generate} disabled={loading||analyzing}
@@ -754,23 +928,34 @@ export default function DetailPageGenerator({ isDark }) {
             <div style={{ fontSize:10, fontWeight:800, color:cat.accent, letterSpacing:2, marginBottom:8 }}>
               {slideTypes[curIdx]?.label?.toUpperCase()}
             </div>
-            {/* 스케일 래퍼 */}
-            <div style={{ width:"100%", paddingBottom:`${100 * (slide.id==="hero"||slide.id==="cta" ? 1 : 1)}%`, position:"relative", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.15)", background:"#fff" }}>
-              <div ref={slideRef} style={{ position:"absolute", inset:0, overflow:"hidden" }}>
-                <div data-slide-inner=""
-                  style={{ transform:`scale(${scale})`, transformOrigin:"top left", width:800 }}>
-                  <SlideView slide={slide} updSlide={d=>updSlide(curIdx,d)} cat={cat} imgUrl={imgUrl} num={curIdx+1}/>
+            {/* 스케일 래퍼: 컨테이너 너비에 맞게 비율 유지 */}
+            <div style={{ width:"100%", position:"relative", borderRadius:14, overflow:"hidden", boxShadow:"0 8px 32px rgba(0,0,0,0.15)", background:"#fff" }}>
+              {/* 비율 유지 패딩 (800×800 기준) */}
+              <div style={{ paddingBottom:"100%", position:"relative" }}>
+                <div ref={slideRef} style={{ position:"absolute", inset:0, overflow:"hidden" }}>
+                  <div data-slide-inner=""
+                    style={{ transform:`scale(${scale})`, transformOrigin:"top left", width:800, height:800 }}>
+                    <SlideView slide={slide} updSlide={d=>updSlide(curIdx,d)} cat={cat} imgUrl={imgUrl} num={curIdx+1}/>
+                  </div>
                 </div>
               </div>
             </div>
             {/* 저장 버튼 */}
-            <div style={{ display:"flex", gap:8, marginTop:10, alignItems:"center" }}>
-              <button onClick={saveSlide} disabled={saving}
-                style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:saving?"wait":"pointer", background:cat.accent, color:"#fff", fontSize:13, fontWeight:800, opacity:saving?0.6:1 }}>
-                {saving ? "저장 중..." : "현재 슬라이드 저장 (PNG)"}
+            <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
+              <button onClick={saveSlide} disabled={saving||savingAll}
+                style={{ flex:1, minWidth:140, padding:"10px", borderRadius:10, border:"none", cursor:saving?"wait":"pointer", background:cat.accent, color:"#fff", fontSize:13, fontWeight:800, opacity:saving?0.6:1 }}>
+                {saving ? "저장 중..." : "현재 슬라이드 PNG"}
               </button>
-              {saveMsg && <span style={{ fontSize:12, color: saveMsg.startsWith("✅")?"#4ade80":"#f87171", fontWeight:600 }}>{saveMsg}</span>}
+              <button onClick={saveAllSlides} disabled={saving||savingAll}
+                style={{ flex:1, minWidth:140, padding:"10px", borderRadius:10, border:"none", cursor:savingAll?"wait":"pointer", background:cat.dark||"#333", color:"#fff", fontSize:13, fontWeight:800, opacity:savingAll?0.6:1 }}>
+                {savingAll ? saveAllMsg || "저장 중..." : "전체 ZIP 저장"}
+              </button>
             </div>
+            {(saveMsg||saveAllMsg) && (
+              <div style={{ marginTop:6, fontSize:12, color: (saveMsg||saveAllMsg).startsWith("✅")?"#4ade80":"#f87171", fontWeight:600 }}>
+                {saveMsg||saveAllMsg}
+              </div>
+            )}
           </div>
 
           {/* 섬네일 */}
