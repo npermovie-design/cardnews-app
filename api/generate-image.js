@@ -1,5 +1,8 @@
 // api/generate-image.js
-// Gemini Imagen 3 - 슬라이드 전체 이미지 생성
+// Nano Banana (Gemini 2.5 Flash Image) 이미지 생성
+// - Imagen API(X) → Gemini generateContent API (O)
+// - 한국어 프롬프트 네이티브 지원
+// - 텍스트를 이미지 안에 직접 렌더링 가능
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,21 +14,21 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY 미설정" });
 
-  const { prompt, aspectRatio = "1:1" } = req.body;
+  const { prompt } = req.body;
   if (!prompt) return res.status(400).json({ error: "prompt 필요" });
 
   try {
+    // Nano Banana = gemini-2.5-flash-image 모델
+    // generateContent 엔드포인트 사용 (Imagen과 다름)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          instances: [{ prompt }],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio,
-            safetySetting: "block_only_high",
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ["IMAGE", "TEXT"],
           },
         }),
       }
@@ -34,15 +37,29 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       return res.status(response.status).json({
-        error: err.error?.message || `Imagen 오류 (${response.status})`,
+        error: err.error?.message || `Nano Banana API 오류 (${response.status})`,
       });
     }
 
     const data = await response.json();
-    const imageB64 = data.predictions?.[0]?.bytesBase64Encoded;
-    if (!imageB64) return res.status(500).json({ error: "이미지 결과 없음" });
 
-    return res.status(200).json({ image: `data:image/png;base64,${imageB64}` });
+    // 응답에서 이미지 파트 추출
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find(p => p.inlineData?.mimeType?.startsWith("image/"));
+
+    if (!imagePart?.inlineData?.data) {
+      // 이미지 없을 때 텍스트 확인 (오류 메시지일 수 있음)
+      const textPart = parts.find(p => p.text);
+      return res.status(500).json({
+        error: "이미지 생성 결과 없음" + (textPart ? ": " + textPart.text : ""),
+      });
+    }
+
+    const mimeType = imagePart.inlineData.mimeType || "image/png";
+    return res.status(200).json({
+      image: `data:${mimeType};base64,${imagePart.inlineData.data}`,
+    });
+
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
