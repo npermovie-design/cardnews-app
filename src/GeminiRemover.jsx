@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 /* ════════════════════════════════════════════════════════════
    GeminiRemover v4 – Replicate AI 인페인팅
@@ -128,49 +128,52 @@ export default function GeminiRemover({ isDark }) {
       const img = origImgRef.current;
       const W   = img.width, H = img.height;
 
-      // 1. 원본 → base64
       setStep("🔍 이미지 준비 중...");
-      const canvas = document.createElement("canvas");
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
 
-      // SD inpainting은 512 또는 768 배수를 선호 → 리사이즈
-      const MAX = 768;
-      let rW = W, rH = H;
-      if (W > MAX || H > MAX) {
-        const ratio = Math.min(MAX / W, MAX / H);
-        rW = Math.round(W * ratio / 8) * 8;
-        rH = Math.round(H * ratio / 8) * 8;
-      } else {
-        rW = Math.round(W / 8) * 8;
-        rH = Math.round(H / 8) * 8;
-      }
-      const scaleX = rW / W;
-      const scaleY = rH / H;
+      // ── 전략: 워터마크 주변 패치만 AI에 전송 → 원본 위에 정밀 합성 ──
+      // 패치 영역: 박스 주변 여유 확보 (SD는 512 배수 필요)
+      const pad    = Math.round(Math.min(W, H) * 0.06);
+      const patchSize = 512; // SD inpainting 최적 크기
 
-      // 리사이즈된 이미지
-      const rCanvas = document.createElement("canvas");
-      rCanvas.width = rW; rCanvas.height = rH;
-      rCanvas.getContext("2d").drawImage(canvas, 0, 0, rW, rH);
-      const imageB64 = rCanvas.toDataURL("image/png");
+      // 원본 캔버스
+      const origCanvas = document.createElement("canvas");
+      origCanvas.width = W; origCanvas.height = H;
+      const origCtx = origCanvas.getContext("2d");
+      origCtx.drawImage(img, 0, 0);
 
-      // 리사이즈된 마스크 - 여유있게 크게
-      const scaledBox = {
-        x: Math.round(box.x * scaleX),
-        y: Math.round(box.y * scaleY),
+      // 패치 영역 계산 (박스 + 여유 패딩, 정사각형)
+      const pX0 = Math.max(0, box.x - pad);
+      const pY0 = Math.max(0, box.y - pad);
+      const pX1 = Math.min(W, box.x + box.w + pad);
+      const pY1 = Math.min(H, box.y + box.h + pad);
+      const pW  = pX1 - pX0;
+      const pH  = pY1 - pY0;
+
+      // 패치를 512×512로 리사이즈해서 AI에 전송
+      const patchCanvas = document.createElement("canvas");
+      patchCanvas.width = patchSize; patchCanvas.height = patchSize;
+      const pCtx = patchCanvas.getContext("2d");
+      pCtx.drawImage(origCanvas, pX0, pY0, pW, pH, 0, 0, patchSize, patchSize);
+      const imageB64 = patchCanvas.toDataURL("image/png");
+
+      // 마스크도 패치 기준으로 생성 (박스 위치를 패치 내 상대 위치로 변환)
+      const scaleX = patchSize / pW;
+      const scaleY = patchSize / pH;
+      const patchBox = {
+        x: Math.round((box.x - pX0) * scaleX),
+        y: Math.round((box.y - pY0) * scaleY),
         w: Math.max(16, Math.round(box.w * scaleX)),
         h: Math.max(16, Math.round(box.h * scaleY)),
       };
-      const maskB64 = buildMask(rW, rH, scaledBox, 10);
+      const maskB64 = buildMask(patchSize, patchSize, patchBox, 12);
       setMaskSrc(maskB64);
 
-      // 2. Replicate 호출
+      // 2. Replicate AI 호출
       setStep("🤖 AI 인페인팅 요청 중... (10~30초)");
       const outputUrl = await callInpaintAPI(imageB64, maskB64);
 
-      // 3. 결과 가져와서 원본 크기로 복원
-      setStep("🖼 결과 합성 중...");
+      // 3. AI 결과 패치를 원본 원래 크기로 복원 후 합성
+      setStep("🖼 원본 해상도로 합성 중...");
       const resultImg = await new Promise((res, rej) => {
         const i = new Image();
         i.crossOrigin = "anonymous";
@@ -179,16 +182,20 @@ export default function GeminiRemover({ isDark }) {
         i.src = outputUrl;
       });
 
-      // 원본 크기 캔버스에 결과 합성
+      // 최종 캔버스: 원본 전체 해상도 유지
       const finalCanvas = document.createElement("canvas");
-      finalCanvas.width  = W; finalCanvas.height = H;
+      finalCanvas.width = W; finalCanvas.height = H;
       const fCtx = finalCanvas.getContext("2d");
-      fCtx.drawImage(canvas, 0, 0); // 원본 전체
-      // AI 처리된 결과 전체를 원본 위에 덮어씌우기 (전체 합성)
-      fCtx.drawImage(resultImg, 0, 0, W, H);
+
+      // 1) 원본 그대로 복사
+      fCtx.drawImage(origCanvas, 0, 0);
+
+      // 2) AI 처리된 패치를 원래 패치 위치/크기로 정밀 합성
+      //    (512→원본 패치 크기로 축소 → 워터마크 주변만 교체)
+      fCtx.drawImage(resultImg, 0, 0, patchSize, patchSize, pX0, pY0, pW, pH);
 
       setResult(finalCanvas.toDataURL("image/png"));
-      setInfo(`✅ AI 제거 완료! (${W}×${H}px)`);
+      setInfo(`✅ AI 제거 완료! 원본 해상도 유지 (${W}×${H}px)`);
     } catch (e) {
       setInfo("❌ 오류: " + e.message);
     } finally {
@@ -259,8 +266,26 @@ export default function GeminiRemover({ isDark }) {
   const reset = () => {
     setImgSrc(null); setResult(null); setInfo(""); setMarkBox(null);
     setManualBox(null); setShowAdj(false); setMaskSrc(null);
+    setLoading(false); setStep(""); setTab("ai");
     origImgRef.current = null;
   };
+
+  // 브라우저 뒤로가기 → 이전 페이지로 이동 (컴포넌트 내부 X)
+  useEffect(() => {
+    // 현재 상태를 히스토리에 추가 (뒤로가기 감지용)
+    window.history.pushState({ geminiRemover: true }, "");
+    const handlePop = (e) => {
+      // 이미지가 업로드된 상태면 초기화, 아니면 진짜 뒤로가기
+      if (imgSrc) {
+        e.preventDefault();
+        reset();
+        window.history.pushState({ geminiRemover: true }, "");
+      }
+      // imgSrc 없으면 브라우저 기본 뒤로가기 동작 (이전 페이지로)
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [imgSrc]);
 
   const adjBox = manualBox || markBox;
 
@@ -290,22 +315,8 @@ export default function GeminiRemover({ isDark }) {
           ))}
         </div>
 
-        {/* ── AI 모드: 서버 안내 ── */}
-        {tab === "ai" && (
-          <div style={{ background:isDark?"rgba(99,102,241,0.07)":"rgba(99,102,241,0.04)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:12, padding:"12px 16px", marginBottom:4 }}>
-            <div style={{ fontSize:12, color:isDark?"#a5b4fc":"#4338ca", lineHeight:1.75 }}>
-              🔒 API 키는 서버에 안전하게 보관됩니다 · 이미지가 서버를 경유해 AI로 처리돼요
-            </div>
-          </div>
-        )}
-        {tab === "canvas" && (
-          <div style={{ background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", border:`1px solid ${bdr}`, borderRadius:12, padding:"12px 16px", marginBottom:4 }}>
-            <div style={{ fontSize:12, color:muted, lineHeight:1.7 }}>
-              ⚡ API 없이 브라우저에서 즉시 처리 · 단순한 배경에 적합<br/>
-              배경이 복잡하거나 결과가 부자연스러우면 <b style={{ color:accent }}>AI 모드</b>를 사용하세요
-            </div>
-          </div>
-        )}
+
+
       </div>
 
       {/* ── 메인 영역 ── */}
@@ -388,8 +399,8 @@ export default function GeminiRemover({ isDark }) {
               )}
               <button onClick={reset}
                 style={{ padding:"11px 14px", borderRadius:10, border:`1px solid ${bdr}`,
-                  background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
-                🔄
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
+                🔄 다시 시작
               </button>
             </div>
           )}
