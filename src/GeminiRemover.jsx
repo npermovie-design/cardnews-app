@@ -132,19 +132,13 @@ export default function GeminiRemover({ isDark }) {
   const removeWithAI = async () => {
     const box = manualBox || markBox;
     if (!imgSrc || !box) return;
-
     setLoading(true); setResult(null); setInfo("");
 
     try {
       const img = origImgRef.current;
-      const W   = img.width, H = img.height;
+      const W = img.width, H = img.height;
 
       setStep("🔍 이미지 준비 중...");
-
-      // ── 전략: 워터마크 주변 패치만 AI에 전송 → 원본 위에 정밀 합성 ──
-      // 패치 영역: 박스 주변 여유 확보 (SD는 512 배수 필요)
-      const pad    = Math.round(Math.min(W, H) * 0.06);
-      const patchSize = 512; // SD inpainting 최적 크기
 
       // 원본 캔버스
       const origCanvas = document.createElement("canvas");
@@ -152,42 +146,44 @@ export default function GeminiRemover({ isDark }) {
       const origCtx = origCanvas.getContext("2d");
       origCtx.drawImage(img, 0, 0);
 
-      // 패치 영역 계산 (박스 + 여유 패딩, 정사각형)
-      const pX0 = Math.max(0, box.x - pad);
-      const pY0 = Math.max(0, box.y - pad);
-      const pX1 = Math.min(W, box.x + box.w + pad);
-      const pY1 = Math.min(H, box.y + box.h + pad);
-      const pW  = pX1 - pX0;
-      const pH  = pY1 - pY0;
+      // ── 전략: 전체 이미지를 AI에 전송 (문맥 인식) ──
+      // LaMa는 전체 이미지를 보고 주변 패턴으로 자연스럽게 채움
+      // 이미지를 AI용 크기로 리사이즈 (LaMa는 크기 제한 없지만 512~1024 권장)
+      const MAX = 1024;
+      let rW = W, rH = H;
+      if (W > MAX || H > MAX) {
+        const ratio = Math.min(MAX / W, MAX / H);
+        rW = Math.round(W * ratio);
+        rH = Math.round(H * ratio);
+      }
+      const scaleX = rW / W;
+      const scaleY = rH / H;
 
-      // 패치를 512×512로 리사이즈해서 AI에 전송
-      const patchCanvas = document.createElement("canvas");
-      patchCanvas.width = patchSize; patchCanvas.height = patchSize;
-      const pCtx = patchCanvas.getContext("2d");
-      pCtx.drawImage(origCanvas, pX0, pY0, pW, pH, 0, 0, patchSize, patchSize);
-      const imageB64 = patchCanvas.toDataURL("image/png");
+      // 전체 이미지 리사이즈
+      const rCanvas = document.createElement("canvas");
+      rCanvas.width = rW; rCanvas.height = rH;
+      rCanvas.getContext("2d").drawImage(origCanvas, 0, 0, rW, rH);
+      const imageB64 = rCanvas.toDataURL("image/png");
 
-      // 마스크도 패치 기준으로 생성 (박스 위치를 패치 내 상대 위치로 변환)
-      const scaleX = patchSize / pW;
-      const scaleY = patchSize / pH;
-      const patchBox = {
-        x: Math.round((box.x - pX0) * scaleX),
-        y: Math.round((box.y - pY0) * scaleY),
-        w: Math.max(16, Math.round(box.w * scaleX)),
-        h: Math.max(16, Math.round(box.h * scaleY)),
+      // 마스크: 리사이즈 비율에 맞게 워터마크 영역만 흰색
+      const scaledBox = {
+        x: Math.round(box.x * scaleX),
+        y: Math.round(box.y * scaleY),
+        w: Math.max(8, Math.round(box.w * scaleX)),
+        h: Math.max(8, Math.round(box.h * scaleY)),
       };
-      const maskB64 = buildMask(patchSize, patchSize, patchBox, 12);
+      const maskB64 = buildMask(rW, rH, scaledBox, 6);
       setMaskSrc(maskB64);
 
-      // 2. Replicate AI 호출
-      setStep("🤖 AI 인페인팅 요청 중... (10~30초)");
+      // AI 호출
+      setStep("🤖 AI 처리 중... (5~15초)");
       const outputUrl = await callInpaintAPI(imageB64, maskB64, (t) => {
         setCountdown(t);
-        if (t > 0) setStep(`⏳ 요청 제한 중... ${t}초 후 자동 재시도`);
+        if (t > 0) setStep(`⏳ 잠시 대기 중... ${t}초 후 자동 재시도`);
         else setStep("🔄 재시도 중...");
       });
 
-      // 3. AI 결과 패치를 원본 원래 크기로 복원 후 합성
+      // 결과 로드
       setStep("🖼 원본 해상도로 합성 중...");
       const resultImg = await new Promise((res, rej) => {
         const i = new Image();
@@ -197,24 +193,28 @@ export default function GeminiRemover({ isDark }) {
         i.src = outputUrl;
       });
 
-      // 최종 캔버스: 원본 전체 해상도 유지
+      // ── 핵심 합성: 원본 전체 유지 + 워터마크 영역만 AI 결과로 교체 ──
       const finalCanvas = document.createElement("canvas");
       finalCanvas.width = W; finalCanvas.height = H;
       const fCtx = finalCanvas.getContext("2d");
 
-      // 1) 원본 그대로 복사
+      // 1) 원본 전체 복사 (원본 해상도 유지)
       fCtx.drawImage(origCanvas, 0, 0);
 
-      // 2) AI 처리된 패치를 원래 패치 위치/크기로 정밀 합성
-      //    (512→원본 패치 크기로 축소 → 워터마크 주변만 교체)
-      fCtx.drawImage(resultImg, 0, 0, patchSize, patchSize, pX0, pY0, pW, pH);
+      // 2) AI 결과에서 워터마크 영역만 추출해서 원본 위에 합성
+      //    (AI 결과의 scaledBox 위치 → 원본의 box 위치로 복원)
+      fCtx.drawImage(
+        resultImg,
+        scaledBox.x, scaledBox.y, scaledBox.w, scaledBox.h, // AI 결과에서 마크 영역
+        box.x,       box.y,       box.w,        box.h        // 원본 위치로 붙여넣기
+      );
 
       setResult(finalCanvas.toDataURL("image/png"));
       setInfo(`✅ AI 제거 완료! 원본 해상도 유지 (${W}×${H}px)`);
     } catch (e) {
       setInfo("❌ 오류: " + e.message);
     } finally {
-      setLoading(false); setStep("");
+      setLoading(false); setStep(""); setCountdown(0);
     }
   };
 

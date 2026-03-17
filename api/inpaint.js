@@ -1,5 +1,4 @@
-// api/inpaint.js
-// Vercel 서버리스 함수 - API 키를 서버에서만 관리
+// api/inpaint.js - LaMa 모델 사용 (NSFW 없음, 워터마크 제거 특화)
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,7 +14,8 @@ export default async function handler(req, res) {
   if (!image || !mask) return res.status(400).json({ error: "image와 mask가 필요합니다" });
 
   try {
-    // Replicate 예측 생성 - stability-ai/stable-diffusion-inpainting
+    // LaMa (Large Mask inpainting) - NSFW 없음, 워터마크/로고 제거 특화
+    // 주변 배경 패턴을 학습해서 자연스럽게 채움
     const createRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -23,55 +23,25 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
-        input: {
-          image,
-          mask,
-          prompt:              "clean background, seamless texture, high quality, natural",
-          negative_prompt:     "watermark, logo, text, symbol, mark, sparkle",
-          num_inference_steps: 20,
-          guidance_scale:      7.5,
-        },
+        version: "627d830d60900aeb676fae6c1e28d649d39e0d6e23715f56e3027aa90ea9c53b",
+        input: { image, mask },
       }),
     });
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(() => ({}));
-      // 요청 제한(429) 자동 재시도
+      // 429 Rate limit 처리
       if (createRes.status === 429) {
-        const retryAfter = parseInt(createRes.headers.get("retry-after") || "10", 10);
-        await new Promise(r => setTimeout(r, (retryAfter + 2) * 1000));
-        const retry = await fetch("https://api.replicate.com/v1/predictions", {
-          method: "POST",
-          headers: { "Authorization": `Token ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            version: "95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
-            input: {
-              image, mask,
-              prompt:              "clean background, seamless texture, high quality, natural",
-              negative_prompt:     "watermark, logo, text, symbol, mark, sparkle",
-              num_inference_steps: 20,
-              guidance_scale:      7.5,
-            },
-          }),
-        });
-        if (!retry.ok) {
-          const retryErr = await retry.json().catch(() => ({}));
-          return res.status(429).json({ error: "rate_limit", detail: retryErr.detail || "잠시 후 다시 시도해주세요" });
-        }
-        const retryData = await retry.json();
-        // 재시도 성공 시 prediction ID로 이어서 폴링
-        Object.assign(prediction, retryData);
-      } else {
-        return res.status(createRes.status).json({ error: err.detail || "Replicate 요청 실패" });
+        return res.status(429).json({ error: "rate_limit", detail: err.detail || "" });
       }
+      return res.status(createRes.status).json({ error: err.detail || "Replicate 요청 실패" });
     }
 
-    const prediction = createRes.ok ? await createRes.json() : {};
+    const prediction = await createRes.json();
     const pollUrl    = `https://api.replicate.com/v1/predictions/${prediction.id}`;
 
-    // 폴링 (최대 120초)
-    for (let i = 0; i < 60; i++) {
+    // 폴링 (최대 60초 - LaMa는 SD보다 훨씬 빠름)
+    for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 2000));
       const pollRes = await fetch(pollUrl, {
         headers: { "Authorization": `Token ${apiKey}` },
@@ -82,10 +52,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ output });
       }
       if (poll.status === "failed") {
-        return res.status(500).json({ error: poll.error || "AI 처리 실패" });
+        return res.status(500).json({ error: poll.error || "처리 실패" });
       }
     }
-    return res.status(504).json({ error: "시간 초과 (120초)" });
+    return res.status(504).json({ error: "시간 초과 (60초)" });
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
