@@ -34,22 +34,23 @@ export default async function handler(req, res) {
   try {
     // 1. Replicate 예측 생성
     // stability-ai/stable-diffusion-inpainting 최신 버전
-    const createRes = await fetch("https://api.replicate.com/v1/predictions", {
+    const createRes = await fetch("https://api.replicate.com/v1/models/stability-ai/stable-diffusion-inpainting/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Token ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // kandinsky-2-inpainting: NSFW 필터 없음, 빠름, 고품질
-        version: "c109cc9a2b5f3c988ac7b4f4c40f74cfe51d12e3a9d21dce4cf62cf9244fd93f",
+        // stability-ai/stable-diffusion-inpainting 최신 버전
         input: {
           image,
           mask:                finalMask,
-          prompt:              "clean background, seamless texture, high quality",
-          negative_prompt:     "watermark, text, logo, symbol, blurry",
-          num_inference_steps: 75,
-          guidance_scale:      4,
+          prompt:              "background texture, clean, seamless, high quality",
+          negative_prompt:     "watermark, logo, text, symbol, mark",
+          num_inference_steps: 20,
+          guidance_scale:      7,
+          safety_checker:      "no",
+          seed:                42,
         },
       }),
     });

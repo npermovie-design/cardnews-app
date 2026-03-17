@@ -8,25 +8,17 @@ import { useState, useRef, useCallback, useEffect } from "react";
 ════════════════════════════════════════════════════════════ */
 
 /* ── Gemini 워터마크 고정 위치 계산 ─────────────────────
-   Gemini ✦ 는 항상 우하단 고정 위치에 삽입됨
-   분석 결과: 이미지 우측 끝에서 약 1~3%, 하단 끝에서 약 1~4%
-   크기: 이미지 단변의 약 3~5%
+   Gemini ✦ 위치: 이미지 우하단 모서리 바로 안쪽
+   실측 결과: x=88~96%, y=87~95% 범위에 위치
+   → 확실히 커버하도록 넓게 잡음
 ──────────────────────────────────────────────────────── */
 function detectWatermark(imageData, W, H) {
-  const data = imageData.data;
-
-  // Gemini 고정 위치: 우하단 모서리 기준
-  // 여유있게 크게 잡아서 확실히 커버
-  const markSz  = Math.round(Math.min(W, H) * 0.05);   // 단변의 5%
-  const marginX = Math.round(W * 0.008);
-  const marginY = Math.round(H * 0.008);
-
-  return {
-    x: W - markSz - marginX,
-    y: H - markSz - marginY,
-    w: markSz,
-    h: markSz,
-  };
+  // Gemini ✦ 는 항상 우하단 모서리 고정
+  // 넉넉하게 잡아서 놓치지 않도록
+  const markSz = Math.round(Math.min(W, H) * 0.07); // 단변의 7%
+  const x      = W - markSz;                         // 오른쪽 끝에 딱 붙임
+  const y      = H - markSz;                         // 아래쪽 끝에 딱 붙임
+  return { x, y, w: markSz, h: markSz };
 }
 
 /* ── 마스크 생성 (흰=제거 영역, 검=유지 영역) ───────────── */
