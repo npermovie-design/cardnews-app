@@ -1,4 +1,6 @@
-// api/inpaint.js - LaMa 모델 사용 (NSFW 없음, 워터마크 제거 특화)
+// api/inpaint.js
+// LaMa inpainting - NSFW 없음, 워터마크 제거 특화
+// 모델명 엔드포인트 사용 → 버전 해시 만료 문제 없음
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -14,23 +16,24 @@ export default async function handler(req, res) {
   if (!image || !mask) return res.status(400).json({ error: "image와 mask가 필요합니다" });
 
   try {
-    // LaMa (Large Mask inpainting) - NSFW 없음, 워터마크/로고 제거 특화
-    // 주변 배경 패턴을 학습해서 자연스럽게 채움
-    const createRes = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: "627d830d60900aeb676fae6c1e28d649d39e0d6e23715f56e3027aa90ea9c53b",
-        input: { image, mask },
-      }),
-    });
+    // 모델명 엔드포인트 방식 → 항상 최신 버전 자동 사용 (해시 만료 없음)
+    const createRes = await fetch(
+      "https://api.replicate.com/v1/models/advimman/lama/predictions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${apiKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "wait=5",
+        },
+        body: JSON.stringify({
+          input: { image, mask },
+        }),
+      }
+    );
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(() => ({}));
-      // 429 Rate limit 처리
       if (createRes.status === 429) {
         return res.status(429).json({ error: "rate_limit", detail: err.detail || "" });
       }
@@ -38,9 +41,15 @@ export default async function handler(req, res) {
     }
 
     const prediction = await createRes.json();
-    const pollUrl    = `https://api.replicate.com/v1/predictions/${prediction.id}`;
 
-    // 폴링 (최대 60초 - LaMa는 SD보다 훨씬 빠름)
+    // 이미 완료된 경우 (Prefer: wait)
+    if (prediction.status === "succeeded") {
+      const output = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+      return res.status(200).json({ output });
+    }
+
+    // 폴링 (최대 60초)
+    const pollUrl = `https://api.replicate.com/v1/predictions/${prediction.id}`;
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 2000));
       const pollRes = await fetch(pollUrl, {
