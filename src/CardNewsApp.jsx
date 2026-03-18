@@ -1260,7 +1260,7 @@ function PageMake(props) {
   }
 
   return (
-    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, color:text}}>
+    <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, margin:"0 auto", color:text}}>
       <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;

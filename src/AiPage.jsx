@@ -5,7 +5,8 @@ import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import DetailPageGenerator from "./DetailPageGenerator";
-import SimpleImageGenerator from "./SimpleImageGenerator";
+import ImageCardNewsApp from "./ImageCardNewsApp";
+import SimpleDetailPage from "./SimpleDetailPage";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -700,38 +701,53 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 카드뉴스 (AI 이미지 생성, 카드 비율)
+  // 심플 카드뉴스 = CardNewsApp (글씨 편집)
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     return (
       <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <SimpleImageGenerator isDark={isDark} user={user} mode="card" />
+        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
   }
 
-  // 이미지 카드뉴스 (기존 CardNewsApp)
+  // 이미지 카드뉴스 = AI 이미지 생성 (정사각형)
   if (aiMenu === "cardnews_image") {
     return (
       <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
+        <ImageCardNewsApp isDark={isDark} user={user} />
       </div>
     );
   }
 
-  // 심플 상세페이지 (기존 CardNewsApp 방식)
+  // 심플 상세페이지 = AI 이미지 생성 (세로형, 단순 입력)
   if (aiMenu === "detail_simple") {
     return (
       <div key="detail_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
+        <SimpleDetailPage isDark={isDark} user={user} />
       </div>
     );
   }
 
-  // 이미지 상세페이지 (기존 DetailPageGenerator)
+  // 이미지 상세페이지 = DetailPageGenerator (상세 입력)
   if (aiMenu === "detail_image" || aiMenu === "detail_page") {
     return (
       <div key="detail_image" style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
         <DetailPageGenerator isDark={isDark} user={user} />
+      </div>
+    );
+  }
+
+  // 카드뉴스 기획 패널
+  if (aiMenu === "cardnews_plan") {
+    return (
+      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
+        <PlannerPanel inline theme={theme}
+          onClose={() => {}}
+          onApplySlides={(slides) => {
+            try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
+            setAiMenu("cardnews_simple");
+          }}
+        />
       </div>
     );
   }

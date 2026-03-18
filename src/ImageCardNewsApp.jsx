@@ -2,11 +2,11 @@ import { useState, useRef } from "react";
 import { changePoints } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
-   SimpleImageGenerator
-   - mode="card"   → 이미지 카드뉴스 (기본 1:1 정사각형)
-   - mode="detail" → 심플 상세페이지 (기본 세로형 860×1100)
-   ✅ Step1 간소화: 주제 + 들어갈 내용 2개 필드만
-   ✅ Step2~4: DetailPageGenerator와 동일한 위저드 흐름
+   ImageCardNewsApp.jsx
+   이미지 카드뉴스 생성기
+   - AI 이미지 생성 방식
+   - 기본 사이즈: 정사각형 1000×1000
+   - 주제 + 내용만 입력하면 AI가 슬라이드 구성
 ══════════════════════════════════════════════════════════════ */
 
 const CLAUDE_KEY = "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";
@@ -155,10 +155,10 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
-  const isCard = mode === "card";
-  const defaultSizeIdx = isCard ? 0 : 1; // card=정사각형, detail=세로형
-  const SLIDE_TYPES = isCard ? SLIDE_TYPES_CARD : SLIDE_TYPES_DETAIL;
+export default function ImageCardNewsApp({ isDark, user }) {
+  const isCard = true;
+  const defaultSizeIdx = 0; // 정사각형
+  const SLIDE_TYPES = SLIDE_TYPES_CARD;
   const accentBase = "#6366f1";
 
   // ── 위저드 단계 ─────────────────────────────────────────────
@@ -178,8 +178,8 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
   // ── Step 3: 디자인 선택 ─────────────────────────────────────
   const [selStyle, setSelStyle] = useState(null);
   const [selSize,  setSelSize]  = useState(defaultSizeIdx);
-  const [customW,  setCustomW]  = useState(isCard ? 1000 : 860);
-  const [customH,  setCustomH]  = useState(isCard ? 1000 : 1100);
+  const [customW,  setCustomW]  = useState(1000);
+  const [customH,  setCustomH]  = useState(1000);
   const [refImg,   setRefImg]   = useState(null);
   const [refStyle, setRefStyle] = useState("");
   const [analyzing,setAnalyzing]= useState(false);
@@ -273,7 +273,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
   };
 
   // ── 보관함 ──────────────────────────────────────────────────
-  const SAVES_KEY = isCard ? "nper_imgcard_saves_v1" : "nper_simpledetail_saves_v1";
+  const SAVES_KEY = "nper_imgcard_saves_v1";
   const saveToLibrary = (images) => {
     try {
       const saves = JSON.parse(localStorage.getItem(SAVES_KEY)||"[]");
@@ -416,37 +416,31 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
 
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>
-              {isCard ? "카드뉴스 주제를 알려주세요" : "상세페이지 주제를 알려주세요"}
+              카드뉴스 주제를 알려주세요
             </div>
             <div style={{ fontSize:13, color:muted }}>
-              주제와 들어갈 내용을 간단히 입력하면 AI가 슬라이드를 구성해요
+              주제와 들어갈 내용을 간단히 입력하면 AI가 이미지 슬라이드를 구성해요
             </div>
           </div>
 
           {/* 주제 */}
           <div style={{ marginBottom:18 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>
-              {isCard ? "어떤 주제로 만들까요? *" : "어떤 상품/서비스인가요? *"}
-            </div>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>어떤 주제로 만들까요? *</div>
             <input
               value={topic}
               onChange={e=>setTopic(e.target.value)}
-              placeholder={isCard ? "예: 블로그 글쓰기 노하우 10가지" : "예: 프리미엄 한우 선물 세트"}
+              placeholder="예: 블로그 글쓰기 노하우 10가지"
               style={inputStyle}
             />
           </div>
 
           {/* 내용 */}
           <div style={{ marginBottom:18 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>
-              {isCard ? "들어갈 내용을 알려주세요 *" : "핵심 특징/내용을 알려주세요 *"}
-            </div>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>들어갈 내용을 알려주세요 *</div>
             <textarea
               value={content}
               onChange={e=>setContent(e.target.value)}
-              placeholder={isCard
-                ? "예: 키워드 선정 방법, 제목 작성 팁, 글 구성 방법, 사진 활용법 등"
-                : "예: 1++ 등급, 냉장 당일 배송, 고급 선물 포장, 2인 세트 구성, 가격 89,000원"}
+              placeholder="예: 키워드 선정 방법, 제목 작성 팁, 글 구성 방법, 사진 활용법 등"
               rows={4}
               style={{ ...inputStyle, resize:"vertical", lineHeight:1.7 }}
             />
