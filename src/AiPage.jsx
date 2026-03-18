@@ -700,29 +700,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 카드뉴스
+  // 심플 카드뉴스 (AI 이미지 생성, 카드 비율)
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     return (
       <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
-      </div>
-    );
-  }
-
-  // 이미지 카드뉴스 (AI 이미지 생성, 카드 비율)
-  if (aiMenu === "cardnews_image") {
-    return (
-      <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <SimpleImageGenerator isDark={isDark} user={user} mode="card" />
       </div>
     );
   }
 
-  // 심플 상세페이지 (AI 이미지 생성, 세로 비율)
+  // 이미지 카드뉴스 (기존 CardNewsApp)
+  if (aiMenu === "cardnews_image") {
+    return (
+      <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
+      </div>
+    );
+  }
+
+  // 심플 상세페이지 (기존 CardNewsApp 방식)
   if (aiMenu === "detail_simple") {
     return (
       <div key="detail_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <SimpleImageGenerator isDark={isDark} user={user} mode="detail" />
+        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
   }
