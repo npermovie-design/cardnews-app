@@ -241,21 +241,6 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                 <div style={{ fontSize: 12, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
               </div>
             </div>
-            {/* 크레딧 현황 */}
-            <div style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#f7f7fb",
-              borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-                <span style={{ fontSize: 12, color: muted }}>크레딧 현황</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: ptColor }}>💎 {ptLeft.toLocaleString()} cr</span>
-              </div>
-              <div style={{ height: 5, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.08)" : "#e0e0eb", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 5, width: ptPct + "%",
-                  background: isEmpty || isLow ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
-              </div>
-              <div style={{ fontSize: 11, color: muted, marginTop: 5 }}>
-                AI글=10cr · 이미지=30cr{ptLeft >= 30 ? " · " + Math.floor(ptLeft/30) + "장가능" : ptLeft >= 10 ? " · 텍스트만가능" : " · ⚠️부족"}
-              </div>
-            </div>
           </div>
 
           {/* 메뉴 목록 */}
@@ -303,7 +288,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: text,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nick}</div>
-          <div style={{ fontSize: 11, color: ptColor, fontWeight: 600 }}>💎 {ptLeft.toLocaleString()}cr 잔여</div>
+          <div style={{ fontSize: 11, color: muted }}>{user.role === "admin" ? "관리자" : "회원"}</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
           style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
