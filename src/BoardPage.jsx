@@ -27,6 +27,35 @@ async function deleteBoardCat(id) {
   await remove(ref(db, "boardCats/" + id));
 }
 
+/* ─── Firebase 세부 태그(Tag) CRUD ─────────────────────────── */
+// 구조: boardTags/{catId}/{tagId}
+async function fetchTagsByCat(catId) {
+  try {
+    const snap = await get(ref(db, "boardTags/" + catId));
+    if (!snap.exists()) return [];
+    return Object.entries(snap.val())
+      .map(([key, val]) => ({ key, ...val }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  } catch { return []; }
+}
+async function fetchAllTags() {
+  try {
+    const snap = await get(ref(db, "boardTags"));
+    if (!snap.exists()) return {};
+    const result = {};
+    Object.entries(snap.val()).forEach(([catId, tags]) => {
+      result[catId] = Object.entries(tags).map(([key, val]) => ({ key, ...val }));
+    });
+    return result;
+  } catch { return {}; }
+}
+async function saveTag(catId, tag) {
+  await set(ref(db, "boardTags/" + catId + "/" + tag.id), tag);
+}
+async function deleteTag(catId, tagId) {
+  await remove(ref(db, "boardTags/" + catId + "/" + tagId));
+}
+
 /* ─── 리치 텍스트 에디터 ───────────────────────────────────── */
 function RichEditor({ value, onChange }) {
   const editorRef = useRef(null);
@@ -190,12 +219,15 @@ function RichBody({ html, C }) {
 }
 
 /* ─── 글쓰기 폼 ─────────────────────────────────────────── */
-function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats }) {
+function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, allTags }) {
   const [title,      setTitle]    = useState(initial?.title || "");
   const [body,       setBody]     = useState(initial?.body  || "");
   const [pickedCat,  setPickedCat]= useState(initial?.subCat || subCat || (cats[0]?.id || "info"));
+  const [pickedTag,  setPickedTag]= useState(initial?.tag || "");
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#d1d5db";
   const sub = cats.find(s=>s.id===pickedCat) || cats[0];
+  const tags = allTags[pickedCat] || [];
+
   return (
     <div style={{maxWidth:900,margin:"0 auto",padding:"28px 0 60px"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
@@ -209,7 +241,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats })
           <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>카테고리 선택</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
             {cats.map(s=>(
-              <button key={s.id} type="button" onClick={()=>setPickedCat(s.id)} style={{
+              <button key={s.id} type="button" onClick={()=>{ setPickedCat(s.id); setPickedTag(""); }} style={{
                 padding:"7px 16px", borderRadius:20, border:"2px solid "+(pickedCat===s.id ? s.color : bdr),
                 background: pickedCat===s.id ? s.color+"22" : "transparent",
                 color: pickedCat===s.id ? s.color : C.muted,
@@ -219,13 +251,38 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats })
             ))}
           </div>
         </div>
+
+        {/* 세부 태그 선택 (해당 카테고리에 태그가 있을 때만) */}
+        {tags.length > 0 && (
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>세부 카테고리 <span style={{fontWeight:400}}>(선택)</span></div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              <button type="button" onClick={()=>setPickedTag("")} style={{
+                padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
+                border:"1px solid "+(pickedTag==="" ? (sub?.color||"#6366f1") : bdr),
+                background: pickedTag==="" ? (sub?.color||"#6366f1")+"18" : "transparent",
+                color: pickedTag==="" ? (sub?.color||"#6366f1") : C.muted, fontWeight: pickedTag===""?700:400,
+              }}>전체</button>
+              {tags.map(t=>(
+                <button key={t.id} type="button" onClick={()=>setPickedTag(t.label)} style={{
+                  padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
+                  border:"1px solid "+(pickedTag===t.label ? (t.color||sub?.color||"#6366f1") : bdr),
+                  background: pickedTag===t.label ? (t.color||sub?.color||"#6366f1")+"18" : "transparent",
+                  color: pickedTag===t.label ? (t.color||sub?.color||"#6366f1") : C.muted,
+                  fontWeight: pickedTag===t.label ? 700 : 400,
+                }}>{t.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <input placeholder="제목을 입력해주세요" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)}
           style={{padding:"13px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:15,outline:"none"}}/>
         <RichEditor value={body} onChange={setBody}/>
         <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
           <button type="button" onClick={onCancel} style={{padding:"11px 24px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer",fontWeight:600}}>취소</button>
           <button type="button" onClick={()=>{
-            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat});
+            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag});
             else alert("제목과 내용을 입력해주세요.");
           }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
             {initial?"수정 완료":"등록하기"}
@@ -241,6 +298,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [subCat,  setSubCat]  = useState(initialCat || "info");
   const [subCats, setSubCats] = useState(DEFAULT_CATS);
+  const [allTags, setAllTags] = useState({}); // { catId: [{id,label,color}] }
   const [posts,   setPostsS]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [view,    setView]    = useState(null);
@@ -250,6 +308,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [sort,    setSort]    = useState("latest");
   const [page,    setPage]    = useState(1);
   const [toast,   setToast]   = useState("");
+  const [filterTag, setFilterTag] = useState(""); // 세부 태그 필터
   const [showCatMgr, setShowCatMgr] = useState(false);
   const PER = 20;
 
@@ -266,9 +325,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   useEffect(()=>{ if(initialCat) setSubCat(initialCat); },[initialCat]);
 
-  // 카테고리 로드
+  // 카테고리 + 태그 로드
   useEffect(()=>{
     fetchBoardCats().then(cats => setSubCats(cats));
+    fetchAllTags().then(tags => setAllTags(tags));
   }, []);
 
   // 반응형 감지
@@ -317,14 +377,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const own  = p=>user&&(user.nick===p.nick||user.role==="admin");
 
   const subInfo = subCats.find(s=>s.id===subCat)||subCats[0];
+  const currentTags = allTags[subCat] || [];
 
   const filtered = useMemo(()=>{
     let list = posts.filter(p=>p.cat===subCat||p.subCat===subCat);
+    if(filterTag) list = list.filter(p=>p.tag===filterTag);
     if(search.trim()){ const q=search.toLowerCase(); list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q)); }
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
           :[...list].sort((a,b)=>b.id-a.id);
-  },[posts,subCat,search,sort]);
+  },[posts,subCat,search,sort,filterTag]);
 
   const hotPosts = useMemo(()=>
     [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3),
@@ -334,10 +396,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const pageItems=filtered.slice((page-1)*PER,page*PER);
 
   /* 글 등록 - Firebase 저장 + 1P 지급 */
-  const submitPost = async ({title, body, subCat: formCat}) => {
+  const submitPost = async ({title, body, subCat: formCat, tag}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const cat = formCat || subCat;
-    const p={id:Date.now(),cat,subCat:cat,nick:user.nick,title,body,
+    const p={id:Date.now(),cat,subCat:cat,tag:tag||"",nick:user.nick,title,body,
              date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[]};
     syncLocal([p,...posts]);
     setMode("list");
@@ -456,7 +518,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   if(mode==="write"||mode==="edit") return (
     <div style={{padding:"0 24px"}}>
       <WriteForm user={user} subCat={subCat} initial={mode==="edit"?view:null}
-        onDone={mode==="edit"?submitEdit:submitPost} onCancel={()=>setMode("list")} C={C} isDark={isDark} cats={subCats}/>
+        onDone={mode==="edit"?submitEdit:submitPost} onCancel={()=>setMode("list")} C={C} isDark={isDark} cats={subCats} allTags={allTags}/>
     </div>
   );
 
@@ -556,18 +618,23 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   /* 카테고리 관리 모달 */
   const CatManager = () => {
-    const [cats,    setCats]    = useState(subCats);
-    const [newIcon, setNewIcon] = useState("💬");
-    const [newLabel,setNewLabel]= useState("");
-    const [newColor,setNewColor]= useState("#6366f1");
-    const [saving,  setSaving]  = useState(false);
+    const [cats,      setCats]     = useState(subCats);
+    const [newIcon,   setNewIcon]  = useState("💬");
+    const [newLabel,  setNewLabel] = useState("");
+    const [newColor,  setNewColor] = useState("#6366f1");
+    const [saving,    setSaving]   = useState(false);
+    const [tab,       setTab]      = useState("cat"); // "cat" | "tag"
+    const [selCat,    setSelCat]   = useState(subCats[0]?.id||"info");
+    const [localTags, setLocalTags]= useState(allTags);
+    const [tagLabel,  setTagLabel] = useState("");
+    const [tagColor,  setTagColor] = useState("#6366f1");
     const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
     const inp = {padding:"9px 12px",borderRadius:8,border:"1px solid "+bdr,background:inputBg,color:C.text,fontSize:13,outline:"none"};
 
     const addCat = async () => {
       if(!newLabel.trim()) return;
       const id = newLabel.trim().toLowerCase().replace(/\s+/g,"_").replace(/[^a-z0-9_가-힣]/g,"") + "_" + Date.now();
-      const cat = {id, label:newLabel.trim(), icon:newIcon, color:newColor, order: cats.length};
+      const cat = {id, label:newLabel.trim(), icon:newIcon, color:newColor, order:cats.length};
       setSaving(true);
       await saveBoardCat(cat);
       const updated = [...cats, cat];
@@ -589,55 +656,144 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       setCats(updated); setSubCats(updated);
     };
 
+    const addTag = async () => {
+      if(!tagLabel.trim()) return;
+      const id = tagLabel.trim().replace(/\s+/g,"_") + "_" + Date.now();
+      const tag = {id, label:tagLabel.trim(), color:tagColor, order:(localTags[selCat]||[]).length};
+      setSaving(true);
+      await saveTag(selCat, tag);
+      const updated = {...localTags, [selCat]: [...(localTags[selCat]||[]), tag]};
+      setLocalTags(updated); setAllTags(updated);
+      setTagLabel(""); setSaving(false);
+    };
+
+    const removeTag = async (catId, tagId) => {
+      await deleteTag(catId, tagId);
+      const updated = {...localTags, [catId]: (localTags[catId]||[]).filter(t=>t.id!==tagId)};
+      setLocalTags(updated); setAllTags(updated);
+    };
+
     return (
       <div onClick={()=>setShowCatMgr(false)} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div onClick={e=>e.stopPropagation()} style={{
-          width:"min(520px,94vw)",maxHeight:"80vh",overflowY:"auto",
+          width:"min(560px,96vw)",maxHeight:"85vh",overflowY:"auto",
           background:isDark?"#1a1730":"#fff",borderRadius:20,
           border:"1px solid "+bdr,boxShadow:"0 24px 64px rgba(0,0,0,0.3)",
           padding:"28px 24px",
         }}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
-            <div style={{fontSize:18,fontWeight:900,color:C.text}}>⚙️ 카테고리 관리</div>
+          {/* 헤더 */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <div style={{fontSize:18,fontWeight:900,color:C.text}}>⚙️ 게시판 카테고리 관리</div>
             <button onClick={()=>setShowCatMgr(false)} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:20}}>✕</button>
           </div>
 
-          {/* 현재 카테고리 목록 */}
-          <div style={{marginBottom:24}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>현재 카테고리</div>
-            {cats.map(c=>(
-              <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:6,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",border:"1px solid "+bdr}}>
-                <span style={{fontSize:18}}>{c.icon}</span>
-                <span style={{flex:1,fontSize:14,fontWeight:600,color:C.text}}>{c.label}</span>
-                <span style={{fontSize:11,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#eee",padding:"2px 8px",borderRadius:6}}>
-                  {posts.filter(p=>p.cat===c.id||p.subCat===c.id).length}개 글
-                </span>
-                <input type="color" value={c.color} title="색상 변경"
-                  onChange={e=>saveCat({...c, color:e.target.value})}
-                  style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",padding:2,background:"none"}} />
-                <button onClick={()=>removeCat(c.id)}
-                  style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:12,cursor:"pointer",fontWeight:700}}>삭제</button>
-              </div>
+          {/* 탭 */}
+          <div style={{display:"flex",gap:6,marginBottom:20,borderBottom:"1px solid "+bdr,paddingBottom:0}}>
+            {[["cat","📌 카테고리"],["tag","🏷 세부 태그"]].map(([t,l])=>(
+              <button key={t} onClick={()=>setTab(t)} style={{
+                padding:"9px 18px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:tab===t?800:500,
+                background:tab===t?(isDark?"rgba(99,102,241,0.18)":"rgba(99,102,241,0.1)"):"transparent",
+                color:tab===t?"#a5b4fc":C.muted,
+                borderBottom:tab===t?"2px solid #6366f1":"2px solid transparent",
+              }}>{l}</button>
             ))}
           </div>
 
-          {/* 새 카테고리 추가 */}
-          <div style={{borderTop:"1px solid "+bdr,paddingTop:20}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:12}}>새 카테고리 추가</div>
-            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <input value={newIcon} onChange={e=>setNewIcon(e.target.value)} placeholder="🏷" maxLength={2}
-                style={{...inp,width:52,textAlign:"center",fontSize:18}} />
-              <input value={newLabel} onChange={e=>setNewLabel(e.target.value)} placeholder="카테고리 이름"
-                style={{...inp,flex:1,minWidth:120}} onKeyDown={e=>e.key==="Enter"&&addCat()} />
-              <input type="color" value={newColor} onChange={e=>setNewColor(e.target.value)} title="색상"
-                style={{width:38,height:38,borderRadius:8,border:"1px solid "+bdr,cursor:"pointer",padding:2}} />
-              <button onClick={addCat} disabled={saving||!newLabel.trim()}
-                style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
-                {saving?"저장중...":"+ 추가"}
-              </button>
+          {/* ── 카테고리 탭 ── */}
+          {tab==="cat" && (<>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>현재 카테고리</div>
+              {cats.map(c=>(
+                <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:6,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",border:"1px solid "+bdr}}>
+                  <span style={{fontSize:18}}>{c.icon}</span>
+                  <span style={{flex:1,fontSize:14,fontWeight:600,color:C.text}}>{c.label}</span>
+                  <span style={{fontSize:11,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#eee",padding:"2px 8px",borderRadius:6}}>
+                    {posts.filter(p=>p.cat===c.id||p.subCat===c.id).length}개 글
+                  </span>
+                  <input type="color" value={c.color} title="색상 변경"
+                    onChange={e=>saveCat({...c, color:e.target.value})}
+                    style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",padding:2,background:"none"}} />
+                  <button onClick={()=>removeCat(c.id)}
+                    style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:12,cursor:"pointer",fontWeight:700}}>삭제</button>
+                </div>
+              ))}
             </div>
-            <div style={{fontSize:11,color:C.muted,marginTop:8}}>💡 이모지 + 이름 + 색상을 설정하고 추가하세요</div>
-          </div>
+            <div style={{borderTop:"1px solid "+bdr,paddingTop:18}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>새 카테고리 추가</div>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <input value={newIcon} onChange={e=>setNewIcon(e.target.value)} placeholder="🏷" maxLength={2}
+                  style={{...inp,width:52,textAlign:"center",fontSize:18}} />
+                <input value={newLabel} onChange={e=>setNewLabel(e.target.value)} placeholder="카테고리 이름"
+                  style={{...inp,flex:1,minWidth:120}} onKeyDown={e=>e.key==="Enter"&&addCat()} />
+                <input type="color" value={newColor} onChange={e=>setNewColor(e.target.value)}
+                  style={{width:38,height:38,borderRadius:8,border:"1px solid "+bdr,cursor:"pointer",padding:2}} />
+                <button onClick={addCat} disabled={saving||!newLabel.trim()}
+                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
+                  {saving?"저장중...":"+ 추가"}
+                </button>
+              </div>
+              <div style={{fontSize:11,color:C.muted,marginTop:8}}>💡 이모지 + 이름 + 색상을 설정하고 추가하세요</div>
+            </div>
+          </>)}
+
+          {/* ── 세부 태그 탭 ── */}
+          {tab==="tag" && (<>
+            {/* 카테고리 선택 */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:8}}>태그를 추가할 카테고리 선택</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {cats.map(c=>(
+                  <button key={c.id} onClick={()=>setSelCat(c.id)} style={{
+                    padding:"6px 14px",borderRadius:16,fontSize:12,cursor:"pointer",
+                    border:"1px solid "+(selCat===c.id?c.color:bdr),
+                    background:selCat===c.id?c.color+"22":"transparent",
+                    color:selCat===c.id?c.color:C.muted,fontWeight:selCat===c.id?700:400,
+                  }}>{c.icon} {c.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* 현재 태그 목록 */}
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:8}}>
+                현재 태그 {(localTags[selCat]||[]).length === 0 && <span style={{fontWeight:400}}>(없음)</span>}
+              </div>
+              {(localTags[selCat]||[]).length === 0 ? (
+                <div style={{padding:"16px",textAlign:"center",borderRadius:10,border:"1px dashed "+bdr,color:C.muted,fontSize:13}}>
+                  아직 태그가 없어요. 아래에서 추가해보세요!
+                </div>
+              ) : (
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {(localTags[selCat]||[]).map(t=>(
+                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 12px",borderRadius:20,border:"1px solid "+(t.color||"#6366f1"),background:(t.color||"#6366f1")+"18"}}>
+                      <span style={{fontSize:13,fontWeight:700,color:t.color||"#6366f1"}}>{t.label}</span>
+                      <span style={{fontSize:11,color:C.muted}}>({posts.filter(p=>(p.cat===selCat||p.subCat===selCat)&&p.tag===t.label).length}개)</span>
+                      <button onClick={()=>removeTag(selCat,t.id)}
+                        style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:"0 2px",lineHeight:1}}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 새 태그 추가 */}
+            <div style={{borderTop:"1px solid "+bdr,paddingTop:18}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>새 태그 추가</div>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <input value={tagLabel} onChange={e=>setTagLabel(e.target.value)} placeholder="태그 이름 (예: AI, 마케팅)"
+                  style={{...inp,flex:1,minWidth:140}} onKeyDown={e=>e.key==="Enter"&&addTag()} />
+                <input type="color" value={tagColor} onChange={e=>setTagColor(e.target.value)}
+                  style={{width:38,height:38,borderRadius:8,border:"1px solid "+bdr,cursor:"pointer",padding:2}} />
+                <button onClick={addTag} disabled={saving||!tagLabel.trim()}
+                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
+                  {saving?"저장중...":"+ 추가"}
+                </button>
+              </div>
+              <div style={{fontSize:11,color:C.muted,marginTop:8}}>
+                💡 예) 정보공유 → AI, 마케팅, 프로그램, 재테크 등 원하는 태그를 자유롭게 추가하세요
+              </div>
+            </div>
+          </>)}
         </div>
       </div>
     );
@@ -662,7 +818,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {!loading && <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,overflowX:"auto"}}>
           {subCats.map(s=>(
-            <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);}}
+            <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);setFilterTag("");}}
               style={{display:"flex",alignItems:"center",gap:6,padding:"13px 18px",borderRadius:0,border:"none",cursor:"pointer",
                 fontSize:14,fontWeight:subCat===s.id?700:500,whiteSpace:"nowrap",
                 background:"transparent",color:subCat===s.id?s.color:C.muted,
@@ -720,6 +876,28 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             </div>
 
+            {/* 세부 태그 필터 바 */}
+            {currentTags.length > 0 && (
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                <button onClick={()=>setFilterTag("")} style={{
+                  padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
+                  border:"1px solid "+(filterTag===""?(subInfo?.color||"#6366f1"):bdr),
+                  background:filterTag===""?(subInfo?.color||"#6366f1")+"18":"transparent",
+                  color:filterTag===""?(subInfo?.color||"#6366f1"):C.muted,
+                  fontWeight:filterTag===""?700:400,
+                }}>전체</button>
+                {currentTags.map(t=>(
+                  <button key={t.id} onClick={()=>setFilterTag(filterTag===t.label?"":t.label)} style={{
+                    padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
+                    border:"1px solid "+(filterTag===t.label?(t.color||subInfo?.color||"#6366f1"):bdr),
+                    background:filterTag===t.label?(t.color||subInfo?.color||"#6366f1")+"18":"transparent",
+                    color:filterTag===t.label?(t.color||subInfo?.color||"#6366f1"):C.muted,
+                    fontWeight:filterTag===t.label?700:400,
+                  }}>{t.label} <span style={{opacity:0.6,fontSize:10}}>({posts.filter(p=>(p.cat===subCat||p.subCat===subCat)&&p.tag===t.label).length})</span></button>
+                ))}
+              </div>
+            )}
+
             {/* 테이블 헤더 - 데스크톱만 */}
             {!isMobile && (
               <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 16px",
@@ -764,6 +942,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:5}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
+                          {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
                           <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
                           {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                           {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
@@ -787,6 +966,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <span style={{textAlign:"center",fontSize:12,color:C.muted,alignSelf:"center"}}>{num}</span>
                     <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:8,minWidth:0}}>
+                      {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
                       <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
                       {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                       {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
