@@ -5,6 +5,7 @@ import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import DetailPageGenerator from "./DetailPageGenerator";
+import SimpleImageGenerator from "./SimpleImageGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -57,7 +58,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const usageBar = isDark ? "rgba(255,255,255,0.08)"     : "rgba(99,102,241,0.12)";
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
-  const [cardOpen, setCardOpen] = useState(!!(aiMenu && aiMenu.startsWith("cardnews")));
+  const [cardOpen, setCardOpen] = useState(!!(aiMenu && (
+    aiMenu === "cardnews_simple" || aiMenu === "cardnews_image" ||
+    aiMenu === "detail_simple"  || aiMenu === "detail_image"
+  )));
 
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
@@ -130,11 +134,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 이미지 그룹 */}
         <Group label="SNS 이미지" icon="🖼" open={cardOpen}
-          active={!!(aiMenu && (aiMenu.startsWith("cardnews") || aiMenu === "detail_page"))}
+          active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
-          <Item id="cardnews_make" label="카드뉴스 만들기"   icon="✨" indent />
-          <Item id="detail_page"  label="상세페이지 만들기" icon="🛍" indent />
+          <Item id="cardnews_simple" label="심플 카드뉴스"   icon="✨" indent />
+          <Item id="cardnews_image"  label="이미지 카드뉴스" icon="🖼" indent />
+          <Item id="detail_simple"   label="심플 상세페이지" icon="📋" indent />
+          <Item id="detail_image"    label="이미지 상세페이지" icon="🛍" indent />
         </>}
 
         <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
@@ -666,15 +672,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 상세페이지 만들기
-  if (aiMenu === "detail_page") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <DetailPageGenerator isDark={isDark} user={user} />
-      </div>
-    );
-  }
-
   // 뉴스로 글쓰기
   if (aiMenu === "blog_news") {
     return (
@@ -703,36 +700,53 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 카드뉴스 - 바로 만들기
-  if (aiMenu === "cardnews_make") {
+  // 심플 카드뉴스
+  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     return (
-      <div key="cn_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
   }
 
-  // 카드뉴스 - 글 기획하기 (인라인 - CardNewsApp의 기획 패널)
+  // 이미지 카드뉴스 (AI 이미지 생성, 카드 비율)
+  if (aiMenu === "cardnews_image") {
+    return (
+      <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <SimpleImageGenerator isDark={isDark} user={user} mode="card" />
+      </div>
+    );
+  }
+
+  // 심플 상세페이지 (AI 이미지 생성, 세로 비율)
+  if (aiMenu === "detail_simple") {
+    return (
+      <div key="detail_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <SimpleImageGenerator isDark={isDark} user={user} mode="detail" />
+      </div>
+    );
+  }
+
+  // 이미지 상세페이지 (기존 DetailPageGenerator)
+  if (aiMenu === "detail_image" || aiMenu === "detail_page") {
+    return (
+      <div key="detail_image" style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <DetailPageGenerator isDark={isDark} user={user} />
+      </div>
+    );
+  }
+
+  // 카드뉴스 - 글 기획하기 (인라인)
   if (aiMenu === "cardnews_plan") {
     return (
       <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
         <PlannerPanel inline theme={theme}
           onClose={() => {}}
           onApplySlides={(slides) => {
-            // 기획 완료 시 cardnews_make로 이동 (localStorage에 저장 후 이동)
             try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
-            setAiMenu("cardnews_make");
+            setAiMenu("cardnews_simple");
           }}
         />
-      </div>
-    );
-  }
-
-  // 상세페이지 만들기
-  if (aiMenu === "detail_page") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
   }

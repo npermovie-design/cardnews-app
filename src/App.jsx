@@ -302,9 +302,11 @@ export default function App() {
                 <DropItem id="ai" icon="📰" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news");    setAiSub(false); }} />
                 {/* SNS 이미지 */}
                 <div style={{ padding:"8px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase", borderTop:"1px solid rgba(255,255,255,0.07)", marginTop:4 }}>SNS 이미지</div>
-                <DropItem id="ai" icon="✨" label="카드뉴스 만들기"   onClick={() => { navigateAi("cardnews_make"); setAiSub(false); }} />
-                <DropItem id="ai" icon="🛍" label="상세페이지 만들기" onClick={() => { navigateAi("detail_page");   setAiSub(false); }} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"   onClick={() => { navigateAi("shorts");         setAiSub(false); }} />
+                <DropItem id="ai" icon="✨" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple"); setAiSub(false); }} />
+                <DropItem id="ai" icon="🖼" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");  setAiSub(false); }} />
+                <DropItem id="ai" icon="📋" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");   setAiSub(false); }} />
+                <DropItem id="ai" icon="🛍" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");    setAiSub(false); }} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"  onClick={() => { navigateAi("shorts");          setAiSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -481,9 +483,11 @@ export default function App() {
             <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>🖼 SNS 이미지</div>
           </div>
           {[
-            { id: "cardnews_make", label: "✨ 카드뉴스 만들기",   ai: "cardnews_make" },
-            { id: "detail_page",   label: "🛍 상세페이지 만들기", ai: "detail_page" },
-            { id: "shorts",        label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+            { id: "cardnews_simple", label: "✨ 심플 카드뉴스",    ai: "cardnews_simple" },
+            { id: "cardnews_image",  label: "🖼 이미지 카드뉴스",  ai: "cardnews_image" },
+            { id: "detail_simple",   label: "📋 심플 상세페이지",  ai: "detail_simple" },
+            { id: "detail_image",    label: "🛍 이미지 상세페이지", ai: "detail_image" },
+            { id: "shorts",          label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
