@@ -468,7 +468,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
     } catch {}
   };
 
-  const saveToDetailLibrary = null; // 카드뉴스 전용
+  const resetAll = () => {
     setWizStep(1); setTopic(""); setPageCount(6); setAiSugg(null);
     setSlideContents([]); setSelPreset(null); setSelSize(0);
     setCustomW(1080); setCustomH(1080);
