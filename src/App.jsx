@@ -321,20 +321,20 @@ export default function App() {
               <DropMenu>
                 {/* SNS 글쓰기 */}
                 <div style={{ padding:"6px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase" }}>SNS 글쓰기</div>
-                <DropItem id="ai" icon="📝" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver");   setAiSub(false); }} />
-                <DropItem id="ai" icon="🟠" label="티스토리"        onClick={() => { navigateAi("blog_tistory"); setAiSub(false); }} />
-                <DropItem id="ai" icon="📱" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta");   setAiSub(false); }} />
-                <DropItem id="ai" icon="▶️" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube"); setAiSub(false); }} />
-                <DropItem id="ai" icon="🧵" label="스레드"          onClick={() => { navigateAi("blog_thread");  setAiSub(false); }} />
-                <DropItem id="ai" icon="📺" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog"); setAiSub(false); }} />
-                <DropItem id="ai" icon="📰" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news");    setAiSub(false); }} />
+                <DropItem id="ai" icon="📝" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver_intro");   setAiSub(false); }} />
+                <DropItem id="ai" icon="🟠" label="티스토리"        onClick={() => { navigateAi("blog_tistory_intro"); setAiSub(false); }} />
+                <DropItem id="ai" icon="📱" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta_intro");   setAiSub(false); }} />
+                <DropItem id="ai" icon="▶️" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube_intro"); setAiSub(false); }} />
+                <DropItem id="ai" icon="🧵" label="스레드"          onClick={() => { navigateAi("blog_thread_intro");  setAiSub(false); }} />
+                <DropItem id="ai" icon="📺" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog_intro"); setAiSub(false); }} />
+                <DropItem id="ai" icon="📰" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news_intro");    setAiSub(false); }} />
                 {/* SNS 이미지 */}
                 <div style={{ padding:"8px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase", borderTop:"1px solid rgba(255,255,255,0.07)", marginTop:4 }}>SNS 이미지</div>
-                <DropItem id="ai" icon="✨" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple"); setAiSub(false); }} />
-                <DropItem id="ai" icon="🖼" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");  setAiSub(false); }} />
-                <DropItem id="ai" icon="📋" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");   setAiSub(false); }} />
-                <DropItem id="ai" icon="🛍" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");    setAiSub(false); }} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"  onClick={() => { navigateAi("shorts");          setAiSub(false); }} />
+                <DropItem id="ai" icon="✨" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple");  setAiSub(false); }} />
+                <DropItem id="ai" icon="🖼" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");   setAiSub(false); }} />
+                <DropItem id="ai" icon="📋" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");    setAiSub(false); }} />
+                <DropItem id="ai" icon="🛍" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");     setAiSub(false); }} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"  onClick={() => { navigateAi("shorts");           setAiSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -491,13 +491,13 @@ export default function App() {
             <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
           </div>
           {[
-            { id: "blog_naver",   label: "📝 네이버 블로그",   ai: "blog_naver" },
-            { id: "blog_tistory", label: "🟠 티스토리",        ai: "blog_tistory" },
-            { id: "blog_insta",   label: "📱 인스타그램 캡션", ai: "blog_insta" },
-            { id: "blog_youtube", label: "▶️ 유튜브 대본",     ai: "blog_youtube" },
-            { id: "blog_thread",  label: "🧵 스레드",          ai: "blog_thread" },
-            { id: "blog_yt_blog", label: "📺 유튜브로 글쓰기", ai: "blog_yt_blog" },
-            { id: "blog_news",    label: "📰 뉴스로 글쓰기",   ai: "blog_news" },
+            { id: "blog_naver",   label: "📝 네이버 블로그",   ai: "blog_naver_intro" },
+            { id: "blog_tistory", label: "🟠 티스토리",        ai: "blog_tistory_intro" },
+            { id: "blog_insta",   label: "📱 인스타그램 캡션", ai: "blog_insta_intro" },
+            { id: "blog_youtube", label: "▶️ 유튜브 대본",     ai: "blog_youtube_intro" },
+            { id: "blog_thread",  label: "🧵 스레드",          ai: "blog_thread_intro" },
+            { id: "blog_yt_blog", label: "📺 유튜브로 글쓰기", ai: "blog_yt_blog_intro" },
+            { id: "blog_news",    label: "📰 뉴스로 글쓰기",   ai: "blog_news_intro" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
