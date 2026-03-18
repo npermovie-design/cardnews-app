@@ -21,6 +21,7 @@ import {
   get,
   update,
   push,
+  remove,
   onValue,
   serverTimestamp,
 } from "firebase/database";
@@ -370,3 +371,53 @@ export async function awardCommentPoints(user, setUserState) {
 // ── 유효성 검사 ───────────────────────────────────────────────────────────
 export function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 export function genCode()       { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+// ── Firebase 게시글 CRUD ──────────────────────────────────────────────────
+/** 전체 게시글 가져오기 */
+export async function getPostsFromDB() {
+  try {
+    const snap = await get(ref(db, "posts"));
+    if (!snap.exists()) return [];
+    const obj = snap.val();
+    return Object.values(obj).sort((a, b) => (b.id || 0) - (a.id || 0));
+  } catch (e) {
+    console.error("getPostsFromDB error:", e);
+    return [];
+  }
+}
+
+/** 게시글 저장 (신규) */
+export async function savePostToDB(post) {
+  await set(ref(db, "posts/" + post.id), post);
+}
+
+/** 게시글 업데이트 (부분) */
+export async function updatePostInDB(postId, data) {
+  await update(ref(db, "posts/" + postId), data);
+}
+
+/** 게시글 삭제 */
+export async function deletePostFromDB(postId) {
+  await remove(ref(db, "posts/" + postId));
+}
+
+/** localStorage → Firebase 마이그레이션 (1회 실행용) */
+export async function migrateLocalPostsToDB() {
+  try {
+    const localPosts = getPosts();
+    if (!localPosts.length) return 0;
+    const snap = await get(ref(db, "posts"));
+    const existing = snap.exists() ? snap.val() : {};
+    let count = 0;
+    for (const post of localPosts) {
+      if (!existing[post.id]) {
+        await set(ref(db, "posts/" + post.id), post);
+        count++;
+      }
+    }
+    return count;
+  } catch (e) {
+    console.error("migration error:", e);
+    return 0;
+  }
+}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { getPosts, setPosts, changePoints } from "./storage";
+import { getPosts, setPosts, changePoints, getPostsFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB } from "./storage";
 
 /* ─── 카테고리 ────────────────────────────────────────────── */
 const SUB_CATS = [
@@ -207,7 +207,8 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark }) {
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [subCat,  setSubCat]  = useState(initialCat || "info");
-  const [posts,   setPostsS]  = useState(getPosts);
+  const [posts,   setPostsS]  = useState([]);
+  const [loading, setLoading] = useState(true);
   const [view,    setView]    = useState(null);
   const [mode,    setMode]    = useState("list");
   const [comment, setComment] = useState("");
@@ -237,21 +238,42 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     return () => window.removeEventListener("resize", fn);
   }, []);
 
+  // Firebase에서 게시글 로드 + localStorage 마이그레이션
+  useEffect(()=>{
+    (async () => {
+      setLoading(true);
+      try {
+        // 기존 localStorage 글 Firebase로 1회 마이그레이션
+        await migrateLocalPostsToDB();
+        // Firebase에서 전체 로드
+        const data = await getPostsFromDB();
+        setPostsS(data);
+      } catch(e) {
+        // Firebase 실패 시 localStorage 폴백
+        setPostsS(getPosts());
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   // URL에서 특정 게시글 직접 열기
   useEffect(()=>{
-    if(pendingPostId){
-      const allPosts = getPosts();
-      const found = allPosts.find(p=>String(p.id)===String(pendingPostId));
+    if(pendingPostId && posts.length > 0){
+      const found = posts.find(p=>String(p.id)===String(pendingPostId));
       if(found){
-        const next=allPosts.map(pp=>pp.id===found.id?{...pp,views:(pp.views||0)+1}:pp);
-        setPosts(next); setPostsS(next); setView(next.find(pp=>pp.id===found.id));
+        const updated = {...found, views:(found.views||0)+1};
+        setPostsS(prev => prev.map(pp=>pp.id===found.id ? updated : pp));
+        updatePostInDB(found.id, {views: updated.views});
+        setView(updated);
         if(found.subCat||found.cat) setSubCat(found.subCat||found.cat);
       }
       if(onPendingPostClear) onPendingPostClear();
     }
-  },[pendingPostId]);
+  },[pendingPostId, posts]);
 
-  const sync = next=>{ setPosts(next); setPostsS(next); };
+  // 로컬 state만 업데이트 (Firebase는 각 함수에서 직접 처리)
+  const syncLocal = next => setPostsS(next);
   const own  = p=>user&&(user.nick===p.nick||user.role==="admin");
 
   const subInfo = SUB_CATS.find(s=>s.id===subCat)||SUB_CATS[0];
@@ -271,12 +293,21 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const totalPages=Math.ceil(filtered.length/PER);
   const pageItems=filtered.slice((page-1)*PER,page*PER);
 
-  /* 글 등록 - 1P 지급 */
+  /* 글 등록 - Firebase 저장 + 1P 지급 */
   const submitPost = async ({title,body}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const p={id:Date.now(),cat:subCat,subCat,nick:user.nick,title,body,
-             date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0};
-    sync([p,...posts]); setMode("list");
+             date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[]};
+    // 낙관적 UI 업데이트
+    syncLocal([p,...posts]);
+    setMode("list");
+    // Firebase 저장
+    try {
+      await savePostToDB(p);
+    } catch(e) {
+      // 실패 시 localStorage 폴백
+      setPosts([p,...posts]);
+    }
     // 1P 지급
     if(user.uid){
       try {
@@ -290,23 +321,32 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     }
   };
 
-  const submitEdit = ({title,body}) => {
-    const next=posts.map(p=>p.id===view.id?{...p,title,body,edited:true}:p);
-    sync(next); setView(next.find(p=>p.id===view.id)); setMode("list");
+  const submitEdit = async ({title,body}) => {
+    const updated = {...view, title, body, edited:true};
+    const next = posts.map(p=>p.id===view.id ? updated : p);
+    syncLocal(next);
+    setView(updated);
+    setMode("list");
+    try { await updatePostInDB(view.id, {title, body, edited:true}); } catch(e){}
     showToast("✅ 글이 수정됐어요","success");
   };
 
-  const del = id => {
+  const del = async id => {
     if(!window.confirm("삭제하시겠습니까?"))return;
-    sync(posts.filter(p=>p.id!==id)); setView(null); setMode("list");
+    syncLocal(posts.filter(p=>p.id!==id));
+    setView(null); setMode("list");
+    try { await deletePostFromDB(id); } catch(e){}
   };
 
   const openPost = p => {
-    const next=posts.map(pp=>pp.id===p.id?{...pp,views:(pp.views||0)+1}:pp);
-    sync(next); setView(next.find(pp=>pp.id===p.id));
+    const updated = {...p, views:(p.views||0)+1};
+    const next = posts.map(pp=>pp.id===p.id ? updated : pp);
+    syncLocal(next); setView(updated);
     // URL에 게시글 ID 반영
     const cat = p.subCat||p.cat||subCat;
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
+    // Firebase 조회수 업데이트 (비동기, 실패해도 무방)
+    updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
   };
 
   // 추천 토글 - 게시글당 1회, 재클릭 시 취소
@@ -323,7 +363,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         likedBy: alreadyLiked ? likedBy.filter(k=>k!==uKey) : [...likedBy, uKey]
       };
     });
-    sync(next); setView(next.find(p=>p.id===id));
+    const updated = next.find(p=>p.id===id);
+    syncLocal(next); setView(updated);
+    updatePostInDB(id, {likes: updated.likes, likedBy: updated.likedBy}).catch(()=>{});
   };
   const isLiked = (post) => {
     if (!post) return false;
@@ -331,17 +373,22 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     return (post.likedBy||[]).includes(uKey);
   };
 
-  const addComment = postId => {
+  const addComment = async postId => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     if(!comment.trim())return;
-    const next=posts.map(p=>p.id===postId?{...p,comments:[...p.comments,{id:Date.now(),nick:user.nick,text:comment,date:new Date().toLocaleDateString("ko-KR")}]}:p);
-    sync(next); setView(next.find(p=>p.id===postId)); setComment("");
+    const newComment = {id:Date.now(),nick:user.nick,text:comment,date:new Date().toLocaleDateString("ko-KR")};
+    const next = posts.map(p=>p.id===postId?{...p,comments:[...(p.comments||[]),newComment]}:p);
+    const updated = next.find(p=>p.id===postId);
+    syncLocal(next); setView(updated); setComment("");
+    try { await updatePostInDB(postId, {comments: updated.comments}); } catch(e){}
   };
 
-  const delComment=(postId,idx)=>{
+  const delComment = async (postId,idx) => {
     if(!window.confirm("댓글을 삭제할까요?"))return;
-    const next=posts.map(p=>p.id===postId?{...p,comments:p.comments.filter((_,i)=>i!==idx)}:p);
-    sync(next); setView(next.find(p=>p.id===postId));
+    const next = posts.map(p=>p.id===postId?{...p,comments:(p.comments||[]).filter((_,i)=>i!==idx)}:p);
+    const updated = next.find(p=>p.id===postId);
+    syncLocal(next); setView(updated);
+    try { await updatePostInDB(postId, {comments: updated.comments}); } catch(e){}
   };
 
   /* 공유 */
@@ -472,8 +519,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#6366f1",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
 
+      {/* 로딩 */}
+      {loading && (
+        <div style={{textAlign:"center",padding:"80px 0",color:C.muted}}>
+          <div style={{fontSize:32,marginBottom:12,display:"inline-block",animation:"spin 1s linear infinite"}}>⏳</div>
+          <div style={{fontSize:14}}>게시글 불러오는 중...</div>
+        </div>
+      )}
+
       {/* 서브 카테고리 탭 */}
-      <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)"}}>
+      {!loading && <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,overflowX:"auto"}}>
           {SUB_CATS.map(s=>(
             <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);}}
@@ -487,9 +542,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
+      {!loading && <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
         {/* 포인트 안내 배너 */}
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",margin:"16px 0 0",borderRadius:12,
           background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
@@ -500,29 +555,29 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           </span>
         </div>
 
-        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start",flexDirection: isMobile ? "column" : "row"}}>
+        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start"}}>
           {/* 메인 */}
-          <div style={{flex:1,minWidth:0,overflow:"hidden",width:"100%"}}>
+          <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
             {/* 액션바 */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:15,fontWeight:800,color:C.text}}>{subInfo.icon} {subInfo.label}</span>
                 <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>총 {filtered.length}개</span>
               </div>
-              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="검색..."
-                    style={{padding:"7px 10px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?80:150}}/>
-                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 8px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
+                    style={{padding:"7px 12px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?90:150}}/>
+                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 10px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
                 </div>
                 <select value={sort} onChange={e=>setSort(e.target.value)}
-                  style={{padding:"7px 8px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
+                  style={{padding:"7px 10px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
                   <option value="latest">최신순</option>
                   <option value="views">조회순</option>
                   <option value="likes">추천순</option>
                 </select>
                 <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                  style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
+                  style={{padding:"8px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
                   ✏️ 글쓰기 (+1cr)
                 </button>
               </div>
@@ -621,16 +676,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             )}
           </div>
 
-          {/* 모바일 로그인 유도 */}
-          {isMobile && !user && (
-            <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:14,padding:"16px",textAlign:"center",marginTop:8}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>✍️ 커뮤니티 참여하기</div>
-              <div style={{fontSize:12,color:C.muted,marginBottom:10,lineHeight:1.5}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
-              <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
-            </div>
-          )}
-          {/* 우측 사이드바 - 데스크톱만 */}
-          {!isMobile && (
+          {/* 우측 사이드바 */}
           <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
             {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
@@ -671,9 +717,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
           </aside>
-          )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
