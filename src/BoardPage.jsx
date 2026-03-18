@@ -555,29 +555,29 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           </span>
         </div>
 
-        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start"}}>
+        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start",flexDirection:isMobile?"column":"row"}}>
           {/* 메인 */}
-          <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+          <div style={{flex:1,minWidth:0,overflow:"hidden",width:"100%"}}>
             {/* 액션바 */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:15,fontWeight:800,color:C.text}}>{subInfo.icon} {subInfo.label}</span>
                 <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>총 {filtered.length}개</span>
               </div>
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="검색..."
-                    style={{padding:"7px 12px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?90:150}}/>
-                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 10px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
+                    style={{padding:"7px 10px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?80:150}}/>
+                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 8px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
                 </div>
                 <select value={sort} onChange={e=>setSort(e.target.value)}
-                  style={{padding:"7px 10px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
+                  style={{padding:"7px 8px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
                   <option value="latest">최신순</option>
                   <option value="views">조회순</option>
                   <option value="likes">추천순</option>
                 </select>
                 <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                  style={{padding:"8px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
+                  style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
                   ✏️ 글쓰기 (+1cr)
                 </button>
               </div>
@@ -676,7 +676,17 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             )}
           </div>
 
-          {/* 우측 사이드바 */}
+          {/* 모바일 로그인 유도 */}
+          {isMobile && !user && (
+            <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:14,padding:"16px",textAlign:"center",width:"100%"}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>✍️ 커뮤니티 참여하기</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:10,lineHeight:1.5}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
+              <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
+            </div>
+          )}
+
+          {/* 우측 사이드바 - 데스크톱만 */}
+          {!isMobile && (
           <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
             {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
@@ -717,6 +727,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
           </aside>
+          )}
         </div>
       </div>}
     </div>
