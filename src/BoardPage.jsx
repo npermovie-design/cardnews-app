@@ -205,6 +205,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark }) {
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost }) {
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 640);
   const [subCat,  setSubCat]  = useState(initialCat || "info");
   const [posts,   setPostsS]  = useState(getPosts);
   const [view,    setView]    = useState(null);
@@ -358,7 +359,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   };
 
   if(mode==="write"||mode==="edit") return (
-    <div style={{padding:"0 clamp(12px,3vw,24px)"}}>
+    <div style={{padding:"0 24px"}}>
       <WriteForm user={user} subCat={subCat} initial={mode==="edit"?view:null}
         onDone={mode==="edit"?submitEdit:submitPost} onCancel={()=>setMode("list")} C={C} isDark={isDark}/>
     </div>
@@ -369,13 +370,13 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     <div style={{background:isDark?"transparent":"#f7f8fa",minHeight:"calc(100vh - 64px)"}}>
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#6366f1",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
-      <div style={{maxWidth:900,margin:"0 auto",padding:"16px 12px 60px"}}>
+      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
         <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"clamp(14px,4vw,24px) clamp(14px,4vw,28px) 20px",borderBottom:"1px solid "+bdr}}>
+          <div style={{padding:"24px 28px 20px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
             <h1 style={{fontSize:22,fontWeight:900,color:C.text,margin:"0 0 16px",lineHeight:1.4}}>{view.title}{view.edited&&<span style={{fontSize:11,color:C.muted,marginLeft:8,fontWeight:400}}>(수정됨)</span>}</h1>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:14,fontSize:13,color:C.muted}}>
                 <div style={{display:"flex",alignItems:"center",gap:7}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff"}}>{(view.nick||"?")[0].toUpperCase()}</div>
@@ -393,7 +394,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             </div>
           </div>
-          <div style={{padding:"clamp(14px,4vw,28px)"}}>
+          <div style={{padding:"28px 28px 24px"}}>
             <RichBody html={view.body} C={C}/>
           </div>
           <div style={{padding:"16px 28px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
@@ -413,59 +414,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             })()}
           </div>
         </div>
-        {/* 이전글 / 다음글 / 목록 네비게이션 */}
-        {(() => {
-          const catPosts = [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>b.id-a.id);
-          const curIdx   = catPosts.findIndex(p=>p.id===view.id);
-          const prevPost = curIdx > 0 ? catPosts[curIdx - 1] : null;
-          const nextPost = curIdx < catPosts.length - 1 ? catPosts[curIdx + 1] : null;
-          const NavRow = ({ icon, label, post, side }) => (
-            <button
-              onClick={() => post ? openPost(post) : null}
-              disabled={!post}
-              style={{
-                flex: 1, display:"flex", alignItems:"center",
-                gap: 10, padding:"14px 18px",
-                background: post ? (isDark?"rgba(255,255,255,0.02)":"#fff") : (isDark?"rgba(255,255,255,0.01)":"#fafafa"),
-                border:"none", cursor: post ? "pointer" : "default",
-                justifyContent: side === "right" ? "flex-end" : "flex-start",
-                transition:"background 0.15s",
-                borderRadius: side === "left" ? "12px 0 0 12px" : side === "right" ? "0 12px 12px 0" : 0,
-              }}
-              onMouseEnter={e=>{ if(post) e.currentTarget.style.background=isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)"; }}
-              onMouseLeave={e=>{ if(post) e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fff"; }}>
-              {side === "left" && <span style={{fontSize:16,color:post?C.purpleL:C.muted,opacity:post?1:0.3}}>‹</span>}
-              <div style={{textAlign: side === "right" ? "right" : "left", minWidth:0}}>
-                <div style={{fontSize:11,color:post?C.purpleL:C.muted,fontWeight:700,marginBottom:3,opacity:post?1:0.4}}>{icon} {label}</div>
-                <div style={{fontSize:13,color:post?C.text:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220,opacity:post?1:0.35}}>
-                  {post ? post.title : "없음"}
-                </div>
-              </div>
-              {side === "right" && <span style={{fontSize:16,color:post?C.purpleL:C.muted,opacity:post?1:0.3}}>›</span>}
-            </button>
-          );
-          return (
-            <div style={{display:"flex",marginTop:12,marginBottom:4,border:"1px solid "+bdr,borderRadius:12,overflow:"hidden"}}>
-              <NavRow icon="▲" label="이전글" post={prevPost} side="left"/>
-              <button
-                onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}}
-                style={{
-                  width:80,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
-                  background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",
-                  borderTop:"none", borderBottom:"none",
-                  borderLeft:"1px solid "+bdr, borderRight:"1px solid "+bdr,
-                  cursor:"pointer", padding:"14px 8px", transition:"background 0.15s",
-                }}
-                onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(99,102,241,0.16)":"rgba(99,102,241,0.1)"}
-                onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)"}>
-                <span style={{fontSize:16}}>☰</span>
-                <span style={{fontSize:11,color:C.purpleL,fontWeight:700}}>목록</span>
-              </button>
-              <NavRow icon="▼" label="다음글" post={nextPost} side="right"/>
-            </div>
-          );
-        })()}
-
         {/* 댓글 */}
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden"}}>
           <div style={{padding:"18px 24px",borderBottom:"1px solid "+bdr}}>
@@ -491,7 +439,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             ))}
             {(view.comments||[]).length===0&&<div style={{padding:"24px 0",textAlign:"center",color:C.muted,fontSize:14}}>첫 댓글을 남겨보세요 💬</div>}
           </div>
-          <div style={{padding:"12px clamp(12px,3vw,24px)",borderTop:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
+          <div style={{padding:"16px 24px",borderTop:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
             {user?(
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0}}>{(user.nick||"?")[0].toUpperCase()}</div>
@@ -514,29 +462,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   /* 목록 */
   return (
     <div style={{background:isDark?"transparent":"#f7f8fa",minHeight:"calc(100vh - 64px)"}}>
-      <style>{`
-        .board-aside{width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
-        .board-tbl-hd{display:grid;grid-template-columns:52px 1fr 90px 76px 54px 50px}
-        .board-tbl-row{display:grid;grid-template-columns:52px 1fr 90px 76px 54px 50px}
-        .board-col-date,.board-col-views,.board-col-likes,.board-col-author{display:block}
-        .board-ab{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
-        .board-ab-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-        @media(max-width:768px){
-          .board-aside{display:none!important}
-          .board-tbl-hd{grid-template-columns:36px 1fr 60px!important}
-          .board-tbl-row{grid-template-columns:36px 1fr 60px!important}
-          .board-col-date,.board-col-views,.board-col-likes{display:none!important}
-          .board-col-author{display:block}
-          .board-ab{flex-direction:column;align-items:stretch}
-          .board-ab-right{justify-content:space-between}
-          .board-search-w{width:100%!important}
-          .board-search-w input{width:100%!important}
-        }
-        @media(max-width:480px){
-          .board-tbl-hd{grid-template-columns:30px 1fr 54px!important}
-          .board-tbl-row{grid-template-columns:30px 1fr 54px!important}
-        }
-      `}</style>
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#6366f1",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
 
@@ -563,24 +488,24 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
           <span style={{fontSize:18}}>💎</span>
           <span style={{fontSize:13,color:isDark?"#86efac":"#166534",lineHeight:1.6}}>
-            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+1P</b> 적립됩니다.
-            댓글에는 포인트가 지급되지 않습니다. 적립된 포인트로 AI 생성기를 이용해보세요!
+            <b>크레딧 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+1cr</b> 적립됩니다.
+            댓글에는 크레딧이 지급되지 않습니다. 적립된 크레딧으로 AI 생성기를 이용해보세요!
           </span>
         </div>
 
-        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start",flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:20,padding:"16px 0 60px",alignItems:"flex-start"}}>
           {/* 메인 */}
-          <div style={{flex:1,minWidth:0}}>
+          <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
             {/* 액션바 */}
-            <div className="board-ab" style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:15,fontWeight:800,color:C.text}}>{subInfo.icon} {subInfo.label}</span>
                 <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>총 {filtered.length}개</span>
               </div>
-              <div className="board-ab-right" style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <div className="board-search-w" style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="검색..."
-                    style={{padding:"7px 12px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:150}}/>
+                    style={{padding:"7px 12px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?90:150}}/>
                   {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 10px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
                 </div>
                 <select value={sort} onChange={e=>setSort(e.target.value)}
@@ -591,22 +516,30 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 </select>
                 <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
                   style={{padding:"8px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
-                  ✏️ 글쓰기 (+1P)
+                  ✏️ 글쓰기 (+1cr)
                 </button>
               </div>
             </div>
 
-            {/* 테이블 헤더 */}
-            <div className="board-tbl-hd" style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 16px",
-              display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
-              fontSize:11,fontWeight:700,color:C.muted}}>
-              <span style={{textAlign:"center"}}>번호</span>
-              <span style={{paddingLeft:8}}>제목</span>
-              <span className="board-col-author" style={{textAlign:"center"}}>작성자</span>
-              <span className="board-col-date" style={{textAlign:"center"}}>날짜</span>
-              <span className="board-col-views" style={{textAlign:"center"}}>조회</span>
-              <span className="board-col-likes" style={{textAlign:"center"}}>추천</span>
-            </div>
+            {/* 테이블 헤더 - 데스크톱만 */}
+            {!isMobile && (
+              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 16px",
+                display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
+                fontSize:11,fontWeight:700,color:C.muted}}>
+                <span style={{textAlign:"center"}}>번호</span>
+                <span style={{paddingLeft:8}}>제목</span>
+                <span style={{textAlign:"center"}}>작성자</span>
+                <span style={{textAlign:"center"}}>날짜</span>
+                <span style={{textAlign:"center"}}>조회</span>
+                <span style={{textAlign:"center"}}>추천</span>
+              </div>
+            )}
+            {isMobile && (
+              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 14px",
+                fontSize:12,fontWeight:700,color:C.muted}}>
+                게시글 목록
+              </div>
+            )}
 
             {pageItems.length===0&&(
               <div style={{background:cardBg,border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",padding:"70px 0",textAlign:"center",color:C.muted}}>
@@ -614,7 +547,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>
                   {search?`"${search}" 검색 결과가 없어요`:"아직 게시글이 없어요"}
                 </div>
-                <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
+                <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1cr</b>이 적립됩니다!</div>
                 {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
               </div>
             )}
@@ -623,9 +556,33 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               {pageItems.map((p,idx)=>{
                 const num=filtered.length-(page-1)*PER-idx;
                 const today=Date.now()-p.id<86400000;
-                return (
+                return isMobile ? (
+                  /* 모바일 카드형 */
                   <div key={p.id} onClick={()=>openPost(p)}
-                    className="board-tbl-row" style={{display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
+                    style={{padding:"12px 14px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background=hover}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:5}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
+                          <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
+                          {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
+                          {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:C.muted}}>
+                          <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
+                          <span>{p.date}</span>
+                          <span>👁 {p.views||0}</span>
+                          {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍 {p.likes}</span>}
+                        </div>
+                      </div>
+                      <span style={{fontSize:11,color:C.muted,flexShrink:0,paddingTop:2}}>#{num}</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* 데스크톱 테이블형 */
+                  <div key={p.id} onClick={()=>openPost(p)}
+                    style={{display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
                       padding:"11px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
                     onMouseEnter={e=>e.currentTarget.style.background=hover}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
@@ -635,12 +592,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                       {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                     </div>
-                    <div className="board-col-author" style={{textAlign:"center",alignSelf:"center",minWidth:0}}>
+                    <div style={{textAlign:"center",alignSelf:"center",minWidth:0}}>
                       <span style={{fontSize:12,color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
                     </div>
-                    <span className="board-col-date" style={{textAlign:"center",fontSize:11,color:C.muted,alignSelf:"center"}}>{p.date}</span>
-                    <span className="board-col-views" style={{textAlign:"center",fontSize:12,color:C.muted,alignSelf:"center"}}>{p.views||0}</span>
-                    <span className="board-col-likes" style={{textAlign:"center",fontSize:12,alignSelf:"center",fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                    <span style={{textAlign:"center",fontSize:11,color:C.muted,alignSelf:"center"}}>{p.date}</span>
+                    <span style={{textAlign:"center",fontSize:12,color:C.muted,alignSelf:"center"}}>{p.views||0}</span>
+                    <span style={{textAlign:"center",fontSize:12,alignSelf:"center",fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
                   </div>
                 );
               })}
@@ -658,7 +615,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           </div>
 
           {/* 우측 사이드바 */}
-          <aside className="board-aside" style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
+          <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
             {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
                 <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>

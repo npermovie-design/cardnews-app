@@ -5,13 +5,16 @@ import { onAuthStateChanged } from "firebase/auth";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
-import ArchivePage from "./ArchivePage";
 import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 
-
+const SNS = [
+  { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
+  { url: "https://www.instagram.com/nperinsight/",          label: "📸", bg: "linear-gradient(45deg,#f09433,#dc2743,#bc1888)", tc: "#fff" },
+  { url: "https://www.youtube.com/@nperinsight/videos",     label: "▶",  bg: "#FF0000", tc: "#fff" },
+];
 
 export default function App() {
   const [page,       setPage]       = useState("home");
@@ -25,13 +28,11 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
-  const [archiveSub, setArchiveSub] = useState(false);
   const [theme,      setTheme]      = useState(getSavedTheme);
 
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
   const aiSubRef    = useRef(null);
-  const archiveSubRef = useRef(null);
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -92,7 +93,6 @@ export default function App() {
       if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
-      if (archiveSubRef.current && !archiveSubRef.current.contains(e.target)) setArchiveSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -125,7 +125,7 @@ export default function App() {
     if (target === "login_trigger") { setShowAuth(true); return; }
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
-    setPage(target); setBoardSub(false); setAiSub(false); setArchiveSub(false); setMobileOpen(false);
+    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -207,7 +207,6 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "archive")  return <ArchivePage theme={theme} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
@@ -286,25 +285,28 @@ export default function App() {
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
           <div ref={aiSubRef} style={{ position: "relative" }}>
-            <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => { setAiSub(s => !s); setArchiveSub(false); setBoardSub(false); }} />
+            <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
               <DropMenu>
-                <DropItem id="ai" icon="✍️" label="SNS 글쓰기"      onClick={() => navigateAi("blog_naver")} />
-                <DropItem id="ai" icon="🃏" label="SNS 이미지 만들기" onClick={() => navigateAi("cardnews_make")} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기" onClick={() => navigateAi("shorts")} />
-              </DropMenu>
-            )}
-          </div>
-          <div ref={archiveSubRef} style={{ position: "relative" }}>
-            <DropBtn label="📂 자료실" open={archiveSub} active={page === "archive"} onClick={() => { setArchiveSub(s => !s); setBoardSub(false); setAiSub(false); }} />
-            {archiveSub && (
-              <DropMenu>
-                <DropItem id="archive" icon="📁" label="전체 자료" onClick={() => { navigate("archive"); setArchiveSub(false); }} />
+                {/* SNS 글쓰기 */}
+                <div style={{ padding:"6px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase" }}>SNS 글쓰기</div>
+                <DropItem id="ai" icon="📝" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver");   setAiSub(false); }} />
+                <DropItem id="ai" icon="🟠" label="티스토리"        onClick={() => { navigateAi("blog_tistory"); setAiSub(false); }} />
+                <DropItem id="ai" icon="📱" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta");   setAiSub(false); }} />
+                <DropItem id="ai" icon="▶️" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube"); setAiSub(false); }} />
+                <DropItem id="ai" icon="🧵" label="스레드"          onClick={() => { navigateAi("blog_thread");  setAiSub(false); }} />
+                <DropItem id="ai" icon="📺" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog"); setAiSub(false); }} />
+                <DropItem id="ai" icon="📰" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news");    setAiSub(false); }} />
+                {/* SNS 이미지 */}
+                <div style={{ padding:"8px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase", borderTop:"1px solid rgba(255,255,255,0.07)", marginTop:4 }}>SNS 이미지</div>
+                <DropItem id="ai" icon="✨" label="카드뉴스 만들기"   onClick={() => { navigateAi("cardnews_make"); setAiSub(false); }} />
+                <DropItem id="ai" icon="🛍" label="상세페이지 만들기" onClick={() => { navigateAi("detail_page");   setAiSub(false); }} />
+                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"   onClick={() => { navigateAi("shorts");         setAiSub(false); }} />
               </DropMenu>
             )}
           </div>
           <div ref={boardSubRef} style={{ position: "relative" }}>
-            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => { setBoardSub(s => !s); setArchiveSub(false); setAiSub(false); }} />
+            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
             {boardSub && (
               <DropMenu>
                 <DropItem id="community" icon="📌" label="정보공유"   onClick={() => { navigateBoard("info");   setBoardSub(false); }} />
@@ -320,7 +322,10 @@ export default function App() {
 
         {/* 오른쪽: SNS + 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-
+          {SNS.map((s, i) => (
+            <button key={i} onClick={() => window.open(s.url, "_blank")} style={{ width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", background: s.bg, color: s.tc, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.label}</button>
+          ))}
+          <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
             {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
           </button>
@@ -337,7 +342,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}cr</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}P</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 
@@ -366,29 +371,27 @@ export default function App() {
                     {/* 포인트 바 */}
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                        <span style={{ color: C.muted }}>크레딧 잔액</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}cr</span>
+                        <span style={{ color: C.muted }}>포인트 잔액</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}P</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI글=10cr · 이미지=30cr · {Math.floor((user.points||0)/30)}장 생성가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 1회=10P · {Math.floor((user.points||0)/10)}회 생성 가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "💎", label: "크레딧 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스 확인", action: () => { navigate("ai"); setProfileOpen(false); } },
-                      { icon: "📅", label: "가입일", sub: user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-", action: null },
-                      { icon: "🕐", label: "마지막 로그인", sub: user.lastLoginDate || "-", action: null },
+                      { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("admin"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
-                      <button key={i} onClick={m.action || undefined} disabled={!m.action}
+                      <button key={i} onClick={m.action}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
-                          cursor: m.action ? "pointer" : "default", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
-                        onMouseEnter={e=>{ if(m.action) e.currentTarget.style.background=theme==="dark"?"rgba(255,255,255,0.06)":"#f5f5f8"; }}
+                          cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
+                        onMouseEnter={e=>e.currentTarget.style.background=theme==="dark"?"rgba(255,255,255,0.06)":"#f5f5f8"}
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                         <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{m.icon}</span>
                         <div>
@@ -431,27 +434,97 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
+          {/* 기본 메뉴 */}
           {[
             { id: "home",  label: "홈" },
-            { id: "about",   label: "소개" },
+            { id: "about", label: "소개" },
             { id: "archive", label: "📂 자료실" },
-            { id: "ai_bl",  label: "✍️ SNS 글쓰기",         ai: "blog_naver" },
-            { id: "ai_cn",  label: "🖼 SNS 이미지 만들기",  ai: "cardnews_make" },
-            { id: "ai_sh",  label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.text,
+              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* SNS 글쓰기 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
+          </div>
+          {[
+            { id: "blog_naver",   label: "📝 네이버 블로그",   ai: "blog_naver" },
+            { id: "blog_tistory", label: "🟠 티스토리",        ai: "blog_tistory" },
+            { id: "blog_insta",   label: "📱 인스타그램 캡션", ai: "blog_insta" },
+            { id: "blog_youtube", label: "▶️ 유튜브 대본",     ai: "blog_youtube" },
+            { id: "blog_thread",  label: "🧵 스레드",          ai: "blog_thread" },
+            { id: "blog_yt_blog", label: "📺 유튜브로 글쓰기", ai: "blog_yt_blog" },
+            { id: "blog_news",    label: "📰 뉴스로 글쓰기",   ai: "blog_news" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="ai"&&aiMenu===m.ai) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="ai"&&aiMenu===m.ai) ? 700 : 400,
+              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* SNS 이미지 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>🖼 SNS 이미지</div>
+          </div>
+          {[
+            { id: "cardnews_make", label: "✨ 카드뉴스 만들기",   ai: "cardnews_make" },
+            { id: "detail_page",   label: "🛍 상세페이지 만들기", ai: "detail_page" },
+            { id: "shorts",        label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="ai"&&aiMenu===m.ai) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="ai"&&aiMenu===m.ai) ? 700 : 400,
+              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* 커뮤니티 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>💬 커뮤니티</div>
+          </div>
+          {[
             { id: "info",   label: "📌 정보공유",   board: "info"   },
             { id: "qna",    label: "❓ 질문답변",   board: "qna"    },
             { id: "free",   label: "🗣 자유게시판", board: "free"   },
             { id: "review", label: "⭐ 사용후기",   board: "review" },
-            { id: "pricing", label: "가격정책" },
-            { id: "contact", label: "문의하기" },
           ].map(m => (
-            <button key={m.id} onClick={() => m.ai ? navigateAi(m.ai) : m.board ? navigateBoard(m.board) : navigate(m.id)} style={{
+            <button key={m.id} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
-              padding: "14px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
-              background: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? C.purpleL : C.muted,
-              fontSize: 16, fontWeight: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? 700 : 500,
-              borderLeft: (m.ai ? (page==="ai"&&aiMenu===m.ai) : page===m.id) ? "3px solid #7c6aff" : "3px solid transparent",
+              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: (page==="community"&&boardCat===m.board) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="community"&&boardCat===m.board) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="community"&&boardCat===m.board) ? 700 : 400,
+              borderLeft: (page==="community"&&boardCat===m.board) ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* 기타 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
+          {[
+            { id: "pricing", label: "💎 가격정책" },
+            { id: "contact", label: "📬 문의하기" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.text,
+              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
@@ -459,7 +532,7 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>{(user.points||0).toLocaleString()}cr</div>
+                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>💎 {(user.points||0).toLocaleString()}cr</div>
                 </div>
                 <button onClick={logout} style={{ padding: "8px 16px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 13 }}>로그아웃</button>
               </div>
@@ -478,8 +551,7 @@ export default function App() {
       </div>
 
       {/* ── 푸터 ── */}
-      {!isAi && (
-        <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
+      <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
           <div style={{ maxWidth: 1000, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -519,8 +591,7 @@ export default function App() {
             <span style={{ fontSize: 12, color: C.muted }}>© 2025 SNS메이킷 · All rights reserved.</span>
             <span style={{ fontSize: 12, color: C.muted, cursor: "pointer" }} onClick={() => navigate("admin")}>관리자</span>
           </div>
-        </footer>
-      )}
+      </footer>
     </div>
   );
 }
