@@ -50,6 +50,7 @@ const FILE_TYPE_INFO = {
   video:   { icon: "🎬", label: "영상",    color: "#ef4444" },
   graphic: { icon: "🎬", label: "그래픽영상", color: "#ef4444" },
   filmed:  { icon: "📹", label: "촬영영상", color: "#f97316" },
+  music:   { icon: "🎵", label: "음악",    color: "#8b5cf6" },
   image:   { icon: "🖼",  label: "이미지",  color: "#10b981" },
   pdf:     { icon: "📄", label: "PDF",    color: "#f59e0b" },
   other:   { icon: "📦", label: "파일",   color: "#6366f1" },
@@ -60,13 +61,14 @@ const CATEGORIES = [
   { id: "all",     label: "전체",    icon: "📂" },
   { id: "graphic", label: "그래픽영상", icon: "🎬" },
   { id: "filmed",  label: "촬영영상", icon: "📹" },
+  { id: "music",   label: "음악",    icon: "🎵" },
   { id: "image",   label: "이미지",  icon: "🖼"  },
   { id: "pdf",     label: "PDF",    icon: "📄" },
   { id: "other",   label: "기타",    icon: "📦" },
 ];
 
-/* 공지 배너 - 영상 카테고리에서 표시 */
-const VIDEO_NOTICE = "이 영상 자료들은 직접 제작한 자료입니다. 상업적으로 사용하셔도 전혀 문제가 없습니다. 😊";
+/* 공지 배너 - 전체 카테고리에 표시 */
+const VIDEO_NOTICE = "이 자료들은 직접 제작한 자료입니다. 상업적으로 사용하셔도 전혀 문제가 없습니다. 😊";
 
 /* ─── 유틸 ──────────────────────────────────────────────── */
 function extractYtId(url) {
@@ -310,7 +312,7 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     category:    editItem?.category    || "graphic",
     thumbnail:   editItem?.thumbnail   || "",
     fileUrl:     editItem?.fileUrl     || "",
-    fileType:    editItem?.fileType    || "video",
+    fileType:    editItem?.fileType    || "graphic",
     fileSize:    editItem?.fileSize    || 0,
     storagePath: editItem?.storagePath || "",
     isFree:      editItem?.isFree      !== false,
@@ -573,20 +575,17 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme }) {
   const itemActive  = isDark ? "#a5b4fc"                 : "#4f46e5";
   const itemActiveBg= isDark ? "rgba(99,102,241,0.22)"  : "rgba(99,102,241,0.1)";
   const brandText   = isDark ? "#fff"                    : "#1a1a2e";
-  const [open,        setOpen]        = useState(true);
-  const [graphicOpen, setGraphicOpen] = useState(true);
+  const [open, setOpen] = useState(true);
 
-  const Item = ({ id, label, icon, isCat, catId, depth }) => {
+  const Item = ({ id, label, icon, isCat, catId }) => {
     const active = isCat ? (menu === "files" && cat === catId) : menu === id;
-    const indent = depth === 2 ? "8px 12px 8px 40px" : isCat ? "8px 12px 8px 28px" : "10px 12px";
     return (
       <button onClick={() => isCat ? (setMenu("files"), setCat(catId)) : setMenu(id)} style={{
-        width: "100%", padding: indent,
+        width: "100%", padding: isCat ? "8px 12px 8px 28px" : "10px 12px",
         borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
-        fontSize: depth === 2 ? 12 : isCat ? 13 : 14,
-        fontWeight: active ? 700 : 400,
+        fontSize: isCat ? 13 : 14, fontWeight: active ? 700 : 400,
         borderLeft: active ? "3px solid #6366f1" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: 7, marginBottom: 2,
       }}>
@@ -604,8 +603,6 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme }) {
       <div style={{ padding: "8px", flex: 1, overflowY: "auto" }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label="홈" icon="🏠" />
-
-        {/* 자료실 전체 토글 */}
         <button onClick={() => setOpen(p => !p)} style={{
           width: "100%", padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
           background: menu === "files" ? itemActiveBg : "transparent",
@@ -616,34 +613,9 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme }) {
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>📂 자료실</span>
           <span style={{ fontSize: 9, opacity: 0.5, display: "inline-block", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
         </button>
-
-        {open && (<>
-          {/* 전체 */}
-          <Item icon="📂" label="전체" isCat catId="all" />
-
-          {/* 그래픽영상 그룹 */}
-          <button onClick={() => setGraphicOpen(p => !p)} style={{
-            width: "100%", padding: "7px 12px 7px 24px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
-            background: (cat === "graphic" || cat === "synth") && menu === "files" ? itemActiveBg : "transparent",
-            color: brandText, fontSize: 13, fontWeight: 700, marginBottom: 2,
-            borderLeft: "3px solid transparent",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>🎬 그래픽영상</span>
-            <span style={{ fontSize: 9, opacity: 0.5, display: "inline-block", transform: graphicOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
-          </button>
-          {graphicOpen && (<>
-            <Item icon="📂" label="전체"   isCat catId="graphic" depth={2} />
-            <Item icon="✨" label="합성영상" isCat catId="synth"   depth={2} />
-          </>)}
-
-          {/* 촬영영상 */}
-          <Item icon="📹" label="촬영영상" isCat catId="filmed" />
-          {/* 이미지/PDF/기타 */}
-          <Item icon="🖼"  label="이미지"  isCat catId="image" />
-          <Item icon="📄" label="PDF"     isCat catId="pdf" />
-          <Item icon="📦" label="기타"    isCat catId="other" />
-        </>)}
+        {open && CATEGORIES.map(c => (
+          <Item key={c.id} icon={c.icon} label={c.label} isCat catId={c.id} />
+        ))}
       </div>
     </div>
   );
@@ -680,11 +652,9 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
 
   const filtered = files.filter(v => {
     const vCat = v.category || v.fileType || "";
-    let matchCat;
-    if (cat === "all")     matchCat = true;
-    else if (cat === "graphic") matchCat = vCat === "graphic" || vCat === "video" || vCat === "synth";
-    else if (cat === "synth")   matchCat = vCat === "synth";
-    else matchCat = vCat === cat;
+    const matchCat = cat === "all"
+      || vCat === cat
+      || (cat === "graphic" && (vCat === "video" || vCat === "synth")); // 기존 video/synth → graphic으로 호환
     const matchSearch = !search.trim() || v.title.toLowerCase().includes(search.toLowerCase()) || (v.description || "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
@@ -717,7 +687,12 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>{c.icon}</div>
               <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 3 }}>{c.label}</div>
-              <div style={{ fontSize: 11, color: muted }}>{files.filter(v => v.category === c.id || v.fileType === c.id).length}개</div>
+              <div style={{ fontSize: 11, color: muted }}>{files.filter(v => {
+                const vCat = v.category || v.fileType || "";
+                return c.id === "graphic"
+                  ? (vCat === "graphic" || vCat === "video" || vCat === "synth")
+                  : vCat === c.id;
+              }).length}개</div>
             </div>
           ))}
         </div>
@@ -736,7 +711,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
     );
   }
 
-  const isVideoCategory = (c) => c === "all" || c === "graphic" || c === "filmed" || c === "video";
+  const isVideoCategory = () => true; // 모든 카테고리에 표시
 
   /* 파일 목록 */
   return (
@@ -762,7 +737,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>
-            {cat === "synth" ? "✨" : CATEGORIES.find(c => c.id === cat)?.icon} {cat === "synth" ? "합성영상" : CATEGORIES.find(c => c.id === cat)?.label || "전체"} 자료실
+            {CATEGORIES.find(c => c.id === cat)?.icon} {CATEGORIES.find(c => c.id === cat)?.label || "전체"} 자료실
           </div>
           <div style={{ fontSize: 12, color: muted }}>{filtered.length}개 파일</div>
         </div>
@@ -778,15 +753,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-        {[
-          { id: "all",     icon: "📂", label: "전체" },
-          { id: "graphic", icon: "🎬", label: "그래픽영상" },
-          { id: "synth",   icon: "✨", label: "합성영상" },
-          { id: "filmed",  icon: "📹", label: "촬영영상" },
-          { id: "image",   icon: "🖼",  label: "이미지" },
-          { id: "pdf",     icon: "📄", label: "PDF" },
-          { id: "other",   icon: "📦", label: "기타" },
-        ].map(c => (
+        {CATEGORIES.map(c => (
           <button key={c.id} onClick={() => setCat(c.id)} style={{
             padding: "6px 14px", borderRadius: 20, border: `1px solid ${cat === c.id ? "#6366f1" : bdr}`,
             background: cat === c.id ? "rgba(99,102,241,0.15)" : "transparent",
