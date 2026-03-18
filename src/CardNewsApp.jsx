@@ -1261,25 +1261,25 @@ function PageMake(props) {
 
   return (
     <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, margin:"0 auto", color:text}}>
-      <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:22}}>
+      {/* 위저드 헤더 - ImageCardNewsApp 스타일 */}
+      <div style={{display:"flex", alignItems:"center", gap:0, marginBottom:28}}>
         {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
           var done = makeStep > st.n; var active = makeStep === st.n;
           return (
-            <div key={st.n} style={{display:"flex", alignItems:"center", gap:5}}>
-              <div style={{display:"flex", alignItems:"center", gap:5, cursor: done ? "pointer" : "default"}}
+            <div key={st.n} style={{display:"flex", alignItems:"center", flex: si < 2 ? 1 : "auto"}}>
+              <div style={{display:"flex", alignItems:"center", gap:8, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
-                <div style={{width:21, height:21, borderRadius:"50%",
-                  background: done ? stepDone : (active ? stepAct : stepInact),
-                  border: active ? "2px solid #6366f1" : "2px solid transparent",
+                <div style={{width:28, height:28, borderRadius:"50%",
+                  background: done ? "#6366f1" : (active ? "#6366f1" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:9, fontWeight:700,
-                  color: (done || active) ? stepActTxt : stepInTxt}}>
+                  fontSize:12, fontWeight:900, flexShrink:0,
+                  color: (done || active) ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb")}}>
                   {done ? "✓" : st.n}
                 </div>
-                <span style={{fontSize:11, fontWeight: active ? 700 : 400,
-                  color: active ? text : (done ? stepLbl : stepInTxt)}}>{st.l}</span>
+                <span style={{fontSize:13, fontWeight: active ? 800 : 500,
+                  color: active ? text : (D ? "rgba(255,255,255,0.4)" : "#888"), whiteSpace:"nowrap"}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{width:18, height:1, background: D ? "rgba(255,255,255,0.15)" : "#ddd"}}/>}
+              {si < 2 && <div style={{flex:1, height:2, background: done ? "#6366f1" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
             </div>
           );
         })}
@@ -1287,154 +1287,166 @@ function PageMake(props) {
 
       {makeStep === 1 && (
         <div>
-          <div style={{marginBottom:14}}>
-            <div style={{fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5}}>주제를 입력하세요</div>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>주제를 입력하세요</div>
+            <div style={{fontSize:13, color:muted}}>주제를 입력하면 AI가 카드뉴스 슬라이드를 자동 구성해줘요</div>
           </div>
-          <div style={{background:sectionBg, border:"1px solid "+bdr, borderRadius:12, padding:"16px", marginBottom:12}}>
-            <div style={{fontSize:14, color:sub, marginBottom:9, fontWeight:700}}>예시 주제</div>
+
+          {/* 예시 주제 */}
+          <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
+            <div style={{fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5}}>💡 예시 주제</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:12}}>
               {EXAMPLES.map(function(ex) {
                 var isC = topic === ex.text;
                 return (
                   <button key={ex.label} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"5px 11px", borderRadius:14, border:"1px solid "+inputBdr,
-                      background: isC ? tagAbg : tagBg,
-                      color: isC ? tagAClr : tagClr,
-                      fontSize:11, cursor:"pointer", fontWeight:600}}>
+                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#6366f1":bdr),
+                      background: isC ? "rgba(99,102,241,0.15)" : tagBg,
+                      color: isC ? "#a5b4fc" : tagClr,
+                      fontSize:12, cursor:"pointer", fontWeight: isC ? 700 : 400, transition:"all 0.12s"}}>
                     {ex.label}
                   </button>
                 );
               })}
             </div>
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
-              placeholder="주제를 직접 입력하세요..." rows={3}
+              placeholder="주제를 직접 입력하세요..."  rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
-                borderRadius:8, padding:"9px 12px", color:text, fontSize:13,
-                fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box"}}/>
-            <div style={{display:"flex", alignItems:"center", gap:8, marginTop:9}}>
-              <span style={{color:muted, fontSize:11}}>슬라이드 수</span>
-              <div style={{display:"flex", gap:3}}>
-                {[3,4,5,6,7,8,10,12].map(function(n) {
-                  var isC = cnt === n;
-                  return (
-                    <button key={n} onClick={function() { setCnt(n); }}
-                      style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer",
-                        fontSize:11, fontWeight:700,
-                        background: isC ? "#6366f1" : (D ? "rgba(255,255,255,0.08)" : "#ede9fc"),
-                        color: isC ? "#fff" : (D ? "rgba(255,255,255,0.4)" : "#6366f1")}}>
-                      {n}
-                    </button>
-                  );
-                })}
-              </div>
+                borderRadius:9, padding:"10px 14px", color:text, fontSize:13,
+                fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box", lineHeight:1.7}}/>
+          </div>
+
+          {/* 슬라이드 수 */}
+          <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
+              <div style={{fontSize:13, fontWeight:700, color:text}}>슬라이드 수</div>
+              <div style={{fontSize:20, fontWeight:900, color:"#6366f1"}}>{cnt}장</div>
+            </div>
+            <div style={{display:"flex", gap:5, flexWrap:"wrap"}}>
+              {[3,4,5,6,7,8,10,12].map(function(n) {
+                var isC = cnt === n;
+                return (
+                  <button key={n} onClick={function() { setCnt(n); }}
+                    style={{width:36, height:36, borderRadius:9,
+                      border:"1.5px solid "+(isC?"#6366f1":bdr),
+                      cursor:"pointer", fontSize:13, fontWeight:700,
+                      background: isC ? "rgba(99,102,241,0.15)" : "transparent",
+                      color: isC ? "#a5b4fc" : (D ? "rgba(255,255,255,0.5)" : "#666")}}>
+                    {n}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
           <div style={{display:"flex", justifyContent:"flex-end"}}>
             <button onClick={function() { if (canGo) { setMakeStep(2); } }} disabled={!canGo}
-              style={{padding:"10px 24px", borderRadius:9, border:"none",
+              style={{padding:"14px 40px", borderRadius:12, border:"none",
                 cursor: canGo ? "pointer" : "not-allowed",
                 background: canGo ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
-                fontSize:13, fontWeight:700}}>
-              다음 →
+                fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8}}>
+              다음 → <span style={{fontSize:12, opacity:0.8}}>디자인 선택</span>
             </button>
           </div>
         </div>
       )}
 
       {makeStep === 2 && (
-        <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
-          <div style={{width: narrow ? "100%" : 286, flexShrink:0, display:"flex", flexDirection:"column"}}>
-            <div style={{fontSize:16, fontWeight:900, marginBottom:4, color:text}}>디자인 스타일 선택</div>
-            <div style={{fontSize:12, color:muted, marginBottom:12}}>클릭하면 오른쪽 크게 보여요 (건너뛰기 가능)</div>
-            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:12}}>
-              {DESIGN_PRESETS.map(function(dp) {
-                var isC = selPreset && selPreset.key === dp.key;
-                return (
-                  <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
-                    style={{borderRadius:9, overflow:"hidden", cursor:"pointer",
-                      border: isC ? "2.5px solid #6366f1" : "2px solid "+bdr,
-                      boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "none"}}>
-                    <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{marginTop:"auto"}}>
-              {err && <div style={{padding:"7px 11px", borderRadius:7, background:errBg, color:errClr, fontSize:12, marginBottom:10}}>{err}</div>}
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                <button onClick={function() { setMakeStep(1); }}
-                  style={{padding:"9px 16px", borderRadius:8, border:"1px solid "+bdr,
-                    background:"transparent", color:muted, fontSize:12, cursor:"pointer"}}>
-                  ← 이전
-                </button>
-                <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
-                  style={{padding:"10px 24px", borderRadius:9, border:"none", cursor:"pointer",
-                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                  {loading ? "생성 중..." : <span>카드뉴스 생성 ✨ <span style={{fontSize:11, opacity:0.8, background:"rgba(255,255,255,0.15)", padding:"1px 6px", borderRadius:8, marginLeft:4}}>💎 10cr</span></span>}
-                </button>
-              </div>
-            </div>
+        <div>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>디자인 스타일을 선택하세요</div>
+            <div style={{fontSize:13, color:muted}}>선택 안 해도 기본 스타일로 생성돼요 (건너뛰기 가능)</div>
           </div>
-          {!narrow && <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-            background:"rgba(255,255,255,0.02)", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
-            {selPreset ? (
-              <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
-                <div style={{fontSize:13, fontWeight:700, color:"rgba(255,255,255,0.5)"}}>{"✔ " + selPreset.label}</div>
-                <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
-              </div>
-            ) : (
-              <div style={{textAlign:"center", opacity:0.4}}>
-                <div style={{fontSize:36, marginBottom:8}}>🖼</div>
-                <div style={{fontSize:13, color:muted}}>왼쪽에서 디자인을 선택하면<br/>여기 크게 보여요</div>
-              </div>
-            )}
-          </div>}
-        </div>
-      )}
-
-      {makeStep === 3 && (
-        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center"}}>
-          {loading && (
-            <div style={{width:"100%", maxWidth:420}}>
-              <div style={{fontSize:72, marginBottom:16, display:"inline-block",
-                animation:"cn-float 3s ease-in-out infinite",
-                filter:"drop-shadow(0 8px 24px rgba(99,102,241,0.4))"}}>🃏✨</div>
-              <div style={{fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px"}}>
-                AI가 카드뉴스를 만들고 있어요
-              </div>
-              <div style={{fontSize:14, color:muted, marginBottom:24}}>{topic} · {cnt}장 구성 중</div>
-              <div style={{display:"flex", flexDirection:"column", gap:10, textAlign:"left",
-                maxWidth:280, margin:"0 auto 20px"}}>
-                {[{l:"주제 분석 중...",d:true},{l:"슬라이드 구성 기획...",d:true},
-                  {l:"문구 생성 중...",a:true},{l:"마무리 다듬는 중..."}
-                ].map(function(s,i) {
+          <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
+            <div style={{width: narrow ? "100%" : 300, flexShrink:0, display:"flex", flexDirection:"column"}}>
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16}}>
+                {DESIGN_PRESETS.map(function(dp) {
+                  var isC = selPreset && selPreset.key === dp.key;
                   return (
-                    <div key={i} style={{display:"flex", alignItems:"center", gap:10,
-                      opacity:s.d||s.a ? 1 : 0.3}}>
-                      <div style={{width:20, height:20, borderRadius:"50%", flexShrink:0,
-                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:10,
-                        background:s.d?"rgba(74,222,128,0.15)":s.a?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
-                        border:s.d?"2px solid #4ade80":s.a?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)"}}>
-                        {s.d?<span style={{color:"#4ade80"}}>✓</span>
-                          :s.a?<div style={{width:8, height:8, borderRadius:"50%",
-                            border:"2px solid #6366f1", borderTopColor:"transparent",
-                            animation:"cn-spin 0.8s linear infinite"}}/>
-                          :null}
-                      </div>
-                      <span style={{fontSize:13, color:s.d?"#4ade80":s.a?text:muted,
-                        fontWeight:s.a?700:400}}>{s.l}</span>
+                    <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
+                      style={{borderRadius:12, overflow:"hidden", cursor:"pointer",
+                        border: isC ? "2px solid #6366f1" : "2px solid transparent",
+                        boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "0 2px 8px rgba(0,0,0,0.15)",
+                        transition:"all 0.15s"}}>
+                      <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
                     </div>
                   );
                 })}
               </div>
-              <div style={{height:4, borderRadius:4, background:"rgba(255,255,255,0.08)",
-                overflow:"hidden", maxWidth:280, margin:"0 auto 10px"}}>
-                <div style={{height:"100%", borderRadius:4,
-                  background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
-                  animation:"cn-progress 8s ease-out forwards"}}/>
+              {selPreset && (
+                <div style={{padding:"9px 14px", borderRadius:9, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", marginBottom:14}}>
+                  <div style={{fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:2}}>✓ {selPreset.label} 선택됨</div>
+                  <button onClick={function(){setSelPreset(null);}} style={{fontSize:11,color:muted,background:"transparent",border:"none",cursor:"pointer",padding:0}}>선택 해제</button>
+                </div>
+              )}
+              <div style={{marginTop:"auto"}}>
+                {err && <div style={{padding:"7px 11px", borderRadius:7, background:errBg, color:errClr, fontSize:12, marginBottom:10}}>{err}</div>}
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                  <button onClick={function() { setMakeStep(1); }}
+                    style={{padding:"12px 28px", borderRadius:12, border:"1px solid "+bdr,
+                      background:"transparent", color:muted, fontSize:14, fontWeight:700, cursor:"pointer"}}>
+                    ← 이전
+                  </button>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#6366f1"}}>10 크레딧</b></div>
+                    <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
+                      style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
+                        background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900,
+                        display:"flex", alignItems:"center", gap:8}}>
+                      {loading ? "생성 중..." : <>카드뉴스 생성하기 →</>}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div style={{fontSize:12, color:muted}}>보통 7~11초 소요</div>
+            </div>
+            {!narrow && <div style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+              background:D?"rgba(255,255,255,0.02)":"#f8f8fb", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
+              {selPreset ? (
+                <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
+                  <div style={{fontSize:13, fontWeight:700, color:muted}}>{"✔ " + selPreset.label}</div>
+                  <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
+                </div>
+              ) : (
+                <div style={{textAlign:"center", opacity:0.4}}>
+                  <div style={{fontSize:36, marginBottom:8}}>🖼</div>
+                  <div style={{fontSize:13, color:muted}}>왼쪽에서 디자인을 선택하면<br/>여기 크게 보여요</div>
+                </div>
+              )}
+            </div>}
+          </div>
+        </div>
+      )}
+
+      {makeStep === 3 && (
+        <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 0", textAlign:"center"}}>
+          {loading && (
+            <div style={{width:"100%", maxWidth:520, borderRadius:16, overflow:"hidden",
+              border:"1px solid rgba(99,102,241,0.4)", background:D?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)"}}>
+              <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.08))",
+                padding:"28px 24px 20px", textAlign:"center", borderBottom:"1px solid rgba(99,102,241,0.2)"}}>
+                <div style={{position:"relative", width:72, height:72, margin:"0 auto 16px"}}>
+                  <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(99,102,241,0.2)"}}/>
+                  <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent",
+                    borderTopColor:"#6366f1", animation:"cn-spin 1s linear infinite"}}/>
+                  <div style={{position:"absolute", inset:8, borderRadius:"50%", border:"2px solid transparent",
+                    borderTopColor:"rgba(99,102,241,0.6)", animation:"cn-spin 1.5s linear infinite reverse"}}/>
+                  <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center",
+                    justifyContent:"center", fontSize:24}}>🎨</div>
+                </div>
+                <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:6}}>카드뉴스 생성 중</div>
+                <div style={{fontSize:12, color:muted}}>{topic} · {cnt}장 구성 중</div>
+              </div>
+              <div style={{padding:"16px 24px"}}>
+                <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
+                  <div style={{height:"100%", borderRadius:4,
+                    background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+                    animation:"cn-progress 8s ease-out forwards"}}/>
+                </div>
+                <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>
+                  보통 7~11초 소요 · 페이지를 벗어나지 마세요
+                </div>
+              </div>
             </div>
           )}
           {!loading && err && (
@@ -1457,7 +1469,7 @@ function PageMake(props) {
                 style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
                   background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
                   fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
-                편집하러 가기 →
+                ✏️ 편집하러 가기 →
               </button>
             </div>
           )}

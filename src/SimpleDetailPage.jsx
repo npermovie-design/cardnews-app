@@ -158,6 +158,7 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
 // ══════════════════════════════════════════════════════════════
 export default function SimpleDetailPage({ isDark, user }) {
   const isCard = false;
+  const mode = "detail"; // 심플 상세페이지 전용
   const defaultSizeIdx = 1; // 세로형 860×1100
   const SLIDE_TYPES = SLIDE_TYPES_DETAIL;
   const accentBase = "#6366f1";
@@ -168,7 +169,7 @@ export default function SimpleDetailPage({ isDark, user }) {
   // ── Step 1 ──────────────────────────────────────────────────
   const [topic,    setTopic]   = useState("");
   const [content,  setContent] = useState("");
-  const [pageCount, setPageCount] = useState(isCard ? 6 : 5);
+  const [pageCount, setPageCount] = useState(5);
   const [productImages, setProductImages] = useState([]);
   const productFileRef = useRef(null);
 

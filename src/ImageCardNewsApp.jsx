@@ -157,6 +157,7 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
 // ══════════════════════════════════════════════════════════════
 export default function ImageCardNewsApp({ isDark, user }) {
   const isCard = true;
+  const mode = "card"; // 이미지 카드뉴스 전용
   const defaultSizeIdx = 0; // 정사각형
   const SLIDE_TYPES = SLIDE_TYPES_CARD;
   const accentBase = "#6366f1";
@@ -165,10 +166,12 @@ export default function ImageCardNewsApp({ isDark, user }) {
   const [wizStep, setWizStep] = useState(1);
 
   // ── Step 1 ──────────────────────────────────────────────────
-  const [topic,    setTopic]   = useState("");
-  const [content,  setContent] = useState("");
-  const [pageCount, setPageCount] = useState(isCard ? 6 : 5);
+  const [topic,      setTopic]      = useState("");
+  const [content,    setContent]    = useState("");
+  const [pageCount,  setPageCount]  = useState(6);
   const [productImages, setProductImages] = useState([]);
+  const [aiSugg,     setAiSugg]     = useState(null);
+  const [suggesting, setSuggesting] = useState(false);
   const productFileRef = useRef(null);
 
   // ── Step 2: 슬라이드 기획 ───────────────────────────────────
@@ -242,6 +245,25 @@ export default function ImageCardNewsApp({ isDark, user }) {
       setAnalyzing(false);
     };
     r.readAsDataURL(file);
+  };
+
+  // ── Step1 AI 주제/내용 추천 ─────────────────────────────────
+  const getSugg = async () => {
+    if (!topic.trim()) return;
+    setSuggesting(true); setAiSugg(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:500,
+          messages:[{role:"user", content:`카드뉴스 주제: "${topic}"\n다음을 JSON으로만 답해:\n{"topics":["더 구체적인 제목 추천1","추천2","추천3"],"contents":["들어갈 핵심 내용 추천1","추천2","추천3"]}`}]
+        }),
+      });
+      const data = await res.json();
+      const txt = (data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim();
+      setAiSugg(JSON.parse(txt));
+    } catch { setAiSugg(null); }
+    setSuggesting(false);
   };
 
   // ── 슬라이드별 AI 추천 ───────────────────────────────────────
@@ -446,7 +468,39 @@ export default function ImageCardNewsApp({ isDark, user }) {
             />
           </div>
 
-          {/* 슬라이드 수 */}
+          {/* AI 추천 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: aiSugg ? 14 : 0 }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>AI 문구 추천</div>
+                <div style={{ fontSize:11, color:muted, marginTop:2 }}>주제를 입력하면 AI가 제목·내용을 추천해줘요</div>
+              </div>
+              <button onClick={getSugg} disabled={suggesting || !topic.trim()}
+                style={{ padding:"8px 16px", borderRadius:8, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:`${accentColor}18`, color:accentColor, fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
+                {suggesting ? "추천 중..." : "✨ AI 추천"}
+              </button>
+            </div>
+            {aiSugg && (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {[{ key:"topics", items:aiSugg.topics, label:"주제 추천", setter:setTopic },
+                  { key:"contents", items:aiSugg.contents, label:"내용 추천", setter:setContent }]
+                  .filter(r=>r.items?.length>0).map(({ key, items, label, setter })=>(
+                  <div key={key}>
+                    <div style={{ fontSize:10, fontWeight:700, color:muted, letterSpacing:1, marginBottom:6 }}>{label}</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                      {items.map((v,i)=>(
+                        <button key={i} onClick={()=>setter(v)}
+                          style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${accentColor}35`, background:`${accentColor}08`, color:text, fontSize:12, cursor:"pointer" }}>
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div style={{ fontSize:10, color:muted }}>클릭하면 입력란에 바로 적용돼요</div>
+              </div>
+            )}
+          </div>
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div style={{ fontSize:13, fontWeight:700, color:text }}>슬라이드 수</div>
