@@ -260,12 +260,22 @@ async function getTopicSuggestions(topic) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
-  const [wizStep, setWizStep] = useState(1);
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary }) {
+  // 보관함에서 열기: 마운트 전 localStorage에서 항목 읽기
+  const libItem = (() => {
+    if (!openFromLibrary) return null;
+    try {
+      const item = JSON.parse(localStorage.getItem("nper_open_card") || "null");
+      localStorage.removeItem("nper_open_card");
+      return item;
+    } catch { return null; }
+  })();
+
+  const [wizStep, setWizStep] = useState(libItem ? 4 : 1);
 
   // Step1 - 카드뉴스용
-  const [topic,     setTopic]     = useState("");
-  const [pageCount, setPageCount] = useState(6);
+  const [topic,     setTopic]     = useState(libItem?.topic || "");
+  const [pageCount, setPageCount] = useState(libItem?.count || 6);
   const [aiSugg,    setAiSugg]    = useState(null);
   const [suggesting,setSuggesting]= useState(false);
 
@@ -280,8 +290,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
   const [customH,   setCustomH]   = useState(1080);
 
   // Step4
-  const [slides,    setSlides]    = useState([]);
-  const [sted,      setSted]      = useState({}); // per-slide overrides
+  const [slides,    setSlides]    = useState(libItem?.slides || []);
+  const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });

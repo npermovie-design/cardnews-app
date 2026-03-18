@@ -250,13 +250,23 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
-  const [wizStep, setWizStep] = useState(1);
+export default function SimpleDetailPageGenerator({ isDark, user, theme, openFromLibrary }) {
+  // 보관함에서 열기
+  const libItem = (() => {
+    if (!openFromLibrary) return null;
+    try {
+      const item = JSON.parse(localStorage.getItem("nper_open_detail") || "null");
+      localStorage.removeItem("nper_open_detail");
+      return item;
+    } catch { return null; }
+  })();
+
+  const [wizStep, setWizStep] = useState(libItem ? 4 : 1);
 
   // Step1
   const [selCat,    setSelCat]    = useState(null);
-  const [form,      setForm]      = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
-  const [pageCount, setPageCount] = useState(5);
+  const [form,      setForm]      = useState({ productName:libItem?.productName||"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
+  const [pageCount, setPageCount] = useState(libItem?.count || 5);
   const [aiSugg,    setAiSugg]    = useState(null);
   const [suggesting,setSuggesting]= useState(false);
 
@@ -271,8 +281,8 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
   const [customH,   setCustomH]   = useState(1100);
 
   // Step4
-  const [slides,    setSlides]    = useState([]);
-  const [sted,      setSted]      = useState({}); // per-slide overrides
+  const [slides,    setSlides]    = useState(libItem?.slides || []);
+  const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
@@ -455,7 +465,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
         thumb = c.toDataURL("image/jpeg", 0.5);
       } catch {}
       const cat = CATEGORIES.find(c=>c.key===selCat)||CATEGORIES[0];
-      list.unshift({ id:"sd_"+Date.now(), productName:form.productName||"심플 상세페이지", catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:slidesData.length, thumbnail:thumb, images:[] });
+      list.unshift({ id:"sd_"+Date.now(), productName:form.productName||"심플 상세페이지", catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:slidesData.length, thumbnail:thumb, images:[], slides:slidesData });
       localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
     } catch {}
   };

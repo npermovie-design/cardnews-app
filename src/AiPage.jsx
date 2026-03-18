@@ -537,7 +537,10 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                       {item.count}장 · {item.date}
                     </div>
                     <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={()=>setAiMenu("cardnews_simple")}
+                      <button onClick={()=>{
+                        try { localStorage.setItem("nper_open_card", JSON.stringify(item)); } catch {}
+                        setAiMenu("cardnews_simple_open");
+                      }}
                         style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
                           background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
                         열기
@@ -582,10 +585,18 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                   </div>
                   <div style={{ padding:"12px 14px" }}>
                     <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName}</div>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                      <span style={{ fontSize:11, color:muted }}>{item.catLabel} · {item.date}</span>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
+                      <button onClick={()=>{
+                        try { localStorage.setItem("nper_open_detail", JSON.stringify(item)); } catch {}
+                        setAiMenu("detail_simple_open");
+                      }}
+                        style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
+                          background:"transparent", color:"#10b981", fontSize:11, fontWeight:700, cursor:"pointer", marginRight:6 }}>
+                        열기
+                      </button>
                       <button onClick={()=>{ if(window.confirm(`"${item.productName}" 를 삭제할까요?`)){ deleteDetailSave(item.id); setDetailList(getDetailSaves()); } }}
-                        style={{ fontSize:10, color:muted, background:"transparent", border:`1px solid ${bdr}`, borderRadius:5, padding:"2px 7px", cursor:"pointer" }}>삭제</button>
+                        style={{ padding:"6px 10px", borderRadius:7, border:"none",
+                          background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>삭제</button>
                     </div>
                     {item.images?.length > 1 && (
                       <div style={{ display:"flex", gap:4, marginTop:8, overflowX:"auto" }}>
@@ -862,6 +873,24 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     return (
       <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} />
+      </div>
+    );
+  }
+
+  // 보관함에서 심플 카드뉴스 열기
+  if (aiMenu === "cardnews_simple_open") {
+    return (
+      <div key="cn_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} openFromLibrary />
+      </div>
+    );
+  }
+
+  // 보관함에서 심플 상세페이지 열기
+  if (aiMenu === "detail_simple_open") {
+    return (
+      <div key="detail_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} openFromLibrary />
       </div>
     );
   }
