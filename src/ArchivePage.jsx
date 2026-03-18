@@ -82,34 +82,6 @@ function formatBytes(bytes) {
   return (bytes / 1024 / 1024).toFixed(1) + " MB";
 }
 
-/** 영상 파일에서 중간 프레임을 캡처해 base64 썸네일 반환 */
-function captureVideoThumbnail(file) {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.muted = true;
-    video.playsInline = true;
-    video.src = url;
-    video.onloadedmetadata = () => {
-      video.currentTime = video.duration * 0.4; // 40% 지점
-    };
-    video.onseeked = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width  = 640;
-      canvas.height = 360;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, 640, 360);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-      URL.revokeObjectURL(url);
-      resolve(dataUrl);
-    };
-    video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-    // 타임아웃 안전장치
-    setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 8000);
-  });
-}
-
 /* ═══════════════════════════════════════════════════════════
    파일 뷰어 (모달)
 ═══════════════════════════════════════════════════════════ */
@@ -338,11 +310,14 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     isFree:      editItem?.isFree      !== false,
   });
   const [file,      setFile]      = useState(null);
+  const [thumbFile, setThumbFile] = useState(null);   // 썸네일 이미지 파일
+  const [thumbPreview, setThumbPreview] = useState(editItem?.thumbnail || "");
   const [progress,  setProgress]  = useState(0);
   const [uploading, setUploading] = useState(false);
   const [saving,    setSaving]    = useState(false);
   const [dragOver,  setDragOver]  = useState(false);
-  const fileRef = useRef();
+  const fileRef  = useRef();
+  const thumbRef = useRef();
 
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -355,12 +330,6 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     setFile(f);
     const ft = detectFileType(f);
     setForm(p => ({ ...p, fileType: ft, category: ft, fileSize: f.size, title: p.title || f.name.replace(/\.[^/.]+$/, "") }));
-    // 영상이면 자동 썸네일 캡처
-    if (ft === "video") {
-      captureVideoThumbnail(f).then(dataUrl => {
-        if (dataUrl) setForm(p => ({ ...p, thumbnail: dataUrl }));
-      });
-    }
   };
 
   const handleUrlChange = (url) => {
@@ -373,6 +342,14 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     setSaving(true);
     try {
       let finalForm = { ...form };
+      // 썸네일 이미지 파일 업로드
+      if (thumbFile) {
+        setUploading(true);
+        const tPath = `archive/thumbs/${Date.now()}_${thumbFile.name}`;
+        const tUrl  = await uploadFileToStorage(thumbFile, tPath, () => {});
+        finalForm.thumbnail = tUrl;
+        setUploading(false);
+      }
       if (mode === "file" && file) {
         setUploading(true);
         const path = `archive/${Date.now()}_${file.name}`;
@@ -510,12 +487,44 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
           </select>
         </div>
 
-        {/* 썸네일 */}
+        {/* 썸네일 이미지 업로드 */}
         <div>
-          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>썸네일 URL <span style={{ fontWeight: 400 }}>(선택)</span></div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <input value={form.thumbnail} onChange={e => setForm(p => ({ ...p, thumbnail: e.target.value }))} placeholder="https://... (비워두면 자동)" style={{ ...inp }} />
-            {form.thumbnail && <img src={form.thumbnail} alt="thumb" style={{ width: 64, height: 40, objectFit: "cover", borderRadius: 6, flexShrink: 0, border: `1px solid ${bdr}` }} />}
+          <div style={{ fontSize: 11, color: muted, fontWeight: 700, marginBottom: 5 }}>
+            🖼 썸네일 이미지 <span style={{ fontWeight: 400 }}>(선택 · jpg, png 권장)</span>
+          </div>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {/* 업로드 버튼 */}
+            <button type="button" onClick={() => thumbRef.current?.click()} style={{
+              padding: "10px 18px", borderRadius: 10,
+              border: `1px dashed ${thumbPreview ? "#6366f1" : bdr}`,
+              background: thumbPreview ? "rgba(99,102,241,0.08)" : inputBg,
+              color: thumbPreview ? "#a5b4fc" : muted,
+              fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+            }}>
+              {thumbPreview ? "🔄 변경" : "📁 이미지 선택"}
+            </button>
+            <input ref={thumbRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => {
+                const f = e.target.files[0];
+                if (!f) return;
+                setThumbFile(f);
+                const reader = new FileReader();
+                reader.onload = ev => setThumbPreview(ev.target.result);
+                reader.readAsDataURL(f);
+              }} />
+            {/* 미리보기 */}
+            {thumbPreview ? (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <img src={thumbPreview} alt="thumb"
+                  style={{ width: 120, height: 68, objectFit: "cover", borderRadius: 8, border: `1px solid ${bdr}`, display: "block" }} />
+                <button onClick={() => { setThumbFile(null); setThumbPreview(""); setForm(p => ({ ...p, thumbnail: "" })); }}
+                  style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#ef4444", color: "#fff", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ width: 120, height: 68, borderRadius: 8, border: `1px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: muted }}>
+                미리보기
+              </div>
+            )}
           </div>
         </div>
 
