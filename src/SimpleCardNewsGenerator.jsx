@@ -78,20 +78,30 @@ function wrapText(ctx, text, maxW) {
   return lines.length ? lines : [""];
 }
 
-function drawDetailSlide(canvas, slide, style, CW, CH) {
+function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   canvas.width = CW; canvas.height = CH;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, CW, CH);
 
   // 배경
-  ctx.fillStyle = style.bgColor || "#1c1c1e";
-  ctx.fillRect(0, 0, CW, CH);
-
-  // 장식 원
-  ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = style.textColor || "#fff";
-  ctx.beginPath(); ctx.arc(CW * 0.88, CH * 0.06, CW * 0.18, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(CW * 0.08, CH * 0.94, CW * 0.11, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
+  if (bgImageEl && bgImageEl.complete && bgImageEl.naturalWidth > 0) {
+    const iR = bgImageEl.naturalWidth / bgImageEl.naturalHeight;
+    const cR = CW / CH;
+    let sw, sh, sx = 0, sy = 0;
+    if (iR > cR) { sh = CH; sw = CH * iR; sx = (CW - sw) / 2; }
+    else { sw = CW; sh = CW / iR; sy = (CH - sh) / 2; }
+    ctx.drawImage(bgImageEl, sx, sy, sw, sh);
+    ctx.fillStyle = "rgba(0,0,0,0.48)";
+    ctx.fillRect(0, 0, CW, CH);
+  } else {
+    ctx.fillStyle = style.bgColor || "#1c1c1e";
+    ctx.fillRect(0, 0, CW, CH);
+    // 단색일 때만 장식 원
+    ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = style.textColor || "#fff";
+    ctx.beginPath(); ctx.arc(CW * 0.88, CH * 0.06, CW * 0.18, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(CW * 0.08, CH * 0.94, CW * 0.11, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
 
   const tc = style.textColor || "#ffffff";
   const al = style.textAlign || "left";
@@ -112,11 +122,11 @@ function drawDetailSlide(canvas, slide, style, CW, CH) {
   ctx.font = getCanvasFont(tw, tSz, ff);
   const titLines = wrapText(ctx, slide.title || slide.headline || "", maxW);
   ctx.font = getCanvasFont("600", sSz, ff);
-  const subLines = slide.subtitle || slide.subheadline ? wrapText(ctx, slide.subtitle || slide.subheadline, maxW) : [];
+  const subLines = (slide.subtitle || slide.subheadline) ? wrapText(ctx, slide.subtitle || slide.subheadline, maxW) : [];
   ctx.font = getCanvasFont("400", bSz, ff);
   const bodLines = slide.body ? wrapText(ctx, slide.body, maxW) : [];
   ctx.font = getCanvasFont("700", hSz, ff);
-  const hlLines = slide.highlight || slide.badge ? wrapText(ctx, slide.highlight || slide.badge, maxW) : [];
+  const hlLines = (slide.highlight || slide.badge) ? wrapText(ctx, slide.highlight || slide.badge, maxW) : [];
 
   const GAP_SUB = Math.round(sSz * 0.5);
   const GAP_TIT = Math.round(tSz * 0.6);
@@ -179,12 +189,19 @@ function drawDetailSlide(canvas, slide, style, CW, CH) {
 }
 
 // ── SlideCanvas 컴포넌트 ─────────────────────────────────────
-function SlideCanvas({ slide, style, CW, CH, displayW }) {
+function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
   const cRef = useRef(null);
   const displayH = Math.round(displayW * CH / CW);
   useEffect(() => {
     if (!cRef.current || !slide) return;
-    drawDetailSlide(cRef.current, slide, style, CW, CH);
+    if (bgImageSrc) {
+      const img = new Image();
+      img.onload = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, img); };
+      img.onerror = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, null); };
+      img.src = bgImageSrc;
+    } else {
+      drawDetailSlide(cRef.current, slide, style, CW, CH, null);
+    }
   });
   if (!slide) return null;
   return (
@@ -370,19 +387,34 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
   const getCurSlide = (idx) => {
     const base = slides[idx]||{};
     const ed = sted[idx]||{};
-    return { ...base, ...ed };
+    // text fields only (exclude style overrides)
+    const { bgColor, bgImage, textColor, titleSize, bodySize, textAlign, textValign, ...textEd } = ed;
+    return { ...base, ...textEd };
+  };
+  const getSlideStyle = (idx) => {
+    const so = sted[idx]||{};
+    return { ...activeStyle, ...(so.bgColor?{bgColor:so.bgColor}:{}), ...(so.textColor?{textColor:so.textColor}:{}), ...(so.titleSize?{titleSize:so.titleSize}:{}), ...(so.bodySize?{bodySize:so.bodySize}:{}), ...(so.textAlign?{textAlign:so.textAlign}:{}), ...(so.textValign?{textValign:so.textValign}:{}) };
   };
   const updSted = (idx, key, val) => setSted(prev=>({...prev,[idx]:{...(prev[idx]||{}), [key]:val}}));
+
+  // bgFile ref
+  const bgFileRef = useRef(null);
 
   // PNG 저장 (단일)
   const saveOne = (idx) => {
     const slide = getCurSlide(idx);
-    const canvas = document.createElement("canvas");
-    drawDetailSlide(canvas, slide, activeStyle, imgW, imgH);
-    const a=document.createElement("a");
-    a.href=canvas.toDataURL("image/png");
-    a.download=`${topic||"cardnews"}_${String(idx+1).padStart(2,"0")}_${slide.label||"slide"}.png`;
-    a.click();
+    const slideStyle = getSlideStyle(idx);
+    const bgImg = (sted[idx]||{}).bgImage;
+    const doSave = (imgEl) => {
+      const canvas = document.createElement("canvas");
+      drawDetailSlide(canvas, slide, slideStyle, imgW, imgH, imgEl);
+      const a=document.createElement("a");
+      a.href=canvas.toDataURL("image/png");
+      a.download=`${topic||"cardnews"}_${String(idx+1).padStart(2,"0")}_${slide.label||"slide"}.png`;
+      a.click();
+    };
+    if (bgImg) { const img=new Image(); img.onload=()=>doSave(img); img.onerror=()=>doSave(null); img.src=bgImg; }
+    else doSave(null);
   };
 
   // 전체 ZIP
@@ -393,11 +425,20 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
     const zip=new window.JSZip();
     for(let i=0;i<slides.length;i++){
       const slide=getCurSlide(i);
-      const canvas=document.createElement("canvas");
-      drawDetailSlide(canvas,slide,activeStyle,imgW,imgH);
-      const b64=canvas.toDataURL("image/png").split(",")[1];
-      const arr=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-      zip.file(`${String(i+1).padStart(2,"0")}_${slide.label||"slide"}.png`,arr);
+      const slideStyle=getSlideStyle(i);
+      const bgImg=(sted[i]||{}).bgImage;
+      await new Promise(resolve=>{
+        const doZip=(imgEl)=>{
+          const canvas=document.createElement("canvas");
+          drawDetailSlide(canvas,slide,slideStyle,imgW,imgH,imgEl);
+          const b64=canvas.toDataURL("image/png").split(",")[1];
+          const arr=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+          zip.file(`${String(i+1).padStart(2,"0")}_${slide.label||"slide"}.png`,arr);
+          resolve();
+        };
+        if(bgImg){const img=new Image();img.onload=()=>doZip(img);img.onerror=()=>doZip(null);img.src=bgImg;}
+        else doZip(null);
+      });
     }
     const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${topic||"cardnews"}_slides.zip`;a.click();
@@ -672,96 +713,196 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
   // ═══ STEP 4: 텍스트 편집 ══════════════════════════════════
   if (wizStep === 4) {
     const curSlide = getCurSlide(selIdx);
-    const previewW = 260;
-    const previewH = Math.round(previewW * imgH / imgW);
+    const so = sted[selIdx] || {};
+    const curStyle = getSlideStyle(selIdx);
+    const previewW = 240;
+    const btnSm = { width:30, height:30, borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:text, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" };
 
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader/>
+        {/* hidden file input for bg image */}
+        <input ref={bgFileRef} type="file" accept="image/*" style={{ display:"none" }}
+          onChange={e=>{
+            const f=e.target.files[0]; if(!f) return;
+            const r=new FileReader();
+            r.onload=ev=>updSted(selIdx,"bgImage",ev.target.result);
+            r.readAsDataURL(f); e.target.value="";
+          }}/>
+
         <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 20px 60px" }}>
-          <div style={{ marginBottom:16 }}>
+          <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드를 편집하세요</div>
-            <div style={{ fontSize:13, color:muted }}>왼쪽에서 슬라이드를 선택하고 텍스트를 수정한 뒤 PNG/ZIP으로 저장하세요</div>
+            <div style={{ fontSize:13, color:muted }}>텍스트 수정, 배경/색상 변경 후 PNG/ZIP으로 저장하세요</div>
           </div>
 
-          <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+          <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
             {/* 슬라이드 목록 (왼쪽) */}
-            <div style={{ width:140, flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
+            <div style={{ width:130, flexShrink:0, display:"flex", flexDirection:"column", gap:5 }}>
               {slides.map((s,i)=>{
                 const sl = getCurSlide(i);
+                const ss = getSlideStyle(i);
+                const sBg = (sted[i]||{}).bgImage;
                 const isActive = selIdx===i;
                 return (
                   <div key={i} onClick={()=>setSelIdx(i)}
-                    style={{ borderRadius:10, overflow:"hidden", border:`2px solid ${isActive?"#6366f1":"transparent"}`, cursor:"pointer", transition:"all 0.12s", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                    style={{ borderRadius:9, overflow:"hidden", border:`2px solid ${isActive?"#6366f1":"transparent"}`, cursor:"pointer", transition:"all 0.12s", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
                     <div style={{ position:"relative" }}>
-                      <SlideCanvas slide={sl} style={activeStyle} CW={imgW} CH={imgH} displayW={136}/>
-                      <div style={{ position:"absolute",top:4,left:4,width:18,height:18,borderRadius:5,background:isActive?"#6366f1":"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff" }}>{i+1}</div>
+                      <SlideCanvas slide={sl} style={ss} CW={imgW} CH={imgH} displayW={126} bgImageSrc={sBg||undefined}/>
+                      <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:isActive?"#6366f1":"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:"#fff" }}>{i+1}</div>
                     </div>
-                    <div style={{ padding:"4px 6px", background:D?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                      <div style={{ fontSize:9, color:isActive?"#a5b4fc":muted, fontWeight:isActive?800:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{s.label}</div>
-                      <button onClick={e=>{e.stopPropagation();saveOne(i);}}
-                        style={{ fontSize:9,padding:"2px 5px",borderRadius:4,border:"none",background:"transparent",color:muted,cursor:"pointer" }}>PNG</button>
+                    <div style={{ padding:"3px 5px", background:D?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ fontSize:8, color:isActive?"#a5b4fc":muted, fontWeight:isActive?800:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{s.label}</div>
+                      <button onClick={e=>{e.stopPropagation();saveOne(i);}} style={{ fontSize:8,padding:"1px 4px",borderRadius:3,border:"none",background:"transparent",color:muted,cursor:"pointer" }}>PNG</button>
                     </div>
                   </div>
                 );
               })}
-              <button onClick={resetAll} style={{ marginTop:4,padding:"8px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
+              <button onClick={resetAll} style={{ marginTop:4,padding:"7px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
             </div>
 
             {/* 편집 패널 (중앙) */}
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, padding:"18px", marginBottom:16 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-                  <div style={{ width:24,height:24,borderRadius:7,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#6366f1" }}>{selIdx+1}</div>
-                  <div style={{ fontSize:14, fontWeight:800, color:text }}>{slides[selIdx]?.label}</div>
+              {/* 슬라이드 헤더 */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                <div style={{ width:24,height:24,borderRadius:7,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#6366f1" }}>{selIdx+1}</div>
+                <div style={{ fontSize:14, fontWeight:800, color:text }}>{slides[selIdx]?.label}</div>
+                <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
+                  <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
+                    style={{ ...btnSm, opacity:selIdx===0?0.3:1 }}>‹</button>
+                  <span style={{ fontSize:11,color:muted,alignSelf:"center" }}>{selIdx+1}/{slides.length}</span>
+                  <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1}
+                    style={{ ...btnSm, opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
                 </div>
+              </div>
 
+              {/* 텍스트 편집 */}
+              <div style={{ borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, padding:"14px", marginBottom:10 }}>
                 {[
-                  { key:"title",    label:"제목 (헤드라인)",  placeholder:"제목을 입력하세요", field:"headline" },
-                  { key:"subtitle", label:"부제목 (선택)",    placeholder:"부제목을 입력하세요 (없으면 비워두세요)", field:"subheadline" },
-                  { key:"body",     label:"본문 내용 (선택)", placeholder:"본문을 입력하세요 (없으면 비워두세요)", ta:true },
-                  { key:"highlight",label:"강조 문구 (선택)", placeholder:"강조할 짧은 문구 (없으면 비워두세요)", field:"badge" },
+                  { key:"title",    label:"제목",    placeholder:"제목을 입력하세요" },
+                  { key:"subtitle", label:"부제목",  placeholder:"비워두면 표시 안 됨" },
+                  { key:"body",     label:"본문",    placeholder:"비워두면 표시 안 됨", ta:true },
+                  { key:"highlight",label:"강조문구", placeholder:"비워두면 표시 안 됨" },
                 ].map(({key,label,placeholder,ta})=>(
-                  <div key={key} style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:11,fontWeight:700,color:muted,marginBottom:6 }}>{label}</div>
+                  <div key={key} style={{ marginBottom:10 }}>
+                    <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:4 }}>{label}</div>
                     {ta
-                      ? <textarea value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder} rows={3}
-                          style={{ width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",lineHeight:1.7 }}/>
+                      ? <textarea value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder} rows={2}
+                          style={{ width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",lineHeight:1.6 }}/>
                       : <input value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder}
-                          style={{ width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}/>}
+                          style={{ width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}/>}
                   </div>
                 ))}
+              </div>
 
-                {/* 전/다음 슬라이드 이동 */}
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
-                  <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
-                    style={{ padding:"8px 16px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:selIdx===0?muted:text,fontSize:12,cursor:selIdx===0?"not-allowed":"pointer",opacity:selIdx===0?0.4:1 }}>← 이전</button>
-                  <span style={{ fontSize:12,color:muted,alignSelf:"center" }}>{selIdx+1} / {slides.length}</span>
-                  <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1}
-                    style={{ padding:"8px 16px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:selIdx===slides.length-1?muted:text,fontSize:12,cursor:selIdx===slides.length-1?"not-allowed":"pointer",opacity:selIdx===slides.length-1?0.4:1 }}>다음 →</button>
+              {/* 스타일 편집 */}
+              <div style={{ borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, padding:"14px", marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:800, color:text, marginBottom:12 }}>🎨 스타일 편집</div>
+
+                {/* 색상 */}
+                <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:muted, marginBottom:5 }}>배경색</div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <input type="color" value={so.bgColor||curStyle.bgColor||"#1c1c1e"}
+                        onChange={e=>updSted(selIdx,"bgColor",e.target.value)}
+                        style={{ width:36,height:36,borderRadius:8,border:`1px solid ${bdr}`,cursor:"pointer",padding:2 }}/>
+                      {so.bgColor&&<button onClick={()=>updSted(selIdx,"bgColor",undefined)} style={{ fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
+                    </div>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:muted, marginBottom:5 }}>글자색</div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <input type="color" value={so.textColor||curStyle.textColor||"#ffffff"}
+                        onChange={e=>updSted(selIdx,"textColor",e.target.value)}
+                        style={{ width:36,height:36,borderRadius:8,border:`1px solid ${bdr}`,cursor:"pointer",padding:2 }}/>
+                      {so.textColor&&<button onClick={()=>updSted(selIdx,"textColor",undefined)} style={{ fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 제목 크기 */}
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:10, color:muted, marginBottom:5 }}>제목 크기 ({so.titleSize||curStyle.titleSize||32}px)</div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <button onClick={()=>updSted(selIdx,"titleSize",Math.max(16,(so.titleSize||curStyle.titleSize||32)-2))}
+                      style={{ ...btnSm, fontSize:18 }}>−</button>
+                    <div style={{ flex:1, height:6, borderRadius:3, background:D?"rgba(255,255,255,0.1)":"#e8e8e8", overflow:"hidden" }}>
+                      <div style={{ height:"100%", borderRadius:3, background:"#6366f1", width:`${((so.titleSize||curStyle.titleSize||32)-16)/(72-16)*100}%`, transition:"width 0.15s" }}/>
+                    </div>
+                    <button onClick={()=>updSted(selIdx,"titleSize",Math.min(72,(so.titleSize||curStyle.titleSize||32)+2))}
+                      style={{ ...btnSm, fontSize:18 }}>+</button>
+                    {so.titleSize&&<button onClick={()=>updSted(selIdx,"titleSize",undefined)} style={{ fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
+                  </div>
+                </div>
+
+                {/* 가로 정렬 */}
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:10, color:muted, marginBottom:5 }}>가로 정렬</div>
+                  <div style={{ display:"flex", gap:5 }}>
+                    {[["left","왼쪽","⬅"],["center","가운데","↔"],["right","오른쪽","➡"]].map(([v,label,icon])=>{
+                      const cur = so.textAlign||curStyle.textAlign||"left";
+                      return <button key={v} onClick={()=>updSted(selIdx,"textAlign",v)}
+                        style={{ flex:1, padding:"7px 4px", borderRadius:8, border:`1px solid ${cur===v?"#6366f1":bdr}`, background:cur===v?"rgba(99,102,241,0.2)":"transparent", color:cur===v?"#a5b4fc":muted, cursor:"pointer", fontSize:11, fontWeight:cur===v?700:400, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <span style={{ fontSize:14 }}>{icon}</span>{label}
+                      </button>;
+                    })}
+                  </div>
+                </div>
+
+                {/* 세로 정렬 */}
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:10, color:muted, marginBottom:5 }}>세로 정렬</div>
+                  <div style={{ display:"flex", gap:5 }}>
+                    {[["top","상단","⬆"],["middle","가운데","↕"],["bottom","하단","⬇"]].map(([v,label,icon])=>{
+                      const cur = so.textValign||curStyle.textValign||"middle";
+                      return <button key={v} onClick={()=>updSted(selIdx,"textValign",v)}
+                        style={{ flex:1, padding:"7px 4px", borderRadius:8, border:`1px solid ${cur===v?"#6366f1":bdr}`, background:cur===v?"rgba(99,102,241,0.2)":"transparent", color:cur===v?"#a5b4fc":muted, cursor:"pointer", fontSize:11, fontWeight:cur===v?700:400, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <span style={{ fontSize:14 }}>{icon}</span>{label}
+                      </button>;
+                    })}
+                  </div>
+                </div>
+
+                {/* 배경 이미지 */}
+                <div>
+                  <div style={{ fontSize:10, color:muted, marginBottom:5 }}>배경 이미지</div>
+                  {so.bgImage ? (
+                    <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px 10px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg }}>
+                      <img src={so.bgImage} alt="" style={{ width:44,height:44,objectFit:"cover",borderRadius:6,flexShrink:0 }}/>
+                      <div style={{ flex:1, fontSize:11, color:muted }}>배경 이미지 적용됨</div>
+                      <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"4px 10px",borderRadius:6,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
+                    </div>
+                  ) : (
+                    <button onClick={()=>bgFileRef.current?.click()}
+                      style={{ width:"100%",padding:"9px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>
+                      📸 배경 이미지 업로드
+                    </button>
+                  )}
+                  {so.bgImage&&<div style={{ fontSize:10,color:muted,marginTop:5 }}>💡 이미지 위에 어두운 오버레이가 자동으로 적용돼요</div>}
                 </div>
               </div>
 
               {/* 저장 버튼 */}
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={()=>saveOne(selIdx)}
-                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:"#6366f1",color:"#fff",fontSize:14,fontWeight:800 }}>
-                  📥 현재 슬라이드 PNG
+                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:"#6366f1",color:"#fff",fontSize:13,fontWeight:800 }}>
+                  📥 현재 PNG
                 </button>
                 <button onClick={saveAll} disabled={dlSt.busy}
-                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:14,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>
+                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>
                   {dlSt.msg||"📦 전체 ZIP"}
                 </button>
               </div>
             </div>
 
             {/* 미리보기 (오른쪽) */}
-            <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:2 }}>미리보기</div>
+            <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:muted }}>미리보기</div>
               <div style={{ borderRadius:12, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,0.3)", border:`1px solid ${bdr}` }}>
-                <SlideCanvas slide={curSlide} style={activeStyle} CW={imgW} CH={imgH} displayW={previewW}/>
+                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={previewW} bgImageSrc={so.bgImage||undefined}/>
               </div>
-              <div style={{ fontSize:10,color:muted }}>{imgW}×{imgH}px · {activeStyle.label}</div>
+              <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
             </div>
           </div>
         </div>

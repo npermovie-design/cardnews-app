@@ -702,37 +702,199 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 카드뉴스 = 4단계 위저드 + 텍스트 편집
-  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
+  // ── 인트로 소개 화면 컴포넌트 ──────────────────────────────
+  const IntroScreen = ({ menuId, icon, title, subtitle, badge, color, steps, features, cta, onStart }) => {
+    const D = isDark;
+    const t = D?"#fff":"#1a1a2e";
+    const m = D?"rgba(255,255,255,0.5)":"#888";
+    const bdr = D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)";
+    const cardBg = D?"rgba(255,255,255,0.04)":"#fff";
     return (
-      <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <div style={{ maxWidth:680, margin:"0 auto", padding:"40px 28px 80px" }}>
+          {/* 헤더 */}
+          <div style={{ textAlign:"center", marginBottom:36 }}>
+            <div style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:`${color}18`, border:`1px solid ${color}40`, marginBottom:12 }}>
+              <span style={{ fontSize:11, fontWeight:700, color }}>{badge}</span>
+            </div>
+            <div style={{ fontSize:26, fontWeight:900, color:t, letterSpacing:-0.5, marginBottom:8 }}>{title}</div>
+            <div style={{ fontSize:14, color:m, lineHeight:1.8, maxWidth:440, margin:"0 auto" }}>{subtitle}</div>
+          </div>
+
+          {/* 진행 순서 */}
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:14 }}>📋 이런 순서로 제작돼요</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {steps.map((s,i)=>(
+                <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"12px 14px", borderRadius:11, background:cardBg, border:`1px solid ${bdr}` }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:`${color}20`, border:`1.5px solid ${color}50`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color, flexShrink:0 }}>{i+1}</div>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:t, marginBottom:2 }}>{s.title}</div>
+                    <div style={{ fontSize:12, color:m, lineHeight:1.6 }}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 특징 */}
+          <div style={{ padding:"16px 18px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, marginBottom:28 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:12 }}>✨ 주요 특징</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {features.map((f,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:`${color}10`, border:`1px solid ${color}30` }}>
+                  <span style={{ fontSize:14 }}>{f.icon}</span>
+                  <span style={{ fontSize:12, color, fontWeight:600 }}>{f.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 시작 버튼 */}
+          <button onClick={onStart}
+            style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${color},${color}cc)`, color:"#fff", fontSize:16, fontWeight:900, boxShadow:`0 8px 28px ${color}40` }}>
+            {cta} →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // 심플 카드뉴스 인트로 or 생성기
+  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
+    if (aiMenu === "cardnews_simple") {
+      return (
+        <IntroScreen menuId="cardnews_simple" icon="✨" title="심플 카드뉴스" badge="텍스트 편집 방식 · 빠른 제작"
+          subtitle="주제만 입력하면 AI가 슬라이드 텍스트를 자동 생성해줘요. 배경색과 글자 스타일을 자유롭게 수정할 수 있어요."
+          color="#6366f1"
+          steps={[
+            { title:"주제 입력", desc:"만들고 싶은 카드뉴스 주제를 입력해요. AI 추천으로 더 구체적인 방향을 잡을 수 있어요." },
+            { title:"슬라이드 기획", desc:"각 슬라이드의 제목·내용을 AI가 자동 추천하거나 직접 입력할 수 있어요." },
+            { title:"디자인 선택 + 사이즈", desc:"스타일 프리셋과 이미지 크기를 선택해요." },
+            { title:"텍스트 편집 + 저장", desc:"제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장" },
+          ]}
+          features={[
+            { icon:"⚡", label:"빠른 제작" },
+            { icon:"💎", label:"10 크레딧" },
+            { icon:"🎨", label:"배경색 자유 변경" },
+            { icon:"📸", label:"배경 이미지 업로드" },
+            { icon:"↔", label:"정렬 조절" },
+            { icon:"📥", label:"PNG/ZIP 저장" },
+          ]}
+          cta="심플 카드뉴스 만들기"
+          onStart={()=>setAiMenu("cardnews_simple_make")}
+        />
+      );
+    }
+    return (
+      <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} />
+      </div>
+    );
+  }
+  if (aiMenu === "cardnews_simple_make") {
+    return (
+      <div key="cn_simple_make" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} />
       </div>
     );
   }
 
-  // 이미지 카드뉴스 = AI 이미지 생성 위저드
-  if (aiMenu === "cardnews_image") {
+  // 이미지 카드뉴스 인트로 or 생성기
+  if (aiMenu === "cardnews_image" || aiMenu === "cardnews_image_make") {
+    if (aiMenu === "cardnews_image") {
+      return (
+        <IntroScreen menuId="cardnews_image" icon="🖼" title="이미지 카드뉴스" badge="AI 이미지 생성 방식 · 고품질"
+          subtitle="주제를 입력하면 AI가 실제 사진 품질의 이미지 슬라이드를 생성해줘요. 슬라이드마다 재생성이 가능해요."
+          color="#8b5cf6"
+          steps={[
+            { title:"주제 입력", desc:"카드뉴스 주제와 들어갈 내용을 입력해요. AI 추천으로 더 구체적인 방향을 잡을 수 있어요." },
+            { title:"슬라이드 기획", desc:"각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요." },
+            { title:"디자인 스타일 + 사이즈", desc:"10가지 스타일 템플릿과 이미지 크기를 선택해요." },
+            { title:"AI 이미지 생성 + 저장", desc:"AI가 슬라이드마다 고품질 이미지를 생성해요. PNG/ZIP 저장 가능" },
+          ]}
+          features={[
+            { icon:"🤖", label:"AI 이미지 생성" },
+            { icon:"💎", label:"슬라이드당 30cr" },
+            { icon:"🎨", label:"10가지 스타일" },
+            { icon:"🔄", label:"슬라이드 재생성" },
+            { icon:"📐", label:"4가지 사이즈" },
+            { icon:"📦", label:"ZIP 다운로드" },
+          ]}
+          cta="이미지 카드뉴스 만들기"
+          onStart={()=>setAiMenu("cardnews_image_make")}
+        />
+      );
+    }
     return (
-      <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div key="cn_image" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <ImageCardNewsApp isDark={isDark} user={user} />
       </div>
     );
   }
 
-  // 심플 상세페이지 = 이미지 상세페이지 UX + 텍스트 편집
-  if (aiMenu === "detail_simple") {
+  // 심플 상세페이지 인트로 or 생성기
+  if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
+    if (aiMenu === "detail_simple") {
+      return (
+        <IntroScreen menuId="detail_simple" icon="📋" title="심플 상세페이지" badge="텍스트 편집 방식 · 빠른 제작"
+          subtitle="상품 정보를 입력하면 AI가 상세페이지 슬라이드 텍스트를 자동 구성해줘요. 배경과 글자 스타일을 자유롭게 수정할 수 있어요."
+          color="#10b981"
+          steps={[
+            { title:"상품 정보 입력", desc:"카테고리·상품명·핵심 특징 등 상품 정보를 입력해요. AI 문구 추천도 제공해요." },
+            { title:"슬라이드 기획", desc:"각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요." },
+            { title:"디자인 선택 + 사이즈", desc:"스타일 프리셋과 이미지 크기를 선택해요. 세로형이 기본이에요." },
+            { title:"텍스트 편집 + 저장", desc:"제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장" },
+          ]}
+          features={[
+            { icon:"⚡", label:"빠른 제작" },
+            { icon:"💎", label:"10 크레딧" },
+            { icon:"🎨", label:"배경색 자유 변경" },
+            { icon:"📸", label:"배경 이미지 업로드" },
+            { icon:"↕", label:"세로/가로 정렬" },
+            { icon:"📥", label:"PNG/ZIP 저장" },
+          ]}
+          cta="심플 상세페이지 만들기"
+          onStart={()=>setAiMenu("detail_simple_make")}
+        />
+      );
+    }
     return (
-      <div key="detail_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div key="detail_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} />
       </div>
     );
   }
 
-  // 이미지 상세페이지 = DetailPageGenerator (AI 이미지 생성)
-  if (aiMenu === "detail_image" || aiMenu === "detail_page") {
+  // 이미지 상세페이지 인트로 or 생성기
+  if (aiMenu === "detail_image" || aiMenu === "detail_image_make" || aiMenu === "detail_page") {
+    if (aiMenu === "detail_image") {
+      return (
+        <IntroScreen menuId="detail_image" icon="🛍" title="이미지 상세페이지" badge="AI 이미지 생성 방식 · 최고 품질"
+          subtitle="상품 정보를 입력하면 AI가 실제 사진 품질의 상세페이지 이미지를 생성해줘요. 참고 이미지 스타일 분석도 가능해요."
+          color="#f59e0b"
+          steps={[
+            { title:"상품 정보 입력", desc:"카테고리·상품명·특징·가격·타겟 고객 등 상세 정보를 입력해요." },
+            { title:"슬라이드 기획", desc:"최대 20장의 슬라이드 구성을 기획해요. 각 슬라이드 문구를 AI가 추천해줘요." },
+            { title:"디자인 + 사이즈 선택", desc:"10가지 스타일 템플릿, 참고 이미지 업로드, 이미지 크기를 선택해요." },
+            { title:"AI 이미지 생성 + 저장", desc:"AI가 각 슬라이드를 고품질 상업용 이미지로 생성해요. 개별 재생성 가능" },
+          ]}
+          features={[
+            { icon:"🤖", label:"AI 이미지 생성" },
+            { icon:"💎", label:"슬라이드당 30cr" },
+            { icon:"🖼", label:"참고 이미지 분석" },
+            { icon:"🔄", label:"개별 재생성" },
+            { icon:"📐", label:"최대 20장" },
+            { icon:"📦", label:"ZIP 다운로드" },
+          ]}
+          cta="이미지 상세페이지 만들기"
+          onStart={()=>setAiMenu("detail_image_make")}
+        />
+      );
+    }
     return (
-      <div key="detail_image" style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div key="detail_image" style={{ flex:1, overflowY:"auto", background: isDark?"transparent":"#f4f4f8" }}>
         <DetailPageGenerator isDark={isDark} user={user} />
       </div>
     );
@@ -741,27 +903,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
   // 카드뉴스 기획 패널
   if (aiMenu === "cardnews_plan") {
     return (
-      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
+      <div key="cn_plan" style={{ flex:1, display:"flex", overflow:"hidden", background: theme==="dark"?"#0f0c29":"#f4f4f8" }}>
         <PlannerPanel inline theme={theme}
-          onClose={() => {}}
-          onApplySlides={(slides) => {
+          onClose={()=>{}}
+          onApplySlides={(slides)=>{
             try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
-            setAiMenu("cardnews_simple");
-          }}
-        />
-      </div>
-    );
-  }
-
-  // 카드뉴스 - 글 기획하기 (인라인)
-  if (aiMenu === "cardnews_plan") {
-    return (
-      <div key="cn_plan" style={{ flex: 1, display: "flex", overflow: "hidden", background: theme === "dark" ? "#0f0c29" : "#f4f4f8" }}>
-        <PlannerPanel inline theme={theme}
-          onClose={() => {}}
-          onApplySlides={(slides) => {
-            try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
-            setAiMenu("cardnews_simple");
+            setAiMenu("cardnews_simple_make");
           }}
         />
       </div>
