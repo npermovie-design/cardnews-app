@@ -5,6 +5,13 @@
 // ── Firebase SDK (CDN 없이 npm 방식) ──────────────────────────────────────
 import { initializeApp, getApps } from "firebase/app";
 import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -40,8 +47,36 @@ const firebaseConfig = {
 const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
+const storage = getStorage(app);
 
-export { auth, db };
+export { auth, db, storage };
+
+// ── Firebase Storage 헬퍼 ─────────────────────────────────────────────────
+/** 파일 업로드 (진행률 콜백 포함) */
+export function uploadFileToStorage(file, path, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fileRef = storageRef(storage, path);
+    const task = uploadBytesResumable(fileRef, file);
+    task.on(
+      "state_changed",
+      snap => onProgress && onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      async () => {
+        const url = await getDownloadURL(task.snapshot.ref);
+        resolve(url);
+      }
+    );
+  });
+}
+
+/** Storage 파일 삭제 */
+export async function deleteFileFromStorage(path) {
+  try {
+    await deleteObject(storageRef(storage, path));
+  } catch (e) {
+    // 파일이 없어도 무시
+  }
+}
 
 // ── 포인트 상수 ───────────────────────────────────────────────────────────
 export const POINTS = {
