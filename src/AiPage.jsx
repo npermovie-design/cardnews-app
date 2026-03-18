@@ -7,6 +7,7 @@ import YtBlogGenerator from "./YtBlogGenerator";
 import DetailPageGenerator from "./DetailPageGenerator";
 import ImageCardNewsApp from "./ImageCardNewsApp";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
+import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -701,11 +702,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 카드뉴스 = CardNewsApp (텍스트 생성 + 글 수정)
+  // 심플 카드뉴스 = 4단계 위저드 + 텍스트 편집
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     return (
       <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} />
       </div>
     );
   }
