@@ -82,6 +82,34 @@ function formatBytes(bytes) {
   return (bytes / 1024 / 1024).toFixed(1) + " MB";
 }
 
+/** 영상 파일에서 중간 프레임을 캡처해 base64 썸네일 반환 */
+function captureVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+    video.onloadedmetadata = () => {
+      video.currentTime = video.duration * 0.4; // 40% 지점
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width  = 640;
+      canvas.height = 360;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, 640, 360);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      URL.revokeObjectURL(url);
+      resolve(dataUrl);
+    };
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    // 타임아웃 안전장치
+    setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 8000);
+  });
+}
+
 /* ═══════════════════════════════════════════════════════════
    파일 뷰어 (모달)
 ═══════════════════════════════════════════════════════════ */
@@ -143,74 +171,151 @@ function FileViewer({ item, onClose }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   파일 카드
+   파일 카드 (인라인 재생 + 다운로드)
 ═══════════════════════════════════════════════════════════ */
-function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit, onView }) {
-  const [hovered, setHovered] = useState(false);
+function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
+  const [hovered,  setHovered]  = useState(false);
+  const [playing,  setPlaying]  = useState(false);
   const typeInfo = FILE_TYPE_INFO[item.fileType] || FILE_TYPE_INFO.other;
   const ytId     = extractYtId(item.fileUrl);
   const driveId  = getDriveFileId(item.fileUrl);
   const thumb    = item.thumbnail
-    || (ytId    ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`                       : null)
-    || (driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w640-h360-c`        : null);
+    || (ytId    ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`                  : null)
+    || (driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w640-h360-c`  : null);
 
   const text   = isDark ? "#fff"                   : "#1a1a2e";
   const muted  = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
 
+  /* 인라인 플레이어 src */
+  const playerSrc = ytId
+    ? `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`
+    : driveId
+    ? `https://drive.google.com/file/d/${driveId}/preview`
+    : null;
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onView(item)}
       style={{
         background: cardBg,
         border: "1px solid " + (hovered ? "rgba(99,102,241,0.4)" : bdr),
         borderRadius: 14, overflow: "hidden",
-        display: "flex", flexDirection: "column", cursor: "pointer",
+        display: "flex", flexDirection: "column",
         transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
-        transform: hovered ? "translateY(-3px)" : "none",
+        transform: !playing && hovered ? "translateY(-3px)" : "none",
         boxShadow: hovered ? "0 10px 32px rgba(99,102,241,0.2)" : "none",
       }}
     >
-      {/* 썸네일 */}
-      <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", background: "#111", overflow: "hidden" }}>
+      {/* ── 영상/미디어 영역 ── */}
+      <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", background: "#000", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0 }}>
-          {thumb
-            ? <img src={thumb} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
-            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", fontSize: 48 }}>{typeInfo.icon}</div>
-          }
-          {/* 오버레이 */}
-          <div style={{ position: "absolute", inset: 0, background: hovered ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.12)", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: hovered ? "#fff" : "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, transform: hovered ? "scale(1.1)" : "scale(1)", transition: "all 0.2s", boxShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
-              {item.fileType === "video" ? "▶" : item.fileType === "image" ? "🔍" : item.fileType === "pdf" ? "📄" : "⬇️"}
+
+          {playing ? (
+            /* 인라인 플레이어 */
+            <>
+              {playerSrc ? (
+                <iframe src={playerSrc}
+                  style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation" />
+              ) : (
+                <video src={item.fileUrl} controls autoPlay
+                  onEnded={() => setPlaying(false)}
+                  style={{ width: "100%", height: "100%", display: "block", background: "#000" }} />
+              )}
+              {/* 닫기 버튼 */}
+              <button onClick={() => setPlaying(false)} style={{
+                position: "absolute", top: 8, right: 8, zIndex: 10,
+                width: 28, height: 28, borderRadius: "50%",
+                background: "rgba(0,0,0,0.7)", border: "none",
+                color: "#fff", fontSize: 13, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>✕</button>
+            </>
+          ) : item.fileType === "image" ? (
+            /* 이미지 미리보기 */
+            <img src={item.fileUrl} alt={item.title}
+              onClick={() => window.open(item.fileUrl, "_blank")}
+              style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "zoom-in",
+                transition: "transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+          ) : (
+            /* 썸네일 + 재생 버튼 */
+            <div onClick={() => item.fileType === "video" ? setPlaying(true) : window.open(item.fileUrl, "_blank")}
+              style={{ position: "absolute", inset: 0, cursor: "pointer" }}>
+              {thumb
+                ? <img src={thumb} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                    background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", fontSize: 48 }}>{typeInfo.icon}</div>
+              }
+              {/* 오버레이 */}
+              <div style={{ position: "absolute", inset: 0, background: hovered ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.15)",
+                transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: "50%",
+                  background: hovered ? "#fff" : "rgba(255,255,255,0.85)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 22, paddingLeft: item.fileType === "video" ? 4 : 0,
+                  transform: hovered ? "scale(1.12)" : "scale(1)", transition: "all 0.2s",
+                  boxShadow: hovered ? "0 6px 24px rgba(99,102,241,0.5)" : "0 2px 10px rgba(0,0,0,0.3)",
+                }}>
+                  {item.fileType === "video" ? "▶" : item.fileType === "pdf" ? "📄" : "🔍"}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
           {/* 타입 뱃지 */}
-          <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
-            {typeInfo.icon} {typeInfo.label}
-          </div>
+          {!playing && (
+            <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#fff", zIndex: 2 }}>
+              {typeInfo.icon} {typeInfo.label}
+            </div>
+          )}
           {/* 파일 크기 */}
-          {item.fileSize > 0 && (
-            <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)", borderRadius: 5, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)" }}>
+          {item.fileSize > 0 && !playing && (
+            <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)", borderRadius: 5, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)", zIndex: 2 }}>
               {formatBytes(item.fileSize)}
             </div>
           )}
           {/* 관리자 버튼 */}
-          {isAdmin && hovered && (
-            <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", gap: 5 }}>
+          {isAdmin && hovered && !playing && (
+            <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", gap: 5, zIndex: 5 }}>
               <button onClick={e => { e.stopPropagation(); onEdit(item); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.92)", color: "#6366f1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>
               <button onClick={e => { e.stopPropagation(); onDelete(item.key, item.storagePath); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(239,68,68,0.92)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑</button>
             </div>
           )}
         </div>
       </div>
-      {/* 카드 하단 */}
-      <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 5, background: cardBg }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: text, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.title}</div>
+
+      {/* ── 카드 하단 ── */}
+      <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 8, background: cardBg }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: text, lineHeight: 1.4,
+          overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {item.title}
+        </div>
         {item.description && (
-          <div style={{ fontSize: 12, color: muted, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>{item.description}</div>
+          <div style={{ fontSize: 12, color: muted, lineHeight: 1.5,
+            overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+            {item.description}
+          </div>
         )}
+        {/* 다운로드 버튼 */}
+        <a href={item.fileUrl} download target="_blank" rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "8px 0", borderRadius: 8, marginTop: 2,
+            border: "1px solid " + bdr, background: "transparent",
+            color: isDark ? "#a5b4fc" : "#6366f1",
+            fontSize: 12, fontWeight: 700, textDecoration: "none",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.07)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          ⬇️ 다운로드
+        </a>
       </div>
     </div>
   );
@@ -250,6 +355,12 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     setFile(f);
     const ft = detectFileType(f);
     setForm(p => ({ ...p, fileType: ft, category: ft, fileSize: f.size, title: p.title || f.name.replace(/\.[^/.]+$/, "") }));
+    // 영상이면 자동 썸네일 캡처
+    if (ft === "video") {
+      captureVideoThumbnail(f).then(dataUrl => {
+        if (dataUrl) setForm(p => ({ ...p, thumbnail: dataUrl }));
+      });
+    }
   };
 
   const handleUrlChange = (url) => {
@@ -507,7 +618,6 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
   const [editItem, setEditItem] = useState(null);
-  const [viewing,  setViewing]  = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -567,7 +677,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
               {files.slice(0, 4).map(v => (
                 <FileCard key={v.key} item={v} isDark={isDark} bdr={bdr}
-                  onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} onView={setViewing} />
+                  onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
               ))}
             </div>
           </div>
@@ -578,8 +688,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
 
   /* 파일 목록 */
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-      {viewing && <FileViewer item={viewing} onClose={() => setViewing(null)} />}
+    <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>
@@ -629,7 +738,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16 }}>
           {filtered.map(v => (
             <FileCard key={v.key} item={v} isDark={isDark} bdr={bdr}
-              onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} onView={setViewing} />
+              onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
           ))}
         </div>
       )}
