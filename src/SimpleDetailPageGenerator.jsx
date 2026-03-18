@@ -125,11 +125,13 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   ctx.font = getCanvasFont(tw, tSz, ff);
   const titLines = wrapText(ctx, slide.title || slide.headline || "", maxW);
   ctx.font = getCanvasFont("600", sSz, ff);
-  const subLines = (slide.subtitle || slide.subheadline) ? wrapText(ctx, slide.subtitle || slide.subheadline, maxW) : [];
+  const _sub = slide.subtitle !== undefined ? slide.subtitle : slide.subheadline;
+  const subLines = _sub ? wrapText(ctx, _sub, maxW) : [];
   ctx.font = getCanvasFont("400", bSz, ff);
   const bodLines = slide.body ? wrapText(ctx, slide.body, maxW) : [];
   ctx.font = getCanvasFont("700", hSz, ff);
-  const hlLines = (slide.highlight || slide.badge) ? wrapText(ctx, slide.highlight || slide.badge, maxW) : [];
+  const _hl = slide.highlight !== undefined ? slide.highlight : slide.badge;
+  const hlLines = _hl ? wrapText(ctx, _hl, maxW) : [];
 
   const GAP_SUB = Math.round(sSz * 0.5);
   const GAP_TIT = Math.round(tSz * 0.6);

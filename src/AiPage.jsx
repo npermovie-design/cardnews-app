@@ -674,6 +674,58 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
+  // ── 인트로 소개 화면 컴포넌트 (블로그 + SNS 이미지 공용) ─────
+  const IntroScreen = ({ icon, title, subtitle, badge, color, steps, features, cta, onStart }) => {
+    const D = isDark;
+    const t = D?"#fff":"#1a1a2e";
+    const m = D?"rgba(255,255,255,0.5)":"#888";
+    const bdr = D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)";
+    const cardBg = D?"rgba(255,255,255,0.04)":"#fff";
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <div style={{ maxWidth:680, margin:"0 auto", padding:"40px 28px 80px" }}>
+          <div style={{ textAlign:"center", marginBottom:36 }}>
+            <div style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:`${color}18`, border:`1px solid ${color}40`, marginBottom:12 }}>
+              <span style={{ fontSize:11, fontWeight:700, color }}>{badge}</span>
+            </div>
+            <div style={{ fontSize:26, fontWeight:900, color:t, letterSpacing:-0.5, marginBottom:8 }}>{title}</div>
+            <div style={{ fontSize:14, color:m, lineHeight:1.8, maxWidth:440, margin:"0 auto" }}>{subtitle}</div>
+          </div>
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:14 }}>📋 이런 순서로 제작돼요</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {steps.map((s,i)=>(
+                <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"12px 14px", borderRadius:11, background:cardBg, border:`1px solid ${bdr}` }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:`${color}20`, border:`1.5px solid ${color}50`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color, flexShrink:0 }}>{i+1}</div>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:t, marginBottom:2 }}>{s.title}</div>
+                    <div style={{ fontSize:12, color:m, lineHeight:1.6 }}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding:"16px 18px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, marginBottom:28 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:12 }}>✨ 주요 특징</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {features.map((f,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:`${color}10`, border:`1px solid ${color}30` }}>
+                  <span style={{ fontSize:14 }}>{f.icon}</span>
+                  <span style={{ fontSize:12, color, fontWeight:600 }}>{f.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={onStart}
+            style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${color},${color}cc)`, color:"#fff", fontSize:16, fontWeight:900, boxShadow:`0 8px 28px ${color}40` }}>
+            {cta} →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // ── 블로그 인트로 데이터 ───────────────────────────────────
   const BLOG_INTRO = {
     blog_naver: {
@@ -825,65 +877,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       </div>
     );
   }
-
-  // ── 인트로 소개 화면 컴포넌트 ──────────────────────────────
-  const IntroScreen = ({ menuId, icon, title, subtitle, badge, color, steps, features, cta, onStart }) => {
-    const D = isDark;
-    const t = D?"#fff":"#1a1a2e";
-    const m = D?"rgba(255,255,255,0.5)":"#888";
-    const bdr = D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)";
-    const cardBg = D?"rgba(255,255,255,0.04)":"#fff";
-    return (
-      <div style={{ flex:1, overflowY:"auto" }}>
-        <div style={{ maxWidth:680, margin:"0 auto", padding:"40px 28px 80px" }}>
-          {/* 헤더 */}
-          <div style={{ textAlign:"center", marginBottom:36 }}>
-            <div style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:`${color}18`, border:`1px solid ${color}40`, marginBottom:12 }}>
-              <span style={{ fontSize:11, fontWeight:700, color }}>{badge}</span>
-            </div>
-            <div style={{ fontSize:26, fontWeight:900, color:t, letterSpacing:-0.5, marginBottom:8 }}>{title}</div>
-            <div style={{ fontSize:14, color:m, lineHeight:1.8, maxWidth:440, margin:"0 auto" }}>{subtitle}</div>
-          </div>
-
-          {/* 진행 순서 */}
-          <div style={{ marginBottom:28 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:14 }}>📋 이런 순서로 제작돼요</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {steps.map((s,i)=>(
-                <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"12px 14px", borderRadius:11, background:cardBg, border:`1px solid ${bdr}` }}>
-                  <div style={{ width:26, height:26, borderRadius:"50%", background:`${color}20`, border:`1.5px solid ${color}50`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color, flexShrink:0 }}>{i+1}</div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:t, marginBottom:2 }}>{s.title}</div>
-                    <div style={{ fontSize:12, color:m, lineHeight:1.6 }}>{s.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 특징 */}
-          <div style={{ padding:"16px 18px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, marginBottom:28 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:12 }}>✨ 주요 특징</div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-              {features.map((f,i)=>(
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:`${color}10`, border:`1px solid ${color}30` }}>
-                  <span style={{ fontSize:14 }}>{f.icon}</span>
-                  <span style={{ fontSize:12, color, fontWeight:600 }}>{f.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 시작 버튼 */}
-          <button onClick={onStart}
-            style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${color},${color}cc)`, color:"#fff", fontSize:16, fontWeight:900, boxShadow:`0 8px 28px ${color}40` }}>
-            {cta} →
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   // 심플 카드뉴스 인트로 or 생성기
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
