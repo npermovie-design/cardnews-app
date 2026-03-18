@@ -380,6 +380,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
         }));
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
+      saveToCardLibrary(slidesData);
       if (user?.uid) changePoints(user.uid, -10, "심플 카드뉴스 생성").catch(()=>{});
     } catch(e) { alert("생성 실패: " + e.message); }
     setLoading(false);
@@ -448,7 +449,26 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme }) {
     setTimeout(()=>setDlSt({busy:false,msg:""}),2500);
   };
 
-  const resetAll = () => {
+  // ── 보관함 저장 ──────────────────────────────────────────
+  const saveToCardLibrary = (slidesData) => {
+    try {
+      const KEY = "nper_saved_works_v2";
+      const list = JSON.parse(localStorage.getItem(KEY) || "[]");
+      const now = new Date();
+      const ds = now.getFullYear() + "." + String(now.getMonth()+1).padStart(2,"0") + "." + String(now.getDate()).padStart(2,"0");
+      // 썸네일: 첫 슬라이드를 canvas로 그려서 저장
+      let thumb = null;
+      try {
+        const c = document.createElement("canvas");
+        drawDetailSlide(c, { title:slidesData[0]?.title||"", subtitle:slidesData[0]?.subtitle||"", body:slidesData[0]?.body||"", highlight:slidesData[0]?.highlight||"" }, activeStyle, imgW, imgH, null);
+        thumb = c.toDataURL("image/jpeg", 0.5);
+      } catch {}
+      list.unshift({ id:"sc_"+Date.now(), topic, count:slidesData.length, date:ds, thumb, slides:slidesData, gs:activeStyle, sted:{} });
+      localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
+    } catch {}
+  };
+
+  const saveToDetailLibrary = null; // 카드뉴스 전용
     setWizStep(1); setTopic(""); setPageCount(6); setAiSugg(null);
     setSlideContents([]); setSelPreset(null); setSelSize(0);
     setCustomW(1080); setCustomH(1080);

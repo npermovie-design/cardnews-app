@@ -376,6 +376,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
         }));
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
+      saveToDetailLibrary(slidesData);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").catch(()=>{});
     } catch(e) { alert("생성 실패: " + e.message); }
     setLoading(false);
@@ -440,6 +441,23 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${form.productName||"detail"}_slides.zip`;a.click();
     setDlSt({busy:false,msg:"✅ 저장 완료!"});
     setTimeout(()=>setDlSt({busy:false,msg:""}),2500);
+  };
+
+  // ── 보관함 저장 ──────────────────────────────────────────
+  const saveToDetailLibrary = (slidesData) => {
+    try {
+      const KEY = "nper_detail_saves_v1";
+      const list = JSON.parse(localStorage.getItem(KEY) || "[]");
+      let thumb = null;
+      try {
+        const c = document.createElement("canvas");
+        drawDetailSlide(c, { title:slidesData[0]?.title||"", subtitle:slidesData[0]?.subtitle||"", body:slidesData[0]?.body||"", highlight:slidesData[0]?.highlight||"" }, activeStyle, imgW, imgH, null);
+        thumb = c.toDataURL("image/jpeg", 0.5);
+      } catch {}
+      const cat = CATEGORIES.find(c=>c.key===selCat)||CATEGORIES[0];
+      list.unshift({ id:"sd_"+Date.now(), productName:form.productName||"심플 상세페이지", catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:slidesData.length, thumbnail:thumb, images:[] });
+      localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
+    } catch {}
   };
 
   const resetAll = () => { setWizStep(1); setSelCat(null); setForm({productName:"",features:"",price:"",cta:"지금 구매하기",target:"",extra:""}); setPageCount(5); setAiSugg(null); setSlideContents([]); setSelPreset(null); setSelSize(0); setSlides([]); setSted({}); };

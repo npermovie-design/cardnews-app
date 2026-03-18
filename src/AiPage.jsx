@@ -509,7 +509,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
               <div style={{ fontSize:48, marginBottom:12 }}>🖼</div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 카드뉴스가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스 편집 화면에서 저장하면 여기 표시됩니다</div>
-              <button onClick={()=>setAiMenu("cardnews_make")}
+              <button onClick={()=>setAiMenu("cardnews_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
                   background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
                 카드뉴스 만들기 →
@@ -537,7 +537,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                       {item.count}장 · {item.date}
                     </div>
                     <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={()=>setAiMenu("cardnews_make")}
+                      <button onClick={()=>setAiMenu("cardnews_simple")}
                         style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
                           background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
                         열기
@@ -564,7 +564,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
               <div style={{ fontSize:48, marginBottom:12 }}>🛍</div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 상세페이지가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>상세페이지 생성 후 자동으로 여기 저장됩니다</div>
-              <button onClick={()=>setAiMenu("detail_page")}
+              <button onClick={()=>setAiMenu("detail_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
                   background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:13, fontWeight:700 }}>
                 상세페이지 만들기 →
