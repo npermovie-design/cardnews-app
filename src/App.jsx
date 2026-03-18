@@ -17,6 +17,32 @@ const SNS = [
   { url: "https://www.youtube.com/@nperinsight/videos",     label: "▶",  bg: "#FF0000", tc: "#fff" },
 ];
 
+// 전체 접속자 수 훅 (회원+비회원 통합)
+function useOnlineCount() {
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    const myId = "u_" + Math.random().toString(36).slice(2, 8);
+    const KEY = "nper_online_users";
+    function hb() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
+        const now = Date.now();
+        raw[myId] = now;
+        Object.keys(raw).forEach(k => { if (now - raw[k] > 30000) delete raw[k]; });
+        localStorage.setItem(KEY, JSON.stringify(raw));
+        setCount(Object.keys(raw).length);
+      } catch {}
+    }
+    hb();
+    const t = setInterval(hb, 15000);
+    return () => {
+      clearInterval(t);
+      try { const raw = JSON.parse(localStorage.getItem(KEY) || "{}"); delete raw[myId]; localStorage.setItem(KEY, JSON.stringify(raw)); } catch {}
+    };
+  }, []);
+  return count;
+}
+
 export default function App() {
   const [page,       setPage]       = useState("home");
   const [user,       setUserState]  = useState(getUser);
@@ -34,6 +60,8 @@ export default function App() {
   const boardSubRef = useRef(null);
   const profileRef  = useRef(null);
   const aiSubRef    = useRef(null);
+
+  const onlineCount = useOnlineCount();
 
   // 현재 테마 팔레트
   const C = THEMES[theme];
@@ -325,17 +353,14 @@ export default function App() {
           <NavBtn id="contact" label="문의하기" />
         </div>
 
-        {/* 오른쪽: SNS + 테마 + 로그인 */}
+        {/* 오른쪽: 테마 + 로그인/프로필 + 접속중 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-          {SNS.map((s, i) => (
-            <button key={i} onClick={() => window.open(s.url, "_blank")} style={{ width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", background: s.bg, color: s.tc, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.label}</button>
-          ))}
-          <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
             {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
           </button>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
-          {user ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            {user ? (
             <div ref={profileRef} style={{ position: "relative" }}>
               {/* 프로필 버튼 */}
               <button onMouseDown={e=>e.stopPropagation()} onClick={() => setProfileOpen(p => !p)}
@@ -423,6 +448,12 @@ export default function App() {
           ) : (
             <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>로그인</button>
           )}
+            {/* 접속자 수 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 5px #4ade80" }} />
+              <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>{onlineCount}명 접속중</span>
+            </div>
+          </div>
         </div>
 
         {/* 햄버거 */}
@@ -548,6 +579,16 @@ export default function App() {
                 로그인 / 회원가입
               </button>
             )}
+            {/* 라이트/다크 모드 토글 + 접속자 수 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 5px #4ade80" }} />
+                <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>현재 {onlineCount}명 접속중</span>
+              </div>
+              <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 13, fontWeight: 700, color: C.muted }}>
+                {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
+              </button>
+            </div>
           </div>
         </div>
       )}
