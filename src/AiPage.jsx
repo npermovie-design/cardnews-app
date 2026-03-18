@@ -59,7 +59,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const comText  = isDark ? "rgba(255,255,255,0.45)"     : "#888";
   const usageBar = isDark ? "rgba(255,255,255,0.08)"     : "rgba(99,102,241,0.12)";
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
-  const [blogOpen, setBlogOpen] = useState(!!(aiMenu && aiMenu.startsWith("blog")));
+  const [blogOpen, setBlogOpen] = useState(!!(aiMenu && (aiMenu.startsWith("blog") || aiMenu.endsWith("_intro") && aiMenu.startsWith("blog"))));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && (
     aiMenu === "cardnews_simple" || aiMenu === "cardnews_image" ||
     aiMenu === "detail_simple"  || aiMenu === "detail_image"
@@ -122,16 +122,16 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 글쓰기 그룹 */}
         <Group label="SNS 글쓰기" icon="✍️" open={blogOpen}
-          active={!!(aiMenu && aiMenu.startsWith("blog"))}
+          active={!!(aiMenu && (aiMenu.startsWith("blog")))}
           onToggle={() => setBlogOpen(p => !p)} />
         {blogOpen && <>
-          <Item id="blog_naver"   label="네이버 블로그"   icon="📝" indent />
-          <Item id="blog_tistory" label="티스토리"        icon="📝" indent />
-          <Item id="blog_insta"   label="인스타그램 캡션" icon="📱" indent />
-          <Item id="blog_youtube" label="유튜브 대본"     icon="▶️" indent />
-          <Item id="blog_thread"  label="스레드"          icon="🧵" indent />
-          <Item id="blog_yt_blog" label="유튜브로 글쓰기" icon="📺" indent />
-          <Item id="blog_news"   label="뉴스로 글쓰기"   icon="📰" indent />
+          <Item id="blog_naver_intro"   label="네이버 블로그"   icon="📝" indent />
+          <Item id="blog_tistory_intro" label="티스토리"        icon="🟠" indent />
+          <Item id="blog_insta_intro"   label="인스타그램 캡션" icon="📱" indent />
+          <Item id="blog_youtube_intro" label="유튜브 대본"     icon="▶️" indent />
+          <Item id="blog_thread_intro"  label="스레드"          icon="🧵" indent />
+          <Item id="blog_yt_blog_intro" label="유튜브로 글쓰기" icon="📺" indent />
+          <Item id="blog_news_intro"    label="뉴스로 글쓰기"   icon="📰" indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
@@ -632,13 +632,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_naver",    icon: "📝", title: "네이버 블로그",   desc: "SEO 최적화 블로그 포스트", cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_tistory",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글",     cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
-      { id: "blog_insta",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "blog_youtube",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
-      { id: "blog_thread",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "blog_yt_blog",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 영상으로 글 작성",  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
-      { id: "blog_news",     icon: "📰", title: "뉴스로 글쓰기",   desc: "뉴스 기사로 블로그 작성",  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "blog_naver_intro",    icon: "📝", title: "네이버 블로그",   desc: "SEO 최적화 블로그 포스트", cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_tistory_intro",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글",     cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
+      { id: "blog_insta_intro",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "blog_youtube_intro",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
+      { id: "blog_thread_intro",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
+      { id: "blog_yt_blog_intro",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 영상으로 글 작성",  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
+      { id: "blog_news_intro",     icon: "📰", title: "뉴스로 글쓰기",   desc: "뉴스 기사로 블로그 작성",  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
       { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",   cr: 10, darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", cr: 0,  darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
       { id: "detail_page",   icon: "🛍", title: "상세페이지 만들기", desc: "AI 이미지 슬라이드 생성", cr: 30,  darkColor: "rgba(16,185,129,0.2)",   lightColor: "rgba(16,185,129,0.07)"  },
@@ -674,6 +674,115 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
+  // ── 블로그 인트로 데이터 ───────────────────────────────────
+  const BLOG_INTRO = {
+    blog_naver: {
+      icon:"📝", title:"네이버 블로그", badge:"SEO 최적화 · 장문 콘텐츠", color:"#4ade80",
+      subtitle:"키워드 기반 SEO 최적화 네이버 블로그 포스트를 AI가 자동 작성해줘요. 소제목 구조와 자연스러운 문체로 완성돼요.",
+      steps:[
+        { title:"주제 입력", desc:"블로그 주제나 키워드를 입력하거나 예시에서 선택해요." },
+        { title:"세부 설정", desc:"글의 톤(친근/전문), 분량, 대상 독자를 설정해요." },
+        { title:"AI 글쓰기", desc:"AI가 서론·본론·결론 구조로 완성된 블로그 글을 작성해요." },
+        { title:"복사 & 활용", desc:"생성된 글을 복사해 네이버 블로그에 바로 붙여넣기해요." },
+      ],
+      features:[
+        { icon:"🔍", label:"SEO 최적화" }, { icon:"📄", label:"장문 작성" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"네이버 블로그 글 작성하기",
+    },
+    blog_tistory: {
+      icon:"🟠", title:"티스토리 블로그", badge:"구조화된 포스팅 · HTML 지원", color:"#f97316",
+      subtitle:"티스토리에 최적화된 구조로 블로그 포스트를 생성해줘요. 가독성 높은 소제목과 정보 구조로 완성돼요.",
+      steps:[
+        { title:"주제 입력", desc:"포스팅할 주제나 키워드를 입력해요." },
+        { title:"세부 설정", desc:"글의 톤, 분량, 포함할 내용을 설정해요." },
+        { title:"AI 글쓰기", desc:"AI가 티스토리 형식에 맞는 포스트를 작성해요." },
+        { title:"복사 & 활용", desc:"생성된 글을 복사해 티스토리에 바로 붙여넣기해요." },
+      ],
+      features:[
+        { icon:"📑", label:"구조화 포스팅" }, { icon:"✍️", label:"자연스러운 문체" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"티스토리 글 작성하기",
+    },
+    blog_insta: {
+      icon:"📱", title:"인스타그램 캡션", badge:"짧고 임팩트있는 · 해시태그 포함", color:"#ec4899",
+      subtitle:"인스타그램 게시물에 딱 맞는 캡션과 해시태그를 AI가 생성해줘요. 감성적이고 임팩트 있는 문구로 완성돼요.",
+      steps:[
+        { title:"주제/이미지 설명 입력", desc:"게시할 사진이나 영상의 주제·내용을 설명해요." },
+        { title:"톤 설정", desc:"감성적·유머러스·정보성 등 원하는 분위기를 선택해요." },
+        { title:"AI 캡션 생성", desc:"AI가 캡션 본문과 관련 해시태그를 함께 작성해줘요." },
+        { title:"복사 & 게시", desc:"캡션을 복사해 인스타그램에 바로 붙여넣기해요." },
+      ],
+      features:[
+        { icon:"#️⃣", label:"해시태그 자동 생성" }, { icon:"💬", label:"감성 문구" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"인스타그램 캡션 작성하기",
+    },
+    blog_youtube: {
+      icon:"▶️", title:"유튜브 대본", badge:"영상 대본 · 설명란 포함", color:"#ef4444",
+      subtitle:"유튜브 영상 대본과 설명란 텍스트를 AI가 작성해줘요. 시청자의 흥미를 끄는 인트로부터 아웃트로까지 완성돼요.",
+      steps:[
+        { title:"영상 주제 입력", desc:"만들 영상의 주제와 핵심 내용을 입력해요." },
+        { title:"채널 스타일 설정", desc:"채널 분위기와 대상 시청자층을 설정해요." },
+        { title:"AI 대본 생성", desc:"AI가 인트로·본론·아웃트로 구조의 대본을 작성해요." },
+        { title:"복사 & 활용", desc:"대본과 설명란 텍스트를 복사해 바로 사용해요." },
+      ],
+      features:[
+        { icon:"🎬", label:"대본 + 설명란" }, { icon:"🎤", label:"자연스러운 말투" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"유튜브 대본 작성하기",
+    },
+    blog_thread: {
+      icon:"🧵", title:"스레드", badge:"짧고 임팩트있는 · 연속 게시", color:"#a855f7",
+      subtitle:"스레드(Threads)에 올릴 짧고 임팩트 있는 게시물을 AI가 작성해줘요. 연속 스레드 형식으로도 생성돼요.",
+      steps:[
+        { title:"주제 입력", desc:"스레드에 올릴 주제나 하고 싶은 이야기를 입력해요." },
+        { title:"형식 선택", desc:"단일 포스트 또는 연속 스레드 형식을 선택해요." },
+        { title:"AI 글쓰기", desc:"AI가 스레드 특유의 짧고 임팩트 있는 글을 작성해요." },
+        { title:"복사 & 게시", desc:"완성된 게시물을 복사해 스레드에 바로 올려요." },
+      ],
+      features:[
+        { icon:"⚡", label:"짧고 강렬한 글" }, { icon:"🔗", label:"연속 스레드" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"스레드 게시물 작성하기",
+    },
+    blog_yt_blog: {
+      icon:"📺", title:"유튜브로 글쓰기", badge:"영상 → 블로그 자동 변환", color:"#ef4444",
+      subtitle:"유튜브 영상 URL을 입력하면 영상 내용을 분석해 블로그 포스트로 자동 변환해줘요. 영상 하나로 블로그 글까지!",
+      steps:[
+        { title:"유튜브 URL 입력", desc:"변환할 유튜브 영상 URL을 붙여넣기해요." },
+        { title:"AI 영상 분석", desc:"AI가 영상의 자막·내용을 분석해요." },
+        { title:"블로그 글 변환", desc:"영상 내용을 구조화된 블로그 포스트로 변환해요." },
+        { title:"복사 & 활용", desc:"완성된 블로그 글을 복사해 바로 사용해요." },
+      ],
+      features:[
+        { icon:"🔗", label:"URL만 입력" }, { icon:"🤖", label:"AI 자동 분석" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"⚡", label:"빠른 변환" },
+      ],
+      cta:"유튜브 영상으로 글쓰기",
+    },
+    blog_news: {
+      icon:"📰", title:"뉴스로 글쓰기", badge:"뉴스 기사 → 블로그 변환", color:"#06b6d4",
+      subtitle:"뉴스 기사 URL을 입력하면 기사 내용을 분석해 나만의 블로그 포스트로 자동 변환해줘요. 트렌드를 콘텐츠로!",
+      steps:[
+        { title:"뉴스 URL 입력", desc:"활용할 뉴스 기사 URL을 붙여넣기해요." },
+        { title:"AI 기사 분석", desc:"AI가 기사의 핵심 내용을 파악해요." },
+        { title:"블로그 글 변환", desc:"기사 내용을 나만의 시각으로 재작성한 블로그 글을 생성해요." },
+        { title:"복사 & 활용", desc:"완성된 포스트를 복사해 블로그에 게시해요." },
+      ],
+      features:[
+        { icon:"🔗", label:"URL만 입력" }, { icon:"📡", label:"최신 트렌드" },
+        { icon:"💎", label:"10 크레딧" }, { icon:"✍️", label:"나만의 시각" },
+      ],
+      cta:"뉴스로 블로그 글쓰기",
+    },
+  };
+
   // 뉴스로 글쓰기
   if (aiMenu === "blog_news") {
     return (
@@ -681,6 +790,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
         <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
+  }
+  if (aiMenu === "blog_news_intro") {
+    const d = BLOG_INTRO.blog_news;
+    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_news")} />;
   }
 
   // 유튜브로 글쓰기
@@ -691,8 +804,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       </div>
     );
   }
+  if (aiMenu === "blog_yt_blog_intro") {
+    const d = BLOG_INTRO.blog_yt_blog;
+    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_yt_blog")} />;
+  }
 
-  // 블로그 계열
+  // 블로그 계열 인트로
+  if (aiMenu.endsWith("_intro") && aiMenu.startsWith("blog_")) {
+    const baseId = aiMenu.replace("_intro", "");
+    const d = BLOG_INTRO[baseId];
+    if (d) return <IntroScreen {...d} onStart={()=>setAiMenu(baseId)} />;
+  }
+
+  // 블로그 계열 생성기
   if (aiMenu.startsWith("blog_")) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
     return (
