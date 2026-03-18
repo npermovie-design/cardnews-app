@@ -158,18 +158,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
             onlineCount={onlineCount} usageText={usageText} usageBar={usageBar} />
         ) : (
           <div style={{ padding: "10px 12px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: usageText }}>비회원 💎 잔여 {Math.max(0,freeLimit-info.used)*10}cr</div>
-              {onlineCount > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80" }} />
-                  <span style={{ fontSize: 10, color: usageText }}>{onlineCount}명</span>
-                </div>
-              )}
-            </div>
-            <div style={{ height: 3, background: usageBar, borderRadius: 2, overflow: "hidden", marginBottom: 6 }}>
-              <div style={{ height: "100%", width: pct, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
-            </div>
             <div style={{ fontSize: 10, color: "#a5b4fc", textAlign: "center" }}>
               비회원 5회 무료 · 로그인하면 20회
             </div>
@@ -1137,11 +1125,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
             <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>🤖 AI 생성기</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px #4ade80", flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.55)" : "#888", whiteSpace: "nowrap", fontWeight: 600 }}>현재 접속중 {onlineCount}명</span>
             </div>
-          </div>
         </div>
 
         {/* 콘텐츠 */}
