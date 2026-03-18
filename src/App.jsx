@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import HomePage from "./HomePage";
 import { AboutPage, AiPage, PricingPage, ContactPage } from "./OtherPages";
 import BoardPage from "./BoardPage";
+import ArchivePage from "./ArchivePage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 
@@ -207,6 +208,7 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
+    if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
@@ -284,6 +286,7 @@ export default function App() {
         <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
+          <NavBtn id="archive" label="📂 자료실" />
           <div ref={aiSubRef} style={{ position: "relative" }}>
             <DropBtn label="🤖 AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
             {aiSub && (
