@@ -6,7 +6,7 @@ import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import DetailPageGenerator from "./DetailPageGenerator";
 import ImageCardNewsApp from "./ImageCardNewsApp";
-import SimpleDetailPage from "./SimpleDetailPage";
+import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -701,16 +701,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 카드뉴스 = 이미지 카드뉴스와 동일 UX (AI 이미지 생성 위저드)
+  // 심플 카드뉴스 = CardNewsApp (텍스트 생성 + 글 수정)
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     return (
       <div key="cn_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <ImageCardNewsApp isDark={isDark} user={user} />
+        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
       </div>
     );
   }
 
-  // 이미지 카드뉴스 = AI 이미지 생성 (정사각형)
+  // 이미지 카드뉴스 = AI 이미지 생성 위저드
   if (aiMenu === "cardnews_image") {
     return (
       <div key="cn_image" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -719,16 +719,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 심플 상세페이지 = 글 수정 방식 (CardNewsApp)
+  // 심플 상세페이지 = 이미지 상세페이지 UX + 텍스트 편집
   if (aiMenu === "detail_simple") {
     return (
       <div key="detail_simple" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <CardNewsApp user={user} embedded initialSubPage="make" theme={theme} />
+        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} />
       </div>
     );
   }
 
-  // 이미지 상세페이지 = DetailPageGenerator (상세 입력 → AI 이미지)
+  // 이미지 상세페이지 = DetailPageGenerator (AI 이미지 생성)
   if (aiMenu === "detail_image" || aiMenu === "detail_page") {
     return (
       <div key="detail_image" style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
