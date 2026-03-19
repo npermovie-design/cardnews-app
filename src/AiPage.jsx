@@ -9,6 +9,7 @@ import ImageCardNewsApp from "./ImageCardNewsApp";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
+import MockupGenerator from "./MockupGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -66,7 +67,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     aiMenu === "detail_simple"  || aiMenu === "detail_image"
   )));
   const [imageOpen, setImageOpen] = useState(!!(aiMenu && (
-    aiMenu === "image_gen" || aiMenu === "logo_gen"
+    aiMenu === "image_gen" || aiMenu === "logo_gen" || aiMenu === "mockup_gen"
   )));
 
   const info = getAiLeft(user);
@@ -151,10 +152,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* 이미지 생성 그룹 */}
         <Group label="이미지 생성" icon="🎨" open={imageOpen}
-          active={!!(aiMenu && (aiMenu==="image_gen"||aiMenu==="logo_gen"))}
+          active={!!(aiMenu && (aiMenu==="image_gen"||aiMenu==="logo_gen"||aiMenu==="mockup_gen"))}
           onToggle={() => setImageOpen(p => !p)} />
         {imageOpen && <>
-          <Item id="logo_gen"  label="로고 생성"   icon="🏷" indent />
+          <Item id="logo_gen"   label="로고 생성"  icon="🏷" indent />
+          <Item id="mockup_gen" label="목업 생성"  icon="🎨" indent />
         </>}
 
         <Item id="shorts" label="SNS영상" icon="🎬" />
@@ -640,7 +642,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       { id: "detail_simple",    icon: "📋", title: "심플 상세페이지",  desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "detail_image",     icon: "🛍", title: "이미지 상세페이지",desc: "AI 이미지 상세페이지",     cr: 30, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       { id: "image_gen",        icon: "🎨", title: "이미지 생성",      desc: "AI 이미지 자유 생성",      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "logo_gen",         icon: "🏷", title: "로고 생성",        desc: "AI 맞춤 로고 제작",        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "logo_gen",   icon: "🏷", title: "로고 생성",  desc: "AI 맞춤 로고 제작",   cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "mockup_gen", icon: "🎨", title: "목업 생성",  desc: "제품·브랜드 목업 제작", cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
       { id: "shorts",           icon: "🎬", title: "SNS영상",           desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
@@ -1065,6 +1068,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     return (
       <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <LogoGenerator isDark={isDark} user={user} />
+      </div>
+    );
+  }
+
+  // 목업 생성
+  if (aiMenu === "mockup_gen") {
+    return (
+      <div key="mockup_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <MockupGenerator isDark={isDark} user={user} />
       </div>
     );
   }
