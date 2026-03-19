@@ -63,8 +63,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && (aiMenu.startsWith("blog") || aiMenu.endsWith("_intro") && aiMenu.startsWith("blog"))));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && (
     aiMenu === "cardnews_simple" || aiMenu === "cardnews_image" ||
-    aiMenu === "detail_simple"  || aiMenu === "detail_image" ||
-    aiMenu === "image_gen"      || aiMenu === "logo_gen"
+    aiMenu === "detail_simple"  || aiMenu === "detail_image"
+  )));
+  const [imageOpen, setImageOpen] = useState(!!(aiMenu && (
+    aiMenu === "image_gen" || aiMenu === "logo_gen"
   )));
 
   const info = getAiLeft(user);
@@ -138,7 +140,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 이미지 그룹 */}
         <Group label="SNS 이미지" icon="🖼" open={cardOpen}
-          active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"||aiMenu==="image_gen"||aiMenu==="logo_gen"))}
+          active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
           <Item id="cardnews_simple" label="심플 카드뉴스"   icon="✨" indent />
@@ -147,9 +149,15 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="detail_image"    label="이미지 상세페이지" icon="🛍" indent />
         </>}
 
-        <Item id="image_gen" label="이미지 생성" icon="🎨" />
-        <Item id="shorts"    label="SNS영상"     icon="🎬" />
-        <Item id="logo_gen"  label="로고 생성"   icon="🏷" />
+        {/* 이미지 생성 그룹 */}
+        <Group label="이미지 생성" icon="🎨" open={imageOpen}
+          active={!!(aiMenu && (aiMenu==="image_gen"||aiMenu==="logo_gen"))}
+          onToggle={() => setImageOpen(p => !p)} />
+        {imageOpen && <>
+          <Item id="logo_gen"  label="로고 생성"   icon="🏷" indent />
+        </>}
+
+        <Item id="shorts" label="SNS영상" icon="🎬" />
 
 
       </div>

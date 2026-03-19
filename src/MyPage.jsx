@@ -181,7 +181,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
         {/* 적립/사용 배지 + 닉네임 변경 버튼 */}
         <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", gap:6" }}>
+          <div style={{ display:"flex", gap:6 }}>
             <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)", fontSize:12, fontWeight:700, color:"#4ade80" }}>+{earned.toLocaleString()}P 적립</div>
             <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(248,113,113,0.12)", border:"1px solid rgba(248,113,113,0.25)", fontSize:12, fontWeight:700, color:"#f87171" }}>{used.toLocaleString()}P 사용</div>
           </div>
