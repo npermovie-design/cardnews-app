@@ -65,6 +65,7 @@ export default function LogoGenerator({ isDark, user }) {
 
   const [results,   setResults]   = useState([]);
   const [genIdx,    setGenIdx]    = useState(0);
+  const [genCount,  setGenCount]  = useState(4);
   const [error,     setError]     = useState("");
   const [selResult, setSelResult] = useState(0);
 
@@ -86,8 +87,8 @@ export default function LogoGenerator({ isDark, user }) {
     const styleLabel = LOGO_STYLES.find(s => s.id === selStyle)?.label || selStyle;
     const basePrompt = `Professional ${STYLE_GUIDES[selStyle] || "logo"}. Brand: "${name.trim()}". Industry: ${industry}.${desc ? ` Description: ${desc}.` : ""}${colorPref ? ` Colors: ${colorPref}.` : ""} Background: ${bgColor === "dark" ? "dark" : "white/light"}. High quality, centered, commercial use, no watermarks, square format, single logo only.`;
 
-    const vers = new Array(4).fill(null);
-    for (let i = 0; i < 4; i++) {
+    const vers = new Array(genCount).fill(null);
+    for (let i = 0; i < genCount; i++) {
       setGenIdx(i);
       try {
         const raw = await callAPI(
@@ -106,7 +107,7 @@ export default function LogoGenerator({ isDark, user }) {
       }
     }
     setGenIdx(-1);
-    if (user?.uid) changePoints(user.uid, -40, "로고 생성 (4버전)").catch(() => {});
+    if (user?.uid) changePoints(user.uid, -(genCount * 10), `로고 생성 (${genCount}버전)`).catch(() => {});
     setSelResult(vers.findIndex(v => v !== null));
     setStep(3);
   };
@@ -150,7 +151,7 @@ export default function LogoGenerator({ isDark, user }) {
           ))}
         </div>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
-          {["✨ 11가지 스타일","💎 40 크레딧","📎 참고이미지 업로드","📥 PNG 다운로드"].map(b => (
+          {["✨ 11가지 스타일","💎 ${genCount * 10} 크레딧","📎 참고이미지 업로드","📥 PNG 다운로드"].map(b => (
             <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
           ))}
         </div>
@@ -240,7 +241,19 @@ export default function LogoGenerator({ isDark, user }) {
         {error && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#f87171", fontSize:12, marginBottom:14, whiteSpace:"pre-wrap" }}>⚠️ {error}</div>}
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div style={{ fontSize:11, color:muted }}>예상 차감: <b style={{ color:"#06b6d4" }}>40 크레딧</b></div>
+          {/* 생성 개수 */}
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ fontSize:12, color:muted }}>생성 개수</div>
+            <div style={{ display:"flex", gap:5 }}>
+              {[1,2,3,4].map(n => (
+                <button key={n} onClick={() => setGenCount(n)}
+                  style={{ width:36, height:36, borderRadius:9, border:`1.5px solid ${genCount===n?"#06b6d4":bdr}`, background:genCount===n?"rgba(6,182,212,0.15)":"transparent", color:genCount===n?"#06b6d4":muted, fontSize:13, fontWeight:genCount===n?800:400, cursor:"pointer" }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize:11, color:muted }}>{genCount * 10} 크레딧</div>
+          </div>
           <button onClick={generate} disabled={!canGenerate}
             style={{ padding:"13px 40px", borderRadius:11, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?"linear-gradient(135deg,#06b6d4,#0891b2)":"rgba(6,182,212,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
             🏷 로고 생성하기 →
@@ -253,7 +266,7 @@ export default function LogoGenerator({ isDark, user }) {
   // ── STEP 2: 로딩
   if (step === 2) {
     const doneCount = results.filter(Boolean).length;
-    const pct = Math.round((doneCount / 4) * 100);
+    const pct = Math.round((doneCount / genCount) * 100);
     return (
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
         <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
@@ -265,14 +278,14 @@ export default function LogoGenerator({ isDark, user }) {
           </div>
           <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>로고를 생성하고 있어요</div>
           <div style={{ fontSize:13, color:"#06b6d4", fontWeight:700, marginBottom:4 }}>
-            {genIdx >= 0 ? `버전 ${genIdx+1} / 4 생성 중...` : "완료!"}
+            {genIdx >= 0 ? `버전 ${genIdx+1} / ${genCount} 생성 중...` : "완료!"}
           </div>
           <div style={{ fontSize:12, color:muted, marginBottom:18 }}>"{name}" · {LOGO_STYLES.find(s=>s.id===selStyle)?.label}</div>
           <div style={{ height:7, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:14 }}>
             <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#06b6d4,#0891b2)", width:`${pct}%`, transition:"width 0.5s ease" }}/>
           </div>
           <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16 }}>
-            {[0,1,2,3].map(i => {
+            {Array.from({length:genCount},(_,i)=>i).map(i => {
               const done = results[i]; const isGen = genIdx === i;
               return (
                 <div key={i} style={{ width:54, height:54, borderRadius:10, border:`2px solid ${done?"#06b6d4":isGen?"rgba(6,182,212,0.5)":bdr}`, background:done?"rgba(6,182,212,0.12)":isGen?"rgba(6,182,212,0.04)":cardBg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:3 }}>
@@ -299,8 +312,8 @@ export default function LogoGenerator({ isDark, user }) {
           <div style={{ marginLeft:"auto", fontSize:11, color:muted }}>클릭해서 선택 → PNG 다운로드</div>
         </div>
 
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
-          {[0,1,2,3].map(i => {
+        <div style={{ display:"grid", gridTemplateColumns:genCount === 1 ? "1fr" : genCount === 2 ? "repeat(2,1fr)" : "repeat(2,1fr)", gap:12, marginBottom:20 }}>
+          {Array.from({length:genCount},(_,i)=>i).map(i => {
             const img = results[i]; const isSel = selResult === i && img;
             return (
               <div key={i} onClick={() => img && setSelResult(i)}
