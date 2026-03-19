@@ -266,6 +266,9 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             <MenuItem icon="📁" label="내 보관함"
               sub="생성한 글·카드뉴스 확인"
               onClick={() => { setOpen(false); }} />
+            <MenuItem icon="👤" label="회원정보"
+              sub="프로필·포인트 내역 확인"
+              onClick={() => { navigate("profile"); setOpen(false); }} />
             <MenuItem icon="📅" label="가입일"
               sub={user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-"}
               disabled={true} />
@@ -1082,6 +1085,69 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
+
+  // 회원정보
+  if (aiMenu === "profile") {
+    if (!user) return null;
+    const nick = user.nick || user.email?.split("@")[0] || "사용자";
+    const initial = nick[0]?.toUpperCase() || "U";
+    const joinDate = user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-";
+    const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "-";
+    const pts = user.points || 0;
+    const bdr2 = isDark ? "rgba(255,255,255,0.08)" : "#e9ecef";
+    const card2 = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ maxWidth:520, margin:"0 auto", padding:"32px 20px 60px" }}>
+          {/* 프로필 카드 */}
+          <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"24px", marginBottom:16, textAlign:"center" }}>
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>
+              {initial}
+            </div>
+            <div style={{ fontSize:20, fontWeight:900, color:isDark?"#fff":"#1a1a2e", marginBottom:4 }}>{nick}</div>
+            <div style={{ fontSize:13, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:10 }}>{user.email}</div>
+            <div style={{ display:"inline-block", padding:"4px 14px", borderRadius:10, fontSize:12, fontWeight:700,
+              background: user.role==="admin" ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.12)",
+              color: user.role==="admin" ? "#fbbf24" : "#a5b4fc" }}>
+              {user.role==="admin" ? "관리자" : "일반회원"}
+            </div>
+          </div>
+          {/* 포인트 */}
+          <div style={{ borderRadius:14, border:`1px solid #6366f120`, background:"rgba(99,102,241,0.06)", padding:"18px 20px", marginBottom:12 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:2 }}>보유 크레딧</div>
+                <div style={{ fontSize:28, fontWeight:900, color:"#a5b4fc" }}>{pts.toLocaleString()} <span style={{ fontSize:14 }}>cr</span></div>
+              </div>
+              <button onClick={() => navigate("pricing")}
+                style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800 }}>
+                충전하기
+              </button>
+            </div>
+          </div>
+          {/* 계정 정보 */}
+          <div style={{ borderRadius:14, border:`1px solid ${bdr2}`, background:card2, overflow:"hidden", marginBottom:12 }}>
+            {[
+              { label:"가입일", value: joinDate },
+              { label:"마지막 로그인", value: lastLogin },
+              { label:"이메일", value: user.email },
+            ].map((item, i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px",
+                borderBottom: i < 2 ? `1px solid ${bdr2}` : "none" }}>
+                <span style={{ fontSize:13, color:isDark?"rgba(255,255,255,0.5)":"#888" }}>{item.label}</span>
+                <span style={{ fontSize:13, fontWeight:600, color:isDark?"#fff":"#1a1a2e" }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+          {/* 로그아웃 */}
+          <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
+            style={{ width:"100%", padding:"13px", borderRadius:12, border:"1px solid rgba(248,113,113,0.3)", background:"rgba(248,113,113,0.06)", color:"#f87171", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            로그아웃
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // 숏폼편집
   if (aiMenu === "shorts") {

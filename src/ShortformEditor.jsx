@@ -45,30 +45,8 @@ function parseJSON(raw){
 
 const LENGTHS=[{id:"s15",label:"15~30초",min:15,max:30},{id:"s30",label:"30~60초",min:30,max:60},{id:"s60",label:"60~90초",min:60,max:90},{id:"s90",label:"90~120초",min:90,max:120}];
 
-// ffmpeg.wasm 0.11.x - CORS 없이 동작 (SharedArrayBuffer 불필요)
-let ffmpegInstance=null;
-async function getFFmpeg(onProgress){
-  if(ffmpegInstance&&ffmpegInstance.isLoaded())return ffmpegInstance;
-  // 0.11.x는 Worker 방식이 아니라서 Vercel CORS 문제 없음
-  if(!window.FFmpeg){
-    await new Promise((res,rej)=>{
-      const s=document.createElement("script");
-      s.src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js";
-      s.onload=res;s.onerror=()=>rej(new Error("ffmpeg.js 로드 실패"));
-      document.head.appendChild(s);
-    });
-  }
-  const {createFFmpeg}=window.FFmpeg||{};
-  if(!createFFmpeg)throw new Error("createFFmpeg 없음 — ffmpeg 로드 실패");
-  const ff=createFFmpeg({
-    log:false,
-    progress:({ratio})=>{if(onProgress)onProgress(Math.round(ratio*100));},
-    corePath:"https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js",
-  });
-  await ff.load();
-  ffmpegInstance=ff;
-  return ff;
-}
+// Canvas + MediaRecorder 방식 (SharedArrayBuffer 불필요 - 모든 브라우저/환경 작동)
+// ffmpeg.wasm 완전 제거 - SharedArrayBuffer 오류 없음
 
 export default function ShortformEditor({isDark}){
   const D=isDark;
@@ -151,71 +129,99 @@ export default function ShortformEditor({isDark}){
     v.src=fileObjUrl.current;
   };
 
-  // ── 핵심: ffmpeg.wasm으로 영상 추출
+  // ── 핵심: Canvas + MediaRecorder로 영상 추출 (SharedArrayBuffer 불필요)
   const extract=async(clip,doDownload=false)=>{
     if(rec)return;
     const startSec=parseTimeToSec(clip.startTime);
     const endSec  =parseTimeToSec(clip.endTime);
     const dur     =Math.max(endSec-startSec,1);
-    setRec(true);setRecPct(0);setRecMsg("ffmpeg 초기화 중...");
+    setRec(true);setRecPct(0);setRecMsg("영상 준비 중...");
 
     try{
-      // ① ffmpeg.wasm 로드 (최초 1회 약 20~40초)
-      setRecMsg("ffmpeg.wasm 로딩 중... (최초 실행 시 20~40초 소요)");
-      const ff=await getFFmpeg(pct=>{
-        if(pct>0&&pct<=100)setRecPct(Math.max(45,Math.min(Math.round(45+pct*0.45),90)));
-      });
-      setRecPct(10);setRecMsg("영상 소스 불러오는 중...");
-
-      // ② 소스 데이터 취득
-      let srcBytes;
+      // ① 소스 비디오 준비
+      let srcUrl;
       if(inputMode==="file"&&file){
-        setRecMsg("파일 읽는 중...");
-        srcBytes=new Uint8Array(await file.arrayBuffer());
+        srcUrl=fileObjUrl.current||URL.createObjectURL(file);
       } else if(inputMode==="youtube"){
-        // Vercel 프록시를 통해 유튜브 영상 다운로드
-        setRecMsg(`유튜브 영상 다운로드 중...\n(영상 크기에 따라 수분 소요될 수 있어요)`);
+        setRecMsg("유튜브 영상 다운로드 중...");
         const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
-        if(!r.ok){
-          const e=await r.json().catch(()=>({error:"알 수 없는 오류"}));
-          throw new Error(e.error||`서버 오류 (${r.status})`);
-        }
-        const buf=await r.arrayBuffer();
-        srcBytes=new Uint8Array(buf);
-        setRecMsg("다운로드 완료! ffmpeg 처리 시작...");
+        if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 (${r.status})`);}
+        const blob=await r.blob();
+        srcUrl=URL.createObjectURL(blob);
       } else throw new Error("소스 없음");
-      setRecPct(40);
 
-      // ③ ffmpeg에 파일 쓰기
-      const ext=inputMode==="file"?(file.name.split(".").pop()||"mp4"):"mp4";
-      // 0.11.x API: ff.FS('writeFile', ...)
-      ff.FS("writeFile",`src.${ext}`,srcBytes);
-      setRecPct(45);setRecMsg("9:16 세로 영상 변환 중...");
+      setRecPct(10);setRecMsg("비디오 로드 중...");
 
-      // ④ 구간 자르기 + 9:16 세로 변환 (0.11.x run API)
-      await ff.run(
-        "-ss", String(startSec),
-        "-t",  String(dur),
-        "-i",  `src.${ext}`,
-        "-vf", "crop=ih*9/16:ih,scale=1080:1920:flags=lanczos,setsar=1",
-        "-c:v","libx264","-preset","ultrafast","-crf","26",
-        "-c:a","aac","-b:a","128k","-ar","44100",
-        "-movflags","+faststart",
-        "out.mp4"
-      );
-      setRecPct(92);setRecMsg("파일 읽는 중...");
+      // ② 비디오 엘리먼트 준비
+      const video=document.createElement("video");
+      video.src=srcUrl;
+      video.muted=false;
+      video.crossOrigin="anonymous";
+      await new Promise((res,rej)=>{
+        video.onloadedmetadata=res;
+        video.onerror=()=>rej(new Error("영상 로드 실패"));
+        setTimeout(res,5000);
+      });
 
-      const data=ff.FS("readFile","out.mp4");
-      const blob=new Blob([data.buffer],{type:"video/mp4"});
+      const actualEnd=Math.min(endSec,video.duration||endSec);
+      const actualDur=Math.max(actualEnd-startSec,1);
+
+      // ③ Canvas 9:16 세팅
+      const canvas=document.createElement("canvas");
+      canvas.width=1080;canvas.height=1920;
+      const ctx=canvas.getContext("2d");
+
+      // ④ 오디오 캡처
+      let finalStream=canvas.captureStream(30);
+      try{
+        const aCtx=new (window.AudioContext||window.webkitAudioContext)();
+        const src2=aCtx.createMediaElementSource(video);
+        const dest=aCtx.createMediaStreamDestination();
+        src2.connect(dest);src2.connect(aCtx.destination);
+        finalStream=new MediaStream([...canvas.captureStream(30).getTracks(),...dest.stream.getTracks()]);
+      }catch{}
+
+      const mimeType=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]
+        .find(t=>MediaRecorder.isTypeSupported(t))||"video/webm";
+      const recorder=new MediaRecorder(finalStream,{mimeType,videoBitsPerSecond:4000000});
+      const chunks=[];
+      recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+
+      // ⑤ seek + 재생
+      setRecMsg("구간 탐색 중...");
+      video.currentTime=startSec;
+      await new Promise(r=>{video.onseeked=r;setTimeout(r,3000);});
+      await video.play().catch(()=>{});
+      recorder.start(200);
+
+      setRecMsg(`세로 영상 변환 중... (${actualDur}초)`);
+      const wallStart=Date.now();
+      await new Promise(resolve=>{
+        const draw=()=>{
+          const elapsed=(Date.now()-wallStart)/1000;
+          setRecPct(Math.min(Math.round((elapsed/actualDur)*100),98));
+          const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
+          const scale=Math.max(1080/vw,1920/vh);
+          const sw=vw*scale,sh=vh*scale;
+          ctx.fillStyle="#000";
+          ctx.fillRect(0,0,1080,1920);
+          ctx.drawImage(video,(1080-sw)/2,(1920-sh)/2,sw,sh);
+          if(elapsed>=actualDur){resolve();return;}
+          requestAnimationFrame(draw);
+        };
+        requestAnimationFrame(draw);
+      });
+
+      video.pause();
+      recorder.stop();
+      await new Promise(r=>{recorder.onstop=r;});
+
+      setRecPct(100);setRecMsg("완료!");
+      const blob=new Blob(chunks,{type:mimeType});
       const blobUrl=URL.createObjectURL(blob);
       const k=clip.index??selIdx;
 
-      setExtracted(p=>({...p,[k]:{url:blobUrl,blob,title:clip.title_a||"shortform"}}));
-      setRecPct(100);setRecMsg("완료!");
-
-      // 임시 파일 정리
-      try{ff.FS("unlink",`src.${ext}`);}catch{}
-      try{ff.FS("unlink","out.mp4");}catch{}
+      setExtracted(p=>({...p,[k]:{url:blobUrl,blob,title:clip.title_a||"shortform",mimeType}}));
 
       if(doDownload)dlVideo(clip,blobUrl,blob);
     }catch(e){
@@ -225,14 +231,15 @@ export default function ShortformEditor({isDark}){
     setTimeout(()=>{setRec(false);setRecPct(0);setRecMsg("");},600);
   };
 
-  const dlVideo=(clip,url,blob)=>{
-    const name=`shortform_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,25)}.mp4`;
+  const dlVideo=(clip,url,blob,mimeType)=>{
+    const ext=(mimeType||"video/webm").includes("mp4")?"mp4":"webm";
+    const name=`shortform_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,25)}.${ext}`;
     const a=document.createElement("a");a.href=url;a.download=name;a.click();
   };
   const downloadClip=clip=>{
     const k=clip.index??selIdx;
     const ex=extracted[k];
-    if(ex)dlVideo(clip,ex.url,ex.blob);
+    if(ex)dlVideo(clip,ex.url,ex.blob,ex.mimeType);
     else extract(clip,true);
   };
 
@@ -583,202 +590,187 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         <div style={{flex:1,display:"flex",overflow:"hidden"}}>
 
           {/* 왼쪽: 클립 목록 */}
-          <div style={{width:160,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
+          <div style={{width:215,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
             {clips.map((clip,i)=>{
               const hc=clip.hook_score>=80?"#4ade80":clip.hook_score>=60?"#f59e0b":"#f87171";
+              const vc=clip.viral_score>=80?"#4ade80":clip.viral_score>=60?"#f59e0b":"#f87171";
               const ex=extracted[clip.index??i];
               return(
                 <div key={i} onClick={()=>setSelIdx(i)}
-                  style={{padding:"8px 9px",borderBottom:`1px solid ${bdr}`,cursor:"pointer",
-                    background:selIdx===i?`rgba(168,85,247,0.1)`:"transparent",
+                  style={{padding:"10px 11px",borderBottom:`1px solid ${bdr}`,cursor:"pointer",
+                    background:selIdx===i?`rgba(168,85,247,0.12)`:"transparent",
                     borderLeft:selIdx===i?`3px solid ${ACC}`:"3px solid transparent"}}>
-                  <div style={{position:"relative",borderRadius:6,overflow:"hidden",marginBottom:5,background:"#0f0f0f",aspectRatio:"9/16",maxHeight:100}}>
-                    {inputMode==="youtube"&&ytInfo?.thumbnail?<img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🎬</div>}
-                    {clip.hook&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"2px 3px",background:"linear-gradient(transparent,rgba(0,0,0,0.85))",fontFamily:capStyle.font,fontSize:6,fontWeight:900,color:capStyle.color,textAlign:"center"}}><span style={{color:capStyle.hl}}>{clip.hook?.slice(0,18)}</span></div>}
-                    <div style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.8)",padding:"1px 3px",borderRadius:3,fontSize:6,color:"#fff"}}>{clip.duration}s</div>
-                    {ex&&<div style={{position:"absolute",top:2,left:2,background:"#4ade80",borderRadius:3,padding:"1px 4px",fontSize:6,fontWeight:700,color:"#000"}}>✓완료</div>}
+                  <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:7,background:"#0f0f0f",aspectRatio:"9/16",maxHeight:140}}>
+                    {ex
+                      ? <video src={ex.url} style={{width:"100%",height:"100%",objectFit:"cover"}} muted playsInline/>
+                      : inputMode==="youtube"&&ytInfo?.thumbnail
+                        ? <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        : <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🎬</div>}
+                    {clip.hook&&!ex&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"3px 4px",background:"linear-gradient(transparent,rgba(0,0,0,0.85))",fontFamily:capStyle.font,fontSize:7,fontWeight:900,color:capStyle.color,textAlign:"center"}}><span style={{color:capStyle.hl}}>{clip.hook?.slice(0,22)}</span></div>}
+                    <div style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,0.8)",padding:"1px 4px",borderRadius:3,fontSize:8,color:"#fff"}}>{clip.duration}s</div>
+                    {ex&&<div style={{position:"absolute",top:3,left:3,background:"#4ade80",borderRadius:4,padding:"1px 5px",fontSize:7,fontWeight:700,color:"#000"}}>✓완료</div>}
                   </div>
-                  <div style={{fontSize:9,fontWeight:700,color:selIdx===i?ACC:text,lineHeight:1.3,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{clip.title_a}</div>
-                  <div style={{display:"flex",gap:2,marginBottom:4}}>
-                    <span style={{fontSize:6,padding:"1px 4px",borderRadius:3,background:`${hc}18`,color:hc,fontWeight:700}}>후킹{clip.hook_score}</span>
-                    <span style={{fontSize:6,padding:"1px 4px",borderRadius:3,background:"rgba(6,182,212,0.15)",color:"#06b6d4",fontWeight:700}}>바이럴{clip.viral_score}</span>
+                  <div style={{fontSize:11,fontWeight:700,color:selIdx===i?ACC:text,lineHeight:1.4,marginBottom:5,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.title_a}</div>
+                  <div style={{display:"flex",gap:4,marginBottom:5}}>
+                    <span style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:`${hc}18`,color:hc,fontWeight:700}}>후킹 {clip.hook_score}</span>
+                    <span style={{fontSize:9,padding:"2px 6px",borderRadius:5,background:`${vc}18`,color:vc,fontWeight:700}}>바이럴 {clip.viral_score}</span>
+                  </div>
+                  <div style={{display:"flex",gap:4}}>
+                    <button onClick={e=>{e.stopPropagation();saveOne(clip);}} style={{flex:1,padding:"4px",borderRadius:5,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:9,cursor:"pointer"}}>🗂 저장</button>
+                    <button onClick={e=>{e.stopPropagation();setSelIdx(i);ex?downloadClip(clip):extract(clip);}} disabled={rec}
+                      style={{flex:2,padding:"4px",borderRadius:5,border:`1px solid ${ex?"rgba(74,222,128,0.3)":`${ACC}30`}`,
+                        background:ex?"rgba(74,222,128,0.1)":`rgba(168,85,247,0.08)`,
+                        color:ex?"#4ade80":ACC,fontSize:9,cursor:"pointer",fontWeight:700,opacity:rec?0.5:1}}>
+                      {ex?"↓ 다운로드":"✂️ 추출"}
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* 오른쪽: 메인 콘텐츠 (플레이어 + 상세) */}
-          <div style={{flex:1,display:"flex",overflow:"hidden",minWidth:0}}>
-
-            {/* 가운데: 9:16 플레이어 */}
-            <div style={{width:220,borderRight:`1px solid ${bdr}`,display:"flex",flexDirection:"column",flexShrink:0,background:"#0a0a0a"}}>
-              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px 8px"}}>
-                <div style={{position:"relative",width:"100%",aspectRatio:"9/16",background:"#111",borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.7)"}}>
-                  {(()=>{
-                    const k=cur.index??selIdx;
-                    const ex=extracted[k];
-                    // ① 추출 완료 → 완성 세로 영상 자동 재생
-                    if(ex)return<video key={ex.url} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay loop src={ex.url}/>;
-                    // ② 파일 → 구간 루프 재생
-                    if(inputMode==="file"&&file)return(
-                      <video key={`f-${selIdx}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay
-                        onLoadedMetadata={e=>{e.target.currentTime=curStart;e.target.play().catch(()=>{});}}
-                        onTimeUpdate={e=>{if(e.target.currentTime>=curEnd&&curEnd>curStart)e.target.currentTime=curStart;}}
-                        src={fileObjUrl.current||""}/>
-                    );
-                    // ③ 유튜브 → 썸네일 + 자막 오버레이
-                    if(inputMode==="youtube"&&ytInfo)return(
-                      <div style={{width:"100%",height:"100%",position:"relative"}}>
-                        <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                        <div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 35%,rgba(0,0,0,0.7))"}}/>
-                        <div style={{position:"absolute",[capStyle.pos==="top"?"top":"bottom"]:10,left:6,right:6,textAlign:"center",
-                          fontFamily:capStyle.font,fontSize:Math.max(capStyle.size-6,10),fontWeight:900,color:capStyle.color,
-                          textShadow:"2px 2px 8px rgba(0,0,0,0.9)",background:`rgba(0,0,0,${capStyle.bgOp})`,
-                          padding:"3px 5px",borderRadius:4,lineHeight:1.4}}>
-                          <span>{cur.hook?.split(" ").slice(0,4).join(" ")||"미리보기"}</span>
-                          {cur.hook?.split(" ").length>4&&<><br/><span style={{color:capStyle.hl}}>{cur.hook?.split(" ").slice(4,8).join(" ")}</span></>}
-                        </div>
-                        <div style={{position:"absolute",top:6,left:6,background:"rgba(0,0,0,0.75)",padding:"2px 6px",borderRadius:4,fontSize:8,color:"#fff",fontWeight:700}}>
-                          {cur.startTime}~{cur.endTime}
-                        </div>
-                        {/* 재생 아이콘 힌트 */}
-                        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
-                          width:40,height:40,borderRadius:"50%",background:"rgba(168,85,247,0.7)",
-                          display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,cursor:"pointer"}}
-                          onClick={()=>extract(cur)}>
-                          ▶
-                        </div>
-                      </div>
-                    );
-                    return<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:11}}>미리보기 없음</div>;
-                  })()}
-                  {/* 추출 중 오버레이 */}
-                  {rec&&(
-                    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:7,padding:"10px"}}>
-                      <div style={{position:"relative",width:44,height:44}}>
-                        <div style={{position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${ACC}25`}}/>
-                        <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:ACC,animation:"spin 1s linear infinite"}}/>
-                        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>✂️</div>
-                      </div>
-                      <div style={{fontSize:9,color:ACC,fontWeight:700,textAlign:"center",lineHeight:1.5,padding:"0 4px"}}>{recMsg}</div>
-                      <div style={{width:100,height:3,borderRadius:2,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
-                        <div style={{height:"100%",borderRadius:2,background:ACC,width:`${recPct}%`,transition:"width 0.3s"}}/>
-                      </div>
-                      <div style={{fontSize:8,color:ACC}}>{recPct}%</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* 버튼 영역 */}
-              <div style={{padding:"8px",borderTop:`1px solid rgba(255,255,255,0.06)`,display:"flex",flexDirection:"column",gap:5}}>
+          {/* 가운데: 9:16 플레이어 — 화면 높이 기반으로 크게 */}
+          <div style={{flexShrink:0,display:"flex",flexDirection:"column",background:"#060606",borderRight:`1px solid ${bdr}`,
+            width:"calc((100vh - 130px) * 9 / 16 + 20px)",minWidth:240,maxWidth:360}}>
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px"}}>
+              <div style={{position:"relative",height:"calc(100vh - 170px)",maxHeight:"80vh",aspectRatio:"9/16",
+                background:"#111",borderRadius:14,overflow:"hidden",boxShadow:"0 8px 36px rgba(0,0,0,0.8)"}}>
                 {(()=>{
                   const k=cur.index??selIdx;
                   const ex=extracted[k];
-                  return<>
-                    {!ex?(
-                      <button onClick={()=>extract(cur)} disabled={rec}
-                        style={{width:"100%",padding:"9px",borderRadius:9,border:"none",cursor:rec?"not-allowed":"pointer",
-                          background:rec?"rgba(168,85,247,0.2)":`linear-gradient(135deg,${ACC},#ec4899)`,
-                          color:"#fff",fontSize:11,fontWeight:800,opacity:rec?0.6:1}}>
-                        {rec?`✂️ ${recPct}%`:"✂️ 세로영상 추출 & 재생"}
-                      </button>
-                    ):(
-                      <div style={{display:"flex",gap:5}}>
-                        <button onClick={()=>downloadClip(cur)} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#4ade80,#22c55e)",color:"#000",fontSize:11,cursor:"pointer",fontWeight:800}}>↓ MP4 다운로드</button>
-                        <button onClick={()=>extract(cur)} disabled={rec} style={{padding:"8px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer"}} title="재추출">🔄</button>
+                  if(ex)return<video key={ex.url} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay loop src={ex.url}/>;
+                  if(inputMode==="file"&&file)return(
+                    <video key={`f-${selIdx}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay
+                      onLoadedMetadata={e=>{e.target.currentTime=curStart;e.target.play().catch(()=>{});}}
+                      onTimeUpdate={e=>{if(e.target.currentTime>=curEnd&&curEnd>curStart)e.target.currentTime=curStart;}}
+                      src={fileObjUrl.current||""}/>
+                  );
+                  if(inputMode==="youtube"&&ytInfo)return(
+                    <div style={{width:"100%",height:"100%",position:"relative"}}>
+                      <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      <div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 40%,rgba(0,0,0,0.75))"}}/>
+                      <div style={{position:"absolute",[capStyle.pos==="top"?"top":"bottom"]:12,left:8,right:8,textAlign:"center",
+                        fontFamily:capStyle.font,fontSize:Math.max(capStyle.size-6,11),fontWeight:900,color:capStyle.color,
+                        textShadow:"2px 2px 8px rgba(0,0,0,0.9)",background:`rgba(0,0,0,${capStyle.bgOp})`,
+                        padding:"4px 8px",borderRadius:5,lineHeight:1.4}}>
+                        <span>{cur.hook?.split(" ").slice(0,4).join(" ")||"미리보기"}</span>
+                        {cur.hook?.split(" ").length>4&&<><br/><span style={{color:capStyle.hl}}>{cur.hook?.split(" ").slice(4,8).join(" ")}</span></>}
                       </div>
-                    )}
-                    <div style={{fontSize:8,color:muted,textAlign:"center"}}>{cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920{ex&&<span style={{color:"#4ade80",marginLeft:4}}>✓</span>}</div>
-                    <button onClick={()=>{saveOne(cur);}} style={{width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:9,cursor:"pointer",fontWeight:700}}>🗂 보관함 저장</button>
-                  </>;
+                      <div style={{position:"absolute",top:8,left:8,background:"rgba(0,0,0,0.75)",padding:"2px 8px",borderRadius:5,fontSize:10,color:"#fff",fontWeight:700}}>{cur.startTime} ~ {cur.endTime}</div>
+                      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+                        width:52,height:52,borderRadius:"50%",background:"rgba(168,85,247,0.75)",
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer"}}
+                        onClick={()=>extract(cur)}>▶</div>
+                    </div>
+                  );
+                  return<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:12}}>미리보기 없음</div>;
                 })()}
+                {rec&&(
+                  <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:"12px"}}>
+                    <div style={{position:"relative",width:50,height:50}}>
+                      <div style={{position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${ACC}25`}}/>
+                      <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:ACC,animation:"spin 1s linear infinite"}}/>
+                      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>✂️</div>
+                    </div>
+                    <div style={{fontSize:10,color:ACC,fontWeight:700,textAlign:"center",lineHeight:1.5,padding:"0 6px"}}>{recMsg}</div>
+                    <div style={{width:120,height:4,borderRadius:2,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+                      <div style={{height:"100%",borderRadius:2,background:ACC,width:`${recPct}%`,transition:"width 0.3s"}}/>
+                    </div>
+                    <div style={{fontSize:9,color:ACC}}>{recPct}%</div>
+                  </div>
+                )}
               </div>
             </div>
+            <div style={{padding:"8px 10px",borderTop:`1px solid rgba(255,255,255,0.06)`,display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
+              {(()=>{
+                const k=cur.index??selIdx;
+                const ex=extracted[k];
+                return<>
+                  {!ex?(
+                    <button onClick={()=>extract(cur)} disabled={rec}
+                      style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:rec?"not-allowed":"pointer",
+                        background:rec?"rgba(168,85,247,0.2)":`linear-gradient(135deg,${ACC},#ec4899)`,
+                        color:"#fff",fontSize:12,fontWeight:800,opacity:rec?0.6:1}}>
+                      {rec?`✂️ ${recPct}%`:"✂️ 세로영상 추출 & 재생"}
+                    </button>
+                  ):(
+                    <div style={{display:"flex",gap:5}}>
+                      <button onClick={()=>downloadClip(cur)} style={{flex:2,padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#4ade80,#22c55e)",color:"#000",fontSize:12,cursor:"pointer",fontWeight:800}}>↓ MP4 다운로드</button>
+                      <button onClick={()=>extract(cur)} disabled={rec} style={{padding:"9px 11px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer"}} title="재추출">🔄</button>
+                    </div>
+                  )}
+                  <div style={{fontSize:9,color:muted,textAlign:"center"}}>{cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920{ex&&<span style={{color:"#4ade80",marginLeft:4}}>✓ 완료</span>}</div>
+                  <button onClick={()=>saveOne(cur)} style={{width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:10,cursor:"pointer",fontWeight:700}}>🗂 보관함 저장</button>
+                </>;
+              })()}
+            </div>
+          </div>
 
-            {/* 상세 정보 - 꽉 채우기 */}
-            <div style={{flex:1,overflowY:"auto",minWidth:0}}>
-              <div style={{padding:"14px 16px",height:"100%",boxSizing:"border-box"}}>
-                {/* 상단: 제목 + 점수 + 썸네일 그리드 */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 200px",gap:12,marginBottom:12}}>
-                  {/* 후킹 제목 3버전 */}
-                  <div style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"13px"}}>
-                    <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:9}}>🎯 후킹 제목 3버전</div>
-                    {[["A","충격·후킹",cur.title_a,"#ef4444"],["B","감성·공감",cur.title_b,"#f59e0b"],["C","정보·궁금증",cur.title_c,"#06b6d4"]].map(([v,typ,t,col])=>(
-                      <div key={v} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 9px",borderRadius:8,border:`1px solid ${col}30`,background:`${col}08`,marginBottom:5}}>
-                        <div style={{width:18,height:18,borderRadius:5,background:`${col}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:col,flexShrink:0}}>{v}</div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:8,color:col,fontWeight:700,marginBottom:1}}>{typ}</div>
-                          <div style={{fontSize:12,fontWeight:700,color:text,lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t}</div>
-                        </div>
-                        <button onClick={()=>cp(t||"","t"+v)} style={{padding:"2px 7px",borderRadius:4,border:`1px solid ${col}30`,background:"transparent",color:col,fontSize:8,cursor:"pointer",flexShrink:0}}>{copied==="t"+v?"✅":"복사"}</button>
-                      </div>
-                    ))}
-                  </div>
-                  {/* 점수 + 썸네일 */}
-                  <div style={{display:"flex",flexDirection:"column",gap:9}}>
-                    <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"11px",flex:1}}>
-                      <div style={{fontSize:10,fontWeight:700,color:muted,marginBottom:7}}>🔥 AI 예측 점수</div>
-                      {[["후킹",cur.hook_score],["바이럴",cur.viral_score]].map(([l,v])=>{
-                        const c=v>=80?"#4ade80":v>=60?"#f59e0b":"#f87171";
-                        return<div key={l} style={{marginBottom:8}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                            <span style={{fontSize:10,color:muted}}>{l}</span>
-                            <span style={{fontSize:14,fontWeight:900,color:c}}>{v}</span>
-                          </div>
-                          <div style={{height:5,borderRadius:3,background:D?"rgba(255,255,255,0.08)":"#e5e7eb",overflow:"hidden"}}>
-                            <div style={{height:"100%",borderRadius:3,background:c,width:`${v||0}%`,transition:"width 0.5s"}}/>
-                          </div>
-                        </div>;
-                      })}
+          {/* 오른쪽: 상세 정보 — 고정 너비 380px */}
+          <div style={{width:380,flexShrink:0,overflowY:"auto"}}>
+            <div style={{padding:"16px 18px"}}>
+              <div style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"13px",marginBottom:11}}>
+                <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:9}}>🎯 후킹 제목 3버전</div>
+                {[["A","충격·후킹",cur.title_a,"#ef4444"],["B","감성·공감",cur.title_b,"#f59e0b"],["C","정보·궁금증",cur.title_c,"#06b6d4"]].map(([v,typ,t,col])=>(
+                  <div key={v} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,border:`1px solid ${col}25`,background:`${col}06`,marginBottom:5}}>
+                    <div style={{width:18,height:18,borderRadius:5,background:`${col}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:col,flexShrink:0}}>{v}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:8,color:col,fontWeight:700,marginBottom:1}}>{typ}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:text,lineHeight:1.3}}>{t}</div>
                     </div>
-                    <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"11px"}}>
-                      <div style={{fontSize:10,fontWeight:700,color:muted,marginBottom:5}}>🖼 썸네일 멘트</div>
-                      <div style={{padding:"7px",borderRadius:6,background:"#0f0f0f",textAlign:"center",marginBottom:5,minHeight:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        <div style={{fontFamily:capStyle.font,fontSize:13,fontWeight:900,color:"#fff",textShadow:"2px 2px 6px rgba(0,0,0,0.9)"}}>{cur.thumbnail_text||"-"}</div>
-                      </div>
-                      <button onClick={()=>cp(cur.thumbnail_text||"","th")} style={{width:"100%",padding:"3px",borderRadius:5,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:8,cursor:"pointer"}}>{copied==="th"?"✅":"복사"}</button>
-                    </div>
+                    <button onClick={()=>cp(t||"","t"+v)} style={{padding:"2px 8px",borderRadius:5,border:`1px solid ${col}25`,background:"transparent",color:col,fontSize:9,cursor:"pointer",flexShrink:0}}>{copied==="t"+v?"✅":"복사"}</button>
                   </div>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:11}}>
+                <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"12px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:muted,marginBottom:8}}>🔥 AI 예측 점수</div>
+                  {[["후킹",cur.hook_score],["바이럴",cur.viral_score]].map(([l,v])=>{
+                    const c=v>=80?"#4ade80":v>=60?"#f59e0b":"#f87171";
+                    return<div key={l} style={{marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontSize:11,color:muted}}>{l}</span><span style={{fontSize:14,fontWeight:900,color:c}}>{v}</span>
+                      </div>
+                      <div style={{height:5,borderRadius:3,background:D?"rgba(255,255,255,0.08)":"#e5e7eb",overflow:"hidden"}}>
+                        <div style={{height:"100%",borderRadius:3,background:c,width:`${v||0}%`,transition:"width 0.5s"}}/>
+                      </div>
+                    </div>;
+                  })}
                 </div>
-
-                {/* 첫 3초 오프닝 + 스크립트 나란히 */}
-                <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"13px",marginBottom:11}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-                    <div style={{fontSize:12,fontWeight:800,color:text}}>📝 자막 스크립트</div>
-                    <button onClick={()=>cp(cur.script||"","sc")} style={{fontSize:9,color:ACC,background:"transparent",border:"none",cursor:"pointer"}}>{copied==="sc"?"✅":"전체 복사"}</button>
+                <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"12px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:muted,marginBottom:6}}>🖼 썸네일 멘트</div>
+                  <div style={{padding:"8px",borderRadius:7,background:"#0f0f0f",textAlign:"center",marginBottom:6,minHeight:42,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <div style={{fontFamily:capStyle.font,fontSize:13,fontWeight:900,color:"#fff",textShadow:"2px 2px 6px rgba(0,0,0,0.9)"}}>{cur.thumbnail_text||"-"}</div>
                   </div>
-                  {cur.hook&&(
-                    <div style={{padding:"6px 10px",borderRadius:7,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",marginBottom:7,fontSize:11,color:"#f87171",fontWeight:600}}>
-                      🎯 첫 3초 오프닝: <span style={{fontStyle:"italic"}}>"{cur.hook}"</span>
-                    </div>
-                  )}
-                  <div style={{padding:"9px 11px",borderRadius:8,background:ibg,fontSize:12,color:text,lineHeight:2,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto"}}>{cur.script}</div>
-                </div>
-
-                {/* 해시태그 + 선택 이유 */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  {cur.hashtags?.length>0&&(
-                    <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"11px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
-                        <div style={{fontSize:11,fontWeight:700,color:text}}>#️⃣ 해시태그</div>
-                        <button onClick={()=>cp(cur.hashtags.join(" "),"ht")} style={{fontSize:9,color:ACC,background:"transparent",border:"none",cursor:"pointer"}}>{copied==="ht"?"✅":"전체 복사"}</button>
-                      </div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                        {cur.hashtags.map((tag,j)=>(
-                          <span key={j} onClick={()=>cp(tag,"tg"+j)} style={{padding:"3px 8px",borderRadius:9,background:`rgba(168,85,247,0.12)`,color:ACC,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid rgba(168,85,247,0.25)`}}>{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {cur.reason&&(
-                    <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"11px"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:text,marginBottom:6}}>💡 이 구간을 선택한 이유</div>
-                      <div style={{fontSize:11,color:muted,lineHeight:1.7}}>{cur.reason}</div>
-                    </div>
-                  )}
+                  <button onClick={()=>cp(cur.thumbnail_text||"","th")} style={{width:"100%",padding:"4px",borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:9,cursor:"pointer"}}>{copied==="th"?"✅":"복사"}</button>
                 </div>
               </div>
+              <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"13px",marginBottom:11}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <div style={{fontSize:12,fontWeight:800,color:text}}>📝 자막 스크립트</div>
+                  <button onClick={()=>cp(cur.script||"","sc")} style={{fontSize:10,color:ACC,background:"transparent",border:"none",cursor:"pointer"}}>{copied==="sc"?"✅":"전체 복사"}</button>
+                </div>
+                {cur.hook&&<div style={{padding:"6px 10px",borderRadius:7,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",marginBottom:7,fontSize:11,color:"#f87171",fontWeight:600}}>첫 3초: "{cur.hook}"</div>}
+                <div style={{padding:"9px 11px",borderRadius:8,background:ibg,fontSize:12,color:text,lineHeight:1.9,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto"}}>{cur.script}</div>
+              </div>
+              {cur.hashtags?.length>0&&(
+                <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"12px",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
+                    <div style={{fontSize:11,fontWeight:700,color:text}}>#️⃣ 해시태그</div>
+                    <button onClick={()=>cp(cur.hashtags.join(" "),"ht")} style={{fontSize:10,color:ACC,background:"transparent",border:"none",cursor:"pointer"}}>{copied==="ht"?"✅":"전체 복사"}</button>
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {cur.hashtags.map((tag,j)=>(
+                      <span key={j} onClick={()=>cp(tag,"tg"+j)} style={{padding:"3px 9px",borderRadius:9,background:`rgba(168,85,247,0.12)`,color:ACC,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid rgba(168,85,247,0.25)`}}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {cur.reason&&(
+                <div style={{padding:"10px 12px",borderRadius:9,background:`rgba(168,85,247,0.06)`,border:`1px solid ${ACC}20`,fontSize:11,color:muted,lineHeight:1.7}}>
+                  💡 {cur.reason}
+                </div>
+              )}
             </div>
           </div>
         </div>
