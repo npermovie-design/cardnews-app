@@ -226,18 +226,24 @@ JSON만 응답:
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:2000, messages:[{role:"user",content:prompt}] }),
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:2000, messages:[{role:"user",content:prompt}] }),
   });
   const data = await res.json();
   const txt = data.content?.[0]?.text || "";
-  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const cleaned = txt.replace(/```json\n?/g,"").replace(/```/g,"").trim();
+  try { return JSON.parse(cleaned); } catch {
+    // JSON 불완전할 경우 slides 키 추출 시도
+    const m = cleaned.match(/"slides"\s*:\s*(\[.*)/s);
+    if (m) { try { return { slides: JSON.parse(m[1].replace(/}\s*,?\s*$/, '}]').split('}]')[0] + '}]') }; } catch {} }
+    return { slides: [] };
+  }
 }
 
 async function suggestSlideText(topic, sc) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300,
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
       messages:[{role:"user", content:`카드뉴스 주제:"${topic}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"제목(14자)","subheadline":"부제목(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"강조(8자,없으면빈문자)"}`}]
     }),
   });
@@ -249,7 +255,7 @@ async function getTopicSuggestions(topic) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300,
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
       messages:[{role:"user", content:`카드뉴스 주제:"${topic}"\nJSON만:\n{"topics":["더 구체적인 주제1","주제2","주제3"],"subtopics":["세부내용 방향1","방향2","방향3"]}`}]
     }),
   });
@@ -294,6 +300,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
+  const [showCreditPopup, setShowCreditPopup] = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
 
   // 테마
@@ -746,7 +753,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
 
   // ── 크레딧 소진 팝업 ──────────────────────────────────────
-  const [showCreditPopup, setShowCreditPopup] = useState(false);
 
   // ═══ STEP 4: 텍스트 편집 ══════════════════════════════════
   if (wizStep === 4) {

@@ -82,29 +82,20 @@ function wrapText(ctx, text, maxW) {
   return lines.length ? lines : [""];
 }
 
-function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
+function drawDetailSlide(canvas, slide, style, CW, CH) {
   canvas.width = CW; canvas.height = CH;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, CW, CH);
 
   // 배경
-  if (bgImageEl && bgImageEl.complete && bgImageEl.naturalWidth > 0) {
-    const iR = bgImageEl.naturalWidth / bgImageEl.naturalHeight;
-    const cR = CW / CH;
-    let sw, sh, sx = 0, sy = 0;
-    if (iR > cR) { sh = CH; sw = CH * iR; sx = (CW - sw) / 2; }
-    else { sw = CW; sh = CW / iR; sy = (CH - sh) / 2; }
-    ctx.drawImage(bgImageEl, sx, sy, sw, sh);
-    ctx.fillStyle = "rgba(0,0,0,0.48)";
-    ctx.fillRect(0, 0, CW, CH);
-  } else {
-    ctx.fillStyle = style.bgColor || "#1c1c1e";
-    ctx.fillRect(0, 0, CW, CH);
-    ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = style.textColor || "#fff";
-    ctx.beginPath(); ctx.arc(CW * 0.88, CH * 0.06, CW * 0.18, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(CW * 0.08, CH * 0.94, CW * 0.11, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
+  ctx.fillStyle = style.bgColor || "#1c1c1e";
+  ctx.fillRect(0, 0, CW, CH);
+
+  // 장식 원
+  ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = style.textColor || "#fff";
+  ctx.beginPath(); ctx.arc(CW * 0.88, CH * 0.06, CW * 0.18, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(CW * 0.08, CH * 0.94, CW * 0.11, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 
   const tc = style.textColor || "#ffffff";
   const al = style.textAlign || "left";
@@ -125,13 +116,11 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   ctx.font = getCanvasFont(tw, tSz, ff);
   const titLines = wrapText(ctx, slide.title || slide.headline || "", maxW);
   ctx.font = getCanvasFont("600", sSz, ff);
-  const _sub = slide.subtitle !== undefined ? slide.subtitle : slide.subheadline;
-  const subLines = _sub ? wrapText(ctx, _sub, maxW) : [];
+  const subLines = slide.subtitle || slide.subheadline ? wrapText(ctx, slide.subtitle || slide.subheadline, maxW) : [];
   ctx.font = getCanvasFont("400", bSz, ff);
   const bodLines = slide.body ? wrapText(ctx, slide.body, maxW) : [];
   ctx.font = getCanvasFont("700", hSz, ff);
-  const _hl = slide.highlight !== undefined ? slide.highlight : slide.badge;
-  const hlLines = _hl ? wrapText(ctx, _hl, maxW) : [];
+  const hlLines = slide.highlight || slide.badge ? wrapText(ctx, slide.highlight || slide.badge, maxW) : [];
 
   const GAP_SUB = Math.round(sSz * 0.5);
   const GAP_TIT = Math.round(tSz * 0.6);
@@ -160,7 +149,11 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
 
   if (subLines.length) { drawLines(subLines, getCanvasFont("600", sSz, ff), tc, 0.6, Math.round(sSz * lhB)); y += GAP_SUB; }
   drawLines(titLines, getCanvasFont(tw, tSz, ff), tc, 1, Math.round(tSz * lhT));
-  if (bodLines.length) { y += GAP_TIT; drawLines(bodLines, getCanvasFont("400", bSz, ff), tc, 0.85, Math.round(bSz * lhB)); }
+
+  if (bodLines.length) {
+    y += GAP_TIT;
+    drawLines(bodLines, getCanvasFont("400", bSz, ff), tc, 0.85, Math.round(bSz * lhB));
+  }
   if (hlLines.length) {
     y += GAP_BOD;
     const hlFont = getCanvasFont("700", hSz, ff);
@@ -171,27 +164,31 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
     const blockH = hlLines.length * Math.round(hSz * 1.55) + Math.round(hSz * 0.5);
     const boxX = getX(mxW + pad2 * 2) - Math.round(hSz * 0.1);
     const hlMode = style.hlMode || "pill";
-    if (hlMode === "pill") { ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = tc; ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, Math.round(hSz * 0.7)); ctx.fill(); ctx.restore(); }
-    else if (hlMode === "box") { ctx.save(); ctx.globalAlpha = 1; ctx.strokeStyle = tc; ctx.lineWidth = Math.round(CW * 0.003); ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, 6); ctx.stroke(); ctx.restore(); }
-    else if (hlMode === "underline") { const ulX = getX(mxW); ctx.save(); ctx.globalAlpha = 1; ctx.strokeStyle = tc; ctx.lineWidth = Math.round(CW * 0.004); ctx.beginPath(); ctx.moveTo(ulX, y + Math.round(hSz * 1.2)); ctx.lineTo(ulX + mxW, y + Math.round(hSz * 1.2)); ctx.stroke(); ctx.restore(); }
+    if (hlMode === "pill") {
+      ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = tc;
+      ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, Math.round(hSz * 0.7));
+      ctx.fill(); ctx.restore();
+    } else if (hlMode === "box") {
+      ctx.save(); ctx.globalAlpha = 1; ctx.strokeStyle = tc; ctx.lineWidth = Math.round(CW * 0.003);
+      ctx.beginPath(); ctx.roundRect(boxX, y - Math.round(hSz * 0.25), mxW + pad2 * 2, blockH, 6);
+      ctx.stroke(); ctx.restore();
+    } else if (hlMode === "underline") {
+      const ulX = getX(mxW);
+      ctx.save(); ctx.globalAlpha = 1; ctx.strokeStyle = tc; ctx.lineWidth = Math.round(CW * 0.004);
+      ctx.beginPath(); ctx.moveTo(ulX, y + Math.round(hSz * 1.2)); ctx.lineTo(ulX + mxW, y + Math.round(hSz * 1.2));
+      ctx.stroke(); ctx.restore();
+    }
     drawLines(hlLines, hlFont, tc, 1, Math.round(hSz * 1.55));
   }
 }
 
 // ── SlideCanvas 컴포넌트 ─────────────────────────────────────
-function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
+function SlideCanvas({ slide, style, CW, CH, displayW }) {
   const cRef = useRef(null);
   const displayH = Math.round(displayW * CH / CW);
   useEffect(() => {
     if (!cRef.current || !slide) return;
-    if (bgImageSrc) {
-      const img = new Image();
-      img.onload = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, img); };
-      img.onerror = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, null); };
-      img.src = bgImageSrc;
-    } else {
-      drawDetailSlide(cRef.current, slide, style, CW, CH, null);
-    }
+    drawDetailSlide(cRef.current, slide, style, CW, CH);
   });
   if (!slide) return null;
   return (
@@ -216,18 +213,24 @@ JSON만 응답:
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:3000, messages:[{role:"user",content:prompt}] }),
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:3000, messages:[{role:"user",content:prompt}] }),
   });
   const data = await res.json();
   const txt = data.content?.[0]?.text || "";
-  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const cleaned = txt.replace(/```json\n?/g,"").replace(/```/g,"").trim();
+  try { return JSON.parse(cleaned); } catch {
+    // JSON 불완전할 경우 slides 키 추출 시도
+    const m = cleaned.match(/"slides"\s*:\s*(\[.*)/s);
+    if (m) { try { return { slides: JSON.parse(m[1].replace(/}\s*,?\s*$/, '}]').split('}]')[0] + '}]') }; } catch {} }
+    return { slides: [] };
+  }
 }
 
 async function suggestSlideText(form, cat, sc) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300,
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
       messages:[{role:"user", content:`상품: ${form.productName} (${cat.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}\n슬라이드: ${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","subheadline":"서브(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}]
     }),
   });
@@ -239,7 +242,7 @@ async function getAiSuggestions(catLabel, form) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:500,
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:500,
       messages:[{role:"user", content:`카테고리:${catLabel} 상품:"${form.productName}" 특징:"${form.features}"\nJSON만:\n{"productNames":["추천1","추천2","추천3"],"ctas":["CTA1","CTA2","CTA3"],"targets":["타겟1","타겟2"],"extras":["추가1","추가2"]}`}]
     }),
   });
@@ -250,23 +253,13 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleDetailPageGenerator({ isDark, user, theme, openFromLibrary }) {
-  // 보관함에서 열기
-  const libItem = (() => {
-    if (!openFromLibrary) return null;
-    try {
-      const item = JSON.parse(localStorage.getItem("nper_open_detail") || "null");
-      localStorage.removeItem("nper_open_detail");
-      return item;
-    } catch { return null; }
-  })();
-
-  const [wizStep, setWizStep] = useState(libItem ? 4 : 1);
+export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
+  const [wizStep, setWizStep] = useState(1);
 
   // Step1
   const [selCat,    setSelCat]    = useState(null);
-  const [form,      setForm]      = useState({ productName:libItem?.productName||"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
-  const [pageCount, setPageCount] = useState(libItem?.count || 5);
+  const [form,      setForm]      = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
+  const [pageCount, setPageCount] = useState(5);
   const [aiSugg,    setAiSugg]    = useState(null);
   const [suggesting,setSuggesting]= useState(false);
 
@@ -281,8 +274,8 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
   const [customH,   setCustomH]   = useState(1100);
 
   // Step4
-  const [slides,    setSlides]    = useState(libItem?.slides || []);
-  const [sted,      setSted]      = useState({});
+  const [slides,    setSlides]    = useState([]);
+  const [sted,      setSted]      = useState({}); // per-slide overrides
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
@@ -357,7 +350,6 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
 
   // Step3→Step4: 슬라이드 텍스트 생성 후 편집 모드로
   const generate = async () => {
-    if (user && (user.points || 0) < 10) { setShowCreditPopup(true); return; }
     setLoading(true);
     try {
       let slidesData;
@@ -387,7 +379,6 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
         }));
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
-      saveToDetailLibrary(slidesData);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").catch(()=>{});
     } catch(e) { alert("생성 실패: " + e.message); }
     setLoading(false);
@@ -397,32 +388,19 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
   const getCurSlide = (idx) => {
     const base = slides[idx]||{};
     const ed = sted[idx]||{};
-    const { bgColor, bgImage, textColor, titleSize, bodySize, textAlign, textValign, ...textEd } = ed;
-    return { ...base, ...textEd };
-  };
-  const getSlideStyle = (idx) => {
-    const so = sted[idx]||{};
-    return { ...activeStyle, ...(so.bgColor?{bgColor:so.bgColor}:{}), ...(so.textColor?{textColor:so.textColor}:{}), ...(so.titleSize?{titleSize:so.titleSize}:{}), ...(so.bodySize?{bodySize:so.bodySize}:{}), ...(so.textAlign?{textAlign:so.textAlign}:{}), ...(so.textValign?{textValign:so.textValign}:{}) };
+    return { ...base, ...ed };
   };
   const updSted = (idx, key, val) => setSted(prev=>({...prev,[idx]:{...(prev[idx]||{}), [key]:val}}));
-
-  const bgFileRef = useRef(null);
 
   // PNG 저장 (단일)
   const saveOne = (idx) => {
     const slide = getCurSlide(idx);
-    const slideStyle = getSlideStyle(idx);
-    const bgImg = (sted[idx]||{}).bgImage;
-    const doSave = (imgEl) => {
-      const canvas = document.createElement("canvas");
-      drawDetailSlide(canvas, slide, slideStyle, imgW, imgH, imgEl);
-      const a=document.createElement("a");
-      a.href=canvas.toDataURL("image/png");
-      a.download=`${form.productName||"slide"}_${String(idx+1).padStart(2,"0")}_${slide.label||"slide"}.png`;
-      a.click();
-    };
-    if (bgImg) { const img=new Image(); img.onload=()=>doSave(img); img.onerror=()=>doSave(null); img.src=bgImg; }
-    else doSave(null);
+    const canvas = document.createElement("canvas");
+    drawDetailSlide(canvas, slide, activeStyle, imgW, imgH);
+    const a=document.createElement("a");
+    a.href=canvas.toDataURL("image/png");
+    a.download=`${form.productName||"slide"}_${String(idx+1).padStart(2,"0")}_${slide.label||"slide"}.png`;
+    a.click();
   };
 
   // 전체 ZIP
@@ -433,42 +411,16 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
     const zip=new window.JSZip();
     for(let i=0;i<slides.length;i++){
       const slide=getCurSlide(i);
-      const slideStyle=getSlideStyle(i);
-      const bgImg=(sted[i]||{}).bgImage;
-      await new Promise(resolve=>{
-        const doZip=(imgEl)=>{
-          const canvas=document.createElement("canvas");
-          drawDetailSlide(canvas,slide,slideStyle,imgW,imgH,imgEl);
-          const b64=canvas.toDataURL("image/png").split(",")[1];
-          const arr=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-          zip.file(`${String(i+1).padStart(2,"0")}_${slide.label||"slide"}.png`,arr);
-          resolve();
-        };
-        if(bgImg){const img=new Image();img.onload=()=>doZip(img);img.onerror=()=>doZip(null);img.src=bgImg;}
-        else doZip(null);
-      });
+      const canvas=document.createElement("canvas");
+      drawDetailSlide(canvas,slide,activeStyle,imgW,imgH);
+      const b64=canvas.toDataURL("image/png").split(",")[1];
+      const arr=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+      zip.file(`${String(i+1).padStart(2,"0")}_${slide.label||"slide"}.png`,arr);
     }
     const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${form.productName||"detail"}_slides.zip`;a.click();
     setDlSt({busy:false,msg:"✅ 저장 완료!"});
     setTimeout(()=>setDlSt({busy:false,msg:""}),2500);
-  };
-
-  // ── 보관함 저장 ──────────────────────────────────────────
-  const saveToDetailLibrary = (slidesData) => {
-    try {
-      const KEY = "nper_detail_saves_v1";
-      const list = JSON.parse(localStorage.getItem(KEY) || "[]");
-      let thumb = null;
-      try {
-        const c = document.createElement("canvas");
-        drawDetailSlide(c, { title:slidesData[0]?.title||"", subtitle:slidesData[0]?.subtitle||"", body:slidesData[0]?.body||"", highlight:slidesData[0]?.highlight||"" }, activeStyle, imgW, imgH, null);
-        thumb = c.toDataURL("image/jpeg", 0.5);
-      } catch {}
-      const cat = CATEGORIES.find(c=>c.key===selCat)||CATEGORIES[0];
-      list.unshift({ id:"sd_"+Date.now(), productName:form.productName||"심플 상세페이지", catLabel:cat.label, date:new Date().toLocaleDateString("ko-KR"), count:slidesData.length, thumbnail:thumb, images:[], slides:slidesData });
-      localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
-    } catch {}
   };
 
   const resetAll = () => { setWizStep(1); setSelCat(null); setForm({productName:"",features:"",price:"",cta:"지금 구매하기",target:"",extra:""}); setPageCount(5); setAiSugg(null); setSlideContents([]); setSelPreset(null); setSelSize(0); setSlides([]); setSted({}); };
@@ -729,171 +681,99 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, openFro
     );
   }
 
-
-  // ── 크레딧 소진 팝업 ──────────────────────────────────────
-  const [showCreditPopup, setShowCreditPopup] = useState(false);
-
   // ═══ STEP 4: 텍스트 편집 ══════════════════════════════════
   if (wizStep === 4) {
     const curSlide = getCurSlide(selIdx);
-    const so = sted[selIdx] || {};
-    const curStyle = getSlideStyle(selIdx);
-    const btnSm = { width:32, height:32, borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:text, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" };
+    const previewW = 260;
+    const previewH = Math.round(previewW * imgH / imgW);
 
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader/>
-
-        {/* 크레딧 소진 팝업 */}
-        {showCreditPopup && (
-          <div onClick={()=>setShowCreditPopup(false)} style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-            <div onClick={e=>e.stopPropagation()} style={{ width:"min(400px,92vw)",background:D?"#1a1730":"#fff",borderRadius:20,padding:"32px 28px",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}` }}>
-              <div style={{ fontSize:48,marginBottom:16 }}>💎</div>
-              <div style={{ fontSize:18,fontWeight:900,color:text,marginBottom:10 }}>크레딧이 모두 소진되었습니다</div>
-              <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 크레딧을 충전하거나<br/>관리자에게 문의해주세요.</div>
-              <div style={{ display:"flex",gap:10 }}>
-                <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
-                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981,#059669)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 크레딧 충전</button>
-              </div>
-              <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#10b981" }}>관리자 문의하기 →</a></div>
-            </div>
-          </div>
-        )}
-
-        <input ref={bgFileRef} type="file" accept="image/*" style={{ display:"none" }}
-          onChange={e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>updSted(selIdx,"bgImage",ev.target.result); r.readAsDataURL(f); e.target.value=""; }}/>
-
-        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 16px 60px" }}>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:20,fontWeight:900,color:text,letterSpacing:-0.5,marginBottom:3 }}>슬라이드 편집</div>
-            <div style={{ fontSize:12,color:muted }}>텍스트·배경·색상 변경 후 PNG/ZIP으로 저장하세요</div>
+        <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 20px 60px" }}>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드를 편집하세요</div>
+            <div style={{ fontSize:13, color:muted }}>왼쪽에서 슬라이드를 선택하고 텍스트를 수정한 뒤 PNG/ZIP으로 저장하세요</div>
           </div>
 
-          <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-
-            {/* 썸네일 목록 */}
-            <div style={{ width:110, flexShrink:0 }}>
-              <div style={{ display:"flex",flexDirection:"column",gap:4,maxHeight:"calc(100vh - 220px)",overflowY:"auto" }}>
-                {slides.map((s,i)=>{
-                  const sl=getCurSlide(i); const ss=getSlideStyle(i); const sBg=(sted[i]||{}).bgImage; const isActive=selIdx===i;
-                  return (
-                    <div key={i} onClick={()=>setSelIdx(i)}
-                      style={{ borderRadius:8,overflow:"hidden",border:`2px solid ${isActive?"#10b981":"transparent"}`,cursor:"pointer",transition:"border 0.12s",background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
-                      <div style={{ position:"relative" }}>
-                        <SlideCanvas slide={sl} style={ss} CW={imgW} CH={imgH} displayW={106} bgImageSrc={sBg||undefined}/>
-                        <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:isActive?"#10b981":"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:"#fff" }}>{i+1}</div>
-                      </div>
-                      <div style={{ padding:"3px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                        <span style={{ fontSize:8,color:isActive?"#6ee7b7":muted,fontWeight:isActive?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1 }}>{s.label}</span>
-                        <button onClick={e=>{e.stopPropagation();saveOne(i);}} style={{ fontSize:8,padding:"1px 4px",borderRadius:3,border:"none",background:"transparent",color:muted,cursor:"pointer",flexShrink:0 }}>↓</button>
-                      </div>
+          <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+            {/* 슬라이드 목록 (왼쪽) */}
+            <div style={{ width:140, flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
+              {slides.map((s,i)=>{
+                const sl = getCurSlide(i);
+                const isActive = selIdx===i;
+                return (
+                  <div key={i} onClick={()=>setSelIdx(i)}
+                    style={{ borderRadius:10, overflow:"hidden", border:`2px solid ${isActive?"#6366f1":"transparent"}`, cursor:"pointer", transition:"all 0.12s", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                    <div style={{ position:"relative" }}>
+                      <SlideCanvas slide={sl} style={activeStyle} CW={imgW} CH={imgH} displayW={136}/>
+                      <div style={{ position:"absolute",top:4,left:4,width:18,height:18,borderRadius:5,background:isActive?"#6366f1":"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff" }}>{i+1}</div>
                     </div>
-                  );
-                })}
-              </div>
-              <button onClick={resetAll} style={{ marginTop:6,width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
+                    <div style={{ padding:"4px 6px", background:D?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ fontSize:9, color:isActive?"#a5b4fc":muted, fontWeight:isActive?800:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{s.label}</div>
+                      <button onClick={e=>{e.stopPropagation();saveOne(i);}}
+                        style={{ fontSize:9,padding:"2px 5px",borderRadius:4,border:"none",background:"transparent",color:muted,cursor:"pointer" }}>PNG</button>
+                    </div>
+                  </div>
+                );
+              })}
+              <button onClick={resetAll} style={{ marginTop:4,padding:"8px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
             </div>
 
-            {/* 편집 패널 */}
-            <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:8 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:9,background:cardBg,border:`1px solid ${bdr}` }}>
-                <div style={{ width:22,height:22,borderRadius:6,background:"rgba(16,185,129,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#10b981",flexShrink:0 }}>{selIdx+1}</div>
-                <span style={{ fontSize:13,fontWeight:800,color:text,flex:1 }}>{slides[selIdx]?.label}</span>
-                <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ ...btnSm,opacity:selIdx===0?0.3:1 }}>‹</button>
-                <span style={{ fontSize:11,color:muted }}>{selIdx+1}/{slides.length}</span>
-                <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1} style={{ ...btnSm,opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
-              </div>
+            {/* 편집 패널 (중앙) */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, padding:"18px", marginBottom:16 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                  <div style={{ width:24,height:24,borderRadius:7,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#6366f1" }}>{selIdx+1}</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:text }}>{slides[selIdx]?.label}</div>
+                </div>
 
-              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
-                <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:8 }}>📝 텍스트</div>
                 {[
-                  { key:"title",label:"제목",placeholder:"제목을 입력하세요" },
-                  { key:"subtitle",label:"부제목",placeholder:"비워두면 표시 안 됨" },
-                  { key:"body",label:"본문",placeholder:"비워두면 표시 안 됨",ta:true },
-                  { key:"highlight",label:"강조문구",placeholder:"비워두면 표시 안 됨" },
+                  { key:"title",    label:"제목 (헤드라인)",  placeholder:"제목을 입력하세요", field:"headline" },
+                  { key:"subtitle", label:"부제목 (선택)",    placeholder:"부제목을 입력하세요 (없으면 비워두세요)", field:"subheadline" },
+                  { key:"body",     label:"본문 내용 (선택)", placeholder:"본문을 입력하세요 (없으면 비워두세요)", ta:true },
+                  { key:"highlight",label:"강조 문구 (선택)", placeholder:"강조할 짧은 문구 (없으면 비워두세요)", field:"badge" },
                 ].map(({key,label,placeholder,ta})=>(
-                  <div key={key} style={{ marginBottom:8 }}>
-                    <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:3 }}>{label}</div>
+                  <div key={key} style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11,fontWeight:700,color:muted,marginBottom:6 }}>{label}</div>
                     {ta
-                      ? <textarea value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder} rows={2} style={{ width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${(curSlide[key]||"")?"rgba(16,185,129,0.5)":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",lineHeight:1.6 }}/>
-                      : <input value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder} style={{ width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${(curSlide[key]||"")?"rgba(16,185,129,0.5)":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}/>}
+                      ? <textarea value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder} rows={3}
+                          style={{ width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"vertical",lineHeight:1.7 }}/>
+                      : <input value={curSlide[key]||""} onChange={e=>updSted(selIdx,key,e.target.value)} placeholder={placeholder}
+                          style={{ width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}/>}
                   </div>
                 ))}
+
+                {/* 전/다음 슬라이드 이동 */}
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                  <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
+                    style={{ padding:"8px 16px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:selIdx===0?muted:text,fontSize:12,cursor:selIdx===0?"not-allowed":"pointer",opacity:selIdx===0?0.4:1 }}>← 이전</button>
+                  <span style={{ fontSize:12,color:muted,alignSelf:"center" }}>{selIdx+1} / {slides.length}</span>
+                  <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1}
+                    style={{ padding:"8px 16px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:selIdx===slides.length-1?muted:text,fontSize:12,cursor:selIdx===slides.length-1?"not-allowed":"pointer",opacity:selIdx===slides.length-1?0.4:1 }}>다음 →</button>
+                </div>
               </div>
 
-              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
-                <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:10 }}>🎨 스타일</div>
-                <div style={{ display:"flex",gap:8,marginBottom:10 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10,color:muted,marginBottom:4 }}>배경색</div>
-                    <div style={{ display:"flex",gap:5,alignItems:"center" }}>
-                      <input type="color" value={so.bgColor||curStyle.bgColor||"#1c1c1e"} onChange={e=>updSted(selIdx,"bgColor",e.target.value)} style={{ width:34,height:34,borderRadius:7,border:`1px solid ${bdr}`,cursor:"pointer",padding:2 }}/>
-                      {so.bgColor&&<button onClick={()=>updSted(selIdx,"bgColor",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
-                    </div>
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10,color:muted,marginBottom:4 }}>글자색</div>
-                    <div style={{ display:"flex",gap:5,alignItems:"center" }}>
-                      <input type="color" value={so.textColor||curStyle.textColor||"#ffffff"} onChange={e=>updSted(selIdx,"textColor",e.target.value)} style={{ width:34,height:34,borderRadius:7,border:`1px solid ${bdr}`,cursor:"pointer",padding:2 }}/>
-                      {so.textColor&&<button onClick={()=>updSted(selIdx,"textColor",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ marginBottom:10 }}>
-                  <div style={{ fontSize:10,color:muted,marginBottom:4 }}>제목 크기 ({so.titleSize||curStyle.titleSize||32}px)</div>
-                  <div style={{ display:"flex",gap:6,alignItems:"center" }}>
-                    <button onClick={()=>updSted(selIdx,"titleSize",Math.max(16,(so.titleSize||curStyle.titleSize||32)-2))} style={{ ...btnSm }}>−</button>
-                    <div style={{ flex:1,height:5,borderRadius:3,background:D?"rgba(255,255,255,0.1)":"#e8e8e8",overflow:"hidden" }}>
-                      <div style={{ height:"100%",borderRadius:3,background:"#10b981",width:`${((so.titleSize||curStyle.titleSize||32)-16)/(72-16)*100}%`,transition:"width 0.15s" }}/>
-                    </div>
-                    <button onClick={()=>updSted(selIdx,"titleSize",Math.min(72,(so.titleSize||curStyle.titleSize||32)+2))} style={{ ...btnSm }}>+</button>
-                    {so.titleSize&&<button onClick={()=>updSted(selIdx,"titleSize",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
-                  </div>
-                </div>
-                <div style={{ display:"flex",gap:8,marginBottom:10 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10,color:muted,marginBottom:4 }}>가로 정렬</div>
-                    <div style={{ display:"flex",gap:3 }}>
-                      {[["left","⬅"],["center","↔"],["right","➡"]].map(([v,icon])=>{
-                        const cur=so.textAlign||curStyle.textAlign||"left";
-                        return <button key={v} onClick={()=>updSted(selIdx,"textAlign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#10b981":bdr}`,background:cur===v?"rgba(16,185,129,0.2)":"transparent",color:cur===v?"#6ee7b7":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10,color:muted,marginBottom:4 }}>세로 정렬</div>
-                    <div style={{ display:"flex",gap:3 }}>
-                      {[["top","⬆"],["middle","↕"],["bottom","⬇"]].map(([v,icon])=>{
-                        const cur=so.textValign||curStyle.textValign||"middle";
-                        return <button key={v} onClick={()=>updSted(selIdx,"textValign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#10b981":bdr}`,background:cur===v?"rgba(16,185,129,0.2)":"transparent",color:cur===v?"#6ee7b7":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
-                      })}
-                    </div>
-                  </div>
-                </div>
-                {so.bgImage ? (
-                  <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:inputBg }}>
-                    <img src={so.bgImage} alt="" style={{ width:38,height:38,objectFit:"cover",borderRadius:5,flexShrink:0 }}/>
-                    <span style={{ flex:1,fontSize:11,color:muted }}>배경 이미지 적용됨</span>
-                    <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
-                  </div>
-                ) : (
-                  <button onClick={()=>bgFileRef.current?.click()} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 배경 이미지 업로드</button>
-                )}
-              </div>
-
-              <div style={{ display:"flex",gap:8 }}>
-                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#10b981",color:"#fff",fontSize:13,fontWeight:800 }}>📥 PNG</button>
-                <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"📦 ZIP"}</button>
+              {/* 저장 버튼 */}
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={()=>saveOne(selIdx)}
+                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:"#6366f1",color:"#fff",fontSize:14,fontWeight:800 }}>
+                  📥 현재 슬라이드 PNG
+                </button>
+                <button onClick={saveAll} disabled={dlSt.busy}
+                  style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:14,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>
+                  {dlSt.msg||"📦 전체 ZIP"}
+                </button>
               </div>
             </div>
 
-            {/* 미리보기 */}
-            <div style={{ flexShrink:0,width:210,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-              <div style={{ fontSize:11,fontWeight:700,color:muted }}>미리보기</div>
-              <div style={{ borderRadius:10,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:`1px solid ${bdr}`,width:"100%" }}>
-                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={208} bgImageSrc={so.bgImage||undefined}/>
+            {/* 미리보기 (오른쪽) */}
+            <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:2 }}>미리보기</div>
+              <div style={{ borderRadius:12, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,0.3)", border:`1px solid ${bdr}` }}>
+                <SlideCanvas slide={curSlide} style={activeStyle} CW={imgW} CH={imgH} displayW={previewW}/>
               </div>
-              <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
+              <div style={{ fontSize:10,color:muted }}>{imgW}×{imgH}px · {activeStyle.label}</div>
             </div>
           </div>
         </div>
