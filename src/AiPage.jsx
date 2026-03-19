@@ -10,6 +10,7 @@ import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
+import ShortformEditor from "./ShortformEditor";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -159,7 +160,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="mockup_gen" label="목업 생성"  icon="🎨" indent />
         </>}
 
-        <Item id="shorts" label="SNS영상" icon="🎬" />
+        <Item id="shorts" label="숏폼편집" icon="✂️" />
 
 
       </div>
@@ -644,7 +645,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       { id: "image_gen",        icon: "🎨", title: "이미지 생성",      desc: "AI 이미지 자유 생성",      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "logo_gen",   icon: "🏷", title: "로고 생성",  desc: "AI 맞춤 로고 제작",   cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
       { id: "mockup_gen", icon: "🎨", title: "목업 생성",  desc: "제품·브랜드 목업 제작", cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
-      { id: "shorts",           icon: "🎬", title: "SNS영상",           desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
+      { id: "shorts", icon: "✂️", title: "숏폼편집", desc: "유튜브→숏폼 AI 기획", cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -1081,23 +1082,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // SNS영상 - 준비중
+
+  // 숏폼편집
   if (aiMenu === "shorts") {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 18, padding: 40, textAlign: "center", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ fontSize: 72 }}>🎬</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: isDark ? "#fff" : "#1a1a2e" }}>SNS영상</div>
-        <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.45)" : "#888", lineHeight: 2 }}>현재 열심히 개발 중입니다! 🔧<br/>조금만 기다려주시면 곧 업데이트될 예정이에요.</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
-          {["쇼츠 스크립트 자동 생성", "자막 문구 최적화", "해시태그 자동 추출"].map(t => (
-            <div key={t} style={{ padding: "7px 14px", borderRadius: 20, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{t}</div>
-          ))}
-        </div>
-        <button onClick={() => navigate("qna")} style={{
-          marginTop: 10, padding: "11px 26px", borderRadius: 12,
-          border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.07)",
-          color: "#fbbf24", fontSize: 14, fontWeight: 700, cursor: "pointer",
-        }}>💬 출시 알림 신청하기</button>
+      <div key="shorts" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <ShortformEditor isDark={isDark} user={user} />
       </div>
     );
   }
