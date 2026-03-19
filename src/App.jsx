@@ -133,18 +133,32 @@ export default function App() {
     const mainSeg = segments[0];
     const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1] : null;
     if (postId) setPendingPostId(postId);
-    // /community/info → page=community, boardCat=info
     if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
       setBoardCat(segments[1]);
+    }
+    // /ai/blog_naver_intro → page=ai, aiMenu=blog_naver_intro
+    if (mainSeg === "ai" && segments[1]) {
+      setAiMenu(segments[1]);
     }
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
   }, []);
 
   useEffect(() => {
     const fn = () => {
-      const hash = window.location.hash.replace("#", "") || "home";
-      setPage(hash); setBoardSub(false); setMobileOpen(false);
+      const path = window.location.pathname.replace(/^\//, "") || "home";
+      const segs = path.split("/");
+      const main = segs[0] || "home";
+      setBoardSub(false); setMobileOpen(false);
       window.scrollTo(0, 0);
+      if (main === "ai" && segs[1]) {
+        setPage("ai");
+        setAiMenu(segs[1]);
+      } else if (main === "community" && segs[1]) {
+        setBoardCat(segs[1]);
+        setPage("community");
+      } else {
+        setPage(main === "" ? "home" : main);
+      }
     };
     window.addEventListener("popstate", fn);
     return () => window.removeEventListener("popstate", fn);
@@ -171,7 +185,7 @@ export default function App() {
 
   const navigateAi = (menu) => {
     setAiMenu(menu);
-    window.history.pushState(null, "", "/ai");
+    window.history.pushState(null, "", "/ai/" + menu);
     setPage("ai"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
@@ -237,7 +251,11 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={(menu) => {
+        setAiMenu(menu);
+        window.history.pushState(null, "", "/ai/" + menu);
+        window.scrollTo(0, 0);
+      }} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
