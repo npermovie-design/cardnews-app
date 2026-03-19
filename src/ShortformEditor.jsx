@@ -105,6 +105,13 @@ export default function ShortformEditor({ isDark }) {
   const [selectedClip, setSelectedClip] = useState(0);
   const [error, setError]         = useState("");
   const [copied, setCopied]       = useState(null);
+  const [archive, setArchive]     = useState(() => {
+    try { return JSON.parse(localStorage.getItem("snsmakeit_shorts_archive")||"[]"); } catch { return []; }
+  });
+  const [archiveMsg, setArchiveMsg] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [recordPct, setRecordPct] = useState(0);
+  const videoRef2 = useRef(null);
   const [schedule, setSchedule]   = useState([]);
   const [analysis, setAnalysis]   = useState(null);
 
@@ -139,6 +146,123 @@ export default function ShortformEditor({ isDark }) {
   };
 
   const togglePlatform = (id) => setSelPlatforms(p => p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+
+  // 보관함에 저장
+  const saveToArchive = (clip) => {
+    const src = inputMode==="youtube" ? (ytInfo?.title||youtubeUrl) : uploadedFile?.name;
+    const entry = {
+      id: Date.now().toString(),
+      savedAt: new Date().toLocaleDateString("ko-KR"),
+      source: src,
+      sourceType: inputMode,
+      youtubeThumbnail: inputMode==="youtube" ? ytInfo?.thumbnail : null,
+      ...clip,
+    };
+    const updated = [entry, ...archive].slice(0, 50);
+    setArchive(updated);
+    localStorage.setItem("snsmakeit_shorts_archive", JSON.stringify(updated));
+    setArchiveMsg("✅ 보관함에 저장됐어요!");
+    setTimeout(() => setArchiveMsg(""), 2500);
+  };
+
+  // 전체 결과 보관함 저장
+  const saveAllToArchive = () => {
+    const src = inputMode==="youtube" ? (ytInfo?.title||youtubeUrl) : uploadedFile?.name;
+    const entries = clips.map(clip => ({
+      id: Date.now().toString() + "_" + clip.index,
+      savedAt: new Date().toLocaleDateString("ko-KR"),
+      source: src,
+      sourceType: inputMode,
+      youtubeThumbnail: inputMode==="youtube" ? ytInfo?.thumbnail : null,
+      ...clip,
+    }));
+    const updated = [...entries, ...archive].slice(0, 100);
+    setArchive(updated);
+    localStorage.setItem("snsmakeit_shorts_archive", JSON.stringify(updated));
+    setArchiveMsg(`✅ ${clips.length}개 모두 보관함에 저장됐어요!`);
+    setTimeout(() => setArchiveMsg(""), 3000);
+  };
+
+  // 영상 구간 다운로드 (업로드 파일 전용)
+  const downloadSegment = async (clip) => {
+    if (!uploadedFile || recording) return;
+    const startSec = parseTimeToSec(clip.startTime);
+    const endSec   = parseTimeToSec(clip.endTime);
+    if (endSec <= startSec) { alert("타임코드를 확인해주세요"); return; }
+
+    setRecording(true); setRecordPct(0);
+    try {
+      const video = document.createElement("video");
+      video.src = URL.createObjectURL(uploadedFile);
+      video.muted = false;
+      await new Promise(r => { video.onloadedmetadata = r; });
+
+      // Canvas 9:16 세로 영상으로 렌더링
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080; canvas.height = 1920;
+      const ctx = canvas.getContext("2d");
+
+      const duration = endSec - startSec;
+      const stream = canvas.captureStream(30);
+      // 오디오 트랙 추가 시도
+      let finalStream = stream;
+      try {
+        const audioCtx = new AudioContext();
+        const src2 = audioCtx.createMediaElementSource(video);
+        const dest = audioCtx.createMediaStreamDestination();
+        src2.connect(dest); src2.connect(audioCtx.destination);
+        const combined = new MediaStream([...stream.getTracks(), ...dest.stream.getTracks()]);
+        finalStream = combined;
+      } catch {}
+
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm";
+      const recorder = new MediaRecorder(finalStream, { mimeType });
+      const chunks = [];
+      recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+
+      video.currentTime = startSec;
+      await new Promise(r => { video.onseeked = r; });
+      await video.play();
+      recorder.start(100);
+
+      const startWall = Date.now();
+      await new Promise(resolve => {
+        const draw = () => {
+          const elapsed = (Date.now() - startWall) / 1000;
+          const pct = Math.min(Math.round((elapsed/duration)*100), 99);
+          setRecordPct(pct);
+          // Cover-fit: 세로 영상
+          const vw = video.videoWidth, vh = video.videoHeight;
+          const scale = Math.max(1080/vw, 1920/vh);
+          const sw = vw*scale, sh = vh*scale;
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0,0,1080,1920);
+          ctx.drawImage(video, (1080-sw)/2, (1920-sh)/2, sw, sh);
+          if (elapsed >= duration) { resolve(); return; }
+          requestAnimationFrame(draw);
+        };
+        requestAnimationFrame(draw);
+      });
+      video.pause();
+      recorder.stop();
+      await new Promise(r => { recorder.onstop = r; });
+
+      const blob = new Blob(chunks, { type: mimeType });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `shortform_${clip.index || 1}_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,20)}.webm`;
+      a.click();
+      setRecordPct(100);
+    } catch(e) { alert("다운로드 실패: " + e.message); }
+    setRecording(false); setRecordPct(0);
+  };
+
+  // mm:ss → 초
+  const parseTimeToSec = (t) => {
+    if (!t) return 0;
+    const p = String(t).match(/(\d+):(\d+)/);
+    return p ? parseInt(p[1])*60+parseInt(p[2]) : 0;
+  };
 
   const generate = async () => {
     setStep(3); setError(""); setClips([]); setProgress(5);
@@ -206,6 +330,8 @@ JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1",
       setSelectedClip(0); setProgress(100); setProgressMsg("완료!");
       await new Promise(r=>setTimeout(r,300));
       setStep(4); setTab("clips");
+      // 보관함 자동 저장
+      setTimeout(() => saveAllToArchive(), 500);
     } catch(e) { setError("생성 실패: "+e.message); setStep(2); }
   };
 
@@ -537,75 +663,225 @@ JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1",
 
   // ─────────── STEP 4 결과 ───────────
   const cur = clips[selectedClip]||{};
+  const curStartSec = parseTimeToSec(cur.startTime);
+  const curEndSec   = parseTimeToSec(cur.endTime);
 
   const TAB_ITEMS = [
-    {id:"clips",label:"✂️ 숏폼 목록"},
+    {id:"clips",   label:"✂️ 숏폼 목록"},
     {id:"subtitle",label:"📺 자막 편집"},
     {id:"schedule",label:"📅 업로드 일정"},
-    {id:"analysis",label:"📊 분석 리포트"},
+    {id:"analysis",label:"📊 분석"},
+    {id:"archive", label:`🗂 보관함 (${archive.length})`},
   ];
 
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
 
       {/* 상단 탭 바 */}
-      <div style={{display:"flex",borderBottom:`1px solid ${bdr}`,background:cardBg,flexShrink:0}}>
-        <button onClick={()=>setStep(2)} style={{padding:"10px 16px",border:"none",background:"transparent",color:muted,fontSize:12,cursor:"pointer",borderRight:`1px solid ${bdr}`}}>← 재설정</button>
+      <div style={{display:"flex",borderBottom:`1px solid ${bdr}`,background:cardBg,flexShrink:0,alignItems:"center"}}>
+        <button onClick={()=>setStep(2)} style={{padding:"10px 14px",border:"none",background:"transparent",color:muted,fontSize:12,cursor:"pointer",borderRight:`1px solid ${bdr}`,whiteSpace:"nowrap"}}>← 재설정</button>
         {TAB_ITEMS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
-            style={{padding:"12px 16px",border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===t.id?800:500,
-              color:tab===t.id?ACC:muted,background:"transparent",borderBottom:tab===t.id?`2px solid ${ACC}`:"2px solid transparent",transition:"all 0.1s"}}>
+            style={{padding:"10px 14px",border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===t.id?800:500,
+              color:tab===t.id?ACC:muted,background:"transparent",borderBottom:tab===t.id?`2px solid ${ACC}`:"2px solid transparent",whiteSpace:"nowrap"}}>
             {t.label}
           </button>
         ))}
         <div style={{flex:1}}/>
-        <div style={{padding:"10px 16px",fontSize:12,color:muted,display:"flex",alignItems:"center"}}>
-          총 {clips.length}개 생성됨
-        </div>
+        {archiveMsg && <div style={{fontSize:11,color:"#4ade80",padding:"0 12px",fontWeight:700}}>{archiveMsg}</div>}
+        <button onClick={saveAllToArchive} style={{margin:"0 8px",padding:"5px 12px",borderRadius:8,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.1)`,color:ACC,fontSize:11,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>
+          🗂 전체 저장
+        </button>
+        <div style={{padding:"0 12px",fontSize:11,color:muted,whiteSpace:"nowrap"}}>총 {clips.length}개</div>
       </div>
 
-      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
-
-        {/* 왼쪽: 숏폼 목록 (항상 표시) */}
-        <div style={{width:220,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
-          {clips.map((clip,i)=>{
-            const hookColor = clip.hook_score>=80?"#4ade80":clip.hook_score>=60?"#f59e0b":"#f87171";
-            const viralColor = clip.viral_score>=80?"#4ade80":clip.viral_score>=60?"#f59e0b":"#f87171";
-            return (
-              <div key={i} onClick={()=>setSelectedClip(i)}
-                style={{padding:"10px 12px",borderBottom:`1px solid ${bdr}`,cursor:"pointer",
-                  background:selectedClip===i?`rgba(168,85,247,0.1)`:"transparent",
-                  borderLeft:selectedClip===i?`3px solid ${ACC}`:"3px solid transparent"}}>
-                {/* 썸네일 */}
-                <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:7,aspectRatio:"16/9",background:"#0f0f0f"}}>
-                  {inputMode==="youtube"&&ytInfo?.thumbnail
-                    ?<img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    :<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🎬</div>}
-                  {/* 타임코드 */}
-                  <div style={{position:"absolute",bottom:3,right:3,background:"rgba(0,0,0,0.85)",padding:"1px 5px",borderRadius:4,fontSize:9,color:"#fff"}}>{clip.startTime}~{clip.endTime}</div>
-                  {/* 썸네일 멘트 */}
-                  {clip.thumbnail_text&&<div style={{position:"absolute",top:3,left:3,right:30,background:"rgba(0,0,0,0.75)",padding:"1px 5px",borderRadius:4,fontSize:8,color:"#fff",fontWeight:900,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{clip.thumbnail_text}</div>}
+      {/* ── 보관함 탭 */}
+      {tab==="archive" && (
+        <div style={{flex:1,overflowY:"auto",padding:"18px"}}>
+          <div style={{maxWidth:900,margin:"0 auto"}}>
+            <div style={{fontSize:15,fontWeight:900,color:text,marginBottom:4}}>🗂 숏폼 보관함</div>
+            <div style={{fontSize:12,color:muted,marginBottom:18}}>생성된 숏폼 기획안이 자동 저장돼요. 언제든 다시 확인할 수 있어요.</div>
+            {archive.length === 0
+              ? <div style={{textAlign:"center",padding:"40px",color:muted,fontSize:13}}>아직 저장된 숏폼이 없어요</div>
+              : <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+                  {archive.map((item, i) => {
+                    const hc = item.hook_score>=80?"#4ade80":item.hook_score>=60?"#f59e0b":"#f87171";
+                    return (
+                      <div key={i} style={{borderRadius:14,border:`1px solid ${bdr}`,background:cardBg,overflow:"hidden"}}>
+                        {/* 세로 썸네일 */}
+                        <div style={{position:"relative",aspectRatio:"9/16",background:"#0f0f0f",maxHeight:160,overflow:"hidden"}}>
+                          {item.youtubeThumbnail
+                            ? <img src={item.youtubeThumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                            : <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:6}}>
+                                <div style={{fontSize:28}}>🎬</div>
+                                <div style={{fontSize:10,color:muted}}>로컬 파일</div>
+                              </div>}
+                          {item.thumbnail_text && (
+                            <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"6px 8px",background:"linear-gradient(transparent,rgba(0,0,0,0.85))",fontSize:11,fontWeight:900,color:"#fff",textAlign:"center"}}>
+                              {item.thumbnail_text}
+                            </div>
+                          )}
+                          <div style={{position:"absolute",top:5,right:5,background:hc,borderRadius:6,padding:"1px 6px",fontSize:9,fontWeight:700,color:"#000"}}>
+                            후킹 {item.hook_score}
+                          </div>
+                        </div>
+                        <div style={{padding:"10px 12px"}}>
+                          <div style={{fontSize:11,fontWeight:800,color:text,lineHeight:1.4,marginBottom:4}}>{item.title_a}</div>
+                          <div style={{fontSize:9,color:muted,marginBottom:6}}>{item.source?.slice(0,30)} · {item.startTime}~{item.endTime}</div>
+                          <div style={{fontSize:9,color:muted,marginBottom:8}}>{item.savedAt}</div>
+                          <div style={{display:"flex",gap:5}}>
+                            <button onClick={()=>cp(item.script||"","arc_"+i)}
+                              style={{flex:1,padding:"4px",borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:9,cursor:"pointer"}}>
+                              {copied==="arc_"+i?"✅":"스크립트 복사"}
+                            </button>
+                            <button onClick={()=>{const updated=archive.filter((_,j)=>j!==i);setArchive(updated);localStorage.setItem("snsmakeit_shorts_archive",JSON.stringify(updated));}}
+                              style={{padding:"4px 8px",borderRadius:6,border:"1px solid rgba(239,68,68,0.2)",background:"transparent",color:"#f87171",fontSize:9,cursor:"pointer"}}>
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {/* 제목 */}
-                <div style={{fontSize:11,fontWeight:700,color:selectedClip===i?ACC:text,lineHeight:1.4,marginBottom:6}}>
-                  {clip.title_a}
-                </div>
-                {/* 점수 배지 */}
-                <div style={{display:"flex",gap:4}}>
-                  <div style={{padding:"2px 7px",borderRadius:8,background:`${hookColor}18`,border:`1px solid ${hookColor}40`,fontSize:9,fontWeight:700,color:hookColor}}>
-                    후킹 {clip.hook_score}
-                  </div>
-                  <div style={{padding:"2px 7px",borderRadius:8,background:`${viralColor}18`,border:`1px solid ${viralColor}40`,fontSize:9,fontWeight:700,color:viralColor}}>
-                    바이럴 {clip.viral_score}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+            }
+          </div>
         </div>
+      )}
 
-        {/* 오른쪽: 탭 컨텐츠 */}
-        <div style={{flex:1,overflowY:"auto",minWidth:0}}>
+      {/* ── 메인 3열 레이아웃 (clips/subtitle/schedule/analysis 탭) */}
+      {tab !== "archive" && (
+        <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+
+          {/* 왼쪽: 클립 목록 */}
+          <div style={{width:190,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
+            {clips.map((clip,i)=>{
+              const hc=clip.hook_score>=80?"#4ade80":clip.hook_score>=60?"#f59e0b":"#f87171";
+              const vc=clip.viral_score>=80?"#4ade80":clip.viral_score>=60?"#f59e0b":"#f87171";
+              return (
+                <div key={i} onClick={()=>setSelectedClip(i)}
+                  style={{padding:"8px 10px",borderBottom:`1px solid ${bdr}`,cursor:"pointer",
+                    background:selectedClip===i?`rgba(168,85,247,0.1)`:"transparent",
+                    borderLeft:selectedClip===i?`3px solid ${ACC}`:"3px solid transparent"}}>
+                  {/* 세로형 썸네일 9:16 */}
+                  <div style={{position:"relative",borderRadius:7,overflow:"hidden",marginBottom:6,background:"#0f0f0f",width:"100%",aspectRatio:"9/16",maxHeight:120}}>
+                    {inputMode==="youtube"&&ytInfo?.thumbnail
+                      ? <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      : <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🎬</div>}
+                    {/* 자막 오버레이 미리보기 */}
+                    {clip.hook && (
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 5px",
+                        background:"linear-gradient(transparent,rgba(0,0,0,0.8))",
+                        fontFamily:captionStyle.font,fontSize:8,fontWeight:900,
+                        color:captionStyle.color,textAlign:"center",lineHeight:1.3}}>
+                        <span style={{color:captionStyle.highlight}}>{clip.hook?.slice(0,20)}</span>
+                      </div>
+                    )}
+                    <div style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,0.8)",padding:"1px 4px",borderRadius:3,fontSize:8,color:"#fff"}}>{clip.duration}s</div>
+                    {clip.thumbnail_text&&<div style={{position:"absolute",top:3,left:3,background:"rgba(0,0,0,0.75)",padding:"1px 4px",borderRadius:3,fontSize:7,color:"#fff",fontWeight:900,maxWidth:"70%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{clip.thumbnail_text}</div>}
+                  </div>
+                  <div style={{fontSize:10,fontWeight:700,color:selectedClip===i?ACC:text,lineHeight:1.3,marginBottom:4}}>
+                    {clip.title_a}
+                  </div>
+                  <div style={{display:"flex",gap:3,marginBottom:4}}>
+                    <span style={{fontSize:8,padding:"1px 5px",borderRadius:5,background:`${hc}18`,color:hc,fontWeight:700}}>후킹 {clip.hook_score}</span>
+                    <span style={{fontSize:8,padding:"1px 5px",borderRadius:5,background:`${vc}18`,color:vc,fontWeight:700}}>바이럴 {clip.viral_score}</span>
+                  </div>
+                  <div style={{display:"flex",gap:3}}>
+                    <button onClick={e=>{e.stopPropagation();saveToArchive(clip);}}
+                      style={{flex:1,padding:"3px",borderRadius:5,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:8,cursor:"pointer",fontWeight:700}}>
+                      🗂 저장
+                    </button>
+                    {inputMode==="file" && uploadedFile && (
+                      <button onClick={e=>{e.stopPropagation();downloadSegment(clip);}}
+                        disabled={recording}
+                        style={{flex:1,padding:"3px",borderRadius:5,border:"1px solid rgba(74,222,128,0.3)",background:"rgba(74,222,128,0.08)",color:"#4ade80",fontSize:8,cursor:"pointer",fontWeight:700,opacity:recording?0.5:1}}>
+                        {recording?"녹화중":"↓ 다운"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 가운데: 세로 영상 미리보기 */}
+          <div style={{width:240,borderRight:`1px solid ${bdr}`,display:"flex",flexDirection:"column",flexShrink:0,background:"#0a0a0a"}}>
+            {/* 9:16 세로 영상 */}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px",position:"relative"}}>
+              <div style={{position:"relative",width:"100%",maxWidth:200,aspectRatio:"9/16",background:"#111",borderRadius:10,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,0.5)"}}>
+                {inputMode==="file" && uploadedFile ? (
+                  <video ref={videoRef2}
+                    key={selectedClip}
+                    style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                    controls
+                    onLoadedMetadata={e => { e.target.currentTime = curStartSec; }}
+                    onTimeUpdate={e => { if(e.target.currentTime >= curEndSec) e.target.currentTime = curStartSec; }}
+                    src={URL.createObjectURL(uploadedFile)}/>
+                ) : inputMode==="youtube" && ytInfo ? (
+                  <div style={{width:"100%",height:"100%",position:"relative"}}>
+                    <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    {/* 자막 오버레이 */}
+                    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"12px 8px"}}>
+                      <div style={{fontFamily:captionStyle.font,fontSize:captionStyle.size-2,fontWeight:900,
+                        color:captionStyle.color,textAlign:"center",lineHeight:1.4,
+                        textShadow:"2px 2px 8px rgba(0,0,0,0.9)",
+                        background:`rgba(0,0,0,${captionStyle.bgOpacity})`,
+                        padding:"4px 8px",borderRadius:6}}>
+                        <span>{cur.hook?.split(" ").slice(0,3).join(" ") || "숏폼 미리보기"} </span>
+                        <span style={{color:captionStyle.highlight}}>{cur.hook?.split(" ").slice(3,6).join(" ")}</span>
+                      </div>
+                    </div>
+                    {/* 타임코드 */}
+                    <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,0.8)",padding:"2px 8px",borderRadius:6,fontSize:10,color:"#fff",fontWeight:700}}>
+                      {cur.startTime}~{cur.endTime}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:12}}>미리보기 없음</div>
+                )}
+              </div>
+            </div>
+
+            {/* 다운로드 버튼 */}
+            <div style={{padding:"10px",borderTop:`1px solid rgba(255,255,255,0.06)`}}>
+              {inputMode==="file" && uploadedFile ? (
+                <div>
+                  {recording && (
+                    <div style={{marginBottom:8}}>
+                      <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.1)",overflow:"hidden",marginBottom:4}}>
+                        <div style={{height:"100%",borderRadius:2,background:"#4ade80",width:`${recordPct}%`,transition:"width 0.3s"}}/>
+                      </div>
+                      <div style={{fontSize:9,color:"#4ade80",textAlign:"center"}}>영상 추출 중 {recordPct}%...</div>
+                    </div>
+                  )}
+                  <button onClick={()=>downloadSegment(cur)} disabled={recording}
+                    style={{width:"100%",padding:"9px",borderRadius:9,border:"none",cursor:recording?"not-allowed":"pointer",
+                      background:recording?"rgba(74,222,128,0.2)":"linear-gradient(135deg,#4ade80,#22c55e)",
+                      color:recording?"#4ade80":"#000",fontSize:12,fontWeight:800,opacity:recording?0.7:1}}>
+                    {recording?`⏺ 추출 중 ${recordPct}%`:"↓ 세로 영상 다운로드 (.webm)"}
+                  </button>
+                  <div style={{fontSize:9,color:muted,textAlign:"center",marginTop:4}}>
+                    {cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920
+                  </div>
+                </div>
+              ) : (
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:10,color:muted,lineHeight:1.6}}>
+                    유튜브 영상은 브라우저에서<br/>직접 다운로드가 제한돼요.<br/>
+                    <b style={{color:ACC}}>파일 업로드</b> 시 세로 영상으로<br/>직접 추출·다운로드돼요.
+                  </div>
+                </div>
+              )}
+              <button onClick={()=>saveToArchive(cur)}
+                style={{width:"100%",padding:"7px",borderRadius:8,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.1)`,color:ACC,fontSize:11,cursor:"pointer",fontWeight:700,marginTop:6}}>
+                🗂 이 클립 보관함에 저장
+              </button>
+            </div>
+          </div>
+
+          {/* 오른쪽: 탭 컨텐츠 */}
+          <div style={{flex:1,overflowY:"auto",minWidth:0}}>
 
           {/* ── 탭: 숏폼 클립 상세 */}
           {tab==="clips" && (
@@ -949,6 +1225,7 @@ JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1",
           )}
         </div>
       </div>
+      )} {/* end tab !== archive */}
     </div>
   );
 }
