@@ -8,6 +8,7 @@ import DetailPageGenerator from "./DetailPageGenerator";
 import ImageCardNewsApp from "./ImageCardNewsApp";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
+import LogoGenerator from "./LogoGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -62,7 +63,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const [blogOpen, setBlogOpen] = useState(!!(aiMenu && (aiMenu.startsWith("blog") || aiMenu.endsWith("_intro") && aiMenu.startsWith("blog"))));
   const [cardOpen, setCardOpen] = useState(!!(aiMenu && (
     aiMenu === "cardnews_simple" || aiMenu === "cardnews_image" ||
-    aiMenu === "detail_simple"  || aiMenu === "detail_image"
+    aiMenu === "detail_simple"  || aiMenu === "detail_image" ||
+    aiMenu === "image_gen"      || aiMenu === "logo_gen"
   )));
 
   const info = getAiLeft(user);
@@ -136,7 +138,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
         {/* SNS 이미지 그룹 */}
         <Group label="SNS 이미지" icon="🖼" open={cardOpen}
-          active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"))}
+          active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"||aiMenu==="image_gen"||aiMenu==="logo_gen"))}
           onToggle={() => setCardOpen(p => !p)} />
         {cardOpen && <>
           <Item id="cardnews_simple" label="심플 카드뉴스"   icon="✨" indent />
@@ -145,7 +147,9 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="detail_image"    label="이미지 상세페이지" icon="🛍" indent />
         </>}
 
-        <Item id="shorts" label="쇼츠영상 생성기" icon="🎬" />
+        <Item id="image_gen" label="이미지 생성" icon="🎨" />
+        <Item id="shorts"    label="SNS영상"     icon="🎬" />
+        <Item id="logo_gen"  label="로고 생성"   icon="🏷" />
 
 
       </div>
@@ -623,10 +627,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
       { id: "blog_thread_intro",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
       { id: "blog_yt_blog_intro",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 영상으로 글 작성",  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
       { id: "blog_news_intro",     icon: "📰", title: "뉴스로 글쓰기",   desc: "뉴스 기사로 블로그 작성",  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "cardnews_make", icon: "✨", title: "카드뉴스 만들기", desc: "주제 → AI 생성 → 편집",   cr: 10, darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "cardnews_plan", icon: "📋", title: "카드뉴스 기획",   desc: "슬라이드 문구 자동 기획", cr: 0,  darkColor: "rgba(139,92,246,0.2)",   lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "detail_page",   icon: "🛍", title: "상세페이지 만들기", desc: "AI 이미지 슬라이드 생성", cr: 30,  darkColor: "rgba(16,185,129,0.2)",   lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "shorts",        icon: "🎬", title: "쇼츠영상 생성기", desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
+      { id: "cardnews_simple",  icon: "✨", title: "심플 카드뉴스",    desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "cardnews_image",   icon: "🖼", title: "이미지 카드뉴스",  desc: "AI 이미지 슬라이드 생성",  cr: 30, darkColor: "rgba(139,92,246,0.18)",  lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "detail_simple",    icon: "📋", title: "심플 상세페이지",  desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "detail_image",     icon: "🛍", title: "이미지 상세페이지",desc: "AI 이미지 상세페이지",     cr: 30, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      { id: "image_gen",        icon: "🎨", title: "이미지 생성",      desc: "AI 이미지 자유 생성",      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "logo_gen",         icon: "🏷", title: "로고 생성",        desc: "AI 맞춤 로고 제작",        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "shorts",           icon: "🎬", title: "SNS영상",           desc: "🔧 개발 중",               darkColor: "rgba(255,255,255,0.04)", lightColor: "rgba(0,0,0,0.03)"       },
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -1034,12 +1041,32 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest })
     );
   }
 
-  // 쇼츠 - 준비중
+  // 이미지 생성
+  if (aiMenu === "image_gen") {
+    return (
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:18, padding:40, textAlign:"center", background: isDark?"transparent":"#f4f4f8" }}>
+        <div style={{ fontSize:72 }}>🎨</div>
+        <div style={{ fontSize:22, fontWeight:900, color: isDark?"#fff":"#1a1a2e" }}>이미지 생성</div>
+        <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>AI 이미지 자유 생성 기능 🔧<br/>곧 업데이트될 예정이에요.</div>
+      </div>
+    );
+  }
+
+  // 로고 생성
+  if (aiMenu === "logo_gen") {
+    return (
+      <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <LogoGenerator isDark={isDark} user={user} />
+      </div>
+    );
+  }
+
+  // SNS영상 - 준비중
   if (aiMenu === "shorts") {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 18, padding: 40, textAlign: "center", background: isDark ? "transparent" : "#f4f4f8" }}>
         <div style={{ fontSize: 72 }}>🎬</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: isDark ? "#fff" : "#1a1a2e" }}>쇼츠영상 생성기</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: isDark ? "#fff" : "#1a1a2e" }}>SNS영상</div>
         <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.45)" : "#888", lineHeight: 2 }}>현재 열심히 개발 중입니다! 🔧<br/>조금만 기다려주시면 곧 업데이트될 예정이에요.</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
           {["쇼츠 스크립트 자동 생성", "자막 문구 최적화", "해시태그 자동 추출"].map(t => (

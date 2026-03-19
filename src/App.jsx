@@ -355,7 +355,9 @@ export default function App() {
                 <DropItem id="ai" icon="🖼" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");   setAiSub(false); }} />
                 <DropItem id="ai" icon="📋" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");    setAiSub(false); }} />
                 <DropItem id="ai" icon="🛍" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");     setAiSub(false); }} />
-                <DropItem id="ai" icon="🎬" label="쇼츠영상 생성기"  onClick={() => { navigateAi("shorts");           setAiSub(false); }} />
+                <DropItem id="ai" icon="🎨" label="이미지 생성"      onClick={() => { navigateAi("image_gen");        setAiSub(false); }} />
+                <DropItem id="ai" icon="🏷" label="로고 생성"        onClick={() => { navigateAi("logo_gen");         setAiSub(false); }} />
+                <DropItem id="ai" icon="🎬" label="SNS영상"           onClick={() => { navigateAi("shorts");           setAiSub(false); }} />
               </DropMenu>
             )}
           </div>
@@ -460,7 +462,9 @@ export default function App() {
             { id: "cardnews_image",  label: "🖼 이미지 카드뉴스",  ai: "cardnews_image" },
             { id: "detail_simple",   label: "📋 심플 상세페이지",  ai: "detail_simple" },
             { id: "detail_image",    label: "🛍 이미지 상세페이지", ai: "detail_image" },
-            { id: "shorts",          label: "🎬 쇼츠영상 생성기",   ai: "shorts" },
+            { id: "image_gen",       label: "🎨 이미지 생성",       ai: "image_gen" },
+            { id: "logo_gen",        label: "🏷 로고 생성",         ai: "logo_gen" },
+            { id: "shorts",          label: "🎬 SNS영상",            ai: "shorts" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
