@@ -3,6 +3,23 @@ import { changePoints, getAiUsage, setAiUsage } from "./storage";
 
 const API_KEY = "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";
 
+/* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
+function cleanBlogText(text) {
+  if (!text) return text;
+  return text
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}]/gu, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1')
+    .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
+    .replace(/^>\s+/gm, '')
+    .replace(/[★☆●○■□▶▷◀◁♥♡→←↑↓⇒⇔☑☐✓✗✘※◎]/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^[-*]{3,}$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function mdToHtml(md) {
   let html = md
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
@@ -118,10 +135,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n- 검색 최적화 제목\n- 소제목으로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함`;
-      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함`;
-      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함`;
-      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함`;
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n- 검색 최적화 제목\n- 소제목은 일반 텍스트로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함\n\n[필수] 이모티콘·이모지·특수기호(★●■▶♥)·마크다운(##·**·~~) 절대 사용 금지. 순수 한글 문장만 작성`;
+      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성`;
+      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성`;
+      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성`;
       return "";
     },
   },
@@ -161,10 +178,10 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,500~2,000자",medium:"2,500~3,500자",long:"4,000자 이상"}[wc];
       const t={professional:"전문적이고 신뢰감 있는",friendly:"친근하고 쉬운",analytical:"분석적이고 논리적인"}[tone];
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n마크다운 형식(## H2, ### H3)으로 작성\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임`;
-      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 상세 스펙·실사용 경험·객관적 평가\n- 별점 형식 포함, 구매 가이드 제공`;
-      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 번호 매긴 단계별 설명\n- 각 단계 팁·주의사항, FAQ 포함`;
-      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n마크다운 형식으로 작성\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도`;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임\n\n[필수] 이모티콘·이모지·특수기호(★●■)·마크다운(##·###·**·~~) 절대 사용 금지. 순수 문장만 작성`;
+      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성`;
+      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성`;
+      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성`;
       return "";
     },
   },
@@ -207,10 +224,10 @@ const PLATFORMS = {
       const w={micro:"50자 이내 2~3줄",short:"120자 내외 5~6줄",medium:"250자 내외 10줄",long:"400자 내외 15줄 이상"}[wc];
       const t={emotional:"감성적이고 시적인",friendly:"친근하고 활발한",trendy:"트렌디하고 세련된",luxurious:"고급스럽고 우아한"}[tone];
       const htag="줄바꿈 후 관련 해시태그 15~20개";
-      if(sub==="daily")   return `인스타그램 일상 피드 캡션 (${w}, ${t})\n상황: ${f.keyword} / 분위기: ${f.mood||""}\n${f.extra||""}\n\n- 첫 줄 강력한 훅, 이모지 자연스럽게\n- 줄바꿈으로 가독성 확보\n- ${htag}`;
+      if(sub==="daily")   return `인스타그램 일상 피드 캡션 (${w}, ${t})\n상황: ${f.keyword} / 분위기: ${f.mood||""}\n${f.extra||""}\n\n- 첫 줄 강력한 훅 (이모지 없이 텍스트로)\n- 줄바꿈으로 가독성 확보\n- ${htag}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
       if(sub==="product") return `인스타그램 제품 홍보 캡션 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n${f.extra||""}\n\n- 제품 매력 훅, 핵심 특징 3가지 이내\n- 구매 유도 CTA 포함\n- ${htag}`;
       if(sub==="info")    return `인스타그램 정보 피드 캡션 (${w}, ${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}\n\n- "저장 필수" 유도 첫 문장\n- 번호 매긴 핵심 포인트\n- ${htag}`;
-      if(sub==="event")   return `인스타그램 이벤트/공지 캡션 (${w}, ${t})\n이벤트: ${f.keyword} / 날짜: ${f.eventDate||""}\n${f.extra||""}\n\n- 강렬한 첫 줄(이모지), 참여 방법 명확히\n- ${htag}`;
+      if(sub==="event")   return `인스타그램 이벤트/공지 캡션 (${w}, ${t})\n이벤트: ${f.keyword} / 날짜: ${f.eventDate||""}\n${f.extra||""}\n\n- 강렬한 첫 줄 (이모지 없이 텍스트로), 참여 방법 명확히\n- ${htag}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
       return "";
     },
   },
@@ -548,7 +565,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           if (line.startsWith("data: ")) {
             const d = line.slice(6).trim();
             if (d==="[DONE]") continue;
-            try { const p=JSON.parse(d); if(p.type==="content_block_delta"&&p.delta?.text){full+=p.delta.text;_savedFull=full;setResult(full);} } catch{}
+            try { const p=JSON.parse(d); if(p.type==="content_block_delta"&&p.delta?.text){full+=p.delta.text;_savedFull=full;setResult(cleanBlogText(full));} } catch{}
           }
         }
       }

@@ -100,6 +100,32 @@ function inlineFormat(text, accentColor) {
   return parts.length ? parts : text;
 }
 
+/* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
+function cleanBlogText(text) {
+  if (!text) return text;
+  return text
+    // 이모지/이모티콘 제거 (유니코드 이모지 범위)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}]/gu, '')
+    // 마크다운 헤더 ## ### # → 텍스트만 남김
+    .replace(/^#{1,6}\s+/gm, '')
+    // 마크다운 굵기/기울임 **text** *text* __text__
+    .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1')
+    .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
+    // 마크다운 취소선 ~~text~~
+    .replace(/~~([^~]+)~~/g, '$1')
+    // 인용문 > 제거
+    .replace(/^>\s+/gm, '')
+    // 특수 기호 제거 (★, ●, ■, ▶, ♥, →, ☑, ✓, ✅ 등)
+    .replace(/[★☆●○■□▶▷◀◁♥♡→←↑↓⇒⇔☑☐✓✗✘※◎]/g, '')
+    // 코드블록 ` ` 제거
+    .replace(/`([^`]+)`/g, '$1')
+    // 수평선 --- *** 제거
+    .replace(/^[-*]{3,}$/gm, '')
+    // 연속 공백·줄바꿈 정리
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const API_KEY = "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";
 
 
@@ -246,12 +272,18 @@ ${newsInfo.content.slice(0, 6000)}`;
 ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호(#, ★, ●, ■, ▶, ♥ 등) 일절 사용 금지
+- 마크다운 기호(##, ###, **, __, ~~, >, - , *) 사용 금지
+- 제목·소제목은 꺾쇠 없이 줄글로 자연스럽게 표현
+- 순수 한국어 문장으로만 작성
+
 작성 형식:
-- SEO 최적화된 블로그 제목
-- 도입부 (기사 핵심 내용 소개)
-- 본론 (소제목 포함, 상세 설명)
+- SEO 최적화된 블로그 제목 (한 줄)
+- 빈 줄 구분으로 도입부 (기사 핵심 내용 소개)
+- 본론 (소제목은 일반 텍스트로, 상세 설명)
 - 마무리 (요약 + 독자 시사점)
-- 관련 해시태그 5~8개
+- 관련 해시태그 5~8개 (맨 아래 별도 줄에 #태그 형식으로만)
 - 출처: ${newsInfo.siteName}`,
 
       tistory: `다음 뉴스 기사를 바탕으로 티스토리 블로그 글을 작성해주세요.
@@ -259,15 +291,25 @@ ${articleSection}
 ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
-## h2 소제목 적극 활용, **강조 텍스트**, 리스트 구조화
-SEO 최적화, 출처 명시`,
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호(★, ●, ■, ▶, ♥ 등) 일절 사용 금지
+- 마크다운 기호(##, ###, **, __, ~~, >, *) 사용 금지
+- 소제목은 줄바꿈 후 일반 텍스트로 자연스럽게 표현
+- 순수 한국어 문장으로만 작성
+
+SEO 최적화된 제목, 소제목으로 구조화, 출처 명시`,
 
       summary: `다음 뉴스 기사의 핵심 내용을 요약 정리해주세요.
 분량: ${lenLabel}
 ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
-- 핵심 포인트 3~5가지
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호 일절 사용 금지
+- 마크다운 기호(##, **, -, *) 사용 금지
+- 번호(1. 2. 3.)는 허용, 나머지는 순수 문장으로 작성
+
+- 핵심 포인트 3~5가지 (번호 목록)
 - 각 포인트 상세 설명
 - 전체 요약 1문단
 - 이 기사가 중요한 이유`,
@@ -277,7 +319,12 @@ ${articleSection}
 ${extra ? `추가 요청: ${extra}` : ""}
 ${articleSection}
 
-① 인스타그램 캡션 (해시태그 포함)
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호(★, ●, ■ 등) 일절 사용 금지
+- 인스타그램 캡션도 이모지 없이 텍스트만으로 작성
+- 해시태그는 맨 아래에만 (#태그 형식으로만)
+
+① 인스타그램 캡션 (해시태그 포함, 이모지 없이)
 ② 스레드 연속 포스팅 3~4개
 ③ X(트위터) 스타일 핵심 인사이트 3개`,
     };
@@ -309,7 +356,7 @@ ${articleSection}
           if (line.startsWith("data: ")) {
             try {
               const p = JSON.parse(line.slice(6).trim());
-              if (p.type==="content_block_delta"&&p.delta?.text) { full+=p.delta.text; _nfFull=full; setResult(full); }
+              if (p.type==="content_block_delta"&&p.delta?.text) { full+=p.delta.text; _nfFull=full; setResult(cleanBlogText(full)); }
             } catch {}
           }
         }
