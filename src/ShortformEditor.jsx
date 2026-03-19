@@ -2,14 +2,37 @@ import { useState, useRef } from "react";
 
 const CLAUDE_KEY = "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";
 
-async function callClaude(prompt) {
+async function callClaude(prompt, maxTokens=4096) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{ "Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true" },
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:3500, messages:[{role:"user",content:prompt}] })
+    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:maxTokens, messages:[{role:"user",content:prompt}] })
   });
   const d = await res.json();
   return d.content?.[0]?.text || "";
+}
+
+// JSON 안전 파싱 - 응답이 잘린 경우도 완성된 객체들만 복구
+function safeParseClips(raw) {
+  const cleaned = raw.replace(/```json\n?/g,"").replace(/```/g,"").trim();
+  try { return JSON.parse(cleaned); } catch {}
+  // 잘린 경우: 완성된 clips 객체들만 추출
+  const objs = [];
+  let depth = 0, inStr = false, escape = false, objStart = -1, arrStarted = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === "\"") { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (!arrStarted && c === "[") { arrStarted = true; depth = 1; continue; }
+    if (!arrStarted) continue;
+    if (c === "{") { if (depth === 1) objStart = i; depth++; }
+    else if (c === "}") { depth--; if (depth === 1 && objStart >= 0) { try { objs.push(JSON.parse(cleaned.slice(objStart, i+1))); } catch {} objStart = -1; } }
+    else if (c === "[") depth++;
+    else if (c === "]") { depth--; }
+  }
+  return { clips: objs };
 }
 
 function extractYoutubeId(url) {
@@ -122,70 +145,64 @@ export default function ShortformEditor({ isDark }) {
     const len = SHORT_LENGTHS.find(l=>l.id===shortLength);
     const src = inputMode==="youtube" ? (ytInfo?.title||youtubeUrl) : (uploadedFile?.name||"업로드 영상");
     const plats = PLATFORMS.filter(p=>selPlatforms.includes(p.id)).map(p=>p.label).join(", ");
-    const capInfo = `자막 스타일: 폰트 ${captionStyle.font}, 색상 ${captionStyle.color}, 강조색 ${captionStyle.highlight}, 위치 ${captionStyle.position}, 애니메이션 ${captionStyle.animation}`;
-    const prompt = `당신은 숏폼 영상 전문 편집 AI입니다. 아래 영상을 분석해 숏폼 ${shortCount}개를 기획하세요.
+
+    try {
+      // ① 먼저 구간 목록만 가져오기 (짧은 응답)
+      setProgress(10); setProgressMsg("영상 분석 중...");
+      const planPrompt = `숏폼 영상 편집 AI. 아래 영상에서 숏폼 ${shortCount}개의 구간을 선정하세요.
 
 영상: ${src}
-구간: ${toMMSS(rangeStart)}~${toMMSS(rangeEnd)}
+분석 구간: ${toMMSS(rangeStart)}~${toMMSS(rangeEnd)}
 숏폼 길이: ${len?.min}~${len?.max}초
-플랫폼: ${plats}
-${capInfo}
 
-다음 JSON만 응답 (다른 텍스트 없이):
-{
-  "clips": [
-    {
-      "index": 1,
-      "title_a": "제목 버전 A (후킹·충격적)",
-      "title_b": "제목 버전 B (감성·공감)",
-      "title_c": "제목 버전 C (정보·궁금증)",
-      "hook_score": 87,
-      "viral_score": 72,
-      "startTime": "00:00",
-      "endTime": "00:45",
-      "duration": 45,
-      "hook": "첫 3초 오프닝 멘트 (강렬하게)",
-      "script": "전체 자막 스크립트\\n줄바꿈 포함\\n${len?.min}~${len?.max}초 분량",
-      "caption_segments": [
-        {"time":"0~3s","text":"첫 3초 자막","style":"big_highlight"},
-        {"time":"3~10s","text":"본론 자막","style":"normal"},
-        {"time":"마지막5s","text":"마무리 자막","style":"cta"}
-      ],
-      "thumbnail_text": "썸네일에 넣을 강렬한 텍스트 (10자 이내)",
-      "thumbnail_tip": "썸네일 구성 팁",
-      "platform_tips": {
-        "youtube": "유튜브 쇼츠 최적화 팁",
-        "instagram": "릴스 최적화 팁",
-        "tiktok": "틱톡 최적화 팁"
-      },
-      "best_upload_day": "월요일",
-      "best_upload_time": "오전 8시",
-      "hashtags": ["#태그1","#태그2","#태그3","#태그4","#태그5"],
-      "reason": "이 구간을 선택한 이유 (1~2문장)"
-    }
-  ],
-  "content_strategy": "전체 콘텐츠 전략 (2~3문장)",
-  "upload_schedule": [
-    {"day": "Day 1", "clip_index": 1, "platform": "유튜브 쇼츠", "time": "오전 8시", "tip": "첫날 가장 강한 콘텐츠 업로드"}
-  ]
-}`;
+JSON만 응답:
+{"clips":[{"index":1,"startTime":"00:00","endTime":"00:30","duration":30,"reason":"선택 이유"},{"index":2,...}]}`;
 
-    const msgs = [
-      {d:600,p:15,m:"영상 분석 중..."},
-      {d:1400,p:35,m:"하이라이트 구간 추출 중..."},
-      {d:1200,p:55,m:"후킹 제목 A/B/C 생성 중..."},
-      {d:1000,p:72,m:"자막 세그먼트 구성 중..."},
-      {d:800,p:85,m:"바이럴 점수 분석 중..."},
-      {d:600,p:93,m:"업로드 일정 최적화 중..."},
-    ];
-    try {
-      for(const m of msgs){ await new Promise(r=>setTimeout(r,m.d)); setProgress(m.p); setProgressMsg(m.m); }
-      const raw = await callClaude(prompt);
-      const cleaned = raw.replace(/```json\n?/g,"").replace(/```/g,"").trim();
-      const parsed = JSON.parse(cleaned);
-      setClips(parsed.clips||[]);
-      setSchedule(parsed.upload_schedule||[]);
-      setAnalysis({strategy:parsed.content_strategy});
+      const planRaw = await callClaude(planPrompt, 1500);
+      const planParsed = safeParseClips(planRaw);
+      const planClips = planParsed.clips || [];
+      setProgress(20); setProgressMsg(`${planClips.length}개 구간 추출 완료, 상세 생성 중...`);
+
+      // ② 클립별로 상세 생성 (병렬 처리로 속도 개선)
+      const allClips = [];
+      const batchSize = 2; // 2개씩 묶어서 처리
+      const groups = [];
+      for (let i = 0; i < planClips.length; i += batchSize) groups.push(planClips.slice(i, i+batchSize));
+
+      for (let gi = 0; gi < groups.length; gi++) {
+        const group = groups[gi];
+        const pct = 20 + Math.round(((gi+1)/groups.length) * 70);
+        setProgress(pct); setProgressMsg(`숏폼 ${gi*batchSize+1}~${Math.min((gi+1)*batchSize, planClips.length)}번 상세 생성 중...`);
+
+        const detailPrompt = `숏폼 ${group.length}개의 상세 기획을 작성하세요.
+
+영상: ${src}  |  플랫폼: ${plats}  |  길이: ${len?.min}~${len?.max}초
+
+${group.map(c=>`#${c.index}: ${c.startTime}~${c.endTime} (${c.reason||""})`).join("\n")}
+
+JSON만 응답 (설명 없이):
+{"clips":[${group.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","endTime":"${c.endTime}","duration":${c.duration},"title_a":"후킹 제목","title_b":"감성 제목","title_c":"정보 제목","hook_score":80,"viral_score":75,"hook":"첫3초 멘트","script":"자막 스크립트 (${len?.min}~${len?.max}초)","caption_segments":[{"time":"0~3s","text":"오프닝","style":"big_highlight"},{"time":"중반","text":"본론","style":"normal"},{"time":"마지막","text":"마무리","style":"cta"}],"thumbnail_text":"썸네일텍스트","thumbnail_tip":"구성팁","platform_tips":{"youtube":"팁","instagram":"팁","tiktok":"팁"},"best_upload_day":"월요일","best_upload_time":"오전8시","hashtags":["#태그1","#태그2","#태그3"],"reason":"${c.reason||""}"}`).join(",")}]}`;
+
+        const raw = await callClaude(detailPrompt, 2500);
+        const parsed = safeParseClips(raw);
+        allClips.push(...(parsed.clips||[]));
+
+        // 생성된 클립 즉시 반영 (스트리밍 느낌)
+        setClips([...allClips]);
+      }
+
+      // ③ 전략 & 스케줄 (간단하게)
+      setProgress(92); setProgressMsg("업로드 일정 생성 중...");
+      const schedPrompt = `숏폼 ${allClips.length}개의 업로드 일정과 전략을 작성하세요.
+영상: ${src}  |  플랫폼: ${plats}
+JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1","clip_index":1,"platform":"${plats.split(",")[0]?.trim()||"유튜브 쇼츠"}","time":"오전 8시","tip":"팁"}]}`;
+      const schedRaw = await callClaude(schedPrompt, 800);
+      try {
+        const schedParsed = JSON.parse(schedRaw.replace(/```json\n?/g,"").replace(/```/g,"").trim());
+        setSchedule(schedParsed.upload_schedule||[]);
+        setAnalysis({strategy:schedParsed.content_strategy||""});
+      } catch { setSchedule([]); setAnalysis({strategy:""}); }
+
       setSelectedClip(0); setProgress(100); setProgressMsg("완료!");
       await new Promise(r=>setTimeout(r,300));
       setStep(4); setTab("clips");
@@ -477,20 +494,42 @@ ${capInfo}
 
   // ─────────── STEP 3 처리중 ───────────
   if(step===3) return (
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 20px"}}>
-      <div style={{maxWidth:440,width:"100%",textAlign:"center"}}>
-        <div style={{position:"relative",width:100,height:100,margin:"0 auto 20px"}}>
-          <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid rgba(168,85,247,0.15)"}}/>
-          <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:ACC,animation:"spin 1s linear infinite"}}/>
-          <div style={{position:"absolute",inset:10,borderRadius:"50%",border:"2px solid transparent",borderTopColor:"rgba(168,85,247,0.4)",animation:"spin 1.6s linear infinite reverse"}}/>
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:34}}>✂️</div>
+    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 20px"}}>
+      <div style={{maxWidth:520,width:"100%"}}>
+        {/* 스피너 */}
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{position:"relative",width:80,height:80,margin:"0 auto 16px"}}>
+            <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid rgba(168,85,247,0.15)"}}/>
+            <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:ACC,animation:"spin 1s linear infinite"}}/>
+            <div style={{position:"absolute",inset:8,borderRadius:"50%",border:"2px solid transparent",borderTopColor:"rgba(168,85,247,0.4)",animation:"spin 1.6s linear infinite reverse"}}/>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>✂️</div>
+          </div>
+          <div style={{fontSize:17,fontWeight:900,color:text,marginBottom:5}}>AI가 분석하고 있어요</div>
+          <div style={{fontSize:13,color:ACC,fontWeight:700,marginBottom:14}}>{progressMsg}</div>
+          <div style={{height:7,borderRadius:4,background:D?"rgba(255,255,255,0.08)":"#e5e7eb",overflow:"hidden",marginBottom:5}}>
+            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#a855f7,#ec4899)",width:`${progress}%`,transition:"width 0.5s ease"}}/>
+          </div>
+          <div style={{fontSize:11,color:muted}}>{progress}% · 완료된 숏폼 {clips.length}개</div>
         </div>
-        <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:6}}>AI가 분석하고 있어요</div>
-        <div style={{fontSize:13,color:ACC,fontWeight:700,marginBottom:18}}>{progressMsg}</div>
-        <div style={{height:8,borderRadius:4,background:D?"rgba(255,255,255,0.08)":"#e5e7eb",overflow:"hidden",marginBottom:6}}>
-          <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#a855f7,#ec4899)",width:`${progress}%`,transition:"width 0.6s ease"}}/>
-        </div>
-        <div style={{fontSize:11,color:muted}}>{progress}%</div>
+
+        {/* 생성된 클립 실시간 표시 */}
+        {clips.length > 0 && (
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:muted,marginBottom:8}}>생성 완료된 숏폼 미리보기</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {clips.map((clip,i)=>(
+                <div key={i} style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.06)`,display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:`rgba(168,85,247,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:ACC,flexShrink:0}}>#{i+1}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{clip.title_a||"생성 중..."}</div>
+                    <div style={{fontSize:10,color:muted}}>{clip.startTime}~{clip.endTime} · 후킹 {clip.hook_score} / 바이럴 {clip.viral_score}</div>
+                  </div>
+                  <div style={{fontSize:14}}>✅</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
