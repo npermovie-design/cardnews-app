@@ -39,6 +39,7 @@
     "firebase": "^12.10.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "youtube-transcript": "^1.3.0"
+    "youtube-transcript": "^1.3.0",
+    "ytdl-core": "^4.11.5"
   }
 }
