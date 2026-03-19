@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { fbLogin, fbRegister, fbGoogleLogin, isValidEmail } from "./storage";
+import { getAuth, sendEmailVerification, reload } from "firebase/auth";
 
 export default function AuthModal({ onClose, onAuth, C }) {
-  const [tab,     setTab]     = useState("login");
-  const [form,    setForm]    = useState({ email: "", pw: "", pw2: "", nick: "" });
-  const [err,     setErr]     = useState("");
-  const [loading, setLoading] = useState(false);
+  const [tab,          setTab]         = useState("login");
+  const [form,         setForm]        = useState({ email: "", pw: "", pw2: "", nick: "" });
+  const [err,          setErr]         = useState("");
+  const [loading,      setLoading]     = useState(false);
+  const [regStep,      setRegStep]     = useState(1);   // 1=폼, 2=인증 대기
+  const [verifyLoading,setVerifyLoading] = useState(false);
+  const [resendCool,   setResendCool]  = useState(false); // 재발송 쿨다운
+  const [pendingUser,  setPendingUser] = useState(null);  // 인증 대기 중인 FB user
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -92,8 +97,17 @@ export default function AuthModal({ onClose, onAuth, C }) {
       if (!isValidEmail(form.email)) { setErr("올바른 이메일 형식이 아닙니다."); setLoading(false); return; }
       if (form.pw.length < 8) { setErr("비밀번호는 8자 이상이어야 합니다."); setLoading(false); return; }
       if (form.pw !== form.pw2) { setErr("비밀번호가 일치하지 않습니다."); setLoading(false); return; }
-      const user = await fbRegister(form.email, form.pw, form.nick.trim());
-      onAuth(user);
+
+      // Firebase 계정 생성
+      await fbRegister(form.email, form.pw, form.nick.trim());
+
+      // 인증 메일 발송 (가입 직후 currentUser 사용)
+      const fbUser = getAuth().currentUser;
+      if (fbUser) {
+        await sendEmailVerification(fbUser);
+        setPendingUser(fbUser);
+        setRegStep(2); // 인증 대기 화면으로 전환
+      }
     } catch(e) {
       const msg = e.code === "auth/email-already-in-use" ? "이미 가입된 이메일입니다."
         : e.code === "auth/weak-password" ? "비밀번호가 너무 약합니다."
@@ -101,6 +115,38 @@ export default function AuthModal({ onClose, onAuth, C }) {
         : "회원가입 중 오류가 발생했습니다.";
       setErr(msg);
     } finally { setLoading(false); }
+  };
+
+  // 인증 완료 확인
+  const checkVerification = async () => {
+    setVerifyLoading(true); setErr("");
+    try {
+      const fbUser = getAuth().currentUser;
+      if (!fbUser) { setErr("세션이 만료됐어요. 다시 가입해주세요."); setRegStep(1); return; }
+      await reload(fbUser); // Firebase에서 최신 상태 가져오기
+      if (fbUser.emailVerified) {
+        // 인증 완료 → 정상 로그인 처리
+        const user = await fbLogin(form.email, form.pw);
+        onAuth(user);
+      } else {
+        setErr("아직 인증이 완료되지 않았어요. 이메일 링크를 클릭해주세요.");
+      }
+    } catch(e) {
+      setErr("확인 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+    } finally { setVerifyLoading(false); }
+  };
+
+  // 인증 메일 재발송
+  const resendEmail = async () => {
+    if (resendCool) return;
+    try {
+      const fbUser = getAuth().currentUser;
+      if (fbUser) {
+        await sendEmailVerification(fbUser);
+        setResendCool(true);
+        setTimeout(() => setResendCool(false), 30000); // 30초 쿨다운
+      }
+    } catch(e) { setErr("재발송 중 오류가 발생했어요."); }
   };
 
   // 모달은 항상 다크 스타일로 고정 (배경이 어두운 오버레이 위)
@@ -170,7 +216,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
           </div>
         )}
 
-        {tab === "register" && (
+        {tab === "register" && regStep === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input placeholder="닉네임 (2자 이상)" value={form.nick} className="nper-auth-input" style={fs} onChange={f("nick")} />
             <input placeholder="이메일" type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
@@ -215,6 +261,48 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 ✅ 일일 로그인 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
                 ✅ 포인트 충전으로 AI 무제한 이용
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 이메일 인증 대기 화면 ── */}
+        {tab === "register" && regStep === 2 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, textAlign: "center" }}>
+            {/* 아이콘 */}
+            <div style={{ fontSize: 56, margin: "8px 0 4px" }}>📧</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>이메일 인증을 완료해주세요</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9 }}>
+              <b style={{ color: "#a5b4fc" }}>{form.email}</b>으로<br/>
+              인증 메일을 발송했어요.<br/>
+              메일함을 확인하고 링크를 클릭한 뒤<br/>아래 버튼을 눌러주세요.
+            </div>
+
+            {/* 안내 박스 */}
+            <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 12, padding: "12px 14px", textAlign: "left" }}>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.8 }}>
+                💡 메일이 보이지 않으면 <b style={{ color: "#fff" }}>스팸함</b>을 확인해주세요<br/>
+                💡 링크 클릭 후 이 창으로 돌아와서 아래 버튼을 눌러주세요
+              </div>
+            </div>
+
+            {err && <div style={{ fontSize: 12, color: "#e53e3e", background: "rgba(229,62,62,0.08)", borderRadius: 8, padding: "8px 12px", border: "1px solid rgba(229,62,62,0.2)" }}>{err}</div>}
+
+            {/* 인증 완료 확인 버튼 */}
+            <button onClick={checkVerification} disabled={verifyLoading}
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+              {verifyLoading ? "확인 중..." : "✅ 인증 완료 확인"}
+            </button>
+
+            {/* 재발송 + 다시가입 */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={resendEmail} disabled={resendCool}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: resendCool ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.6)", fontSize: 12, cursor: resendCool ? "not-allowed" : "pointer" }}>
+                {resendCool ? "30초 후 재발송 가능" : "📤 메일 재발송"}
+              </button>
+              <button onClick={() => { setRegStep(1); setErr(""); setPendingUser(null); }}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.6)", fontSize: 12, cursor: "pointer" }}>
+                ← 정보 수정
+              </button>
             </div>
           </div>
         )}
