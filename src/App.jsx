@@ -10,6 +10,7 @@ import BoardPage from "./BoardPage";
 import ArchivePage from "./ArchivePage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
+import MyPage from "./MyPage";
 
 const SNS = [
   { url: "https://open.kakao.com/o/gIw9vTFg",              label: "💬", bg: "#FEE500", tc: "#3A1D1D" },
@@ -140,6 +141,7 @@ export default function App() {
     if (mainSeg === "ai" && segments[1]) {
       setAiMenu(segments[1]);
     }
+    if (mainSeg === "mypage" && !user) { setPage("home"); return; } // 비로그인 차단
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
   }, []);
 
@@ -259,6 +261,7 @@ export default function App() {
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
+    if (page === "mypage")   return <MyPage user={user} setUser={u=>{ setUserState(u); try{localStorage.setItem("nper_user",JSON.stringify(u));}catch{} }} C={C} navigate={navigate} theme={theme} />;
     if (page === "admin")    return <AdminPage C={C} user={user} />;
     return <HomePage C={C} navigate={navigate} />;
   };
@@ -506,12 +509,18 @@ export default function App() {
           ))}
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>💎 {(user.points||0).toLocaleString()}cr</div>
+              <div style={{ display: "flex", flexDirection:"column", gap:10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
+                    <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>💎 {(user.points||0).toLocaleString()}cr</div>
+                  </div>
+                  <button onClick={logout} style={{ padding: "8px 16px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 13 }}>로그아웃</button>
                 </div>
-                <button onClick={logout} style={{ padding: "8px 16px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 13 }}>로그아웃</button>
+                <button onClick={()=>{ navigate("mypage"); setMobileOpen(false); }}
+                  style={{ width:"100%", padding:"11px", borderRadius:10, border:"1px solid "+C.border, background:"transparent", color:C.purpleL, fontSize:13, fontWeight:700, cursor:"pointer", textAlign:"left" }}>
+                  👤 내 마이페이지 (크레딧 내역·닉네임 변경)
+                </button>
               </div>
             ) : (
               <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
