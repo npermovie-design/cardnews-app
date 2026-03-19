@@ -6,42 +6,106 @@ import { changePoints } from "./storage";
    로고/텍스트 입력 → 목업 종류 선택 → 이미지 생성
 ═══════════════════════════════════════════════════ */
 
-const MOCKUP_TYPES = [
-  { id:"business_card",  label:"명함",         icon:"🪪", desc:"가로형 명함 디자인",           color:"#6366f1" },
-  { id:"phone",          label:"스마트폰 화면", icon:"📱", desc:"폰 화면에 로고 노출",           color:"#06b6d4" },
-  { id:"monitor",        label:"컴퓨터 모니터", icon:"🖥",  desc:"모니터 화면 목업",             color:"#8b5cf6" },
-  { id:"notebook",       label:"노트북 화면",   icon:"💻", desc:"노트북 화면에 적용",           color:"#0891b2" },
-  { id:"tshirt",         label:"티셔츠",        icon:"👕", desc:"티셔츠 가슴 로고 프린팅",      color:"#ec4899" },
-  { id:"tumbler",        label:"텀블러",        icon:"🥤", desc:"텀블러 측면 로고 인쇄",        color:"#10b981" },
-  { id:"mug",            label:"머그컵",        icon:"☕", desc:"머그컵 측면 로고",             color:"#f59e0b" },
-  { id:"notebook_book",  label:"노트북(수첩)",  icon:"📒", desc:"수첩/노트 커버 로고",          color:"#d97706" },
-  { id:"pen",            label:"볼펜",          icon:"🖊",  desc:"볼펜 몸체 로고 각인",         color:"#64748b" },
-  { id:"tote_bag",       label:"토트백",        icon:"🛍", desc:"가방 측면 로고 프린팅",        color:"#7c3aed" },
-  { id:"banner",         label:"배너/현수막",   icon:"🎌", desc:"이벤트 배너 목업",             color:"#dc2626" },
-  { id:"signage",        label:"간판",          icon:"🪧", desc:"매장 간판 로고 적용",          color:"#059669" },
-  { id:"envelope",       label:"봉투/레터헤드", icon:"✉️", desc:"기업 봉투 CI 적용",            color:"#7c6aff" },
-  { id:"cap",            label:"모자",          icon:"🧢", desc:"야구 모자 앞면 로고",          color:"#b45309" },
-  { id:"sticker",        label:"스티커/씰",     icon:"🔖", desc:"원형/각형 스티커 목업",        color:"#0284c7" },
-  { id:"packaging",      label:"패키징 박스",   icon:"📦", desc:"제품 포장 박스 디자인",        color:"#9333ea" },
+// 종합 목업 (특별)
+const COMPREHENSIVE_MOCKUP = {
+  id:"comprehensive", label:"종합 브랜드 목업", icon:"✨",
+  desc:"명함·봉투·노트·폰 등 한 장에 모두",
+  color:"#f59e0b", isBrand:true
+};
+
+const MOCKUP_CATEGORIES = [
+  {
+    label:"기업·브랜딩",
+    items:[
+      { id:"business_card",   label:"명함",          icon:"🪪", desc:"가로형 명함 디자인",        color:"#6366f1" },
+      { id:"letterhead",      label:"레터헤드",       icon:"📄", desc:"회사 공문서 레터헤드",      color:"#4f46e5" },
+      { id:"envelope",        label:"봉투",           icon:"✉️", desc:"기업 봉투 CI 적용",         color:"#7c6aff" },
+      { id:"id_badge",        label:"사원증/배지",    icon:"🪪", desc:"명찰·사원증 목업",          color:"#6366f1" },
+      { id:"stamp",           label:"도장/스탬프",    icon:"📮", desc:"회사 도장 목업",            color:"#dc2626" },
+    ]
+  },
+  {
+    label:"디지털·화면",
+    items:[
+      { id:"phone",           label:"스마트폰",       icon:"📱", desc:"폰 화면 로고 노출",         color:"#06b6d4" },
+      { id:"monitor",         label:"모니터",         icon:"🖥",  desc:"모니터 화면 목업",          color:"#8b5cf6" },
+      { id:"notebook",        label:"노트북 화면",    icon:"💻", desc:"노트북 화면에 적용",        color:"#0891b2" },
+      { id:"tablet",          label:"태블릿",         icon:"📱", desc:"태블릿 화면 목업",          color:"#0ea5e9" },
+    ]
+  },
+  {
+    label:"옥외·광고",
+    items:[
+      { id:"signage",         label:"매장 간판",      icon:"🪧", desc:"매장 외관 간판 적용",       color:"#059669" },
+      { id:"billboard",       label:"빌보드/옥외광고",icon:"🎌", desc:"건물 옥외 광고판",          color:"#dc2626" },
+      { id:"banner_vertical", label:"배너 (세로형)",  icon:"📢", desc:"행사·전시 롤업 배너",       color:"#b91c1c" },
+      { id:"banner_flag",     label:"깃발 배너",      icon:"🚩", desc:"야외 깃발 배너 목업",       color:"#ef4444" },
+      { id:"magazine",        label:"잡지/카탈로그",  icon:"📰", desc:"잡지 표지 브랜드 적용",     color:"#7c3aed" },
+    ]
+  },
+  {
+    label:"인쇄물",
+    items:[
+      { id:"notebook_book",   label:"노트(수첩)",     icon:"📒", desc:"수첩 커버 로고",            color:"#d97706" },
+      { id:"sticker",         label:"스티커/씰",      icon:"🔖", desc:"원형·각형 스티커",          color:"#0284c7" },
+      { id:"packaging",       label:"패키징 박스",    icon:"📦", desc:"제품 포장 박스",            color:"#9333ea" },
+      { id:"paper_bag",       label:"쇼핑백",         icon:"🛍", desc:"종이 쇼핑백 로고",          color:"#a16207" },
+      { id:"flyer",           label:"전단지/리플렛",  icon:"📋", desc:"홍보 전단지 목업",          color:"#64748b" },
+    ]
+  },
+  {
+    label:"굿즈·용품",
+    items:[
+      { id:"tshirt",          label:"티셔츠",         icon:"👕", desc:"가슴 로고 프린팅",          color:"#ec4899" },
+      { id:"tumbler",         label:"텀블러",         icon:"🥤", desc:"측면 로고 인쇄",            color:"#10b981" },
+      { id:"mug",             label:"머그컵",         icon:"☕", desc:"머그컵 로고",               color:"#f59e0b" },
+      { id:"cap",             label:"모자",           icon:"🧢", desc:"야구모자 앞면 로고",        color:"#b45309" },
+      { id:"pen",             label:"볼펜",           icon:"🖊",  desc:"볼펜 몸체 각인",            color:"#475569" },
+      { id:"tote_bag",        label:"토트백",         icon:"👜", desc:"캔버스 가방 프린팅",        color:"#7c3aed" },
+      { id:"umbrella",        label:"우산",           icon:"☂️", desc:"우산 로고 프린팅",          color:"#0369a1" },
+      { id:"apron",           label:"앞치마",         icon:"🧑‍🍳", desc:"앞치마 로고 자수",          color:"#15803d" },
+    ]
+  },
 ];
 
+// 평탄화된 목록 (전체 선택/해제용)
+const MOCKUP_TYPES = MOCKUP_CATEGORIES.flatMap(c => c.items);
+
 const MOCKUP_PROMPTS = {
-  business_card:  "Professional business card mockup, white card with logo centered, dark background, soft shadow, realistic photography style, top-down view",
-  phone:          "Smartphone screen mockup showing logo on a clean interface, modern phone on white or dark background, realistic 3D render",
-  monitor:        "Desktop computer monitor displaying logo on dark screen, professional office desk background, realistic product photography",
-  notebook:       "Laptop computer screen showing logo on modern website interface, wooden desk background, realistic photography",
-  tshirt:         "White t-shirt mockup with logo printed on chest, flat lay or mannequin style, clean white background, realistic fabric texture",
-  tumbler:        "Stainless steel tumbler with logo engraved/printed on side, minimal studio background, professional product photography",
-  mug:            "White ceramic coffee mug with logo on side, realistic studio lighting, white or dark background, professional mockup",
-  notebook_book:  "Premium hardcover notebook with logo on cover, top-down flat lay, minimal background, realistic texture",
-  pen:            "Elegant ballpoint pen with logo engraved, dark or white background, professional product photography, close-up detail",
-  tote_bag:       "Canvas tote bag with logo printed on front, white background, fashion-forward product photography, natural fabric texture",
-  banner:         "Vertical pull-up banner/roll-up banner with logo design, office or exhibition background, professional marketing mockup",
-  signage:        "Modern store signage with logo mounted on wall, urban background or interior shop, realistic architectural visualization",
-  envelope:       "White business envelope and letterhead set with logo, flat lay top-down view, premium paper texture, minimal background",
-  cap:            "Baseball cap with logo embroidered on front, front and 3/4 view, minimal background, realistic fabric mockup",
-  sticker:        "Round and rectangular die-cut stickers with logo, scattered arrangement on white background, high-quality print mockup",
-  packaging:      "Product packaging box with logo printed, 3D perspective view, white or gradient background, realistic commercial render",
+  // 기업·브랜딩
+  business_card:   "Professional business card mockup, elegant card with logo centered, dark studio background, soft shadow, top-down realistic photography",
+  letterhead:      "Corporate letterhead mockup on white premium paper, logo at top, clean minimal office desk background, realistic flat lay",
+  envelope:        "White business envelope with logo printed, premium paper texture, flat lay top-down, minimal background",
+  id_badge:        "Corporate employee ID badge/lanyard mockup with logo, hanging on white background, professional product photography",
+  stamp:           "Corporate rubber stamp or wax seal with logo, dark moody background, close-up detail, professional product photography",
+  // 디지털·화면
+  phone:           "Modern smartphone screen mockup with logo on dark UI interface, phone on minimal background, realistic 3D product render",
+  monitor:         "Widescreen desktop monitor showing logo on dark web interface, professional office desk, realistic product photography",
+  notebook:        "MacBook laptop open showing logo on screen, wooden desk background, natural lighting, realistic product photography",
+  tablet:          "iPad/tablet mockup showing logo on screen, minimal table background, realistic product photography",
+  // 옥외·광고
+  signage:         "Modern illuminated storefront signage with logo, urban street at night, realistic architectural visualization, cinematic lighting",
+  billboard:       "Large outdoor billboard on building rooftop with brand logo design, blue sky background, realistic 3D render, wide angle perspective",
+  banner_vertical: "Vertical pull-up roll-up banner with logo, exhibition hall background, professional marketing mockup, realistic fabric",
+  banner_flag:     "Outdoor feather flag/sail banner with logo in wind, street environment, realistic fabric texture render",
+  magazine:        "Magazine or catalog cover with brand logo and design, held by hand or on stone surface, editorial photography style, dramatic lighting",
+  // 인쇄물
+  notebook_book:   "Premium hardcover notebook/journal with logo on cover, flat lay on white background, realistic leather or fabric texture",
+  sticker:         "Die-cut brand stickers with logo, round and rectangular, scattered on white background, high quality print mockup",
+  packaging:       "Product packaging gift box with logo printed, 3D perspective view, white studio background, realistic commercial render",
+  paper_bag:       "Kraft paper shopping bag with logo printed, minimal white background, product photography, natural texture",
+  flyer:           "Brand flyer or leaflet with logo, flat lay on white background, clean print mockup, professional graphic design",
+  // 굿즈·용품
+  tshirt:          "White t-shirt with logo printed on chest, flat lay on minimal background, clean fabric texture, fashion mockup",
+  tumbler:         "Stainless steel tumbler/bottle with logo engraved on side, minimal studio background, professional product photography",
+  mug:             "White ceramic coffee mug with logo on side, studio lighting, white or dark background, realistic product mockup",
+  cap:             "Baseball cap with logo embroidered on front, 3/4 view, minimal background, realistic fabric and embroidery texture",
+  pen:             "Premium ballpoint pen with logo engraved, dark elegant background, close-up detail, professional product photography",
+  tote_bag:        "Canvas tote bag with logo printed on front, white/natural background, lifestyle product photography",
+  umbrella:        "Open umbrella with logo printed on canopy, outdoor or studio background, realistic product photography",
+  apron:           "Canvas apron with logo embroidered, flat lay or worn, clean background, realistic fabric texture",
+  // 종합
+  comprehensive:   "Premium brand identity stationery flat lay mockup featuring business cards, envelope, letterhead, notebook, pen and smartphone arranged aesthetically on white background, top-down bird eye view, professional commercial photography, ultra realistic, high-end corporate branding showcase",
 };
 
 async function generateMockup(logoPrompt, mockupType, logoB64, logoMime) {
@@ -106,6 +170,10 @@ export default function MockupGenerator({ isDark, user }) {
 
   const canGenerate = selTypes.length > 0 && (logoText.trim() || logoB64);
 
+  // 모든 선택 가능한 타입 (종합 포함)
+  const allTypes = [COMPREHENSIVE_MOCKUP, ...MOCKUP_TYPES];
+  const getTypeInfo = (id) => allTypes.find(t => t.id === id) || { label:id, icon:"🎨" };
+
   const generate = async () => {
     if (!canGenerate) return;
     setStep(2); setResults({}); setError("");
@@ -133,7 +201,7 @@ export default function MockupGenerator({ isDark, user }) {
 
   const download = (typeId) => {
     const img = results[typeId]; if (!img) return;
-    const type = MOCKUP_TYPES.find(t => t.id === typeId);
+    const type = getTypeInfo(typeId);
     const a = document.createElement("a");
     a.href = img;
     a.download = `mockup_${type?.label || typeId}.png`;
@@ -156,18 +224,28 @@ export default function MockupGenerator({ isDark, user }) {
         <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:10 }}>목업 생성기</div>
         <div style={{ fontSize:13, color:muted, lineHeight:1.9, marginBottom:28 }}>
           로고 파일이나 브랜드명을 입력하면<br/>
-          명함·폰·모니터·텀블러 등 다양한 제품에<br/>
+          명함·간판·잡지·빌보드 등 다양한 제품에<br/>
           적용된 고품질 목업 이미지를 생성해요.
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:24 }}>
-          {MOCKUP_TYPES.slice(0,8).map(t => (
-            <div key={t.id} style={{ padding:"12px 6px", borderRadius:11, border:`1px solid ${bdr}`, background:cardBg, textAlign:"center" }}>
-              <div style={{ fontSize:22, marginBottom:4 }}>{t.icon}</div>
-              <div style={{ fontSize:10, fontWeight:700, color:text }}>{t.label}</div>
+
+        {/* 종합 목업 강조 */}
+        <div style={{ padding:"14px 18px", borderRadius:14, border:"2px solid rgba(245,158,11,0.4)", background:"rgba(245,158,11,0.08)", marginBottom:16, textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
+          <span style={{ fontSize:28 }}>✨</span>
+          <div>
+            <div style={{ fontSize:13, fontWeight:900, color:"#f59e0b", marginBottom:2 }}>종합 브랜드 목업 — 한 장에 모두!</div>
+            <div style={{ fontSize:11, color:muted }}>명함·봉투·노트·폰 등 여러 아이템을 한 이미지에 담아요</div>
+          </div>
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:16 }}>
+          {[...MOCKUP_CATEGORIES.flatMap(c=>c.items)].slice(0,10).map(t => (
+            <div key={t.id} style={{ padding:"10px 4px", borderRadius:10, border:`1px solid ${bdr}`, background:cardBg, textAlign:"center" }}>
+              <div style={{ fontSize:18, marginBottom:2 }}>{t.icon}</div>
+              <div style={{ fontSize:9, fontWeight:700, color:text }}>{t.label}</div>
             </div>
           ))}
         </div>
-        <div style={{ fontSize:12, color:muted, marginBottom:24 }}>+ 볼펜, 토트백, 간판, 모자, 패키징 등 총 16종</div>
+        <div style={{ fontSize:11, color:muted, marginBottom:24 }}>+ 빌보드, 잡지, 배너, 쇼핑백, 앞치마, 우산 등 총 29종</div>
         <button onClick={() => setStep(1)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#6d28d9)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:"0 8px 24px rgba(124,58,237,0.3)" }}>
           🎨 목업 만들기 시작 →
         </button>
@@ -220,8 +298,8 @@ export default function MockupGenerator({ isDark, user }) {
 
         {/* 목업 종류 선택 */}
         <div style={{ marginBottom:22 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:text }}>② 목업 종류 선택 * <span style={{ fontSize:11, color:muted, fontWeight:400 }}>({selTypes.length}개 선택 · 종당 10 크레딧)</span></div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:text }}>② 목업 종류 선택 * <span style={{ fontSize:11, color:muted, fontWeight:400 }}>({selTypes.length}개 · 종당 10cr)</span></div>
             <div style={{ display:"flex", gap:6 }}>
               <button onClick={() => setSelTypes(MOCKUP_TYPES.map(t=>t.id))}
                 style={{ padding:"4px 10px", borderRadius:7, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>전체 선택</button>
@@ -229,19 +307,46 @@ export default function MockupGenerator({ isDark, user }) {
                 style={{ padding:"4px 10px", borderRadius:7, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>전체 해제</button>
             </div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:7 }}>
-            {MOCKUP_TYPES.map(t => {
-              const isSel = selTypes.includes(t.id);
-              return (
-                <button key={t.id} onClick={() => toggleType(t.id)}
-                  style={{ padding:"12px 8px", borderRadius:11, border:`2px solid ${isSel?t.color:bdr}`, background:isSel?`${t.color}18`:cardBg, cursor:"pointer", textAlign:"center", transition:"all 0.1s", boxShadow:isSel?`0 0 0 3px ${t.color}20`:"none" }}>
-                  <div style={{ fontSize:22, marginBottom:4 }}>{t.icon}</div>
-                  <div style={{ fontSize:11, fontWeight:800, color:isSel?t.color:text, marginBottom:2 }}>{t.label}</div>
-                  <div style={{ fontSize:9, color:muted }}>{t.desc}</div>
-                </button>
-              );
-            })}
-          </div>
+
+          {/* ── 종합 목업 (강조) */}
+          {(() => {
+            const C = COMPREHENSIVE_MOCKUP;
+            const isSel = selTypes.includes(C.id);
+            return (
+              <button onClick={() => toggleType(C.id)}
+                style={{ width:"100%", padding:"16px 20px", borderRadius:14, border:`2px solid ${isSel?"#f59e0b":bdr}`, background:isSel?"rgba(245,158,11,0.12)":cardBg, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:14, marginBottom:16, transition:"all 0.12s", boxShadow:isSel?"0 0 0 3px rgba(245,158,11,0.2)":"none" }}>
+                <div style={{ width:48, height:48, borderRadius:12, background:"linear-gradient(135deg,#f59e0b,#d97706)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>✨</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                    <span style={{ fontSize:14, fontWeight:900, color:isSel?"#f59e0b":text }}>종합 브랜드 목업</span>
+                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:"rgba(245,158,11,0.2)", color:"#f59e0b", fontWeight:700 }}>추천</span>
+                  </div>
+                  <div style={{ fontSize:11, color:muted }}>명함·봉투·레터헤드·노트·폰·스티커 등을 한 이미지에 — 브랜드 정체성을 한눈에 보여줘요</div>
+                </div>
+                <div style={{ fontSize:13, fontWeight:700, color:isSel?"#f59e0b":muted, flexShrink:0 }}>10 cr</div>
+              </button>
+            );
+          })()}
+
+          {/* ── 카테고리별 */}
+          {MOCKUP_CATEGORIES.map(cat => (
+            <div key={cat.label} style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:muted, marginBottom:7, paddingLeft:2, letterSpacing:0.5 }}>{cat.label}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))", gap:6 }}>
+                {cat.items.map(t => {
+                  const isSel = selTypes.includes(t.id);
+                  return (
+                    <button key={t.id} onClick={() => toggleType(t.id)}
+                      style={{ padding:"10px 6px", borderRadius:10, border:`2px solid ${isSel?t.color:bdr}`, background:isSel?`${t.color}15`:cardBg, cursor:"pointer", textAlign:"center", transition:"all 0.1s", boxShadow:isSel?`0 0 0 2px ${t.color}20`:"none" }}>
+                      <div style={{ fontSize:18, marginBottom:3 }}>{t.icon}</div>
+                      <div style={{ fontSize:10, fontWeight:800, color:isSel?t.color:text, marginBottom:1 }}>{t.label}</div>
+                      <div style={{ fontSize:8, color:muted, lineHeight:1.3 }}>{t.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {error && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#f87171", fontSize:12, marginBottom:14 }}>⚠️ {error}</div>}
@@ -365,7 +470,7 @@ export default function MockupGenerator({ isDark, user }) {
               if (!window.JSZip) await new Promise((res,rej) => { const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
               const zip = new window.JSZip();
               successResults.forEach(id => {
-                const t = MOCKUP_TYPES.find(m=>m.id===id);
+                const t = getTypeInfo(id);
                 const img = results[id];
                 if (!img) return;
                 const arr = Uint8Array.from(atob(img.split(",")[1]), c => c.charCodeAt(0));
