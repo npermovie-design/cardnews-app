@@ -370,43 +370,104 @@ export default function MockupGenerator({ isDark, user }) {
   if (step === 2) {
     const total = selTypes.length;
     const done  = Object.keys(results).length;
-    const pct   = Math.round((done / total) * 100);
-    const curType = MOCKUP_TYPES.find(t => t.id === curGen);
+    const pct   = Math.round((done / Math.max(total,1)) * 100);
+    const curType = getTypeInfo(curGen); // MOCKUP_TYPES → getTypeInfo (comprehensive 포함)
+    const isRunning = curGen !== null;
+
+    // 목업 종류별 생성 팁
+    const TIPS = {
+      comprehensive:   "명함·봉투·노트·폰 등 여러 아이템을 한 이미지에 배치하고 있어요",
+      business_card:   "가로형 명함에 로고와 브랜드컬러를 적용하고 있어요",
+      letterhead:      "공문서 레터헤드에 로고와 기업 CI를 배치하고 있어요",
+      phone:           "스마트폰 화면에 로고가 들어간 UI를 생성하고 있어요",
+      monitor:         "모니터 화면에 브랜드 웹사이트 느낌으로 적용하고 있어요",
+      billboard:       "건물 옥외 빌보드에 대형 로고를 배치하고 있어요",
+      signage:         "매장 간판에 로고와 조명 효과를 적용하고 있어요",
+      magazine:        "잡지·카탈로그 표지에 브랜드 디자인을 적용하고 있어요",
+      banner_vertical: "세로형 롤업 배너에 로고를 디자인하고 있어요",
+      tshirt:          "티셔츠 가슴에 로고 프린팅을 시뮬레이션하고 있어요",
+      tumbler:         "텀블러 측면에 로고 인쇄 효과를 적용하고 있어요",
+      mug:             "머그컵 측면에 로고를 사실적으로 렌더링하고 있어요",
+    };
+    const tip = TIPS[curGen] || `${curType?.label || ""} 목업을 AI가 생성하고 있어요`;
+
     return (
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
-        <div style={{ maxWidth:480, width:"100%", textAlign:"center" }}>
+        <div style={{ maxWidth:520, width:"100%", textAlign:"center" }}>
+
           {/* 스피너 */}
-          <div style={{ position:"relative", width:96, height:96, margin:"0 auto 20px" }}>
+          <div style={{ position:"relative", width:100, height:100, margin:"0 auto 20px" }}>
             <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(124,58,237,0.15)" }}/>
-            <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent", borderTopColor:ACC, animation:"spin 1s linear infinite" }}/>
-            <div style={{ position:"absolute", inset:10, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"rgba(124,58,237,0.5)", animation:"spin 1.6s linear infinite reverse" }}/>
-            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>
-              {curType?.icon || "🎨"}
+            {isRunning && <>
+              <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent", borderTopColor:ACC, animation:"spin 1s linear infinite" }}/>
+              <div style={{ position:"absolute", inset:10, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"rgba(124,58,237,0.5)", animation:"spin 1.6s linear infinite reverse" }}/>
+            </>}
+            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:36 }}>
+              {isRunning ? (curType?.icon || "🎨") : "✅"}
             </div>
           </div>
-          <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>목업을 생성하고 있어요</div>
-          <div style={{ fontSize:13, color:ACC, fontWeight:700, marginBottom:4 }}>
-            {curType ? `${curType.label} 생성 중... (${done+1}/${total})` : "완료!"}
+
+          <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>
+            {isRunning ? "목업을 생성하고 있어요" : "모든 목업 생성 완료!"}
           </div>
-          <div style={{ height:7, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", margin:"16px 0 14px" }}>
-            <div style={{ height:"100%", borderRadius:4, background:`linear-gradient(90deg,${ACC},#6d28d9)`, width:`${pct}%`, transition:"width 0.5s ease" }}/>
+
+          {/* 현재 생성 항목 + 진행 */}
+          {isRunning && (
+            <div style={{ background:`rgba(124,58,237,0.08)`, border:`1px solid ${ACC}30`, borderRadius:12, padding:"12px 16px", margin:"0 0 14px", textAlign:"left" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                <span style={{ fontSize:20 }}>{curType?.icon || "🎨"}</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:800, color:ACC }}>
+                    {curType?.label || curGen} 생성 중... ({done+1}/{total})
+                  </div>
+                  <div style={{ fontSize:11, color:muted, marginTop:1 }}>{tip}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 진행 바 */}
+          <div style={{ height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:14 }}>
+            <div style={{ height:"100%", borderRadius:4, background:`linear-gradient(90deg,${ACC},#6d28d9)`, width:`${pct}%`, transition:"width 0.6s ease" }}/>
           </div>
-          {/* 진행 목록 */}
-          <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:200, overflowY:"auto" }}>
+          <div style={{ fontSize:12, color:muted, marginBottom:14 }}>{done}/{total} 완료 · {Math.max(total-done,0)}개 남음</div>
+
+          {/* 목록 */}
+          <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:220, overflowY:"auto", textAlign:"left" }}>
             {selTypes.map(id => {
-              const t = MOCKUP_TYPES.find(m => m.id === id);
+              const t = getTypeInfo(id);
               const isDone = results[id] !== undefined;
               const isGen  = curGen === id;
+              const isPending = !isDone && !isGen;
               return (
-                <div key={id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 12px", borderRadius:8, background:isDone?"rgba(74,222,128,0.08)":isGen?`rgba(124,58,237,0.08)`:cardBg, border:`1px solid ${isDone?"rgba(74,222,128,0.2)":isGen?`${ACC}30`:bdr}`, textAlign:"left" }}>
-                  <span style={{ fontSize:16 }}>{t?.icon}</span>
-                  <span style={{ fontSize:12, fontWeight:600, color:isDone?"#4ade80":isGen?ACC:muted, flex:1 }}>{t?.label}</span>
-                  <span style={{ fontSize:12 }}>{isDone?"✅":isGen?"⏳":"·"}</span>
+                <div key={id} style={{
+                  display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:9,
+                  background:isDone?"rgba(74,222,128,0.08)":isGen?`rgba(124,58,237,0.1)`:"transparent",
+                  border:`1px solid ${isDone?"rgba(74,222,128,0.25)":isGen?`${ACC}40`:bdr}`,
+                  transition:"all 0.2s"
+                }}>
+                  <span style={{ fontSize:17, flexShrink:0 }}>{t?.icon || "🎨"}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:isDone?"#4ade80":isGen?ACC:muted }}>{t?.label || id}</div>
+                    {isGen && <div style={{ fontSize:10, color:muted, marginTop:1 }}>AI 이미지 생성 중...</div>}
+                    {isDone && results[id] && <div style={{ fontSize:10, color:"#4ade80", marginTop:1 }}>✓ 생성 완료</div>}
+                    {isDone && !results[id] && <div style={{ fontSize:10, color:"#f87171", marginTop:1 }}>생성 실패</div>}
+                    {isPending && <div style={{ fontSize:10, color:muted, marginTop:1 }}>대기 중</div>}
+                  </div>
+                  <div style={{ fontSize:16, flexShrink:0 }}>
+                    {isDone && results[id] ? "✅" : isDone && !results[id] ? "❌" : isGen ? (
+                      <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${ACC}40`, borderTopColor:ACC, animation:"spin 0.8s linear infinite" }}/>
+                    ) : "·"}
+                  </div>
                 </div>
               );
             })}
           </div>
-          <div style={{ fontSize:11, color:muted, marginTop:14, lineHeight:1.7 }}>각 목업은 약 10~20초 소요됩니다.</div>
+
+          <div style={{ fontSize:11, color:muted, marginTop:14, lineHeight:1.7 }}>
+            각 목업은 AI가 약 10~20초 동안 생성해요.<br/>
+            페이지를 닫지 말고 기다려주세요.
+          </div>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
