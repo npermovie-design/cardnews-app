@@ -32,10 +32,15 @@ const STYLE_GUIDES = {
 };
 
 async function callAPI(prompt, refB64, refMime) {
+  // 참고 이미지가 있으면 "스타일 참고용"임을 프롬프트에 명시
+  const finalPrompt = refB64
+    ? `[STYLE REFERENCE ONLY - Do NOT copy or reproduce the reference image. Use it only for color palette, mood, and overall aesthetic inspiration.]\n\n${prompt}`
+    : prompt;
+
   const res = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, productImageB64: refB64 || null, productImageMime: refMime || null }),
+    body: JSON.stringify({ prompt: finalPrompt, productImageB64: refB64 || null, productImageMime: refMime || null }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || data.message || `서버 오류 (${res.status})`);
@@ -227,13 +232,13 @@ export default function LogoGenerator({ isDark, user }) {
               <img src={`data:${refMime};base64,${refImage}`} alt="" style={{ width:56, height:56, objectFit:"cover", borderRadius:7, flexShrink:0 }}/>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:text }}>참고 이미지 업로드됨</div>
-                <div style={{ fontSize:10, color:muted }}>버전 1 생성 시 스타일 참고</div>
+                <div style={{ fontSize:10, color:muted }}>색감·분위기만 참고 (그대로 복사 ❌)</div>
               </div>
               <button onClick={() => { setRefImage(null); setRefMime(null); }} style={{ padding:"3px 9px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>제거</button>
             </div>
           ) : (
             <button onClick={() => refFileRef.current?.click()} style={{ width:"100%", padding:"12px", borderRadius:11, border:`2px dashed ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
-              📎 참고 이미지 업로드 (선택)
+              📎 참고 이미지 업로드 — 색감·분위기만 반영 (복사 아님)
             </button>
           )}
         </div>
