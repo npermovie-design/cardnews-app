@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getPosts, setPosts, getMembers, saveMembers, db, changePoints } from "./storage";
+import { getPosts, setPosts, getMembers, saveMembers, db, changePoints, getPostsFromDB } from "./storage";
 import { ref, get, set, push, update, remove } from "firebase/database";
 import { Btn, Inp } from "./UI";
 
@@ -50,7 +50,8 @@ export default function AdminPage({ C, user: adminUser }) {
   const [pw, setPw]        = useState("");
   const [auth, setAuth]    = useState(false);
   const [tab, setTab]      = useState("members");
-  const [posts, setPosts2] = useState(getPosts());
+  const [posts, setPosts2] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
   const [members, setMembers2] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [search, setSearch]   = useState("");
@@ -76,7 +77,17 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingMembers(false);
   };
 
-  useEffect(() => { if (auth) { loadMembers(); loadVideos(); } }, [auth]);
+  // Firebase에서 게시글 로드
+  const loadPosts = async () => {
+    setLoadingPosts(true);
+    try {
+      const list = await getPostsFromDB();
+      setPosts2(list);
+    } catch(e) { console.error("게시글 로드 실패:", e); }
+    setLoadingPosts(false);
+  };
+
+  useEffect(() => { if (auth) { loadMembers(); loadVideos(); loadPosts(); } }, [auth]);
 
   // 영상 목록 로드
   const [videos, setVideos]       = useState([]);
@@ -189,11 +200,14 @@ export default function AdminPage({ C, user: adminUser }) {
     } catch(e) {}
   };
 
-  // ── 게시글 삭제
-  const deletePost = (id) => {
-    const next = getPosts().filter(p => p.id !== id);
-    setPosts(next); setPosts2(next);
-    showToast("게시글 삭제 완료");
+  // ── 게시글 삭제 (Firebase)
+  const deletePost = async (id) => {
+    if (!window.confirm("이 게시글을 삭제할까요?")) return;
+    try {
+      await remove(ref(db, "posts/" + id));
+      setPosts2(prev => prev.filter(p => p.id !== id));
+      showToast("게시글 삭제 완료");
+    } catch(e) { showToast("삭제 실패: " + e.message); }
   };
 
   // ── 비회원 사용 관리
@@ -272,11 +286,12 @@ export default function AdminPage({ C, user: adminUser }) {
               style={{ padding: "8px 14px", borderRadius: 9, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 13, outline: "none", width: 220 }} />
           </div>
 
-          {filteredMembers.length === 0 && (
-            <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>검색 결과가 없어요</div>
+          {loadingMembers && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 회원 목록 불러오는 중...</div>}
+          {!loadingMembers && filteredMembers.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>
+              {search ? "검색 결과가 없어요" : "가입한 회원이 없어요"}
+            </div>
           )}
-
-          {loadingMembers && <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>⏳ 회원 목록 불러오는 중...</div>}
           {!loadingMembers && filteredMembers.map(m => {
             const uid = m.uid || m.id || "";
             const mUsed = usage["member_" + uid] || 0;
@@ -432,9 +447,13 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ─────────────── 게시글 관리 ─────────────── */}
       {tab === "posts" && (
         <div>
-          <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>총 <b style={{ color: C.text }}>{posts.length}개</b>의 게시글</div>
-          {posts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>게시글이 없어요</div>}
-          {posts.map(p => (
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ fontSize: 13, color: C.muted }}>총 <b style={{ color: C.text }}>{posts.length}개</b>의 게시글</div>
+            <button onClick={loadPosts} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:C.muted, fontSize:12, cursor:"pointer" }}>🔄 새로고침</button>
+          </div>
+          {loadingPosts && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 게시글 불러오는 중...</div>}
+          {!loadingPosts && posts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>게시글이 없어요</div>}
+          {!loadingPosts && posts.map(p => (
             <div key={p.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 18px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, boxShadow: C.shadow }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>

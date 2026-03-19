@@ -79,6 +79,19 @@ export default function AuthModal({ onClose, onAuth, C }) {
       if (!form.email || !form.pw) { setErr("이메일과 비밀번호를 입력해주세요."); setLoading(false); return; }
       if (!isValidEmail(form.email)) { setErr("올바른 이메일 형식이 아닙니다."); setLoading(false); return; }
       const user = await fbLogin(form.email, form.pw);
+
+      // 이메일 인증 여부 확인
+      const fbUser = getAuth().currentUser;
+      if (fbUser && !fbUser.emailVerified) {
+        // 인증 안 된 경우 → 로그아웃 후 인증 대기 화면으로
+        await getAuth().signOut();
+        setPendingUser(fbUser);
+        setRegStep(2);
+        setTab("register");
+        setErr("이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.");
+        return;
+      }
+
       onAuth(user);
     } catch(e) {
       const msg = (e.code === "auth/user-not-found" || e.code === "auth/wrong-password" || e.code === "auth/invalid-credential")
@@ -121,11 +134,15 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const checkVerification = async () => {
     setVerifyLoading(true); setErr("");
     try {
-      const fbUser = getAuth().currentUser;
-      if (!fbUser) { setErr("세션이 만료됐어요. 다시 가입해주세요."); setRegStep(1); return; }
-      await reload(fbUser); // Firebase에서 최신 상태 가져오기
+      let fbUser = getAuth().currentUser;
+      // currentUser 없으면 (로그인 탭에서 튕긴 경우) 재로그인
+      if (!fbUser && form.email && form.pw) {
+        await fbLogin(form.email, form.pw);
+        fbUser = getAuth().currentUser;
+      }
+      if (!fbUser) { setErr("세션이 만료됐어요. 비밀번호를 다시 입력해주세요."); setRegStep(1); setTab("login"); return; }
+      await reload(fbUser);
       if (fbUser.emailVerified) {
-        // 인증 완료 → 정상 로그인 처리
         const user = await fbLogin(form.email, form.pw);
         onAuth(user);
       } else {
@@ -140,11 +157,18 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const resendEmail = async () => {
     if (resendCool) return;
     try {
-      const fbUser = getAuth().currentUser;
+      let fbUser = getAuth().currentUser;
+      // 로그인 탭에서 미인증으로 튕긴 경우 → 다시 로그인해서 발송
+      if (!fbUser && form.email && form.pw) {
+        await fbLogin(form.email, form.pw);
+        fbUser = getAuth().currentUser;
+        if (fbUser?.emailVerified) { const u = await fbLogin(form.email, form.pw); onAuth(u); return; }
+      }
       if (fbUser) {
         await sendEmailVerification(fbUser);
         setResendCool(true);
-        setTimeout(() => setResendCool(false), 30000); // 30초 쿨다운
+        setErr("");
+        setTimeout(() => setResendCool(false), 30000);
       }
     } catch(e) { setErr("재발송 중 오류가 발생했어요."); }
   };

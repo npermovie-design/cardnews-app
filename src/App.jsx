@@ -371,109 +371,30 @@ export default function App() {
           <NavBtn id="contact" label="문의하기" />
         </div>
 
-        {/* 오른쪽: 테마 + 로그인/프로필 + 접속중 */}
-        <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+        {/* 오른쪽: 테마 + 로그인/로그아웃 + 문의 */}
+        <div className="nav-right" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
             {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
           </button>
-          <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            {user ? (
-            <div ref={profileRef} style={{ position: "relative" }}>
-              {/* 프로필 버튼 */}
-              <button onMouseDown={e=>e.stopPropagation()} onClick={() => setProfileOpen(p => !p)}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 6px", borderRadius: 24,
-                  border: "1px solid " + C.border, background: profileOpen ? (theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.04)") : "transparent",
-                  cursor: "pointer", transition: "all 0.15s" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                  {(user.nick||"U")[0].toUpperCase()}
-                </div>
-                <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}P</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
-              </button>
-
-              {/* 프로필 드롭다운 */}
-              {profileOpen && (
-                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, width: 280, zIndex: 200,
-                  background: theme==="dark" ? "#1a1730" : "#fff",
-                  border: "1px solid " + C.border, borderRadius: 16,
-                  boxShadow: "0 16px 48px rgba(0,0,0,0.2)", overflow: "hidden" }}>
-                  {/* 헤더 */}
-                  <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid " + C.border,
-                    background: theme==="dark" ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
-                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                        {(user.nick||"U")[0].toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                          <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{user.nick}</span>
-                          {user.role==="admin" && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, background: "rgba(251,191,36,0.15)", color: "#fbbf24", fontWeight: 700 }}>👑 관리자</span>}
-                        </div>
-                        <div style={{ fontSize: 12, color: C.muted }}>{user.email}</div>
-                      </div>
-                    </div>
-                    {/* 포인트 바 */}
-                    <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                        <span style={{ color: C.muted }}>포인트 잔액</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}P</span>
-                      </div>
-                      <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
-                          background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
-                      </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 1회=10P · {Math.floor((user.points||0)/10)}회 생성 가능</div>
-                    </div>
-                  </div>
-                  {/* 메뉴 */}
-                  <div style={{ padding: "8px" }}>
-                    {[
-                      { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
-                      ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("admin"); setProfileOpen(false); } }] : []),
-                    ].map((m,i) => (
-                      <button key={i} onClick={m.action}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
-                          cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
-                        onMouseEnter={e=>e.currentTarget.style.background=theme==="dark"?"rgba(255,255,255,0.06)":"#f5f5f8"}
-                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                        <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{m.icon}</span>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{m.label}</div>
-                          <div style={{ fontSize: 11, color: C.muted }}>{m.sub}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  {/* 로그아웃 */}
-                  <div style={{ padding: "8px", borderTop: "1px solid " + C.border }}>
-                    <button onClick={() => { logout(); setProfileOpen(false); }}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
-                        cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "#ef4444" }}
-                      onMouseEnter={e=>e.currentTarget.style.background="rgba(239,68,68,0.08)"}
-                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>🚪</span>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>로그아웃</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+          <button onClick={() => { navigate("contact"); }} style={{ padding: "5px 13px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted }}>문의하기</button>
+          {user ? (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
+              <button onClick={logout} style={{ padding: "5px 13px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted }}>로그아웃</button>
+              <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80", boxShadow:"0 0 5px #4ade80" }}/>
+                <span style={{ fontSize:10, color:C.muted, fontWeight:600 }}>{onlineCount}명 접속중</span>
+              </div>
             </div>
           ) : (
-            <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>로그인</button>
-          )}
-            {/* 접속자 수 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 5px #4ade80" }} />
-              <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>{onlineCount}명 접속중</span>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
+              <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>로그인</button>
+              <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80", boxShadow:"0 0 5px #4ade80" }}/>
+                <span style={{ fontSize:10, color:C.muted, fontWeight:600 }}>{onlineCount}명 접속중</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-
         {/* 햄버거 */}
         <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "4px 8px", marginLeft: "auto", lineHeight: 1 }}>
           {mobileOpen ? "✕" : "☰"}
