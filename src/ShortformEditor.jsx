@@ -109,9 +109,12 @@ export default function ShortformEditor({ isDark }) {
     try { return JSON.parse(localStorage.getItem("snsmakeit_shorts_archive")||"[]"); } catch { return []; }
   });
   const [archiveMsg, setArchiveMsg] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [recordPct, setRecordPct] = useState(0);
-  const videoRef2 = useRef(null);
+  const [recording, setRecording]       = useState(false);
+  const [recordPct, setRecordPct]       = useState(0);
+  const [extractedVideos, setExtractedVideos] = useState({}); // {clipIndex: blobUrl}
+  const [activePreview, setActivePreview] = useState(null);   // 현재 재생 중인 blobUrl
+  const videoRef2   = useRef(null);
+  const fileUrlRef  = useRef(null); // uploadedFile의 object URL 캐시
   const [schedule, setSchedule]   = useState([]);
   const [analysis, setAnalysis]   = useState(null);
 
@@ -183,78 +186,120 @@ export default function ShortformEditor({ isDark }) {
     setTimeout(() => setArchiveMsg(""), 3000);
   };
 
-  // 영상 구간 다운로드 (업로드 파일 전용)
-  const downloadSegment = async (clip) => {
+  // 영상 구간 추출 → 재생 + 다운로드 가능하게 저장
+  const extractSegment = async (clip, doDownload = false) => {
     if (!uploadedFile || recording) return;
     const startSec = parseTimeToSec(clip.startTime);
     const endSec   = parseTimeToSec(clip.endTime);
-    if (endSec <= startSec) { alert("타임코드를 확인해주세요"); return; }
+    if (endSec <= startSec || endSec > uploadedFile.size) {
+      // 타임코드 이상해도 그냥 진행 (AI가 추정한 값이라 실제 길이와 다를 수 있음)
+    }
+    const clampedEnd = Math.min(endSec, 99999);
 
     setRecording(true); setRecordPct(0);
     try {
-      const video = document.createElement("video");
-      video.src = URL.createObjectURL(uploadedFile);
-      video.muted = false;
-      await new Promise(r => { video.onloadedmetadata = r; });
+      // 파일 URL 캐시
+      if (!fileUrlRef.current) fileUrlRef.current = URL.createObjectURL(uploadedFile);
 
-      // Canvas 9:16 세로 영상으로 렌더링
+      const video = document.createElement("video");
+      video.src = fileUrlRef.current;
+      video.muted = false;
+      video.crossOrigin = "anonymous";
+      await new Promise((res, rej) => {
+        video.onloadedmetadata = res;
+        video.onerror = rej;
+        setTimeout(res, 3000); // 3초 내 로드 안 되면 그냥 진행
+      });
+
+      const actualEnd = Math.min(clampedEnd, video.duration || clampedEnd);
+      const duration  = Math.max(actualEnd - startSec, 1);
+
+      // Canvas 9:16 세로
       const canvas = document.createElement("canvas");
       canvas.width = 1080; canvas.height = 1920;
       const ctx = canvas.getContext("2d");
 
-      const duration = endSec - startSec;
-      const stream = canvas.captureStream(30);
-      // 오디오 트랙 추가 시도
-      let finalStream = stream;
+      // 오디오
+      let finalStream = canvas.captureStream(30);
       try {
-        const audioCtx = new AudioContext();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const src2 = audioCtx.createMediaElementSource(video);
-        const dest = audioCtx.createMediaStreamDestination();
-        src2.connect(dest); src2.connect(audioCtx.destination);
-        const combined = new MediaStream([...stream.getTracks(), ...dest.stream.getTracks()]);
-        finalStream = combined;
+        const dest  = audioCtx.createMediaStreamDestination();
+        src2.connect(dest);
+        src2.connect(audioCtx.destination);
+        finalStream = new MediaStream([
+          ...canvas.captureStream(30).getTracks(),
+          ...dest.stream.getTracks()
+        ]);
       } catch {}
 
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm";
-      const recorder = new MediaRecorder(finalStream, { mimeType });
-      const chunks = [];
-      recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+      const mimeType = ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]
+        .find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
 
+      const recorder = new MediaRecorder(finalStream, { mimeType, videoBitsPerSecond: 4000000 });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      // seek to start
       video.currentTime = startSec;
-      await new Promise(r => { video.onseeked = r; });
-      await video.play();
-      recorder.start(100);
+      await new Promise(r => { video.onseeked = r; setTimeout(r, 2000); });
+      await video.play().catch(() => {});
+      recorder.start(200);
 
       const startWall = Date.now();
       await new Promise(resolve => {
         const draw = () => {
           const elapsed = (Date.now() - startWall) / 1000;
-          const pct = Math.min(Math.round((elapsed/duration)*100), 99);
+          const pct = Math.min(Math.round((elapsed / duration) * 100), 99);
           setRecordPct(pct);
-          // Cover-fit: 세로 영상
-          const vw = video.videoWidth, vh = video.videoHeight;
-          const scale = Math.max(1080/vw, 1920/vh);
-          const sw = vw*scale, sh = vh*scale;
+
+          // 9:16 cover fit
+          const vw = video.videoWidth  || 1920;
+          const vh = video.videoHeight || 1080;
+          const scale = Math.max(1080 / vw, 1920 / vh);
+          const sw = vw * scale, sh = vh * scale;
           ctx.fillStyle = "#000";
-          ctx.fillRect(0,0,1080,1920);
-          ctx.drawImage(video, (1080-sw)/2, (1920-sh)/2, sw, sh);
+          ctx.fillRect(0, 0, 1080, 1920);
+          ctx.drawImage(video, (1080 - sw) / 2, (1920 - sh) / 2, sw, sh);
+
           if (elapsed >= duration) { resolve(); return; }
           requestAnimationFrame(draw);
         };
         requestAnimationFrame(draw);
       });
+
       video.pause();
       recorder.stop();
       await new Promise(r => { recorder.onstop = r; });
 
-      const blob = new Blob(chunks, { type: mimeType });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `shortform_${clip.index || 1}_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,20)}.webm`;
-      a.click();
       setRecordPct(100);
-    } catch(e) { alert("다운로드 실패: " + e.message); }
+      const blob     = new Blob(chunks, { type: mimeType });
+      const blobUrl  = URL.createObjectURL(blob);
+      const clipKey  = clip.index ?? selectedClip;
+
+      // 저장: 재생용 URL
+      setExtractedVideos(prev => ({ ...prev, [clipKey]: { url: blobUrl, blob, mimeType, clip } }));
+      setActivePreview(blobUrl);
+
+      // 다운로드 여부
+      if (doDownload) {
+        const ext  = mimeType.includes("mp4") ? "mp4" : "webm";
+        const name = `shortform_${clipKey}_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,20)}.${ext}`;
+        const a = document.createElement("a");
+        a.href = blobUrl; a.download = name; a.click();
+      }
+    } catch(e) { alert("추출 실패: " + e.message); console.error(e); }
     setRecording(false); setRecordPct(0);
+  };
+
+  const downloadExtracted = (clip) => {
+    const clipKey = clip.index ?? selectedClip;
+    const ex = extractedVideos[clipKey];
+    if (!ex) { extractSegment(clip, true); return; }
+    const ext  = ex.mimeType?.includes("mp4") ? "mp4" : "webm";
+    const name = `shortform_${clipKey}_${(clip.title_a||"clip").replace(/[^가-힣a-zA-Z0-9]/g,"_").slice(0,20)}.${ext}`;
+    const a = document.createElement("a");
+    a.href = ex.url; a.download = name; a.click();
   };
 
   // mm:ss → 초
@@ -793,10 +838,10 @@ JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1",
                       🗂 저장
                     </button>
                     {inputMode==="file" && uploadedFile && (
-                      <button onClick={e=>{e.stopPropagation();downloadSegment(clip);}}
+                      <button onClick={e=>{e.stopPropagation(); const ex=extractedVideos[clip.index??i]; ex?downloadExtracted(clip):extractSegment(clip,false); setSelectedClip(i);}}
                         disabled={recording}
-                        style={{flex:1,padding:"3px",borderRadius:5,border:"1px solid rgba(74,222,128,0.3)",background:"rgba(74,222,128,0.08)",color:"#4ade80",fontSize:8,cursor:"pointer",fontWeight:700,opacity:recording?0.5:1}}>
-                        {recording?"녹화중":"↓ 다운"}
+                        style={{flex:1,padding:"3px",borderRadius:5,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.08)",color:"#4ade80",fontSize:8,cursor:"pointer",fontWeight:700,opacity:recording?0.5:1}}>
+                        {extractedVideos[clip.index??i]?"↓ 다운":"✂️ 추출"}
                       </button>
                     )}
                   </div>
@@ -806,77 +851,132 @@ JSON만: {"content_strategy":"전략 2문장","upload_schedule":[{"day":"Day 1",
           </div>
 
           {/* 가운데: 세로 영상 미리보기 */}
-          <div style={{width:240,borderRight:`1px solid ${bdr}`,display:"flex",flexDirection:"column",flexShrink:0,background:"#0a0a0a"}}>
-            {/* 9:16 세로 영상 */}
-            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px",position:"relative"}}>
-              <div style={{position:"relative",width:"100%",maxWidth:200,aspectRatio:"9/16",background:"#111",borderRadius:10,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,0.5)"}}>
-                {inputMode==="file" && uploadedFile ? (
-                  <video ref={videoRef2}
-                    key={selectedClip}
-                    style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
-                    controls
-                    onLoadedMetadata={e => { e.target.currentTime = curStartSec; }}
-                    onTimeUpdate={e => { if(e.target.currentTime >= curEndSec) e.target.currentTime = curStartSec; }}
-                    src={URL.createObjectURL(uploadedFile)}/>
-                ) : inputMode==="youtube" && ytInfo ? (
-                  <div style={{width:"100%",height:"100%",position:"relative"}}>
-                    <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    {/* 자막 오버레이 */}
-                    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"12px 8px"}}>
-                      <div style={{fontFamily:captionStyle.font,fontSize:captionStyle.size-2,fontWeight:900,
-                        color:captionStyle.color,textAlign:"center",lineHeight:1.4,
-                        textShadow:"2px 2px 8px rgba(0,0,0,0.9)",
-                        background:`rgba(0,0,0,${captionStyle.bgOpacity})`,
-                        padding:"4px 8px",borderRadius:6}}>
-                        <span>{cur.hook?.split(" ").slice(0,3).join(" ") || "숏폼 미리보기"} </span>
-                        <span style={{color:captionStyle.highlight}}>{cur.hook?.split(" ").slice(3,6).join(" ")}</span>
+          <div style={{width:250,borderRight:`1px solid ${bdr}`,display:"flex",flexDirection:"column",flexShrink:0,background:"#080808"}}>
+
+            {/* 9:16 세로 플레이어 */}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"12px 10px",position:"relative"}}>
+              <div style={{position:"relative",width:"100%",aspectRatio:"9/16",background:"#111",borderRadius:12,overflow:"hidden",boxShadow:"0 6px 32px rgba(0,0,0,0.7)"}}>
+
+                {/* ── 추출된 영상이 있으면 재생 */}
+                {(() => {
+                  const clipKey = cur.index ?? selectedClip;
+                  const ex = extractedVideos[clipKey];
+                  if (ex) return (
+                    <video key={ex.url}
+                      style={{width:"100%",height:"100%",objectFit:"cover",display:"block",background:"#000"}}
+                      controls autoPlay loop
+                      src={ex.url}/>
+                  );
+
+                  // ── 원본 영상 (구간 미리보기)
+                  if (inputMode==="file" && uploadedFile) return (
+                    <video key={`orig-${selectedClip}`}
+                      style={{width:"100%",height:"100%",objectFit:"cover",display:"block",background:"#000"}}
+                      controls
+                      onLoadedMetadata={e => { e.target.currentTime = curStartSec; }}
+                      onTimeUpdate={e => { if(e.target.currentTime >= curEndSec && curEndSec > curStartSec) e.target.currentTime = curStartSec; }}
+                      src={fileUrlRef.current || (()=>{ fileUrlRef.current=URL.createObjectURL(uploadedFile); return fileUrlRef.current; })()}/>
+                  );
+
+                  // ── 유튜브: 썸네일 + 자막 오버레이
+                  if (inputMode==="youtube" && ytInfo) return (
+                    <div style={{width:"100%",height:"100%",position:"relative"}}>
+                      <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      <div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 40%,rgba(0,0,0,0.7))"}}/>
+                      {/* 자막 미리보기 */}
+                      <div style={{position:"absolute",bottom:16,left:8,right:8,textAlign:"center",
+                        fontFamily:captionStyle.font,fontSize:captionStyle.size-2,fontWeight:900,
+                        color:captionStyle.color,textShadow:"2px 2px 8px rgba(0,0,0,0.9)",
+                        background:`rgba(0,0,0,${captionStyle.bgOpacity})`,padding:"5px 8px",borderRadius:6,lineHeight:1.4}}>
+                        <span>{cur.hook?.split(" ").slice(0,4).join(" ")||"미리보기"}</span>
+                        {cur.hook?.split(" ").slice(4,8).length>0 && <><br/><span style={{color:captionStyle.highlight}}>{cur.hook.split(" ").slice(4,8).join(" ")}</span></>}
+                      </div>
+                      <div style={{position:"absolute",top:8,left:8,background:"rgba(0,0,0,0.75)",padding:"2px 8px",borderRadius:6,fontSize:9,color:"#fff",fontWeight:700}}>
+                        {cur.startTime} ~ {cur.endTime}
                       </div>
                     </div>
-                    {/* 타임코드 */}
-                    <div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,0.8)",padding:"2px 8px",borderRadius:6,fontSize:10,color:"#fff",fontWeight:700}}>
-                      {cur.startTime}~{cur.endTime}
+                  );
+
+                  return <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:11}}>미리보기 없음</div>;
+                })()}
+
+                {/* 추출 중 오버레이 */}
+                {recording && (
+                  <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10}}>
+                    <div style={{position:"relative",width:52,height:52}}>
+                      <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid rgba(74,222,128,0.2)"}}/>
+                      <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:"#4ade80",animation:"spin 1s linear infinite"}}/>
+                      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>✂️</div>
                     </div>
+                    <div style={{fontSize:12,color:"#4ade80",fontWeight:700}}>영상 추출 중</div>
+                    <div style={{width:120,height:5,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+                      <div style={{height:"100%",borderRadius:3,background:"#4ade80",width:`${recordPct}%`,transition:"width 0.3s"}}/>
+                    </div>
+                    <div style={{fontSize:11,color:"#4ade80"}}>{recordPct}%</div>
                   </div>
-                ) : (
-                  <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:12}}>미리보기 없음</div>
                 )}
               </div>
             </div>
 
-            {/* 다운로드 버튼 */}
-            <div style={{padding:"10px",borderTop:`1px solid rgba(255,255,255,0.06)`}}>
-              {inputMode==="file" && uploadedFile ? (
-                <div>
-                  {recording && (
-                    <div style={{marginBottom:8}}>
-                      <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.1)",overflow:"hidden",marginBottom:4}}>
-                        <div style={{height:"100%",borderRadius:2,background:"#4ade80",width:`${recordPct}%`,transition:"width 0.3s"}}/>
-                      </div>
-                      <div style={{fontSize:9,color:"#4ade80",textAlign:"center"}}>영상 추출 중 {recordPct}%...</div>
+            {/* 버튼 영역 */}
+            <div style={{padding:"10px",borderTop:`1px solid rgba(255,255,255,0.06)`,display:"flex",flexDirection:"column",gap:6}}>
+              {(() => {
+                const clipKey = cur.index ?? selectedClip;
+                const ex = extractedVideos[clipKey];
+                const isFile = inputMode==="file" && uploadedFile;
+
+                return <>
+                  {/* 추출 버튼 (파일 전용) */}
+                  {isFile && !ex && (
+                    <button onClick={() => extractSegment(cur, false)} disabled={recording}
+                      style={{width:"100%",padding:"9px",borderRadius:9,border:"none",cursor:recording?"not-allowed":"pointer",
+                        background:recording?"rgba(168,85,247,0.2)":"linear-gradient(135deg,#a855f7,#ec4899)",
+                        color:"#fff",fontSize:12,fontWeight:800,opacity:recording?0.6:1}}>
+                      {recording ? `✂️ 추출 중 ${recordPct}%` : "✂️ 세로 영상으로 추출하기"}
+                    </button>
+                  )}
+
+                  {/* 추출 완료: 재생/다운로드 */}
+                  {isFile && ex && (
+                    <div style={{display:"flex",gap:5}}>
+                      <button onClick={() => setActivePreview(ex.url)}
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.1)",color:"#4ade80",fontSize:11,cursor:"pointer",fontWeight:700}}>
+                        ▶ 재생
+                      </button>
+                      <button onClick={() => downloadExtracted(cur)}
+                        style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#4ade80,#22c55e)",color:"#000",fontSize:11,cursor:"pointer",fontWeight:800}}>
+                        ↓ 다운로드
+                      </button>
+                      <button onClick={() => extractSegment(cur, false)} disabled={recording}
+                        style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer"}}
+                        title="재추출">
+                        🔄
+                      </button>
                     </div>
                   )}
-                  <button onClick={()=>downloadSegment(cur)} disabled={recording}
-                    style={{width:"100%",padding:"9px",borderRadius:9,border:"none",cursor:recording?"not-allowed":"pointer",
-                      background:recording?"rgba(74,222,128,0.2)":"linear-gradient(135deg,#4ade80,#22c55e)",
-                      color:recording?"#4ade80":"#000",fontSize:12,fontWeight:800,opacity:recording?0.7:1}}>
-                    {recording?`⏺ 추출 중 ${recordPct}%`:"↓ 세로 영상 다운로드 (.webm)"}
+
+                  {/* 유튜브: 안내 */}
+                  {!isFile && (
+                    <div style={{padding:"8px 10px",borderRadius:8,background:"rgba(168,85,247,0.08)",border:`1px solid rgba(168,85,247,0.2)`,fontSize:10,color:muted,textAlign:"center",lineHeight:1.6}}>
+                      📁 <b style={{color:ACC}}>파일 업로드</b> 시<br/>세로 영상 추출·재생·다운로드<br/>가능해요
+                    </div>
+                  )}
+
+                  {/* 정보 */}
+                  {isFile && (
+                    <div style={{fontSize:9,color:muted,textAlign:"center",lineHeight:1.6}}>
+                      {cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920
+                      {ex && <span style={{color:"#4ade80",marginLeft:6}}>✓ 추출 완료</span>}
+                    </div>
+                  )}
+
+                  {/* 보관함 저장 */}
+                  <button onClick={() => saveToArchive(cur)}
+                    style={{width:"100%",padding:"7px",borderRadius:8,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:10,cursor:"pointer",fontWeight:700}}>
+                    🗂 보관함에 저장
                   </button>
-                  <div style={{fontSize:9,color:muted,textAlign:"center",marginTop:4}}>
-                    {cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920
-                  </div>
-                </div>
-              ) : (
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:10,color:muted,lineHeight:1.6}}>
-                    유튜브 영상은 브라우저에서<br/>직접 다운로드가 제한돼요.<br/>
-                    <b style={{color:ACC}}>파일 업로드</b> 시 세로 영상으로<br/>직접 추출·다운로드돼요.
-                  </div>
-                </div>
-              )}
-              <button onClick={()=>saveToArchive(cur)}
-                style={{width:"100%",padding:"7px",borderRadius:8,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.1)`,color:ACC,fontSize:11,cursor:"pointer",fontWeight:700,marginTop:6}}>
-                🗂 이 클립 보관함에 저장
-              </button>
+                </>;
+              })()}
             </div>
           </div>
 
