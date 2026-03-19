@@ -95,7 +95,9 @@ export default function LogoGenerator({ isDark, user }) {
           i === 0 ? refImage : null,
           i === 0 ? refMime : null
         );
-        vers[i] = "data:image/png;base64," + raw;
+        // API가 raw base64 또는 data URI 둘 다 반환할 수 있음
+        const dataUri = raw.startsWith("data:") ? raw : "data:image/png;base64," + raw;
+        vers[i] = dataUri;
         setResults([...vers]);
       } catch (e) {
         vers[i] = null;
@@ -305,7 +307,9 @@ export default function LogoGenerator({ isDark, user }) {
                 style={{ borderRadius:13, border:`2px solid ${isSel?"#06b6d4":bdr}`, background:cardBg, overflow:"hidden", cursor:img?"pointer":"default", transition:"all 0.15s", boxShadow:isSel?"0 0 0 3px rgba(6,182,212,0.2)":"none" }}>
                 <div style={{ aspectRatio:"1", background:D?"rgba(255,255,255,0.03)":"#f5f5f5", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
                   {img
-                    ? <img src={img} alt={`로고 v${i+1}`} style={{ width:"100%", height:"100%", objectFit:"contain", padding:10 }}/>
+                    ? <img src={img} alt={`로고 v${i+1}`}
+                        style={{ width:"100%", height:"100%", objectFit:"contain", padding:10, display:"block" }}
+                      />
                     : <div style={{ textAlign:"center", color:muted }}><div style={{ fontSize:22, marginBottom:4 }}>❌</div><div style={{ fontSize:11 }}>생성 실패</div></div>}
                   {isSel && <div style={{ position:"absolute", top:7, right:7, background:"#06b6d4", borderRadius:5, padding:"2px 8px", fontSize:10, fontWeight:700, color:"#fff" }}>선택됨</div>}
                 </div>
@@ -321,7 +325,7 @@ export default function LogoGenerator({ isDark, user }) {
         {results[selResult] && (
           <div style={{ padding:"18px", borderRadius:15, border:`1px solid ${bdr}`, background:cardBg, display:"flex", gap:18, alignItems:"center", flexWrap:"wrap" }}>
             <div style={{ width:140, height:140, borderRadius:11, background:D?"rgba(255,255,255,0.05)":"#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
-              <img src={results[selResult]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", padding:8 }}/>
+              <img src={results[selResult]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", padding:8, display:"block" }}/>
             </div>
             <div style={{ flex:1, minWidth:180 }}>
               <div style={{ fontSize:14, fontWeight:900, color:text, marginBottom:4 }}>버전 {selResult+1} 선택됨</div>
