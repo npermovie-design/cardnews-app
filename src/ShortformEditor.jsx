@@ -66,6 +66,7 @@ export default function ShortformEditor({isDark}){
   const [totalDur,setTotalDur] = useState(1200);
   const [rangeEnd,setRangeEnd] = useState(1200);
   const [capStyle,setCapStyle] = useState({font:"Noto Sans KR",color:"#ffffff",hl:"#ffff00",size:20,pos:"bottom",bgOp:0.6});
+  const [layout,setLayout]     = useState({split:true,topColor:"#ffffff",botColor:"#ffff00"});
 
   // 결과
   const [clips,setClips]       = useState([]);
@@ -123,6 +124,78 @@ export default function ShortformEditor({isDark}){
     v.src=fileObjUrl.current;
   };
 
+  // ── 얼굴 위치 감지 (FaceDetector API 또는 기본값)
+  const detectFace=async(video,sampleTime)=>{
+    try{
+      const t=Math.min(sampleTime+1,(video.duration||sampleTime+5)-0.1);
+      video.currentTime=t;
+      await new Promise(res=>{video.onseeked=res;setTimeout(res,3000);});
+      if("FaceDetector" in window){
+        const c=document.createElement("canvas");
+        c.width=640;c.height=360;
+        c.getContext("2d").drawImage(video,0,0,640,360);
+        const det=new window.FaceDetector({maxDetectedFaces:2,fastMode:true});
+        const faces=await det.detect(c);
+        if(faces.length>0){
+          const f=faces.reduce((a,b)=>a.boundingBox.width>b.boundingBox.width?a:b).boundingBox;
+          return{cx:(f.x+f.width/2)/640,cy:(f.y+f.height/2)/360,detected:true};
+        }
+      }
+    }catch{}
+    return{cx:0.5,cy:0.32,detected:false};
+  };
+
+  // ── 분할 레이아웃 캔버스 렌더 (상단제목 + 얼굴크롭 + 하단자막)
+  const drawSplit=(ctx,video,facePos,topText,botText)=>{
+    const W=1080,H=1920,TOP=260,BOT=260,MID=H-TOP-BOT;
+    const {cx=0.5,cy=0.32}=facePos||{};
+    const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
+    const scale=Math.max(W/vw,MID/vh)*1.05;
+    const sw=vw*scale,sh=vh*scale;
+    const dx=W/2-cx*sw,dy=TOP+MID*0.38-cy*sh;
+
+    ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+
+    // 영상 (얼굴 중심 크롭)
+    ctx.save();ctx.beginPath();ctx.rect(0,TOP,W,MID);ctx.clip();
+    ctx.drawImage(video,dx,dy,sw,sh);
+    ctx.restore();
+
+    // 상단 그라데이션
+    const tg=ctx.createLinearGradient(0,0,0,TOP);
+    tg.addColorStop(0,"rgba(0,0,0,0.92)");tg.addColorStop(1,"rgba(0,0,0,0.08)");
+    ctx.fillStyle=tg;ctx.fillRect(0,0,W,TOP);
+
+    // 상단 텍스트
+    if(topText){
+      ctx.save();ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=14;
+      const fs=Math.max(38,Math.min(60,Math.floor(900/Math.max(topText.length,1))));
+      ctx.font=`900 ${fs}px sans-serif`;ctx.fillStyle=layout.topColor||"#fff";
+      const lw=Math.max(1,Math.floor(960/(fs*0.88)));
+      const ls=[];for(let i=0;i<topText.length;i+=lw)ls.push(topText.slice(i,i+lw));
+      const lh=fs+14,tot=ls.length*lh;
+      ls.forEach((l,i)=>ctx.fillText(l,W/2,(TOP-tot)/2+lh*(i+0.85)));
+      ctx.restore();
+    }
+
+    // 하단 그라데이션
+    const bg=ctx.createLinearGradient(0,H-BOT,0,H);
+    bg.addColorStop(0,"rgba(0,0,0,0.08)");bg.addColorStop(1,"rgba(0,0,0,0.92)");
+    ctx.fillStyle=bg;ctx.fillRect(0,H-BOT,W,BOT);
+
+    // 하단 텍스트
+    if(botText){
+      ctx.save();ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=10;
+      const fs2=Math.max(32,Math.min(50,Math.floor(800/Math.max(botText.length,1))));
+      ctx.font=`700 ${fs2}px sans-serif`;ctx.fillStyle=layout.botColor||"#ff0";
+      const lw2=Math.max(1,Math.floor(960/(fs2*0.75)));
+      const ls2=[];for(let i=0;i<botText.length;i+=lw2)ls2.push(botText.slice(i,i+lw2));
+      const lh2=fs2+12,tot2=ls2.length*lh2;
+      ls2.forEach((l,i)=>ctx.fillText(l,W/2,H-BOT+(BOT-tot2)/2+lh2*(i+0.85)));
+      ctx.restore();
+    }
+  };
+
   // ── 핵심: Canvas + MediaRecorder로 영상 추출 (SharedArrayBuffer 불필요)
   // overrideSrc: 이미 다운로드된 blob URL (autoExtractAll에서 재사용)
   const extract=async(clip,doDownload=false,overrideSrc=null)=>{
@@ -164,12 +237,16 @@ export default function ShortformEditor({isDark}){
       const actualEnd=Math.min(endSec,video.duration||endSec);
       const actualDur=Math.max(actualEnd-startSec,1);
 
-      // ③ Canvas 9:16 세팅
+      // ③ 얼굴 감지
+      setRecMsg("얼굴 위치 감지 중...");setRecPct(15);
+      const facePos=await detectFace(video,startSec);
+
+      // ④ Canvas 9:16 세팅
       const canvas=document.createElement("canvas");
       canvas.width=1080;canvas.height=1920;
       const ctx=canvas.getContext("2d");
 
-      // ④ 오디오 캡처
+      // ⑤ 오디오 캡처
       let finalStream=canvas.captureStream(30);
       try{
         const aCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -181,30 +258,41 @@ export default function ShortformEditor({isDark}){
 
       const mimeType=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]
         .find(t=>MediaRecorder.isTypeSupported(t))||"video/webm";
-      const recorder=new MediaRecorder(finalStream,{mimeType,videoBitsPerSecond:4000000});
+      const recorder=new MediaRecorder(finalStream,{mimeType,videoBitsPerSecond:5000000});
       const chunks=[];
       recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
 
-      // ⑤ seek + 재생
-      setRecMsg("구간 탐색 중...");
+      // ⑥ 정밀 seek → startSec에 실제로 도달한 뒤 녹화 시작
+      setRecMsg("구간 정밀 탐색 중...");setRecPct(20);
       video.currentTime=startSec;
-      await new Promise(r=>{video.onseeked=r;setTimeout(r,3000);});
+      await new Promise(r=>{video.onseeked=r;setTimeout(r,4000);});
+      // 실제 currentTime이 startSec 근처인지 확인
+      if(Math.abs(video.currentTime-startSec)>1){
+        video.currentTime=startSec;
+        await new Promise(r=>{video.onseeked=r;setTimeout(r,3000);});
+      }
       await video.play().catch(()=>{});
-      recorder.start(200);
+      recorder.start(100);
 
-      setRecMsg(`세로 영상 변환 중... (${actualDur}초)`);
-      const wallStart=Date.now();
+      const topText=clip.title_a||"";
+      const botText=clip.hook||"";
+      setRecMsg(`변환 중... (${actualDur}초)`);
+
       await new Promise(resolve=>{
         const draw=()=>{
-          const elapsed=(Date.now()-wallStart)/1000;
-          setRecPct(Math.min(Math.round((elapsed/actualDur)*100),98));
-          const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
-          const scale=Math.max(1080/vw,1920/vh);
-          const sw=vw*scale,sh=vh*scale;
-          ctx.fillStyle="#000";
-          ctx.fillRect(0,0,1080,1920);
-          ctx.drawImage(video,(1080-sw)/2,(1920-sh)/2,sw,sh);
-          if(elapsed>=actualDur){resolve();return;}
+          const vt=video.currentTime;
+          const elapsed=Math.max(0,vt-startSec);
+          setRecPct(20+Math.min(Math.round((elapsed/actualDur)*78),78));
+          if(layout.split){
+            drawSplit(ctx,video,facePos,topText,botText);
+          }else{
+            const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
+            const scale=Math.max(1080/vw,1920/vh);
+            const sw=vw*scale,sh=vh*scale;
+            ctx.fillStyle="#000";ctx.fillRect(0,0,1080,1920);
+            ctx.drawImage(video,(1080-sw)/2,(1920-sh)/2,sw,sh);
+          }
+          if(vt>=actualEnd-0.08||elapsed>=actualDur+0.3){resolve();return;}
           requestAnimationFrame(draw);
         };
         requestAnimationFrame(draw);
@@ -394,6 +482,11 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         </div>
 
         {inputMode==="youtube"&&<>
+          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.25)",marginBottom:10,fontSize:11,color:"#fbbf24",lineHeight:1.7}}>
+            ⚠️ <b>YouTube 직접 스트리밍은 봇 감지로 차단됩니다.</b><br/>
+            AI 클립 분석 후 → 영상을 직접 다운로드해서 "파일 업로드" 탭으로 편집하세요.<br/>
+            <span style={{opacity:0.7}}>유튜브 앱 or 별도 도구로 다운로드 후 업로드 권장</span>
+          </div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1,position:"relative"}}>
               <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,color:muted}}>🔗</span>
@@ -432,7 +525,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                 <div style={{fontSize:11,color:muted}}>MP4, MOV, WEBM, MKV · 브라우저에서 직접 처리</div>
               </div>
             :<div style={{borderRadius:12,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.06)`,overflow:"hidden"}}>
-                <video controls style={{width:"100%",maxHeight:220,background:"#000",display:"block"}} src={fileObjUrl.current}/>
+                <video controls preload="metadata" style={{width:"100%",maxHeight:220,background:"#000",display:"block"}} src={fileObjUrl.current}/>
                 <div style={{padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div>
                     <div style={{fontSize:13,fontWeight:800,color:text}}>{file.name}</div>
@@ -538,6 +631,59 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             </div>
             <input type="range" min={1} max={10} value={count} onChange={e=>setCount(Number(e.target.value))} style={{width:"100%",accentColor:ACC}}/>
           </div>
+        </div>
+
+        {/* 화면 레이아웃 */}
+        <div style={{borderRadius:12,border:`2px solid ${ACC}40`,background:card,padding:"14px",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:12,fontWeight:800,color:text}}>🎬 화면 레이아웃</div>
+            <div style={{display:"flex",gap:4}}>
+              {[["split","상단제목+얼굴+하단자막"],["full","풀화면"]].map(([v,l])=>{const s=layout.split===(v==="split");return(
+                <button key={v} onClick={()=>setLayout(p=>({...p,split:v==="split"}))}
+                  style={{padding:"5px 12px",borderRadius:7,border:`1.5px solid ${s?ACC:bdr}`,background:s?`rgba(168,85,247,0.15)`:"transparent",color:s?ACC:muted,fontSize:10,cursor:"pointer",fontWeight:s?800:500}}>{l}</button>
+              );})}
+            </div>
+          </div>
+          {layout.split&&(
+            <div>
+              {/* 레이아웃 미리보기 */}
+              <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-start"}}>
+                <div style={{width:80,flexShrink:0}}>
+                  <div style={{width:80,height:142,borderRadius:8,background:"#111",overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)",display:"flex",flexDirection:"column"}}>
+                    <div style={{height:21,background:"linear-gradient(rgba(0,0,0,0.9),rgba(0,0,0,0.2))",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontSize:6,fontWeight:900,color:layout.topColor||"#fff"}}>제목 텍스트</span>
+                    </div>
+                    <div style={{flex:1,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontSize:8}}>👤</span>
+                    </div>
+                    <div style={{height:21,background:"linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.9))",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontSize:6,fontWeight:700,color:layout.botColor||"#ff0"}}>자막 텍스트</span>
+                    </div>
+                  </div>
+                  <div style={{fontSize:8,color:muted,textAlign:"center",marginTop:4}}>1080×1920</div>
+                </div>
+                <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div>
+                    <div style={{fontSize:10,color:muted,marginBottom:4}}>상단 제목 색상</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <input type="color" value={layout.topColor||"#ffffff"} onChange={e=>setLayout(p=>({...p,topColor:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
+                      <span style={{fontSize:10,color:muted}}>흰색 추천</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:10,color:muted,marginBottom:4}}>하단 자막 색상</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <input type="color" value={layout.botColor||"#ffff00"} onChange={e=>setLayout(p=>({...p,botColor:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
+                      <span style={{fontSize:10,color:muted}}>노랑 추천</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{padding:"8px 10px",borderRadius:8,background:`rgba(168,85,247,0.06)`,border:`1px solid ${ACC}20`,fontSize:10,color:muted,lineHeight:1.6}}>
+                👆 <b>상단</b>: AI가 생성한 후킹 제목 | 🎯 <b>중간</b>: 얼굴 감지로 자동 크롭 | 👇 <b>하단</b>: 첫 3초 멘트
+              </div>
+            </div>
+          )}
         </div>
 
         {err&&<div style={{padding:"9px 12px",borderRadius:9,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"#f87171",fontSize:11,marginBottom:12}}>⚠️ {err}</div>}
@@ -686,10 +832,10 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                 {(()=>{
                   const k=cur.index??selIdx;
                   const ex=extracted[k];
-                  if(ex)return<video key={ex.url} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay loop src={ex.url}/>;
+                  if(ex)return<video key={ex.url} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls loop src={ex.url}/>;
                   if(inputMode==="file"&&file)return(
-                    <video key={`f-${selIdx}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls autoPlay
-                      onLoadedMetadata={e=>{e.target.currentTime=curStart;e.target.play().catch(()=>{});}}
+                    <video key={`f-${selIdx}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls
+                      onLoadedMetadata={e=>{e.target.currentTime=curStart;}}
                       onTimeUpdate={e=>{if(e.target.currentTime>=curEnd&&curEnd>curStart)e.target.currentTime=curStart;}}
                       src={fileObjUrl.current||""}/>
                   );

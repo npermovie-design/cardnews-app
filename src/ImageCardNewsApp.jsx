@@ -394,6 +394,26 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
     setSaveMsg(""); setErr("");
   };
 
+  // Step 1 → Step 2: 이동 즉시 AI로 슬라이드 내용 자동 채우기
+  const goToStep2 = async () => {
+    if (!topic.trim() || !content.trim()) return;
+    const initialSlides = SLIDE_TYPES.slice(0, pageCount).map(t => ({
+      id: t.id, label: t.label, headline: "", body: "", badge: "", aiLoading: false
+    }));
+    setSlideContents(initialSlides);
+    setWizStep(2);
+    setPlanGenLoading(true);
+    try {
+      const textData = await generateSlideTexts({ topic, content, pageCount, slideTypes: SLIDE_TYPES, mode });
+      const filled = textData.slides || [];
+      setSlideContents(initialSlides.map(s => {
+        const found = filled.find(f => f.id === s.id);
+        return found ? { ...s, ...found } : s;
+      }));
+    } catch {}
+    setPlanGenLoading(false);
+  };
+
   // ── 위저드 진행 바 ──────────────────────────────────────────
   const WizHeader = () => (
     <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
@@ -542,11 +562,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
 
           {/* 다음 버튼 */}
           <div style={{ display:"flex", justifyContent:"flex-end" }}>
-            <button onClick={()=>{
-              if(!canNext) return;
-              setSlideContents(SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",body:"",badge:"",aiLoading:false})));
-              setWizStep(2);
-            }} disabled={!canNext}
+            <button onClick={goToStep2} disabled={!canNext}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?accentColor:`${accentColor}40`, color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>
             </button>
@@ -571,6 +587,13 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
               비워두면 AI가 자동으로 채워줘요.
             </div>
           </div>
+
+          {planGenLoading && (
+            <div style={{ padding:"12px 16px", borderRadius:10, background:`${accentColor}12`, border:`1px solid ${accentColor}30`, marginBottom:16, display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:16,height:16,borderRadius:"50%",border:`2px solid ${accentColor}40`,borderTopColor:accentColor,animation:"spin 0.8s linear infinite",flexShrink:0 }}/>
+              <div style={{ fontSize:13,fontWeight:700,color:accentColor }}>AI가 슬라이드 내용을 자동으로 채우고 있어요...</div>
+            </div>
+          )}
 
           {/* 전체 AI 추천 */}
           <div style={{ display:"flex", gap:8, marginBottom:20, padding:"12px 16px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, alignItems:"center", justifyContent:"space-between" }}>
@@ -781,12 +804,22 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                   <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
                   <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
                 </div>
-                <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>
-                  {progress.total === 0 ? "준비 중..." : "이미지 생성 중"}
-                </div>
-                <div style={{ fontSize:12,color:muted,animation:progress.total===0?"pulse 1.5s ease-in-out infinite":undefined }}>
-                  {progress.msg || "AI가 슬라이드를 준비하고 있어요..."}
-                </div>
+                {progress.total === 0 ? (
+                  <>
+                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>준비 중...</div>
+                    <div style={{ fontSize:12,color:muted,animation:"pulse 1.5s ease-in-out infinite" }}>
+                      {progress.msg || "AI가 슬라이드를 준비하고 있어요..."}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize:36,fontWeight:900,color:accentColor,lineHeight:1,marginBottom:4 }}>
+                      {progress.cur} <span style={{ fontSize:20,color:muted,fontWeight:700 }}>/ {progress.total}</span>
+                    </div>
+                    <div style={{ fontSize:15,fontWeight:800,color:text,marginBottom:4 }}>이미지 생성 중</div>
+                    <div style={{ fontSize:11,color:muted }}>{slides[progress.cur - 1]?.label || ""}</div>
+                  </>
+                )}
               </div>
               {progress.total > 0 && (
                 <div style={{ padding:"16px 24px" }}>
@@ -802,6 +835,16 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                       <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s" }}/>
                     ))}
                   </div>
+                  {rendered.some(Boolean) && (
+                    <div style={{ display:"flex",gap:6,marginTop:14,flexWrap:"wrap",justifyContent:"center" }}>
+                      {rendered.map((img,i)=>img?(
+                        <div key={i} style={{ position:"relative" }}>
+                          <img src={img} alt={slides[i]?.label} style={{ width:58,height:58,objectFit:"cover",borderRadius:8,border:`2px solid ${accentColor}`,boxShadow:"0 2px 8px rgba(0,0,0,0.25)",display:"block" }}/>
+                          <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:accentColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:900,color:"#fff" }}>{i+1}</div>
+                        </div>
+                      ):null)}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
