@@ -1,90 +1,38 @@
 /* ═══════════════════════════════════════════════════════════
-   storage.js  ·  Firebase Realtime DB + 포인트 시스템
+   storage.js  ·  Supabase DB + Auth + 포인트 시스템
    ═══════════════════════════════════════════════════════════ */
 
-// ── Firebase SDK (CDN 없이 npm 방식) ──────────────────────────────────────
-import { initializeApp, getApps } from "firebase/app";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  update,
-  push,
-  remove,
-  onValue,
-  serverTimestamp,
-} from "firebase/database";
+import { createClient } from "@supabase/supabase-js";
 
-// ── Firebase Config ───────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey:            "AIzaSyClm3wjA2za73xEvIPjmFDtw6PYwKnCjHk",
-  authDomain:        "nper-chat.firebaseapp.com",
-  databaseURL:       "https://nper-chat-default-rtdb.firebaseio.com",
-  projectId:         "nper-chat",
-  storageBucket:     "nper-chat.firebasestorage.app",
-  messagingSenderId: "749917860492",
-  appId:             "1:749917860492:web:f3bed6ab1ea2fcf20ac1a9",
-};
+// ── Supabase Config ───────────────────────────────────────────────────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co";
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
 
-const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getDatabase(app);
-const storage = getStorage(app);
-
-export { auth, db, storage };
-
-// ── Firebase Storage 헬퍼 ─────────────────────────────────────────────────
-/** 파일 업로드 (진행률 콜백 포함) */
-export function uploadFileToStorage(file, path, onProgress) {
-  return new Promise((resolve, reject) => {
-    const fileRef = storageRef(storage, path);
-    const task = uploadBytesResumable(fileRef, file);
-    task.on(
-      "state_changed",
-      snap => onProgress && onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-      reject,
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
-        resolve(url);
-      }
-    );
+const _g = typeof window !== "undefined" ? window : globalThis;
+if (!_g.__supabase__) {
+  _g.__supabase__ = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      storageKey: "sb-snsmakeit-auth-token",
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: "implicit",
+    },
   });
 }
+export const supabase = _g.__supabase__;
 
-/** Storage 파일 삭제 */
-export async function deleteFileFromStorage(path) {
-  try {
-    await deleteObject(storageRef(storage, path));
-  } catch (e) {
-    // 파일이 없어도 무시
-  }
-}
+// 기존 파일 호환용 별명 (auth, db 이름 그대로 사용 가능)
+export const auth = supabase;
+export const db   = supabase;
 
 // ── 포인트 상수 ───────────────────────────────────────────────────────────
 export const POINTS = {
-  SIGNUP:      10,   // 가입 시
-  DAILY_LOGIN: 1,    // 일일 로그인
-  POST_WRITE:  1,    // 게시글 작성
-  COMMENT:     0,    // 댓글 작성 (적립 없음)
-  AI_USE:      -10,  // AI 생성 1회
+  SIGNUP:      200,
+  DAILY_LOGIN: 1,
+  POST_WRITE:  1,
+  COMMENT:     0,
+  AI_USE:      -10,
 };
 
 export const PLANS = [
@@ -145,211 +93,284 @@ export const CATS = [
   { id: "qna",     label: "질문답변",            icon: "💬" },
 ];
 
-// ── 레거시 로컬스토리지 (게시글 등 기존 데이터 호환) ─────────────────────
+// ── 로컬스토리지 헬퍼 ─────────────────────────────────────────────────────
 export const POSTS_KEY   = "nper_posts_v2";
 export const USER_KEY    = "nper_user";
 export const AI_KEY      = "nper_ai_usage";
-
 export const MEMBERS_KEY = "nper_members";
+
 export function getLocalUser()   { try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch { return null; } }
 export function setLocalUser(u)  { try { localStorage.setItem(USER_KEY, JSON.stringify(u)); } catch {} }
 export function getPosts()       { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || "[]"); } catch { return []; } }
 export function setPosts(p)      { try { localStorage.setItem(POSTS_KEY, JSON.stringify(p)); } catch {} }
 export function getMembers()     { try { return JSON.parse(localStorage.getItem(MEMBERS_KEY) || "[]"); } catch { return []; } }
 export function saveMembers(m)   { try { localStorage.setItem(MEMBERS_KEY, JSON.stringify(m)); } catch {} }
-
-// getUser / setUser 는 로컬스토리지 래퍼 (App.jsx 호환 유지)
 export function getUser()        { return getLocalUser(); }
 export function setUser(u)       { setLocalUser(u); }
 
-// ── Firebase Auth 헬퍼 ────────────────────────────────────────────────────
-
-/** 회원가입: Firebase Auth + DB에 유저 문서 생성 */
-export async function fbRegister(email, pw, nick) {
-  const cred = await createUserWithEmailAndPassword(auth, email, pw);
-  await updateProfile(cred.user, { displayName: nick });
-  const uid = cred.user.uid;
-  const userData = {
-    uid,
-    email,
-    nick,
-    role:     "member",
-    points:   POINTS.SIGNUP,
-    joinDate: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    lastLoginDate: new Date().toLocaleDateString("ko-KR"),
-  };
-  await set(ref(db, "users/" + uid), userData);
-  return userData;
+// ── 내부 헬퍼: users 테이블에서 유저 가져오기 ────────────────────────────
+async function _fetchUserRow(uid) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("uid", uid)
+    .single();
+  if (error) return null;
+  return data;
 }
 
-/** 로그인: Firebase Auth + DB에서 유저 데이터 가져오기 + 일일 로그인 포인트 */
-export async function fbLogin(email, pw) {
-  const cred = await signInWithEmailAndPassword(auth, email, pw);
-  const uid  = cred.user.uid;
-  const snap = await get(ref(db, "users/" + uid));
-  let userData = snap.exists() ? snap.val() : { uid, email, nick: cred.user.displayName || email, role: "member", points: 0 };
-
-  // 일일 로그인 포인트 (하루 1회)
-  const today = new Date().toLocaleDateString("ko-KR");
-  if (userData.lastLoginDate !== today) {
-    userData.points       = (userData.points || 0) + POINTS.DAILY_LOGIN;
-    userData.lastLoginDate = today;
-    userData.lastLogin     = new Date().toISOString();
-    await update(ref(db, "users/" + uid), {
-      points:        userData.points,
-      lastLoginDate: today,
-      lastLogin:     userData.lastLogin,
-    });
+// ── 내부 헬퍼: 일일 로그인 포인트 처리 (fire-and-forget) ─────────────────
+function _handleDailyLogin(userData) {
+  try {
+    const today = new Date().toLocaleDateString("ko-KR");
+    if (userData.last_login_date !== today) {
+      const newPoints = Math.max(0, (userData.points || 0) + POINTS.DAILY_LOGIN);
+      // 비동기로 처리, 로그인을 블로킹하지 않음
+      (async () => {
+        try {
+          const { error } = await supabase.from("users").update({
+            points: newPoints,
+            last_login_date: today,
+            last_login: new Date().toISOString(),
+          }).eq("uid", userData.uid);
+          if (!error) {
+            await supabase.from("point_history").insert({
+              uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인",
+              balance: newPoints, created_at: new Date().toISOString(),
+            });
+          }
+        } catch(e) {}
+      })();
+      // 로컬 userData는 즉시 업데이트
+      userData = { ...userData, points: newPoints, last_login_date: today };
+    }
+  } catch(e) {
+    console.warn("일일 로그인 포인트 처리 실패:", e.message);
   }
   return userData;
 }
 
+// ── Auth: 이메일 회원가입 ─────────────────────────────────────────────────
+export async function fbRegister(email, pw, nick, captchaToken) {
+  // 10초 타임아웃
+  const signUpOptions = { email, password: pw };
+  if (captchaToken) signUpOptions.options = { captchaToken };
+  const signUpPromise = supabase.auth.signUp(signUpOptions);
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("회원가입 요청 시간이 초과됐습니다. 다시 시도해주세요.")), 30000)
+  );
+  const { data, error } = await Promise.race([signUpPromise, timeout]);
+  if (error) throw error;
 
-/** 카카오 로그인 */
+  const uid = data.user?.id;
+  if (!uid) throw new Error("회원가입에 실패했습니다. 다시 시도해주세요.");
+
+  const userData = {
+    uid, email, nick,
+    role:            "member",
+    points:          POINTS.SIGNUP,
+    join_date:       new Date().toISOString(),
+    last_login:      new Date().toISOString(),
+    last_login_date: new Date().toLocaleDateString("ko-KR"),
+    provider:        "email",
+  };
+
+  // users 테이블 insert - fire-and-forget (대기 없이 백그라운드 처리)
+  (async () => { try { await supabase.from("users").insert(userData); } catch(e) {} })();
+
+  return userData;
+}
+
+// ── Auth: 이메일 로그인 ──────────────────────────────────────────────────
+export async function fbLogin(email, pw) {
+  // 10초 타임아웃
+  const authPromise = supabase.auth.signInWithPassword({ email, password: pw });
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("로그인 요청 시간이 초과됐습니다. 다시 시도해주세요.")), 30000)
+  );
+  const { data, error } = await Promise.race([authPromise, timeout]);
+  if (error) throw error;
+
+  const uid = data.user.id;
+  // users 테이블 조회 - 3초 타임아웃 (실패해도 로그인 진행)
+  let userData = null;
+  try {
+    const fetchPromise = _fetchUserRow(uid);
+    const fetchTimeout = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
+    userData = await Promise.race([fetchPromise, fetchTimeout]);
+  } catch(e) { userData = null; }
+
+  if (!userData) {
+    userData = {
+      uid, email,
+      nick: email.split("@")[0],
+      role:            "member",
+      points:          0,
+      join_date:       new Date().toISOString(),
+      last_login:      new Date().toISOString(),
+      last_login_date: new Date().toLocaleDateString("ko-KR"),
+      provider:        "email",
+    };
+    // fire-and-forget (블로킹 없이 백그라운드 처리)
+    (async () => { try { await supabase.from("users").insert(userData); } catch(e) {} })();
+  }
+
+  // 일일 로그인 처리 (동기 반환, DB 업데이트는 백그라운드)
+  try { userData = _handleDailyLogin(userData); } catch(e) {}
+  return userData;
+}
+
+// ── Auth: 구글 로그인 ────────────────────────────────────────────────────
+export async function fbGoogleLogin() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error) throw error;
+  // OAuth는 리다이렉트 방식 → onAuthStateChange에서 후처리
+}
+
+// ── Auth: 카카오 로그인 ──────────────────────────────────────────────────
+export async function fbKakaoLogin() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "kakao",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) throw error;
+  // OAuth는 리다이렉트 방식 → onAuthStateChange에서 후처리
+}
+
+// 구 카카오 흐름 호환용 (kakaoLoginRedirect, fbKakaoLogin(code) 대체)
 export const KAKAO_REST_KEY = "4d0f0128951fe2ff52b47d4243b1480e";
 export const KAKAO_REDIRECT = "https://www.snsmakeit.com/oauth/kakao";
-
 export function kakaoLoginRedirect() {
-  const url = "https://kauth.kakao.com/oauth/authorize"
-    + "?client_id=" + KAKAO_REST_KEY
-    + "&redirect_uri=" + encodeURIComponent(KAKAO_REDIRECT)
-    + "&response_type=code"
-    + "&prompt=login";
-  // 팝업으로 열기
-  const popup = window.open(url, "kakaoLogin", "width=500,height=600,left=" + ((window.screen.width-500)/2) + ",top=" + ((window.screen.height-600)/2));
-  return popup;
+  return fbKakaoLogin(); // Supabase OAuth로 통합
 }
 
-/** 카카오 토큰 교환 + Firebase 커스텀 토큰 로그인 (팝업 콜백 처리) */
-export async function fbKakaoLogin(code) {
-  // 1. 카카오 토큰 교환
-  const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type:   "authorization_code",
-      client_id:    KAKAO_REST_KEY,
-      redirect_uri: KAKAO_REDIRECT,
-      code,
-    }),
-  });
-  const tokenData = await tokenRes.json();
-  if (!tokenData.access_token) throw new Error("카카오 토큰 발급 실패");
+// ── Auth: OAuth 로그인 후 users 테이블 동기화 (onAuthStateChange에서 호출) ──
+export async function syncOAuthUser(supabaseUser) {
+  const uid   = supabaseUser.id;
+  const email = supabaseUser.email || "";
+  const nick  =
+    supabaseUser.user_metadata?.full_name ||
+    supabaseUser.user_metadata?.name ||
+    supabaseUser.user_metadata?.preferred_username ||
+    email.split("@")[0];
+  const provider = supabaseUser.app_metadata?.provider || "oauth";
 
-  // 2. 카카오 유저 정보
-  const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
-    headers: { Authorization: "Bearer " + tokenData.access_token },
-  });
-  const kakaoUser = await userRes.json();
-  const kakaoId   = String(kakaoUser.id);
-  const nick      = kakaoUser.kakao_account?.profile?.nickname || "카카오유저";
-  const email     = kakaoUser.kakao_account?.email || (kakaoId + "@kakao.nper");
+  // uid로 먼저 찾고, 없으면 email로 찾기 (기존 데이터 호환)
+  let userData = await _fetchUserRow(uid);
 
-  // 3. Firebase DB에 유저 저장 (uid = "kakao_" + kakaoId)
-  const uid  = "kakao_" + kakaoId;
-  const snap = await get(ref(db, "users/" + uid));
-  let userData;
-
-  if (snap.exists()) {
-    userData = snap.val();
-    const today = new Date().toLocaleDateString("ko-KR");
-    if (userData.lastLoginDate !== today) {
-      userData.points        = (userData.points || 0) + POINTS.DAILY_LOGIN;
-      userData.lastLoginDate = today;
-      userData.lastLogin     = new Date().toISOString();
-      await update(ref(db, "users/" + uid), {
-        points: userData.points, lastLoginDate: today, lastLogin: userData.lastLogin,
-      });
+  if (!userData && email) {
+    const { data } = await supabase.from("users").select("*").eq("email", email).single();
+    if (data) {
+      // 기존 유저 발견 → uid를 Supabase uid로 업데이트
+      await supabase.from("users").update({ uid }).eq("email", email);
+      userData = { ...data, uid };
     }
-  } else {
-    userData = {
-      uid, email, nick,
-      role:          "member",
-      points:        POINTS.SIGNUP,
-      joinDate:      new Date().toISOString(),
-      lastLogin:     new Date().toISOString(),
-      lastLoginDate: new Date().toLocaleDateString("ko-KR"),
-      provider:      "kakao",
-    };
-    await set(ref(db, "users/" + uid), userData);
   }
+
+  if (!userData) {
+    userData = {
+      uid,
+      email,
+      nick,
+      role:            "member",
+      points:          POINTS.SIGNUP,
+      join_date:       new Date().toISOString(),
+      last_login:      new Date().toISOString(),
+      last_login_date: new Date().toLocaleDateString("ko-KR"),
+      provider,
+    };
+    await supabase.from("users").insert(userData);
+  } else {
+    userData = await _handleDailyLogin(userData);
+  }
+
   return userData;
 }
 
-/** 구글 로그인/회원가입 */
-export async function fbGoogleLogin() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  const cred = await signInWithPopup(auth, provider);
-  const uid  = cred.user.uid;
-  const snap = await get(ref(db, "users/" + uid));
+// ── Auth: 로그아웃 ───────────────────────────────────────────────────────
+export async function fbLogout() {
+  // scope: "global" → 서버 세션까지 완전 삭제 (local이면 새로고침 시 재로그인됨)
+  try { await supabase.auth.signOut({ scope: "global" }); } catch(e) {}
+  // localStorage 세션 키 직접 제거 (완전 초기화)
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith("sb-")) localStorage.removeItem(k);
+    });
+  } catch(e) {}
+  // 로컬 유저 state도 초기화
+  try { setLocalUser(null); } catch(e) {}
+}
 
-  if (snap.exists()) {
-    // 기존 유저 → 로그인
-    let userData = snap.val();
-    const today = new Date().toLocaleDateString("ko-KR");
-    if (userData.lastLoginDate !== today) {
-      userData.points       = (userData.points || 0) + POINTS.DAILY_LOGIN;
-      userData.lastLoginDate = today;
-      userData.lastLogin     = new Date().toISOString();
-      await update(ref(db, "users/" + uid), {
-        points: userData.points, lastLoginDate: today, lastLogin: userData.lastLogin,
-      });
+// ── DB: 유저 데이터 가져오기 ─────────────────────────────────────────────
+export async function fetchUser(uid) {
+  return await _fetchUserRow(uid);
+}
+
+// ── DB: 포인트 변경 (Supabase RPC 함수 사용 - 단 1회 호출로 차감+내역 동시 처리) ─
+export async function changePoints(uid, delta, reason) {
+  if (!uid) { console.warn("changePoints: uid 없음"); return 0; }
+  try {
+    // 현재 포인트 직접 조회
+    const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
+    const currentPoints = row?.points || 0;
+    const newPoints = Math.max(0, currentPoints + delta);
+
+    // users 테이블 직접 업데이트
+    const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", uid);
+    if (error) {
+      console.warn("changePoints 업데이트 실패:", error.message);
+      return currentPoints;
     }
-    return userData;
-  } else {
-    // 신규 유저 → 자동 가입
-    const nick = cred.user.displayName || cred.user.email.split("@")[0];
-    const userData = {
-      uid,
-      email:         cred.user.email,
-      nick,
-      role:          "member",
-      points:        POINTS.SIGNUP,
-      joinDate:      new Date().toISOString(),
-      lastLogin:     new Date().toISOString(),
-      lastLoginDate: new Date().toLocaleDateString("ko-KR"),
-      provider:      "google",
-    };
-    await set(ref(db, "users/" + uid), userData);
-    return userData;
+
+    // point_history 직접 기록 (실패해도 무방)
+    (async () => { try { await supabase.from("point_history").insert({
+      uid, delta, reason: reason || "", balance: newPoints, created_at: new Date().toISOString(),
+    }); } catch(e) {} })();
+
+    // RPC도 시도 (실패해도 무방)
+    (async () => { try { await supabase.rpc("update_user_points", { p_uid: uid, p_delta: delta, p_reason: reason || "" }); } catch(e) {} })();
+
+    return newPoints;
+  } catch(e) {
+    console.error("changePoints 오류:", e.message);
+    return 0;
   }
 }
 
-/** 로그아웃 */
-export async function fbLogout() {
-  await signOut(auth);
+// ── Supabase Storage 파일 업로드 ─────────────────────────────────────────
+export async function uploadFileToStorage(file, path, onProgress) {
+  // Supabase Storage는 진행률 콜백 미지원 → 업로드 전/후에 0/100 전달
+  if (onProgress) onProgress(0);
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  if (onProgress) onProgress(100);
+
+  const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+  return urlData.publicUrl;
 }
 
-/** DB에서 최신 유저 데이터 가져오기 */
-export async function fetchUser(uid) {
-  const snap = await get(ref(db, "users/" + uid));
-  return snap.exists() ? snap.val() : null;
+/** Storage 파일 삭제 */
+export async function deleteFileFromStorage(path) {
+  try {
+    await supabase.storage.from("uploads").remove([path]);
+  } catch (e) {
+    // 파일 없어도 무시
+  }
 }
 
-/** 포인트 변경 */
-export async function changePoints(uid, delta, reason) {
-  const snap = await get(ref(db, "users/" + uid));
-  if (!snap.exists()) return;
-  const current = snap.val().points || 0;
-  const newPts  = Math.max(0, current + delta);
-  await update(ref(db, "users/" + uid), { points: newPts });
-  // 포인트 히스토리 기록
-  await push(ref(db, "pointHistory/" + uid), {
-    delta,
-    reason,
-    balance: newPts,
-    at: new Date().toISOString(),
-  });
-  return newPts;
-}
-
-// ── AI 사용 횟수 (Firebase 기반) ──────────────────────────────────────────
+// ── AI 사용 횟수 ──────────────────────────────────────────────────────────
 export function getAiUsage() { try { return JSON.parse(localStorage.getItem(AI_KEY) || "{}"); } catch { return {}; } }
 export function setAiUsage(u){ try { localStorage.setItem(AI_KEY, JSON.stringify(u)); } catch {} }
 
-export const FREE_GUEST  = 5;
+export const FREE_GUEST  = 10;
 export const FREE_MEMBER = 20;
 
 export function getAiLeft(user) {
@@ -361,7 +382,7 @@ export function getAiLeft(user) {
   const extraFromPoints = Math.floor(points / Math.abs(POINTS.AI_USE));
   return {
     used, limit,
-    left: Math.max(0, limit - used) + extraFromPoints,
+    left:   Math.max(0, limit - used) + extraFromPoints,
     canUse: (limit - used > 0) || (points >= Math.abs(POINTS.AI_USE)),
   };
 }
@@ -386,35 +407,70 @@ export async function useAiOnce(user, setUserState) {
   return false;
 }
 
-// ── 게시글 작성 포인트 ────────────────────────────────────────────────────
+// ── 게시글 작성 / 댓글 포인트 ────────────────────────────────────────────
 export async function awardPostPoints(user, setUserState) {
-  if (!user || !user.uid) return;
-  const newPts = await changePoints(user.uid, POINTS.POST_WRITE, "게시글 작성");
+  if (!user?.uid) return;
+  const newPts  = await changePoints(user.uid, POINTS.POST_WRITE, "게시글 작성");
   const newUser = { ...user, points: newPts };
   setLocalUser(newUser);
   if (setUserState) setUserState(newUser);
 }
 
 export async function awardCommentPoints(user, setUserState) {
-  if (!user || !user.uid) return;
-  const newPts = await changePoints(user.uid, POINTS.COMMENT, "댓글 작성");
+  if (!user?.uid) return;
+  const newPts  = await changePoints(user.uid, POINTS.COMMENT, "댓글 작성");
   const newUser = { ...user, points: newPts };
   setLocalUser(newUser);
   if (setUserState) setUserState(newUser);
+}
+
+// ── 게스트 사용 즉시 증가 + 배지 업데이트 이벤트 발생 ─────────────────────
+export function incrementGuestUsage() {
+  try {
+    const usage = JSON.parse(localStorage.getItem(AI_KEY) || "{}");
+    usage["guest"] = (usage["guest"] || 0) + 1;
+    localStorage.setItem(AI_KEY, JSON.stringify(usage));
+    window.dispatchEvent(new CustomEvent("guestUsageUpdate", { detail: { count: usage["guest"] } }));
+  } catch(e) {}
+}
+
+// ── 게스트 사용 한도 체크 (초과 시 window 이벤트 발생 → App.jsx 팝업 표시) ─
+export function guestLimitExceeded() {
+  try {
+    const usage = JSON.parse(localStorage.getItem(AI_KEY) || "{}");
+    if ((usage["guest"] || 0) >= FREE_GUEST) {
+      window.dispatchEvent(new CustomEvent("pointsExhausted", { detail: { isGuest: true } }));
+      return true;
+    }
+  } catch(e) {}
+  return false;
 }
 
 // ── 유효성 검사 ───────────────────────────────────────────────────────────
 export function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 export function genCode()       { return String(Math.floor(100000 + Math.random() * 900000)); }
 
-// ── Firebase 게시글 CRUD ──────────────────────────────────────────────────
+// ── 게시글 CRUD (Supabase) ────────────────────────────────────────────────
+// BoardPage는 'body' 필드 사용, Supabase는 'content' 컬럼 → 중간 변환
+function rowToPost(row) {
+  if (!row) return row;
+  const { content, ...rest } = row;
+  return { ...rest, body: content ?? "" };
+}
+function postToRow(post) {
+  const { body, ...rest } = post;
+  return { ...rest, content: body ?? post.content ?? "" };
+}
+
 /** 전체 게시글 가져오기 */
 export async function getPostsFromDB() {
   try {
-    const snap = await get(ref(db, "posts"));
-    if (!snap.exists()) return [];
-    const obj = snap.val();
-    return Object.values(obj).sort((a, b) => (b.id || 0) - (a.id || 0));
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("id", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(rowToPost);
   } catch (e) {
     console.error("getPostsFromDB error:", e);
     return [];
@@ -423,30 +479,36 @@ export async function getPostsFromDB() {
 
 /** 게시글 저장 (신규) */
 export async function savePostToDB(post) {
-  await set(ref(db, "posts/" + post.id), post);
+  const { error } = await supabase.from("posts").insert(postToRow(post));
+  if (error) throw error;
 }
 
 /** 게시글 업데이트 (부분) */
 export async function updatePostInDB(postId, data) {
-  await update(ref(db, "posts/" + postId), data);
+  const row = data.body !== undefined ? postToRow(data) : data;
+  const { error } = await supabase.from("posts").update(row).eq("id", postId);
+  if (error) throw error;
 }
 
 /** 게시글 삭제 */
 export async function deletePostFromDB(postId) {
-  await remove(ref(db, "posts/" + postId));
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+  if (error) throw error;
 }
 
-/** localStorage → Firebase 마이그레이션 (1회 실행용) */
+/** localStorage → Supabase 마이그레이션 (1회 실행용) */
 export async function migrateLocalPostsToDB() {
   try {
     const localPosts = getPosts();
     if (!localPosts.length) return 0;
-    const snap = await get(ref(db, "posts"));
-    const existing = snap.exists() ? snap.val() : {};
+
+    const { data: existing } = await supabase.from("posts").select("id");
+    const existingIds = new Set((existing || []).map(p => p.id));
+
     let count = 0;
     for (const post of localPosts) {
-      if (!existing[post.id]) {
-        await set(ref(db, "posts/" + post.id), post);
+      if (!existingIds.has(post.id)) {
+        await supabase.from("posts").insert(post);
         count++;
       }
     }

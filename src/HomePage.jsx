@@ -143,7 +143,7 @@ export default function HomePage({ navigate, C }) {
           <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.muted, lineHeight: 1.9, maxWidth: 560, margin: "0 auto 16px" }}>
             SNS 콘텐츠 만드는 게 막막하고 시간이 없으신가요?<br/>
             블로그·인스타·유튜브·카드뉴스까지 <b style={{ color: C.purpleL }}>AI가 전부 자동 생성</b>해드려요.<br/>
-            <b style={{ color: C.purpleL }}>비회원 5회 무료 · 가입 즉시 200cr 지급!</b>
+            <b style={{ color: C.purpleL }}>비회원 5회 무료 · 가입 즉시 200P 지급!</b>
           </p>
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
@@ -233,7 +233,7 @@ export default function HomePage({ navigate, C }) {
             { name: "김블로그", job: "네이버 블로그 운영자", avatar: "🙋‍♀️", rating: 5, platform: "네이버 블로그", text: "예전엔 글 하나 쓰는데 2~3시간 걸렸는데 이제 30분이면 돼요. SEO 키워드도 알아서 넣어줘서 상위 노출도 잘 되고 있어요. 진짜 신세계입니다 ㅋㅋ", result: "글 작성 시간 85% 단축" },
             { name: "마케터 이씨", job: "인스타 마케터", avatar: "💁‍♂️", rating: 5, platform: "인스타그램", text: "캡션 쓰는 게 매일 스트레스였는데 이제 클릭 몇 번이면 끝나요. 해시태그도 잘 추천해주고 팔로워도 조금씩 늘고 있어요.", result: "팔로워 월 200명 증가" },
             { name: "유튜버 박씨", job: "유튜브 채널 운영", avatar: "🎬", rating: 5, platform: "유튜브", text: "대본이랑 설명란 작성이 제일 힘들었는데 이 툴 쓰고 나서 영상 발행 속도가 2배 빨라졌어요. 썸네일 기획도 도와줘서 클릭률도 올랐어요.", result: "영상 발행 속도 2배" },
-            { name: "소상공인 최씨", job: "카페 사장님", avatar: "☕", rating: 5, platform: "블로그 + 인스타", text: "홍보 글 쓸 줄 몰라서 항상 고민이었는데 이제 메뉴 소개, 이벤트 공지 다 AI로 뚝딱 만들어요. 크레딧 충전하고 계속 쓰고 있습니다.", result: "월 홍보 비용 60% 절감" },
+            { name: "소상공인 최씨", job: "카페 사장님", avatar: "☕", rating: 5, platform: "블로그 + 인스타", text: "홍보 글 쓸 줄 몰라서 항상 고민이었는데 이제 메뉴 소개, 이벤트 공지 다 AI로 뚝딱 만들어요. 포인트 충전하고 계속 쓰고 있습니다.", result: "월 홍보 비용 60% 절감" },
             { name: "강사 정씨", job: "온라인 강의 운영", avatar: "👩‍🏫", rating: 5, platform: "티스토리 블로그", text: "강의 관련 블로그 포스팅을 매주 올리는데 아이디어 고갈이 문제였어요. AI가 목차부터 내용까지 잡아줘서 훨씬 수월해졌어요.", result: "포스팅 발행 주 2회→5회" },
             { name: "프리랜서 한씨", job: "콘텐츠 프리랜서", avatar: "💻", rating: 5, platform: "SNS 이미지", text: "카드뉴스 만드는 데 포토샵 몰라도 되고 텍스트만 입력하면 예쁜 이미지가 뚝딱 나와요. 클라이언트 납품 속도가 3배 빨라졌습니다.", result: "작업 효율 300% 향상" },
           ].map((r, i) => (
@@ -270,11 +270,11 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 포인트/요금 안내 ══ */}
       <SecWrap C={C}>
-        <SecTitle C={C} badge="Pricing" title="합리적인 크레딧 시스템" sub="비회원도 5회 무료! 크레딧 충전으로 더 많이 사용하세요." />
+        <SecTitle C={C} badge="Pricing" title="합리적인 포인트 시스템" sub="비회원도 5회 무료! 포인트 충전으로 더 많이 사용하세요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "🎁", title: "비회원 무료", point: "5회", desc: "로그인 없이 AI 생성기 5회 무료 체험", color: "#888", btnText: "무료 체험하기", onClick: () => navigate("ai") },
-            { icon: "👤", title: "회원 가입", point: "200cr 지급", desc: "가입 즉시 200cr 지급 + 게시글·로그인 크레딧 적립", color: "#22c55e", btnText: "무료 회원가입", onClick: () => navigate("ai") },
+            { icon: "👤", title: "회원 가입", point: "200P 지급", desc: "가입 즉시 200P 지급 + 게시글·로그인 포인트 적립", color: "#22c55e", btnText: "무료 회원가입", onClick: () => navigate("ai") },
             { icon: "⚡", title: "Basic 충전", point: "500P", desc: "9,900원 · AI 50회 분량 · 유효기간 없음", color: "#6366f1", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: false },
             { icon: "🔥", title: "Pro 충전", point: "1,200P", desc: "19,900원 · AI 120회 분량 · 우선 고객지원", color: "#8b5cf6", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: true },
           ].map((p, i) => (
@@ -309,7 +309,7 @@ export default function HomePage({ navigate, C }) {
             { icon: "⚡", title: "빠른 생성 속도", desc: "평균 30초~3분 이내 콘텐츠 완성. 직접 쓰는 것보다 10배 이상 빠릅니다." },
             { icon: "🎯", title: "SEO 자동 최적화", desc: "키워드를 자동으로 파악해 검색 상위 노출에 유리한 구조로 글을 작성합니다." },
             { icon: "🌏", title: "다양한 플랫폼 지원", desc: "네이버·티스토리·인스타·유튜브·스레드 등 플랫폼별 최적화된 글을 생성합니다." },
-            { icon: "💰", title: "합리적인 비용", desc: "월정액 없이 크레딧 충전 방식. 비회원도 5회 무료로 바로 체험할 수 있어요." },
+            { icon: "💰", title: "합리적인 비용", desc: "월정액 없이 포인트 충전 방식. 비회원도 5회 무료로 바로 체험할 수 있어요." },
           ].map((d, i) => (
             <FadeIn key={d.title} delay={i * 0.1}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
@@ -339,7 +339,7 @@ export default function HomePage({ navigate, C }) {
           </h2>
           <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 40 }}>
             로그인 없이 지금 바로 5회 무료 체험!<br/>
-            회원가입하면 200cr 추가 지급 + 크레딧 적립으로 더 오래 사용하세요.
+            회원가입하면 200P 추가 지급 + 포인트 적립으로 더 오래 사용하세요.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <Btn C={C} onClick={() => navigate("ai")}>✨ AI 생성기 무료 체험</Btn>

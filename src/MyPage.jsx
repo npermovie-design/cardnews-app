@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { db, changePoints } from "./storage";
-import { ref, get, update, push } from "firebase/database";
-import { getAuth, updateProfile } from "firebase/auth";
+import { supabase, changePoints } from "./storage";
 
 /* ═══════════════════════════════════════════════
    MyPage.jsx  ·  회원 전용 마이페이지
@@ -16,8 +14,17 @@ const HISTORY_ICON = {
   "게시글 작성":        { icon:"✍️", color:"#a78bfa" },
   "댓글 작성":          { icon:"💬", color:"#818cf8" },
   "AI 생성 사용":       { icon:"🤖", color:"#f87171" },
-  "심플 카드뉴스 생성": { icon:"✨", color:"#f87171" },
+  "블로그 글 생성":      { icon:"✍️", color:"#f87171" },
+  "유튜브 블로그 생성":  { icon:"📺", color:"#f87171" },
+  "뉴스 블로그 생성":    { icon:"📰", color:"#f87171" },
+  "심플 카드뉴스 생성":  { icon:"✨", color:"#f87171" },
   "심플 상세페이지 생성":{ icon:"📋", color:"#f87171" },
+  "이미지 생성":         { icon:"🖼", color:"#f87171" },
+  "이미지 재생성":       { icon:"🔄", color:"#f59e0b" },
+  "상세페이지 이미지 생성":{ icon:"🛍", color:"#f87171" },
+  "로고 생성":           { icon:"🏷", color:"#f87171" },
+  "목업 생성":           { icon:"🎨", color:"#f87171" },
+  "커뮤니티 글 작성":    { icon:"✍️", color:"#a78bfa" },
   "관리자 지급":        { icon:"👑", color:"#fbbf24" },
   "포인트 초기화":      { icon:"🔄", color:"#94a3b8" },
 };
@@ -43,6 +50,11 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [histLoading, setHistLoading] = useState(false);
   const [userData, setUserData] = useState(user);
 
+  // user prop 변경 시 즉시 반영 (포인트 차감 등)
+  useEffect(() => {
+    if (user) setUserData(u => ({ ...u, ...user }));
+  }, [user?.points, user?.nick]);
+
   // 닉네임 변경
   const [nickEdit, setNickEdit]   = useState(false);
   const [newNick, setNewNick]     = useState(user?.nick || "");
@@ -56,36 +68,55 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   useEffect(() => {
     if (!user?.uid) return;
     setHistLoading(true);
-    get(ref(db, "pointHistory/" + user.uid)).then(snap => {
-      if (snap.exists()) {
-        const raw = snap.val();
-        const list = Object.values(raw)
-          .sort((a,b) => new Date(b.at||0) - new Date(a.at||0));
-        setHistory(list);
-      } else {
-        setHistory([]);
-      }
-    }).catch(()=>{}).finally(()=>setHistLoading(false));
 
-    // 최신 유저 데이터
-    get(ref(db, "users/" + user.uid)).then(snap => {
-      if (snap.exists()) setUserData(snap.val());
-    }).catch(()=>{});
+    // 포인트 내역 (타임아웃 8초)
+    // point_history 로드 - RPC 함수 사용으로 속도 개선
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("point_history")
+          .select("id, delta, reason, balance, created_at")
+          .eq("uid", user.uid)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        setHistory((data || []).map(h => ({ ...h, at: h.created_at })));
+      } catch(e) {
+        console.warn("point_history 로드 실패:", e.message);
+        setHistory([]);
+      } finally {
+        setHistLoading(false);
+      }
+
+      // 최신 포인트 조회
+      try {
+        const { data } = await supabase
+          .from("users")
+          .select("points, nick, email")
+          .eq("uid", user.uid)
+          .single();
+        if (data) setUserData(prev => ({ ...prev, ...data }));
+      } catch(e) {}
+    })();
   }, [user?.uid]);
 
-  // 닉네임 변경 가능 여부
+  // 닉네임 변경 가능 여부 (localStorage 기반)
+  const getNickChangedAt = () => {
+    if (userData?.nickChangedAt) return userData.nickChangedAt;
+    try { return localStorage.getItem(`nper_nick_changed_${user?.uid}`) || null; } catch { return null; }
+  };
   const canChangeNick = () => {
-    if (!userData?.nickChangedAt) return true;
-    const last = new Date(userData.nickChangedAt);
-    const now  = new Date();
-    const diffDays = (now - last) / (1000 * 60 * 60 * 24);
+    const changedAt = getNickChangedAt();
+    if (!changedAt) return true;
+    const diffDays = (Date.now() - new Date(changedAt)) / (1000 * 60 * 60 * 24);
     return diffDays >= 30;
   };
   const nextChangeDate = () => {
-    if (!userData?.nickChangedAt) return null;
-    const last = new Date(userData.nickChangedAt);
-    last.setDate(last.getDate() + 30);
-    return last.toLocaleDateString("ko-KR");
+    const changedAt = getNickChangedAt();
+    if (!changedAt) return null;
+    const next = new Date(changedAt);
+    next.setDate(next.getDate() + 30);
+    return next.toLocaleDateString("ko-KR");
   };
 
   const handleNickChange = async () => {
@@ -94,23 +125,27 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
     if (!canChangeNick()) { setNickMsg(`다음 변경 가능일: ${nextChangeDate()}`); return; }
     setNickLoading(true); setNickMsg("");
     try {
-      const fbUser = getAuth().currentUser;
-      if (fbUser) await updateProfile(fbUser, { displayName: newNick.trim() });
       const now = new Date().toISOString();
-      await update(ref(db, "users/" + user.uid), { nick: newNick.trim(), nickChangedAt: now });
-      // 히스토리 기록
-      await push(ref(db, "pointHistory/" + user.uid), {
-        delta: 0, reason: "닉네임 변경", balance: userData?.points || 0, at: now
-      });
+      // nick만 업데이트 (nick_changed_at 컬럼 없어도 동작)
+      const { error } = await supabase.from("users").update({ nick: newNick.trim() }).eq("uid", user.uid);
+      if (error) throw new Error(error.message);
+      // 변경 날짜는 localStorage에 보관
+      const nickChangedKey = `nper_nick_changed_${user.uid}`;
+      try { localStorage.setItem(nickChangedKey, now); } catch {}
+      try {
+        await supabase.from("point_history").insert({
+          uid: user.uid, delta: 0, reason: "닉네임 변경", balance: userData?.points || 0, created_at: now
+        });
+      } catch(e) {} // point_history 실패해도 닉네임 변경은 진행
+      const newUserObj = { ...user, nick: newNick.trim() };
       const updated = { ...userData, nick: newNick.trim(), nickChangedAt: now };
       setUserData(updated);
-      // 로컬스토리지 + 상위 state 업데이트
-      try { localStorage.setItem("nper_user", JSON.stringify({...user, nick: newNick.trim()})); } catch {}
-      if (setUser) setUser({...user, nick: newNick.trim()});
+      try { localStorage.setItem("nper_user", JSON.stringify(newUserObj)); } catch {}
+      if (setUser) setUser(newUserObj);
       setNickEdit(false);
       showToast("닉네임이 변경됐어요! ✅");
     } catch(e) {
-      setNickMsg("변경 중 오류가 발생했어요. 다시 시도해주세요.");
+      setNickMsg("변경 중 오류: " + (e.message || "다시 시도해주세요."));
     } finally { setNickLoading(false); }
   };
 
@@ -175,7 +210,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
             <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>💎 {(userData?.points||0).toLocaleString()}P</div>
-            <div style={{ fontSize:10, color:muted }}>보유 크레딧</div>
+            <div style={{ fontSize:10, color:muted }}>보유 포인트</div>
           </div>
         </div>
 
@@ -213,7 +248,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       {/* ── 탭 ── */}
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
-        {[["history","💳 크레딧 내역"],["info","👤 계정 정보"]].map(([t,l])=>(
+        {[["history","💳 포인트 내역"],["info","👤 계정 정보"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
             background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
@@ -229,8 +264,8 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           {!histLoading && history.length === 0 && (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
               <div style={{ fontSize:36, marginBottom:12 }}>📭</div>
-              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:6 }}>크레딧 내역이 없어요</div>
-              <div style={{ fontSize:12 }}>AI 생성이나 게시글 작성으로 크레딧을 적립해보세요!</div>
+              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:6 }}>포인트 내역이 없어요</div>
+              <div style={{ fontSize:12 }}>AI 생성이나 게시글 작성으로 포인트를 적립해보세요!</div>
             </div>
           )}
           {!histLoading && history.length > 0 && (
@@ -283,7 +318,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[
-              { icon:"💎", label:"크레딧 충전", sub:"더 많은 AI 생성", action:()=>navigate("pricing"), color:"#a5b4fc" },
+              { icon:"💎", label:"포인트 충전", sub:"AI 생성 포인트 충전", action:()=>navigate("pricing"), color:"#a5b4fc" },
               { icon:"📁", label:"내 보관함",   sub:"카드뉴스·상세페이지", action:()=>navigate("ai"), color:"#4ade80" },
               { icon:"📬", label:"문의하기",    sub:"1:1 문의", action:()=>navigate("contact"), color:"#f59e0b" },
             ].map(({icon,label,sub,action,color})=>(

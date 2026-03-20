@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { changePoints, getAiUsage, setAiUsage } from "./storage";
+import { useState, useEffect } from "react";
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
+import { callAIStream } from "./aiClient";
 
 
 /* ── 마크다운 → JSX 렌더러 ── */
@@ -126,7 +128,6 @@ function cleanBlogText(text) {
     .trim();
 }
 
-const API_KEY = "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";
 
 
 // ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
@@ -142,12 +143,12 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
             ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -161,7 +162,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 크레딧 충전하기
+              💎 포인트 충전하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
@@ -175,7 +176,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
-export default function NewsBlogGenerator({ theme, embedded, user }) {
+export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
@@ -199,8 +200,11 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
   const [extra,      setExtra]      = useState("");
   const [result,     setResult]     = useState("");
   const [generating, setGenerating] = useState(false);
+  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
+  const [loadStep,   setLoadStep]  = useState(0);
 
   const IS = {
     width:"100%", padding:"13px 16px", borderRadius:10,
@@ -246,11 +250,15 @@ export default function NewsBlogGenerator({ theme, embedded, user }) {
     const _aiPoints = user ? (user.points || 0) : 0;
     // 비회원: 5회 초과 시 차단 / 회원: 20회 초과 + 포인트 확실히 0일 때만 차단
     // 로그인 회원 차단 없음, 비회원만 5회 초과 차단
-    if (!user && _aiUsed >= _aiLimit) {
-      setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 크레딧을 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
-      return;
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
+    setGenErr(""); setGenerating(true); setResult(""); setCopied(false); setLoadStep(1);
+    // 포인트 즉시 차감
+    if (user && user.uid) {
+      changePoints(user.uid, -10, "뉴스 블로그 생성").then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      }).catch(()=>{});
     }
-    setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
     var _nfFull = "";
 
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
@@ -329,47 +337,25 @@ ${articleSection}
 ③ X(트위터) 스타일 핵심 인사이트 3개`,
     };
 
+    await new Promise(r=>setTimeout(r,600)); setLoadStep(2);
+    await new Promise(r=>setTimeout(r,700)); setLoadStep(3);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "x-api-key": API_KEY,
-          "anthropic-version":"2023-06-01",
-          "anthropic-dangerous-direct-browser-access":"true"
-        },
-        body: JSON.stringify({
-          model:"claude-haiku-4-5", max_tokens:4000, stream:true,
-          messages:[{role:"user", content: prompts[blogType]}]
-        }),
+      await callAIStream("claude-haiku-4-5", [{role:"user", content: prompts[blogType]}], 4000, (accumulated) => {
+        _nfFull = accumulated;
+        if (accumulated.length > 30) setLoadStep(4);
       });
-      if (!res.ok) throw new Error("API 오류");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf=""; let full="";
-      while (true) {
-        const {done,value} = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value,{stream:true});
-        const lines = buf.split("\n"); buf = lines.pop();
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const p = JSON.parse(line.slice(6).trim());
-              if (p.type==="content_block_delta"&&p.delta?.text) { full+=p.delta.text; _nfFull=full; setResult(cleanBlogText(full)); }
-            } catch {}
-          }
-        }
-      }
     } catch { setGenErr("생성 중 오류가 발생했습니다."); }
     finally {
-      setGenerating(false);
-      var _u = getAiUsage();
-      var _k = user ? ("member_" + (user.uid || "u")) : "guest";
-      var _nu = Object.assign({}, _u);
-      _nu[_k] = (_u[_k] || 0) + 1;
-      setAiUsage(_nu);
-      if (user && user.uid) { changePoints(user.uid, -10, "NewsBlogGenerator 생성").catch(function(e) {}); }
+      if (_nfFull) setResult(cleanBlogText(_nfFull));
+      setGenerating(false); setLoadStep(0);
+      if (user) {
+        var _u = getAiUsage();
+        var _k = "member_" + (user.uid || "u");
+        var _nu = Object.assign({}, _u);
+        _nu[_k] = (_u[_k] || 0) + 1;
+        setAiUsage(_nu);
+      }
+      // 포인트 차감은 생성 시작 시점에 처리됨
       // 보관함 자동저장
       if (_nfFull && _nfFull.length > 50) {
         try {
@@ -393,6 +379,8 @@ ${articleSection}
     <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif"}}>
       <style>{`
         @keyframes ns-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        @keyframes ns-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes ns-progress{from{width:0%}to{width:92%}}
         @keyframes ns-blink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes ns-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .ns-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
@@ -568,7 +556,7 @@ ${articleSection}
                 boxShadow:"0 4px 20px rgba(239,68,68,0.3)",transition:"all 0.2s"}}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10cr</span></span>)}
+                : user ? (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
           </div>
@@ -576,63 +564,101 @@ ${articleSection}
       </div>
 
       {/* ── 우측: 결과 패널 ── */}
-      {(() => {
-        const _u2 = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
-        const _k2 = user ? ("member_" + (user.uid || "u")) : "guest";
-        const _ex = (_u2[_k2]||0) >= (user?20:5) && (user?(user.points||0):0) < 10;
-        if (_ex && !generating && !result) return <PointsExhausted isDark={isDark} isGuest={!user} title="뉴스 블로그" />;
-        return null;
-      })()}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
-        {result && (
-          <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
-            <span style={{fontSize:15,fontWeight:800,color:text}}>📄 작성 결과</span>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
-                style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                {copied?"✓ 복사됨":"📋 복사"}
-              </button>
-              <button onClick={()=>{
-                const b=new Blob([result],{type:"text/plain;charset=utf-8"});
-                const u=URL.createObjectURL(b);
-                const a=document.createElement("a");
-                a.href=u;a.download="뉴스블로그.txt";a.click();URL.revokeObjectURL(u);
-              }} style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                📄 저장
-              </button>
+
+        {/* 크레딧 소진 */}
+        {(() => {
+          const _u2 = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+          const _k2 = user ? ("member_" + (user.uid || "u")) : "guest";
+          const _ex = (_u2[_k2]||0) >= (user?20:5) && (user?(user.points||0):0) < 10;
+          if (_ex && !generating && !result) return <PointsExhausted isDark={isDark} isGuest={!user} title="뉴스 블로그" />;
+          return null;
+        })()}
+
+        {/* 로딩 화면 - 생성 중 */}
+        {generating && (
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",padding:"40px 24px",textAlign:"center"}}>
+            <div style={{fontSize:64,marginBottom:16,display:"inline-block",animation:"ns-float 3s ease-in-out infinite",filter:"drop-shadow(0 8px 20px rgba(239,68,68,0.4))"}}>📰✨</div>
+            <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8,letterSpacing:"-0.5px"}}>AI가 글을 작성하고 있어요</div>
+            <div style={{fontSize:13,color:muted,marginBottom:24}}>{newsInfo?.title?.slice(0,35)}{newsInfo?.title?.length>35?"...":""} · 뉴스 블로그 글쓰기</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,textAlign:"left",maxWidth:260,margin:"0 auto 20px"}}>
+              {[
+                {step:1, l:"기사 내용 분석 중..."},
+                {step:2, l:"구조 기획 중..."},
+                {step:3, l:"본문 작성 중..."},
+                {step:4, l:"마무리 다듬는 중..."},
+              ].map(({step, l}) => {
+                const done = loadStep > step;
+                const active = loadStep === step;
+                return (
+                  <div key={step} style={{display:"flex",alignItems:"center",gap:10,opacity:done||active?1:0.3}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
+                      background:done?"rgba(74,222,128,0.15)":active?"rgba(239,68,68,0.2)":"rgba(255,255,255,0.05)",
+                      border:done?"2px solid #4ade80":active?"2px solid #ef4444":"2px solid rgba(255,255,255,0.1)"}}>
+                      {done?<span style={{color:"#4ade80"}}>✓</span>:active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #ef4444",borderTopColor:"transparent",animation:"ns-spin 0.8s linear infinite"}}/>:null}
+                    </div>
+                    <span style={{fontSize:13,color:done?"#4ade80":active?text:muted,fontWeight:active?700:400}}>{l}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",maxWidth:260,margin:"0 auto 10px"}}>
+              <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#ef4444,#f97316,#ef4444)",animation:"ns-progress 12s ease-out forwards"}}/>
+            </div>
+            <div style={{fontSize:12,color:muted}}>보통 20~60초 소요</div>
+          </div>
+        )}
+
+        {/* 초기 안내 화면 */}
+        {!generating && !result && (
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center"}}>
+            <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>📰</div>
+            <div style={{fontSize:16,fontWeight:800,color:text}}>뉴스로 블로그 글쓰기</div>
+            <div style={{fontSize:13,color:muted,lineHeight:1.9,maxWidth:320}}>
+              왼쪽에 기사 링크를 입력하면<br/>
+              <span style={{color:"#ef4444",fontWeight:700}}>기사 내용을 자동 분석</span>해서<br/>
+              블로그 글을 작성해드려요
             </div>
           </div>
         )}
-        <div style={{flex:1,overflowY:"auto",padding:result?"28px 32px":"0"}}>
-          {!result && !generating && (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"48px 32px",textAlign:"center"}}>
-              <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>📰</div>
-              <div>
-                <div style={{fontSize:18,fontWeight:800,color:text,marginBottom:8,opacity:0.6}}>뉴스 기사 URL을 입력해주세요</div>
-                <div style={{fontSize:14,color:muted,lineHeight:1.9,maxWidth:320}}>
-                  왼쪽에 기사 링크를 입력하면<br/>
-                  <span style={{color:"#ef4444",fontWeight:700}}>기사 내용을 자동 분석</span>해서<br/>
-                  블로그 글을 작성해드려요
+
+        {/* 결과 화면 */}
+        {!generating && result && (
+          <>
+            <div style={{height:46,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 18px",borderBottom:`1px solid ${border}`,background:headerBg}}>
+              <span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:8,
+                  background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",border:`1px solid ${border}`}}>
+                  <span style={{fontSize:10,color:muted}}>글자수</span>
+                  <span style={{fontSize:12,fontWeight:700,color:text}}>{result.length.toLocaleString()}</span>
+                  <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
+                  <span style={{fontSize:10,color:muted}}>공백제외</span>
+                  <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
                 </div>
+                <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
+                  style={{padding:"5px 14px",borderRadius:7,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
+                    background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
+                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  {copied?"✓ 복사됨":"📋 복사"}
+                </button>
+                <button onClick={()=>{
+                  const b=new Blob([result],{type:"text/plain;charset=utf-8"});
+                  const u=URL.createObjectURL(b);
+                  const a=document.createElement("a");
+                  a.href=u;a.download="뉴스블로그.txt";a.click();URL.revokeObjectURL(u);
+                }} style={{padding:"5px 14px",borderRadius:7,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                  📄 저장
+                </button>
               </div>
             </div>
-          )}
-          {generating && !result && (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:20,padding:"48px 32px",textAlign:"center"}}>
-              <div style={{width:64,height:64,borderRadius:20,background:"rgba(239,68,68,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <div style={{width:32,height:32,border:"3px solid rgba(239,68,68,0.2)",borderTopColor:"#ef4444",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>
+            <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
+              <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",fontSize:15,color:text,animation:"ns-fadein 0.4s ease",lineHeight:1.9}}>
+                {renderMarkdown(result, isDark, text, muted, accent)}
               </div>
-              <div style={{fontSize:16,fontWeight:700,color:text}}>AI가 블로그 글을 작성 중이에요...</div>
-              <div style={{fontSize:13,color:muted}}>기사 내용을 분석해서 작성 중</div>
             </div>
-          )}
-          {result && (
-            <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",fontSize:16,color:text,animation:"ns-fadein 0.4s ease",lineHeight:1.9}}>
-              {renderMarkdown(result, isDark, text, muted, accent)}
-              {generating && <span style={{display:"inline-block",width:2,height:16,background:"#ef4444",marginLeft:2,animation:"ns-blink 1s infinite"}}/>}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

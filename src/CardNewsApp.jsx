@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, getAiUsage, setAiUsage } from "./storage";
+import { callAI } from "./aiClient";
 
 function loadJSZip() {
   return new Promise(function(resolve, reject) {
@@ -17,8 +18,6 @@ var RATIOS = [
   { key:"9:16", W:1080, H:1920 },
   { key:"4:5",  W:1080, H:1350 },
 ];
-
-var API_KEY = "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";
 
 var BG_COLORS = [
   {key:"charcoal",  color:"#1c1c1e"}, {key:"navy",  color:"#0f1629"},
@@ -731,14 +730,8 @@ export function PlannerPanel(props) {
       var sysMsg = "You are a Korean card news planning expert. Respond ONLY with a JSON object. No explanation, no markdown, no text before or after. Just the raw JSON.\nFormat: {\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
       var userMsg = "다음 웹페이지 내용으로 카드뉴스 " + planCnt + "장을 기획해주세요.\n\n[페이지 내용]\n" + pageText;
       if (planNote.trim()) { userMsg = userMsg + "\n\n[추가 요청]\n" + planNote; }
-      var res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:4000, system:sysMsg, messages:[{role:"user", content:userMsg}]})
-      });
-      if (!res.ok) { var e2 = await res.json().catch(function(){return{};}); setUrlErr("오류: " + ((e2.error && e2.error.message) ? e2.error.message : "다시 시도")); setUrlLoading(false); return; }
-      var data = await res.json();
-      var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
+      var text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setUrlErr("오류: " + e2.message); setUrlLoading(false); return null; });
+      if (text === null) return;
       var clean = text.split("```json").join("").split("```").join("").trim();
       var jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (!jsonMatch) { setUrlErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setUrlLoading(false); return; }
@@ -755,14 +748,8 @@ export function PlannerPanel(props) {
       var sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 주제와 요구사항을 주면, 각 슬라이드의 제목/부제목/본문/하이라이트 문구를 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
       var userMsg = "주제: " + planTopic + "\n슬라이드 수: " + planCnt + "장";
       if (planNote.trim()) { userMsg = userMsg + "\n추가 요청: " + planNote; }
-      var res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:4000, system:sysMsg, messages:[{role:"user", content:userMsg}]})
-      });
-      if (!res.ok) { var e2 = await res.json().catch(function(){return{};}); setPlanErr("오류: " + ((e2.error && e2.error.message) ? e2.error.message : "다시 시도")); setPlanLoading(false); return; }
-      var data = await res.json();
-      var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
+      var text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setPlanErr("오류: " + e2.message); setPlanLoading(false); return null; });
+      if (text === null) return;
       var clean = text.split("```json").join("").split("```").join("").trim();
       var jsonMatch2 = clean.match(/\{[\s\S]*\}/);
       if (!jsonMatch2) { setPlanErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setPlanLoading(false); return; }
@@ -1230,12 +1217,12 @@ function PageMake(props) {
         <div style={{maxWidth:380, width:"100%"}}>
           <div style={{fontSize:56, marginBottom:14}}>💎</div>
           <div style={{fontSize:19, fontWeight:900, color:text, marginBottom:8}}>
-            {!props.user ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
+            {!props.user ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
               ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 20회 추가 무료를 받으세요!</>
-              : <>카드뉴스 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>}
+              : <>카드뉴스 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>}
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
@@ -1246,7 +1233,7 @@ function PageMake(props) {
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
                 style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                💎 크레딧 충전하기
+                💎 포인트 충전하기
               </button>
             )}
             <button onClick={function(){ window.location.hash = "#contact"; }}
@@ -1389,12 +1376,12 @@ function PageMake(props) {
                     ← 이전
                   </button>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#6366f1"}}>10 크레딧</b></div>
+                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#6366f1"}}>10P</b></div>}
                     <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                       style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
                         background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900,
                         display:"flex", alignItems:"center", gap:8}}>
-                      {loading ? "생성 중..." : <>카드뉴스 생성하기 →</>}
+                      {loading ? "생성 중..." : user ? <>카드뉴스 생성하기 → 💎 10P</> : "✦ 1회 생성하기"}
                     </button>
                   </div>
                 </div>
@@ -1593,21 +1580,12 @@ export function CardNewsApp(props) {
   async function generate() {
     if (!topic.trim()) { return; }
     var left = getLeft(user);
-    if (!left.canUse) { setErr(user ? "크레딧 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
+    if (!left.canUse) { setErr(user ? "포인트 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
     setLoading(true); setErr("");
     try {
       var sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\"}]}";
-      var res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:4000, system:sysMsg, messages:[{role:"user", content:"주제: " + topic + "\n슬라이드 수: " + cnt + "장"}]})
-      });
-      if (!res.ok) {
-        var e2 = await res.json().catch(function() { return {}; });
-        setErr("오류(" + res.status + "): " + ((e2.error && e2.error.message) ? e2.error.message : "다시 시도")); setLoading(false); return;
-      }
-      var data = await res.json();
-      var text = (data.content || []).map(function(b) { return b.text || ""; }).join("");
+      var text = await callAI("claude-haiku-4-5", [{role:"user", content:"주제: " + topic + "\n슬라이드 수: " + cnt + "장"}], 4000, sysMsg).catch(function(e2) { setErr("오류: " + e2.message); setLoading(false); return null; });
+      if (text === null) return;
       var clean = text.split("```json").join("").split("```").join("").trim();
       var parsed = JSON.parse(clean);
       setSlides(parsed.slides || []); setTname(parsed.topic || topic);

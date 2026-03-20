@@ -1,0 +1,566 @@
+import { useState, useRef } from "react";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
+
+/* ═══════════════════════════════════════════════════════════
+   ProductShotGenerator.jsx  ·  AI 제품컷 생성기
+═══════════════════════════════════════════════════════════ */
+
+const ATMOSPHERES = [
+  { id:"studio",   label:"스튜디오",       icon:"🎬", desc:"깔끔한 배경·전문 조명",    color:"#6366f1" },
+  { id:"nature",   label:"자연·아웃도어",  icon:"🌿", desc:"자연광·그린 배경",          color:"#10b981" },
+  { id:"cafe",     label:"카페·라이프스타일",icon:"☕",desc:"따뜻한 인테리어 공간",      color:"#f59e0b" },
+  { id:"city",     label:"도시·스트리트",  icon:"🏙", desc:"도시적·트렌디",             color:"#64748b" },
+  { id:"minimal",  label:"미니멀",         icon:"⬜", desc:"화이트·심플 배경",          color:"#94a3b8" },
+  { id:"luxury",   label:"럭셔리",         icon:"✨", desc:"다크·고급스러운 분위기",     color:"#7c3aed" },
+  { id:"outdoor",  label:"야외·공원",      icon:"🌸", desc:"밝고 화사한 야외",          color:"#ec4899" },
+  { id:"abstract", label:"추상·컬러풀",    icon:"🎨", desc:"감각적인 컬러 배경",        color:"#ef4444" },
+];
+
+const COLOR_TONES = [
+  { id:"bright",  label:"밝고 화사한", color:"#fde68a", textC:"#92400e" },
+  { id:"pastel",  label:"파스텔",      color:"#fbcfe8", textC:"#831843" },
+  { id:"dark",    label:"다크 무드",   color:"#374151", textC:"#f9fafb" },
+  { id:"vintage", label:"빈티지",      color:"#d97706", textC:"#fff"    },
+  { id:"vivid",   label:"선명한",      color:"#7c3aed", textC:"#fff"    },
+  { id:"natural", label:"자연스러운",  color:"#6ee7b7", textC:"#065f46" },
+];
+
+const ATMO_PROMPTS = {
+  studio:   "clean professional studio background, white or light grey seamless backdrop, studio lighting",
+  nature:   "natural outdoor setting, green nature background, soft natural light, fresh environment",
+  cafe:     "cozy cafe interior, warm ambient lighting, wooden textures, lifestyle setting",
+  city:     "modern urban city background, street style, contemporary city environment",
+  minimal:  "minimalist pure white background, clean simple setting, flat lay style",
+  luxury:   "luxury elegant dark background, premium high-end setting, dramatic lighting",
+  outdoor:  "bright cheerful outdoor park, blooming flowers, sunny natural environment",
+  abstract: "colorful abstract artistic background, vibrant gradient, creative composition",
+};
+
+const TONE_PROMPTS = {
+  bright:  "bright vibrant colors, high key lighting, cheerful warm tones",
+  pastel:  "soft pastel color palette, gentle romantic tones, dreamy atmosphere",
+  dark:    "dark moody color grading, low key dramatic lighting, deep shadows",
+  vintage: "vintage warm color grading, film photography look, nostalgic tones",
+  vivid:   "highly saturated vivid colors, bold striking palette, eye-catching",
+  natural: "natural realistic colors, balanced lighting, true-to-life color accuracy",
+};
+
+const MODEL_GENDERS = [
+  { id:"female", label:"여성",    icon:"👩" },
+  { id:"male",   label:"남성",    icon:"👨" },
+  { id:"both",   label:"남녀 혼성", icon:"👫" },
+];
+const MODEL_AGES   = [
+  { id:"20s", label:"20대" },
+  { id:"30s", label:"30대" },
+  { id:"40s", label:"40대" },
+  { id:"50s", label:"50대" },
+];
+const MODEL_COUNTS = [
+  { id:"1",     label:"1명",   icon:"🙂" },
+  { id:"2",     label:"2명",   icon:"👥" },
+  { id:"group", label:"여러명", icon:"👨‍👩‍👧" },
+];
+
+async function generateProductShot(prompt, productB64, productMime) {
+  const res = await fetch("/api/generate-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, productImageB64: productB64, productImageMime: productMime }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `서버 오류 (${res.status})`);
+  if (!data.image) throw new Error("이미지 데이터 없음");
+  // data.image is already a full data URL (data:image/...;base64,...)
+  return data.image;
+}
+
+function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc }) {
+  const atmoP = ATMO_PROMPTS[atmosphere] || ATMO_PROMPTS.studio;
+  const toneP = TONE_PROMPTS[colorTone]  || TONE_PROMPTS.natural;
+  const nameP = productName?.trim() ? `"${productName.trim()}" ` : "";
+
+  if (mode === "product") {
+    return [
+      `Professional Korean commercial product photography.`,
+      `${nameP}product advertisement image.`,
+      atmoP + ".",
+      toneP + ".",
+      `High quality studio product shot, commercial advertising style, photorealistic, sharp focus.`,
+      `The product is prominently displayed and well-lit.`,
+      `No text, no watermark, no people, no models.`,
+      extraDesc?.trim() ? `Additional context: ${extraDesc.trim()}.` : "",
+    ].filter(Boolean).join(" ");
+  }
+
+  const genderP = gender === "female" ? "young Korean woman" : gender === "male" ? "young Korean man" : "Korean man and woman";
+  const ageMap  = { "20s":"in their 20s", "30s":"in their 30s", "40s":"in their 40s", "50s":"in their 50s" };
+  const ageP    = ageMap[age] || "in their 20s";
+  const countP  = count === "1" ? "a single" : count === "2" ? "two" : "a group of";
+  const actionP = "naturally holding, using, or showcasing the product with a natural confident expression";
+
+  return [
+    `Professional Korean commercial advertising photography.`,
+    `${nameP}product advertisement with model.`,
+    `${countP} attractive ${genderP} ${ageP} ${actionP}.`,
+    `${atmoP}.`,
+    `${toneP}.`,
+    `Natural authentic pose, professional commercial lighting, photorealistic, high quality advertising photography.`,
+    `Korean beauty standards, clean polished look.`,
+    `No text, no watermark.`,
+    extraDesc?.trim() ? `Additional details: ${extraDesc.trim()}.` : "",
+  ].filter(Boolean).join(" ");
+}
+
+export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
+  const D      = isDark;
+  const text   = D ? "#fff" : "#1a1a2e";
+  const muted  = D ? "rgba(255,255,255,0.5)" : "#888";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr    = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
+  const inputBg= D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
+  const accent = "#f97316";
+
+  const [step, setStep] = useState(0); // 0=intro, 1=설정, 2=생성중, 3=결과
+  useGeneratingGuard(step === 2, 10);
+
+  const fileRef = useRef(null);
+  const [productImg,  setProductImg]  = useState(null); // { b64, mime, url }
+  const [productName, setProductName] = useState("");
+  const [mode,        setMode]        = useState(null); // "product"|"model"
+  const [atmosphere,  setAtmosphere]  = useState("studio");
+  const [colorTone,   setColorTone]   = useState("bright");
+  const [extraDesc,   setExtraDesc]   = useState("");
+  const [gender,      setGender]      = useState("female");
+  const [age,         setAge]         = useState("20s");
+  const [count,       setCount]       = useState("1");
+  const [result,      setResult]      = useState(null);
+  const [error,       setError]       = useState("");
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const b64 = e.target.result.split(",")[1];
+      setProductImg({ b64, mime: file.type, url: e.target.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGenerate = async () => {
+    if (!productImg) { setError("제품 이미지를 먼저 업로드해주세요."); return; }
+    if (!mode)       { setError("생성 모드를 선택해주세요."); return; }
+
+    if (!user) {
+      if (guestLimitExceeded()) { setError("비회원 무료 횟수를 모두 사용했어요. 회원가입 후 계속 이용하세요."); return; }
+      incrementGuestUsage();
+    } else {
+      if ((user.points || 0) < 10) { setError("포인트가 부족해요. 충전 후 이용해주세요."); return; }
+    }
+
+    setError(""); setStep(2);
+    try {
+      const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc });
+      const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
+      setResult(img);
+      if (user) {
+        const updated = await changePoints(user.uid, -10, "제품컷 생성");
+        if (updated !== null && onUserUpdate) onUserUpdate({ ...user, points: updated });
+      }
+      setStep(3);
+    } catch(e) {
+      setError("생성 실패: " + e.message);
+      setStep(1);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!result) return;
+    const a = document.createElement("a");
+    a.href = result;
+    a.download = `product_shot_${Date.now()}.png`;
+    a.click();
+  };
+
+  const reset = () => {
+    setResult(null); setError(""); setMode(null); setStep(1);
+    setProductImg(null); setProductName(""); setExtraDesc("");
+    setAtmosphere("studio"); setColorTone("bright");
+    setGender("female"); setAge("20s"); setCount("1");
+  };
+
+  const card = (active, color = accent) => ({
+    padding:"12px 14px", borderRadius:12,
+    border:`2px solid ${active ? color : bdr}`,
+    background: active ? color + "18" : cardBg,
+    cursor:"pointer", transition:"all 0.15s",
+  });
+
+  const SectionTitle = ({ children }) => (
+    <div style={{ fontSize:12, fontWeight:800, color:muted, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>
+      {children}
+    </div>
+  );
+
+  /* ══════════════════════════════════════
+     STEP 0: 인트로
+  ══════════════════════════════════════ */
+  if (step === 0) return (
+    <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+      <div style={{ maxWidth:520, width:"100%", textAlign:"center" }}>
+        <div style={{ fontSize:60, marginBottom:14 }}>🛍</div>
+        <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:`rgba(249,115,22,0.15)`, border:`1px solid rgba(249,115,22,0.3)`, fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
+          AI 광고 이미지 · 제품컷 자동 생성
+        </div>
+        <div style={{ fontSize:26, fontWeight:900, color:text, marginBottom:10 }}>AI 제품컷 생성기</div>
+        <div style={{ fontSize:14, color:muted, lineHeight:1.9, marginBottom:28 }}>
+          제품 사진 하나만 업로드하면<br/>AI가 광고용 제품컷을 자동으로 만들어드려요.
+        </div>
+
+        {/* 4단계 소개 */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24, textAlign:"left" }}>
+          {[
+            ["1","제품 이미지 업로드","JPG·PNG·WEBP 제품 사진 첨부"],
+            ["2","모드 선택","제품만 or 모델과 함께"],
+            ["3","분위기·색감 설정","스튜디오·자연·럭셔리 등 8가지"],
+            ["4","AI 생성 & 다운로드","PNG 파일로 바로 저장"],
+          ].map(([n,l,d]) => (
+            <div key={n} style={{ padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4 }}>
+                <div style={{ width:20, height:20, borderRadius:6, background:`rgba(249,115,22,0.2)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:accent }}>{n}</div>
+                <span style={{ fontSize:12, fontWeight:800, color:text }}>{l}</span>
+              </div>
+              <div style={{ fontSize:11, color:muted }}>{d}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 배지 */}
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
+          {["📦 제품만 생성","🧍 모델과 함께","🎬 8가지 분위기","🎨 6가지 색감 톤","💎 10P"].map(b => (
+            <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
+          ))}
+        </div>
+
+        <button onClick={() => setStep(1)}
+          style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", cursor:"pointer",
+            background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:15, fontWeight:900,
+            boxShadow:`0 8px 24px rgba(249,115,22,0.35)` }}>
+          🛍 제품컷 만들기 시작 →
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════
+     STEP 2: 로딩
+  ══════════════════════════════════════ */
+  if (step === 2) return (
+    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+      <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
+        {/* 이중 링 스피너 */}
+        <div style={{ position:"relative", width:100, height:100, margin:"0 auto 28px" }}>
+          <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:`3px solid rgba(249,115,22,0.12)` }}/>
+          <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent", borderTopColor:accent, animation:"spin 1s linear infinite" }}/>
+          <div style={{ position:"absolute", inset:12, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"rgba(249,115,22,0.45)", animation:"spin 1.7s linear infinite reverse" }}/>
+          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>
+        </div>
+        <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>AI가 제품컷을 생성 중이에요</div>
+        <div style={{ fontSize:13, color:muted, marginBottom:28 }}>보통 15~30초 소요됩니다. 잠시만 기다려주세요.</div>
+        {/* 진행 단계 */}
+        <div style={{ display:"flex", justifyContent:"center", gap:10, flexWrap:"wrap" }}>
+          {[
+            { label:"이미지 분석",   icon:"🔍", active:false },
+            { label:"프롬프트 구성", icon:"✍️", active:false },
+            { label:"AI 생성 중",   icon:"🎨", active:true  },
+            { label:"마무리 처리",  icon:"✨", active:false },
+          ].map((s, i) => (
+            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, padding:"10px 14px", borderRadius:12,
+              background: s.active ? `rgba(249,115,22,0.12)` : D?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",
+              border:`1px solid ${s.active ? accent+"50" : bdr}` }}>
+              <div style={{ fontSize:20 }}>{s.icon}</div>
+              <div style={{ fontSize:10, fontWeight:700, color: s.active ? accent : muted, whiteSpace:"nowrap" }}>{s.label}</div>
+              {s.active && <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid rgba(249,115,22,0.3)`, borderTopColor:accent, animation:"spin 0.8s linear infinite" }}/>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  /* ══════════════════════════════════════
+     STEP 3: 결과
+  ══════════════════════════════════════ */
+  if (step === 3 && result) return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 80px" }}>
+      <div style={{ maxWidth:640, margin:"0 auto" }}>
+
+        {/* 헤더 */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+          <button onClick={reset}
+            style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>
+            ← 다시 만들기
+          </button>
+          <div style={{ fontSize:15, fontWeight:900, color:text }}>🛍 제품컷 생성 완료!</div>
+        </div>
+
+        {/* 생성된 이미지 */}
+        <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:16,
+          background: D ? "rgba(0,0,0,0.3)" : "#f5f5f5",
+          boxShadow:"0 8px 32px rgba(0,0,0,0.18)" }}>
+          <img
+            src={result}
+            alt="생성된 제품컷"
+            style={{ width:"100%", display:"block", objectFit:"contain", maxHeight:600 }}
+            onError={(e) => { e.target.style.display="none"; }}
+          />
+        </div>
+
+        {/* 설정 요약 */}
+        <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
+          {[
+            mode === "model" ? "🧍 모델 포함" : "📦 제품만",
+            ATMOSPHERES.find(a=>a.id===atmosphere)?.icon + " " + ATMOSPHERES.find(a=>a.id===atmosphere)?.label,
+            COLOR_TONES.find(t=>t.id===colorTone)?.label,
+            productName ? `"${productName}"` : null,
+          ].filter(Boolean).map((tag, i) => (
+            <span key={i} style={{ padding:"3px 10px", borderRadius:12, background:`rgba(249,115,22,0.12)`, border:`1px solid rgba(249,115,22,0.25)`, fontSize:11, fontWeight:600, color:accent }}>
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* 버튼 */}
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+          <button onClick={handleDownload}
+            style={{ flex:1, minWidth:160, padding:"13px", borderRadius:12, border:"none", cursor:"pointer",
+              background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:14, fontWeight:800,
+              boxShadow:`0 6px 20px rgba(249,115,22,0.3)` }}>
+            📥 PNG 다운로드
+          </button>
+          <button onClick={() => { setResult(null); setStep(1); }}
+            style={{ padding:"13px 22px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>
+            🔄 재생성
+          </button>
+        </div>
+
+        {/* 제품컷 미리보기 (썸네일 형태) */}
+        <div style={{ marginTop:24, padding:"16px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
+          <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+            <div style={{ width:90, height:90, borderRadius:10, overflow:"hidden", flexShrink:0, border:`1px solid ${bdr}`,
+              background: D ? "rgba(255,255,255,0.03)" : "#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <img src={result} alt="썸네일" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+                onError={(e) => { e.target.style.display="none"; }} />
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4 }}>생성 완료</div>
+              <div style={{ fontSize:11, color:muted, marginBottom:2 }}>
+                분위기: {ATMOSPHERES.find(a=>a.id===atmosphere)?.label}
+              </div>
+              <div style={{ fontSize:11, color:muted, marginBottom:10 }}>
+                색감: {COLOR_TONES.find(t=>t.id===colorTone)?.label} · {mode === "model" ? "모델 포함" : "제품만"}
+              </div>
+              <button onClick={() => { setStep(0); setResult(null); setMode(null); setProductImg(null); }}
+                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                ← 인트로로
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  /* ══════════════════════════════════════
+     STEP 1: 설정 화면
+  ══════════════════════════════════════ */
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 80px" }}>
+      <div style={{ maxWidth:620, margin:"0 auto" }}>
+
+        {/* 헤더 */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24 }}>
+          <button onClick={() => setStep(0)}
+            style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
+            ← 소개
+          </button>
+          <div style={{ fontSize:18, fontWeight:900, color:text }}>🛍 AI 제품컷 생성기</div>
+        </div>
+
+        {/* ─── ① 제품 이미지 업로드 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+          <SectionTitle>① 제품 이미지 업로드</SectionTitle>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }}
+            onChange={e => { handleFile(e.target.files[0]); e.target.value = ""; }} />
+
+          {!productImg ? (
+            <div onClick={() => fileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
+              style={{ border:`2px dashed ${bdr}`, borderRadius:12, padding:"36px 20px", textAlign:"center", cursor:"pointer",
+                background:D?"rgba(255,255,255,0.02)":"#fafafa", transition:"border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+              <div style={{ fontSize:40, marginBottom:10 }}>📦</div>
+              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4 }}>제품 이미지를 업로드하세요</div>
+              <div style={{ fontSize:12, color:muted }}>클릭하거나 드래그 · JPG, PNG, WEBP</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+              <div style={{ width:100, height:100, borderRadius:10, overflow:"hidden", border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f8f8f8", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <img src={productImg.url} alt="제품" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#4ade80", marginBottom:8 }}>✅ 이미지 업로드 완료</div>
+                <input value={productName} onChange={e => setProductName(e.target.value)}
+                  placeholder="제품명 입력 (선택)"
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+              </div>
+              <button onClick={() => setProductImg(null)}
+                style={{ padding:"6px 10px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, cursor:"pointer", fontSize:12, flexShrink:0 }}>
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ─── ② 생성 모드 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+          <SectionTitle>② 생성 모드 선택</SectionTitle>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            {[
+              { id:"product", icon:"📦", label:"제품만 생성",       desc:"제품을 주인공으로 한 깔끔한 광고 이미지" },
+              { id:"model",   icon:"🧍", label:"모델과 함께 생성", desc:"모델이 제품을 사용하는 자연스러운 광고 장면" },
+            ].map(m => (
+              <div key={m.id} onClick={() => setMode(m.id)} style={{ ...card(mode === m.id), padding:"16px" }}>
+                <div style={{ fontSize:28, marginBottom:8 }}>{m.icon}</div>
+                <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:4 }}>{m.label}</div>
+                <div style={{ fontSize:11, color:muted, lineHeight:1.5 }}>{m.desc}</div>
+                {mode === m.id && <div style={{ marginTop:8, fontSize:10, fontWeight:800, color:accent }}>✓ 선택됨</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── 모델 설정 ─── */}
+        {mode === "model" && (
+          <div style={{ background:cardBg, border:`1px solid ${accent}40`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+            <SectionTitle>③ 모델 설정</SectionTitle>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>성별</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {MODEL_GENDERS.map(g => (
+                  <button key={g.id} onClick={() => setGender(g.id)} style={{
+                    flex:1, padding:"10px 8px", borderRadius:10, border:`2px solid ${gender===g.id?accent:bdr}`,
+                    background: gender===g.id ? accent+"18" : "transparent",
+                    color: gender===g.id ? accent : muted, fontSize:13, fontWeight:gender===g.id?800:500, cursor:"pointer",
+                  }}>
+                    <div style={{ fontSize:18, marginBottom:3 }}>{g.icon}</div>{g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>나이대</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {MODEL_AGES.map(a => (
+                  <button key={a.id} onClick={() => setAge(a.id)} style={{
+                    flex:1, padding:"9px 6px", borderRadius:10, border:`2px solid ${age===a.id?accent:bdr}`,
+                    background: age===a.id ? accent+"18" : "transparent",
+                    color: age===a.id ? accent : muted, fontSize:13, fontWeight:age===a.id?800:500, cursor:"pointer",
+                  }}>{a.label}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>인원수</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {MODEL_COUNTS.map(c => (
+                  <button key={c.id} onClick={() => setCount(c.id)} style={{
+                    flex:1, padding:"10px 8px", borderRadius:10, border:`2px solid ${count===c.id?accent:bdr}`,
+                    background: count===c.id ? accent+"18" : "transparent",
+                    color: count===c.id ? accent : muted, fontSize:13, fontWeight:count===c.id?800:500, cursor:"pointer",
+                  }}>
+                    <div style={{ fontSize:18, marginBottom:3 }}>{c.icon}</div>{c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── 광고 분위기 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+          <SectionTitle>{mode === "model" ? "④" : "③"} 광고 분위기</SectionTitle>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:8 }}>
+            {ATMOSPHERES.map(a => (
+              <div key={a.id} onClick={() => setAtmosphere(a.id)} style={{ ...card(atmosphere === a.id, a.color), padding:"12px" }}>
+                <div style={{ fontSize:20, marginBottom:5 }}>{a.icon}</div>
+                <div style={{ fontSize:12, fontWeight:800, color:text, marginBottom:2 }}>{a.label}</div>
+                <div style={{ fontSize:10, color:muted, lineHeight:1.4 }}>{a.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── 색감·톤 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+          <SectionTitle>{mode === "model" ? "⑤" : "④"} 색감·톤</SectionTitle>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+            {COLOR_TONES.map(t => (
+              <button key={t.id} onClick={() => setColorTone(t.id)} style={{
+                padding:"8px 16px", borderRadius:20,
+                border:`2px solid ${colorTone===t.id?t.color:bdr}`,
+                background: colorTone===t.id ? t.color : "transparent",
+                color: colorTone===t.id ? t.textC : muted,
+                fontSize:12, fontWeight:colorTone===t.id?800:500, cursor:"pointer", transition:"all 0.15s",
+              }}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── 추가 설명 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:20 }}>
+          <SectionTitle>추가 설명 (선택)</SectionTitle>
+          <textarea value={extraDesc} onChange={e => setExtraDesc(e.target.value)}
+            placeholder="예: 여름 시즌 한정판, 젊고 활기찬 느낌, 아이돌 화보 스타일 등..."
+            rows={2}
+            style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, outline:"none", resize:"vertical", lineHeight:1.6, boxSizing:"border-box", fontFamily:"inherit" }} />
+        </div>
+
+        {/* ─── 에러 ─── */}
+        {error && (
+          <div style={{ padding:"12px 16px", borderRadius:10, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>
+            {error}
+          </div>
+        )}
+
+        {/* ─── 생성 버튼 ─── */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+          {user && (
+            <div style={{ fontSize:12, color:muted }}>
+              예상 차감: <b style={{ color:accent }}>10P</b>
+              <span style={{ marginLeft:8 }}>· 보유 {(user.points||0).toLocaleString()} P</span>
+            </div>
+          )}
+          <button onClick={handleGenerate}
+            disabled={!productImg || !mode}
+            style={{
+              marginLeft:"auto", padding:"14px 44px", borderRadius:12, border:"none",
+              cursor:(!productImg||!mode)?"not-allowed":"pointer",
+              background:(!productImg||!mode)?"rgba(249,115,22,0.3)":`linear-gradient(135deg,${accent},#ea580c)`,
+              color:"#fff", fontSize:15, fontWeight:900,
+              opacity:(!productImg||!mode)?0.6:1,
+              boxShadow:(!productImg||!mode)?"none":`0 6px 20px rgba(249,115,22,0.3)`,
+            }}>
+            {user ? `🛍 제품컷 생성하기 · 💎 10P` : "✦ 1회 생성하기"}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}

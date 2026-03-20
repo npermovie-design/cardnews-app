@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { changePoints } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleImageGenerator
@@ -9,7 +9,7 @@ import { changePoints } from "./storage";
    ✅ Step2~4: DetailPageGenerator와 동일한 위저드 흐름
 ══════════════════════════════════════════════════════════════ */
 
-const CLAUDE_KEY = "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";
+import { callAI } from "./aiClient";
 
 // ── 스타일 템플릿 ────────────────────────────────────────────
 const STYLE_TEMPLATES = [
@@ -107,22 +107,7 @@ async function generateSlideTexts({ topic, content, pageCount, slideTypes, mode 
 JSON만 응답:
 {"slides":[${typeList.map(t=>`{"id":"${t.id}","label":"${t.label}","headline":"","body":"","badge":""}`).join(",")}]}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  const data = await res.json();
-  const txt = data.content?.[0]?.text || "";
+  const txt = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 2000);
   return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
@@ -155,7 +140,7 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
+export default function SimpleImageGenerator({ isDark, user, mode = "card", onUserUpdate }) {
   const isCard = mode === "card";
   const defaultSizeIdx = isCard ? 0 : 1; // card=정사각형, detail=세로형
   const SLIDE_TYPES = isCard ? SLIDE_TYPES_CARD : SLIDE_TYPES_DETAIL;
@@ -226,18 +211,11 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
       setRefImg(e.target.result); setAnalyzing(true);
       try {
         const b64 = e.target.result.split(",")[1], mime = e.target.result.split(":")[1].split(";")[0];
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST",
-          headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-          body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300,
-            messages:[{role:"user",content:[
-              {type:"image",source:{type:"base64",media_type:mime,data:b64}},
-              {type:"text",text:"이 이미지의 디자인 스타일을 80자 이내로 설명해주세요. 색감, 분위기, 레이아웃 위주로. 한국어로."}
-            ]}]
-          }),
-        });
-        const data = await res.json();
-        setRefStyle(data.content?.[0]?.text || "");
+        const refTxt = await callAI("claude-sonnet-4-5", [{role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:mime,data:b64}},
+          {type:"text",text:"이 이미지의 디자인 스타일을 80자 이내로 설명해주세요. 색감, 분위기, 레이아웃 위주로. 한국어로."}
+        ]}], 300);
+        setRefStyle(refTxt || "");
       } catch { setRefStyle(""); }
       setAnalyzing(false);
     };
@@ -250,15 +228,8 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
     if (!sc) return;
     setSlideContents(prev => prev.map((s,i)=>i===idx?{...s,aiLoading:true}:s));
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300,
-          messages:[{role:"user", content:`주제:"${topic}" / 내용:"${content}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","body":"본문(40자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}]
-        }),
-      });
-      const data = await res.json();
-      const parsed = JSON.parse((data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim());
+      const slideTxt = await callAI("claude-sonnet-4-5", [{role:"user", content:`주제:"${topic}" / 내용:"${content}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","body":"본문(40자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}], 300);
+      const parsed = JSON.parse(slideTxt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
       setSlideContents(prev => prev.map((s,i)=>i===idx?{...s,...parsed,aiLoading:false}:s));
     } catch { setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,aiLoading:false}:s)); }
   };
@@ -294,6 +265,8 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
 
   // ── 생성 ─────────────────────────────────────────────────────
   const generate = async () => {
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
     setErr(""); setLoading(true); setSlides([]); setRendered([]); setSaveMsg("");
     const bul = (e)=>{ e.preventDefault(); e.returnValue="생성 중입니다."; };
     window.addEventListener("beforeunload", bul);
@@ -329,7 +302,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
           let raw = await generateSlideImage(prompt, prodImg);
           if (raw && (imgW!==1000||imgH!==1000)) raw = await resizeImage(raw, imgW, imgH);
           results[i] = raw;
-          if (raw && user?.uid) changePoints(user.uid, -30, `이미지 생성 (${s.label})`).catch(()=>{});
+          if (raw && user?.uid) changePoints(user.uid, -30, `이미지 생성 (${s.label})`).then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
         } catch { results[i] = null; }
         setRendered([...results]);
         await new Promise(r=>setTimeout(r,50));
@@ -351,7 +324,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
       let img = await generateSlideImage(prompt, prodImg);
       if (img && (imgW!==1000||imgH!==1000)) img = await resizeImage(img, imgW, imgH);
       setRendered(prev=>{ const r=[...prev]; r[idx]=img; return r; });
-      if (img && user?.uid) changePoints(user.uid, -30, `이미지 재생성 (${slides[idx]?.label})`).catch(()=>{});
+      if (img && user?.uid) changePoints(user.uid, -30, `이미지 재생성 (${slides[idx]?.label})`).then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
     } catch(e) { setErr("재생성 실패: " + e.message); }
     setRegenIdx(null);
   };
@@ -704,12 +677,12 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card" }) {
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12,color:muted,marginBottom:6 }}>
-                예상 차감: <b style={{ color:accentColor }}>{pageCount * 30} 크레딧</b>
-                {user && <span style={{ marginLeft:8,color:muted }}>· 보유 {(user.points||0).toLocaleString()} cr</span>}
+                예상 차감: <b style={{ color:accentColor }}>{pageCount * 30}P</b>
+                {user && <span style={{ marginLeft:8,color:muted }}>· 보유 {(user.points||0).toLocaleString()} P</span>}
               </div>
               <button onClick={()=>{ setWizStep(4); generate(); }}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
-                이미지 {pageCount}장 생성하기 →
+                {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
               </button>
             </div>
           </div>

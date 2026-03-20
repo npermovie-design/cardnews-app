@@ -25,3 +25,5 @@ dist-ssr
 
 release/
 .env
+.vercel
+.env*.local

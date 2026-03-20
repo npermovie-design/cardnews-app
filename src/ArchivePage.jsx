@@ -1,28 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { db, uploadFileToStorage, deleteFileFromStorage } from "./storage";
-import { ref, get, set, push, remove, update } from "firebase/database";
+import { supabase, uploadFileToStorage, deleteFileFromStorage } from "./storage";
 
 /* ═══════════════════════════════════════════════════════════
-   Firebase 자료실 헬퍼
+   Supabase 자료실 헬퍼
 ═══════════════════════════════════════════════════════════ */
-const DB_PATH = "archive/files";
-
 async function fetchFiles() {
-  const snap = await get(ref(db, DB_PATH));
-  if (!snap.exists()) return [];
-  return Object.entries(snap.val())
-    .map(([key, val]) => ({ key, ...val }))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const { data } = await supabase.from("archive_files").select("*").order("created_at", { ascending: false });
+  return (data || []).map(v => ({ ...v, key: v.id }));
 }
 async function addFile(data) {
-  const newRef = push(ref(db, DB_PATH));
-  await set(newRef, { ...data, createdAt: Date.now() });
+  await supabase.from("archive_files").insert({ ...data, created_at: new Date().toISOString() });
 }
 async function deleteFileRecord(key) {
-  await remove(ref(db, `${DB_PATH}/${key}`));
+  await supabase.from("archive_files").delete().eq("id", key);
 }
 async function updateFileRecord(key, data) {
-  await update(ref(db, `${DB_PATH}/${key}`), data);
+  await supabase.from("archive_files").update(data).eq("id", key);
 }
 
 /* ─── 파일 타입 감지 ─────────────────────────────────────── */

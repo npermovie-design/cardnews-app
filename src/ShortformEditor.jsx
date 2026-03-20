@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { callClaude } from "./aiClient";
 
 /*
   ShortformEditor  —  Vercel 전용 완결판
@@ -10,22 +11,12 @@ import { useState, useRef } from "react";
   파일 업로드도 동일하게 ffmpeg.wasm 처리
 */
 
-const CLAUDE_KEY = "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";
-
 const ACC = "#a855f7";
 
 function toMMSS(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);return`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;}
 function parseTimeToSec(t){if(!t)return 0;const p=String(t).match(/(\d+):(\d+)/);return p?parseInt(p[1])*60+parseInt(p[2]):0;}
 function extractYtId(url){const m=url.match(/(?:v=|youtu\.be\/|embed\/)([^&?/\s]{11})/);return m?m[1]:null;}
 
-async function callClaude(prompt,maxTokens=2000){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})
-  });
-  return (await res.json()).content?.[0]?.text||"";
-}
 
 function parseJSON(raw){
   const c=raw.replace(/```json\n?/g,"").replace(/```/g,"").trim();

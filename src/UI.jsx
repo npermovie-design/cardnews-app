@@ -48,7 +48,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
       ...base,
       padding: small ? "5px 14px" : "11px 26px",
       fontSize: small ? 12 : 14,
-      background: "#fff",
+      background: C?.card || "transparent",
       border: "1px solid rgba(124,106,255,0.35)",
       color: C.purpleL,
       boxShadow: "0 1px 4px rgba(124,106,255,0.1)",

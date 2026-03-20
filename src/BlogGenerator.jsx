@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { changePoints, getAiUsage, setAiUsage } from "./storage";
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 
-const API_KEY = "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";
+import { callAI, callAIStream } from "./aiClient";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -366,26 +367,26 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8, letterSpacing:"-0.5px" }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b> + 크레딧 적립 혜택을 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b> + 포인트 적립 혜택을 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         {/* 혜택 카드 */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
-            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 200cr 지급" },
-            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 1cr" },
-            { icon:"🔄", title:"일일 로그인", desc:"매일 3cr 적립" },
-            { icon:"♾️", title:"AI 무제한", desc:"크레딧 충전으로" },
+            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 200P 지급" },
+            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 1P" },
+            { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
+            { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
           ] : [
-            { icon:"💳", title:"크레딧 충전", desc:"Basic ₩9,900 / 4,500cr" },
-            { icon:"🔥", title:"Deluxe 플랜", desc:"₩19,900 / 9,500cr" },
-            { icon:"📝", title:"무료 적립", desc:"게시글 작성 1cr" },
-            { icon:"💬", title:"관리자 문의", desc:"무료 크레딧 요청" },
+            { icon:"💳", title:"포인트 충전" },
+            { icon:"🔥", title:"Deluxe 플랜", desc:"₩19,900 / 9,500P" },
+            { icon:"📝", title:"무료 적립", desc:"게시글 작성 1P" },
+            { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
               <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>
@@ -408,7 +409,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
-              💎 크레딧 충전하기
+              💎 포인트 충전하기
             </button>
           )}
           <button onClick={() => { window.location.hash = "#contact"; }}
@@ -422,7 +423,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
   );
 }
 
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
   const isDark = theme === "dark" || (!theme && !!embedded); // theme prop 우선, 없으면 embedded 기준
 
@@ -434,6 +435,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   const [loading,    setLoading]    = useState(false);
+  useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
@@ -499,14 +501,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (!fields.keyword || !fields.keyword.trim()) { return; }
     setTitleLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:300,
-          messages:[{role:"user",content:`키워드: ${fields.keyword}\nSEO 최적화 블로그 제목 3개만 번호 목록으로 답하세요.`}]})
-      });
-      const data = await res.json();
-      const txt = (data.content||[]).map(function(b){return b.text||"";}).join("");
+      const txt = await callAI("claude-haiku-4-5", [{role:"user",content:`키워드: ${fields.keyword}\nSEO 최적화 블로그 제목 3개만 번호 목록으로 답하세요.`}], 300);
       const ls = txt.split("\n").map(function(l){return l.replace(/^\d+\.?\s*/,"").trim();}).filter(function(l){return l.length>2;}).slice(0,3);
       setTitleSugg(ls);
     } catch(e) {}
@@ -517,14 +512,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (!fields.keyword || !fields.keyword.trim()) { return; }
     setSeoLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:150,
-          messages:[{role:"user",content:`메인 키워드: ${fields.keyword}\n연관 SEO 키워드 7개를 쉼표로만 나열하세요.`}]})
-      });
-      const data = await res.json();
-      const txt = (data.content||[]).map(function(b){return b.text||"";}).join("").trim();
+      const txt = (await callAI("claude-haiku-4-5", [{role:"user",content:`메인 키워드: ${fields.keyword}\n연관 SEO 키워드 7개를 쉼표로만 나열하세요.`}], 150)).trim();
       const ks = txt.split(/[,，]/).map(function(k){return k.trim();}).filter(function(k){return k.length>0;}).slice(0,7);
       setSeoKeys(ks);
     } catch(e) {}
@@ -533,6 +521,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage(); // 비회원: 즉시 사용 횟수 차감
     // 사용 횟수 체크 (비회원 5회, 회원 20회)
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
@@ -540,45 +530,37 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _aiLimit = user ? 20 : 5;
     const _aiPoints = user ? (user.points || 0) : 0;
     if (_aiUsed >= _aiLimit && _aiPoints < 10) {
-      setError(user ? "무료 횟수(20회)를 모두 사용했어요. 크레딧을 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
+      setError(user ? "무료 횟수(20회)를 모두 사용했어요. 포인트를 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
       return;
     }
     setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
+
+    // 포인트 즉시 차감 (생성 시작 시점)
+    if (user && user.uid) {
+      changePoints(user.uid, -10, "블로그 글 생성").then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      }).catch(()=>{});
+    }
+
     const prompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
     var _savedFull = "";
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-haiku-4-5", max_tokens:4000, stream:true, messages:[{role:"user",content:prompt}]}),
+      const full = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], 4000, (accumulated) => {
+        _savedFull = accumulated;
+        setResult(cleanBlogText(accumulated));
       });
-      if (!res.ok) throw new Error("API 오류");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf=""; let full="";
-      while (true) {
-        const {done,value} = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value,{stream:true});
-        const lines = buf.split("\n"); buf = lines.pop();
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const d = line.slice(6).trim();
-            if (d==="[DONE]") continue;
-            try { const p=JSON.parse(d); if(p.type==="content_block_delta"&&p.delta?.text){full+=p.delta.text;_savedFull=full;setResult(cleanBlogText(full));} } catch{}
-          }
-        }
-      }
       if (isTistory) setHtmlResult(mdToHtml(full));
     } catch(e) { setError("생성 중 오류가 발생했습니다."); }
     finally {
       setLoading(false);
-      var _u2 = getAiUsage();
-      var _k2 = user ? ("member_" + (user.uid || "u")) : "guest";
-      var _newU2 = Object.assign({}, _u2);
-      _newU2[_k2] = (_u2[_k2] || 0) + 1;
-      setAiUsage(_newU2);
-      if (user && user.uid) { changePoints(user.uid, -10, "블로그 글 생성").catch(function(e) {}); }
+      if (user) { // 회원만 finally에서 횟수 증가 (비회원은 generate 시작 시점에 이미 처리)
+        var _u2 = getAiUsage();
+        var _k2 = "member_" + (user.uid || "u");
+        var _newU2 = Object.assign({}, _u2);
+        _newU2[_k2] = (_u2[_k2] || 0) + 1;
+        setAiUsage(_newU2);
+      }
+      // 포인트 차감은 생성 시작 시점에 처리됨
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
         try {
@@ -922,7 +904,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {/* 생성 버튼 */}
           <div style={{padding:"10px 18px 14px",flexShrink:0}}>
             <button onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              {loading?(<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>):(<span>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10cr</span></span>)}
+              {loading ? (<><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
           </div>
         </div>

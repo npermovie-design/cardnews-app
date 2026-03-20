@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -9,7 +10,7 @@ import { changePoints } from "./storage";
    ✅ Step4: 텍스트 편집 (글 수정, Canvas 미리보기)
 ══════════════════════════════════════════════════════════════ */
 
-const CLAUDE_KEY = "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";
+import { callAI } from "./aiClient";
 
 // ── 예시 주제 ────────────────────────────────────────────────
 const TOPIC_EXAMPLES = [
@@ -196,13 +197,24 @@ function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
   const displayH = Math.round(displayW * CH / CW);
   useEffect(() => {
     if (!cRef.current || !slide) return;
+    const doDraw = (imgEl) => {
+      if (!cRef.current) return;
+      drawDetailSlide(cRef.current, slide, style, CW, CH, imgEl);
+    };
+    const drawWithFont = (imgEl) => {
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(() => doDraw(imgEl));
+      } else {
+        doDraw(imgEl);
+      }
+    };
     if (bgImageSrc) {
       const img = new Image();
-      img.onload = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, img); };
-      img.onerror = () => { if (cRef.current) drawDetailSlide(cRef.current, slide, style, CW, CH, null); };
+      img.onload = () => drawWithFont(img);
+      img.onerror = () => drawWithFont(null);
       img.src = bgImageSrc;
     } else {
-      drawDetailSlide(cRef.current, slide, style, CW, CH, null);
+      drawWithFont(null);
     }
   });
   if (!slide) return null;
@@ -223,13 +235,7 @@ async function generateSlideTexts({ topic, pageCount }) {
 JSON만 응답:
 {"slides":[${types.map(t=>`{"id":"${t.id}","label":"${t.label}","headline":"","subheadline":"","body":"","badge":""}`).join(",")}]}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:2000, messages:[{role:"user",content:prompt}] }),
-  });
-  const data = await res.json();
-  const txt = data.content?.[0]?.text || "";
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user",content:prompt}], 2000);
   const cleaned = txt.replace(/```json\n?/g,"").replace(/```/g,"").trim();
   try { return JSON.parse(cleaned); } catch {
     // JSON 불완전할 경우 slides 키 추출 시도
@@ -240,33 +246,19 @@ JSON만 응답:
 }
 
 async function suggestSlideText(topic, sc) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
-      messages:[{role:"user", content:`카드뉴스 주제:"${topic}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"제목(14자)","subheadline":"부제목(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"강조(8자,없으면빈문자)"}`}]
-    }),
-  });
-  const data = await res.json();
-  return JSON.parse((data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`카드뉴스 주제:"${topic}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"제목(14자)","subheadline":"부제목(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"강조(8자,없으면빈문자)"}`}], 300);
+  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
 async function getTopicSuggestions(topic) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
-      messages:[{role:"user", content:`카드뉴스 주제:"${topic}"\nJSON만:\n{"topics":["더 구체적인 주제1","주제2","주제3"],"subtopics":["세부내용 방향1","방향2","방향3"]}`}]
-    }),
-  });
-  const data = await res.json();
-  return JSON.parse((data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`카드뉴스 주제:"${topic}"\nJSON만:\n{"topics":["더 구체적인 주제1","주제2","주제3"],"subtopics":["세부내용 방향1","방향2","방향3"]}`}], 300);
+  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary }) {
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary , onUserUpdate}) {
   // 보관함에서 열기: 마운트 전 localStorage에서 항목 읽기
   const libItem = (() => {
     if (!openFromLibrary) return null;
@@ -300,6 +292,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
+  useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
   const [showCreditPopup, setShowCreditPopup] = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
 
@@ -372,9 +365,17 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // Step3→Step4: 텍스트 생성
   const generate = async () => {
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
     // 크레딧 체크
     if (user && (user.points || 0) < 10) { setShowCreditPopup(true); return; }
-    setLoading(true);
+    // 포인트 즉시 차감
+    if (user?.uid) {
+      changePoints(user.uid, -10, "심플 카드뉴스 생성").then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      }).catch(()=>{});
+    }
+        setLoading(true);
     try {
       let slidesData;
       if (slideContents.length > 0 && slideContents.some(s=>s.headline)) {
@@ -400,7 +401,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       saveToCardLibrary(slidesData);
-      if (user?.uid) changePoints(user.uid, -10, "심플 카드뉴스 생성").catch(()=>{});
+      // 포인트 차감은 생성 시작 시점에 처리됨
     } catch(e) { alert("생성 실패: " + e.message); }
     setLoading(false);
   };
@@ -415,7 +416,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   };
   const getSlideStyle = (idx) => {
     const so = sted[idx]||{};
-    return { ...activeStyle, ...(so.bgColor?{bgColor:so.bgColor}:{}), ...(so.textColor?{textColor:so.textColor}:{}), ...(so.titleSize?{titleSize:so.titleSize}:{}), ...(so.bodySize?{bodySize:so.bodySize}:{}), ...(so.textAlign?{textAlign:so.textAlign}:{}), ...(so.textValign?{textValign:so.textValign}:{}) };
+    return { ...activeStyle, ...(so.bgColor?{bgColor:so.bgColor}:{}), ...(so.textColor?{textColor:so.textColor}:{}), ...(so.titleSize?{titleSize:so.titleSize}:{}), ...(so.bodySize?{bodySize:so.bodySize}:{}), ...(so.textAlign?{textAlign:so.textAlign}:{}), ...(so.textValign?{textValign:so.textValign}:{}), ...(so.fontFamily?{fontFamily:so.fontFamily}:{}) };
   };
   const updSted = (idx, key, val) => setSted(prev=>({...prev,[idx]:{...(prev[idx]||{}), [key]:val}}));
 
@@ -738,10 +739,10 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#6366f1" }}>10 크레딧</b></div>
+              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#6366f1" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#6366f1",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
-                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:"카드뉴스 만들기 →"}
+                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:user?"카드뉴스 만들기 →":"✦ 1회 생성하기"}
               </button>
             </div>
           </div>
@@ -770,11 +771,11 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           <div onClick={()=>setShowCreditPopup(false)} style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center" }}>
             <div onClick={e=>e.stopPropagation()} style={{ width:"min(400px,92vw)",background:D?"#1a1730":"#fff",borderRadius:20,padding:"32px 28px",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}` }}>
               <div style={{ fontSize:48,marginBottom:16 }}>💎</div>
-              <div style={{ fontSize:18,fontWeight:900,color:text,marginBottom:10 }}>크레딧이 모두 소진되었습니다</div>
-              <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 크레딧을 충전하거나<br/>관리자에게 문의해주세요.</div>
+              <div style={{ fontSize:18,fontWeight:900,color:text,marginBottom:10 }}>포인트가 모두 소진되었습니다</div>
+              <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 포인트를 충전하거나<br/>관리자에게 문의해주세요.</div>
               <div style={{ display:"flex",gap:10 }}>
                 <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
-                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 크레딧 충전</button>
+                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 포인트 충전</button>
               </div>
               <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#6366f1" }}>관리자 문의하기 →</a></div>
             </div>
@@ -860,6 +861,25 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                   </div>
                 </div>
+                {/* 폰트 선택 */}
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:10,color:muted,marginBottom:4 }}>폰트</div>
+                  <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
+                    {[
+                      { label:"기본", val:"sans-serif" },
+                      { label:"명조", val:"Nanum Myeongjo" },
+                      { label:"고딕", val:"Noto Sans KR" },
+                      { label:"둥근", val:"Nanum Gothic" },
+                      { label:"배민", val:"BMDOHYEON" },
+                      { label:"넥슨", val:"NeoDunggeunmo" },
+                    ].map(f=>{
+                      const cur = so.fontFamily||curStyle.fontFamily||"sans-serif";
+                      const isCur = cur===f.val;
+                      return <button key={f.val} onClick={()=>updSted(selIdx,"fontFamily",f.val)}
+                        style={{ padding:"5px 10px",borderRadius:6,border:`1px solid ${isCur?"#6366f1":bdr}`,background:isCur?"rgba(99,102,241,0.2)":"transparent",color:isCur?"#a5b4fc":muted,cursor:"pointer",fontSize:11,fontWeight:isCur?700:400 }}>{f.label}</button>;
+                    })}
+                  </div>
+                </div>
                 <div style={{ marginBottom:10 }}>
                   <div style={{ fontSize:10,color:muted,marginBottom:4 }}>제목 크기 ({so.titleSize||curStyle.titleSize||32}px)</div>
                   <div style={{ display:"flex",gap:6,alignItems:"center" }}>
@@ -869,6 +889,18 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                     <button onClick={()=>updSted(selIdx,"titleSize",Math.min(72,(so.titleSize||curStyle.titleSize||32)+2))} style={{ ...btnSm }}>+</button>
                     {so.titleSize&&<button onClick={()=>updSted(selIdx,"titleSize",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
+                  </div>
+                </div>
+                {/* 본문 크기 */}
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:10,color:muted,marginBottom:4 }}>본문 크기 ({so.bodySize||curStyle.bodySize||15}px)</div>
+                  <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                    <button onClick={()=>updSted(selIdx,"bodySize",Math.max(8,(so.bodySize||curStyle.bodySize||15)-1))} style={{ ...btnSm }}>−</button>
+                    <div style={{ flex:1,height:5,borderRadius:3,background:D?"rgba(255,255,255,0.1)":"#e8e8e8",overflow:"hidden" }}>
+                      <div style={{ height:"100%",borderRadius:3,background:"#6366f1",width:`${((so.bodySize||curStyle.bodySize||15)-8)/(36-8)*100}%`,transition:"width 0.15s" }}/>
+                    </div>
+                    <button onClick={()=>updSted(selIdx,"bodySize",Math.min(36,(so.bodySize||curStyle.bodySize||15)+1))} style={{ ...btnSm }}>+</button>
+                    {so.bodySize&&<button onClick={()=>updSted(selIdx,"bodySize",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
                   </div>
                 </div>
                 <div style={{ display:"flex",gap:8,marginBottom:10 }}>
@@ -909,12 +941,17 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
 
             {/* 미리보기 */}
-            <div style={{ flexShrink:0,width:210,display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+            <div style={{ flexShrink:0,width:260,display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
               <div style={{ fontSize:11,fontWeight:700,color:muted }}>미리보기</div>
-              <div style={{ borderRadius:10,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.3)",border:`1px solid ${bdr}`,width:"100%" }}>
-                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={208} bgImageSrc={so.bgImage||undefined}/>
+              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%" }}>
+                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={258} bgImageSrc={so.bgImage||undefined}/>
               </div>
               <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
+              <div style={{ display:"flex",gap:6,width:"100%" }}>
+                <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===0?0.3:1 }}>‹</button>
+                <span style={{ flex:2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:muted }}>{selIdx+1} / {slides.length}</span>
+                <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
+              </div>
             </div>
           </div>
         </div>

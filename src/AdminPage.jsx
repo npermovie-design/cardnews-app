@@ -1,26 +1,44 @@
 import { useState, useEffect } from "react";
-import { getPosts, setPosts, getMembers, saveMembers, db, changePoints, getPostsFromDB } from "./storage";
-import { ref, get, set, push, update, remove } from "firebase/database";
+import { getPosts, getMembers, saveMembers, supabase, changePoints, getPostsFromDB, deletePostFromDB } from "./storage";
 import { Btn, Inp } from "./UI";
 
-/* ── 영상자료실 Firebase 헬퍼 ── */
-const VID_PATH = "archive/videos";
+/* ── 게시판 카테고리/태그 CRUD ── */
+const DEFAULT_BOARD_CATS = [
+  { id:"info",label:"정보공유",icon:"📌",color:"#6366f1" },
+  { id:"qna", label:"질문답변",icon:"❓",color:"#f59e0b" },
+  { id:"free",label:"자유게시판",icon:"🗣",color:"#10b981" },
+  { id:"review",label:"사용후기",icon:"⭐",color:"#ec4899" },
+];
+async function fetchBoardCatsAdmin() {
+  try {
+    const { data } = await supabase.from("board_cats").select("*").order("order",{ascending:true});
+    return (data&&data.length>0) ? data : DEFAULT_BOARD_CATS;
+  } catch { return DEFAULT_BOARD_CATS; }
+}
+async function saveBoardCatAdmin(cat) { await supabase.from("board_cats").upsert(cat); }
+async function deleteBoardCatAdmin(id) { await supabase.from("board_cats").delete().eq("id",id); }
+async function fetchTagsByCatAdmin(catId) {
+  try {
+    const { data } = await supabase.from("board_tags").select("*").eq("cat_id",catId).order("order",{ascending:true});
+    return data || [];
+  } catch { return []; }
+}
+async function saveTagAdmin(catId, tag) { await supabase.from("board_tags").upsert({...tag,cat_id:catId}); }
+async function deleteTagAdmin(tagId) { await supabase.from("board_tags").delete().eq("id",tagId); }
+
+/* ── 영상자료실 Supabase 헬퍼 ── */
 async function fetchVideos() {
-  const snap = await get(ref(db, VID_PATH));
-  if (!snap.exists()) return [];
-  return Object.entries(snap.val())
-    .map(([key, val]) => ({ key, ...val }))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const { data } = await supabase.from("videos").select("*").order("created_at", { ascending: false });
+  return (data || []).map(v => ({ ...v, key: v.id }));
 }
 async function saveVideo(data) {
-  const r = push(ref(db, VID_PATH));
-  await set(r, { ...data, createdAt: Date.now() });
+  await supabase.from("videos").insert({ ...data, created_at: new Date().toISOString() });
 }
-async function editVideo(key, data) {
-  await update(ref(db, `${VID_PATH}/${key}`), data);
+async function editVideo(id, data) {
+  await supabase.from("videos").update(data).eq("id", id);
 }
-async function removeVideo(key) {
-  await remove(ref(db, `${VID_PATH}/${key}`));
+async function removeVideo(id) {
+  await supabase.from("videos").delete().eq("id", id);
 }
 function extractYtId(url) {
   const m = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
@@ -50,6 +68,14 @@ export default function AdminPage({ C, user: adminUser }) {
   const [pw, setPw]        = useState("");
   const [auth, setAuth]    = useState(false);
   const [tab, setTab]      = useState("members");
+  // 게시판 관리 상태
+  const [boardCats, setBoardCats] = useState(DEFAULT_BOARD_CATS);
+  const [selBoardCat, setSelBoardCat] = useState(null);
+  const [boardTags, setBoardTags] = useState([]);
+  const [newCatForm, setNewCatForm] = useState({ id:"", label:"", icon:"📌", color:"#6366f1" });
+  const [newTagLabel, setNewTagLabel] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#6366f1");
+  const [boardLoading, setBoardLoading] = useState(false);
   const [posts, setPosts2] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [members, setMembers2] = useState([]);
@@ -59,20 +85,13 @@ export default function AdminPage({ C, user: adminUser }) {
   const [ptInputs, setPtInputs] = useState({});
   const [guestSearch, setGuestSearch] = useState("");
 
-  // Firebase에서 회원 목록 로드
+  // Supabase에서 회원 목록 로드
   const loadMembers = async () => {
     setLoadingMembers(true);
     try {
-      const snap = await get(ref(db, "users"));
-      if (snap.exists()) {
-        const obj = snap.val();
-        const list = Object.values(obj).sort((a, b) =>
-          new Date(b.joinDate || 0) - new Date(a.joinDate || 0)
-        );
-        setMembers2(list);
-      } else {
-        setMembers2([]);
-      }
+      const { data, error } = await supabase.from("users").select("*").order("join_date", { ascending: false });
+      if (error) throw error;
+      setMembers2(data || []);
     } catch(e) { console.error("회원 로드 실패:", e); }
     setLoadingMembers(false);
   };
@@ -87,7 +106,43 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingPosts(false);
   };
 
-  useEffect(() => { if (auth) { loadMembers(); loadVideos(); loadPosts(); } }, [auth]);
+  useEffect(() => { if (auth) { loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); } }, [auth]);
+
+  const loadBoardCats = async () => {
+    setBoardLoading(true);
+    try { setBoardCats(await fetchBoardCatsAdmin()); } catch(e) {}
+    setBoardLoading(false);
+  };
+  const loadTagsForCat = async (catId) => {
+    try { setBoardTags(await fetchTagsByCatAdmin(catId)); } catch(e) { setBoardTags([]); }
+  };
+  const handleSelectBoardCat = async (cat) => {
+    setSelBoardCat(cat); setNewTagLabel(""); setNewTagColor("#6366f1");
+    await loadTagsForCat(cat.id);
+  };
+  const handleAddTag = async () => {
+    if (!newTagLabel.trim()||!selBoardCat) return;
+    setBoardLoading(true);
+    try {
+      const newTag = { id: Date.now().toString(), label: newTagLabel.trim(), color: newTagColor, order: boardTags.length };
+      const { error } = await supabase.from("board_tags").upsert({...newTag, cat_id: selBoardCat.id});
+      if (error) throw new Error(error.message);
+      setNewTagLabel(""); await loadTagsForCat(selBoardCat.id);
+      showToast("서브 카테고리 추가 완료!");
+    } catch(e) {
+      alert("저장 실패: " + e.message + "\n\nSupabase에 board_tags 테이블이 없거나 권한이 없습니다.\n아래 SQL을 실행해주세요.");
+    } finally { setBoardLoading(false); }
+  };
+  const handleDeleteTag = async (tagId) => {
+    try {
+      const { error } = await supabase.from("board_tags").delete().eq("id",tagId);
+      if (error) throw new Error(error.message);
+      await loadTagsForCat(selBoardCat.id);
+      showToast("서브 카테고리 삭제 완료");
+    } catch(e) {
+      alert("삭제 실패: " + e.message);
+    }
+  };
 
   // 영상 목록 로드
   const [videos, setVideos]       = useState([]);
@@ -144,47 +199,45 @@ export default function AdminPage({ C, user: adminUser }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // ── 포인트 지급 (Firebase)
+  // ── 포인트 지급 (Supabase)
   const grantPoints = async (uid, pts) => {
     if (!pts || isNaN(pts)) { showToast("포인트를 입력하세요"); return; }
     try {
-      const snap = await get(ref(db, "users/" + uid));
-      if (!snap.exists()) return;
-      const cur = snap.val().points || 0;
-      const next = cur + Number(pts);
-      await update(ref(db, "users/" + uid), { points: next });
+      const member = members.find(m => m.uid === uid);
+      const next = (member?.points || 0) + Number(pts);
+      await supabase.from("users").update({ points: next }).eq("uid", uid);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
       showToast("+" + pts + "P 지급 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 초기화 (Firebase)
+  // ── 포인트 초기화 (Supabase)
   const resetPoints = async (uid) => {
     if (!window.confirm("이 회원의 포인트를 0으로 초기화할까요?")) return;
     try {
-      await update(ref(db, "users/" + uid), { points: 0 });
+      await supabase.from("users").update({ points: 0 }).eq("uid", uid);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: 0 } : m));
       showToast("포인트 초기화 완료");
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 직접 설정 (Firebase)
+  // ── 포인트 직접 설정 (Supabase)
   const setPoints = async (uid, pts) => {
     if (!pts || isNaN(pts)) return;
     try {
-      await update(ref(db, "users/" + uid), { points: Number(pts) });
+      await supabase.from("users").update({ points: Number(pts) }).eq("uid", uid);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: Number(pts) } : m));
       showToast(pts + "P 설정 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 회원 탈퇴 (Firebase)
+  // ── 회원 탈퇴 (Supabase)
   const deleteMember = async (uid, nick) => {
     if (!window.confirm(`"${nick}" 회원을 탈퇴 처리하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
     try {
-      await remove(ref(db, "users/" + uid));
+      await supabase.from("users").delete().eq("uid", uid);
       setMembers2(prev => prev.filter(m => m.uid !== uid));
       showToast(`"${nick}" 회원 탈퇴 처리 완료`);
     } catch(e) { showToast("오류: " + e.message); }
@@ -200,11 +253,11 @@ export default function AdminPage({ C, user: adminUser }) {
     } catch(e) {}
   };
 
-  // ── 게시글 삭제 (Firebase)
+  // ── 게시글 삭제 (Supabase)
   const deletePost = async (id) => {
     if (!window.confirm("이 게시글을 삭제할까요?")) return;
     try {
-      await remove(ref(db, "posts/" + id));
+      await deletePostFromDB(id);
       setPosts2(prev => prev.filter(p => p.id !== id));
       showToast("게시글 삭제 완료");
     } catch(e) { showToast("삭제 실패: " + e.message); }
@@ -267,7 +320,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4, width: "fit-content" }}>
-        {[["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
+        {[["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "9px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -462,6 +515,92 @@ export default function AdminPage({ C, user: adminUser }) {
               <button onClick={() => deletePost(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>삭제</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ─────────────── 게시판 관리 ─────────────── */}
+      {tab === "board" && (
+        <div style={{ display:"flex", gap:20, alignItems:"flex-start", flexWrap:"wrap" }}>
+          {/* 왼쪽: 카테고리 목록 */}
+          <div style={{ flex:"1 1 280px", background:C.card, border:"1px solid "+bdr, borderRadius:16, padding:"20px" }}>
+            <div style={{ fontSize:15, fontWeight:900, color:C.text, marginBottom:4 }}>메인 카테고리</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>카테고리를 선택하면 서브 카테고리를 관리할 수 있어요</div>
+            {boardLoading && <div style={{ color:C.muted, fontSize:13 }}>불러오는 중...</div>}
+            {boardCats.map(cat => (
+              <div key={cat.id} onClick={()=>handleSelectBoardCat(cat)}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?cat.color:bdr}`, background:selBoardCat?.id===cat.id?cat.color+"15":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
+                <span style={{ fontSize:20 }}>{cat.icon}</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{cat.label}</div>
+                  <div style={{ fontSize:11, color:C.muted }}>ID: {cat.id}</div>
+                </div>
+                <div style={{ width:14, height:14, borderRadius:"50%", background:cat.color, flexShrink:0 }}/>
+              </div>
+            ))}
+          </div>
+
+          {/* 오른쪽: 서브 카테고리 관리 */}
+          <div style={{ flex:"1 1 320px", background:C.card, border:"1px solid "+bdr, borderRadius:16, padding:"20px" }}>
+            {!selBoardCat ? (
+              <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>👈</div>
+                <div style={{ fontSize:14 }}>왼쪽에서 카테고리를 선택하세요</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+                  <span style={{ fontSize:22 }}>{selBoardCat.icon}</span>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:900, color:C.text }}>{selBoardCat.label}</div>
+                    <div style={{ fontSize:11, color:C.muted }}>서브 카테고리 {boardTags.length}개</div>
+                  </div>
+                </div>
+
+                {/* 기존 태그 목록 */}
+                {boardTags.length === 0 ? (
+                  <div style={{ padding:"16px", borderRadius:10, background:isDark?"rgba(255,255,255,0.03)":"#f9fafb", textAlign:"center", color:C.muted, fontSize:12, marginBottom:16 }}>
+                    서브 카테고리가 없어요. 아래에서 추가하세요.
+                  </div>
+                ) : (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
+                    {boardTags.map(tag => (
+                      <div key={tag.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:tag.color+"20", border:`1px solid ${tag.color}50` }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", background:tag.color }}/>
+                        <span style={{ fontSize:13, fontWeight:600, color:isDark?C.text:"#333" }}>{tag.label}</span>
+                        <button onClick={()=>handleDeleteTag(tag.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(239,68,68,0.7)", fontSize:14, lineHeight:1, padding:"0 2px" }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 새 태그 추가 */}
+                <div style={{ borderTop:"1px solid "+bdr, paddingTop:16 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:10 }}>새 서브 카테고리 추가</div>
+                  <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:10 }}>
+                    <input value={newTagLabel} onChange={e=>setNewTagLabel(e.target.value)}
+                      onKeyDown={e=>{ if(e.key==="Enter") handleAddTag(); }}
+                      placeholder="예: AI, 마케팅, 디자인..."
+                      style={{ flex:1, padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none" }}/>
+                    <input type="color" value={newTagColor} onChange={e=>setNewTagColor(e.target.value)}
+                      style={{ width:36, height:36, borderRadius:8, border:"1px solid "+bdr, cursor:"pointer", padding:2 }}/>
+                  </div>
+                  {newTagLabel.trim() && (
+                    <div style={{ marginBottom:10 }}>
+                      <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>미리보기</div>
+                      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:20, background:newTagColor+"20", border:`1px solid ${newTagColor}50` }}>
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:newTagColor }}/>
+                        <span style={{ fontSize:13,fontWeight:600,color:isDark?C.text:"#333" }}>{newTagLabel}</span>
+                      </div>
+                    </div>
+                  )}
+                  <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
+                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
+                    + 서브 카테고리 추가
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 

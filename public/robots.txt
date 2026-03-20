@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 사이트맵
+Sitemap: https://www.snsmakeit.com/sitemap.xml

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleDetailPageGenerator.jsx
@@ -9,7 +9,7 @@ import { changePoints } from "./storage";
    ✅ Step4: 텍스트 편집 (이미지 생성 X, 글 수정 방식)
 ══════════════════════════════════════════════════════════════ */
 
-const CLAUDE_KEY = "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";
+import { callAI } from "./aiClient";
 
 // ── 카테고리 ─────────────────────────────────────────────────
 const CATEGORIES = [
@@ -210,13 +210,7 @@ headline(14자 이내), subheadline(20자, 선택), body(50자, 선택), badge(8
 JSON만 응답:
 {"slides":[${types.map(t=>`{"id":"${t.id}","label":"${t.label}","headline":"","subheadline":"","body":"","badge":""}`).join(",")}]}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:3000, messages:[{role:"user",content:prompt}] }),
-  });
-  const data = await res.json();
-  const txt = data.content?.[0]?.text || "";
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user",content:prompt}], 3000);
   const cleaned = txt.replace(/```json\n?/g,"").replace(/```/g,"").trim();
   try { return JSON.parse(cleaned); } catch {
     // JSON 불완전할 경우 slides 키 추출 시도
@@ -227,33 +221,19 @@ JSON만 응답:
 }
 
 async function suggestSlideText(form, cat, sc) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300,
-      messages:[{role:"user", content:`상품: ${form.productName} (${cat.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}\n슬라이드: ${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","subheadline":"서브(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}]
-    }),
-  });
-  const data = await res.json();
-  return JSON.parse((data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`상품: ${form.productName} (${cat.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}\n슬라이드: ${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","subheadline":"서브(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}], 300);
+  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
 async function getAiSuggestions(catLabel, form) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:500,
-      messages:[{role:"user", content:`카테고리:${catLabel} 상품:"${form.productName}" 특징:"${form.features}"\nJSON만:\n{"productNames":["추천1","추천2","추천3"],"ctas":["CTA1","CTA2","CTA3"],"targets":["타겟1","타겟2"],"extras":["추가1","추가2"]}`}]
-    }),
-  });
-  const data = await res.json();
-  return JSON.parse((data.content?.[0]?.text||"").replace(/```json\n?/g,"").replace(/```/g,"").trim());
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`카테고리:${catLabel} 상품:"${form.productName}" 특징:"${form.features}"\nJSON만:\n{"productNames":["추천1","추천2","추천3"],"ctas":["CTA1","CTA2","CTA3"],"targets":["타겟1","타겟2"],"extras":["추가1","추가2"]}`}], 500);
+  return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
+export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate }) {
   const [wizStep, setWizStep] = useState(1);
 
   // Step1
@@ -350,6 +330,8 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
 
   // Step3→Step4: 슬라이드 텍스트 생성 후 편집 모드로
   const generate = async () => {
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
     setLoading(true);
     try {
       let slidesData;
@@ -379,7 +361,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
         }));
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
-      if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").catch(()=>{});
+      if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
     } catch(e) { alert("생성 실패: " + e.message); }
     setLoading(false);
   };
@@ -668,10 +650,10 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#6366f1" }}>10 크레딧</b></div>
+              {user && <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#6366f1" }}>10P</b></div>}
               <button onClick={generate} disabled={loading}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#6366f1",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
-                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:"텍스트 생성하기 →"}
+                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:user?"텍스트 생성하기 →":"✦ 1회 생성하기"}
               </button>
             </div>
           </div>
@@ -743,6 +725,20 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme }) {
                           style={{ width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${(curSlide[key]||"")?"rgba(99,102,241,0.5)":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}/>}
                   </div>
                 ))}
+
+                {/* 폰트 선택 */}
+                <div style={{ marginTop:14, marginBottom:10 }}>
+                  <div style={{ fontSize:11,fontWeight:700,color:muted,marginBottom:6 }}>폰트</div>
+                  <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
+                    {[{label:"기본",val:"sans-serif"},{label:"명조",val:"Nanum Myeongjo"},{label:"고딕",val:"Noto Sans KR"},{label:"둥근",val:"Nanum Gothic"},{label:"배민",val:"BMDOHYEON"}].map(f=>{
+                      const so = sted[selIdx]||{};
+                      const cur = so.fontFamily||activeStyle.fontFamily||"sans-serif";
+                      const isCur = cur===f.val;
+                      return <button key={f.val} onClick={()=>updSted(selIdx,"fontFamily",f.val)}
+                        style={{ padding:"5px 11px",borderRadius:6,border:`1px solid ${isCur?"#6366f1":bdr}`,background:isCur?"rgba(99,102,241,0.2)":"transparent",color:isCur?"#a5b4fc":muted,cursor:"pointer",fontSize:11,fontWeight:isCur?700:400 }}>{f.label}</button>;
+                    })}
+                  </div>
+                </div>
 
                 {/* 전/다음 슬라이드 이동 */}
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>

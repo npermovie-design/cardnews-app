@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
-import { changePoints } from "./storage";
+import { useState, useRef, useEffect } from "react";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 
 /* ══════════════════════════════════════════════════════════════
    상세페이지 만들기 v7
@@ -11,7 +12,7 @@ import { changePoints } from "./storage";
    ✅ 최대 20장 / ZIP 저장
 ══════════════════════════════════════════════════════════════ */
 
-const CLAUDE_KEY = "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";
+import { callAI } from "./aiClient";
 
 // ── 스타일 템플릿 10종 ───────────────────────────────────────
 const STYLE_TEMPLATES = [
@@ -331,78 +332,32 @@ ${refStyle ? `참고 스타일: ${refStyle}` : ""}
 JSON만 응답:
 {"slides":[${types.map(t => `{"id":"${t.id}","label":"${t.label}","headline":"","subheadline":"","body":"","badge":"","cta":""}`).join(",")}]}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await res.json();
-  const txt = data.content?.[0]?.text || "";
+  const txt = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 3000);
   const clean = txt.replace(/```json\n?/g, "").replace(/```/g, "").trim();
   return JSON.parse(clean);
 }
 
 // 참고 이미지 분석
 async function analyzeRefImage(b64, mime) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 400,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mime, data: b64 } },
-          { type: "text", text: "이 상세페이지 이미지의 디자인 스타일을 100자 이내로 설명해주세요. 색감, 배경 스타일, 조명, 레이아웃 분위기 위주로. 한국어로." }
-        ]
-      }]
-    }),
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text || "";
+  return await callAI("claude-sonnet-4-5", [{
+    role: "user",
+    content: [
+      { type: "image", source: { type: "base64", media_type: mime, data: b64 } },
+      { type: "text", text: "이 상세페이지 이미지의 디자인 스타일을 100자 이내로 설명해주세요. 색감, 배경 스타일, 조명, 레이아웃 분위기 위주로. 한국어로." }
+    ]
+  }], 400);
 }
 
 // AI 문구 추천
 async function getAiSuggestions(catLabel, form) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 500,
-      messages: [{ role: "user", content: `카테고리:${catLabel} 상품:"${form.productName}" 특징:"${form.features}"\nJSON만:\n{"productNames":["추천1","추천2","추천3"],"ctas":["CTA1","CTA2","CTA3"],"targets":["타겟1","타겟2"],"extras":["추가1","추가2"]}` }]
-    }),
-  });
-  const data = await res.json();
-  const txt = data.content?.[0]?.text || "";
+  const txt = await callAI("claude-sonnet-4-5", [{ role: "user", content: `카테고리:${catLabel} 상품:"${form.productName}" 특징:"${form.features}"\nJSON만:\n{"productNames":["추천1","추천2","추천3"],"ctas":["CTA1","CTA2","CTA3"],"targets":["타겟1","타겟2"],"extras":["추가1","추가2"]}` }], 500);
   return JSON.parse(txt.replace(/```json\n?/g, "").replace(/```/g, "").trim());
 }
 
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트 - 3단계 위저드
 // ══════════════════════════════════════════════════════════════
-export default function DetailPageGenerator({ isDark, user }) {
+export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
   // ── 위저드 단계 ─────────────────────────────────────────────
   const [wizStep, setWizStep] = useState(1); // 1:상품입력 2:슬라이드기획 3:디자인 4:생성결과
 
@@ -431,6 +386,7 @@ export default function DetailPageGenerator({ isDark, user }) {
   const [slides,    setSlides]    = useState([]);
   const [rendered,  setRendered]  = useState([]);
   const [loading,   setLoading]   = useState(false);
+  useGeneratingGuard(loading, (slides?.length || pageCount || 1) * 30); // 생성 중 이탈 방지
   const [progress,  setProgress]  = useState({ msg:"", cur:0, total:0 });
   const [err,       setErr]       = useState("");
   const [curIdx,    setCurIdx]    = useState(0);
@@ -508,7 +464,16 @@ export default function DetailPageGenerator({ isDark, user }) {
 
   // 생성 실행
   const generate = async () => {
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
     setErr(""); setLoading(true); setSlides([]); setRendered([]); setSaveMsg("");
+    // 전체 포인트 즉시 선차감 (슬라이드 수 × 30P)
+    if (user?.uid) {
+      const totalCost = (planSlides?.length || pageCount || 1) * 30;
+      changePoints(user.uid, -totalCost, `상세페이지 생성 (${planSlides?.length || pageCount}장)`).then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      });
+    }
     const beforeUnload = (e) => { e.preventDefault(); e.returnValue="이미지 생성 중입니다."; };
     window.addEventListener("beforeunload", beforeUnload);
     try {
@@ -554,7 +519,7 @@ export default function DetailPageGenerator({ isDark, user }) {
           results[i] = raw;
           // 이미지 생성 성공 시 30 크레딧 차감
           if (raw && user?.uid) {
-            changePoints(user.uid, -30, `상세페이지 이미지 생성 (${s.label})`).catch(()=>{});
+            // 포인트는 생성 시작 시점에 선차감됨
           }
         } catch(e) { results[i] = null; }
         setRendered([...results]);
@@ -578,7 +543,7 @@ export default function DetailPageGenerator({ isDark, user }) {
       if (img && (imgW !== 1000 || imgH !== 1000)) img = await resizeImage(img, imgW, imgH);
       setRendered(prev => { const r=[...prev]; r[idx]=img; return r; });
       if (img && user?.uid) {
-        changePoints(user.uid, -30, `상세페이지 재생성 (${slides[idx]?.label})`).catch(()=>{});
+        changePoints(user.uid, -30, `상세페이지 재생성 (${slides[idx]?.label})`).then(newPts => { if(onUserUpdate) onUserUpdate({...user, points: newPts}); });
       }
     } catch(e) { setErr("재생성 실패: " + e.message); }
     setRegenIdx(null);
@@ -780,20 +745,12 @@ export default function DetailPageGenerator({ isDark, user }) {
     try {
       const cat_ = CATEGORIES.find(c => c.key === selCat);
       const kw = sc.keyword ? `키워드: ${sc.keyword}` : "";
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":CLAUDE_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400,
-          messages:[{role:"user", content:`쇼핑몰 상세페이지 카피라이터.
+      const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`쇼핑몰 상세페이지 카피라이터.
 상품: ${form.productName} (${cat_?.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}
 슬라이드: ${sc.label} (${sc.id})
 ${kw}
 이 슬라이드의 카피를 작성해주세요. JSON만 응답:
-{"headline":"헤드라인(14자 이내)","subheadline":"서브헤드라인(22자 이내, 없으면 빈 문자열)","body":"본문(50자 이내, 없으면 빈 문자열)","badge":"배지텍스트(8자 이내, 없으면 빈 문자열)"}`}]
-        }),
-      });
-      const data = await res.json();
-      const txt = data.content?.[0]?.text || "";
+{"headline":"헤드라인(14자 이내)","subheadline":"서브헤드라인(22자 이내, 없으면 빈 문자열)","body":"본문(50자 이내, 없으면 빈 문자열)","badge":"배지텍스트(8자 이내, 없으면 빈 문자열)"}`}], 400);
       const parsed = JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
       setSlideContents(prev => prev.map((s,i) => i===idx ? {...s, ...parsed, aiLoading:false} : s));
     } catch(e) {
@@ -1047,12 +1004,12 @@ ${kw}
             </button>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12, color:muted, marginBottom:6 }}>
-                예상 차감: <b style={{ color:accentColor }}>{pageCount * 30} 크레딧</b>
-                {user && <span style={{ marginLeft:8, color:muted }}>· 보유 {(user.points||0).toLocaleString()} cr</span>}
+                예상 차감: <b style={{ color:accentColor }}>{pageCount * 30}P</b>
+                {user && <span style={{ marginLeft:8, color:muted }}>· 보유 {(user.points||0).toLocaleString()} P</span>}
               </div>
               <button onClick={()=>{ setWizStep(4); generate(); }}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
-                이미지 {pageCount}장 생성하기 →
+                {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
               </button>
             </div>
           </div>

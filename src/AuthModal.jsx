@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { fbLogin, fbRegister, fbGoogleLogin, isValidEmail } from "./storage";
-import { getAuth, sendEmailVerification, reload } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { fbLogin, fbRegister, fbGoogleLogin, fbKakaoLogin, isValidEmail, supabase } from "./storage";
 
 export default function AuthModal({ onClose, onAuth, C }) {
   const [tab,          setTab]         = useState("login");
@@ -13,6 +12,8 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const [pendingUser,  setPendingUser] = useState(null);  // 인증 대기 중인 FB user
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+
+
 
   // 인앱 브라우저(카카오/네이버 등 WebView) 감지
   const isInAppBrowser = () => {
@@ -34,43 +35,19 @@ export default function AuthModal({ onClose, onAuth, C }) {
   };
 
   const googleLogin = async () => {
-    // 인앱 브라우저 차단 처리
-    if (isInAppBrowser()) {
-      setErr("__inapp__");
-      return;
-    }
+    if (isInAppBrowser()) { setErr("__inapp__"); return; }
     setErr(""); setLoading(true);
     try {
-      const user = await fbGoogleLogin();
-      onAuth(user);
+      await fbGoogleLogin(); // Supabase OAuth → 리다이렉트됨 (이후 App.jsx에서 처리)
     } catch(e) {
-      const msg = e.code === "auth/popup-closed-by-user" ? "로그인 창을 닫았습니다."
-        : e.code === "auth/popup-blocked" ? "팝업이 차단됐습니다. 팝업을 허용해주세요."
-        : "구글 로그인 중 오류가 발생했습니다.";
-      setErr(msg);
-    } finally { setLoading(false); }
+      setErr("구글 로그인 중 오류가 발생했습니다.");
+      setLoading(false);
+    }
   };
-
-  // 카카오 팝업 메시지 수신
-  useState(() => {
-    const handler = async (e) => {
-      if (e.data && e.data.type === "kakao_code") {
-        setErr(""); setLoading(true);
-        try {
-          const user = await fbKakaoLogin(e.data.code);
-          onAuth(user);
-        } catch(err) {
-          setErr("카카오 로그인 중 오류가 발생했습니다.");
-        } finally { setLoading(false); }
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  });
 
   const kakaoLogin = () => {
     setErr("");
-    kakaoLoginRedirect();
+    fbKakaoLogin(); // Supabase OAuth → 리다이렉트됨
   };
 
   const login = async () => {
@@ -79,26 +56,19 @@ export default function AuthModal({ onClose, onAuth, C }) {
       if (!form.email || !form.pw) { setErr("이메일과 비밀번호를 입력해주세요."); setLoading(false); return; }
       if (!isValidEmail(form.email)) { setErr("올바른 이메일 형식이 아닙니다."); setLoading(false); return; }
       const user = await fbLogin(form.email, form.pw);
-
-      // 이메일 인증 여부 확인
-      const fbUser = getAuth().currentUser;
-      if (fbUser && !fbUser.emailVerified) {
-        // 인증 안 된 경우 → 로그아웃 후 인증 대기 화면으로
-        await getAuth().signOut();
-        setPendingUser(fbUser);
-        setRegStep(2);
-        setTab("register");
-        setErr("이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.");
-        return;
-      }
-
       onAuth(user);
     } catch(e) {
-      const msg = (e.code === "auth/user-not-found" || e.code === "auth/wrong-password" || e.code === "auth/invalid-credential")
+      const msg = (e.message?.includes("Invalid login") || e.message?.includes("invalid_credentials") || e.message?.includes("Invalid email"))
         ? "이메일 또는 비밀번호가 올바르지 않습니다."
-        : e.code === "auth/too-many-requests"
+        : e.message?.includes("Email not confirmed")
+        ? "이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요."
+        : e.message?.includes("too many requests") || e.message?.includes("rate limit")
         ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요."
-        : "로그인 중 오류가 발생했습니다.";
+        : e.message?.includes("시간이 초과")
+        ? e.message
+        : e.message?.includes("User not found") || e.message?.includes("user not found")
+        ? "가입되지 않은 이메일입니다. 회원가입을 먼저 해주세요."
+        : `오류: ${e.message}`;
       setErr(msg);
     } finally { setLoading(false); }
   };
@@ -111,21 +81,18 @@ export default function AuthModal({ onClose, onAuth, C }) {
       if (form.pw.length < 8) { setErr("비밀번호는 8자 이상이어야 합니다."); setLoading(false); return; }
       if (form.pw !== form.pw2) { setErr("비밀번호가 일치하지 않습니다."); setLoading(false); return; }
 
-      // Firebase 계정 생성
       await fbRegister(form.email, form.pw, form.nick.trim());
-
-      // 인증 메일 발송 (가입 직후 currentUser 사용)
-      const fbUser = getAuth().currentUser;
-      if (fbUser) {
-        await sendEmailVerification(fbUser);
-        setPendingUser(fbUser);
-        setRegStep(2); // 인증 대기 화면으로 전환
-      }
+      setRegStep(2);
     } catch(e) {
-      const msg = e.code === "auth/email-already-in-use" ? "이미 가입된 이메일입니다."
-        : e.code === "auth/weak-password" ? "비밀번호가 너무 약합니다."
-        : e.code === "auth/invalid-email" ? "올바른 이메일 형식이 아닙니다."
-        : "회원가입 중 오류가 발생했습니다.";
+      const msg = e.message?.includes("already registered") || e.message?.includes("already been registered") || e.message?.includes("User already registered")
+        ? "이미 가입된 이메일입니다."
+        : e.message?.includes("Password should")
+        ? "비밀번호가 너무 약합니다. (8자 이상)"
+        : e.message?.includes("valid email")
+        ? "올바른 이메일 형식이 아닙니다."
+        : e.message?.includes("시간이 초과")
+        ? e.message
+        : `오류: ${e.message}`;
       setErr(msg);
     } finally { setLoading(false); }
   };
@@ -134,22 +101,12 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const checkVerification = async () => {
     setVerifyLoading(true); setErr("");
     try {
-      let fbUser = getAuth().currentUser;
-      // currentUser 없으면 (로그인 탭에서 튕긴 경우) 재로그인
-      if (!fbUser && form.email && form.pw) {
-        await fbLogin(form.email, form.pw);
-        fbUser = getAuth().currentUser;
-      }
-      if (!fbUser) { setErr("세션이 만료됐어요. 비밀번호를 다시 입력해주세요."); setRegStep(1); setTab("login"); return; }
-      await reload(fbUser);
-      if (fbUser.emailVerified) {
-        const user = await fbLogin(form.email, form.pw);
-        onAuth(user);
-      } else {
-        setErr("아직 인증이 완료되지 않았어요. 이메일 링크를 클릭해주세요.");
-      }
+      // Supabase: 이메일 인증 후 로그인 시도
+      const user = await fbLogin(form.email, form.pw);
+      onAuth(user);
     } catch(e) {
-      setErr("확인 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+      // 인증 안 된 경우 Supabase가 에러 반환
+      setErr("아직 인증이 완료되지 않았어요. 이메일 링크를 클릭해주세요.");
     } finally { setVerifyLoading(false); }
   };
 
@@ -157,19 +114,10 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const resendEmail = async () => {
     if (resendCool) return;
     try {
-      let fbUser = getAuth().currentUser;
-      // 로그인 탭에서 미인증으로 튕긴 경우 → 다시 로그인해서 발송
-      if (!fbUser && form.email && form.pw) {
-        await fbLogin(form.email, form.pw);
-        fbUser = getAuth().currentUser;
-        if (fbUser?.emailVerified) { const u = await fbLogin(form.email, form.pw); onAuth(u); return; }
-      }
-      if (fbUser) {
-        await sendEmailVerification(fbUser);
-        setResendCool(true);
-        setErr("");
-        setTimeout(() => setResendCool(false), 30000);
-      }
+      await supabase.auth.resend({ type: "signup", email: form.email });
+      setResendCool(true);
+      setErr("");
+      setTimeout(() => setResendCool(false), 30000);
     } catch(e) { setErr("재발송 중 오류가 발생했어요."); }
   };
 
@@ -263,6 +211,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 </div>
               </div>
             )}
+
             <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "가입 중..." : "회원가입하기"}
             </button>

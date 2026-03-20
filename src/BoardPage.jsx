@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { getPosts, setPosts, changePoints, getPostsFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, db } from "./storage";
-import { ref, get, set, push, remove } from "firebase/database";
+import { getPosts, setPosts, changePoints, getPostsFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, supabase } from "./storage";
 
-/* ─── 기본 카테고리 (Firebase 없을 때 폴백) ─────────────────── */
+/* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
   { id: "info",   label: "정보공유",   icon: "📌", color: "#6366f1" },
   { id: "qna",    label: "질문답변",   icon: "❓", color: "#f59e0b" },
@@ -10,54 +9,49 @@ const DEFAULT_CATS = [
   { id: "review", label: "사용후기",   icon: "⭐", color: "#ec4899" },
 ];
 
-/* ─── Firebase 카테고리 CRUD ────────────────────────────────── */
+/* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
 async function fetchBoardCats() {
   try {
-    const snap = await get(ref(db, "boardCats"));
-    if (!snap.exists()) return DEFAULT_CATS;
-    return Object.entries(snap.val())
-      .map(([key, val]) => ({ key, ...val }))
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const { data } = await supabase.from("board_cats").select("*").order("order", { ascending: true });
+    if (!data || data.length === 0) return DEFAULT_CATS;
+    return data.map(v => ({ ...v, key: v.id }));
   } catch { return DEFAULT_CATS; }
 }
 async function saveBoardCat(cat) {
-  await set(ref(db, "boardCats/" + cat.id), cat);
+  await supabase.from("board_cats").upsert(cat);
 }
 async function deleteBoardCat(id) {
-  await remove(ref(db, "boardCats/" + id));
+  await supabase.from("board_cats").delete().eq("id", id);
 }
 
-/* ─── Firebase 세부 태그(Tag) CRUD ─────────────────────────── */
-// 구조: boardTags/{catId}/{tagId}
+/* ─── Supabase 세부 태그(Tag) CRUD ──────────────────────────── */
 async function fetchTagsByCat(catId) {
   try {
-    const snap = await get(ref(db, "boardTags/" + catId));
-    if (!snap.exists()) return [];
-    return Object.entries(snap.val())
-      .map(([key, val]) => ({ key, ...val }))
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const { data } = await supabase.from("board_tags").select("*").eq("cat_id", catId).order("order", { ascending: true });
+    return (data || []).map(v => ({ ...v, key: v.id }));
   } catch { return []; }
 }
 async function fetchAllTags() {
   try {
-    const snap = await get(ref(db, "boardTags"));
-    if (!snap.exists()) return {};
+    const { data } = await supabase.from("board_tags").select("*");
+    if (!data) return {};
     const result = {};
-    Object.entries(snap.val()).forEach(([catId, tags]) => {
-      result[catId] = Object.entries(tags).map(([key, val]) => ({ key, ...val }));
+    data.forEach(tag => {
+      if (!result[tag.cat_id]) result[tag.cat_id] = [];
+      result[tag.cat_id].push({ ...tag, key: tag.id });
     });
     return result;
   } catch { return {}; }
 }
 async function saveTag(catId, tag) {
-  await set(ref(db, "boardTags/" + catId + "/" + tag.id), tag);
+  await supabase.from("board_tags").upsert({ ...tag, cat_id: catId });
 }
 async function deleteTag(catId, tagId) {
-  await remove(ref(db, "boardTags/" + catId + "/" + tagId));
+  await supabase.from("board_tags").delete().eq("id", tagId);
 }
 
 /* ─── 리치 텍스트 에디터 ───────────────────────────────────── */
-function RichEditor({ value, onChange }) {
+function RichEditor({ value, onChange, isDark }) {
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -120,22 +114,29 @@ function RichEditor({ value, onChange }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [fontSize, setFontSize] = useState("3");
 
+  const edBdr = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
+  const edBg  = isDark ? "#1a1a2e" : "#f9f9fc";
+  const edTxt = isDark ? "#e0e0e0" : "#1a1730";
+  const btnClr = isDark ? "#ccc" : "#555";
+  const tbBdr = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+  const tbBg  = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
+
   const ToolBtn = ({ onClick, title, children, active }) => (
     <button type="button" onMouseDown={e => { e.preventDefault(); onClick(); }} title={title}
       style={{ padding:"5px 9px", border:"none", borderRadius:6, background: active?"rgba(99,102,241,0.25)":"transparent",
-        color:"#ccc", cursor:"pointer", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", minWidth:28 }}
-      onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"}
+        color:btnClr, cursor:"pointer", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", minWidth:28 }}
+      onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)"}
       onMouseLeave={e=>e.currentTarget.style.background=active?"rgba(99,102,241,0.25)":"transparent"}>
       {children}
     </button>
   );
 
-  const Divider = () => <div style={{width:1,height:20,background:"rgba(255,255,255,0.15)",margin:"0 3px"}}/>;
+  const Divider = () => <div style={{width:1,height:20,background:isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)",margin:"0 3px"}}/>;
 
   return (
-    <div style={{border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,overflow:"visible",background:"#1a1a2e"}}>
+    <div style={{border:`1px solid ${edBdr}`,borderRadius:12,overflow:"visible",background:edBg}}>
       {/* 툴바 */}
-      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:2,padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.03)"}}>
+      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:2,padding:"8px 10px",borderBottom:`1px solid ${tbBdr}`,background:tbBg}}>
         {/* 텍스트 스타일 */}
         <ToolBtn onClick={()=>exec("bold")} title="굵게 (Ctrl+B)"><b>B</b></ToolBtn>
         <ToolBtn onClick={()=>exec("italic")} title="기울임 (Ctrl+I)"><i>I</i></ToolBtn>
@@ -144,7 +145,7 @@ function RichEditor({ value, onChange }) {
         <Divider/>
         {/* 폰트 크기 */}
         <select value={fontSize} onChange={e=>{setFontSize(e.target.value);exec("fontSize",e.target.value);}}
-          style={{padding:"4px 6px",border:"none",borderRadius:6,background:"rgba(255,255,255,0.06)",color:"#ccc",fontSize:12,cursor:"pointer"}}>
+          style={{padding:"4px 6px",border:"none",borderRadius:6,background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",color:btnClr,fontSize:12,cursor:"pointer"}}>
           {[["1","작게"],["3","보통"],["5","크게"],["7","매우 크게"]].map(([v,l])=>(
             <option key={v} value={v}>{l}</option>
           ))}
@@ -170,7 +171,7 @@ function RichEditor({ value, onChange }) {
           <ToolBtn onClick={()=>setShowEmoji(p=>!p)} title="이모티콘">😊</ToolBtn>
           {showEmoji && (
             <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:999,
-              background:"#1e1c3a",border:"1px solid rgba(255,255,255,0.15)",borderRadius:12,padding:10,
+              background:isDark?"#1e1c3a":"#fff",border:`1px solid ${edBdr}`,borderRadius:12,padding:10,
               display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4,width:180,boxShadow:"0 8px 24px rgba(0,0,0,0.4)"}}>
               {EMOJIS.map(e=>(
                 <button key={e} type="button" onClick={()=>{insertEmoji(e);setShowEmoji(false);}}
@@ -193,13 +194,13 @@ function RichEditor({ value, onChange }) {
         onInput={e=>onChange(e.currentTarget.innerHTML)}
         onClick={()=>setShowEmoji(false)}
         data-placeholder="내용을 입력해주세요..."
-        style={{minHeight:280,padding:"16px 18px",color:"#e0e0e0",fontSize:15,lineHeight:1.8,outline:"none",
+        style={{minHeight:280,padding:"16px 18px",color:edTxt,fontSize:15,lineHeight:1.8,outline:"none",
           wordBreak:"break-word",overflowY:"auto"}}
       />
 
       <style>{`
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: rgba(255,255,255,0.25); pointer-events:none; }
-        [contenteditable] table td { border: 1px solid #555; padding: 8px 12px; }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: ${isDark?"rgba(255,255,255,0.25)":"rgba(0,0,0,0.3)"}; pointer-events:none; }
+        [contenteditable] table td { border: 1px solid ${isDark?"#555":"#ccc"}; padding: 8px 12px; }
         [contenteditable] a { color: #7c6aff; }
         [contenteditable] img { max-width: 100%; border-radius: 8px; }
         [contenteditable] ul { padding-left: 20px; }
@@ -278,7 +279,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
 
         <input placeholder="제목을 입력해주세요" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)}
           style={{padding:"13px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:15,outline:"none"}}/>
-        <RichEditor value={body} onChange={setBody}/>
+        <RichEditor value={body} onChange={setBody} isDark={isDark}/>
         <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
           <button type="button" onClick={onCancel} style={{padding:"11px 24px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer",fontWeight:600}}>취소</button>
           <button type="button" onClick={()=>{
@@ -300,7 +301,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [subCats, setSubCats] = useState(DEFAULT_CATS);
   const [allTags, setAllTags] = useState({}); // { catId: [{id,label,color}] }
   const [posts,   setPostsS]  = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [view,    setView]    = useState(null);
   const [mode,    setMode]    = useState("list");
   const [comment, setComment] = useState("");
@@ -338,22 +339,23 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     return () => window.removeEventListener("resize", fn);
   }, []);
 
-  // Firebase에서 게시글 로드 + localStorage 마이그레이션
+  // 게시글 로드 - localStorage 즉시 표시 후 Supabase 백그라운드 갱신
   useEffect(()=>{
+    // 1) localStorage 즉시 표시 (로딩 스피너 없음)
+    const cached = getPosts();
+    if (cached.length > 0) { setPostsS(cached); setLoading(false); }
+
+    // 2) Supabase 백그라운드 조용히 갱신
     (async () => {
-      setLoading(true);
       try {
-        // 기존 localStorage 글 Firebase로 1회 마이그레이션
-        await migrateLocalPostsToDB();
-        // Firebase에서 전체 로드
+        const migrated = localStorage.getItem("nper_migrated_v1");
+        if (!migrated) {
+          try { await migrateLocalPostsToDB(); localStorage.setItem("nper_migrated_v1", "1"); } catch(e) {}
+        }
         const data = await getPostsFromDB();
-        setPostsS(data);
-      } catch(e) {
-        // Firebase 실패 시 localStorage 폴백
-        setPostsS(getPosts());
-      } finally {
-        setLoading(false);
-      }
+        if (data && data.length > 0) setPostsS(data);
+      } catch(e) {}
+      finally { setLoading(false); }
     })();
   }, []);
 
@@ -372,7 +374,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     }
   },[pendingPostId, posts]);
 
-  // 로컬 state만 업데이트 (Firebase는 각 함수에서 직접 처리)
+  // 로컬 state만 업데이트 (Supabase는 각 함수에서 직접 처리)
   const syncLocal = next => setPostsS(next);
   const own  = p=>user&&(user.nick===p.nick||user.role==="admin");
 
@@ -395,7 +397,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const totalPages=Math.ceil(filtered.length/PER);
   const pageItems=filtered.slice((page-1)*PER,page*PER);
 
-  /* 글 등록 - Firebase 저장 + 1P 지급 */
+  /* 글 등록 - Supabase 저장 + 1P 지급 */
   const submitPost = async ({title, body, subCat: formCat, tag}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const cat = formCat || subCat;
@@ -404,7 +406,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     syncLocal([p,...posts]);
     setMode("list");
     setSubCat(cat); // 작성 후 해당 카테고리로 이동
-    // Firebase 저장
+    // Supabase 저장
     try {
       await savePostToDB(p);
     } catch(e) {
@@ -448,7 +450,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     // URL에 게시글 ID 반영
     const cat = p.subCat||p.cat||subCat;
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
-    // Firebase 조회수 업데이트 (비동기, 실패해도 무방)
+    // Supabase 조회수 업데이트 (비동기, 실패해도 무방)
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
   };
 
@@ -843,8 +845,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
           <span style={{fontSize:18}}>💎</span>
           <span style={{fontSize:13,color:isDark?"#86efac":"#166534",lineHeight:1.6}}>
-            <b>크레딧 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+1cr</b> 적립됩니다.
-            댓글에는 크레딧이 지급되지 않습니다. 적립된 크레딧으로 AI 생성기를 이용해보세요!
+            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+1P</b> 적립됩니다.
+            댓글에는 포인트가 지급되지 않습니다. 적립된 포인트로 AI 생성기를 이용해보세요!
           </span>
         </div>
 
@@ -871,7 +873,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 </select>
                 <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
                   style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
-                  ✏️ 글쓰기 (+1cr)
+                  ✏️ 글쓰기 (+1P)
                 </button>
               </div>
             </div>
@@ -924,7 +926,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>
                   {search?`"${search}" 검색 결과가 없어요`:"아직 게시글이 없어요"}
                 </div>
-                <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1cr</b>이 적립됩니다!</div>
+                <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
                 {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
               </div>
             )}

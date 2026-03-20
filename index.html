@@ -1,38 +1,115 @@
 <!doctype html>
 <html lang="ko">
   <head>
+    <!-- 검색엔진 인증 -->
     <meta name="google-site-verification" content="RK3cE_t-6IlrSQbjoV4TvEg9n-Crqg8eaEByIHq_V50" />
     <meta name="naver-site-verification" content="20befb9d4db477010b5f0545bd3097fe2cfa1e6a" />
-    
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SNS메이킷 - AI 콘텐츠 생성기</title>
 
-    <!-- SEO -->
-    <meta name="description" content="카드뉴스, 상세페이지, 블로그 글을 AI로 빠르게 제작하세요. SNS메이킷은 네이버 블로그, 인스타그램, 유튜브 등 다양한 SNS 콘텐츠를 자동 생성해드립니다."/>
-    <meta name="keywords" content="카드뉴스 만들기, AI 카드뉴스, 상세페이지 제작, 블로그 자동 생성, SNS 콘텐츠, AI 글쓰기"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- 기본 SEO -->
+    <title>SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성</title>
+    <meta name="description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버 블로그, 인스타그램, 유튜브 대본, SNS 카드뉴스까지 비회원 5회 무료 체험!"/>
+    <meta name="keywords" content="카드뉴스 만들기, AI 카드뉴스, 상세페이지 제작, 블로그 자동 생성, SNS 콘텐츠, AI 글쓰기, 네이버 블로그 자동생성, 인스타그램 캡션, 유튜브 대본, 소셜미디어 콘텐츠"/>
     <meta name="author" content="SNS메이킷"/>
+    <meta name="robots" content="index, follow"/>
+    <meta name="theme-color" content="#7c6aff"/>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.snsmakeit.com/"/>
 
     <!-- Open Graph (카카오톡, 페이스북 등 SNS 공유) -->
     <meta property="og:type" content="website"/>
-    <meta property="og:url" content="https://snsmakeit.com/"/>
+    <meta property="og:url" content="https://www.snsmakeit.com/"/>
     <meta property="og:title" content="SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성"/>
-    <meta property="og:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어줍니다. 지금 바로 무료로 체험해보세요!"/>
-    <meta property="og:image" content="https://snsmakeit.com/og-image.png"/>
+    <meta property="og:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료 체험!"/>
+    <meta property="og:image" content="https://www.snsmakeit.com/og-image.png"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
+    <meta property="og:image:alt" content="SNS메이킷 - AI 콘텐츠 생성기"/>
     <meta property="og:site_name" content="SNS메이킷"/>
     <meta property="og:locale" content="ko_KR"/>
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:site" content="@snsmakeit"/>
     <meta name="twitter:title" content="SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성"/>
-    <meta name="twitter:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어줍니다."/>
-    <meta name="twitter:image" content="https://snsmakeit.com/og-image.png"/>
+    <meta name="twitter:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료!"/>
+    <meta name="twitter:image" content="https://www.snsmakeit.com/og-image.png"/>
 
-    <!-- 카카오톡 -->
-    <meta property="og:image:alt" content="SNS메이킷 - AI 콘텐츠 생성기"/>
+    <!-- Google Fonts (카드뉴스 캔버스 폰트) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- 배민·넥슨 무료 폰트 -->
+    <style>
+      @font-face { font-family:'BMDOHYEON'; src:url('https://cdn.jsdelivr.net/gh/webfontworld/baemin/BMDOHYEON.woff2') format('woff2'); font-display:swap; }
+      @font-face { font-family:'NeoDunggeunmo'; src:url('https://cdn.jsdelivr.net/gh/webfontworld/nexon/NeoDunggeunmo-Regular.woff2') format('woff2'); font-display:swap; }
+    </style>
+
+    <!-- 구조화 데이터 (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.snsmakeit.com/#website",
+          "url": "https://www.snsmakeit.com/",
+          "name": "SNS메이킷",
+          "description": "AI 기반 SNS 콘텐츠 자동 생성 서비스",
+          "inLanguage": "ko-KR",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://www.snsmakeit.com/",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://www.snsmakeit.com/#app",
+          "name": "SNS메이킷",
+          "url": "https://www.snsmakeit.com/",
+          "description": "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 생성해드립니다. 네이버 블로그, 인스타그램, 유튜브 대본, SNS 카드뉴스까지 원스톱으로 제작 가능합니다.",
+          "applicationCategory": "ProductivityApplication",
+          "operatingSystem": "Web",
+          "inLanguage": "ko-KR",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW",
+            "description": "비회원 5회 무료 체험"
+          },
+          "featureList": [
+            "AI 카드뉴스 생성",
+            "AI 상세페이지 생성",
+            "네이버 블로그 자동 생성",
+            "인스타그램 캡션 생성",
+            "유튜브 대본 작성",
+            "로고 생성",
+            "목업 이미지 생성"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://www.snsmakeit.com/#organization",
+          "name": "SNS메이킷",
+          "url": "https://www.snsmakeit.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.snsmakeit.com/favicon.svg"
+          },
+          "description": "AI 기반 SNS 콘텐츠 자동 생성 서비스"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

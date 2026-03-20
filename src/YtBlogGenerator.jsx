@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
-import { changePoints, getAiUsage, setAiUsage } from "./storage";
+import { useState, useRef, useEffect } from "react";
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 
-const API_KEY = "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";
+import { callAIStream } from "./aiClient";
 
 /* ── 유튜브 ID 추출 ── */
 function extractYtId(url) {
@@ -54,12 +55,12 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "크레딧이 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
             ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 크레딧이 필요해요.<br/>크레딧을 충전하거나 관리자에게 문의해주세요.</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -73,7 +74,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 크레딧 충전하기
+              💎 포인트 충전하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
@@ -87,7 +88,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
-export default function YtBlogGenerator({ theme, embedded, user }) {
+export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate}) {
   const isDark = theme === "dark" || (!theme && !!embedded);
 
   /* 색상 */
@@ -116,6 +117,7 @@ export default function YtBlogGenerator({ theme, embedded, user }) {
   const [extra,       setExtra]       = useState("");
   const [result,      setResult]      = useState("");
   const [generating,  setGenerating]  = useState(false);
+  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
   const [genErr,      setGenErr]      = useState("");
   const [copied,      setCopied]      = useState(false);
   const transcriptRef = useRef(null);
@@ -236,11 +238,15 @@ export default function YtBlogGenerator({ theme, embedded, user }) {
     const _aiPoints = user ? (user.points || 0) : 0;
     // 비회원: 5회 초과 시 차단 / 회원: 20회 초과 + 포인트 확실히 0일 때만 차단
     // 로그인 회원 차단 없음, 비회원만 5회 초과 차단
-    if (!user && _aiUsed >= _aiLimit) {
-      setGenErr(user ? "무료 횟수(20회)를 모두 사용했어요. 크레딧을 충전해주세요." : "비회원 무료 횟수(5회)를 모두 사용했어요. 회원가입 후 계속 이용하세요.");
-      return;
-    }
+    if (!user && guestLimitExceeded()) return;
+    if (!user) incrementGuestUsage();
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
+    // 포인트 즉시 차감
+    if (user && user.uid) {
+      changePoints(user.uid, -10, "유튜브 블로그 생성").then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      }).catch(()=>{});
+    }
     var _nfFull = "";
 
     const transcriptText = transcript.length > 0
@@ -306,50 +312,21 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
     };
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "x-api-key": API_KEY,
-          "anthropic-version":"2023-06-01",
-          "anthropic-dangerous-direct-browser-access":"true"
-        },
-        body: JSON.stringify({
-          model:"claude-haiku-4-5", max_tokens:4000, stream:true,
-          messages:[{role:"user", content: prompts[blogType]}]
-        }),
+      await callAIStream("claude-haiku-4-5", [{role:"user", content: prompts[blogType]}], 4000, (accumulated) => {
+        _nfFull = accumulated;
+        setResult(accumulated);
       });
-      if (!res.ok) throw new Error("API 오류");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf=""; let full="";
-      while (true) {
-        const {done,value} = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value,{stream:true});
-        const lines = buf.split("\n"); buf = lines.pop();
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const d = line.slice(6).trim();
-            if (d==="[DONE]") continue;
-            try {
-              const p = JSON.parse(d);
-              if (p.type==="content_block_delta"&&p.delta?.text) {
-                full += p.delta.text; _nfFull = full; setResult(full);
-              }
-            } catch {}
-          }
-        }
-      }
     } catch(e) { setGenErr("생성 중 오류가 발생했습니다."); }
     finally {
       setGenerating(false);
-      var _u = getAiUsage();
-      var _k = user ? ("member_" + (user.uid || "u")) : "guest";
-      var _nu = Object.assign({}, _u);
-      _nu[_k] = (_u[_k] || 0) + 1;
-      setAiUsage(_nu);
-      if (user && user.uid) { changePoints(user.uid, -10, "유튜브 블로그 생성").catch(function(e) {}); }
+      if (user) {
+        var _u = getAiUsage();
+        var _k = "member_" + (user.uid || "u");
+        var _nu = Object.assign({}, _u);
+        _nu[_k] = (_u[_k] || 0) + 1;
+        setAiUsage(_nu);
+      }
+      // 포인트 차감은 생성 시작 시점에 처리됨
       // 보관함 자동저장
       if (typeof _nfFull !== "undefined" && _nfFull && _nfFull.length > 50) {
         try {
@@ -590,7 +567,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
               }}>
               {generating
                 ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : "✍️ 블로그 글 작성하기"
+                : user ? <span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span> : <span>✦ 1회 생성해보기</span>
               }
             </button>
             {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
