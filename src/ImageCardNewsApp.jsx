@@ -770,12 +770,25 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12,color:muted,marginBottom:6 }}>
                 예상 차감: <b style={{ color:accentColor }}>{pageCount * 30}P</b>
-                {user && <span style={{ marginLeft:8,color:muted }}>· 보유 {(user.points||0).toLocaleString()} P</span>}
+                {user && <span style={{ marginLeft:8,color:(user.points||0)<pageCount*30?"#ef4444":muted }}>· 보유 {(user.points||0).toLocaleString()} P</span>}
               </div>
-              <button onClick={()=>{ setWizStep(4); generate(); }}
-                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
-                {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
-              </button>
+              {user && (user.points||0) < pageCount*30 ? (
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ padding:"10px 16px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.25)",color:"#f87171",fontSize:12,fontWeight:700,marginBottom:8 }}>
+                    포인트가 모자랍니다. 충전 후 이용해주세요.<br/>
+                    <span style={{ fontWeight:400,opacity:0.8 }}>필요 {pageCount*30}P · 보유 {user.points||0}P</span>
+                  </div>
+                  <button onClick={()=>{ window.location.hash="#pricing"; }}
+                    style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#f59e0b,#ef4444)",color:"#fff",fontSize:15,fontWeight:900 }}>
+                    💎 포인트 충전하기
+                  </button>
+                </div>
+              ) : (
+                <button onClick={()=>{ setWizStep(4); generate(); }}
+                  style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
+                  {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -804,20 +817,30 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                   <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
                   <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
                 </div>
-                {progress.total === 0 ? (
+                {progress.cur > 0 ? (
+                  /* 이미지 생성 단계 */
                   <>
-                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>준비 중...</div>
+                    <div style={{ fontSize:38,fontWeight:900,color:accentColor,lineHeight:1,marginBottom:6 }}>
+                      {progress.cur} <span style={{ fontSize:20,color:muted,fontWeight:700 }}>/ {progress.total}</span>
+                    </div>
+                    <div style={{ fontSize:15,fontWeight:800,color:text,marginBottom:4 }}>🎨 이미지 생성 중</div>
+                    <div style={{ fontSize:11,color:muted }}>{slides[progress.cur - 1]?.label || ""}</div>
+                  </>
+                ) : progress.total > 0 ? (
+                  /* 텍스트 구성 단계 */
+                  <>
+                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>📝 텍스트 구성 중...</div>
                     <div style={{ fontSize:12,color:muted,animation:"pulse 1.5s ease-in-out infinite" }}>
-                      {progress.msg || "AI가 슬라이드를 준비하고 있어요..."}
+                      {progress.msg || "AI가 슬라이드 내용을 작성하고 있어요..."}
                     </div>
                   </>
                 ) : (
+                  /* 초기 준비 단계 */
                   <>
-                    <div style={{ fontSize:36,fontWeight:900,color:accentColor,lineHeight:1,marginBottom:4 }}>
-                      {progress.cur} <span style={{ fontSize:20,color:muted,fontWeight:700 }}>/ {progress.total}</span>
+                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>준비 중...</div>
+                    <div style={{ fontSize:12,color:muted,animation:"pulse 1.5s ease-in-out infinite" }}>
+                      AI가 슬라이드를 준비하고 있어요...
                     </div>
-                    <div style={{ fontSize:15,fontWeight:800,color:text,marginBottom:4 }}>이미지 생성 중</div>
-                    <div style={{ fontSize:11,color:muted }}>{slides[progress.cur - 1]?.label || ""}</div>
                   </>
                 )}
               </div>

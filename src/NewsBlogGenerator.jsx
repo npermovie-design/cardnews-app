@@ -263,7 +263,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
 
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
-    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"핵심 요약",sns:"SNS 콘텐츠"}[blogType];
+    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"핵심 요약",sns:"SNS 콘텐츠",cafe:"네이버 카페"}[blogType];
 
     const articleSection = `
 [뉴스 기사 정보]
@@ -335,6 +335,26 @@ ${articleSection}
 ① 인스타그램 캡션 (해시태그 포함, 이모지 없이)
 ② 스레드 연속 포스팅 3~4개
 ③ X(트위터) 스타일 핵심 인사이트 3개`,
+
+      cafe: `다음 뉴스 기사를 바탕으로 네이버 카페 게시글을 작성해주세요.
+스타일: ${toneLabel}
+${extra ? `추가 요청: ${extra}` : ""}
+${articleSection}
+
+[네이버 카페 글쓰기 규칙]
+- 이모티콘, 이모지, 특수 기호(★, ●, ■, ▶, ♥ 등) 일절 사용 금지
+- 마크다운 기호(##, ###, **, __, ~~, >, -, *) 사용 금지
+- 카페 회원들이 쉽게 읽을 수 있는 짧고 핵심적인 글 (800자 내외)
+- 지나치게 길지 않게, 핵심만 전달
+- 순수 한국어 문장으로만 작성
+
+작성 형식:
+- 제목 (카페 게시글용, 한 줄, 20자 내외)
+- 빈 줄
+- 도입 한두 문장 (이 기사의 핵심 내용)
+- 본론 (3~5개 포인트, 번호 목록 허용)
+- 마무리 한 문장 (의견 또는 시사점)
+- 출처: ${newsInfo?.siteName || ""} ${url}`,
     };
 
     await new Promise(r=>setTimeout(r,600)); setLoadStep(2);
@@ -370,6 +390,7 @@ ${articleSection}
 
   const BLOG_TYPES = [
     {id:"naver",   icon:"📝", label:"네이버 블로그",  desc:"SEO 최적화 정보성 글"},
+    {id:"cafe",    icon:"☕", label:"네이버 카페",    desc:"짧고 핵심적인 카페 글"},
     {id:"tistory", icon:"🟠", label:"티스토리",       desc:"HTML 구조 블로그"},
     {id:"summary", icon:"📋", label:"핵심 요약",      desc:"핵심 내용 정리"},
     {id:"sns",     icon:"📱", label:"SNS 3종",        desc:"인스타·스레드·X"},

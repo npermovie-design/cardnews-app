@@ -94,14 +94,21 @@ export default function ShortformEditor({isDark}){
     if(!id){setYtInfo({id:"",title:"링크를 확인해주세요",error:true});return;}
     setYtLoading(true);
     try{
-      const r=await fetch(`/api/youtube-info?url=${encodeURIComponent(url)}`);
-      if(r.ok){
-        const d=await r.json();
-        setYtInfo({id,title:d.title,thumbnail:d.thumbnail,duration:d.duration,ok:true});
-        if(d.duration){setTotalDur(d.duration);setRangeEnd(d.duration);}
-        setYtLoading(false);return;
+      // yt-dlp Python 함수 우선 시도 (봇 감지 우회율 높음)
+      const endpoints=["/api/yt-dl","/api/youtube-info"];
+      for(const ep of endpoints){
+        try{
+          const r=await fetch(`${ep}?url=${encodeURIComponent(url)}`);
+          if(r.ok){
+            const d=await r.json();
+            if(!d.error){
+              setYtInfo({id,title:d.title,thumbnail:d.thumbnail,duration:d.duration,streamUrl:d.streamUrl,ok:true});
+              if(d.duration){setTotalDur(d.duration);setRangeEnd(d.duration);}
+              setYtLoading(false);return;
+            }
+          }
+        }catch{}
       }
-    }catch{}
     // fallback: oEmbed (제목·썸네일만, 길이 모름)
     try{
       const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
