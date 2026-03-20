@@ -76,6 +76,9 @@ export default function ShortformEditor({isDark}){
   const [rec,setRec]           = useState(false);
   const [recPct,setRecPct]     = useState(0);
   const [recMsg,setRecMsg]     = useState("");
+  const [autoMode,setAutoMode] = useState(false);   // 전체 자동 편집 중
+  const [autoIdx,setAutoIdx]   = useState(0);       // 자동 편집 진행 클립 번호
+  const cachedSrcUrl           = useRef(null);       // 다운로드한 영상 캐시 URL
   const [err,setErr]           = useState("");
   const [copied,setCopied]     = useState(null);
   const [archive,setArchive]   = useState(()=>{try{return JSON.parse(localStorage.getItem("snsmakeit_shorts_v3")||"[]");}catch{return[];}});
@@ -121,7 +124,8 @@ export default function ShortformEditor({isDark}){
   };
 
   // ── 핵심: Canvas + MediaRecorder로 영상 추출 (SharedArrayBuffer 불필요)
-  const extract=async(clip,doDownload=false)=>{
+  // overrideSrc: 이미 다운로드된 blob URL (autoExtractAll에서 재사용)
+  const extract=async(clip,doDownload=false,overrideSrc=null)=>{
     if(rec)return;
     const startSec=parseTimeToSec(clip.startTime);
     const endSec  =parseTimeToSec(clip.endTime);
@@ -129,17 +133,20 @@ export default function ShortformEditor({isDark}){
     setRec(true);setRecPct(0);setRecMsg("영상 준비 중...");
 
     try{
-      // ① 소스 비디오 준비
-      let srcUrl;
-      if(inputMode==="file"&&file){
-        srcUrl=fileObjUrl.current||URL.createObjectURL(file);
-      } else if(inputMode==="youtube"){
-        setRecMsg("유튜브 영상 다운로드 중...");
-        const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
-        if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 (${r.status})`);}
-        const blob=await r.blob();
-        srcUrl=URL.createObjectURL(blob);
-      } else throw new Error("소스 없음");
+      // ① 소스 비디오 준비 (캐시 우선)
+      let srcUrl = overrideSrc;
+      if(!srcUrl){
+        if(inputMode==="file"&&file){
+          srcUrl=fileObjUrl.current||URL.createObjectURL(file);
+        } else if(inputMode==="youtube"){
+          setRecMsg("유튜브 영상 다운로드 중...(처음 1회만 다운로드)");
+          const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
+          if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 (${r.status})`);}
+          const blob=await r.blob();
+          srcUrl=URL.createObjectURL(blob);
+          cachedSrcUrl.current=srcUrl; // 캐시에 저장
+        } else throw new Error("소스 없음");
+      }
 
       setRecPct(10);setRecMsg("비디오 로드 중...");
 
@@ -278,7 +285,52 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
       await new Promise(r=>setTimeout(r,300));
       setStep(4);setTab("clips");
       setTimeout(saveAll,500);
+      // 자동 편집 바로 시작 (YouTube 링크인 경우 확인 후 시작)
+      if(all.length>0){
+        setTimeout(()=>{
+          if(window.confirm(`✂️ 숏폼 ${all.length}개가 준비됐어요!\n\n지금 바로 전체 자동 편집·다운로드를 시작할까요?\n(영상을 1회 다운로드 후 모든 클립을 자동으로 추출합니다)`)){
+            autoExtractAll(all);
+          }
+        },600);
+      }
     }catch(e){setErr("생성 실패: "+e.message);setStep(2);}
+  };
+
+  // ── 전체 자동 편집: 영상 1회 다운로드 → 모든 클립 순차 추출 + 다운로드
+  const autoExtractAll=async(clipList)=>{
+    if(rec||autoMode)return;
+    setAutoMode(true);setAutoIdx(0);setErr("");
+
+    try{
+      // 1) 영상 1회 다운로드 (YouTube만)
+      let srcUrl=cachedSrcUrl.current;
+      if(!srcUrl){
+        if(inputMode==="youtube"){
+          setRecMsg("유튜브 영상 다운로드 중... (1회만)");setRec(true);setRecPct(5);
+          const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
+          if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 ${r.status}`);}
+          const blob=await r.blob();
+          srcUrl=URL.createObjectURL(blob);
+          cachedSrcUrl.current=srcUrl;
+          setRec(false);setRecPct(0);setRecMsg("");
+        } else if(inputMode==="file"&&file){
+          srcUrl=fileObjUrl.current||URL.createObjectURL(file);
+          cachedSrcUrl.current=srcUrl;
+        } else throw new Error("소스 없음");
+      }
+
+      // 2) 각 클립 순차 추출 + 자동 다운로드
+      for(let i=0;i<clipList.length;i++){
+        const clip=clipList[i];
+        setAutoIdx(i+1);
+        await extract(clip,true,srcUrl); // doDownload=true → 자동 다운로드
+        await new Promise(r=>setTimeout(r,500)); // 브라우저 숨 고르기
+      }
+    }catch(e){
+      setErr("자동 편집 실패: "+e.message);
+    }finally{
+      setAutoMode(false);setAutoIdx(0);setRec(false);setRecPct(0);setRecMsg("");
+    }
   };
 
   const cur=clips[selIdx]||{};
@@ -525,7 +577,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           ))}
         </div>}
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
     </div>
   );
 
@@ -545,7 +597,12 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         ))}
         <div style={{flex:1}}/>
         {archMsg&&<div style={{fontSize:10,color:"#4ade80",padding:"0 8px",fontWeight:700}}>{archMsg}</div>}
-        <button onClick={saveAll} style={{margin:"0 6px",padding:"4px 10px",borderRadius:7,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.1)`,color:ACC,fontSize:10,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>🗂 전체저장</button>
+        {autoMode&&<div style={{fontSize:10,color:ACC,padding:"0 6px",fontWeight:700,animation:"pulse 1s ease-in-out infinite"}}>⚡ 자동편집 {autoIdx}/{clips.length}</div>}
+        <button onClick={()=>autoExtractAll(clips)} disabled={autoMode||rec}
+          style={{margin:"0 4px",padding:"4px 10px",borderRadius:7,border:`1px solid ${ACC}`,background:`rgba(168,85,247,0.15)`,color:ACC,fontSize:10,cursor:autoMode||rec?"not-allowed":"pointer",fontWeight:700,whiteSpace:"nowrap",opacity:autoMode||rec?0.5:1}}>
+          ⚡ 전체자동편집
+        </button>
+        <button onClick={saveAll} style={{margin:"0 4px",padding:"4px 10px",borderRadius:7,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.1)`,color:ACC,fontSize:10,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>🗂 전체저장</button>
         <div style={{padding:"0 8px",fontSize:10,color:muted,whiteSpace:"nowrap"}}>{clips.length}개</div>
       </div>
 
