@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
@@ -125,13 +125,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Group label="SNS 글쓰기" icon="✍️" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
           <Item id="blog_naver_intro"   label="네이버 블로그"   indent />
+          <Item id="blog_cafe"          label="네이버 카페"     indent />
           <Item id="blog_tistory_intro" label="티스토리"        indent />
           <Item id="blog_insta_intro"   label="인스타그램 캡션" indent />
           <Item id="blog_youtube_intro" label="유튜브 대본"     indent />
           <Item id="blog_thread_intro"  label="스레드"          indent />
           <Item id="blog_yt_blog_intro" label="유튜브로 글쓰기" indent />
           <Item id="blog_news_intro"    label="뉴스로 글쓰기"   indent />
-          <Item id="blog_cafe"          label="네이버 카페"     indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
@@ -332,7 +332,7 @@ const BLOG_MAP = {
   blog_youtube: { type: "blog_youtube", label: "유튜브 대본 & 설명 생성" },
   blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
   blog_yt_blog: { type: "blog_yt_blog", label: "유튜브로 글쓰기" },
-  blog_cafe:    { type: "cafe",         label: "네이버 카페 글쓰기" },
+  blog_cafe:    { type: "blog_cafe",    label: "네이버 카페 글쓰기" },
 };
 
 
@@ -627,102 +627,254 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   );
 }
 
-/* ── 모델 생성기 ─────────────────────────────────────────── */
-function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
-  const [gender, setGender] = useState("female"); // female|male|both
-  const [prompt, setPrompt] = useState("");
-  const [refImg, setRefImg] = useState(null); // { b64, mime }
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const ACC = "#6366f1";
-  const bg = isDark ? "transparent" : "#f4f4f8";
-  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
-  const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+/* ── 공통 스타일 헬퍼 ─────────────────────────────────────────── */
+function useGenColors(isDark) {
+  return {
+    ACC: "#6366f1",
+    bg: isDark ? "transparent" : "#f4f4f8",
+    card: isDark ? "rgba(255,255,255,0.05)" : "#fff",
+    bdr: isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0",
+    text: isDark ? "#fff" : "#1a1a2e",
+    muted: isDark ? "rgba(255,255,255,0.45)" : "#888",
+    ibg: isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc",
+  };
+}
 
-  const handleRef = e => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = ev => setRefImg({ b64: ev.target.result.split(",")[1], mime: f.type });
-    reader.readAsDataURL(f);
+function StepBar({ step, total, labels, ACC }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:24 }}>
+      {labels.map((l,i) => (
+        <div key={i} style={{ display:"flex", alignItems:"center", flex: i < labels.length-1 ? 1 : "none" }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+            <div style={{
+              width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:12, fontWeight:900,
+              background: i+1 <= step ? ACC : "rgba(128,128,128,0.15)",
+              color: i+1 <= step ? "#fff" : "rgba(128,128,128,0.5)",
+              border: i+1 === step ? `2px solid ${ACC}` : "2px solid transparent",
+              transition:"all 0.3s",
+            }}>{i+1 < step ? "✓" : i+1}</div>
+            <div style={{ fontSize:10, color: i+1 <= step ? ACC : "rgba(128,128,128,0.5)", fontWeight: i+1===step?700:400, whiteSpace:"nowrap" }}>{l}</div>
+          </div>
+          {i < labels.length-1 && (
+            <div style={{ flex:1, height:2, background: i+1 < step ? ACC : "rgba(128,128,128,0.15)", margin:"0 4px", marginBottom:16, transition:"background 0.3s" }} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function GenLoading({ emoji, title, subtitle, ACC, isDark }) {
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 20px", textAlign:"center" }}>
+      <div style={{ fontSize:80, marginBottom:20, animation:"ai-float 2s ease-in-out infinite" }}>{emoji}</div>
+      <div style={{ fontSize:22, fontWeight:900, color:ACC, marginBottom:8 }}>{title}</div>
+      <div style={{ width:280, height:6, borderRadius:3, background:"rgba(128,128,128,0.15)", overflow:"hidden", marginBottom:16 }}>
+        <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${ACC},#8b5cf6)`, animation:"ai-progress 4s ease-out forwards" }} />
+      </div>
+      <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>{subtitle}</div>
+      <div style={{ marginTop:20, display:"flex", gap:8 }}>
+        {["레이아웃 구성","스타일 적용","디테일 추가"].map((t,i)=>(
+          <div key={i} style={{ padding:"4px 10px", borderRadius:20, fontSize:11, fontWeight:600,
+            background:`${ACC}18`, color:ACC, border:`1px solid ${ACC}30`,
+            animation:`ai-fadein 0.5s ease ${i*0.3}s both` }}>{t}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SelectGroup({ label, options, value, onChange, cols=3, ACC, bdr, muted, text }) {
+  return (
+    <div style={{ marginBottom:18 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>{label}</div>
+      <div style={{ display:"grid", gridTemplateColumns:`repeat(${cols},1fr)`, gap:6 }}>
+        {options.map(o => (
+          <button key={o.v||o} onClick={() => onChange(o.v||o)} style={{
+            padding:"9px 8px", borderRadius:10, border:`1.5px solid ${value===(o.v||o)?ACC:bdr}`,
+            background: value===(o.v||o)?`${ACC}18`:"transparent",
+            color: value===(o.v||o)?ACC:muted, fontSize:12, fontWeight:700, cursor:"pointer",
+            textAlign:"center", transition:"all 0.15s",
+          }}>{o.l||o}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── 모델 생성기 ─────────────────────────────────────────── */
+function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuFn }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted, ibg } = C;
+  const [step, setStep] = useState(1);
+  const [gender, setGender] = useState("female");
+  const [age, setAge] = useState("20대");
+  const [nationality, setNationality] = useState("한국인");
+  const [outfit, setOutfit] = useState("캐주얼");
+  const [bgType, setBgType] = useState("화이트 스튜디오");
+  const [pose, setPose] = useState("정면");
+  const [refImg, setRefImg] = useState(null);
+  const [useCustom, setUseCustom] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [result, setResult] = useState(null);
+  const [err, setErr] = useState("");
+
+  const buildPrompt = () => {
+    if (useCustom && customPrompt.trim()) return customPrompt.trim();
+    const gMap = { female:"beautiful woman", male:"handsome man", both:"couple man and woman" };
+    const nMap = { "한국인":"Korean", "일본인":"Japanese", "중국인":"Chinese", "서양인":"Caucasian Western", "흑인":"Black", "다양한":"multiethnic" };
+    const oMap = { "캐주얼":"casual everyday outfit", "비즈니스":"business formal suit", "스트릿":"streetwear", "스포츠":"sportswear athletic wear", "드레스":"elegant dress", "한복":"traditional Korean hanbok", "코트":"stylish winter coat", "수영복":"swimwear beachwear" };
+    const bMap = { "화이트 스튜디오":"clean white studio background", "카페 인테리어":"cozy cafe interior background", "도시 거리":"modern city street background", "자연/공원":"natural park outdoor background", "해변":"beautiful beach background" };
+    const pMap = { "정면":"front facing camera full body", "측면":"side profile", "앉기":"sitting naturally", "걷기":"walking in motion", "자연스러운":"natural candid relaxed pose" };
+    return `Professional commercial model photography, ${nMap[nationality]} ${age} ${gMap[gender]}, wearing ${oMap[outfit]}, ${bMap[bgType]}, ${pMap[pose]}, professional studio lighting, photorealistic, high resolution 4K, commercial quality fashion photography, sharp focus`;
   };
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
-    setLoading(true); setErr(""); setResults([]);
-    const genderLabel = gender === "female" ? "여자 모델" : gender === "male" ? "남자 모델" : "남녀 커플 모델";
-    const fullPrompt = `Professional fashion model photo, ${genderLabel}, ${prompt || "modern casual style"}, full body or half body shot, studio lighting, white or minimal background, commercial quality, realistic, high resolution`;
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); setStep(3); return; }
+    setStep(4); setErr("");
     try {
-      const body = { prompt: fullPrompt };
+      const body = { prompt: buildPrompt() };
       if (refImg) { body.productImageB64 = refImg.b64; body.productImageMime = refImg.mime; }
       const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      if (data.imageBase64) setResults([data.imageBase64]);
+      if (data.imageBase64) { setResult(`data:image/png;base64,${data.imageBase64}`); setStep(5); }
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
-    } catch(e) { setErr(e.message || "생성 실패"); }
-    setLoading(false);
+    } catch(e) { setErr(e.message||"생성 실패. 다시 시도해주세요."); setStep(3); }
   };
+
+  const readRef = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setRefImg({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
+
+  const W = { maxWidth:620, margin:"0 auto" };
+
+  if (step === 4) return (
+    <div style={{ flex:1, overflow:"hidden", background:bg }}>
+      <GenLoading emoji="🧍" title="모델 이미지 생성 중..." subtitle={"AI가 모델 이미지를 생성하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+    </div>
+  );
+
+  if (step === 5 && result) return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={W}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+          <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
+          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>생성 완료!</span>
+          <span style={{ fontSize:13, color:muted }}>모델 이미지가 생성되었어요</span>
+        </div>
+        <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:20, animation:"ai-fadein 0.5s ease" }}>
+          <img src={result} alt="generated model" style={{ width:"100%", display:"block" }} />
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <a href={result} download="model.png" style={{
+            flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`,
+            color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none",
+          }}>⬇ PNG 다운로드</a>
+          <button onClick={() => { setResult(null); setStep(1); }} style={{
+            flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`,
+            background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer",
+          }}>🔄 다시 생성하기</button>
+        </div>
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
-      <div style={{ maxWidth:640, margin:"0 auto" }}>
-        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🧍 모델 생성</div>
-        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>AI로 광고용 모델 이미지를 생성해요. 참고 이미지의 분위기를 반영할 수 있어요.</div>
-
-        {/* 성별 선택 */}
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>모델 성별</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {[{v:"female",l:"👩 여자 모델"},{v:"male",l:"👨 남자 모델"},{v:"both",l:"👫 남녀 함께"}].map(g=>(
-              <button key={g.v} onClick={()=>setGender(g.v)} style={{
-                flex:1, padding:"10px 0", borderRadius:10, border:`1.5px solid ${gender===g.v?ACC:bdr}`,
-                background: gender===g.v?`${ACC}18`:"transparent", color: gender===g.v?ACC:muted,
-                fontSize:13, fontWeight:700, cursor:"pointer"
-              }}>{g.l}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* 스타일 프롬프트 */}
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>스타일 설명 (선택)</div>
-          <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="예) 캐주얼 스타일, 카페 배경, 자연광, 미니멀한 분위기..."
-            style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card, color:text, fontSize:13, outline:"none", resize:"vertical", minHeight:80 }} />
-        </div>
-
-        {/* 참고 이미지 */}
-        <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>참고 이미지 (선택) – 분위기·스타일 반영</div>
-          <label style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:10, border:`1.5px dashed ${bdr}`, cursor:"pointer", background:card }}>
-            <span style={{ fontSize:20 }}>{refImg?"✅":"📎"}</span>
-            <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?"참고 이미지 선택됨":"이미지 파일 선택"}</span>
-            <input type="file" accept="image/*" onChange={handleRef} style={{ display:"none" }} />
-          </label>
-        </div>
-
+      <div style={W}>
+        <StepBar step={step} total={3} labels={["기본 설정","스타일 설정","참고·생성"]} ACC={ACC} />
         {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
-        <button onClick={generate} disabled={loading} style={{
-          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:loading?"wait":"pointer",
-          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
-          boxShadow:`0 6px 20px ${ACC}40`, opacity:loading?0.7:1, marginBottom:24
-        }}>{loading?"🎨 모델 생성 중...":"🧍 모델 이미지 생성하기 (10P)"}</button>
+        {step === 1 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>기본 설정</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>모델의 성별, 나이대, 국적을 선택해요.</div>
+            <SelectGroup label="성별" value={gender} onChange={setGender} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"female",l:"👩 여자"},{v:"male",l:"👨 남자"},{v:"both",l:"👫 커플"}]} />
+            <SelectGroup label="나이대" value={age} onChange={setAge} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"10대",l:"10대"},{v:"20대",l:"20대"},{v:"30대",l:"30대"},{v:"40대",l:"40대"},{v:"50대",l:"50대+"}]} />
+            <SelectGroup label="국적 / 인종" value={nationality} onChange={setNationality} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"한국인",l:"🇰🇷 한국인"},{v:"일본인",l:"🇯🇵 일본인"},{v:"중국인",l:"🇨🇳 중국인"},{v:"서양인",l:"🌍 서양인"},{v:"흑인",l:"✊ 흑인"},{v:"다양한",l:"🌐 다양한"}]} />
+            <button onClick={() => setStep(2)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>
+              다음 → 스타일 설정
+            </button>
+          </div>
+        )}
 
-        {results.length > 0 && (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
-            {results.map((b64,i)=>(
-              <div key={i} style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}` }}>
-                <img src={`data:image/png;base64,${b64}`} alt="model" style={{ width:"100%", display:"block" }} />
-                <div style={{ padding:"8px 10px", textAlign:"right" }}>
-                  <a href={`data:image/png;base64,${b64}`} download={`model_${i+1}.png`}
-                    style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 다운로드</a>
-                </div>
+        {step === 2 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>스타일 설정</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>의상, 배경, 포즈를 선택해요.</div>
+            <SelectGroup label="의상 / 스타일" value={outfit} onChange={setOutfit} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"캐주얼",l:"👕 캐주얼"},{v:"비즈니스",l:"👔 비즈니스"},{v:"스트릿",l:"🧢 스트릿"},{v:"스포츠",l:"🏃 스포츠"},{v:"드레스",l:"👗 드레스"},{v:"한복",l:"🎎 한복"},{v:"코트",l:"🧥 코트"},{v:"수영복",l:"🩱 수영복"}]} />
+            <SelectGroup label="배경" value={bgType} onChange={setBgType} cols={2} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"화이트 스튜디오",l:"⬜ 화이트 스튜디오"},{v:"카페 인테리어",l:"☕ 카페"},{v:"도시 거리",l:"🏙 도시 거리"},{v:"자연/공원",l:"🌿 자연/공원"},{v:"해변",l:"🏖 해변"}]} />
+            <SelectGroup label="포즈" value={pose} onChange={setPose} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"정면",l:"🧍 정면"},{v:"측면",l:"🚶 측면"},{v:"앉기",l:"🪑 앉기"},{v:"걷기",l:"🚶 걷기"},{v:"자연스러운",l:"😊 자연스러운"}]} />
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
+              <button onClick={() => setStep(3)} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>다음 → 참고 이미지</button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>참고 이미지 & 생성</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>참고 이미지를 추가하거나 직접 프롬프트를 입력할 수 있어요.</div>
+
+            {/* 직접 프롬프트 토글 */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card }}>
+              <button onClick={() => setUseCustom(p=>!p)} style={{ width:40, height:22, borderRadius:11, border:"none", cursor:"pointer", background: useCustom?ACC:"rgba(128,128,128,0.2)", transition:"background 0.2s", flexShrink:0, position:"relative" }}>
+                <div style={{ position:"absolute", top:2, left: useCustom?20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left 0.2s" }} />
+              </button>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>직접 프롬프트 입력</div>
+                <div style={{ fontSize:11, color:muted }}>설정 대신 영문 프롬프트를 직접 작성해요</div>
               </div>
-            ))}
+            </div>
+
+            {useCustom ? (
+              <div style={{ marginBottom:16 }}>
+                <textarea value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)}
+                  placeholder="예) Korean 20s beautiful woman, casual white t-shirt, cafe background, natural smile, full body shot, professional photography..."
+                  style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:ibg, color:text, fontSize:13, outline:"none", resize:"vertical", minHeight:100, fontFamily:"inherit" }} />
+              </div>
+            ) : (
+              <div style={{ padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card, marginBottom:16 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>생성될 프롬프트 미리보기</div>
+                <div style={{ fontSize:12, color:text, lineHeight:1.6 }}>{buildPrompt()}</div>
+              </div>
+            )}
+
+            {/* 참고 이미지 */}
+            <div style={{ marginBottom:20 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>참고 이미지 (선택) – 분위기·스타일 반영</div>
+              <label style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:10, border:`1.5px dashed ${refImg?ACC:bdr}`, cursor:"pointer", background:card }}>
+                <span style={{ fontSize:20 }}>{refImg?"✅":"📎"}</span>
+                <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?"참고 이미지 선택됨 (클릭하여 변경)":"이미지 파일 선택하기"}</span>
+                <input type="file" accept="image/*" onChange={readRef} style={{ display:"none" }} />
+              </label>
+              {refImg && <div style={{ marginTop:8, borderRadius:8, overflow:"hidden", maxHeight:120 }}><img src={refImg.url} alt="" style={{ width:"100%", objectFit:"cover" }} /></div>}
+            </div>
+
+            {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setStep(2)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
+              <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
+                🧍 모델 이미지 생성 (10P)
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -732,99 +884,148 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
 /* ── 얼굴·의상 교체 ─────────────────────────────────────── */
 function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted } = C;
+  const [step, setStep] = useState(1);
   const [srcImg, setSrcImg] = useState(null);
   const [refImg, setRefImg] = useState(null);
+  const [swapMode, setSwapMode] = useState("both"); // face|outfit|both
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [sliderPos, setSliderPos] = useState(50);
-  const ACC = "#6366f1";
-  const bg = isDark ? "transparent" : "#f4f4f8";
-  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
-  const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const sliderRef = useRef(null);
 
-  const readFile = (setter) => (e) => {
+  const readFile = setter => e => {
     const f = e.target.files?.[0]; if (!f) return;
     const reader = new FileReader();
     reader.onload = ev => setter({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
     reader.readAsDataURL(f);
   };
 
+  const startSlide = (clientX) => {
+    const el = sliderRef.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const move = ev => {
+      const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      setSliderPos(Math.min(100, Math.max(0, ((x - rect.left) / rect.width) * 100)));
+    };
+    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.removeEventListener("touchmove", move); document.removeEventListener("touchend", up); };
+    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);
+    document.addEventListener("touchmove", move, {passive:true}); document.addEventListener("touchend", up);
+    move({ clientX });
+  };
+
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (!srcImg || !refImg) { setErr("원본 이미지와 참고 이미지를 모두 업로드해주세요."); return; }
-    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다."); return; }
-    setLoading(true); setErr(""); setResult(null);
+    if (!srcImg || !refImg) { setErr("두 이미지를 모두 업로드해주세요."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    setStep(3); setErr("");
+    const modeMap = { face:"face only", outfit:"outfit and clothing only", both:"face and outfit" };
+    const prompt = `Swap the ${modeMap[swapMode]} from the reference photo onto the person in the main photo. Preserve the original pose, background, and lighting. Make the result photorealistic, seamless, and natural-looking with high quality.`;
     try {
-      const prompt = "Swap the face and outfit from the reference photo onto the person in the main photo. Keep the background and pose. Make it photorealistic and seamless.";
       const res = await fetch("/api/generate-image", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime, refImageB64: refImg.b64, refImageMime: refImg.mime })
+        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      if (data.imageBase64) setResult(`data:image/png;base64,${data.imageBase64}`);
+      if (data.imageBase64) { setResult(`data:image/png;base64,${data.imageBase64}`); setSliderPos(50); setStep(4); }
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
-    } catch(e) { setErr(e.message || "생성 실패"); }
-    setLoading(false);
+    } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
   };
+
+  const W = { maxWidth:640, margin:"0 auto" };
+
+  if (step === 3) return (
+    <div style={{ flex:1, overflow:"hidden", background:bg }}>
+      <GenLoading emoji="🔄" title="얼굴·의상 교체 중..." subtitle={"AI가 이미지를 분석하고 교체하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+    </div>
+  );
+
+  if (step === 4 && result) return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={W}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+          <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
+          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>교체 완료!</span>
+          <span style={{ fontSize:13, color:muted }}>슬라이더로 전후를 비교해보세요</span>
+        </div>
+
+        {/* 비교 슬라이더 */}
+        <div ref={sliderRef}
+          style={{ position:"relative", borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, cursor:"col-resize", animation:"ai-fadein 0.5s ease", userSelect:"none", touchAction:"none" }}
+          onMouseDown={e => startSlide(e.clientX)}
+          onTouchStart={e => startSlide(e.touches[0].clientX)}>
+          {/* Before (원본) */}
+          {srcImg && <img src={srcImg.url} alt="before" style={{ width:"100%", display:"block" }} />}
+          {/* After (결과) */}
+          <div style={{ position:"absolute", inset:0, overflow:"hidden", clipPath:`inset(0 ${100-sliderPos}% 0 0)` }}>
+            <img src={result} alt="after" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+          </div>
+          {/* 슬라이더 핸들 */}
+          <div style={{ position:"absolute", top:0, bottom:0, left:`${sliderPos}%`, transform:"translateX(-50%)", width:3, background:"#fff", boxShadow:"0 0 8px rgba(0,0,0,0.4)" }}>
+            <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:36, height:36, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 12px rgba(0,0,0,0.3)", fontSize:14 }}>◀▶</div>
+          </div>
+          {/* 라벨 */}
+          <div style={{ position:"absolute", top:10, left:10, padding:"3px 8px", borderRadius:6, background:"rgba(0,0,0,0.55)", color:"#fff", fontSize:11, fontWeight:700 }}>원본</div>
+          <div style={{ position:"absolute", top:10, right:10, padding:"3px 8px", borderRadius:6, background:`${ACC}cc`, color:"#fff", fontSize:11, fontWeight:700 }}>결과</div>
+        </div>
+
+        <div style={{ display:"flex", gap:10, marginTop:16 }}>
+          <a href={result} download="faceswap.png" style={{ flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none" }}>⬇ 결과 다운로드</a>
+          <button onClick={() => { setResult(null); setStep(1); setSrcImg(null); setRefImg(null); }} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>🔄 다시 시작</button>
+        </div>
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
-      <div style={{ maxWidth:700, margin:"0 auto" }}>
-        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔄 얼굴·의상 교체</div>
-        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>두 장의 이미지를 업로드하면 AI가 얼굴과 의상을 교체해줘요. 슬라이더로 비교해보세요.</div>
+      <div style={W}>
+        <StepBar step={step} total={2} labels={["원본 업로드","참고 + 생성"]} ACC={ACC} />
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
-          {[{label:"원본 이미지", setter:setSrcImg, img:srcImg, emoji:"👤"},{label:"참고 이미지 (교체할 스타일)", setter:setRefImg, img:refImg, emoji:"🎭"}].map(({label,setter,img,emoji})=>(
-            <label key={label} style={{ display:"block", cursor:"pointer" }}>
-              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:6 }}>{label}</div>
-              <div style={{ aspectRatio:"3/4", borderRadius:10, border:`1.5px dashed ${img?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
-                {img ? <img src={img.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <><span style={{ fontSize:32 }}>{emoji}</span><span style={{ fontSize:12, color:muted }}>클릭하여 업로드</span></>}
+        {step === 1 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>원본 이미지 업로드</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>교체 기반이 될 인물 사진을 업로드해요.</div>
+            <label style={{ display:"block", cursor:"pointer", marginBottom:20 }}>
+              <div style={{ aspectRatio:"3/4", maxHeight:360, borderRadius:14, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10 }}>
+                {srcImg
+                  ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  : <><span style={{ fontSize:48 }}>👤</span><span style={{ fontSize:14, color:muted }}>원본 인물 사진 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
               </div>
-              <input type="file" accept="image/*" onChange={readFile(setter)} style={{ display:"none" }} />
+              <input type="file" accept="image/*" onChange={readFile(setSrcImg)} style={{ display:"none" }} />
             </label>
-          ))}
-        </div>
+            <button onClick={() => { if(!srcImg){setErr("이미지를 업로드해주세요.");return;} setErr(""); setStep(2); }} style={{
+              width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
+              background: srcImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
+              color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6,
+            }}>다음 → 참고 이미지 업로드</button>
+          </div>
+        )}
 
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:12 }}>{err}</div>}
-
-        <button onClick={generate} disabled={loading||!srcImg||!refImg} style={{
-          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:(loading||!srcImg||!refImg)?"not-allowed":"pointer",
-          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
-          boxShadow:`0 6px 20px ${ACC}40`, opacity:(loading||!srcImg||!refImg)?0.6:1, marginBottom:24
-        }}>{loading?"🔄 교체 중...":"🔄 얼굴·의상 교체하기 (10P)"}</button>
-
-        {(srcImg || result) && (
-          <div style={{ marginTop:8 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>비교 보기 (슬라이더로 조절)</div>
-            <div style={{ position:"relative", borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}`, userSelect:"none" }}>
-              {srcImg && <img src={srcImg.url} alt="before" style={{ width:"100%", display:"block" }} />}
-              {result && (
-                <div style={{ position:"absolute", inset:0, overflow:"hidden", clipPath:`inset(0 ${100-sliderPos}% 0 0)` }}>
-                  <img src={result} alt="after" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                </div>
-              )}
-              {result && (
-                <div style={{ position:"absolute", top:0, bottom:0, left:`${sliderPos}%`, width:3, background:"#fff", transform:"translateX(-50%)", cursor:"ew-resize" }}
-                  onMouseDown={e=>{
-                    const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                    const move = ev => setSliderPos(Math.min(100,Math.max(0,((ev.clientX-rect.left)/rect.width)*100)));
-                    const up = () => { document.removeEventListener("mousemove",move); document.removeEventListener("mouseup",up); };
-                    document.addEventListener("mousemove",move); document.addEventListener("mouseup",up);
-                  }}>
-                  <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:28, height:28, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", fontSize:12 }}>◀▶</div>
-                </div>
-              )}
-              {!result && srcImg && <div style={{ position:"absolute", top:8, left:8, padding:"4px 8px", borderRadius:6, background:"rgba(0,0,0,0.5)", color:"#fff", fontSize:11 }}>원본</div>}
-            </div>
-            {result && (
-              <div style={{ textAlign:"right", marginTop:8 }}>
-                <a href={result} download="faceswap.png" style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 결과 다운로드</a>
+        {step === 2 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>참고 이미지 & 교체 설정</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>스타일을 가져올 참고 이미지를 업로드해요.</div>
+            <label style={{ display:"block", cursor:"pointer", marginBottom:16 }}>
+              <div style={{ aspectRatio:"3/4", maxHeight:280, borderRadius:14, border:`2px dashed ${refImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10 }}>
+                {refImg
+                  ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  : <><span style={{ fontSize:48 }}>🎭</span><span style={{ fontSize:14, color:muted }}>교체할 스타일 참고 사진</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
               </div>
-            )}
+              <input type="file" accept="image/*" onChange={readFile(setRefImg)} style={{ display:"none" }} />
+            </label>
+            <SelectGroup label="교체 범위" value={swapMode} onChange={setSwapMode} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"face",l:"😊 얼굴만"},{v:"outfit",l:"👗 의상만"},{v:"both",l:"🔄 얼굴+의상"}]} />
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
+              <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
+                🔄 교체 생성하기 (10P)
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -834,18 +1035,15 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
 /* ── 좌우 여백 채우기 (Outpainting) ─────────────────────── */
 function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted } = C;
+  const [step, setStep] = useState(1);
   const [srcImg, setSrcImg] = useState(null);
-  const [direction, setDirection] = useState("both"); // left|right|both
+  const [direction, setDirection] = useState("both");
   const [ratio, setRatio] = useState("16:9");
+  const [style, setStyle] = useState("자연스럽게");
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const ACC = "#6366f1";
-  const bg = isDark ? "transparent" : "#f4f4f8";
-  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
-  const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
 
   const readFile = e => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -857,10 +1055,11 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("이미지를 업로드해주세요."); return; }
-    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다."); return; }
-    setLoading(true); setErr(""); setResult(null);
-    const dirLabel = direction === "left" ? "left side" : direction === "right" ? "right side" : "both sides";
-    const prompt = `Extend the image by filling in the ${dirLabel} naturally. Match the existing background, lighting, colors and style. Make it seamless and photorealistic. Target aspect ratio: ${ratio}.`;
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    setStep(3); setErr("");
+    const dirMap = { left:"left side", right:"right side", both:"both left and right sides" };
+    const styleMap = { "자연스럽게":"seamlessly and naturally matching the existing content", "흐릿하게":"with a soft blurred gradient fade", "확장하기":"extending the scene with similar environment" };
+    const prompt = `Outpainting: extend and fill the ${dirMap[direction]} of this image ${styleMap[style]}. Match the existing colors, lighting, texture, and style perfectly. Target aspect ratio: ${ratio}. Make it look like the original image was always wider.`;
     try {
       const res = await fetch("/api/generate-image", {
         method:"POST", headers:{"Content-Type":"application/json"},
@@ -868,72 +1067,78 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      if (data.imageBase64) setResult(`data:image/png;base64,${data.imageBase64}`);
+      if (data.imageBase64) { setResult(`data:image/png;base64,${data.imageBase64}`); setStep(4); }
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
-    } catch(e) { setErr(e.message || "생성 실패"); }
-    setLoading(false);
+    } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
   };
+
+  const W = { maxWidth:620, margin:"0 auto" };
+
+  if (step === 3) return (
+    <div style={{ flex:1, overflow:"hidden", background:bg }}>
+      <GenLoading emoji="↔" title="여백 채우는 중..." subtitle={"이미지의 빈 공간을 AI가 채우고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+    </div>
+  );
+
+  if (step === 4 && result) return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={W}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+          <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
+          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>생성 완료!</span>
+        </div>
+        <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:20, animation:"ai-fadein 0.5s ease" }}>
+          <img src={result} alt="outpainted" style={{ width:"100%", display:"block" }} />
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <a href={result} download="outpainted.png" style={{ flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none" }}>⬇ PNG 다운로드</a>
+          <button onClick={() => { setResult(null); setStep(1); setSrcImg(null); }} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>🔄 다시 하기</button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
-      <div style={{ maxWidth:640, margin:"0 auto" }}>
-        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>↔ 좌우 여백 채우기</div>
-        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>이미지의 좌우 여백을 AI가 자연스럽게 채워 더 넓은 화면비로 확장해줘요.</div>
+      <div style={W}>
+        <StepBar step={step} total={2} labels={["이미지 업로드","확장 설정"]} ACC={ACC} />
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
-        {/* 이미지 업로드 */}
-        <div style={{ marginBottom:16 }}>
-          <label style={{ display:"block", cursor:"pointer" }}>
-            <div style={{ padding:"32px", borderRadius:12, border:`1.5px dashed ${srcImg?ACC:bdr}`, background:card, textAlign:"center", overflow:"hidden" }}>
-              {srcImg
-                ? <img src={srcImg.url} alt="" style={{ maxWidth:"100%", maxHeight:200, objectFit:"contain", borderRadius:8 }} />
-                : <><div style={{ fontSize:36, marginBottom:8 }}>🖼</div><div style={{ fontSize:13, color:muted }}>클릭하여 이미지 업로드</div></>
-              }
-            </div>
-            <input type="file" accept="image/*" onChange={readFile} style={{ display:"none" }} />
-          </label>
-        </div>
-
-        {/* 방향 선택 */}
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>확장 방향</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {[{v:"left",l:"← 왼쪽"},{v:"both",l:"↔ 양쪽"},{v:"right",l:"오른쪽 →"}].map(d=>(
-              <button key={d.v} onClick={()=>setDirection(d.v)} style={{
-                flex:1, padding:"10px 0", borderRadius:10, border:`1.5px solid ${direction===d.v?ACC:bdr}`,
-                background:direction===d.v?`${ACC}18`:"transparent", color:direction===d.v?ACC:muted,
-                fontSize:13, fontWeight:700, cursor:"pointer"
-              }}>{d.l}</button>
-            ))}
+        {step === 1 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>이미지 업로드</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>여백을 채울 이미지를 업로드해요.</div>
+            <label style={{ display:"block", cursor:"pointer", marginBottom:20 }}>
+              <div style={{ minHeight:200, borderRadius:14, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10, padding:20 }}>
+                {srcImg
+                  ? <img src={srcImg.url} alt="" style={{ maxWidth:"100%", maxHeight:240, objectFit:"contain", borderRadius:8 }} />
+                  : <><span style={{ fontSize:48 }}>🖼</span><span style={{ fontSize:14, color:muted }}>확장할 이미지 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
+              </div>
+              <input type="file" accept="image/*" onChange={readFile} style={{ display:"none" }} />
+            </label>
+            <button onClick={() => { if(!srcImg){setErr("이미지를 업로드해주세요.");return;} setErr(""); setStep(2); }} style={{
+              width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
+              background: srcImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
+              color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6,
+            }}>다음 → 확장 설정</button>
           </div>
-        </div>
+        )}
 
-        {/* 비율 선택 */}
-        <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>목표 비율</div>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {["16:9","21:9","4:3","3:2","2:1"].map(r=>(
-              <button key={r} onClick={()=>setRatio(r)} style={{
-                padding:"7px 14px", borderRadius:8, border:`1.5px solid ${ratio===r?ACC:bdr}`,
-                background:ratio===r?`${ACC}18`:"transparent", color:ratio===r?ACC:muted,
-                fontSize:13, fontWeight:700, cursor:"pointer"
-              }}>{r}</button>
-            ))}
-          </div>
-        </div>
-
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:12 }}>{err}</div>}
-
-        <button onClick={generate} disabled={loading||!srcImg} style={{
-          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:(loading||!srcImg)?"not-allowed":"pointer",
-          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
-          boxShadow:`0 6px 20px ${ACC}40`, opacity:(loading||!srcImg)?0.6:1, marginBottom:24
-        }}>{loading?"↔ 여백 채우는 중...":"↔ 여백 채우기 (10P)"}</button>
-
-        {result && (
-          <div style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}` }}>
-            <img src={result} alt="outpainted" style={{ width:"100%", display:"block" }} />
-            <div style={{ padding:"10px 14px", textAlign:"right", background:card }}>
-              <a href={result} download="outpainted.png" style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 다운로드</a>
+        {step === 2 && (
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>확장 설정</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>방향, 비율, 스타일을 선택해요.</div>
+            <SelectGroup label="확장 방향" value={direction} onChange={setDirection} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"left",l:"← 왼쪽"},{v:"both",l:"↔ 양쪽"},{v:"right",l:"오른쪽 →"}]} />
+            <SelectGroup label="목표 비율" value={ratio} onChange={setRatio} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={["16:9","21:9","4:3","3:2","2:1","1:1"]} />
+            <SelectGroup label="채우기 스타일" value={style} onChange={setStyle} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"자연스럽게",l:"🌊 자연스럽게"},{v:"흐릿하게",l:"🌫 흐릿하게"},{v:"확장하기",l:"🌄 배경 확장"}]} />
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
+              <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
+                ↔ 여백 채우기 (10P)
+              </button>
             </div>
           </div>
         )}
@@ -1166,6 +1371,21 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       cta:"뉴스로 블로그 글쓰기",
     },
+    blog_cafe: {
+      icon:"☕", title:"네이버 카페 글쓰기", badge:"짧고 친근한 · 커뮤니티형", color:"#03C75A",
+      subtitle:"네이버 카페에 어울리는 친근하고 자연스러운 게시글을 AI가 작성해줘요. 정보 공유부터 후기, 질문, 자유 게시글까지 다양하게 지원해요.",
+      steps:[
+        { title:"카테고리 선택", desc:"정보·꿀팁, 후기·리뷰, 질문·도움, 자유 게시글 중 선택해요." },
+        { title:"주제 입력", desc:"키워드나 주제를 입력하고 예시에서 골라도 돼요." },
+        { title:"AI 글쓰기", desc:"카페 분위기에 맞는 친근하고 자연스러운 글을 AI가 작성해줘요." },
+        { title:"복사 & 게시", desc:"완성된 글을 복사해 네이버 카페에 바로 붙여넣기해요." },
+      ],
+      features:[
+        { icon:"💬", label:"자연스러운 문체" }, { icon:"📋", label:"다양한 카테고리" },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+      ],
+      cta:"네이버 카페 글 작성하기",
+    },
   };
 
   // 뉴스로 글쓰기
@@ -1202,10 +1422,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   }
 
   // 네이버 카페 글쓰기
-  if (aiMenu === "blog_cafe") {
+  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe") {
+    if (aiMenu === "blog_cafe") {
+      const d = BLOG_INTRO.blog_cafe;
+      return <IntroScreen {...d} onStart={() => setAiMenu("blog_cafe_make")} />;
+    }
+  }
+  if (aiMenu === "blog_cafe_make") {
     return (
-      <div key="blog_cafe" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} initialType="cafe" />
+      <div key="blog_cafe_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <BlogGenerator initialType="blog_cafe" menuLabel="네이버 카페 글쓰기" embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
       </div>
     );
   }
@@ -1430,18 +1656,75 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 모델 생성
+  // 모델 생성 인트로
   if (aiMenu === "model_gen") {
+    return (
+      <IntroScreen icon="🧍" title="모델 생성" badge="AI 광고 모델 · 다양한 설정" color="#6366f1"
+        subtitle="성별·나이대·국적·의상·배경·포즈를 설정하거나 직접 프롬프트를 입력해 AI 광고 모델 이미지를 생성해요. 참고 이미지의 스타일도 반영할 수 있어요."
+        steps={[
+          { title:"기본 설정", desc:"성별, 나이대, 국적을 선택해요." },
+          { title:"스타일 설정", desc:"의상, 배경, 포즈를 선택해요. 직접 프롬프트 입력도 가능해요." },
+          { title:"참고 이미지 & 생성", desc:"참고 이미지를 추가하거나 바로 생성해요." },
+          { title:"결과 확인", desc:"생성된 모델 이미지를 확인하고 다운로드해요." },
+        ]}
+        features={[
+          { icon:"👗", label:"8가지 의상" }, { icon:"🌏", label:"6가지 국적" },
+          { icon:"✍️", label:"직접 프롬프트" }, { icon:"💎", label:"10P" },
+        ]}
+        cta="모델 이미지 생성하기"
+        onStart={() => setAiMenu("model_gen_make")}
+      />
+    );
+  }
+  if (aiMenu === "model_gen_make") {
     return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 얼굴·의상 교체
+  // 얼굴·의상 교체 인트로
   if (aiMenu === "face_swap") {
+    return (
+      <IntroScreen icon="🔄" title="얼굴·의상 교체" badge="비교 슬라이더 · 실시간 확인" color="#8b5cf6"
+        subtitle="원본 이미지와 참고 이미지를 업로드하면 AI가 얼굴 또는 의상을 교체해줘요. 슬라이더로 전후를 직접 비교해볼 수 있어요."
+        steps={[
+          { title:"원본 업로드", desc:"교체 기반이 될 인물 사진을 업로드해요." },
+          { title:"참고 업로드 & 설정", desc:"스타일을 가져올 이미지와 교체 범위(얼굴/의상/둘다)를 선택해요." },
+          { title:"AI 교체 생성", desc:"AI가 자연스럽게 교체한 이미지를 생성해요." },
+          { title:"슬라이더 비교", desc:"드래그 슬라이더로 전후 결과를 비교하고 다운로드해요." },
+        ]}
+        features={[
+          { icon:"😊", label:"얼굴 교체" }, { icon:"👗", label:"의상 교체" },
+          { icon:"◀▶", label:"비교 슬라이더" }, { icon:"💎", label:"10P" },
+        ]}
+        cta="얼굴·의상 교체 시작하기"
+        onStart={() => setAiMenu("face_swap_make")}
+      />
+    );
+  }
+  if (aiMenu === "face_swap_make") {
     return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 좌우 여백 채우기
+  // 좌우 여백 채우기 인트로
   if (aiMenu === "outpaint") {
+    return (
+      <IntroScreen icon="↔" title="좌우 여백 채우기" badge="AI Outpainting · 비율 확장" color="#f59e0b"
+        subtitle="이미지 좌우의 빈 공간을 AI가 자연스럽게 채워 더 넓은 화면비로 확장해줘요. 가로형 배너, SNS 커버 이미지 제작에 활용해보세요."
+        steps={[
+          { title:"이미지 업로드", desc:"여백을 채울 이미지를 업로드해요." },
+          { title:"확장 설정", desc:"방향, 목표 비율, 채우기 스타일을 선택해요." },
+          { title:"AI 여백 채우기", desc:"AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요." },
+          { title:"결과 다운로드", desc:"확장된 이미지를 확인하고 PNG로 저장해요." },
+        ]}
+        features={[
+          { icon:"↔", label:"좌우 확장" }, { icon:"📐", label:"6가지 비율" },
+          { icon:"🌊", label:"자연스러운 연결" }, { icon:"💎", label:"10P" },
+        ]}
+        cta="여백 채우기 시작하기"
+        onStart={() => setAiMenu("outpaint_make")}
+      />
+    );
+  }
+  if (aiMenu === "outpaint_make") {
     return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
@@ -1551,8 +1834,10 @@ const MENU_LABELS = {
   detail_simple: "심플 상세페이지", detail_simple_make: "심플 상세페이지", detail_simple_open: "심플 상세페이지",
   detail_image: "이미지 상세페이지", detail_image_make: "이미지 상세페이지",
   logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
-  blog_cafe: "네이버 카페", blog_cafe_intro: "네이버 카페",
-  model_gen: "모델 생성", face_swap: "얼굴·의상 교체", outpaint: "좌우 여백 채우기",
+  blog_cafe: "네이버 카페", blog_cafe_intro: "네이버 카페", blog_cafe_make: "네이버 카페",
+  model_gen: "모델 생성", model_gen_make: "모델 생성",
+  face_swap: "얼굴·의상 교체", face_swap_make: "얼굴·의상 교체",
+  outpaint: "좌우 여백 채우기", outpaint_make: "좌우 여백 채우기",
   shorts: "숏폼편집",
 };
 

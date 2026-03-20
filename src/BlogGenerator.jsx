@@ -325,6 +325,47 @@ const PLATFORMS = {
       return "";
     },
   },
+  blog_cafe: {
+    title: "네이버 카페 글쓰기",
+    accentColor: "#03C75A",
+    subtypes: [
+      { id:"info",    icon:"📋", label:"정보·꿀팁",   desc:"유용한 정보 공유" },
+      { id:"review",  icon:"⭐", label:"후기·리뷰",   desc:"제품·장소 솔직 후기" },
+      { id:"question",icon:"❓", label:"질문·도움",   desc:"카페 회원에게 질문" },
+      { id:"free",    icon:"💬", label:"자유 게시글", desc:"일상·공지·이야기" },
+    ],
+    tones: [
+      {id:"friendly",  label:"친근·일상체"},
+      {id:"informative",label:"정보·유익"},
+      {id:"review",    label:"솔직 후기체"},
+    ],
+    wordCounts: [
+      {id:"short",  label:"짧게",  desc:"300~500자"},
+      {id:"medium", label:"보통",  desc:"600~900자"},
+      {id:"long",   label:"길게",  desc:"1,000자 이상"},
+    ],
+    fields: {
+      info:     ["keyword","target","extra"],
+      review:   ["keyword","productName","pros","cons","extra"],
+      question: ["keyword","extra"],
+      free:     ["keyword","extra"],
+    },
+    examples: {
+      info:     ["자취 생활비 절약 꿀팁 모음","주말 등산 초보 준비물 리스트","다이어트 식단 실패 없이 유지하는 법"],
+      review:   ["다이소 신상 청소용품 써봤어요","홍대 핫플 카페 솔직 후기","아이허브 단백질 쉐이크 비교 후기"],
+      question: ["카페 오픈런 어떻게 하나요","운동 초보 헬스장 선택 기준","이 제품 써보신 분 계세요"],
+      free:     ["오늘 날씨 너무 좋다","이번 주 모임 공지입니다","공구 마감 임박 안내"],
+    },
+    buildPrompt(sub, f, tone, wc) {
+      const w={short:"300~500자",medium:"600~900자",long:"1,000자 이상"}[wc];
+      const t={friendly:"친근하고 자연스러운 일상체",informative:"유익하고 친절한",review:"솔직하고 공감 가는 후기체"}[tone];
+      if(sub==="info")     return `네이버 카페 정보 게시글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"카페 회원"}\n${f.extra||""}\n\n- 핵심 정보를 친근하게 전달\n- 소제목 없이 자연스러운 문단 구성\n- 마무리에 "도움이 됐으면 해요" 류 인사\n\n[필수] 이모티콘·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만`;
+      if(sub==="review")   return `네이버 카페 후기 게시글 (${w}, ${t})\n대상: ${f.keyword} / 제품명: ${f.productName||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매/방문 동기부터 솔직 후기까지\n- 장단점 균형 있게\n- 추천 대상 언급으로 마무리\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
+      if(sub==="question") return `네이버 카페 질문 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 상황 설명 후 궁금한 점 명확히\n- 카페 회원들에게 도움 요청하는 자연스러운 글\n- 마지막에 감사 인사\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
+      if(sub==="free")     return `네이버 카페 자유 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 가볍고 친근한 일상 공유\n- 카페 분위기에 맞는 짧고 자연스러운 글\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
+      return "";
+    },
+  },
 };
 
 const FIELD_LABELS = {
