@@ -477,6 +477,10 @@ export default function App() {
 
         {/* 데스크톱 메뉴 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+          <NavBtn id="home" label="홈" />
+          <NavBtn id="about" label="소개" />
+          <NavBtn id="archive" label="자료실" />
+          <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
           {/* SNS 글쓰기 */}
           <div style={{ position: "relative" }}>
             <DropBtn label="SNS글쓰기" open={openMenu==="snsWrite"} active={page==="ai" && aiMenu?.startsWith("blog_")} onClick={() => setOpenMenu(m => m==="snsWrite"?null:"snsWrite")} />
@@ -534,6 +538,7 @@ export default function App() {
             )}
           </div>
           <NavBtn id="pricing" label="가격정책" />
+          <NavBtn id="contact" label="문의하기" />
         </div>
 
         {/* 오른쪽: 접속자수 + 테마 + 로그인 */}
@@ -672,7 +677,23 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
-              {/* SNS 글쓰기 */}
+              {/* 기본 메뉴 */}
+          {[
+            { id: "home",    label: "홈" },
+            { id: "about",   label: "소개" },
+            { id: "archive", label: "📂 자료실" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.text,
+              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* SNS 글쓰기 */}
           <div style={{ margin: "8px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
           </div>
@@ -761,13 +782,19 @@ export default function App() {
 
           {/* 기타 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
-          <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{
-            display: "block", width: "100%", textAlign: "left",
-            padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-            background: page==="pricing" ? "rgba(124,106,255,0.08)" : "transparent",
-            color: page==="pricing" ? C.purpleL : C.text, fontSize: 15, fontWeight: page==="pricing" ? 700 : 500,
-            borderLeft: page==="pricing" ? "3px solid #7c6aff" : "3px solid transparent",
-          }}>💎 가격정책</button>
+          {[
+            { id: "pricing", label: "💎 가격정책" },
+            { id: "contact", label: "📬 문의하기" },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.text,
+              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
