@@ -345,15 +345,24 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const cached = getPosts();
     if (cached.length > 0) { setPostsS(cached); setLoading(false); }
 
-    // 2) Supabase 백그라운드 조용히 갱신
+    // 2) Supabase 백그라운드 조용히 갱신 — localStorage 포스트와 merge
     (async () => {
       try {
         const migrated = localStorage.getItem("nper_migrated_v1");
         if (!migrated) {
           try { await migrateLocalPostsToDB(); localStorage.setItem("nper_migrated_v1", "1"); } catch(e) {}
         }
-        const data = await getPostsFromDB();
-        if (data && data.length > 0) setPostsS(data);
+        const dbData = await getPostsFromDB();
+        if (dbData && dbData.length > 0) {
+          // localStorage에만 있는 포스트(DB 저장 실패분)도 함께 표시
+          const localPosts = getPosts();
+          const dbIds = new Set(dbData.map(p => String(p.id)));
+          const localOnly = localPosts.filter(p => !dbIds.has(String(p.id)));
+          const merged = [...localOnly, ...dbData].sort((a, b) => b.id - a.id);
+          setPostsS(merged);
+          // localStorage도 merge 결과로 갱신
+          setPosts(merged);
+        }
       } catch(e) {}
       finally { setLoading(false); }
     })();
@@ -403,15 +412,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const cat = formCat || subCat;
     const p={id:Date.now(),cat,subCat:cat,tag:tag||"",nick:user.nick,title,body,
              date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[]};
-    syncLocal([p,...posts]);
+    const nextPosts = [p, ...posts];
+    syncLocal(nextPosts);
+    setPosts(nextPosts); // 항상 localStorage에 저장 (Supabase 성공 여부 무관)
     setMode("list");
     setSubCat(cat); // 작성 후 해당 카테고리로 이동
-    // Supabase 저장
+    // Supabase 저장 (실패해도 localStorage에 이미 있으므로 무시)
     try {
       await savePostToDB(p);
     } catch(e) {
-      // 실패 시 localStorage 폴백
-      setPosts([p,...posts]);
+      console.warn("Supabase 저장 실패, localStorage에만 저장됨:", e?.message);
     }
     // 1P 지급
     if(user.uid){

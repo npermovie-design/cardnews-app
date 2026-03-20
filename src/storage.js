@@ -477,10 +477,21 @@ export async function getPostsFromDB() {
   }
 }
 
-/** 게시글 저장 (신규) */
+/** 게시글 저장 (신규) — 컬럼 없으면 최소 필드로 재시도 */
 export async function savePostToDB(post) {
-  const { error } = await supabase.from("posts").insert(postToRow(post));
-  if (error) throw error;
+  const row = postToRow(post);
+  const { error } = await supabase.from("posts").insert(row);
+  if (!error) return;
+
+  // 컬럼 오류(42703)면 tag/subCat 없이 재시도
+  if (error.code === "42703" || error.message?.includes("column")) {
+    const { id, cat, title, content, nick, date, views, likes } = row;
+    const minimal = { id, cat, title, content: content ?? "", nick, date, views: views ?? 0, likes: likes ?? 0 };
+    const { error: e2 } = await supabase.from("posts").insert(minimal);
+    if (e2) throw e2;
+    return;
+  }
+  throw error;
 }
 
 /** 게시글 업데이트 (부분) */
