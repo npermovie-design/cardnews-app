@@ -152,7 +152,9 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   const [gender,      setGender]      = useState("female");
   const [age,         setAge]         = useState("20s");
   const [count,       setCount]       = useState("1");
-  const [result,      setResult]      = useState(null);
+  const [results,     setResults]     = useState([]); // 생성된 이미지 배열
+  const [imgCount,    setImgCount]    = useState(1);  // 생성 수 (1/2/4)
+  const [genProgress, setGenProgress] = useState(0);  // 생성 진행 수
   const [error,       setError]       = useState("");
   const [sizePreset,  setSizePreset]  = useState("sq");
   const [resolution,  setResolution]  = useState("md");
@@ -171,20 +173,26 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
     if (!productImg) { setError("제품 이미지를 먼저 업로드해주세요."); return; }
     if (!mode)       { setError("생성 모드를 선택해주세요."); return; }
 
+    const cost = 10 * imgCount;
     if (!user) {
       if (guestLimitExceeded()) { setError("비회원 무료 횟수를 모두 사용했어요. 회원가입 후 계속 이용하세요."); return; }
       incrementGuestUsage();
     } else {
-      if ((user.points || 0) < 10) { setError("포인트가 부족해요. 충전 후 이용해주세요."); return; }
+      if ((user.points || 0) < cost) { setError(`포인트가 부족해요. ${cost}P 필요합니다.`); return; }
     }
 
-    setError(""); setStep(2);
+    setError(""); setResults([]); setGenProgress(0); setStep(2);
     try {
       const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset });
-      const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
-      setResult(img);
+      const imgs = [];
+      for (let i = 0; i < imgCount; i++) {
+        const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
+        imgs.push(img);
+        setGenProgress(i + 1);
+      }
+      setResults(imgs);
       if (user) {
-        const updated = await changePoints(user.uid, -10, "제품컷 생성");
+        const updated = await changePoints(user.uid, -cost, `제품컷 생성 (${imgCount}장)`);
         if (updated !== null && onUserUpdate) onUserUpdate({ ...user, points: updated });
       }
       setStep(3);
@@ -194,8 +202,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
     }
   };
 
-  const handleDownload = () => {
-    if (!result) return;
+  const handleDownload = (imgSrc, idx = 0) => {
+    if (!imgSrc) return;
     const preset = SIZE_PRESETS.find(s => s.id === sizePreset) || SIZE_PRESETS[0];
     const resPx  = RESOLUTIONS.find(r => r.id === resolution)?.px || 1080;
     // 긴 쪽이 resPx가 되도록 출력 크기 계산
@@ -225,18 +233,18 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
 
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
-      a.download = `product_shot_${preset.ratio.replace(":","x")}_${resPx}px_${Date.now()}.png`;
+      a.download = `product_shot_${preset.ratio.replace(":","x")}_${resPx}px_${idx+1}_${Date.now()}.png`;
       a.click();
     };
-    img.src = result;
+    img.src = imgSrc;
   };
 
   const reset = () => {
-    setResult(null); setError(""); setMode(null); setStep(1);
+    setResults([]); setError(""); setMode(null); setStep(1);
     setProductImg(null); setProductName(""); setExtraDesc("");
     setAtmosphere("studio"); setColorTone("bright");
     setGender("female"); setAge("20s"); setCount("1");
-    setSizePreset("sq"); setResolution("md");
+    setSizePreset("sq"); setResolution("md"); setImgCount(1); setGenProgress(0);
   };
 
   const card = (active, color = accent) => ({
@@ -318,22 +326,19 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
         <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>AI가 제품컷을 생성 중이에요</div>
         <div style={{ fontSize:13, color:muted, marginBottom:28 }}>보통 15~30초 소요됩니다. 잠시만 기다려주세요.</div>
         {/* 진행 단계 */}
-        <div style={{ display:"flex", justifyContent:"center", gap:10, flexWrap:"wrap" }}>
-          {[
-            { label:"이미지 분석",   icon:"🔍", active:false },
-            { label:"프롬프트 구성", icon:"✍️", active:false },
-            { label:"AI 생성 중",   icon:"🎨", active:true  },
-            { label:"마무리 처리",  icon:"✨", active:false },
-          ].map((s, i) => (
-            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, padding:"10px 14px", borderRadius:12,
-              background: s.active ? `rgba(249,115,22,0.12)` : D?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",
-              border:`1px solid ${s.active ? accent+"50" : bdr}` }}>
-              <div style={{ fontSize:20 }}>{s.icon}</div>
-              <div style={{ fontSize:10, fontWeight:700, color: s.active ? accent : muted, whiteSpace:"nowrap" }}>{s.label}</div>
-              {s.active && <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid rgba(249,115,22,0.3)`, borderTopColor:accent, animation:"spin 0.8s linear infinite" }}/>}
+        {/* 진행 표시 */}
+        {imgCount > 1 && (
+          <div style={{ marginTop:20, width:"100%" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:muted, marginBottom:6 }}>
+              <span>생성 중...</span>
+              <span style={{ color:accent, fontWeight:800 }}>{genProgress} / {imgCount}</span>
             </div>
-          ))}
-        </div>
+            <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ea580c)`,
+                width:`${imgCount > 0 ? (genProgress/imgCount)*100 : 0}%`, transition:"width 0.5s ease" }}/>
+            </div>
+          </div>
+        )}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -342,9 +347,9 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   /* ══════════════════════════════════════
      STEP 3: 결과
   ══════════════════════════════════════ */
-  if (step === 3 && result) return (
+  if (step === 3 && results.length > 0) return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 80px" }}>
-      <div style={{ maxWidth:640, margin:"0 auto" }}>
+      <div style={{ maxWidth: results.length > 1 ? 880 : 640, margin:"0 auto" }}>
 
         {/* 헤더 */}
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, flexWrap:"wrap" }}>
@@ -352,19 +357,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
             style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>
             ← 다시 만들기
           </button>
-          <div style={{ fontSize:15, fontWeight:900, color:text }}>🛍 제품컷 생성 완료!</div>
-        </div>
-
-        {/* 생성된 이미지 */}
-        <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:16,
-          background: D ? "rgba(0,0,0,0.3)" : "#f5f5f5",
-          boxShadow:"0 8px 32px rgba(0,0,0,0.18)" }}>
-          <img
-            src={result}
-            alt="생성된 제품컷"
-            style={{ width:"100%", display:"block", objectFit:"contain", maxHeight:600 }}
-            onError={(e) => { e.target.style.display="none"; }}
-          />
+          <div style={{ fontSize:15, fontWeight:900, color:text }}>🛍 제품컷 {results.length}장 생성 완료!</div>
         </div>
 
         {/* 설정 요약 */}
@@ -383,42 +376,40 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
           ))}
         </div>
 
-        {/* 버튼 */}
+        {/* 이미지 그리드 */}
+        <div style={{ display:"grid", gridTemplateColumns: results.length === 1 ? "1fr" : results.length === 2 ? "1fr 1fr" : "1fr 1fr", gap:12, marginBottom:16 }}>
+          {results.map((img, idx) => (
+            <div key={idx} style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`,
+              background: D ? "rgba(0,0,0,0.3)" : "#f5f5f5", boxShadow:"0 4px 20px rgba(0,0,0,0.12)" }}>
+              <img src={img} alt={`제품컷 ${idx+1}`}
+                style={{ width:"100%", display:"block", objectFit:"contain", maxHeight: results.length > 1 ? 400 : 600 }}
+                onError={(e) => { e.target.style.display="none"; }}
+              />
+              <div style={{ padding:"10px 12px", borderTop:`1px solid ${bdr}` }}>
+                <button onClick={() => handleDownload(img, idx)}
+                  style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
+                    background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:12, fontWeight:800 }}>
+                  📥 {idx+1}번 다운로드
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 전체 다운로드 + 재생성 */}
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-          <button onClick={handleDownload}
-            style={{ flex:1, minWidth:160, padding:"13px", borderRadius:12, border:"none", cursor:"pointer",
-              background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:14, fontWeight:800,
-              boxShadow:`0 6px 20px rgba(249,115,22,0.3)` }}>
-            📥 PNG 다운로드 ({SIZE_PRESETS.find(s=>s.id===sizePreset)?.ratio} · {RESOLUTIONS.find(r=>r.id===resolution)?.desc})
-          </button>
-          <button onClick={() => { setResult(null); setStep(1); }}
+          {results.length > 1 && (
+            <button onClick={() => results.forEach((img, i) => { setTimeout(() => handleDownload(img, i), i*300); })}
+              style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer",
+                background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:14, fontWeight:800,
+                boxShadow:`0 6px 20px rgba(249,115,22,0.3)` }}>
+              📥 전체 다운로드 ({results.length}장)
+            </button>
+          )}
+          <button onClick={() => { setResults([]); setStep(1); }}
             style={{ padding:"13px 22px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>
             🔄 재생성
           </button>
-        </div>
-
-        {/* 제품컷 미리보기 (썸네일 형태) */}
-        <div style={{ marginTop:24, padding:"16px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
-          <div style={{ display:"flex", gap:14, alignItems:"center" }}>
-            <div style={{ width:90, height:90, borderRadius:10, overflow:"hidden", flexShrink:0, border:`1px solid ${bdr}`,
-              background: D ? "rgba(255,255,255,0.03)" : "#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <img src={result} alt="썸네일" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
-                onError={(e) => { e.target.style.display="none"; }} />
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4 }}>생성 완료</div>
-              <div style={{ fontSize:11, color:muted, marginBottom:2 }}>
-                분위기: {ATMOSPHERES.find(a=>a.id===atmosphere)?.label}
-              </div>
-              <div style={{ fontSize:11, color:muted, marginBottom:10 }}>
-                색감: {COLOR_TONES.find(t=>t.id===colorTone)?.label} · {mode === "model" ? "모델 포함" : "제품만"}
-              </div>
-              <button onClick={() => { setStep(0); setResult(null); setMode(null); setProductImg(null); }}
-                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer", fontWeight:600 }}>
-                ← 인트로로
-              </button>
-            </div>
-          </div>
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -614,6 +605,30 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
                 }}>
                   <div style={{ fontWeight:900, marginBottom:2 }}>{r.label}</div>
                   <div style={{ fontSize:10, opacity:0.8 }}>{r.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 생성 수량 */}
+          <div>
+            <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>생성 이미지 수</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {[
+                { n:1, label:"1장", desc:"10P" },
+                { n:2, label:"2장", desc:"20P" },
+                { n:4, label:"4장", desc:"40P" },
+              ].map(({ n, label, desc }) => (
+                <button key={n} onClick={() => setImgCount(n)} style={{
+                  flex:1, padding:"10px 8px", borderRadius:10,
+                  border:`2px solid ${imgCount===n ? accent : bdr}`,
+                  background: imgCount===n ? accent+"18" : "transparent",
+                  color: imgCount===n ? accent : muted,
+                  fontSize:13, fontWeight:imgCount===n?800:500, cursor:"pointer",
+                  transition:"all 0.15s",
+                }}>
+                  <div style={{ fontWeight:900, marginBottom:2 }}>{label}</div>
+                  <div style={{ fontSize:10, opacity:0.8 }}>{desc}</div>
                 </button>
               ))}
             </div>

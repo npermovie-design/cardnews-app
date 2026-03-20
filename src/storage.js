@@ -451,15 +451,42 @@ export function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 export function genCode()       { return String(Math.floor(100000 + Math.random() * 900000)); }
 
 // ── 게시글 CRUD (Supabase) ────────────────────────────────────────────────
-// BoardPage는 'body' 필드 사용, Supabase는 'content' 컬럼 → 중간 변환
+// Supabase posts 테이블 컬럼: id(TEXT), title, content, author, author_uid, cat, tag, subCat, views, likes, created_at, images, comments
 function rowToPost(row) {
   if (!row) return row;
-  const { content, ...rest } = row;
-  return { ...rest, body: content ?? "" };
+  return {
+    id:       row.id,
+    title:    row.title || "",
+    body:     row.content || "",
+    nick:     row.author || row.nick || "",
+    uid:      row.author_uid || "",
+    cat:      row.cat || "free",
+    tag:      row.tag || "",
+    subCat:   row.subCat || row.cat || "",
+    views:    row.views || 0,
+    likes:    row.likes || 0,
+    date:     row.created_at ? new Date(row.created_at).toLocaleDateString("ko-KR") : (row.date || ""),
+    comments: Array.isArray(row.comments) ? row.comments : [],
+    likedBy:  Array.isArray(row.likedBy) ? row.likedBy : [],
+    images:   Array.isArray(row.images) ? row.images : [],
+  };
 }
 function postToRow(post) {
-  const { body, ...rest } = post;
-  return { ...rest, content: body ?? post.content ?? "" };
+  return {
+    id:         String(post.id),
+    title:      post.title || "",
+    content:    post.body || post.content || "",
+    author:     post.nick || post.author || "",
+    author_uid: post.uid || post.author_uid || "",
+    cat:        post.cat || "free",
+    tag:        post.tag || "",
+    subCat:     post.subCat || post.cat || "",
+    views:      post.views || 0,
+    likes:      post.likes || 0,
+    created_at: post.created_at || new Date().toISOString(),
+    images:     Array.isArray(post.images) ? post.images : [],
+    comments:   Array.isArray(post.comments) ? post.comments : [],
+  };
 }
 
 /** 전체 게시글 가져오기 */
@@ -477,33 +504,33 @@ export async function getPostsFromDB() {
   }
 }
 
-/** 게시글 저장 (신규) — 컬럼 없으면 최소 필드로 재시도 */
+/** 게시글 저장 (신규) */
 export async function savePostToDB(post) {
-  const row = postToRow(post);
-  const { error } = await supabase.from("posts").insert(row);
-  if (!error) return;
-
-  // 컬럼 오류(42703)면 tag/subCat 없이 재시도
-  if (error.code === "42703" || error.message?.includes("column")) {
-    const { id, cat, title, content, nick, date, views, likes } = row;
-    const minimal = { id, cat, title, content: content ?? "", nick, date, views: views ?? 0, likes: likes ?? 0 };
-    const { error: e2 } = await supabase.from("posts").insert(minimal);
-    if (e2) throw e2;
-    return;
-  }
-  throw error;
+  const { error } = await supabase.from("posts").insert(postToRow(post));
+  if (error) throw error;
 }
 
 /** 게시글 업데이트 (부분) */
 export async function updatePostInDB(postId, data) {
-  const row = data.body !== undefined ? postToRow(data) : data;
-  const { error } = await supabase.from("posts").update(row).eq("id", postId);
+  // body → content, nick → author 변환
+  const row = {};
+  if (data.body !== undefined)   row.content = data.body;
+  if (data.title !== undefined)  row.title   = data.title;
+  if (data.nick !== undefined)   row.author  = data.nick;
+  if (data.views !== undefined)  row.views   = data.views;
+  if (data.likes !== undefined)  row.likes   = data.likes;
+  if (data.comments !== undefined) row.comments = data.comments;
+  if (data.edited !== undefined) row.updated_at = new Date().toISOString();
+  // 그 외 필드 직접 전달
+  const pass = ["cat","tag","subCat","images"];
+  pass.forEach(k => { if (data[k] !== undefined) row[k] = data[k]; });
+  const { error } = await supabase.from("posts").update(row).eq("id", String(postId));
   if (error) throw error;
 }
 
 /** 게시글 삭제 */
 export async function deletePostFromDB(postId) {
-  const { error } = await supabase.from("posts").delete().eq("id", postId);
+  const { error } = await supabase.from("posts").delete().eq("id", String(postId));
   if (error) throw error;
 }
 

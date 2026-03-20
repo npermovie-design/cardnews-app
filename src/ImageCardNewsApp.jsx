@@ -767,11 +767,12 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
     const currentPng = rendered[curIdx];
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
         <WizHeader />
         <div style={{ maxWidth:1080, margin:"0 auto", padding:"0 20px 60px" }}>
 
           {/* 생성 중 */}
-          {loading && progress.total > 0 && (
+          {loading && (
             <div style={{ borderRadius:16,overflow:"hidden",border:`1px solid ${accentColor}40`,background:isDark?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)",marginBottom:20 }}>
               <div style={{ background:`linear-gradient(135deg,${accentColor}22,${accentColor}08)`,padding:"24px 24px 20px",textAlign:"center",borderBottom:`1px solid ${accentColor}20` }}>
                 <div style={{ position:"relative",width:72,height:72,margin:"0 auto 16px" }}>
@@ -780,23 +781,29 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                   <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
                   <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
                 </div>
-                <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>이미지 생성 중</div>
-                <div style={{ fontSize:12,color:muted }}>{progress.msg}</div>
-              </div>
-              <div style={{ padding:"16px 24px" }}>
-                <div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8 }}>
-                  <span style={{ color:muted }}>{progress.cur} / {progress.total} 완료</span>
-                  <span style={{ fontWeight:800,color:accentColor }}>{Math.round((progress.cur/progress.total)*100)}%</span>
+                <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>
+                  {progress.total === 0 ? "준비 중..." : "이미지 생성 중"}
                 </div>
-                <div style={{ height:8,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8",overflow:"hidden" }}>
-                  <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},${accentColor}bb)`,width:`${(progress.cur/progress.total)*100}%`,transition:"width 0.5s ease" }}/>
-                </div>
-                <div style={{ display:"flex",gap:5,marginTop:12,justifyContent:"center",flexWrap:"wrap" }}>
-                  {Array.from({length:progress.total}).map((_,i)=>(
-                    <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s" }}/>
-                  ))}
+                <div style={{ fontSize:12,color:muted,animation:progress.total===0?"pulse 1.5s ease-in-out infinite":undefined }}>
+                  {progress.msg || "AI가 슬라이드를 준비하고 있어요..."}
                 </div>
               </div>
+              {progress.total > 0 && (
+                <div style={{ padding:"16px 24px" }}>
+                  <div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8 }}>
+                    <span style={{ color:muted }}>{progress.cur} / {progress.total} 완료</span>
+                    <span style={{ fontWeight:800,color:accentColor }}>{Math.round((progress.cur/progress.total)*100)}%</span>
+                  </div>
+                  <div style={{ height:8,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8",overflow:"hidden" }}>
+                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},${accentColor}bb)`,width:`${(progress.cur/progress.total)*100}%`,transition:"width 0.5s ease" }}/>
+                  </div>
+                  <div style={{ display:"flex",gap:5,marginTop:12,justifyContent:"center",flexWrap:"wrap" }}>
+                    {Array.from({length:progress.total}).map((_,i)=>(
+                      <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s" }}/>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

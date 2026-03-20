@@ -29,8 +29,6 @@ export function ContactPage({ C }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(160px,100%),1fr))", gap: 12, marginBottom: 40 }}>
         {[
           { icon: "💬", title: "카카오 오픈채팅", desc: "가장 빠른 응답", sub: "평균 30분 이내", color: "#FEE500", tc: "#3A1D1D", url: "https://open.kakao.com/o/gIw9vTFg" },
-          { icon: "📸", title: "인스타그램 DM", desc: "@nperinsight", sub: "DM으로 문의", color: "linear-gradient(45deg,#f09433,#dc2743)", tc: "#fff", url: "https://www.instagram.com/nperinsight/" },
-          { icon: "▶", title: "유튜브 채널", desc: "@nperinsight", sub: "영상 댓글 문의", color: "#FF0000", tc: "#fff", url: "https://www.youtube.com/@nperinsight/videos" },
         ].map((item, i) => (
           <button key={i} onClick={() => window.open(item.url, "_blank")}
             style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px", cursor: "pointer", textAlign: "left", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: C.shadow }}
