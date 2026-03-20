@@ -13,6 +13,7 @@ import ArchivePage from "./ArchivePage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 import MyPage from "./MyPage";
+import AttendanceModal from "./AttendanceModal";
 
 // 접속자 카운트 훅 (localStorage heartbeat)
 function useOnlineCount() {
@@ -97,6 +98,7 @@ export default function App() {
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
   const [guestUsageCount, setGuestUsageCount] = useState(() => {
     try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}").guest || 0; } catch { return 0; }
   });
@@ -418,6 +420,7 @@ export default function App() {
       {/* 생성 중 이탈 방지 모달 */}
       {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} />}
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
+      {showAttendance && <AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} />}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "36px 28px", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
@@ -576,6 +579,7 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
+                      { icon: "🔴", label: "출석체크", sub: "매일 +3P · 연속 보너스", action: () => { setShowAttendance(true); setProfileOpen(false); } },
                       { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
                       { icon: "👤", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
