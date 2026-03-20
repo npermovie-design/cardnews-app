@@ -89,11 +89,10 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
   const [showAuth,   setShowAuth]   = useState(false);
-  const [boardSub,   setBoardSub]   = useState(false);
+  const [openMenu,   setOpenMenu]   = useState(null); // "snsWrite"|"snsImage"|"imageGen"|"board"
   const [profileOpen, setProfileOpen] = useState(false);
   const [boardCat,   setBoardCat]   = useState("info");
   const [pendingPostId, setPendingPostId] = useState(null);
-  const [aiSub,      setAiSub]      = useState(false);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
@@ -103,9 +102,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}").guest || 0; } catch { return 0; }
   });
 
-  const boardSubRef   = useRef(null);
+  const dropMenuRef   = useRef(null);
   const profileRef    = useRef(null);
-  const aiSubRef      = useRef(null);
   const isLoggingOut  = useRef(false);
   const onlineCount   = useOnlineCount();
 
@@ -165,9 +163,8 @@ export default function App() {
 
   useEffect(() => {
     const fn = e => {
-      if (boardSubRef.current && !boardSubRef.current.contains(e.target)) setBoardSub(false);
+      if (dropMenuRef.current && !dropMenuRef.current.contains(e.target)) setOpenMenu(null);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
-      if (aiSubRef.current && !aiSubRef.current.contains(e.target)) setAiSub(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -212,7 +209,7 @@ export default function App() {
         if (!ok) return;
       }
       const hash = window.location.hash.replace("#", "") || "home";
-      setPage(hash); setBoardSub(false); setMobileOpen(false);
+      setPage(hash); setOpenMenu(null); setMobileOpen(false);
       window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", fn);
@@ -235,7 +232,7 @@ export default function App() {
     if (!(await confirmGuard())) return;
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
-    setPage(target); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage(target); setOpenMenu(null); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -243,7 +240,7 @@ export default function App() {
     if (!(await confirmGuard())) return;
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
-    setPage("community"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage("community"); setOpenMenu(null); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
   const navigatePost = (postId) => {
@@ -255,7 +252,7 @@ export default function App() {
     if (!(await confirmGuard())) return;
     setAiMenu(menu);
     window.history.pushState(null, "", "/ai/" + menu);
-    setPage("ai"); setBoardSub(false); setAiSub(false); setMobileOpen(false);
+    setPage("ai"); setOpenMenu(null); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -328,9 +325,10 @@ export default function App() {
     </button>
   );
 
-  const DropMenu = ({ children }) => (
+  const DropMenu = ({ children, right }) => (
     <div style={{
-      position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
+      position: "absolute", top: "calc(100% + 8px)", zIndex: 100,
+      left: right ? "auto" : 0, right: right ? 0 : "auto",
       background: C.modalBg, border: "1px solid " + C.border,
       borderRadius: 13, padding: 6, minWidth: 190,
       boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
@@ -404,6 +402,16 @@ export default function App() {
           .mobile-btn{display:flex!important}
           .nav-right{display:none!important}
         }
+        @media(max-width:768px){
+          .page-inner{padding-left:12px!important;padding-right:12px!important}
+          .card-grid{grid-template-columns:1fr 1fr!important}
+          .hide-mobile{display:none!important}
+          .form-row{flex-direction:column!important;gap:10px!important}
+        }
+        @media(max-width:480px){
+          .card-grid{grid-template-columns:1fr!important}
+          .stat-row{grid-template-columns:1fr 1fr!important}
+        }
         @media(max-width:640px){
           .cta-row{flex-direction:column!important}
           .cta-row button{width:100%!important;text-align:center!important}
@@ -468,46 +476,64 @@ export default function App() {
         </button>
 
         {/* 데스크톱 메뉴 */}
-        <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
-          <NavBtn id="home" label="홈" />
-          <NavBtn id="about" label="소개" />
-          <NavBtn id="archive" label="자료실" />
-          <div ref={aiSubRef} style={{ position: "relative" }}>
-            <DropBtn label="AI 생성기" open={aiSub} active={page === "ai"} onClick={() => setAiSub(s => !s)} />
-            {aiSub && (
+        <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+          {/* SNS 글쓰기 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="SNS글쓰기" open={openMenu==="snsWrite"} active={page==="ai" && aiMenu?.startsWith("blog_")} onClick={() => setOpenMenu(m => m==="snsWrite"?null:"snsWrite")} />
+            {openMenu==="snsWrite" && (
               <DropMenu>
-                {/* SNS 글쓰기 */}
-                <div style={{ padding:"6px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase" }}>SNS 글쓰기</div>
-                <DropItem id="ai" icon="" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver");   setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="티스토리"        onClick={() => { navigateAi("blog_tistory"); setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta");   setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube"); setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="스레드"          onClick={() => { navigateAi("blog_thread");  setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog"); setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news");    setAiSub(false); }} />
-                {/* SNS 이미지 */}
-                <div style={{ padding:"8px 14px 2px", fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.3)", letterSpacing:1.2, textTransform:"uppercase", borderTop:"1px solid rgba(255,255,255,0.07)", marginTop:4 }}>SNS 이미지</div>
-                <DropItem id="ai" icon="" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple"); setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");  setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");   setAiSub(false); }} />
-                <DropItem id="ai" icon="" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");    setAiSub(false); }} />
-                {user?.role === "admin" && <DropItem id="ai" icon="" label="쇼츠영상 생성기 👑" onClick={() => { navigateAi("shorts"); setAiSub(false); }} />}
+                <DropItem id="ai" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver_intro");   setOpenMenu(null); }} />
+                <DropItem id="ai" label="티스토리"        onClick={() => { navigateAi("blog_tistory_intro"); setOpenMenu(null); }} />
+                <DropItem id="ai" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta_intro");   setOpenMenu(null); }} />
+                <DropItem id="ai" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube_intro"); setOpenMenu(null); }} />
+                <DropItem id="ai" label="스레드"          onClick={() => { navigateAi("blog_thread_intro");  setOpenMenu(null); }} />
+                <DropItem id="ai" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog_intro"); setOpenMenu(null); }} />
+                <DropItem id="ai" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news_intro");    setOpenMenu(null); }} />
+                <DropItem id="ai" label="네이버 카페"     onClick={() => { navigateAi("blog_cafe");          setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <div ref={boardSubRef} style={{ position: "relative" }}>
-            <DropBtn label="커뮤니티" open={boardSub} active={isBoard} onClick={() => setBoardSub(s => !s)} />
-            {boardSub && (
+          {/* SNS 이미지 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="SNS이미지" open={openMenu==="snsImage"} active={page==="ai" && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu?.startsWith(x))} onClick={() => setOpenMenu(m => m==="snsImage"?null:"snsImage")} />
+            {openMenu==="snsImage" && (
               <DropMenu>
-                <DropItem id="community" icon="" label="정보공유"   onClick={() => { navigateBoard("info");   setBoardSub(false); }} />
-                <DropItem id="community" icon="" label="질문답변"   onClick={() => { navigateBoard("qna");    setBoardSub(false); }} />
-                <DropItem id="community" icon="" label="자유게시판" onClick={() => { navigateBoard("free");   setBoardSub(false); }} />
-                <DropItem id="community" icon="" label="사용후기"   onClick={() => { navigateBoard("review"); setBoardSub(false); }} />
+                <DropItem id="ai" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple"); setOpenMenu(null); }} />
+                <DropItem id="ai" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");  setOpenMenu(null); }} />
+                <DropItem id="ai" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");   setOpenMenu(null); }} />
+                <DropItem id="ai" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");   setOpenMenu(null); }} />
+                {user?.role === "admin" && <DropItem id="ai" label="쇼츠영상 생성기 👑" onClick={() => { navigateAi("shorts"); setOpenMenu(null); }} />}
+              </DropMenu>
+            )}
+          </div>
+          {/* 이미지 생성 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="이미지생성" open={openMenu==="imageGen"} active={page==="ai" && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu)} onClick={() => setOpenMenu(m => m==="imageGen"?null:"imageGen")} />
+            {openMenu==="imageGen" && (
+              <DropMenu>
+                <DropItem id="ai" label="제품컷 생성"      onClick={() => { navigateAi("product_shot"); setOpenMenu(null); }} />
+                <DropItem id="ai" label="로고 생성"        onClick={() => { navigateAi("logo_gen");     setOpenMenu(null); }} />
+                <DropItem id="ai" label="목업 생성"        onClick={() => { navigateAi("mockup_gen");   setOpenMenu(null); }} />
+                <DropItem id="ai" label="모델 생성"        onClick={() => { navigateAi("model_gen");    setOpenMenu(null); }} />
+                <DropItem id="ai" label="얼굴·의상 교체"   onClick={() => { navigateAi("face_swap");    setOpenMenu(null); }} />
+                <DropItem id="ai" label="좌우 여백 채우기" onClick={() => { navigateAi("outpaint");     setOpenMenu(null); }} />
+              </DropMenu>
+            )}
+          </div>
+          <div style={{ flex: 1 }} />
+          {/* 커뮤니티 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="커뮤니티" open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
+            {openMenu==="board" && (
+              <DropMenu right>
+                <DropItem id="community" label="정보공유"   onClick={() => { navigateBoard("info");   setOpenMenu(null); }} />
+                <DropItem id="community" label="질문답변"   onClick={() => { navigateBoard("qna");    setOpenMenu(null); }} />
+                <DropItem id="community" label="자유게시판" onClick={() => { navigateBoard("free");   setOpenMenu(null); }} />
+                <DropItem id="community" label="사용후기"   onClick={() => { navigateBoard("review"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
           <NavBtn id="pricing" label="가격정책" />
-          <NavBtn id="contact" label="문의하기" />
         </div>
 
         {/* 오른쪽: 접속자수 + 테마 + 로그인 */}
@@ -646,57 +672,64 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
-          {/* 기본 메뉴 */}
-          {[
-            { id: "home",  label: "홈" },
-            { id: "about", label: "소개" },
-            { id: "archive", label: "📂 자료실" },
-          ].map(m => (
-            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
-              color: page === m.id ? C.purpleL : C.text,
-              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* SNS 글쓰기 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
+              {/* SNS 글쓰기 */}
+          <div style={{ margin: "8px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
           </div>
           {[
-            { id: "blog_naver",   label: "네이버 블로그",   ai: "blog_naver" },
-            { id: "blog_tistory", label: "티스토리",        ai: "blog_tistory" },
-            { id: "blog_insta",   label: "인스타그램 캡션", ai: "blog_insta" },
-            { id: "blog_youtube", label: "유튜브 대본",     ai: "blog_youtube" },
-            { id: "blog_thread",  label: "스레드",          ai: "blog_thread" },
-            { id: "blog_yt_blog", label: "유튜브로 글쓰기", ai: "blog_yt_blog" },
-            { id: "blog_news",    label: "뉴스로 글쓰기",   ai: "blog_news" },
+            { ai: "blog_naver_intro",   label: "네이버 블로그" },
+            { ai: "blog_tistory_intro", label: "티스토리" },
+            { ai: "blog_insta_intro",   label: "인스타그램 캡션" },
+            { ai: "blog_youtube_intro", label: "유튜브 대본" },
+            { ai: "blog_thread_intro",  label: "스레드" },
+            { ai: "blog_yt_blog_intro", label: "유튜브로 글쓰기" },
+            { ai: "blog_news_intro",    label: "뉴스로 글쓰기" },
+            { ai: "blog_cafe",          label: "네이버 카페" },
           ].map(m => (
-            <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
+            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="ai"&&aiMenu===m.ai) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="ai"&&aiMenu===m.ai) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #7c6aff" : "3px solid transparent",
+              background: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? 700 : 400,
+              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
           {/* SNS 이미지 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>🖼 SNS 이미지</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🖼 SNS 이미지</div>
           </div>
           {[
-            { id: "cardnews_simple", label: "심플 카드뉴스",    ai: "cardnews_simple" },
-            { id: "cardnews_image",  label: "이미지 카드뉴스",  ai: "cardnews_image" },
-            { id: "detail_simple",   label: "심플 상세페이지",  ai: "detail_simple" },
-            { id: "detail_image",    label: "이미지 상세페이지", ai: "detail_image" },
-            ...(user?.role === "admin" ? [{ id: "shorts", label: "쇼츠영상 생성기 👑", ai: "shorts" }] : []),
+            { ai: "cardnews_simple", label: "심플 카드뉴스" },
+            { ai: "cardnews_image",  label: "이미지 카드뉴스" },
+            { ai: "detail_simple",   label: "심플 상세페이지" },
+            { ai: "detail_image",    label: "이미지 상세페이지" },
+            ...(user?.role === "admin" ? [{ ai: "shorts", label: "쇼츠영상 생성기 👑" }] : []),
           ].map(m => (
-            <button key={m.id} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
+            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? 700 : 400,
+              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* 이미지 생성 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🎨 이미지생성</div>
+          </div>
+          {[
+            { ai: "product_shot", label: "제품컷 생성" },
+            { ai: "logo_gen",     label: "로고 생성" },
+            { ai: "mockup_gen",   label: "목업 생성" },
+            { ai: "model_gen",    label: "모델 생성" },
+            { ai: "face_swap",    label: "얼굴·의상 교체" },
+            { ai: "outpaint",     label: "좌우 여백 채우기" },
+          ].map(m => (
+            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
               background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
@@ -708,15 +741,15 @@ export default function App() {
 
           {/* 커뮤니티 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.muted, letterSpacing: 1.5, padding: "0 4px" }}>💬 커뮤니티</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 커뮤니티</div>
           </div>
           {[
-            { id: "info",   label: "정보공유",   board: "info"   },
-            { id: "qna",    label: "질문답변",   board: "qna"    },
-            { id: "free",   label: "자유게시판", board: "free"   },
-            { id: "review", label: "사용후기",   board: "review" },
+            { board: "info",   label: "정보공유" },
+            { board: "qna",    label: "질문답변" },
+            { board: "free",   label: "자유게시판" },
+            { board: "review", label: "사용후기" },
           ].map(m => (
-            <button key={m.id} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
+            <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
               background: (page==="community"&&boardCat===m.board) ? "rgba(124,106,255,0.08)" : "transparent",
@@ -728,19 +761,13 @@ export default function App() {
 
           {/* 기타 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
-          {[
-            { id: "pricing", label: "💎 가격정책" },
-            { id: "contact", label: "📬 문의하기" },
-          ].map(m => (
-            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
-              color: page === m.id ? C.purpleL : C.text,
-              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
+          <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{
+            display: "block", width: "100%", textAlign: "left",
+            padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+            background: page==="pricing" ? "rgba(124,106,255,0.08)" : "transparent",
+            color: page==="pricing" ? C.purpleL : C.text, fontSize: 15, fontWeight: page==="pricing" ? 700 : 500,
+            borderLeft: page==="pricing" ? "3px solid #7c6aff" : "3px solid transparent",
+          }}>💎 가격정책</button>
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

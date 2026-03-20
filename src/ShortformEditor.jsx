@@ -109,6 +109,7 @@ export default function ShortformEditor({isDark}){
           }
         }catch{}
       }
+    }catch{}
     // fallback: oEmbed (제목·썸네일만, 길이 모름)
     try{
       const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);

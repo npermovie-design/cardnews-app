@@ -176,7 +176,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
-export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate }) {
+export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate, initialType }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
@@ -194,7 +194,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const [newsInfo,   setNewsInfo]   = useState(null);  // {title, content, image, siteName}
   const [fetchStatus,setFetchStatus]= useState("");
   const [fetchErr,   setFetchErr]   = useState("");
-  const [blogType,   setBlogType]   = useState("naver");
+  const [blogType,   setBlogType]   = useState(initialType || "naver");
   const [tone,       setTone]       = useState("info");
   const [length,     setLength]     = useState("medium");
   const [extra,      setExtra]      = useState("");

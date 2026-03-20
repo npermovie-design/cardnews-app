@@ -122,35 +122,38 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="library" label="보관함" icon="" />
 
         {/* SNS 글쓰기 그룹 */}
-        <Group label="SNS 글쓰기" icon="" active={!!(aiMenu && (aiMenu.startsWith("blog")))} />
+        <Group label="SNS 글쓰기" icon="✍️" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
-          <Item id="blog_naver_intro"   label="네이버 블로그"   icon="" indent />
-          <Item id="blog_tistory_intro" label="티스토리"        icon="" indent />
-          <Item id="blog_insta_intro"   label="인스타그램 캡션" icon="" indent />
-          <Item id="blog_youtube_intro" label="유튜브 대본"     icon="" indent />
-          <Item id="blog_thread_intro"  label="스레드"          icon="" indent />
-          <Item id="blog_yt_blog_intro" label="유튜브로 글쓰기" icon="" indent />
-          <Item id="blog_news_intro"    label="뉴스로 글쓰기"   icon="" indent />
+          <Item id="blog_naver_intro"   label="네이버 블로그"   indent />
+          <Item id="blog_tistory_intro" label="티스토리"        indent />
+          <Item id="blog_insta_intro"   label="인스타그램 캡션" indent />
+          <Item id="blog_youtube_intro" label="유튜브 대본"     indent />
+          <Item id="blog_thread_intro"  label="스레드"          indent />
+          <Item id="blog_yt_blog_intro" label="유튜브로 글쓰기" indent />
+          <Item id="blog_news_intro"    label="뉴스로 글쓰기"   indent />
+          <Item id="blog_cafe"          label="네이버 카페"     indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
-        <Group label="SNS 이미지" icon="" active={!!(aiMenu && (aiMenu==="cardnews_simple"||aiMenu==="cardnews_image"||aiMenu==="detail_simple"||aiMenu==="detail_image"))} />
+        <Group label="SNS 이미지" icon="🖼" active={!!(aiMenu && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu.startsWith(x)))} />
         {cardOpen && <>
-          <Item id="cardnews_simple" label="심플 카드뉴스"   icon="" indent />
-          <Item id="cardnews_image"  label="이미지 카드뉴스" icon="" indent />
-          <Item id="detail_simple"   label="심플 상세페이지" icon="" indent />
-          <Item id="detail_image"    label="이미지 상세페이지" icon="" indent />
+          <Item id="cardnews_simple" label="심플 카드뉴스"    indent />
+          <Item id="cardnews_image"  label="이미지 카드뉴스"  indent />
+          <Item id="detail_simple"   label="심플 상세페이지"  indent />
+          <Item id="detail_image"    label="이미지 상세페이지" indent />
+          {user?.role === "admin" && <Item id="shorts" label="쇼츠 편집 👑" indent />}
         </>}
 
         {/* 이미지 생성 그룹 */}
-        <Group label="이미지 생성" icon="" active={!!(aiMenu && (aiMenu==="image_gen"||aiMenu==="logo_gen"||aiMenu==="mockup_gen"||aiMenu==="product_shot"))} />
+        <Group label="이미지생성" icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu))} />
         {imageOpen && <>
-          <Item id="product_shot" label="제품컷 생성"  icon="" indent />
-          <Item id="logo_gen"     label="로고 생성"    icon="" indent />
-          <Item id="mockup_gen"   label="목업 생성"    icon="" indent />
+          <Item id="product_shot" label="제품컷 생성"      indent />
+          <Item id="logo_gen"     label="로고 생성"        indent />
+          <Item id="mockup_gen"   label="목업 생성"        indent />
+          <Item id="model_gen"    label="모델 생성"        indent />
+          <Item id="face_swap"    label="얼굴·의상 교체"   indent />
+          <Item id="outpaint"     label="좌우 여백 채우기" indent />
         </>}
-
-        {user?.role === "admin" && <Item id="shorts" label="숏폼편집 👑" icon="" />}
 
 
       </div>
@@ -328,7 +331,8 @@ const BLOG_MAP = {
   blog_insta:   { type: "blog_insta",   label: "인스타그램 캡션 생성" },
   blog_youtube: { type: "blog_youtube", label: "유튜브 대본 & 설명 생성" },
   blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
-  blog_yt_blog: { type: "blog_yt_blog",  label: "유튜브로 글쓰기" },
+  blog_yt_blog: { type: "blog_yt_blog", label: "유튜브로 글쓰기" },
+  blog_cafe:    { type: "cafe",         label: "네이버 카페 글쓰기" },
 };
 
 
@@ -623,6 +627,321 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   );
 }
 
+/* ── 모델 생성기 ─────────────────────────────────────────── */
+function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const [gender, setGender] = useState("female"); // female|male|both
+  const [prompt, setPrompt] = useState("");
+  const [refImg, setRefImg] = useState(null); // { b64, mime }
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const ACC = "#6366f1";
+  const bg = isDark ? "transparent" : "#f4f4f8";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+
+  const handleRef = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setRefImg({ b64: ev.target.result.split(",")[1], mime: f.type });
+    reader.readAsDataURL(f);
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    setLoading(true); setErr(""); setResults([]);
+    const genderLabel = gender === "female" ? "여자 모델" : gender === "male" ? "남자 모델" : "남녀 커플 모델";
+    const fullPrompt = `Professional fashion model photo, ${genderLabel}, ${prompt || "modern casual style"}, full body or half body shot, studio lighting, white or minimal background, commercial quality, realistic, high resolution`;
+    try {
+      const body = { prompt: fullPrompt };
+      if (refImg) { body.productImageB64 = refImg.b64; body.productImageMime = refImg.mime; }
+      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.imageBase64) setResults([data.imageBase64]);
+      if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
+    } catch(e) { setErr(e.message || "생성 실패"); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={{ maxWidth:640, margin:"0 auto" }}>
+        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🧍 모델 생성</div>
+        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>AI로 광고용 모델 이미지를 생성해요. 참고 이미지의 분위기를 반영할 수 있어요.</div>
+
+        {/* 성별 선택 */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>모델 성별</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[{v:"female",l:"👩 여자 모델"},{v:"male",l:"👨 남자 모델"},{v:"both",l:"👫 남녀 함께"}].map(g=>(
+              <button key={g.v} onClick={()=>setGender(g.v)} style={{
+                flex:1, padding:"10px 0", borderRadius:10, border:`1.5px solid ${gender===g.v?ACC:bdr}`,
+                background: gender===g.v?`${ACC}18`:"transparent", color: gender===g.v?ACC:muted,
+                fontSize:13, fontWeight:700, cursor:"pointer"
+              }}>{g.l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 스타일 프롬프트 */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>스타일 설명 (선택)</div>
+          <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="예) 캐주얼 스타일, 카페 배경, 자연광, 미니멀한 분위기..."
+            style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card, color:text, fontSize:13, outline:"none", resize:"vertical", minHeight:80 }} />
+        </div>
+
+        {/* 참고 이미지 */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>참고 이미지 (선택) – 분위기·스타일 반영</div>
+          <label style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:10, border:`1.5px dashed ${bdr}`, cursor:"pointer", background:card }}>
+            <span style={{ fontSize:20 }}>{refImg?"✅":"📎"}</span>
+            <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?"참고 이미지 선택됨":"이미지 파일 선택"}</span>
+            <input type="file" accept="image/*" onChange={handleRef} style={{ display:"none" }} />
+          </label>
+        </div>
+
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+
+        <button onClick={generate} disabled={loading} style={{
+          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:loading?"wait":"pointer",
+          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
+          boxShadow:`0 6px 20px ${ACC}40`, opacity:loading?0.7:1, marginBottom:24
+        }}>{loading?"🎨 모델 생성 중...":"🧍 모델 이미지 생성하기 (10P)"}</button>
+
+        {results.length > 0 && (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
+            {results.map((b64,i)=>(
+              <div key={i} style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}` }}>
+                <img src={`data:image/png;base64,${b64}`} alt="model" style={{ width:"100%", display:"block" }} />
+                <div style={{ padding:"8px 10px", textAlign:"right" }}>
+                  <a href={`data:image/png;base64,${b64}`} download={`model_${i+1}.png`}
+                    style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 다운로드</a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── 얼굴·의상 교체 ─────────────────────────────────────── */
+function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const [srcImg, setSrcImg] = useState(null);
+  const [refImg, setRefImg] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [sliderPos, setSliderPos] = useState(50);
+  const ACC = "#6366f1";
+  const bg = isDark ? "transparent" : "#f4f4f8";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+
+  const readFile = (setter) => (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setter({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!srcImg || !refImg) { setErr("원본 이미지와 참고 이미지를 모두 업로드해주세요."); return; }
+    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다."); return; }
+    setLoading(true); setErr(""); setResult(null);
+    try {
+      const prompt = "Swap the face and outfit from the reference photo onto the person in the main photo. Keep the background and pose. Make it photorealistic and seamless.";
+      const res = await fetch("/api/generate-image", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime, refImageB64: refImg.b64, refImageMime: refImg.mime })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.imageBase64) setResult(`data:image/png;base64,${data.imageBase64}`);
+      if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
+    } catch(e) { setErr(e.message || "생성 실패"); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={{ maxWidth:700, margin:"0 auto" }}>
+        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔄 얼굴·의상 교체</div>
+        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>두 장의 이미지를 업로드하면 AI가 얼굴과 의상을 교체해줘요. 슬라이더로 비교해보세요.</div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+          {[{label:"원본 이미지", setter:setSrcImg, img:srcImg, emoji:"👤"},{label:"참고 이미지 (교체할 스타일)", setter:setRefImg, img:refImg, emoji:"🎭"}].map(({label,setter,img,emoji})=>(
+            <label key={label} style={{ display:"block", cursor:"pointer" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:6 }}>{label}</div>
+              <div style={{ aspectRatio:"3/4", borderRadius:10, border:`1.5px dashed ${img?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
+                {img ? <img src={img.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <><span style={{ fontSize:32 }}>{emoji}</span><span style={{ fontSize:12, color:muted }}>클릭하여 업로드</span></>}
+              </div>
+              <input type="file" accept="image/*" onChange={readFile(setter)} style={{ display:"none" }} />
+            </label>
+          ))}
+        </div>
+
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:12 }}>{err}</div>}
+
+        <button onClick={generate} disabled={loading||!srcImg||!refImg} style={{
+          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:(loading||!srcImg||!refImg)?"not-allowed":"pointer",
+          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
+          boxShadow:`0 6px 20px ${ACC}40`, opacity:(loading||!srcImg||!refImg)?0.6:1, marginBottom:24
+        }}>{loading?"🔄 교체 중...":"🔄 얼굴·의상 교체하기 (10P)"}</button>
+
+        {(srcImg || result) && (
+          <div style={{ marginTop:8 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>비교 보기 (슬라이더로 조절)</div>
+            <div style={{ position:"relative", borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}`, userSelect:"none" }}>
+              {srcImg && <img src={srcImg.url} alt="before" style={{ width:"100%", display:"block" }} />}
+              {result && (
+                <div style={{ position:"absolute", inset:0, overflow:"hidden", clipPath:`inset(0 ${100-sliderPos}% 0 0)` }}>
+                  <img src={result} alt="after" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                </div>
+              )}
+              {result && (
+                <div style={{ position:"absolute", top:0, bottom:0, left:`${sliderPos}%`, width:3, background:"#fff", transform:"translateX(-50%)", cursor:"ew-resize" }}
+                  onMouseDown={e=>{
+                    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                    const move = ev => setSliderPos(Math.min(100,Math.max(0,((ev.clientX-rect.left)/rect.width)*100)));
+                    const up = () => { document.removeEventListener("mousemove",move); document.removeEventListener("mouseup",up); };
+                    document.addEventListener("mousemove",move); document.addEventListener("mouseup",up);
+                  }}>
+                  <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:28, height:28, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", fontSize:12 }}>◀▶</div>
+                </div>
+              )}
+              {!result && srcImg && <div style={{ position:"absolute", top:8, left:8, padding:"4px 8px", borderRadius:6, background:"rgba(0,0,0,0.5)", color:"#fff", fontSize:11 }}>원본</div>}
+            </div>
+            {result && (
+              <div style={{ textAlign:"right", marginTop:8 }}>
+                <a href={result} download="faceswap.png" style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 결과 다운로드</a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── 좌우 여백 채우기 (Outpainting) ─────────────────────── */
+function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const [srcImg, setSrcImg] = useState(null);
+  const [direction, setDirection] = useState("both"); // left|right|both
+  const [ratio, setRatio] = useState("16:9");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const ACC = "#6366f1";
+  const bg = isDark ? "transparent" : "#f4f4f8";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+
+  const readFile = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setSrcImg({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!srcImg) { setErr("이미지를 업로드해주세요."); return; }
+    if ((user.points || 0) < 10) { setErr("포인트가 부족합니다."); return; }
+    setLoading(true); setErr(""); setResult(null);
+    const dirLabel = direction === "left" ? "left side" : direction === "right" ? "right side" : "both sides";
+    const prompt = `Extend the image by filling in the ${dirLabel} naturally. Match the existing background, lighting, colors and style. Make it seamless and photorealistic. Target aspect ratio: ${ratio}.`;
+    try {
+      const res = await fetch("/api/generate-image", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.imageBase64) setResult(`data:image/png;base64,${data.imageBase64}`);
+      if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
+    } catch(e) { setErr(e.message || "생성 실패"); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={{ maxWidth:640, margin:"0 auto" }}>
+        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>↔ 좌우 여백 채우기</div>
+        <div style={{ fontSize:13, color:muted, marginBottom:20 }}>이미지의 좌우 여백을 AI가 자연스럽게 채워 더 넓은 화면비로 확장해줘요.</div>
+
+        {/* 이미지 업로드 */}
+        <div style={{ marginBottom:16 }}>
+          <label style={{ display:"block", cursor:"pointer" }}>
+            <div style={{ padding:"32px", borderRadius:12, border:`1.5px dashed ${srcImg?ACC:bdr}`, background:card, textAlign:"center", overflow:"hidden" }}>
+              {srcImg
+                ? <img src={srcImg.url} alt="" style={{ maxWidth:"100%", maxHeight:200, objectFit:"contain", borderRadius:8 }} />
+                : <><div style={{ fontSize:36, marginBottom:8 }}>🖼</div><div style={{ fontSize:13, color:muted }}>클릭하여 이미지 업로드</div></>
+              }
+            </div>
+            <input type="file" accept="image/*" onChange={readFile} style={{ display:"none" }} />
+          </label>
+        </div>
+
+        {/* 방향 선택 */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>확장 방향</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[{v:"left",l:"← 왼쪽"},{v:"both",l:"↔ 양쪽"},{v:"right",l:"오른쪽 →"}].map(d=>(
+              <button key={d.v} onClick={()=>setDirection(d.v)} style={{
+                flex:1, padding:"10px 0", borderRadius:10, border:`1.5px solid ${direction===d.v?ACC:bdr}`,
+                background:direction===d.v?`${ACC}18`:"transparent", color:direction===d.v?ACC:muted,
+                fontSize:13, fontWeight:700, cursor:"pointer"
+              }}>{d.l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 비율 선택 */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>목표 비율</div>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["16:9","21:9","4:3","3:2","2:1"].map(r=>(
+              <button key={r} onClick={()=>setRatio(r)} style={{
+                padding:"7px 14px", borderRadius:8, border:`1.5px solid ${ratio===r?ACC:bdr}`,
+                background:ratio===r?`${ACC}18`:"transparent", color:ratio===r?ACC:muted,
+                fontSize:13, fontWeight:700, cursor:"pointer"
+              }}>{r}</button>
+            ))}
+          </div>
+        </div>
+
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:12 }}>{err}</div>}
+
+        <button onClick={generate} disabled={loading||!srcImg} style={{
+          width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:(loading||!srcImg)?"not-allowed":"pointer",
+          background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900,
+          boxShadow:`0 6px 20px ${ACC}40`, opacity:(loading||!srcImg)?0.6:1, marginBottom:24
+        }}>{loading?"↔ 여백 채우는 중...":"↔ 여백 채우기 (10P)"}</button>
+
+        {result && (
+          <div style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}` }}>
+            <img src={result} alt="outpainted" style={{ width:"100%", display:"block" }} />
+            <div style={{ padding:"10px 14px", textAlign:"right", background:card }}>
+              <a href={result} download="outpainted.png" style={{ fontSize:12, color:ACC, fontWeight:700, textDecoration:"none" }}>⬇ 다운로드</a>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, onUserUpdate }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
@@ -650,9 +969,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "detail_simple",    icon: "📋", title: "심플 상세페이지",  desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "detail_image",     icon: "🛍", title: "이미지 상세페이지",desc: "AI 이미지 상세페이지",     cr: 30, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       { id: "image_gen",        icon: "🎨", title: "이미지 생성",      desc: "AI 이미지 자유 생성",      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "product_shot", icon: "🛍", title: "제품컷 생성", desc: "AI 광고용 제품 이미지", cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
-      { id: "logo_gen",   icon: "🏷", title: "로고 생성",  desc: "AI 맞춤 로고 제작",   cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "mockup_gen", icon: "🎨", title: "목업 생성",  desc: "제품·브랜드 목업 제작", cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
+      { id: "product_shot", icon: "🛍", title: "제품컷 생성",       desc: "AI 광고용 제품 이미지",    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
+      { id: "logo_gen",     icon: "🏷", title: "로고 생성",         desc: "AI 맞춤 로고 제작",        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "mockup_gen",   icon: "🎨", title: "목업 생성",         desc: "제품·브랜드 목업 제작",    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
+      { id: "model_gen",    icon: "🧍", title: "모델 생성",         desc: "여자/남자 광고 모델 생성", cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "face_swap",    icon: "🔄", title: "얼굴·의상 교체",   desc: "이미지 비교 슬라이더",     cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "outpaint",     icon: "↔",  title: "좌우 여백 채우기", desc: "이미지 비율 확장",          cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: "숏폼편집 👑", desc: "유튜브→숏폼 AI 기획 (관리자)", cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
     return (
@@ -879,6 +1201,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     if (d) return <IntroScreen {...d} onStart={()=>setAiMenu(baseId)} />;
   }
 
+  // 네이버 카페 글쓰기
+  if (aiMenu === "blog_cafe") {
+    return (
+      <div key="blog_cafe" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} initialType="cafe" />
+      </div>
+    );
+  }
+
   // 블로그 계열 생성기
   if (aiMenu.startsWith("blog_")) {
     const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
@@ -1099,6 +1430,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
+  // 모델 생성
+  if (aiMenu === "model_gen") {
+    return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+  }
+
+  // 얼굴·의상 교체
+  if (aiMenu === "face_swap") {
+    return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+  }
+
+  // 좌우 여백 채우기
+  if (aiMenu === "outpaint") {
+    return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+  }
 
   // 회원정보
   if (aiMenu === "profile") {
@@ -1205,7 +1550,10 @@ const MENU_LABELS = {
   cardnews_image: "이미지 카드뉴스", cardnews_image_make: "이미지 카드뉴스",
   detail_simple: "심플 상세페이지", detail_simple_make: "심플 상세페이지", detail_simple_open: "심플 상세페이지",
   detail_image: "이미지 상세페이지", detail_image_make: "이미지 상세페이지",
-  logo_gen: "로고 생성", mockup_gen: "목업 생성", shorts: "숏폼편집",
+  logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
+  blog_cafe: "네이버 카페", blog_cafe_intro: "네이버 카페",
+  model_gen: "모델 생성", face_swap: "얼굴·의상 교체", outpaint: "좌우 여백 채우기",
+  shorts: "숏폼편집",
 };
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
@@ -1315,6 +1663,14 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         @media(max-width:768px){
           .ai-sidebar-desktop{display:none!important}
           .ai-sidebar-mobile{display:flex!important}
+        }
+        @media(max-width:640px){
+          .ai-content-pad{padding:16px 12px 60px!important}
+          .ai-grid{grid-template-columns:repeat(2,1fr)!important}
+          .ai-form-row{flex-direction:column!important}
+        }
+        @media(max-width:400px){
+          .ai-grid{grid-template-columns:1fr!important}
         }
       `}</style>
 
