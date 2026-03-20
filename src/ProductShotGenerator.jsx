@@ -46,6 +46,20 @@ const TONE_PROMPTS = {
   natural: "natural realistic colors, balanced lighting, true-to-life color accuracy",
 };
 
+const SIZE_PRESETS = [
+  { id:"sq",   label:"정사각형", ratio:"1:1",  w:1,  h:1,  icon:"⬜", desc:"인스타그램 피드",   prompt:"square format 1:1 aspect ratio" },
+  { id:"v45",  label:"세로 4:5", ratio:"4:5",  w:4,  h:5,  icon:"📱", desc:"인스타 세로 피드",   prompt:"portrait format 4:5 aspect ratio" },
+  { id:"v916", label:"세로 9:16",ratio:"9:16", w:9,  h:16, icon:"📲", desc:"릴스·쇼츠",          prompt:"tall portrait format 9:16 aspect ratio" },
+  { id:"h169", label:"가로 16:9",ratio:"16:9", w:16, h:9,  icon:"🖥",  desc:"유튜브 썸네일·배너", prompt:"landscape format 16:9 aspect ratio" },
+  { id:"h43",  label:"가로 4:3", ratio:"4:3",  w:4,  h:3,  icon:"🖼",  desc:"블로그·프레젠테이션", prompt:"landscape format 4:3 aspect ratio" },
+];
+
+const RESOLUTIONS = [
+  { id:"sm", label:"소",  px:800,  desc:"800px · 웹용" },
+  { id:"md", label:"중",  px:1080, desc:"1080px · SNS 표준" },
+  { id:"lg", label:"대",  px:1920, desc:"1920px · 고화질 인쇄" },
+];
+
 const MODEL_GENDERS = [
   { id:"female", label:"여성",    icon:"👩" },
   { id:"male",   label:"남성",    icon:"👨" },
@@ -76,10 +90,11 @@ async function generateProductShot(prompt, productB64, productMime) {
   return data.image;
 }
 
-function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc }) {
-  const atmoP = ATMO_PROMPTS[atmosphere] || ATMO_PROMPTS.studio;
-  const toneP = TONE_PROMPTS[colorTone]  || TONE_PROMPTS.natural;
-  const nameP = productName?.trim() ? `"${productName.trim()}" ` : "";
+function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset }) {
+  const atmoP  = ATMO_PROMPTS[atmosphere] || ATMO_PROMPTS.studio;
+  const toneP  = TONE_PROMPTS[colorTone]  || TONE_PROMPTS.natural;
+  const nameP  = productName?.trim() ? `"${productName.trim()}" ` : "";
+  const sizeP  = SIZE_PRESETS.find(s => s.id === sizePreset)?.prompt || SIZE_PRESETS[0].prompt;
 
   if (mode === "product") {
     return [
@@ -87,6 +102,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
       `${nameP}product advertisement image.`,
       atmoP + ".",
       toneP + ".",
+      sizeP + ".",
       `High quality studio product shot, commercial advertising style, photorealistic, sharp focus.`,
       `The product is prominently displayed and well-lit.`,
       `No text, no watermark, no people, no models.`,
@@ -106,6 +122,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
     `${countP} attractive ${genderP} ${ageP} ${actionP}.`,
     `${atmoP}.`,
     `${toneP}.`,
+    sizeP + ".",
     `Natural authentic pose, professional commercial lighting, photorealistic, high quality advertising photography.`,
     `Korean beauty standards, clean polished look.`,
     `No text, no watermark.`,
@@ -137,6 +154,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   const [count,       setCount]       = useState("1");
   const [result,      setResult]      = useState(null);
   const [error,       setError]       = useState("");
+  const [sizePreset,  setSizePreset]  = useState("sq");
+  const [resolution,  setResolution]  = useState("md");
 
   const handleFile = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -161,7 +180,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
 
     setError(""); setStep(2);
     try {
-      const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc });
+      const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset });
       const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
       setResult(img);
       if (user) {
@@ -177,10 +196,39 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
 
   const handleDownload = () => {
     if (!result) return;
-    const a = document.createElement("a");
-    a.href = result;
-    a.download = `product_shot_${Date.now()}.png`;
-    a.click();
+    const preset = SIZE_PRESETS.find(s => s.id === sizePreset) || SIZE_PRESETS[0];
+    const resPx  = RESOLUTIONS.find(r => r.id === resolution)?.px || 1080;
+    // 긴 쪽이 resPx가 되도록 출력 크기 계산
+    const ratio  = preset.w / preset.h;
+    const outW   = ratio >= 1 ? resPx : Math.round(resPx * ratio);
+    const outH   = ratio >= 1 ? Math.round(resPx / ratio) : resPx;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width  = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+
+      // 중앙 크롭 (cover 방식)
+      const srcRatio = img.naturalWidth / img.naturalHeight;
+      const tgtRatio = outW / outH;
+      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+      if (srcRatio > tgtRatio) {
+        sw = Math.round(sh * tgtRatio);
+        sx = Math.round((img.naturalWidth - sw) / 2);
+      } else {
+        sh = Math.round(sw / tgtRatio);
+        sy = Math.round((img.naturalHeight - sh) / 2);
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `product_shot_${preset.ratio.replace(":","x")}_${resPx}px_${Date.now()}.png`;
+      a.click();
+    };
+    img.src = result;
   };
 
   const reset = () => {
@@ -188,6 +236,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
     setProductImg(null); setProductName(""); setExtraDesc("");
     setAtmosphere("studio"); setColorTone("bright");
     setGender("female"); setAge("20s"); setCount("1");
+    setSizePreset("sq"); setResolution("md");
   };
 
   const card = (active, color = accent) => ({
@@ -324,6 +373,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
             mode === "model" ? "🧍 모델 포함" : "📦 제품만",
             ATMOSPHERES.find(a=>a.id===atmosphere)?.icon + " " + ATMOSPHERES.find(a=>a.id===atmosphere)?.label,
             COLOR_TONES.find(t=>t.id===colorTone)?.label,
+            SIZE_PRESETS.find(s=>s.id===sizePreset)?.icon + " " + SIZE_PRESETS.find(s=>s.id===sizePreset)?.ratio,
+            RESOLUTIONS.find(r=>r.id===resolution)?.desc,
             productName ? `"${productName}"` : null,
           ].filter(Boolean).map((tag, i) => (
             <span key={i} style={{ padding:"3px 10px", borderRadius:12, background:`rgba(249,115,22,0.12)`, border:`1px solid rgba(249,115,22,0.25)`, fontSize:11, fontWeight:600, color:accent }}>
@@ -338,7 +389,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
             style={{ flex:1, minWidth:160, padding:"13px", borderRadius:12, border:"none", cursor:"pointer",
               background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:14, fontWeight:800,
               boxShadow:`0 6px 20px rgba(249,115,22,0.3)` }}>
-            📥 PNG 다운로드
+            📥 PNG 다운로드 ({SIZE_PRESETS.find(s=>s.id===sizePreset)?.ratio} · {RESOLUTIONS.find(r=>r.id===resolution)?.desc})
           </button>
           <button onClick={() => { setResult(null); setStep(1); }}
             style={{ padding:"13px 22px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:13, cursor:"pointer", fontWeight:700 }}>
@@ -519,6 +570,53 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
                 fontSize:12, fontWeight:colorTone===t.id?800:500, cursor:"pointer", transition:"all 0.15s",
               }}>{t.label}</button>
             ))}
+          </div>
+        </div>
+
+        {/* ─── 사이즈·해상도 ─── */}
+        <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
+          <SectionTitle>{mode === "model" ? "⑥" : "⑤"} 사이즈 · 해상도</SectionTitle>
+
+          {/* 비율 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>출력 비율</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6 }}>
+              {SIZE_PRESETS.map(s => {
+                const isSel = sizePreset === s.id;
+                return (
+                  <div key={s.id} onClick={() => setSizePreset(s.id)} style={{
+                    borderRadius:10, border:`2px solid ${isSel ? accent : bdr}`,
+                    background: isSel ? accent+"18" : "transparent",
+                    cursor:"pointer", padding:"10px 6px", textAlign:"center", transition:"all 0.15s",
+                  }}>
+                    <div style={{ fontSize:18, marginBottom:3 }}>{s.icon}</div>
+                    <div style={{ fontSize:11, fontWeight:800, color: isSel ? accent : text }}>{s.label}</div>
+                    <div style={{ fontSize:9, color:muted, marginTop:2 }}>{s.ratio}</div>
+                    <div style={{ fontSize:9, color:muted, lineHeight:1.3, marginTop:2 }}>{s.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 해상도 */}
+          <div>
+            <div style={{ fontSize:12, color:muted, marginBottom:8, fontWeight:600 }}>다운로드 해상도</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {RESOLUTIONS.map(r => (
+                <button key={r.id} onClick={() => setResolution(r.id)} style={{
+                  flex:1, padding:"10px 8px", borderRadius:10,
+                  border:`2px solid ${resolution===r.id ? accent : bdr}`,
+                  background: resolution===r.id ? accent+"18" : "transparent",
+                  color: resolution===r.id ? accent : muted,
+                  fontSize:13, fontWeight:resolution===r.id?800:500, cursor:"pointer",
+                  transition:"all 0.15s",
+                }}>
+                  <div style={{ fontWeight:900, marginBottom:2 }}>{r.label}</div>
+                  <div style={{ fontSize:10, opacity:0.8 }}>{r.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
