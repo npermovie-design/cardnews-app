@@ -476,55 +476,49 @@ export default function App() {
         </button>
 
         {/* 데스크톱 메뉴 */}
-        <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+        <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
           <NavBtn id="archive" label="자료실" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
-          {/* SNS 글쓰기 */}
+          {/* AI 생성기 통합 드롭다운 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label="SNS글쓰기" open={openMenu==="snsWrite"} active={page==="ai" && aiMenu?.startsWith("blog_")} onClick={() => setOpenMenu(m => m==="snsWrite"?null:"snsWrite")} />
-            {openMenu==="snsWrite" && (
-              <DropMenu>
-                <DropItem id="ai" label="네이버 블로그"   onClick={() => { navigateAi("blog_naver_intro");   setOpenMenu(null); }} />
-                <DropItem id="ai" label="티스토리"        onClick={() => { navigateAi("blog_tistory_intro"); setOpenMenu(null); }} />
-                <DropItem id="ai" label="인스타그램 캡션" onClick={() => { navigateAi("blog_insta_intro");   setOpenMenu(null); }} />
-                <DropItem id="ai" label="유튜브 대본"     onClick={() => { navigateAi("blog_youtube_intro"); setOpenMenu(null); }} />
-                <DropItem id="ai" label="스레드"          onClick={() => { navigateAi("blog_thread_intro");  setOpenMenu(null); }} />
-                <DropItem id="ai" label="유튜브로 글쓰기" onClick={() => { navigateAi("blog_yt_blog_intro"); setOpenMenu(null); }} />
-                <DropItem id="ai" label="뉴스로 글쓰기"   onClick={() => { navigateAi("blog_news_intro");    setOpenMenu(null); }} />
-                <DropItem id="ai" label="네이버 카페"     onClick={() => { navigateAi("blog_cafe");          setOpenMenu(null); }} />
-              </DropMenu>
+            <DropBtn label="AI 생성기" open={openMenu==="aiGen"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
+            {openMenu==="aiGen" && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
+                background: C.modalBg, border: "1px solid " + C.border,
+                borderRadius: 13, padding: 8, minWidth: 260,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
+              }}>
+                {[
+                  { key:"snsWrite", label:"✍️ SNS 글쓰기",  desc:"블로그·인스타·유튜브",  ai:"blog_naver_intro" },
+                  { key:"snsImage", label:"🖼 SNS 이미지",   desc:"카드뉴스·상세페이지",   ai:"cardnews_simple"  },
+                  { key:"imageGen", label:"🎨 이미지 생성",  desc:"제품컷·로고·모델·목업", ai:"product_shot"     },
+                ].map(item => (
+                  <button key={item.key} onClick={() => { navigateAi(item.ai); setOpenMenu(null); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%",
+                      padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+                      background: (page==="ai" &&
+                        ((item.key==="snsWrite" && aiMenu?.startsWith("blog_")) ||
+                         (item.key==="snsImage" && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu?.startsWith(x))) ||
+                         (item.key==="imageGen" && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu))))
+                        ? "rgba(124,106,255,0.08)" : "transparent",
+                      textAlign: "left", transition: "background 0.12s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div style={{ fontSize: 26 }}>{item.label.split(" ")[0]}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label.slice(3)}</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-          {/* SNS 이미지 */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label="SNS이미지" open={openMenu==="snsImage"} active={page==="ai" && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu?.startsWith(x))} onClick={() => setOpenMenu(m => m==="snsImage"?null:"snsImage")} />
-            {openMenu==="snsImage" && (
-              <DropMenu>
-                <DropItem id="ai" label="심플 카드뉴스"    onClick={() => { navigateAi("cardnews_simple"); setOpenMenu(null); }} />
-                <DropItem id="ai" label="이미지 카드뉴스"  onClick={() => { navigateAi("cardnews_image");  setOpenMenu(null); }} />
-                <DropItem id="ai" label="심플 상세페이지"  onClick={() => { navigateAi("detail_simple");   setOpenMenu(null); }} />
-                <DropItem id="ai" label="이미지 상세페이지" onClick={() => { navigateAi("detail_image");   setOpenMenu(null); }} />
-                {user?.role === "admin" && <DropItem id="ai" label="쇼츠영상 생성기 👑" onClick={() => { navigateAi("shorts"); setOpenMenu(null); }} />}
-              </DropMenu>
-            )}
-          </div>
-          {/* 이미지 생성 */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label="이미지생성" open={openMenu==="imageGen"} active={page==="ai" && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu)} onClick={() => setOpenMenu(m => m==="imageGen"?null:"imageGen")} />
-            {openMenu==="imageGen" && (
-              <DropMenu>
-                <DropItem id="ai" label="제품컷 생성"      onClick={() => { navigateAi("product_shot"); setOpenMenu(null); }} />
-                <DropItem id="ai" label="로고 생성"        onClick={() => { navigateAi("logo_gen");     setOpenMenu(null); }} />
-                <DropItem id="ai" label="목업 생성"        onClick={() => { navigateAi("mockup_gen");   setOpenMenu(null); }} />
-                <DropItem id="ai" label="모델 생성"        onClick={() => { navigateAi("model_gen");    setOpenMenu(null); }} />
-                <DropItem id="ai" label="얼굴·의상 교체"   onClick={() => { navigateAi("face_swap");    setOpenMenu(null); }} />
-                <DropItem id="ai" label="좌우 여백 채우기" onClick={() => { navigateAi("outpaint");     setOpenMenu(null); }} />
-              </DropMenu>
-            )}
-          </div>
-          <div style={{ flex: 1 }} />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn label="커뮤니티" open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
