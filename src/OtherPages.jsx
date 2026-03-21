@@ -6,7 +6,7 @@
    - PricingPage.jsx : 요금제 / 크레딧
    - ContactPage.jsx : 문의하기
 ══════════════════════════════════════════════════════════ */
-export { AboutPage }   from "./AboutPage";
+export { AboutPage, HowToPage } from "./AboutPage";
 export { AiPage }      from "./AiPage";
 export { PricingPage } from "./PricingPage";
 export { ContactPage } from "./ContactPage";

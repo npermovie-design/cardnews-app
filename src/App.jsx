@@ -4,7 +4,7 @@ import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAut
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
-import { AboutPage, AiPage, ContactPage } from "./OtherPages";
+import { AboutPage, HowToPage, AiPage, ContactPage } from "./OtherPages";
 import { PricingPage } from "./PricingPage";
 import { PaymentSuccessPage, PaymentFailPage } from "./PaymentPage";
 import { LegalPage } from "./LegalPage";
@@ -353,9 +353,10 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
+    if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
     if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} />;
+    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
@@ -481,6 +482,7 @@ export default function App() {
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
+          <NavBtn id="howto" label="이용방법" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
           {/* AI 생성기 통합 드롭다운 */}
           <div style={{ position: "relative" }}>

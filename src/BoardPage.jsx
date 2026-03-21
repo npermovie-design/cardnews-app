@@ -306,7 +306,7 @@ function extractText(html, maxLen = 120) {
 }
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
-export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost }) {
+export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost, onUserUpdate }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [subCat,  setSubCat]  = useState(initialCat || "info");
   const [subCats, setSubCats] = useState(DEFAULT_CATS);
@@ -438,7 +438,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     // 1P 지급
     if(user.uid){
       try {
-        await changePoints(user.uid, 1, "커뮤니티 글 작성");
+        const newPts = await changePoints(user.uid, 1, "커뮤니티 글 작성");
+        if(onUserUpdate) onUserUpdate({...user, points: newPts});
         showToast("✅ 글이 등록됐어요! +1P 포인트가 지급됐습니다 🎉","success");
       } catch(e) {
         showToast("✅ 글이 등록됐어요!","success");
