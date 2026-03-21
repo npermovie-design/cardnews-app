@@ -9,7 +9,8 @@ async function fetchFiles() {
   return (data || []).map(v => ({ ...v, key: v.id }));
 }
 async function addFile(data) {
-  await supabase.from("archive_files").insert({ ...data, created_at: new Date().toISOString() });
+  const { error } = await supabase.from("archive_files").insert({ ...data, created_at: new Date().toISOString() });
+  if (error) throw new Error(error.message || "DB 저장 실패");
 }
 async function deleteFileRecord(key) {
   await supabase.from("archive_files").delete().eq("id", key);
