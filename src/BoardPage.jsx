@@ -992,7 +992,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {hoverPreview && (
               <div style={{
                 position:"fixed", zIndex:9999, pointerEvents:"none",
-                left: hoverPreview.x + 16, top: Math.min(hoverPreview.y - 20, window.innerHeight - 260),
+                left: hoverPreview.x, top: hoverPreview.y,
                 width: 280, background: isDark?"rgba(18,16,48,0.97)":"#fff",
                 border:"1px solid "+(isDark?"rgba(124,106,255,0.25)":"rgba(0,0,0,0.1)"),
                 borderRadius:14, boxShadow:"0 12px 40px rgba(0,0,0,0.22)", overflow:"hidden",
@@ -1054,10 +1054,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div key={p.id} onClick={()=>openPost(p)}
                     style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
                       padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
-                    onMouseEnter={e=>{
-                      e.currentTarget.style.background=hover;
-                      const rect=e.currentTarget.getBoundingClientRect();
-                      setHoverPreview({post:p,thumb,snippet:extractText(p.body),x:rect.right,y:rect.top});
+                    onMouseEnter={e=>{ e.currentTarget.style.background=hover; }}
+                    onMouseMove={e=>{
+                      const x = e.clientX + 18;
+                      const y = e.clientY - 10;
+                      const popW = 280, popH = hoverPreview?.thumb ? 220 : 100;
+                      setHoverPreview({
+                        post: p, thumb, snippet: extractText(p.body),
+                        x: x + popW > window.innerWidth ? e.clientX - popW - 10 : x,
+                        y: y + popH > window.innerHeight ? e.clientY - popH : y,
+                      });
                     }}
                     onMouseLeave={e=>{
                       e.currentTarget.style.background="transparent";
