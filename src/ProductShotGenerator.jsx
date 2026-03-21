@@ -327,18 +327,16 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
         <div style={{ fontSize:13, color:muted, marginBottom:28 }}>보통 15~30초 소요됩니다. 잠시만 기다려주세요.</div>
         {/* 진행 단계 */}
         {/* 진행 표시 */}
-        {imgCount > 1 && (
-          <div style={{ marginTop:20, width:"100%" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:muted, marginBottom:6 }}>
-              <span>생성 중...</span>
-              <span style={{ color:accent, fontWeight:800 }}>{genProgress} / {imgCount}</span>
-            </div>
-            <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden" }}>
-              <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ea580c)`,
-                width:`${imgCount > 0 ? (genProgress/imgCount)*100 : 0}%`, transition:"width 0.5s ease" }}/>
-            </div>
+        <div style={{ marginTop:20, width:"100%" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:muted, marginBottom:6 }}>
+            <span>생성 중...</span>
+            <span style={{ color:accent, fontWeight:800 }}>{genProgress} / {imgCount}</span>
           </div>
-        )}
+          <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ea580c)`,
+              width:`${imgCount > 0 ? Math.max(5,(genProgress/imgCount)*100) : 5}%`, transition:"width 0.5s ease" }}/>
+          </div>
+        </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>

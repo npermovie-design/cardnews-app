@@ -236,6 +236,11 @@ async function getAiSuggestions(catLabel, form) {
 export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate }) {
   const [wizStep, setWizStep] = useState(1);
 
+  // URL 불러오기
+  const [urlInput,   setUrlInput]   = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlResult,  setUrlResult]  = useState(null);
+
   // Step1
   const [selCat,    setSelCat]    = useState(null);
   const [form,      setForm]      = useState({ productName:"", features:"", price:"", cta:"지금 구매하기", target:"", extra:"" });
@@ -303,6 +308,23 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       </div>
     </div>
   );
+
+  // URL에서 콘텐츠 불러오기
+  const fetchFromUrl = async () => {
+    if (!urlInput.trim()) return;
+    setUrlLoading(true); setUrlResult(null);
+    try {
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const data = await r.json();
+      if (data.error) { alert(data.error); setUrlLoading(false); return; }
+      setUrlResult(data);
+      // 상품명 = 제목, 특징 = 설명+내용
+      if (data.title) setForm(p=>({...p, productName: data.title.slice(0,60)}));
+      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
+      if (desc) setForm(p=>({...p, features: desc}));
+    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    setUrlLoading(false);
+  };
 
   // AI 추천
   const getSugg = async () => {
@@ -417,6 +439,31 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>상품 정보를 입력하세요</div>
             <div style={{ fontSize:13, color:muted }}>입력한 내용을 바탕으로 AI가 상세페이지 슬라이드를 구성해요</div>
+          </div>
+
+          {/* URL 불러오기 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>🔗 URL로 내용 불러오기</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:10 }}>상품 페이지, 뉴스 기사, 유튜브 링크를 붙여넣으면 상품명·특징을 자동으로 채워줘요</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                onKeyDown={e=>{ if(e.key==="Enter") fetchFromUrl(); }}
+                placeholder="https://... 상품 페이지 / 뉴스 / 유튜브 URL"
+                style={{ flex:1, padding:"9px 13px", borderRadius:9, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
+              <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
+                {urlLoading?"불러오는 중...":"불러오기"}
+              </button>
+            </div>
+            {urlResult && (
+              <div style={{ marginTop:10, padding:"10px 13px", borderRadius:8, background:D?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)", border:"1px solid rgba(99,102,241,0.2)", display:"flex", gap:10, alignItems:"flex-start" }}>
+                {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:56, height:40, objectFit:"cover", borderRadius:5, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{urlResult.title}</div>
+                  <div style={{ fontSize:11, color:muted, marginTop:2 }}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스 기사":"웹페이지"} · 상품명·특징에 자동 입력됐어요</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 카테고리 */}

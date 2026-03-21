@@ -583,6 +583,37 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             })()}
           </div>
         </div>
+        {/* 이전/다음 글 네비게이션 */}
+        {(()=>{
+          const viewIdx = filtered.findIndex(p=>p.id===view.id);
+          const prevP = viewIdx < filtered.length-1 ? filtered[viewIdx+1] : null; // 최신순이므로 인덱스 +1이 이전글
+          const nextP = viewIdx > 0 ? filtered[viewIdx-1] : null; // 인덱스 -1이 다음글
+          return (
+            <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:12,overflow:"hidden",marginBottom:16}}>
+              {nextP&&<div style={{display:"flex",alignItems:"center",padding:"12px 18px",borderBottom:prevP?"1px solid "+bdr:"none",cursor:"pointer",gap:10}}
+                onClick={()=>openPost(nextP)}
+                onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)"}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,flexShrink:0}}>▲ 다음 글</span>
+                <span style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nextP.title}</span>
+              </div>}
+              {prevP&&<div style={{display:"flex",alignItems:"center",padding:"12px 18px",cursor:"pointer",gap:10}}
+                onClick={()=>openPost(prevP)}
+                onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)"}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,flexShrink:0}}>▼ 이전 글</span>
+                <span style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prevP.title}</span>
+              </div>}
+            </div>
+          );
+        })()}
+        {/* 목록으로 버튼 (하단) */}
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+          <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}}
+            style={{padding:"10px 32px",borderRadius:10,border:"1px solid "+bdr,background:C.card,color:C.muted,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+            ≡ 목록으로
+          </button>
+        </div>
         {/* 댓글 */}
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden"}}>
           <div style={{padding:"18px 24px",borderBottom:"1px solid "+bdr}}>

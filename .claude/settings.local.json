@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"color:#111\\\\|color:#000\\\\|color: #111\\\\|color: #000\" src/*.jsx)"
+    ]
+  }
+}

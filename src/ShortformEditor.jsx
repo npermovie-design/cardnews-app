@@ -79,6 +79,8 @@ export default function ShortformEditor({isDark}){
   const [recMsg,setRecMsg]     = useState("");
   const [autoMode,setAutoMode] = useState(false);   // 전체 자동 편집 중
   const [autoIdx,setAutoIdx]   = useState(0);       // 자동 편집 진행 클립 번호
+  const [topText, setTopText]  = useState("");
+  const [botText, setBotText]  = useState("");
   const cachedSrcUrl           = useRef(null);       // 다운로드한 영상 캐시 URL
   const [err,setErr]           = useState("");
   const [copied,setCopied]     = useState(null);
@@ -206,7 +208,7 @@ export default function ShortformEditor({isDark}){
 
   // ── 핵심: Canvas + MediaRecorder로 영상 추출 (SharedArrayBuffer 불필요)
   // overrideSrc: 이미 다운로드된 blob URL (autoExtractAll에서 재사용)
-  const extract=async(clip,doDownload=false,overrideSrc=null)=>{
+  const extract=async(clip,doDownload=false,overrideSrc=null,overrideTop=null,overrideBot=null)=>{
     if(rec)return;
     const startSec=parseTimeToSec(clip.startTime);
     const endSec  =parseTimeToSec(clip.endTime);
@@ -282,8 +284,8 @@ export default function ShortformEditor({isDark}){
       await video.play().catch(()=>{});
       recorder.start(100);
 
-      const topText=clip.title_a||"";
-      const botText=clip.hook||"";
+      const tTop=overrideTop!==null?overrideTop:(clip.title_a||"");
+      const tBot=overrideBot!==null?overrideBot:(clip.hook||"");
       setRecMsg(`변환 중... (${actualDur}초)`);
 
       await new Promise(resolve=>{
@@ -292,7 +294,7 @@ export default function ShortformEditor({isDark}){
           const elapsed=Math.max(0,vt-startSec);
           setRecPct(20+Math.min(Math.round((elapsed/actualDur)*78),78));
           if(layout.split){
-            drawSplit(ctx,video,facePos,topText,botText);
+            drawSplit(ctx,video,facePos,tTop,tBot);
           }else{
             const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
             const scale=Math.max(1080/vw,1920/vh);
@@ -798,7 +800,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
               const vc=clip.viral_score>=80?"#4ade80":clip.viral_score>=60?"#f59e0b":"#f87171";
               const ex=extracted[clip.index??i];
               return(
-                <div key={i} onClick={()=>setSelIdx(i)}
+                <div key={i} onClick={()=>{setSelIdx(i);setTopText(clip.title_a||"");setBotText(clip.hook||"");}}
                   style={{padding:"10px 11px",borderBottom:`1px solid ${bdr}`,cursor:"pointer",
                     background:selIdx===i?`rgba(168,85,247,0.12)`:"transparent",
                     borderLeft:selIdx===i?`3px solid ${ACC}`:"3px solid transparent"}}>
