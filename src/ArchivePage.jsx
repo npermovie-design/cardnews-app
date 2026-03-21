@@ -319,6 +319,72 @@ function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   파일 리스트 행 (리스트 뷰)
+═══════════════════════════════════════════════════════════ */
+function FileListRow({ item, isDark, bdr, text, muted, onDelete, isAdmin, onEdit }) {
+  const [downloading, setDownloading] = useState(false);
+  const typeInfo = FILE_TYPE_INFO[item.fileType] || FILE_TYPE_INFO.other;
+  const ytId = extractYtId(item.fileUrl);
+  const thumb = item.thumbnail || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    if (!item.fileUrl) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(item.fileUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = item.title || "download";
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch { window.open(item.fileUrl, "_blank"); }
+    setDownloading(false);
+  };
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "10px 14px", borderRadius: 10,
+      border: `1px solid ${bdr}`, background: cardBg,
+      transition: "border-color 0.15s",
+    }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)"}
+      onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+      {/* 썸네일 */}
+      <div style={{ width: 72, height: 48, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {thumb
+          ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <span style={{ fontSize: 22 }}>{typeInfo.icon}</span>}
+      </div>
+      {/* 정보 */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 3 }}>
+          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (typeInfo.color || "#6366f1") + "22", color: typeInfo.color || "#6366f1", fontWeight: 700 }}>{typeInfo.label}</span>
+          {item.fileSize > 0 && <span style={{ fontSize: 11, color: muted }}>{formatBytes(item.fileSize)}</span>}
+          {item.description && <span style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{item.description}</span>}
+        </div>
+      </div>
+      {/* 액션 버튼 */}
+      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        <button onClick={handleDownload} disabled={downloading} style={{
+          padding: "6px 14px", borderRadius: 7, border: `1px solid ${bdr}`,
+          background: "transparent", color: isDark ? "#a5b4fc" : "#6366f1",
+          fontSize: 12, fontWeight: 700, cursor: downloading ? "wait" : "pointer",
+        }}>{downloading ? "⏳" : "⬇️ 다운로드"}</button>
+        {isAdmin && <>
+          <button onClick={e => { e.stopPropagation(); onEdit(item); }} style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>✏️</button>
+          <button onClick={e => { e.stopPropagation(); onDelete(item.key, item.storagePath); }} style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 12, cursor: "pointer" }}>🗑</button>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    업로드 폼
 ═══════════════════════════════════════════════════════════ */
 function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
@@ -653,6 +719,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
   const [editItem, setEditItem] = useState(null);
+  const [viewMode, setViewMode] = useState("grid-lg"); // "grid-lg" | "grid-sm" | "list"
 
   const load = async () => {
     setLoading(true);
@@ -739,11 +806,27 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
           </div>
           <div style={{ fontSize: 12, color: muted }}>{filtered.length}개 파일</div>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {/* 검색 */}
           <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 9, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.04)" : "#fff" }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="파일 검색..."
-              style={{ padding: "8px 14px", border: "none", background: "transparent", color: text, fontSize: 13, outline: "none", width: 150 }} />
+              style={{ padding: "8px 14px", border: "none", background: "transparent", color: text, fontSize: 13, outline: "none", width: 140 }} />
             {search && <button onClick={() => setSearch("")} style={{ padding: "8px 10px", border: "none", background: "transparent", color: muted, cursor: "pointer" }}>✕</button>}
+          </div>
+          {/* 뷰 모드 토글 */}
+          <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 8, overflow: "hidden" }}>
+            {[
+              { id: "grid-lg", icon: "⊞", title: "대형 썸네일" },
+              { id: "grid-sm", icon: "⊟", title: "소형 썸네일" },
+              { id: "list",    icon: "☰", title: "리스트" },
+            ].map(m => (
+              <button key={m.id} onClick={() => setViewMode(m.id)} title={m.title} style={{
+                padding: "7px 11px", border: "none", cursor: "pointer", fontSize: 14,
+                background: viewMode === m.id ? (isDark ? "rgba(99,102,241,0.3)" : "rgba(99,102,241,0.12)") : "transparent",
+                color: viewMode === m.id ? "#a5b4fc" : muted,
+                transition: "all 0.15s",
+              }}>{m.icon}</button>
+            ))}
           </div>
           {isAdmin && (
             <button onClick={() => setMenu("upload")} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 업로드</button>
@@ -777,10 +860,22 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
           )}
         </div>
       )}
-      {!loading && filtered.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16 }}>
+      {!loading && filtered.length > 0 && viewMode !== "list" && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center",
+        }}>
           {filtered.map(v => (
-            <FileCard key={v.key} item={v} isDark={isDark} bdr={bdr}
+            <div key={v.key} style={{ width: viewMode === "grid-sm" ? 180 : 240, flexShrink: 0 }}>
+              <FileCard item={v} isDark={isDark} bdr={bdr}
+                onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
+            </div>
+          ))}
+        </div>
+      )}
+      {!loading && filtered.length > 0 && viewMode === "list" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {filtered.map(v => (
+            <FileListRow key={v.key} item={v} isDark={isDark} bdr={bdr} text={text} muted={muted}
               onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
           ))}
         </div>
