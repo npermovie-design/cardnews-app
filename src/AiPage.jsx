@@ -1318,8 +1318,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     const bdr = D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)";
     const cardBg = D?"rgba(255,255,255,0.04)":"#fff";
     return (
-      <div style={{ flex:1, overflowY:"auto" }}>
-        <div style={{ maxWidth:680, margin:"0 auto", padding:"40px 28px 80px" }}>
+      <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 20px" }}>
+        <div style={{ maxWidth:620, width:"100%" }}>
           <div style={{ textAlign:"center", marginBottom:36 }}>
             <div style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
             <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:`${color}18`, border:`1px solid ${color}40`, marginBottom:12 }}>
