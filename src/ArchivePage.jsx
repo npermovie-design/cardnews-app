@@ -150,6 +150,28 @@ function FileViewer({ item, onClose }) {
 function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
   const [hovered,  setHovered]  = useState(false);
   const [playing,  setPlaying]  = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    if (!item.fileUrl) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(item.fileUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = item.title || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(item.fileUrl, "_blank");
+    }
+    setDownloading(false);
+  };
   const typeInfo = FILE_TYPE_INFO[item.fileType] || FILE_TYPE_INFO.other;
   const ytId     = extractYtId(item.fileUrl);
   const driveId  = getDriveFileId(item.fileUrl);
@@ -276,10 +298,11 @@ function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
           </div>
         )}
         {/* 다운로드 버튼 */}
-        <a href={item.fileUrl} download target="_blank" rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}
+        <button onClick={handleDownload}
+          disabled={downloading}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            cursor: downloading ? "wait" : "pointer",
             padding: "8px 0", borderRadius: 8, marginTop: 2,
             border: "1px solid " + bdr, background: "transparent",
             color: isDark ? "#a5b4fc" : "#6366f1",
@@ -288,8 +311,8 @@ function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
           }}
           onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.07)"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-          ⬇️ 다운로드
-        </a>
+          {downloading ? "⏳ 다운로드 중..." : "⬇️ 다운로드"}
+        </button>
       </div>
     </div>
   );
