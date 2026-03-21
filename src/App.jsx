@@ -397,10 +397,12 @@ export default function App() {
         .desktop-nav{display:flex!important}
         .mobile-btn{display:none!important}
         .nav-right{display:flex!important}
+        .mobile-controls{display:none!important}
         @media(max-width:768px){
           .desktop-nav{display:none!important}
           .mobile-btn{display:flex!important}
           .nav-right{display:none!important}
+          .mobile-controls{display:flex!important}
         }
         @media(max-width:768px){
           .page-inner{padding-left:12px!important;padding-right:12px!important}
@@ -657,8 +659,55 @@ export default function App() {
           )}
         </div>
 
+        {/* 모바일 전용 컨트롤: 접속자수 + 다크모드 + 유저상태 */}
+        <div className="mobile-controls" style={{ display: "none", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4, flexShrink: 0 }}>
+          {/* 접속자수 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 7px", borderRadius: 12,
+            background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80",
+              boxShadow: "0 0 4px #4ade80", animation: "pulse 2s infinite" }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#4ade80" }}>{onlineCount}명</span>
+          </div>
+          {/* 다크/라이트 토글 */}
+          <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", justifyContent: "center",
+            width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
+            background: C.toggleBg, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>
+            {theme === "light" ? "🌙" : "☀️"}
+          </button>
+          {/* 유저 상태 */}
+          {user ? (
+            <button onClick={() => { setMobileOpen(s => !s); }} style={{ width: 30, height: 30, borderRadius: "50%",
+              background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
+              color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+              {(user.nick||"U")[0].toUpperCase()}
+            </button>
+          ) : (
+            <>
+              {(() => {
+                const left = Math.max(0, FREE_GUEST - guestUsageCount);
+                return (
+                  <div onClick={() => left === 0 && setShowPointsModal(true)}
+                    style={{ padding: "3px 7px", borderRadius: 10, cursor: left === 0 ? "pointer" : "default",
+                      background: left > 0 ? "rgba(99,102,241,0.1)" : "rgba(239,68,68,0.1)",
+                      border: `1px solid ${left > 0 ? "rgba(99,102,241,0.3)" : "rgba(239,68,68,0.3)"}` }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: left > 0 ? "#a5b4fc" : "#f87171", whiteSpace: "nowrap" }}>
+                      {left > 0 ? `${left}회` : "소진⚡"}
+                    </span>
+                  </div>
+                );
+              })()}
+              <button onClick={() => { setShowAuth(true); }} style={{ padding: "5px 9px", borderRadius: 8, border: "none",
+                cursor: "pointer", fontWeight: 700, fontSize: 11,
+                background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0 }}>
+                로그인
+              </button>
+            </>
+          )}
+        </div>
+
         {/* 햄버거 */}
-        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "4px 8px", marginLeft: "auto", lineHeight: 1 }}>
+        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "4px 8px", lineHeight: 1, flexShrink: 0 }}>
           {mobileOpen ? "✕" : "☰"}
         </button>
       </div>
@@ -791,17 +840,51 @@ export default function App() {
           ))}
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                  <div style={{ fontSize: 12, color: C.purpleL, marginTop: 2 }}>💎 {(user.points||0).toLocaleString()}P</div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, color: "#fff" }}>
+                      {(user.nick||"U")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
+                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>💎 {(user.points||0).toLocaleString()}P · {Math.floor((user.points||0)/10)}회 가능</div>
+                    </div>
+                  </div>
+                  <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>로그아웃</button>
                 </div>
-                <button onClick={logout} style={{ padding: "8px 16px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 13 }}>로그아웃</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 출석체크</button>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 포인트 충전</button>
+                </div>
               </div>
             ) : (
-              <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
-                로그인 / 회원가입
-              </button>
+              <div>
+                {(() => {
+                  const left = Math.max(0, FREE_GUEST - guestUsageCount);
+                  return (
+                    <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 10,
+                      background: left > 0 ? "rgba(99,102,241,0.08)" : "rgba(239,68,68,0.08)",
+                      border: `1px solid ${left > 0 ? "rgba(99,102,241,0.25)" : "rgba(239,68,68,0.25)"}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: C.muted }}>비회원 AI 무료 사용</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
+                          {left > 0 ? `${left}회 남음` : "소진 ⚡"}
+                        </span>
+                      </div>
+                      {left > 0 && (
+                        <div style={{ marginTop: 6, height: 4, borderRadius: 4, background: "rgba(99,102,241,0.15)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+                  로그인 / 회원가입
+                </button>
+              </div>
             )}
           </div>
         </div>
