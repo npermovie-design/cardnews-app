@@ -998,7 +998,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 borderRadius:14, boxShadow:"0 12px 40px rgba(0,0,0,0.22)", overflow:"hidden",
               }}>
                 {hoverPreview.thumb && (
-                  <img src={hoverPreview.thumb} alt="" style={{width:"100%",height:140,objectFit:"cover",display:"block"}}
+                  <img src={hoverPreview.thumb} alt=""
+                    style={{width:"100%",maxHeight:420,objectFit:"contain",display:"block",background:isDark?"#0a0818":"#f0f0f6"}}
                     onError={e=>e.target.style.display="none"} />
                 )}
                 <div style={{padding:"12px 14px"}}>
