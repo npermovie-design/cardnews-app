@@ -294,6 +294,17 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
   );
 }
 
+/* ─── 썸네일·텍스트 추출 ─────────────────────────────────── */
+function extractThumb(html) {
+  if (!html) return null;
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m ? m[1] : null;
+}
+function extractText(html, maxLen = 120) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, maxLen);
+}
+
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
@@ -311,6 +322,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [toast,   setToast]   = useState("");
   const [filterTag, setFilterTag] = useState(""); // 세부 태그 필터
   const [showCatMgr, setShowCatMgr] = useState(false);
+  const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
   const PER = 20;
 
   const isDark = !!(C.bg?.includes("0a")||C.bg?.includes("#10")||C.bg?.includes("242"));
@@ -436,13 +448,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     }
   };
 
-  const submitEdit = async ({title,body}) => {
-    const updated = {...view, title, body, edited:true};
+  const submitEdit = async ({title, body, subCat: newCat, tag}) => {
+    const cat = newCat || view.subCat || view.cat || subCat;
+    const updated = {...view, title, body, subCat: cat, cat, tag: tag||"", edited:true};
     const next = posts.map(p=>p.id===view.id ? updated : p);
     syncLocal(next);
+    setPosts(next);
     setView(updated);
+    setSubCat(cat); // 수정 후 변경된 카테고리로 이동
     setMode("list");
-    try { await updatePostInDB(view.id, {title, body, edited:true}); } catch(e){}
+    try { await updatePostInDB(view.id, {title, body, subCat: cat, cat, tag: tag||"", edited:true}); } catch(e){}
     showToast("✅ 글이 수정됐어요","success");
   };
 
@@ -943,11 +958,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
             {/* 테이블 헤더 - 데스크톱만 */}
             {!isMobile && (
-              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 16px",
-                display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
-                fontSize:11,fontWeight:700,color:C.muted}}>
+              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 12px",
+                display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
+                fontSize:11,fontWeight:700,color:C.muted,alignItems:"center"}}>
                 <span style={{textAlign:"center"}}>번호</span>
-                <span style={{paddingLeft:8}}>제목</span>
+                <span style={{textAlign:"center"}}>이미지</span>
+                <span style={{paddingLeft:6}}>제목</span>
                 <span style={{textAlign:"center"}}>작성자</span>
                 <span style={{textAlign:"center"}}>날짜</span>
                 <span style={{textAlign:"center"}}>조회</span>
@@ -972,17 +988,50 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
 
+            {/* 호버 프리뷰 팝업 */}
+            {hoverPreview && (
+              <div style={{
+                position:"fixed", zIndex:9999, pointerEvents:"none",
+                left: hoverPreview.x + 16, top: Math.min(hoverPreview.y - 20, window.innerHeight - 260),
+                width: 280, background: isDark?"rgba(18,16,48,0.97)":"#fff",
+                border:"1px solid "+(isDark?"rgba(124,106,255,0.25)":"rgba(0,0,0,0.1)"),
+                borderRadius:14, boxShadow:"0 12px 40px rgba(0,0,0,0.22)", overflow:"hidden",
+              }}>
+                {hoverPreview.thumb && (
+                  <img src={hoverPreview.thumb} alt="" style={{width:"100%",height:140,objectFit:"cover",display:"block"}}
+                    onError={e=>e.target.style.display="none"} />
+                )}
+                <div style={{padding:"12px 14px"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:isDark?"#e2e8f0":"#1a1730",marginBottom:6,lineHeight:1.4}}>{hoverPreview.post.title}</div>
+                  {hoverPreview.snippet && (
+                    <div style={{fontSize:11,color:isDark?"rgba(255,255,255,0.45)":"rgba(0,0,0,0.5)",lineHeight:1.6}}>
+                      {hoverPreview.snippet}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={{border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
               {pageItems.map((p,idx)=>{
                 const num=filtered.length-(page-1)*PER-idx;
                 const today=Date.now()-p.id<86400000;
+                const thumb=extractThumb(p.body);
                 return isMobile ? (
                   /* 모바일 카드형 */
                   <div key={p.id} onClick={()=>openPost(p)}
                     style={{padding:"12px 14px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
                     onMouseEnter={e=>e.currentTarget.style.background=hover}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:5}}>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                      {/* 모바일 썸네일 */}
+                      {thumb
+                        ? <img src={thumb} alt="" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}}
+                            onError={e=>e.target.style.display="none"}/>
+                        : <div style={{width:48,height:36,borderRadius:6,flexShrink:0,marginTop:2,background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
+                            {subInfo?.icon||"📋"}
+                          </div>
+                      }
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
                           {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
@@ -1003,23 +1052,40 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 ) : (
                   /* 데스크톱 테이블형 */
                   <div key={p.id} onClick={()=>openPost(p)}
-                    style={{display:"grid",gridTemplateColumns:"52px 1fr 90px 76px 54px 50px",
-                      padding:"11px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
-                    onMouseEnter={e=>e.currentTarget.style.background=hover}
-                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <span style={{textAlign:"center",fontSize:12,color:C.muted,alignSelf:"center"}}>{num}</span>
-                    <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:8,minWidth:0}}>
+                    style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
+                      padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
+                    onMouseEnter={e=>{
+                      e.currentTarget.style.background=hover;
+                      const rect=e.currentTarget.getBoundingClientRect();
+                      setHoverPreview({post:p,thumb,snippet:extractText(p.body),x:rect.right,y:rect.top});
+                    }}
+                    onMouseLeave={e=>{
+                      e.currentTarget.style.background="transparent";
+                      setHoverPreview(null);
+                    }}>
+                    <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
+                    {/* 썸네일 */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {thumb
+                        ? <img src={thumb} alt="" style={{width:36,height:28,objectFit:"cover",borderRadius:5}}
+                            onError={e=>e.target.style.display="none"}/>
+                        : <div style={{width:36,height:28,borderRadius:5,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>
+                            {subInfo?.icon||"📋"}
+                          </div>
+                      }
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
                       {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
                       <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
                       {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                       {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                     </div>
-                    <div style={{textAlign:"center",alignSelf:"center",minWidth:0}}>
+                    <div style={{textAlign:"center",minWidth:0}}>
                       <span style={{fontSize:12,color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
                     </div>
-                    <span style={{textAlign:"center",fontSize:11,color:C.muted,alignSelf:"center"}}>{p.date}</span>
-                    <span style={{textAlign:"center",fontSize:12,color:C.muted,alignSelf:"center"}}>{p.views||0}</span>
-                    <span style={{textAlign:"center",fontSize:12,alignSelf:"center",fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                    <span style={{textAlign:"center",fontSize:11,color:C.muted}}>{p.date}</span>
+                    <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{p.views||0}</span>
+                    <span style={{textAlign:"center",fontSize:12,fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
                   </div>
                 );
               })}

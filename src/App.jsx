@@ -481,7 +481,6 @@ export default function App() {
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label="홈" />
           <NavBtn id="about" label="소개" />
-          <NavBtn id="archive" label="자료실" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
           {/* AI 생성기 통합 드롭다운 */}
           <div style={{ position: "relative" }}>
@@ -533,6 +532,7 @@ export default function App() {
               </DropMenu>
             )}
           </div>
+          <NavBtn id="archive" label="자료실" />
           <NavBtn id="pricing" label="가격정책" />
           <NavBtn id="contact" label="문의하기" />
         </div>
