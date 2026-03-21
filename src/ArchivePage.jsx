@@ -1,12 +1,57 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase, uploadFileToStorage, deleteFileFromStorage } from "./storage";
 
+const PIXABAY_KEY = import.meta.env.VITE_PIXABAY_KEY || "";
+
+/* ─── 카테고리별 Pixabay 검색어 매핑 ── */
+const PIXABAY_QUERY = {
+  graphic:  { type: "video", q: "motion+background" },
+  filmed:   { type: "video", q: "cinematic" },
+  music:    { type: "video", q: "" }, // 음악은 미지원
+  image:    { type: "photo", q: "background+texture" },
+  pdf:      { type: "photo", q: "" },
+  other:    { type: "photo", q: "abstract" },
+  all:      { type: "video", q: "background" },
+};
+
+async function fetchPixabay(cat = "all", page = 1) {
+  if (!PIXABAY_KEY) return [];
+  const cfg = PIXABAY_QUERY[cat] || PIXABAY_QUERY.all;
+  if (!cfg.q) return [];
+  const isVideo = cfg.type === "video";
+  const base = isVideo
+    ? "https://pixabay.com/api/videos/"
+    : "https://pixabay.com/api/";
+  const url = `${base}?key=${PIXABAY_KEY}&q=${cfg.q}&per_page=20&page=${page}&safesearch=true`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.hits || []).map(h => ({
+      key:         `pbay_${h.id}`,
+      id:          `pbay_${h.id}`,
+      title:       (h.tags || "Pixabay").split(",")[0].trim(),
+      description: h.tags || "",
+      category:    cat === "all" ? (isVideo ? "graphic" : "image") : cat,
+      fileType:    isVideo ? "video" : "image",
+      fileUrl:     isVideo ? (h.videos?.medium?.url || h.videos?.small?.url || "") : (h.largeImageURL || h.webformatURL || ""),
+      thumbnail:   isVideo ? (h.videos?.tiny?.thumbnail || h.picture_id ? `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg` : "") : (h.previewURL || h.webformatURL || ""),
+      fileSize:    0,
+      storagePath: "",
+      isFree:      true,
+      source:      "pixabay",
+      sourceUrl:   h.pageURL || "https://pixabay.com",
+      pixabayUser: h.user || "",
+      created_at:  new Date().toISOString(),
+    }));
+  } catch { return []; }
+}
+
 /* ═══════════════════════════════════════════════════════════
    Supabase 자료실 헬퍼
 ═══════════════════════════════════════════════════════════ */
 async function fetchFiles() {
   const { data } = await supabase.from("archive_files").select("*").order("created_at", { ascending: false });
-  return (data || []).map(v => ({ ...v, key: v.id }));
+  return (data || []).map(v => ({ ...v, key: v.id, source: "upload" }));
 }
 async function addFile(data) {
   const { error } = await supabase.from("archive_files").insert({ ...data, created_at: new Date().toISOString() });
@@ -715,18 +760,30 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   const bdr     = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
   const isAdmin = user?.role === "admin";
 
-  const [files,    setFiles]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState("");
-  const [editItem, setEditItem] = useState(null);
-  const [viewMode, setViewMode] = useState("grid-lg"); // "grid-lg" | "grid-sm" | "list"
+  const [files,      setFiles]      = useState([]);
+  const [pbFiles,    setPbFiles]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [pbLoading,  setPbLoading]  = useState(false);
+  const [search,     setSearch]     = useState("");
+  const [editItem,   setEditItem]   = useState(null);
+  const [viewMode,   setViewMode]   = useState("grid-lg");
+  const [sourceFilter, setSourceFilter] = useState("all"); // "all" | "upload" | "pixabay"
 
   const load = async () => {
     setLoading(true);
     try { setFiles(await fetchFiles()); } catch(e) { setFiles([]); }
     setLoading(false);
   };
+
+  const loadPixabay = async (catId) => {
+    if (!PIXABAY_KEY) return;
+    setPbLoading(true);
+    try { setPbFiles(await fetchPixabay(catId)); } catch { setPbFiles([]); }
+    setPbLoading(false);
+  };
+
   useEffect(() => { load(); }, []);
+  useEffect(() => { loadPixabay(cat); }, [cat]);
 
   const handleDelete = async (key, storagePath) => {
     if (!window.confirm("이 파일을 삭제할까요?")) return;
@@ -735,13 +792,23 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
     load();
   };
 
-  const filtered = files.filter(v => {
+  const allFiles = [
+    ...files,
+    ...(PIXABAY_KEY ? pbFiles : []),
+  ];
+
+  const filtered = allFiles.filter(v => {
     const vCat = v.category || v.fileType || "";
     const matchCat = cat === "all"
       || vCat === cat
-      || (cat === "graphic" && (vCat === "video" || vCat === "synth")); // 기존 video/synth → graphic으로 호환
-    const matchSearch = !search.trim() || v.title.toLowerCase().includes(search.toLowerCase()) || (v.description || "").toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
+      || (cat === "graphic" && (vCat === "video" || vCat === "synth"));
+    const matchSearch = !search.trim()
+      || v.title.toLowerCase().includes(search.toLowerCase())
+      || (v.description || "").toLowerCase().includes(search.toLowerCase());
+    const matchSource = sourceFilter === "all"
+      || v.source === sourceFilter
+      || (sourceFilter === "upload" && !v.source);
+    return matchCat && matchSearch && matchSource;
   });
 
   /* 업로드 / 수정 */
@@ -796,90 +863,116 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
     );
   }
 
-  /* 파일 목록 */
+  /* 파일 목록 — BoardPage 스타일 */
+  const catInfo = CATEGORIES.find(c => c.id === cat);
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>
-            {CATEGORIES.find(c => c.id === cat)?.icon} {CATEGORIES.find(c => c.id === cat)?.label || "전체"} 자료실
+    <div style={{ overflowY: "auto", padding: "0 0 60px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 20px 0" }}>
+        {/* 상단 툴바 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: text }}>
+            {catInfo?.icon} {catInfo?.label || "전체"} 자료실
+            <span style={{ fontSize: 12, fontWeight: 400, color: muted, marginLeft: 8 }}>총 {filtered.length}개</span>
           </div>
-          <div style={{ fontSize: 12, color: muted }}>{filtered.length}개 파일</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {/* 검색 */}
+            <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 9, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.04)" : "#fff" }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="파일 검색..."
+                style={{ padding: "7px 12px", border: "none", background: "transparent", color: text, fontSize: 13, outline: "none", width: 130 }} />
+              {search && <button onClick={() => setSearch("")} style={{ padding: "7px 8px", border: "none", background: "transparent", color: muted, cursor: "pointer" }}>✕</button>}
+            </div>
+            {/* 뷰 모드 */}
+            <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 8, overflow: "hidden" }}>
+              {[{ id:"list",icon:"☰" },{ id:"grid-sm",icon:"⊟" },{ id:"grid-lg",icon:"⊞" }].map(m => (
+                <button key={m.id} onClick={() => setViewMode(m.id)} title={m.id} style={{
+                  padding: "7px 10px", border: "none", cursor: "pointer", fontSize: 14,
+                  background: viewMode === m.id ? (isDark?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)") : "transparent",
+                  color: viewMode === m.id ? "#a5b4fc" : muted,
+                }}>{m.icon}</button>
+              ))}
+            </div>
+            {isAdmin && (
+              <button onClick={() => setMenu("upload")} style={{ padding: "7px 14px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 업로드</button>
+            )}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {/* 검색 */}
-          <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 9, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.04)" : "#fff" }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="파일 검색..."
-              style={{ padding: "8px 14px", border: "none", background: "transparent", color: text, fontSize: 13, outline: "none", width: 140 }} />
-            {search && <button onClick={() => setSearch("")} style={{ padding: "8px 10px", border: "none", background: "transparent", color: muted, cursor: "pointer" }}>✕</button>}
+
+        {/* 로딩 */}
+        {loading && (
+          <div style={{ textAlign: "center", padding: "80px 0", color: muted }}>
+            <div style={{ fontSize: 32, marginBottom: 10, display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</div>
+            <div style={{ fontSize: 13 }}>불러오는 중...</div>
           </div>
-          {/* 뷰 모드 토글 */}
-          <div style={{ display: "flex", border: `1px solid ${bdr}`, borderRadius: 8, overflow: "hidden" }}>
-            {[
-              { id: "grid-lg", icon: "⊞", title: "대형 썸네일" },
-              { id: "grid-sm", icon: "⊟", title: "소형 썸네일" },
-              { id: "list",    icon: "☰", title: "리스트" },
-            ].map(m => (
-              <button key={m.id} onClick={() => setViewMode(m.id)} title={m.title} style={{
-                padding: "7px 11px", border: "none", cursor: "pointer", fontSize: 14,
-                background: viewMode === m.id ? (isDark ? "rgba(99,102,241,0.3)" : "rgba(99,102,241,0.12)") : "transparent",
-                color: viewMode === m.id ? "#a5b4fc" : muted,
-                transition: "all 0.15s",
-              }}>{m.icon}</button>
+        )}
+
+        {/* 빈 상태 */}
+        {!loading && filtered.length === 0 && (
+          <div style={{ textAlign: "center", padding: "80px 0", color: muted }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>📂</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 6 }}>
+              {search ? `"${search}" 검색 결과가 없어요` : "아직 파일이 없어요"}
+            </div>
+            {isAdmin && !search && (
+              <button onClick={() => setMenu("upload")} style={{ marginTop: 12, padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 첫 파일 업로드하기</button>
+            )}
+          </div>
+        )}
+
+        {/* 리스트 뷰 — BoardPage 테이블 스타일 */}
+        {!loading && filtered.length > 0 && viewMode === "list" && (
+          <div style={{ border: `1px solid ${bdr}`, borderRadius: 10, overflow: "hidden" }}>
+            {/* 헤더 */}
+            <div style={{ display: "grid", gridTemplateColumns: "44px 56px 1fr 80px 70px 110px", padding: "8px 12px",
+              background: isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)", borderBottom: `1px solid ${bdr}` }}>
+              {["번호","","제목","분류","크기","다운로드"].map(h => (
+                <span key={h} style={{ fontSize: 11, color: muted, fontWeight: 700, textAlign: h==="번호"?"center":"left" }}>{h}</span>
+              ))}
+            </div>
+            {filtered.map((v, idx) => {
+              const ti = FILE_TYPE_INFO[v.fileType] || FILE_TYPE_INFO.other;
+              const ytId = extractYtId(v.fileUrl);
+              const thumb = v.thumbnail || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+              return (
+                <div key={v.key} style={{ display: "grid", gridTemplateColumns: "44px 56px 1fr 80px 70px 110px",
+                  padding: "8px 12px", borderBottom: `1px solid ${bdr}`, alignItems: "center",
+                  transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <span style={{ textAlign: "center", fontSize: 12, color: muted }}>{filtered.length - idx}</span>
+                  <div style={{ width: 44, height: 32, borderRadius: 5, overflow: "hidden", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                           : <span style={{ fontSize: 16 }}>{ti.icon}</span>}
+                  </div>
+                  <div style={{ paddingLeft: 8, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</div>
+                    {v.description && <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description}</div>}
+                  </div>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (ti.color||"#6366f1")+"22", color: ti.color||"#6366f1", fontWeight: 700, whiteSpace: "nowrap" }}>{ti.label}</span>
+                  <span style={{ fontSize: 11, color: muted }}>{v.fileSize ? formatBytes(v.fileSize) : "-"}</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <DownloadBtn item={v} isDark={isDark} bdr={bdr} muted={muted} compact />
+                    {isAdmin && <>
+                      <button onClick={() => setEditItem(v)} style={{ padding: "4px 7px", borderRadius: 5, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>✏️</button>
+                      <button onClick={() => handleDelete(v.key, v.storagePath)} style={{ padding: "4px 7px", borderRadius: 5, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>🗑</button>
+                    </>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 그리드 뷰 */}
+        {!loading && filtered.length > 0 && viewMode !== "list" && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "center" }}>
+            {filtered.map(v => (
+              <div key={v.key} style={{ width: viewMode === "grid-sm" ? 180 : 240, flexShrink: 0 }}>
+                <FileCard item={v} isDark={isDark} bdr={bdr} onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
+              </div>
             ))}
           </div>
-          {isAdmin && (
-            <button onClick={() => setMenu("upload")} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 업로드</button>
-          )}
-        </div>
+        )}
       </div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-        {CATEGORIES.map(c => (
-          <button key={c.id} onClick={() => setCat(c.id)} style={{
-            padding: "6px 14px", borderRadius: 20, border: `1px solid ${cat === c.id ? "#6366f1" : bdr}`,
-            background: cat === c.id ? "rgba(99,102,241,0.15)" : "transparent",
-            color: cat === c.id ? "#a5b4fc" : muted, fontSize: 12, fontWeight: cat === c.id ? 700 : 400,
-            cursor: "pointer", transition: "all 0.15s",
-          }}>{c.icon} {c.label}</button>
-        ))}
-      </div>
-      {loading && (
-        <div style={{ textAlign: "center", padding: "80px 0", color: muted }}>
-          <div style={{ fontSize: 36, marginBottom: 12, animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</div>
-          <div style={{ fontSize: 14 }}>불러오는 중...</div>
-        </div>
-      )}
-      {!loading && filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "80px 0", color: muted }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📂</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: text, marginBottom: 6 }}>
-            {search ? `"${search}" 검색 결과가 없어요` : "아직 파일이 없어요"}
-          </div>
-          {isAdmin && !search && (
-            <button onClick={() => setMenu("upload")} style={{ marginTop: 12, padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 첫 파일 업로드하기</button>
-          )}
-        </div>
-      )}
-      {!loading && filtered.length > 0 && viewMode !== "list" && (
-        <div style={{
-          display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center",
-        }}>
-          {filtered.map(v => (
-            <div key={v.key} style={{ width: viewMode === "grid-sm" ? 180 : 240, flexShrink: 0 }}>
-              <FileCard item={v} isDark={isDark} bdr={bdr}
-                onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
-            </div>
-          ))}
-        </div>
-      )}
-      {!loading && filtered.length > 0 && viewMode === "list" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {filtered.map(v => (
-            <FileListRow key={v.key} item={v} isDark={isDark} bdr={bdr} text={text} muted={muted}
-              onDelete={handleDelete} isAdmin={isAdmin} onEdit={setEditItem} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -888,61 +981,37 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
    ArchivePage (메인 export)
 ═══════════════════════════════════════════════════════════ */
 export default function ArchivePage({ user, C, theme }) {
-  const [menu,     setMenu]     = useState("home");
-  const [cat,      setCat]      = useState("all");
-  const [sideOpen, setSideOpen] = useState(false);
-
+  const [cat, setCat] = useState("all");
+  const [menu, setMenu] = useState("files");
   const isDark = theme === "dark";
-  const topBdr = isDark ? "rgba(255,255,255,0.07)"  : "#e5e3f5";
-  const topBg  = isDark ? "rgba(0,0,0,0.25)"        : "rgba(255,255,255,0.9)";
-  const topClr = isDark ? "rgba(255,255,255,0.35)"  : "#aaa";
 
   return (
     <div style={{
-      display: "flex", height: "calc(100vh - 60px)",
+      minHeight: "calc(100vh - 60px)",
       background: isDark ? "linear-gradient(160deg,#0f0c29,#1a1740,#0f0c29)" : "#f4f4f8",
-      color: isDark ? "#fff" : "#1a1a2e",
       fontFamily: "'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif",
-      overflow: "hidden",
     }}>
-      <style>{`
-        *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:4px}
-        ::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.3);border-radius:4px}
-        button{font-family:inherit}
-        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-        @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
-        .arch-sidebar-desktop{display:flex}
-        .arch-sidebar-mobile{display:none}
-        @media(max-width:768px){
-          .arch-sidebar-desktop{display:none!important}
-          .arch-sidebar-mobile{display:flex!important}
-        }
-      `}</style>
-      <div className="arch-sidebar-desktop">
-        <ArchiveSidebar menu={menu} setMenu={setMenu} cat={cat} setCat={setCat} theme={theme} user={user} />
-      </div>
-      {sideOpen && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 50 }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => setSideOpen(false)} />
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 240, animation: "slideIn 0.2s ease", zIndex: 51 }}>
-            <ArchiveSidebar menu={menu} setMenu={m => { setMenu(m); setSideOpen(false); }}
-              cat={cat} setCat={c => { setCat(c); setSideOpen(false); }} theme={theme} user={user} />
-          </div>
-        </div>
-      )}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", borderBottom: "1px solid " + topBdr, background: topBg }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button className="arch-sidebar-mobile" onClick={() => setSideOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: isDark ? "#fff" : "#333", padding: "4px 6px", display: "none" }}>☰</button>
-            <span style={{ fontSize: 12, color: topClr, fontWeight: 600 }}>📂 자료실</span>
-          </div>
-        </div>
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <ArchiveContent menu={menu} setMenu={setMenu} cat={cat} setCat={setCat} user={user} theme={theme} />
+      <style>{`*{box-sizing:border-box;margin:0;padding:0}button{font-family:inherit}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.3);border-radius:4px}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}
+      </style>
+      {/* 카테고리 탭 — BoardPage와 동일 스타일 */}
+      <div style={{ borderBottom: `1px solid ${isDark?"rgba(255,255,255,0.07)":"#e5e3f5"}`, background: isDark?"rgba(0,0,0,0.2)":"rgba(255,255,255,0.7)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px", display: "flex", alignItems: "center", gap: 4, overflowX: "auto" }}>
+          {CATEGORIES.map(c => (
+            <button key={c.id} onClick={() => { setCat(c.id); setMenu("files"); }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "13px 18px", border: "none", cursor: "pointer",
+                fontSize: 14, fontWeight: cat === c.id ? 700 : 500, whiteSpace: "nowrap", background: "transparent",
+                color: cat === c.id ? (c.color || "#6366f1") : (isDark ? "rgba(255,255,255,0.45)" : "#888"),
+                borderBottom: cat === c.id ? `2px solid ${c.color || "#6366f1"}` : "2px solid transparent",
+              }}>
+              {c.icon} {c.label}
+              <span style={{ fontSize: 11, opacity: 0.65 }}>({0})</span>
+            </button>
+          ))}
         </div>
       </div>
+      <ArchiveContent menu={menu} setMenu={setMenu} cat={cat} setCat={setCat} user={user} theme={theme} />
     </div>
   );
 }

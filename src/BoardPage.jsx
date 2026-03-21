@@ -1,13 +1,18 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, supabase } from "./storage";
+import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
-  { id: "info",   label: "정보공유",   icon: "📌", color: "#6366f1" },
-  { id: "qna",    label: "질문답변",   icon: "❓", color: "#f59e0b" },
-  { id: "free",   label: "자유게시판", icon: "🗣", color: "#10b981" },
-  { id: "review", label: "사용후기",   icon: "⭐", color: "#ec4899" },
+  { id: "info",    label: "정보공유",   icon: "📌", color: "#6366f1" },
+  { id: "qna",     label: "질문답변",   icon: "❓", color: "#f59e0b" },
+  { id: "free",    label: "자유게시판", icon: "🗣", color: "#10b981" },
+  { id: "review",  label: "사용후기",   icon: "⭐", color: "#ec4899" },
+  { id: "archive", label: "자료실",     icon: "📁", color: "#3b82f6" },
 ];
+
+const isVideoUrl = url => /\.(mp4|mov|avi|mkv|webm|m4v)/i.test(url);
+const isImageUrl = url => /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)/i.test(url);
+const safeName   = n  => n.replace(/[^a-zA-Z0-9._-]/g, "_");
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
 async function fetchBoardCats() {
@@ -221,13 +226,36 @@ function RichBody({ html, C }) {
 
 /* ─── 글쓰기 폼 ─────────────────────────────────────────── */
 function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, allTags }) {
-  const [title,      setTitle]    = useState(initial?.title || "");
-  const [body,       setBody]     = useState(initial?.body  || "");
-  const [pickedCat,  setPickedCat]= useState(initial?.subCat || subCat || (cats[0]?.id || "info"));
-  const [pickedTag,  setPickedTag]= useState(initial?.tag || "");
+  const [title,         setTitle]        = useState(initial?.title || "");
+  const [body,          setBody]         = useState(initial?.body  || "");
+  const [pickedCat,     setPickedCat]    = useState(initial?.subCat || subCat || (cats[0]?.id || "info"));
+  const [pickedTag,     setPickedTag]    = useState(initial?.tag || "");
+  const [uploadedFiles, setUploadedFiles]= useState(
+    (initial?.images || []).map(url => ({ url, type: isVideoUrl(url) ? "video" : "image" }))
+  );
+  const [uploading,     setUploading]    = useState(false);
+  const fileInputRef = useRef(null);
+
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#d1d5db";
   const sub = cats.find(s=>s.id===pickedCat) || cats[0];
   const tags = allTags[pickedCat] || [];
+
+  const handleFileUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    for (const file of Array.from(files)) {
+      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 파일 크기는 50MB 이하여야 합니다.`); continue; }
+      try {
+        const path = `posts/${Date.now()}_${safeName(file.name)}`;
+        const url = await uploadFileToStorage(file, path);
+        const type = file.type.startsWith("video") ? "video" : "image";
+        setUploadedFiles(prev => [...prev, { url, type, name: file.name }]);
+      } catch(e) {
+        alert(`${file.name} 업로드 실패: ${e.message}`);
+      }
+    }
+    setUploading(false);
+  };
 
   return (
     <div style={{maxWidth:900,margin:"0 auto",padding:"28px 0 60px"}}>
@@ -280,10 +308,41 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
         <input placeholder="제목을 입력해주세요" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)}
           style={{padding:"13px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:15,outline:"none"}}/>
         <RichEditor value={body} onChange={setBody} isDark={isDark}/>
+
+        {/* 파일 첨부 */}
+        <div style={{border:"1px solid "+bdr,borderRadius:12,padding:"14px 16px",background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
+            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>📎 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상, 최대 50MB)</span></span>
+            <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
+              style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#6366f1",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
+              {uploading?"업로드 중...":"+ 파일 추가"}
+            </button>
+            <input ref={fileInputRef} type="file" multiple accept="image/*,video/*"
+              style={{display:"none"}} onChange={e=>handleFileUpload(e.target.files)}/>
+          </div>
+          {uploadedFiles.length > 0 && (
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {uploadedFiles.map((f,i)=>(
+                <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",border:"1px solid "+bdr}}>
+                  {f.type==="video"
+                    ? <div style={{width:90,height:68,background:isDark?"#1a1a2e":"#e5e7eb",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+                        <span style={{fontSize:20}}>🎬</span>
+                        <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"video").slice(0,12)}</span>
+                      </div>
+                    : <img src={f.url} alt="" style={{width:90,height:68,objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                  }
+                  <button type="button" onClick={()=>setUploadedFiles(prev=>prev.filter((_,j)=>j!==i))}
+                    style={{position:"absolute",top:2,right:2,width:18,height:18,borderRadius:"50%",border:"none",background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
           <button type="button" onClick={onCancel} style={{padding:"11px 24px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer",fontWeight:600}}>취소</button>
           <button type="button" onClick={()=>{
-            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag});
+            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url)});
             else alert("제목과 내용을 입력해주세요.");
           }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
             {initial?"수정 완료":"등록하기"}
@@ -421,11 +480,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const pageItems=filtered.slice((page-1)*PER,page*PER);
 
   /* 글 등록 - Supabase 저장 + 1P 지급 */
-  const submitPost = async ({title, body, subCat: formCat, tag}) => {
+  const submitPost = async ({title, body, subCat: formCat, tag, images}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const cat = formCat || subCat;
     const p={id:Date.now(),cat,subCat:cat,tag:tag||"",nick:user.nick,title,body,
-             date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[]};
+             date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[],
+             images: Array.isArray(images) ? images : []};
     const nextPosts = [p, ...posts];
     syncLocal(nextPosts);
     setPosts(nextPosts); // 항상 localStorage에 저장 (Supabase 성공 여부 무관)
@@ -451,16 +511,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     }
   };
 
-  const submitEdit = async ({title, body, subCat: newCat, tag}) => {
+  const submitEdit = async ({title, body, subCat: newCat, tag, images}) => {
     const cat = newCat || view.subCat || view.cat || subCat;
-    const updated = {...view, title, body, subCat: cat, cat, tag: tag||"", edited:true};
+    const updated = {...view, title, body, subCat: cat, cat, tag: tag||"", edited:true, images: Array.isArray(images) ? images : (view.images||[])};
     const next = posts.map(p=>p.id===view.id ? updated : p);
     syncLocal(next);
     setPosts(next);
     setView(updated);
     setSubCat(cat); // 수정 후 변경된 카테고리로 이동
     setMode("list");
-    try { await updatePostInDB(view.id, {title, body, subCat: cat, cat, tag: tag||"", edited:true}); } catch(e){}
+    try { await updatePostInDB(view.id, {title, body, subCat: cat, cat, tag: tag||"", edited:true, images: updated.images}); } catch(e){}
     showToast("✅ 글이 수정됐어요","success");
   };
 
@@ -590,6 +650,30 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           </div>
           <div style={{padding:"28px 28px 24px"}}>
             <RichBody html={view.body} C={C}/>
+            {/* 첨부 이미지/영상 */}
+            {(view.images||[]).length > 0 && (
+              <div style={{marginTop:24,borderTop:"1px solid "+bdr,paddingTop:20}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>📎 첨부 파일 {view.images.length}개</div>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {view.images.map((url,i)=>
+                    isVideoUrl(url) ? (
+                      <div key={i}>
+                        <video src={url} controls style={{width:"100%",maxWidth:640,borderRadius:10,border:"1px solid "+bdr,display:"block"}}/>
+                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#6366f1",textDecoration:"none"}}>⬇ 다운로드</a>
+                      </div>
+                    ) : isImageUrl(url) ? (
+                      <img key={i} src={url} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
+                        onClick={()=>window.open(url,"_blank")} onError={e=>e.target.style.display="none"}/>
+                    ) : (
+                      <a key={i} href={url} download rel="noopener noreferrer"
+                        style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",color:C.text,textDecoration:"none",fontSize:13,fontWeight:600}}>
+                        📄 파일 {i+1} <span style={{fontSize:11,color:C.muted,marginLeft:4}}>클릭하여 다운로드</span>
+                      </a>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div style={{padding:"16px 28px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
             {(() => {
@@ -1047,6 +1131,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
                           {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
                           <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
+                          {(p.images||[]).length>0&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>📎</span>}
                           {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                           {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                         </div>
@@ -1118,6 +1203,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
                       {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
                       <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
+                      {(p.images||[]).length>0&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>📎</span>}
                       {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                       {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                     </div>
