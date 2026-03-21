@@ -15,11 +15,16 @@ const isImageUrl = url => /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)/i.test(url);
 const safeName   = n  => n.replace(/[^a-zA-Z0-9._-]/g, "_");
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
+const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "📁", color: "#3b82f6" };
+
 async function fetchBoardCats() {
   try {
     const { data } = await supabase.from("board_cats").select("*").order("order", { ascending: true });
     if (!data || data.length === 0) return DEFAULT_CATS;
-    return data.map(v => ({ ...v, key: v.id }));
+    const cats = data.map(v => ({ ...v, key: v.id }));
+    // 자료실이 없으면 항상 마지막에 추가
+    if (!cats.find(c => c.id === "archive")) cats.push(ARCHIVE_CAT);
+    return cats;
   } catch { return DEFAULT_CATS; }
 }
 async function saveBoardCat(cat) {
