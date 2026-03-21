@@ -344,16 +344,17 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
     try {
       let finalForm = { ...form };
       // 썸네일 이미지 파일 업로드
+      const safeName = (n) => n.replace(/[^a-zA-Z0-9._-]/g, "_");
       if (thumbFile) {
         setUploading(true);
-        const tPath = `archive/thumbs/${Date.now()}_${thumbFile.name}`;
+        const tPath = `archive/thumbs/${Date.now()}_${safeName(thumbFile.name)}`;
         const tUrl  = await uploadFileToStorage(thumbFile, tPath, () => {});
         finalForm.thumbnail = tUrl;
         setUploading(false);
       }
       if (mode === "file" && file) {
         setUploading(true);
-        const path = `archive/${Date.now()}_${file.name}`;
+        const path = `archive/${Date.now()}_${safeName(file.name)}`;
         const url  = await uploadFileToStorage(file, path, setProgress);
         finalForm.fileUrl     = url;
         finalForm.storagePath = path;
@@ -704,29 +705,9 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
     );
   }
 
-  const isVideoCategory = () => true; // 모든 카테고리에 표시
-
   /* 파일 목록 */
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-      {/* 영상 공지 배너 */}
-      {isVideoCategory(cat) && (
-        <div style={{
-          display: "flex", alignItems: "flex-start", gap: 12,
-          padding: "14px 18px", marginBottom: 20, borderRadius: 12,
-          background: isDark ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.05)",
-          border: "1px solid rgba(99,102,241,0.2)",
-        }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>📢</span>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: isDark ? "#a5b4fc" : "#4f46e5", marginBottom: 3 }}>영상 자료 이용 안내</div>
-            <div style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.7)" : "#444", lineHeight: 1.7 }}>
-              이 영상 자료들은 직접 제작한 자료입니다.<br/>
-              <b style={{ color: isDark ? "#4ade80" : "#16a34a" }}>상업적으로 사용하셔도 전혀 문제가 없습니다.</b> 😊
-            </div>
-          </div>
-        </div>
-      )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>

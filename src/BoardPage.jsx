@@ -955,7 +955,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   fontWeight:filterTag===""?700:400,
                 }}>전체</button>
                 {currentTags.map(t=>(
-                  <button key={t.id} onClick={()=>setFilterTag(filterTag===t.label?"":t.label)} style={{
+                  <button key={t.id} onClick={()=>{setFilterTag(filterTag===t.label?"":t.label);setPage(1);}} style={{
                     padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
                     border:"1px solid "+(filterTag===t.label?(t.color||subInfo?.color||"#6366f1"):bdr),
                     background:filterTag===t.label?(t.color||subInfo?.color||"#6366f1")+"18":"transparent",
@@ -1065,8 +1065,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div key={p.id} onClick={()=>openPost(p)}
                     style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
                       padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
-                    onMouseEnter={e=>{ e.currentTarget.style.background=hover; }}
-                    onMouseMove={e=>{
+                    onMouseEnter={e=>{
+                      e.currentTarget.style.background=hover;
                       const x = e.clientX + 18;
                       const y = e.clientY - 10;
                       const popW = 280, popH = thumb ? 220 : 100;
@@ -1077,8 +1077,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       if (snippetCache.current[p.id] !== undefined) {
                         setHoverPreview({ post: p, thumb, snippet: snippetCache.current[p.id], ...pos });
                       } else {
-                        setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, ...pos } : { post: p, thumb, snippet: null, ...pos });
-                        if (!hoverTimer.current || hoverTimer.current !== p.id) {
+                        setHoverPreview({ post: p, thumb, snippet: null, ...pos });
+                        if (hoverTimer.current !== p.id) {
                           hoverTimer.current = p.id;
                           getPostByIdFromDB(p.id).then(full => {
                             if (full) {
@@ -1089,6 +1089,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           }).catch(() => { snippetCache.current[p.id] = ""; });
                         }
                       }
+                    }}
+                    onMouseMove={e=>{
+                      const x = e.clientX + 18;
+                      const y = e.clientY - 10;
+                      const popW = 280, popH = thumb ? 220 : 100;
+                      const pos = {
+                        x: x + popW > window.innerWidth ? e.clientX - popW - 10 : x,
+                        y: y + popH > window.innerHeight ? e.clientY - popH : y,
+                      };
+                      setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, ...pos } : prev);
                     }}
                     onMouseLeave={e=>{
                       e.currentTarget.style.background="transparent";

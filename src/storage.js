@@ -345,14 +345,20 @@ export async function changePoints(uid, delta, reason) {
 
 // ── Supabase Storage 파일 업로드 ─────────────────────────────────────────
 export async function uploadFileToStorage(file, path, onProgress) {
-  // Supabase Storage는 진행률 콜백 미지원 → 업로드 전/후에 0/100 전달
-  if (onProgress) onProgress(0);
+  if (onProgress) onProgress(10);
   const { error } = await supabase.storage
     .from("uploads")
     .upload(path, file, { upsert: true });
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes("Bucket not found") || error.statusCode === "404") {
+      throw new Error("Storage 버킷이 없습니다. Supabase 대시보드 → Storage → 'uploads' 버킷을 Public으로 생성해주세요.");
+    }
+    if (error.message?.includes("policy") || error.statusCode === "403") {
+      throw new Error("Storage 권한 오류: Supabase 대시보드 → Storage → uploads → Policies에 INSERT 정책을 추가해주세요.");
+    }
+    throw new Error(error.message || "파일 업로드 실패");
+  }
   if (onProgress) onProgress(100);
-
   const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
   return urlData.publicUrl;
 }
