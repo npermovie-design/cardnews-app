@@ -531,7 +531,7 @@ export default function App() {
                 <DropItem id="community" label="질문답변"   onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
                 <DropItem id="community" label="자유게시판" onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
                 <DropItem id="community" label="사용후기"   onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
-                <DropItem id="community" label="📁 자료실"  onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
+                <DropItem id="community" label="자료실"  onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
@@ -791,7 +791,7 @@ export default function App() {
             { board: "qna",     label: "질문답변" },
             { board: "free",    label: "자유게시판" },
             { board: "review",  label: "사용후기" },
-            { board: "archive", label: "📁 자료실" },
+            { board: "archive", label: "자료실" },
           ].map(m => (
             <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
