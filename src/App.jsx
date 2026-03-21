@@ -471,10 +471,11 @@ export default function App() {
 
         {/* 로고 */}
         <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, marginRight: 16, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(124,106,255,0.3)" }}>N</div>
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(124,106,255,0.3)", flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
+          </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>SNS메이킷</div>
-            <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
           </div>
         </button>
 
@@ -610,7 +611,7 @@ export default function App() {
                     {[
                       { icon: "🔴", label: "출석체크", sub: "매일 +3P · 연속 보너스", action: () => { setShowAttendance(true); setProfileOpen(false); } },
                       { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setProfileOpen(false); } },
+                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
                       { icon: "👤", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
@@ -771,7 +772,7 @@ export default function App() {
             { ai: "mockup_gen",   label: "목업 생성" },
             { ai: "model_gen",    label: "모델 생성" },
             { ai: "face_swap",    label: "얼굴·의상 교체" },
-            { ai: "outpaint",     label: "좌우 여백 채우기" },
+            { ai: "outpaint",     label: "여백 늘리기" },
           ].map(m => (
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -875,15 +876,16 @@ export default function App() {
         {renderPage()}
       </div>
 
-      {/* ── 푸터 (AI 페이지에선 숨김) ── */}
+      {/* ── 푸터 ── */}
       {page !== "ai" && <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
           <div style={{ maxWidth: 1000, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>N</div>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
+                  </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-                  <div style={{ fontSize: 9, color: C.muted, letterSpacing: 1 }}>NPER CONTENTS LAB</div>
                 </div>
               </div>
               <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>

@@ -323,6 +323,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [filterTag, setFilterTag] = useState(""); // 세부 태그 필터
   const [showCatMgr, setShowCatMgr] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
+  const snippetCache = useRef({}); // postId → snippet text
+  const hoverTimer = useRef(null);
   const PER = 20;
 
   const isDark = !!(C.bg?.includes("0a")||C.bg?.includes("#10")||C.bg?.includes("242"));
@@ -1025,7 +1027,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               {pageItems.map((p,idx)=>{
                 const num=filtered.length-(page-1)*PER-idx;
                 const today=Date.now()-p.id<86400000;
-                const thumb=extractThumb(p.body);
+                const thumb = (p.images && p.images[0]) || extractThumb(p.body);
                 return isMobile ? (
                   /* 모바일 카드형 */
                   <div key={p.id} onClick={()=>openPost(p)}
@@ -1067,12 +1069,26 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     onMouseMove={e=>{
                       const x = e.clientX + 18;
                       const y = e.clientY - 10;
-                      const popW = 280, popH = hoverPreview?.thumb ? 220 : 100;
-                      setHoverPreview({
-                        post: p, thumb, snippet: extractText(p.body),
+                      const popW = 280, popH = thumb ? 220 : 100;
+                      const pos = {
                         x: x + popW > window.innerWidth ? e.clientX - popW - 10 : x,
                         y: y + popH > window.innerHeight ? e.clientY - popH : y,
-                      });
+                      };
+                      if (snippetCache.current[p.id] !== undefined) {
+                        setHoverPreview({ post: p, thumb, snippet: snippetCache.current[p.id], ...pos });
+                      } else {
+                        setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, ...pos } : { post: p, thumb, snippet: null, ...pos });
+                        if (!hoverTimer.current || hoverTimer.current !== p.id) {
+                          hoverTimer.current = p.id;
+                          getPostByIdFromDB(p.id).then(full => {
+                            if (full) {
+                              const snip = extractText(full.body);
+                              snippetCache.current[p.id] = snip;
+                              setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, snippet: snip } : prev);
+                            } else { snippetCache.current[p.id] = ""; }
+                          }).catch(() => { snippetCache.current[p.id] = ""; });
+                        }
+                      }
                     }}
                     onMouseLeave={e=>{
                       e.currentTarget.style.background="transparent";

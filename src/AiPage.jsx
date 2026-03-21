@@ -153,7 +153,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="model_gen"    label="모델 생성"        indent />
           <Item id="face_swap"    label="얼굴 교체"         indent />
           <Item id="outfit_swap"  label="의상 교체"         indent />
-          <Item id="outpaint"     label="좌우 여백 채우기" indent />
+          <Item id="outpaint"     label="여백 늘리기" indent />
         </>}
 
 
@@ -249,7 +249,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             {[
               { label:"포인트 충전", sub:"더 많은 AI 생성", onClick:()=>{ navigate("pricing"); setOpen(false); },
                 accent:true },
-              { label:"내 보관함", sub:"생성한 글·카드뉴스", onClick:()=>setOpen(false) },
+              { label:"내 보관함", sub:"생성한 글·카드뉴스", onClick:()=>{ navigate("library"); setOpen(false); } },
             ].map((item,i) => (
               <button key={i} onClick={item.onClick}
                 style={{ width:"100%", padding:"9px 10px", border:"none", borderRadius:9,
@@ -1179,15 +1179,22 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   );
 }
 
-/* ── 좌우 여백 채우기 (Outpainting) ─────────────────────── */
+/* ── 여백 늘리기 (Outpainting) ─────────────────────── */
 function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const C = useGenColors(isDark);
-  const { ACC, bg, card, bdr, text, muted, ibg } = C;
+  const { ACC, bg, card, bdr, text, muted } = C;
   const [step, setStep] = useState(1);
   const [srcImg, setSrcImg] = useState(null);
-  const [imgX, setImgX] = useState(50);   // 0~100: 이미지 수평 위치 (50=중앙)
-  const [imgY, setImgY] = useState(50);   // 0~100: 이미지 수직 위치 (50=중앙)
+  const [sizeMode, setSizeMode] = useState("manual"); // "ratio" | "manual"
+  // 비율 모드
   const [ratio, setRatio] = useState("16:9");
+  const [imgX, setImgX] = useState(50);
+  const [imgY, setImgY] = useState(50);
+  // 수동 모드: 각 방향 확장 (0~400px 단위)
+  const [expLeft,   setExpLeft]   = useState(100);
+  const [expRight,  setExpRight]  = useState(100);
+  const [expTop,    setExpTop]    = useState(0);
+  const [expBottom, setExpBottom] = useState(0);
   const [fillStyle, setFillStyle] = useState("자연스럽게");
   const [result, setResult] = useState(null);
   const [err, setErr] = useState("");
@@ -1195,20 +1202,41 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const readFile = e => {
     const f = e.target.files?.[0]; if (!f) return;
     const reader = new FileReader();
-    reader.onload = ev => { setSrcImg({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result }); setImgX(50); setImgY(50); };
+    reader.onload = ev => {
+      setSrcImg({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+      setImgX(50); setImgY(50);
+    };
     reader.readAsDataURL(f);
   };
 
+  const fillMap = {
+    "자연스럽게": "seamlessly and naturally matching the existing content style, colors, and texture",
+    "흐릿하게":   "with a soft blurred gradient fade that gently transitions to the surroundings",
+    "배경확장":   "extending the surrounding environment and background scene",
+  };
+
   const buildPrompt = () => {
+    const fm = fillMap[fillStyle] || fillMap["자연스럽게"];
+    if (sizeMode === "manual") {
+      const dirs = [];
+      if (expLeft  > 0) dirs.push(`${expLeft}px to the left`);
+      if (expRight > 0) dirs.push(`${expRight}px to the right`);
+      if (expTop   > 0) dirs.push(`${expTop}px to the top`);
+      if (expBottom> 0) dirs.push(`${expBottom}px to the bottom`);
+      const expansion = dirs.length ? dirs.join(", ") : "equally on all sides";
+      return `Outpainting task: Expand the canvas by ${expansion}. Fill all new empty areas ${fm}. The filled areas must match the original image's lighting, color palette, and atmosphere. Make the result look like a single seamless photograph.`;
+    }
     const hPos = imgX < 30 ? "left side" : imgX > 70 ? "right side" : "center";
-    const vPos = imgY < 30 ? "top area" : imgY > 70 ? "bottom area" : "middle";
-    const fillMap = { "자연스럽게":"seamlessly and naturally matching the existing content style, colors, and texture", "흐릿하게":"with a soft blurred gradient fade that gently transitions to the surroundings", "배경확장":"extending the surrounding environment and background scene" };
-    return `Outpainting task: The original image is positioned at the ${hPos}, ${vPos} of a ${ratio} aspect ratio canvas. Fill ALL empty/transparent areas around the original image ${fillMap[fillStyle] || fillMap["자연스럽게"]}. The filled areas must match the original image's lighting, color palette, and atmosphere. Output: ${ratio} aspect ratio. Make the result look like a single seamless wide-angle photograph.`;
+    const vPos = imgY < 30 ? "top area"  : imgY > 70 ? "bottom area" : "middle";
+    return `Outpainting task: The original image is positioned at the ${hPos}, ${vPos} of a ${ratio} aspect ratio canvas. Fill ALL empty areas around the original image ${fm}. Output: ${ratio} aspect ratio. Make the result look like a single seamless photograph.`;
   };
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("이미지를 업로드해주세요."); return; }
+    if (sizeMode === "manual" && expLeft===0 && expRight===0 && expTop===0 && expBottom===0) {
+      setErr("최소 한 방향의 여백 크기를 0보다 크게 설정해주세요."); return;
+    }
     if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
@@ -1227,16 +1255,52 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   };
 
   const W = { maxWidth:640, margin:"0 auto" };
+  const getRatioParts = r => { const [w,h]=r.split(":").map(Number); return {w:w||16,h:h||9}; };
 
-  // 비율 → 숫자
-  const getRatioParts = (r) => {
-    const [w, h] = r.split(":").map(Number);
-    return { w: w||16, h: h||9 };
+  // 수동 모드 미리보기: 원본을 중앙, 주변에 확장 영역 표시
+  const ManualPreview = () => {
+    const maxExp = Math.max(expLeft, expRight, expTop, expBottom, 1);
+    const scale = 120 / maxExp;
+    const oW = 120, oH = 90; // 원본 표시 크기
+    const pL = Math.round(expLeft  * scale);
+    const pR = Math.round(expRight * scale);
+    const pT = Math.round(expTop   * scale);
+    const pB = Math.round(expBottom* scale);
+    const totalW = pL + oW + pR;
+    const totalH = pT + oH + pB;
+    const maxW = 320;
+    const scaleDown = totalW > maxW ? maxW / totalW : 1;
+    const fw = Math.round(totalW * scaleDown);
+    const fh = Math.round(totalH * scaleDown);
+    const sl = Math.round(pL * scaleDown);
+    const st = Math.round(pT * scaleDown);
+    const sw = Math.round(oW * scaleDown);
+    const sh = Math.round(oH * scaleDown);
+    return (
+      <div style={{ position:"relative", width:fw, height:fh, margin:"0 auto 12px",
+        borderRadius:10, overflow:"hidden", border:`2px solid ${ACC}` }}>
+        {/* 확장 영역 (격자) */}
+        <div style={{ position:"absolute", inset:0,
+          backgroundImage:`repeating-linear-gradient(45deg,${isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)"} 0,${isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)"} 1px,transparent 0,transparent 50%)`,
+          backgroundSize:"10px 10px",
+          background: isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)" }} />
+        {/* 원본 이미지 영역 */}
+        <div style={{ position:"absolute", left:sl, top:st, width:sw, height:sh,
+          border:`2px solid ${ACC}`, borderRadius:4, overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.3)" }}>
+          <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+        </div>
+        {/* 방향 라벨 */}
+        {expLeft  > 0 && <div style={{ position:"absolute", left:2, top:"50%", transform:"translateY(-50%)", fontSize:8, color:ACC, fontWeight:800 }}>←{expLeft}px</div>}
+        {expRight > 0 && <div style={{ position:"absolute", right:2, top:"50%", transform:"translateY(-50%)", fontSize:8, color:ACC, fontWeight:800 }}>{expRight}px→</div>}
+        {expTop   > 0 && <div style={{ position:"absolute", top:2, left:"50%", transform:"translateX(-50%)", fontSize:8, color:ACC, fontWeight:800 }}>↑{expTop}px</div>}
+        {expBottom> 0 && <div style={{ position:"absolute", bottom:2, left:"50%", transform:"translateX(-50%)", fontSize:8, color:ACC, fontWeight:800 }}>{expBottom}px↓</div>}
+      </div>
+    );
   };
 
   if (step === 3) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="🖼" title="여백 채우는 중..." subtitle={"이미지의 빈 공간을 AI가 채우고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="🖼" title="여백 늘리는 중..." subtitle={"이미지의 빈 공간을 AI가 채우고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
     </div>
   );
 
@@ -1261,15 +1325,16 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
-        <StepBar step={step} total={2} labels={["이미지 업로드","위치·설정"]} ACC={ACC} />
+        <StepBar step={step} total={2} labels={["이미지 업로드","크기·설정"]} ACC={ACC} />
         {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
         {step === 1 && (
           <div>
             <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>이미지 업로드</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>여백을 채울 이미지를 업로드해요.</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>여백을 늘릴 이미지를 업로드해요.</div>
             <label style={{ display:"block", cursor:"pointer", marginBottom:20 }}>
-              <div style={{ minHeight:200, borderRadius:14, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10, padding:20 }}>
+              <div style={{ minHeight:200, borderRadius:14, border:`2px dashed ${srcImg?ACC:bdr}`, background:card,
+                display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10, padding:20 }}>
                 {srcImg
                   ? <img src={srcImg.url} alt="" style={{ maxWidth:"100%", maxHeight:240, objectFit:"contain", borderRadius:8 }} />
                   : <><span style={{ fontSize:48 }}>🖼</span><span style={{ fontSize:14, color:muted }}>확장할 이미지 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
@@ -1280,101 +1345,155 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
               width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
               background: srcImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
               color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6,
-            }}>다음 → 위치 설정</button>
+            }}>다음 → 크기 설정</button>
           </div>
         )}
 
         {step === 2 && srcImg && (
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>이미지 위치 설정</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:16 }}>원본 이미지를 원하는 위치로 조정하면, 빈 공간을 AI가 채워요.</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>여백 크기 설정</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:16 }}>원하는 방향과 크기를 설정하면 AI가 자연스럽게 채워드려요.</div>
 
-            {/* 비율 선택 */}
-            <SelectGroup label="목표 비율" value={ratio} onChange={setRatio} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={["16:9","21:9","4:3","3:2","2:1","1:1"]} />
+            {/* 모드 선택 탭 */}
+            <div style={{ display:"flex", background: isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)", borderRadius:12, padding:4, marginBottom:20 }}>
+              {[{v:"manual",l:"✏️ 수동 설정"},{v:"ratio",l:"📐 비율 선택"}].map(({v,l}) => (
+                <button key={v} onClick={()=>setSizeMode(v)} style={{
+                  flex:1, padding:"9px 0", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                  background: sizeMode===v ? (isDark?"rgba(255,255,255,0.12)":"#fff") : "transparent",
+                  color: sizeMode===v ? (v==="manual"?ACC:text) : muted,
+                  boxShadow: sizeMode===v ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+                  transition:"all 0.15s",
+                }}>{l}</button>
+              ))}
+            </div>
 
-            {/* 채우기 스타일 */}
-            <SelectGroup label="채우기 스타일" value={fillStyle} onChange={setFillStyle} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"자연스럽게",l:"🌊 자연스럽게"},{v:"흐릿하게",l:"🌫 흐릿하게"},{v:"배경확장",l:"🌄 배경 확장"}]} />
+            {/* ── 수동 설정 모드 ── */}
+            {sizeMode === "manual" && (
+              <div>
+                <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:10 }}>📐 방향별 확장 크기</div>
 
-            {/* 위치 미리보기 + 슬라이더 */}
-            <div style={{ marginBottom:18 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:10 }}>📍 이미지 위치 조정</div>
+                {/* 미리보기 */}
+                {ManualPreview()}
 
-              {/* 비율 프리뷰 캔버스 */}
-              {(() => {
-                const { w: rw, h: rh } = getRatioParts(ratio);
-                const frameW = 340;
-                const frameH = Math.round(frameW * rh / rw);
-                // 이미지 크기: 프레임의 약 50% 너비로 표시
-                const imgDispW = Math.round(frameW * 0.5);
-                const imgDispH = Math.round(frameW * 0.5);
-                const imgLeft = Math.round((imgX / 100) * (frameW - imgDispW));
-                const imgTop  = Math.round((imgY / 100) * (frameH - imgDispH));
-                return (
-                  <div style={{ position:"relative", width:frameW, height:frameH, margin:"0 auto 16px",
-                    borderRadius:12, overflow:"hidden", border:`2px solid ${ACC}`,
-                    background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
-                    {/* 격자 패턴 (비어있는 영역) */}
-                    <div style={{ position:"absolute", inset:0,
-                      backgroundImage:`repeating-linear-gradient(45deg,${isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)"} 0,${isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)"} 1px,transparent 0,transparent 50%)`,
-                      backgroundSize:"12px 12px" }} />
-                    {/* 이미지 */}
-                    <div style={{ position:"absolute", left:imgLeft, top:imgTop, width:imgDispW, height:imgDispH,
-                      border:`2px solid ${ACC}`, borderRadius:6, overflow:"hidden", boxShadow:"0 4px 16px rgba(0,0,0,0.3)" }}>
-                      <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                {/* 슬라이더 4개 */}
+                {[
+                  { label:"← 왼쪽 확장", val:expLeft,   set:setExpLeft,   color:"#6366f1" },
+                  { label:"오른쪽 확장 →", val:expRight, set:setExpRight, color:"#8b5cf6" },
+                  { label:"↑ 위쪽 확장",  val:expTop,   set:setExpTop,    color:"#ec4899" },
+                  { label:"아래쪽 확장 ↓", val:expBottom,set:setExpBottom, color:"#f59e0b" },
+                ].map(({label,val,set,color}) => (
+                  <div key={label} style={{ marginBottom:16 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:text }}>{label}</span>
+                      <span style={{ fontSize:13, fontWeight:900, color:color, minWidth:52, textAlign:"right" }}>{val}px</span>
                     </div>
-                    {/* 위치 라벨 */}
-                    <div style={{ position:"absolute", bottom:6, right:8, fontSize:9, color:isDark?"rgba(255,255,255,0.4)":"rgba(0,0,0,0.4)", fontWeight:700 }}>
-                      {ratio}
+                    <input type="range" min={0} max={400} step={20} value={val}
+                      onChange={e=>set(Number(e.target.value))}
+                      style={{ width:"100%", accentColor:color }} />
+                    {/* 빠른 값 버튼 */}
+                    <div style={{ display:"flex", gap:4, marginTop:6, flexWrap:"wrap" }}>
+                      {[0,50,100,150,200,300,400].map(px => (
+                        <button key={px} onClick={()=>set(px)} style={{
+                          padding:"3px 9px", borderRadius:6, border:`1px solid ${val===px?color:bdr}`,
+                          background: val===px?`${color}18`:"transparent",
+                          color: val===px?color:muted, fontSize:10, fontWeight:700, cursor:"pointer",
+                        }}>{px===0?"없음":`${px}px`}</button>
+                      ))}
                     </div>
                   </div>
-                );
-              })()}
-
-              {/* 수평 위치 슬라이더 */}
-              <div style={{ marginBottom:12 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:muted, marginBottom:5 }}>
-                  <span>← 왼쪽</span>
-                  <span style={{ fontWeight:700, color:ACC }}>수평 위치</span>
-                  <span>오른쪽 →</span>
-                </div>
-                <input type="range" min={0} max={100} value={imgX} onChange={e=>setImgX(Number(e.target.value))}
-                  style={{ width:"100%", accentColor:ACC }} />
-              </div>
-
-              {/* 수직 위치 슬라이더 */}
-              <div style={{ marginBottom:4 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:muted, marginBottom:5 }}>
-                  <span>↑ 상단</span>
-                  <span style={{ fontWeight:700, color:ACC }}>수직 위치</span>
-                  <span>하단 ↓</span>
-                </div>
-                <input type="range" min={0} max={100} value={imgY} onChange={e=>setImgY(Number(e.target.value))}
-                  style={{ width:"100%", accentColor:ACC }} />
-              </div>
-
-              {/* 빠른 위치 버튼 */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, marginTop:10 }}>
-                {[
-                  {l:"좌상단",x:0,y:0},{l:"상단",x:50,y:0},{l:"우상단",x:100,y:0},
-                  {l:"왼쪽",x:0,y:50},{l:"중앙",x:50,y:50},{l:"오른쪽",x:100,y:50},
-                  {l:"좌하단",x:0,y:100},{l:"하단",x:50,y:100},{l:"우하단",x:100,y:100},
-                ].map(({l,x,y}) => (
-                  <button key={l} onClick={()=>{setImgX(x);setImgY(y);}}
-                    style={{ padding:"6px 4px", borderRadius:8, border:`1px solid ${(imgX===x&&imgY===y)?ACC:bdr}`,
-                      background:(imgX===x&&imgY===y)?`${ACC}18`:"transparent",
-                      color:(imgX===x&&imgY===y)?ACC:muted, fontSize:10, fontWeight:700, cursor:"pointer" }}>
-                    {l}
-                  </button>
                 ))}
+
+                {/* 프리셋 버튼 */}
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>⚡ 빠른 프리셋</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:6 }}>
+                    {[
+                      {l:"← 왼쪽만",   vals:[200,0,0,0]},
+                      {l:"오른쪽만 →", vals:[0,200,0,0]},
+                      {l:"↑↓ 위아래",  vals:[0,0,150,150]},
+                      {l:"← → 양쪽",   vals:[150,150,0,0]},
+                      {l:"전방향 균일", vals:[100,100,100,100]},
+                      {l:"와이드 배너", vals:[200,200,0,0]},
+                    ].map(({l,vals:[L,R,T,B]}) => (
+                      <button key={l} onClick={()=>{setExpLeft(L);setExpRight(R);setExpTop(T);setExpBottom(B);}}
+                        style={{ padding:"8px 10px", borderRadius:9, border:`1px solid ${bdr}`, background:"transparent",
+                          color:muted, fontSize:11, fontWeight:700, cursor:"pointer", textAlign:"left",
+                          transition:"all 0.1s" }}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor=ACC;e.currentTarget.style.color=ACC;}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=bdr;e.currentTarget.style.color=muted;}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* ── 비율 선택 모드 ── */}
+            {sizeMode === "ratio" && (
+              <div>
+                <SelectGroup label="목표 비율" value={ratio} onChange={setRatio} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
+                  options={["16:9","21:9","4:3","3:2","2:1","1:1","9:16","3:4"]} />
+
+                {/* 비율 프리뷰 + 위치 슬라이더 */}
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:10 }}>📍 이미지 위치 조정</div>
+                  {(() => {
+                    const { w: rw, h: rh } = getRatioParts(ratio);
+                    const frameW = 300, frameH = Math.round(frameW * rh / rw);
+                    const imgDispW = Math.round(frameW * 0.48), imgDispH = Math.round(frameW * 0.48);
+                    const imgLeft = Math.round((imgX / 100) * (frameW - imgDispW));
+                    const imgTop  = Math.round((imgY / 100) * (frameH - imgDispH));
+                    return (
+                      <div style={{ position:"relative", width:frameW, height:Math.min(frameH,220), margin:"0 auto 16px",
+                        borderRadius:12, overflow:"hidden", border:`2px solid ${ACC}`,
+                        background: isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)" }}>
+                        <div style={{ position:"absolute", inset:0,
+                          backgroundImage:`repeating-linear-gradient(45deg,${isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)"} 0,${isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)"} 1px,transparent 0,transparent 50%)`,
+                          backgroundSize:"12px 12px" }} />
+                        <div style={{ position:"absolute", left:imgLeft, top:Math.min(imgTop,Math.min(frameH,220)-imgDispH),
+                          width:imgDispW, height:imgDispH,
+                          border:`2px solid ${ACC}`, borderRadius:6, overflow:"hidden", boxShadow:"0 4px 16px rgba(0,0,0,0.3)" }}>
+                          <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                        </div>
+                        <div style={{ position:"absolute", bottom:6, right:8, fontSize:9, color:isDark?"rgba(255,255,255,0.4)":"rgba(0,0,0,0.4)", fontWeight:700 }}>{ratio}</div>
+                      </div>
+                    );
+                  })()}
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:muted, marginBottom:5 }}>
+                      <span>← 왼쪽</span><span style={{ fontWeight:700, color:ACC }}>수평 위치</span><span>오른쪽 →</span>
+                    </div>
+                    <input type="range" min={0} max={100} value={imgX} onChange={e=>setImgX(Number(e.target.value))} style={{ width:"100%", accentColor:ACC }} />
+                  </div>
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:muted, marginBottom:5 }}>
+                      <span>↑ 상단</span><span style={{ fontWeight:700, color:ACC }}>수직 위치</span><span>하단 ↓</span>
+                    </div>
+                    <input type="range" min={0} max={100} value={imgY} onChange={e=>setImgY(Number(e.target.value))} style={{ width:"100%", accentColor:ACC }} />
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, marginTop:8 }}>
+                    {[{l:"좌상",x:0,y:0},{l:"상단",x:50,y:0},{l:"우상",x:100,y:0},
+                      {l:"왼쪽",x:0,y:50},{l:"중앙",x:50,y:50},{l:"오른쪽",x:100,y:50},
+                      {l:"좌하",x:0,y:100},{l:"하단",x:50,y:100},{l:"우하",x:100,y:100}].map(({l,x,y})=>(
+                      <button key={l} onClick={()=>{setImgX(x);setImgY(y);}}
+                        style={{ padding:"5px 4px", borderRadius:7, border:`1px solid ${(imgX===x&&imgY===y)?ACC:bdr}`,
+                          background:(imgX===x&&imgY===y)?`${ACC}18`:"transparent",
+                          color:(imgX===x&&imgY===y)?ACC:muted, fontSize:10, fontWeight:700, cursor:"pointer" }}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 채우기 스타일 (공통) */}
+            <SelectGroup label="채우기 스타일" value={fillStyle} onChange={setFillStyle} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"자연스럽게",l:"🌊 자연스럽게"},{v:"흐릿하게",l:"🌫 흐릿하게"},{v:"배경확장",l:"🌄 배경 확장"}]} />
 
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
               <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                🖼 여백 채우기 (10P)
+                🖼 여백 늘리기 (10P)
               </button>
             </div>
           </div>
@@ -1417,7 +1536,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "model_gen",    icon: "🧍", title: "모델 생성",         desc: "여자/남자 광고 모델 생성", cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "face_swap",    icon: "🔄", title: "얼굴 교체",         desc: "얼굴만 교체 · 비교 슬라이더", cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "outfit_swap",  icon: "👗", title: "의상 교체",         desc: "옷·스타일 교체",           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "outpaint",     icon: "↔",  title: "좌우 여백 채우기", desc: "이미지 비율 확장",          cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      { id: "outpaint",     icon: "↔",  title: "여백 늘리기",      desc: "수동 크기 조절 + AI 채우기", cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: "숏폼편집 👑", desc: "유튜브→숏폼 AI 기획 (관리자)", cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
     return (
@@ -1966,22 +2085,22 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 좌우 여백 채우기 인트로
+  // 여백 늘리기 인트로
   if (aiMenu === "outpaint") {
     return (
-      <IntroScreen icon="↔" title="좌우 여백 채우기" badge="AI Outpainting · 비율 확장" color="#f59e0b"
-        subtitle="이미지 좌우의 빈 공간을 AI가 자연스럽게 채워 더 넓은 화면비로 확장해줘요. 가로형 배너, SNS 커버 이미지 제작에 활용해보세요."
+      <IntroScreen icon="↔" title="여백 늘리기" badge="AI Outpainting · 수동 크기 조절" color="#f59e0b"
+        subtitle="이미지 주변의 빈 공간을 AI가 자연스럽게 채워 확장해줘요. 방향별 수동 크기 설정 또는 비율 자동으로 빠르게 완성할 수 있어요."
         steps={[
-          { title:"이미지 업로드", desc:"여백을 채울 이미지를 업로드해요." },
-          { title:"확장 설정", desc:"방향, 목표 비율, 채우기 스타일을 선택해요." },
-          { title:"AI 여백 채우기", desc:"AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요." },
+          { title:"이미지 업로드", desc:"여백을 늘릴 이미지를 업로드해요." },
+          { title:"크기 설정", desc:"수동(방향별 px)으로 직접 조절하거나, 비율을 선택해서 자동으로 설정해요." },
+          { title:"AI 여백 늘리기", desc:"AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요." },
           { title:"결과 다운로드", desc:"확장된 이미지를 확인하고 PNG로 저장해요." },
         ]}
         features={[
-          { icon:"↔", label:"좌우 확장" }, { icon:"📐", label:"6가지 비율" },
+          { icon:"✏️", label:"수동 크기 조절" }, { icon:"📐", label:"비율 자동 선택" },
           { icon:"🌊", label:"자연스러운 연결" }, { icon:"💎", label:"10P" },
         ]}
-        cta="여백 채우기 시작하기"
+        cta="여백 늘리기 시작하기"
         onStart={() => setAiMenu("outpaint_make")}
       />
     );
@@ -2100,7 +2219,7 @@ const MENU_LABELS = {
   model_gen: "모델 생성", model_gen_make: "모델 생성",
   face_swap: "얼굴 교체", face_swap_make: "얼굴 교체",
   outfit_swap: "의상 교체", outfit_swap_make: "의상 교체",
-  outpaint: "좌우 여백 채우기", outpaint_make: "좌우 여백 채우기",
+  outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
   shorts: "숏폼편집",
 };
 
@@ -2270,6 +2389,13 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        </div>
+        {/* 미니 푸터 */}
+        <div style={{ flexShrink:0, borderTop:"1px solid "+topBdr, padding:"6px 16px", display:"flex", alignItems:"center", justifyContent:"center", flexWrap:"wrap", gap:"0 16px" }}>
+          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>© 2025 SNS메이킷</span>
+          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>상호: 엔퍼그로스 · 대표: 김선봉 · 사업자: 598-09-02769</span>
+          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>통신판매업: 2024-서울금천-1997호</span>
+          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>고객센터: npermovie@naver.com</span>
         </div>
       </div>
     </div>
