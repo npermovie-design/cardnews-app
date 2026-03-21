@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { getPosts, setPosts, changePoints, getPostsFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, supabase } from "./storage";
+import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, supabase } from "./storage";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
@@ -469,15 +469,22 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     try { await deletePostFromDB(id); } catch(e){}
   };
 
-  const openPost = p => {
+  const openPost = async p => {
     const updated = {...p, views:(p.views||0)+1};
     const next = posts.map(pp=>pp.id===p.id ? updated : pp);
     syncLocal(next); setView(updated);
-    // URL에 게시글 ID 반영
     const cat = p.subCat||p.cat||subCat;
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
-    // Supabase 조회수 업데이트 (비동기, 실패해도 무방)
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
+    // body가 없으면 Supabase에서 full post 로드
+    if (!p.body) {
+      const full = await getPostByIdFromDB(p.id);
+      if (full) {
+        const withBody = {...updated, body: full.body, images: full.images||updated.images};
+        setView(withBody);
+        setPostsS(prev => prev.map(pp => pp.id===p.id ? {...pp, body: full.body} : pp));
+      }
+    }
   };
 
   // 추천 토글 - 게시글당 1회, 재클릭 시 취소
@@ -1145,7 +1152,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>💎 포인트 적립</span>
               </div>
-              {[["✏️ 글 작성","+1P"],["🤖 AI 생성","-10P"],["🎁 가입 즉시","+10P"],["📅 일일 로그인","+3P"]].map(([a,p])=>(
+              {[["✏️ 글 작성","+1P"],["🤖 AI 생성","-10P"],["🎁 가입 즉시","+200P"],["📅 출석체크","+3P"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

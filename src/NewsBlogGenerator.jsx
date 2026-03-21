@@ -147,7 +147,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
+            ? <><b style={{color:text}}>비회원 무료 10회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
             : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>

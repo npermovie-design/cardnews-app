@@ -1,22 +1,11 @@
 import { useState, useRef } from "react";
 import { callClaude } from "./aiClient";
 
-/*
-  ShortformEditor  —  Vercel 전용 완결판
-  흐름:
-  ① /api/youtube-info  → 제목·썸네일·길이 취득
-  ② /api/youtube-stream → Vercel이 유튜브를 대신 다운로드해서 브라우저에 스트리밍
-  ③ ffmpeg.wasm (브라우저) → 구간 자르기 + 9:16 세로 변환
-  ④ Blob URL → 재생 + MP4 다운로드
-  파일 업로드도 동일하게 ffmpeg.wasm 처리
-*/
-
 const ACC = "#a855f7";
 
 function toMMSS(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);return`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;}
 function parseTimeToSec(t){if(!t)return 0;const p=String(t).match(/(\d+):(\d+)/);return p?parseInt(p[1])*60+parseInt(p[2]):0;}
 function extractYtId(url){const m=url.match(/(?:v=|youtu\.be\/|embed\/)([^&?/\s]{11})/);return m?m[1]:null;}
-
 
 function parseJSON(raw){
   const c=raw.replace(/```json\n?/g,"").replace(/```/g,"").trim();
@@ -34,10 +23,117 @@ function parseJSON(raw){
   return{clips:objs};
 }
 
-const LENGTHS=[{id:"s15",label:"15~30초",min:15,max:30},{id:"s30",label:"30~60초",min:30,max:60},{id:"s60",label:"60~90초",min:60,max:90},{id:"s90",label:"90~120초",min:90,max:120}];
+const LENGTHS=[
+  {id:"s15",label:"15~30초",min:15,max:30},
+  {id:"s30",label:"30~60초",min:30,max:60},
+  {id:"s60",label:"60~90초",min:60,max:90},
+  {id:"s90",label:"90~120초",min:90,max:120}
+];
 
-// Canvas + MediaRecorder 방식 (SharedArrayBuffer 불필요 - 모든 브라우저/환경 작동)
-// ffmpeg.wasm 완전 제거 - SharedArrayBuffer 오류 없음
+// ── 레이아웃 목록 ───────────────────────────────────────────────────────────
+const LAYOUTS = [
+  {
+    id:"split", label:"얼굴+제목+자막",
+    desc:"상단 후킹 제목 + 얼굴 자동 크롭 + 하단 자막\n가장 인기있는 숏폼 포맷",
+    icon:"🎬",
+    preview: (topColor,botColor)=>(
+      <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",background:"#111"}}>
+        <div style={{flex:"0 0 22%",background:"linear-gradient(rgba(0,0,0,0.9),rgba(0,0,0,0.1))",display:"flex",alignItems:"center",justifyContent:"center",padding:"4px"}}>
+          <span style={{fontSize:9,fontWeight:900,color:topColor||"#fff",textAlign:"center"}}>후킹 제목 텍스트</span>
+        </div>
+        <div style={{flex:1,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+          <div style={{width:40,height:48,borderRadius:"50% 50% 40% 40%",background:"rgba(168,85,247,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>👤</div>
+          <span style={{position:"absolute",bottom:4,right:4,fontSize:7,color:"rgba(255,255,255,0.4)"}}>얼굴 자동크롭</span>
+        </div>
+        <div style={{flex:"0 0 22%",background:"linear-gradient(rgba(0,0,0,0.1),rgba(0,0,0,0.9))",display:"flex",alignItems:"center",justifyContent:"center",padding:"4px"}}>
+          <span style={{fontSize:9,fontWeight:700,color:botColor||"#ffff00",textAlign:"center"}}>첫 3초 자막</span>
+        </div>
+      </div>
+    )
+  },
+  {
+    id:"full_bot", label:"풀화면+하단자막",
+    desc:"영상 전체 노출 + 하단 그라데이션 자막\n인물·풍경 영상에 최적",
+    icon:"📱",
+    preview: (topColor,botColor)=>(
+      <div style={{width:"100%",height:"100%",background:"#1a1a2e",position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontSize:22,opacity:0.4}}>🎥</span>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"30%",background:"linear-gradient(transparent,rgba(0,0,0,0.92))",display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"8px 4px"}}>
+          <span style={{fontSize:9,fontWeight:900,color:botColor||"#ffff00",textAlign:"center"}}>하단 자막 텍스트</span>
+        </div>
+      </div>
+    )
+  },
+  {
+    id:"full_top", label:"풀화면+상단자막",
+    desc:"영상 전체 + 상단 그라데이션 제목\n클릭율 높은 레이아웃",
+    icon:"📌",
+    preview: (topColor)=>(
+      <div style={{width:"100%",height:"100%",background:"#1a1a2e",position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontSize:22,opacity:0.4}}>🎥</span>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:"28%",background:"linear-gradient(rgba(0,0,0,0.92),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"8px 4px"}}>
+          <span style={{fontSize:9,fontWeight:900,color:topColor||"#fff",textAlign:"center"}}>상단 제목 텍스트</span>
+        </div>
+      </div>
+    )
+  },
+  {
+    id:"full_center", label:"풀화면+중앙자막",
+    desc:"영상 전체 + 가운데 자막 박스\n강렬한 임팩트 연출",
+    icon:"🎯",
+    preview: (topColor,botColor)=>(
+      <div style={{width:"100%",height:"100%",background:"#1a1a2e",position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontSize:22,opacity:0.4}}>🎥</span>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"5px 8px",maxWidth:"85%",textAlign:"center"}}>
+            <span style={{fontSize:9,fontWeight:900,color:botColor||"#ffff00"}}>중앙 자막 박스</span>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id:"top_text", label:"상단 텍스트형",
+    desc:"상단 35% 제목 영역 + 하단 65% 영상\n제목 강조가 필요할 때",
+    icon:"📝",
+    preview: (topColor)=>(
+      <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",background:"#111"}}>
+        <div style={{flex:"0 0 35%",background:"linear-gradient(135deg,#1a1a2e,#0f0f1f)",display:"flex",alignItems:"center",justifyContent:"center",padding:"6px"}}>
+          <span style={{fontSize:9,fontWeight:900,color:topColor||"#fff",textAlign:"center",lineHeight:1.4}}>강렬한<br/>제목 텍스트</span>
+        </div>
+        <div style={{flex:1,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <span style={{fontSize:18,opacity:0.5}}>🎥</span>
+        </div>
+      </div>
+    )
+  },
+  {
+    id:"bot_text", label:"하단 텍스트형",
+    desc:"상단 65% 영상 + 하단 35% 텍스트 박스\n정보전달형 숏폼에 최적",
+    icon:"💬",
+    preview: (topColor,botColor)=>(
+      <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",background:"#111"}}>
+        <div style={{flex:1,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <span style={{fontSize:18,opacity:0.5}}>🎥</span>
+        </div>
+        <div style={{flex:"0 0 35%",background:"linear-gradient(135deg,#0f0f1f,#1a1a2e)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"6px",gap:3}}>
+          <span style={{fontSize:8,fontWeight:900,color:topColor||"#fff",textAlign:"center"}}>소제목</span>
+          <span style={{fontSize:9,fontWeight:700,color:botColor||"#ffff00",textAlign:"center",lineHeight:1.4}}>하단 자막 텍스트</span>
+        </div>
+      </div>
+    )
+  },
+];
+
+// ── 자막 스타일 프리셋 ──────────────────────────────────────────────────────
+const CAP_PRESETS = [
+  {id:"classic",  label:"클래식",  topColor:"#ffffff", botColor:"#ffff00", bgOp:0.55, font:"Noto Sans KR"},
+  {id:"redhot",   label:"레드핫",  topColor:"#ff4444", botColor:"#ffffff", bgOp:0.65, font:"Noto Sans KR"},
+  {id:"blue",     label:"블루",    topColor:"#60a5fa", botColor:"#ffffff", bgOp:0.60, font:"Noto Sans KR"},
+  {id:"neon",     label:"네온",    topColor:"#a855f7", botColor:"#ec4899", bgOp:0.45, font:"Noto Sans KR"},
+  {id:"minimal",  label:"미니멀",  topColor:"#ffffff", botColor:"#ffffff", bgOp:0.00, font:"Noto Sans KR"},
+  {id:"dark",     label:"다크",    topColor:"#4ade80", botColor:"#facc15", bgOp:0.80, font:"Noto Sans KR"},
+];
 
 export default function ShortformEditor({isDark}){
   const D=isDark;
@@ -47,9 +143,10 @@ export default function ShortformEditor({isDark}){
   const bdr   =D?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)";
   const ibg   =D?"rgba(255,255,255,0.07)":"#f8f8f8";
 
+  // ── 스텝: 0인트로 1입력 2설정 3레이아웃 4생성중 5결과
   const [step,setStep]         = useState(0);
   const [tab,setTab]           = useState("clips");
-  const [inputMode,setInputMode]= useState("youtube");
+  const [inputMode,setInputMode]= useState("file");
 
   // 입력
   const [ytUrl,setYtUrl]       = useState("");
@@ -60,32 +157,42 @@ export default function ShortformEditor({isDark}){
   const fileRef  = useRef(null);
   const fileObjUrl= useRef(null);
 
-  // 설정
+  // 기본 설정
   const [lenId,setLenId]       = useState("s30");
   const [count,setCount]       = useState(3);
   const [totalDur,setTotalDur] = useState(1200);
   const [rangeEnd,setRangeEnd] = useState(1200);
-  const [capStyle,setCapStyle] = useState({font:"Noto Sans KR",color:"#ffffff",hl:"#ffff00",size:20,pos:"bottom",bgOp:0.6});
-  const [layout,setLayout]     = useState({split:true,topColor:"#ffffff",botColor:"#ffff00"});
+
+  // 레이아웃 & 스타일
+  const [layoutType,setLayoutType] = useState("split");
+  const [presetId,setPresetId]     = useState("classic");
+  const [capStyle,setCapStyle]     = useState({font:"Noto Sans KR",color:"#ffffff",hl:"#ffff00",size:20,pos:"bottom",bgOp:0.55,topColor:"#ffffff",botColor:"#ffff00"});
 
   // 결과
   const [clips,setClips]       = useState([]);
   const [selIdx,setSelIdx]     = useState(0);
   const [prog,setProg]         = useState(0);
   const [progMsg,setProgMsg]   = useState("");
-  const [extracted,setExtracted]= useState({});  // key→{url,blob}
+  const [extracted,setExtracted]= useState({});
   const [rec,setRec]           = useState(false);
   const [recPct,setRecPct]     = useState(0);
   const [recMsg,setRecMsg]     = useState("");
-  const [autoMode,setAutoMode] = useState(false);   // 전체 자동 편집 중
-  const [autoIdx,setAutoIdx]   = useState(0);       // 자동 편집 진행 클립 번호
+  const [autoMode,setAutoMode] = useState(false);
+  const [autoIdx,setAutoIdx]   = useState(0);
   const [topText, setTopText]  = useState("");
   const [botText, setBotText]  = useState("");
-  const cachedSrcUrl           = useRef(null);       // 다운로드한 영상 캐시 URL
+  const cachedSrcUrl           = useRef(null);
   const [err,setErr]           = useState("");
   const [copied,setCopied]     = useState(null);
   const [archive,setArchive]   = useState(()=>{try{return JSON.parse(localStorage.getItem("snsmakeit_shorts_v3")||"[]");}catch{return[];}});
   const [archMsg,setArchMsg]   = useState("");
+
+  // 프리셋 적용
+  const applyPreset = (pid) => {
+    const p = CAP_PRESETS.find(x=>x.id===pid)||CAP_PRESETS[0];
+    setPresetId(pid);
+    setCapStyle(prev=>({...prev, color:p.topColor, hl:p.botColor, bgOp:p.bgOp, font:p.font, topColor:p.topColor, botColor:p.botColor}));
+  };
 
   const cp=(t,k)=>{navigator.clipboard.writeText(t);setCopied(k);setTimeout(()=>setCopied(null),2000);};
   const inp={width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:ibg,color:text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
@@ -96,7 +203,6 @@ export default function ShortformEditor({isDark}){
     if(!id){setYtInfo({id:"",title:"링크를 확인해주세요",error:true});return;}
     setYtLoading(true);
     try{
-      // yt-dlp Python 함수 우선 시도 (봇 감지 우회율 높음)
       const endpoints=["/api/yt-dl","/api/youtube-info"];
       for(const ep of endpoints){
         try{
@@ -104,7 +210,7 @@ export default function ShortformEditor({isDark}){
           if(r.ok){
             const d=await r.json();
             if(!d.error){
-              setYtInfo({id,title:d.title,thumbnail:d.thumbnail,duration:d.duration,streamUrl:d.streamUrl,ok:true});
+              setYtInfo({id,title:d.title,thumbnail:d.thumbnail,duration:d.duration,ok:true});
               if(d.duration){setTotalDur(d.duration);setRangeEnd(d.duration);}
               setYtLoading(false);return;
             }
@@ -112,7 +218,6 @@ export default function ShortformEditor({isDark}){
         }catch{}
       }
     }catch{}
-    // fallback: oEmbed (제목·썸네일만, 길이 모름)
     try{
       const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
       const d=await r.json();
@@ -134,15 +239,14 @@ export default function ShortformEditor({isDark}){
     v.src=fileObjUrl.current;
   };
 
-  // ── 얼굴 위치 감지 (FaceDetector API 또는 기본값)
+  // ── 얼굴 위치 감지
   const detectFace=async(video,sampleTime)=>{
     try{
       const t=Math.min(sampleTime+1,(video.duration||sampleTime+5)-0.1);
       video.currentTime=t;
       await new Promise(res=>{video.onseeked=res;setTimeout(res,3000);});
       if("FaceDetector" in window){
-        const c=document.createElement("canvas");
-        c.width=640;c.height=360;
+        const c=document.createElement("canvas");c.width=640;c.height=360;
         c.getContext("2d").drawImage(video,0,0,640,360);
         const det=new window.FaceDetector({maxDetectedFaces:2,fastMode:true});
         const faces=await det.detect(c);
@@ -155,108 +259,159 @@ export default function ShortformEditor({isDark}){
     return{cx:0.5,cy:0.32,detected:false};
   };
 
-  // ── 분할 레이아웃 캔버스 렌더 (상단제목 + 얼굴크롭 + 하단자막)
-  const drawSplit=(ctx,video,facePos,topText,botText)=>{
-    const W=1080,H=1920,TOP=260,BOT=260,MID=H-TOP-BOT;
-    const {cx=0.5,cy=0.32}=facePos||{};
+  // ── 레이아웃별 캔버스 렌더
+  const drawFrame=(ctx,video,facePos,tTop,tBot,ltype,cs)=>{
+    const W=1080,H=1920;
     const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
-    const scale=Math.max(W/vw,MID/vh)*1.05;
-    const sw=vw*scale,sh=vh*scale;
-    const dx=W/2-cx*sw,dy=TOP+MID*0.38-cy*sh;
+    const {cx=0.5,cy=0.32}=facePos||{};
+    const topC=cs.topColor||"#fff";
+    const botC=cs.botColor||"#ffff00";
+    const bgOp=cs.bgOp||0.55;
 
-    ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+    const drawFullVideo=(scaleUp=1)=>{
+      const scale=Math.max(W/vw,H/vh)*scaleUp;
+      const sw=vw*scale,sh=vh*scale;
+      ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+      ctx.drawImage(video,(W-sw)/2,(H-sh)/2,sw,sh);
+    };
 
-    // 영상 (얼굴 중심 크롭)
-    ctx.save();ctx.beginPath();ctx.rect(0,TOP,W,MID);ctx.clip();
-    ctx.drawImage(video,dx,dy,sw,sh);
-    ctx.restore();
-
-    // 상단 그라데이션
-    const tg=ctx.createLinearGradient(0,0,0,TOP);
-    tg.addColorStop(0,"rgba(0,0,0,0.92)");tg.addColorStop(1,"rgba(0,0,0,0.08)");
-    ctx.fillStyle=tg;ctx.fillRect(0,0,W,TOP);
-
-    // 상단 텍스트
-    if(topText){
-      ctx.save();ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=14;
-      const fs=Math.max(38,Math.min(60,Math.floor(900/Math.max(topText.length,1))));
-      ctx.font=`900 ${fs}px sans-serif`;ctx.fillStyle=layout.topColor||"#fff";
-      const lw=Math.max(1,Math.floor(960/(fs*0.88)));
-      const ls=[];for(let i=0;i<topText.length;i+=lw)ls.push(topText.slice(i,i+lw));
+    const drawText=(text,x,y,maxW,fs,color,align="center")=>{
+      if(!text)return;
+      ctx.save();ctx.textAlign=align;ctx.fillStyle=color;
+      ctx.font=`900 ${fs}px sans-serif`;
+      ctx.shadowColor="#000";ctx.shadowBlur=16;
+      const lw=Math.max(1,Math.floor(maxW/(fs*0.55)));
+      const ls=[];for(let i=0;i<text.length;i+=lw)ls.push(text.slice(i,i+lw));
       const lh=fs+14,tot=ls.length*lh;
-      ls.forEach((l,i)=>ctx.fillText(l,W/2,(TOP-tot)/2+lh*(i+0.85)));
+      ls.forEach((l,i)=>ctx.fillText(l,x,y-tot/2+lh*(i+0.85)));
       ctx.restore();
-    }
+    };
 
-    // 하단 그라데이션
-    const bg=ctx.createLinearGradient(0,H-BOT,0,H);
-    bg.addColorStop(0,"rgba(0,0,0,0.08)");bg.addColorStop(1,"rgba(0,0,0,0.92)");
-    ctx.fillStyle=bg;ctx.fillRect(0,H-BOT,W,BOT);
-
-    // 하단 텍스트
-    if(botText){
-      ctx.save();ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=10;
-      const fs2=Math.max(32,Math.min(50,Math.floor(800/Math.max(botText.length,1))));
-      ctx.font=`700 ${fs2}px sans-serif`;ctx.fillStyle=layout.botColor||"#ff0";
-      const lw2=Math.max(1,Math.floor(960/(fs2*0.75)));
-      const ls2=[];for(let i=0;i<botText.length;i+=lw2)ls2.push(botText.slice(i,i+lw2));
-      const lh2=fs2+12,tot2=ls2.length*lh2;
-      ls2.forEach((l,i)=>ctx.fillText(l,W/2,H-BOT+(BOT-tot2)/2+lh2*(i+0.85)));
-      ctx.restore();
+    if(ltype==="split"){
+      const TOP=280,BOT=280,MID=H-TOP-BOT;
+      const scale=Math.max(W/vw,MID/vh)*1.05;
+      const sw=vw*scale,sh=vh*scale;
+      const dx=W/2-cx*sw,dy=TOP+MID*0.38-cy*sh;
+      ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+      ctx.save();ctx.beginPath();ctx.rect(0,TOP,W,MID);ctx.clip();
+      ctx.drawImage(video,dx,dy,sw,sh);ctx.restore();
+      const tg=ctx.createLinearGradient(0,0,0,TOP);
+      tg.addColorStop(0,"rgba(0,0,0,0.95)");tg.addColorStop(1,"rgba(0,0,0,0.05)");
+      ctx.fillStyle=tg;ctx.fillRect(0,0,W,TOP);
+      if(tTop){
+        const fs=Math.max(40,Math.min(64,Math.floor(920/Math.max(tTop.length,1))));
+        drawText(tTop,W/2,TOP/2+10,940,fs,topC);
+      }
+      const bg2=ctx.createLinearGradient(0,H-BOT,0,H);
+      bg2.addColorStop(0,"rgba(0,0,0,0.05)");bg2.addColorStop(1,"rgba(0,0,0,0.95)");
+      ctx.fillStyle=bg2;ctx.fillRect(0,H-BOT,W,BOT);
+      if(tBot){
+        const fs2=Math.max(34,Math.min(52,Math.floor(840/Math.max(tBot.length,1))));
+        drawText(tBot,W/2,H-BOT/2+10,940,fs2,botC);
+      }
+    } else if(ltype==="full_bot"){
+      drawFullVideo();
+      const BOTH=360;
+      const bg2=ctx.createLinearGradient(0,H-BOTH,0,H);
+      bg2.addColorStop(0,"rgba(0,0,0,0)");bg2.addColorStop(0.4,"rgba(0,0,0,0.8)");bg2.addColorStop(1,"rgba(0,0,0,0.95)");
+      ctx.fillStyle=bg2;ctx.fillRect(0,H-BOTH,W,BOTH);
+      if(tBot){
+        const fs=Math.max(36,Math.min(56,Math.floor(860/Math.max(tBot.length,1))));
+        drawText(tBot,W/2,H-100,940,fs,botC);
+      }
+    } else if(ltype==="full_top"){
+      drawFullVideo();
+      const TOPH=340;
+      const tg=ctx.createLinearGradient(0,0,0,TOPH);
+      tg.addColorStop(0,"rgba(0,0,0,0.95)");tg.addColorStop(0.6,"rgba(0,0,0,0.7)");tg.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.fillStyle=tg;ctx.fillRect(0,0,W,TOPH);
+      if(tTop){
+        const fs=Math.max(40,Math.min(66,Math.floor(920/Math.max(tTop.length,1))));
+        drawText(tTop,W/2,140,940,fs,topC);
+      }
+    } else if(ltype==="full_center"){
+      drawFullVideo();
+      if(tBot){
+        const fs=Math.max(38,Math.min(60,Math.floor(880/Math.max(tBot.length,1))));
+        const lw=Math.max(1,Math.floor(900/(fs*0.55)));
+        const ls=[];for(let i=0;i<tBot.length;i+=lw)ls.push(tBot.slice(i,i+lw));
+        const lh=fs+16,tot=ls.length*lh;
+        const pw=Math.min(W*0.88,940),ph=tot+48;
+        ctx.save();
+        ctx.fillStyle=`rgba(0,0,0,${Math.max(bgOp,0.65)})`;
+        const rx=W/2-pw/2,ry=H/2-ph/2;
+        ctx.beginPath();ctx.roundRect(rx,ry,pw,ph,24);ctx.fill();
+        ctx.restore();
+        drawText(tBot,W/2,H/2,940,fs,botC);
+      }
+    } else if(ltype==="top_text"){
+      const TEXTH=Math.round(H*0.35);
+      ctx.fillStyle="#0f0f1f";ctx.fillRect(0,0,W,TEXTH);
+      const scale=Math.max(W/vw,(H-TEXTH)/vh);
+      const sw=vw*scale,sh=vh*scale;
+      ctx.fillStyle="#000";ctx.fillRect(0,TEXTH,W,H-TEXTH);
+      ctx.save();ctx.beginPath();ctx.rect(0,TEXTH,W,H-TEXTH);ctx.clip();
+      ctx.drawImage(video,(W-sw)/2,TEXTH+(H-TEXTH-sh)/2,sw,sh);ctx.restore();
+      if(tTop){
+        const fs=Math.max(42,Math.min(68,Math.floor(880/Math.max(tTop.length,1))));
+        drawText(tTop,W/2,TEXTH/2,920,fs,topC);
+      }
+    } else if(ltype==="bot_text"){
+      const TEXTH=Math.round(H*0.35);
+      const VIDH=H-TEXTH;
+      const scale=Math.max(W/vw,VIDH/vh);
+      const sw=vw*scale,sh=vh*scale;
+      ctx.fillStyle="#000";ctx.fillRect(0,0,W,VIDH);
+      ctx.save();ctx.beginPath();ctx.rect(0,0,W,VIDH);ctx.clip();
+      ctx.drawImage(video,(W-sw)/2,(VIDH-sh)/2,sw,sh);ctx.restore();
+      ctx.fillStyle="#0f0f1f";ctx.fillRect(0,VIDH,W,TEXTH);
+      const tg2=ctx.createLinearGradient(0,VIDH-60,0,VIDH);
+      tg2.addColorStop(0,"rgba(15,15,31,0)");tg2.addColorStop(1,"rgba(15,15,31,1)");
+      ctx.fillStyle=tg2;ctx.fillRect(0,VIDH-60,W,60);
+      if(tTop){
+        const fs=Math.max(30,Math.min(44,Math.floor(800/Math.max(tTop.length,1))));
+        drawText(tTop,W/2,VIDH+TEXTH*0.35,920,fs,topC);
+      }
+      if(tBot){
+        const fs=Math.max(34,Math.min(52,Math.floor(840/Math.max(tBot.length,1))));
+        drawText(tBot,W/2,VIDH+TEXTH*0.72,920,fs,botC);
+      }
     }
   };
 
-  // ── 핵심: Canvas + MediaRecorder로 영상 추출 (SharedArrayBuffer 불필요)
-  // overrideSrc: 이미 다운로드된 blob URL (autoExtractAll에서 재사용)
+  // ── Canvas + MediaRecorder로 추출
   const extract=async(clip,doDownload=false,overrideSrc=null,overrideTop=null,overrideBot=null)=>{
     if(rec)return;
     const startSec=parseTimeToSec(clip.startTime);
     const endSec  =parseTimeToSec(clip.endTime);
-    const dur     =Math.max(endSec-startSec,1);
     setRec(true);setRecPct(0);setRecMsg("영상 준비 중...");
-
     try{
-      // ① 소스 비디오 준비 (캐시 우선)
-      let srcUrl = overrideSrc;
+      let srcUrl=overrideSrc;
       if(!srcUrl){
         if(inputMode==="file"&&file){
           srcUrl=fileObjUrl.current||URL.createObjectURL(file);
         } else if(inputMode==="youtube"){
-          setRecMsg("유튜브 영상 다운로드 중...(처음 1회만 다운로드)");
+          setRecMsg("유튜브 영상 다운로드 중...");
           const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
           if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 (${r.status})`);}
           const blob=await r.blob();
           srcUrl=URL.createObjectURL(blob);
-          cachedSrcUrl.current=srcUrl; // 캐시에 저장
+          cachedSrcUrl.current=srcUrl;
         } else throw new Error("소스 없음");
       }
-
       setRecPct(10);setRecMsg("비디오 로드 중...");
-
-      // ② 비디오 엘리먼트 준비
       const video=document.createElement("video");
-      video.src=srcUrl;
-      video.muted=false;
-      video.crossOrigin="anonymous";
+      video.src=srcUrl;video.muted=false;video.crossOrigin="anonymous";
       await new Promise((res,rej)=>{
-        video.onloadedmetadata=res;
-        video.onerror=()=>rej(new Error("영상 로드 실패"));
-        setTimeout(res,5000);
+        video.onloadedmetadata=res;video.onerror=()=>rej(new Error("영상 로드 실패"));setTimeout(res,5000);
       });
-
       const actualEnd=Math.min(endSec,video.duration||endSec);
       const actualDur=Math.max(actualEnd-startSec,1);
-
-      // ③ 얼굴 감지
       setRecMsg("얼굴 위치 감지 중...");setRecPct(15);
       const facePos=await detectFace(video,startSec);
-
-      // ④ Canvas 9:16 세팅
       const canvas=document.createElement("canvas");
       canvas.width=1080;canvas.height=1920;
       const ctx=canvas.getContext("2d");
-
-      // ⑤ 오디오 캡처
       let finalStream=canvas.captureStream(30);
       try{
         const aCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -265,64 +420,44 @@ export default function ShortformEditor({isDark}){
         src2.connect(dest);src2.connect(aCtx.destination);
         finalStream=new MediaStream([...canvas.captureStream(30).getTracks(),...dest.stream.getTracks()]);
       }catch{}
-
       const mimeType=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]
         .find(t=>MediaRecorder.isTypeSupported(t))||"video/webm";
       const recorder=new MediaRecorder(finalStream,{mimeType,videoBitsPerSecond:5000000});
       const chunks=[];
       recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
-
-      // ⑥ 정밀 seek → startSec에 실제로 도달한 뒤 녹화 시작
-      setRecMsg("구간 정밀 탐색 중...");setRecPct(20);
+      setRecMsg("구간 탐색 중...");setRecPct(20);
       video.currentTime=startSec;
       await new Promise(r=>{video.onseeked=r;setTimeout(r,4000);});
-      // 실제 currentTime이 startSec 근처인지 확인
       if(Math.abs(video.currentTime-startSec)>1){
         video.currentTime=startSec;
         await new Promise(r=>{video.onseeked=r;setTimeout(r,3000);});
       }
       await video.play().catch(()=>{});
       recorder.start(100);
-
       const tTop=overrideTop!==null?overrideTop:(clip.title_a||"");
       const tBot=overrideBot!==null?overrideBot:(clip.hook||"");
       setRecMsg(`변환 중... (${actualDur}초)`);
-
       await new Promise(resolve=>{
         const draw=()=>{
           const vt=video.currentTime;
           const elapsed=Math.max(0,vt-startSec);
           setRecPct(20+Math.min(Math.round((elapsed/actualDur)*78),78));
-          if(layout.split){
-            drawSplit(ctx,video,facePos,tTop,tBot);
-          }else{
-            const vw=video.videoWidth||1920,vh=video.videoHeight||1080;
-            const scale=Math.max(1080/vw,1920/vh);
-            const sw=vw*scale,sh=vh*scale;
-            ctx.fillStyle="#000";ctx.fillRect(0,0,1080,1920);
-            ctx.drawImage(video,(1080-sw)/2,(1920-sh)/2,sw,sh);
-          }
+          drawFrame(ctx,video,facePos,tTop,tBot,layoutType,capStyle);
           if(vt>=actualEnd-0.08||elapsed>=actualDur+0.3){resolve();return;}
           requestAnimationFrame(draw);
         };
         requestAnimationFrame(draw);
       });
-
-      video.pause();
-      recorder.stop();
+      video.pause();recorder.stop();
       await new Promise(r=>{recorder.onstop=r;});
-
       setRecPct(100);setRecMsg("완료!");
       const blob=new Blob(chunks,{type:mimeType});
       const blobUrl=URL.createObjectURL(blob);
       const k=clip.index??selIdx;
-
       setExtracted(p=>({...p,[k]:{url:blobUrl,blob,title:clip.title_a||"shortform",mimeType}}));
-
-      if(doDownload)dlVideo(clip,blobUrl,blob);
+      if(doDownload)dlVideo(clip,blobUrl,blob,mimeType);
     }catch(e){
-      console.error(e);
-      alert("추출 실패: "+e.message);
+      console.error(e);setErr("추출 실패: "+e.message);
     }
     setTimeout(()=>{setRec(false);setRecPct(0);setRecMsg("");},600);
   };
@@ -333,10 +468,8 @@ export default function ShortformEditor({isDark}){
     const a=document.createElement("a");a.href=url;a.download=name;a.click();
   };
   const downloadClip=clip=>{
-    const k=clip.index??selIdx;
-    const ex=extracted[k];
-    if(ex)dlVideo(clip,ex.url,ex.blob,ex.mimeType);
-    else extract(clip,true);
+    const k=clip.index??selIdx;const ex=extracted[k];
+    if(ex)dlVideo(clip,ex.url,ex.blob,ex.mimeType);else extract(clip,true);
   };
 
   // ── 보관함
@@ -355,7 +488,7 @@ export default function ShortformEditor({isDark}){
 
   // ── AI 생성
   const generate=async()=>{
-    setStep(3);setErr("");setClips([]);setProg(5);
+    setStep(4);setErr("");setClips([]);setProg(5);
     const len=LENGTHS.find(l=>l.id===lenId);
     const src=inputMode==="youtube"?(ytInfo?.title||ytUrl):(file?.name||"영상");
     try{
@@ -366,7 +499,6 @@ JSON만: {"clips":[{"index":1,"startTime":"00:00","endTime":"00:30","duration":3
       const r1=await callClaude(p1,800);
       const planClips=(parseJSON(r1).clips||[]).slice(0,count);
       setProg(20);setProgMsg(`${planClips.length}개 구간 추출, 상세 생성 중...`);
-
       const all=[];
       for(let i=0;i<planClips.length;i+=2){
         const g=planClips.slice(i,i+2);
@@ -381,26 +513,18 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
       }
       setSelIdx(0);setProg(100);setProgMsg("완료!");
       await new Promise(r=>setTimeout(r,300));
-      setStep(4);setTab("clips");
+      setStep(5);setTab("clips");
       setTimeout(saveAll,500);
-      // 자동 편집 바로 시작 (YouTube 링크인 경우 확인 후 시작)
-      if(all.length>0){
-        setTimeout(()=>{
-          if(window.confirm(`✂️ 숏폼 ${all.length}개가 준비됐어요!\n\n지금 바로 전체 자동 편집·다운로드를 시작할까요?\n(영상을 1회 다운로드 후 모든 클립을 자동으로 추출합니다)`)){
-            autoExtractAll(all);
-          }
-        },600);
-      }
-    }catch(e){setErr("생성 실패: "+e.message);setStep(2);}
+      // 자동 편집 바로 시작 (확인창 없이)
+      if(all.length>0) setTimeout(()=>autoExtractAll(all),800);
+    }catch(e){setErr("생성 실패: "+e.message);setStep(3);}
   };
 
-  // ── 전체 자동 편집: 영상 1회 다운로드 → 모든 클립 순차 추출 + 다운로드
+  // ── 전체 자동 편집
   const autoExtractAll=async(clipList)=>{
     if(rec||autoMode)return;
     setAutoMode(true);setAutoIdx(0);setErr("");
-
     try{
-      // 1) 영상 1회 다운로드 (YouTube만)
       let srcUrl=cachedSrcUrl.current;
       if(!srcUrl){
         if(inputMode==="youtube"){
@@ -408,27 +532,20 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           const r=await fetch(`/api/youtube-stream?url=${encodeURIComponent(ytUrl)}`);
           if(!r.ok){const e=await r.json().catch(()=>({error:"서버 오류"}));throw new Error(e.error||`서버 오류 ${r.status}`);}
           const blob=await r.blob();
-          srcUrl=URL.createObjectURL(blob);
-          cachedSrcUrl.current=srcUrl;
+          srcUrl=URL.createObjectURL(blob);cachedSrcUrl.current=srcUrl;
           setRec(false);setRecPct(0);setRecMsg("");
         } else if(inputMode==="file"&&file){
           srcUrl=fileObjUrl.current||URL.createObjectURL(file);
           cachedSrcUrl.current=srcUrl;
         } else throw new Error("소스 없음");
       }
-
-      // 2) 각 클립 순차 추출 + 자동 다운로드
       for(let i=0;i<clipList.length;i++){
-        const clip=clipList[i];
-        setAutoIdx(i+1);
-        await extract(clip,true,srcUrl); // doDownload=true → 자동 다운로드
-        await new Promise(r=>setTimeout(r,500)); // 브라우저 숨 고르기
+        const clip=clipList[i];setAutoIdx(i+1);
+        await extract(clip,true,srcUrl);
+        await new Promise(r=>setTimeout(r,500));
       }
-    }catch(e){
-      setErr("자동 편집 실패: "+e.message);
-    }finally{
-      setAutoMode(false);setAutoIdx(0);setRec(false);setRecPct(0);setRecMsg("");
-    }
+    }catch(e){setErr("자동 편집 실패: "+e.message);}
+    finally{setAutoMode(false);setAutoIdx(0);setRec(false);setRecPct(0);setRecMsg("");}
   };
 
   const cur=clips[selIdx]||{};
@@ -440,29 +557,23 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
     <div style={{flex:1,overflowY:"auto",display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 20px"}}>
       <div style={{maxWidth:560,width:"100%",textAlign:"center"}}>
         <div style={{display:"inline-flex",gap:6,padding:"5px 16px",borderRadius:20,background:"rgba(168,85,247,0.15)",border:"1px solid rgba(168,85,247,0.3)",fontSize:11,fontWeight:700,color:ACC,marginBottom:16}}>
-          ✂️ Vercel 전용 · ytdl-core + ffmpeg.wasm
+          ✂️ AI 숏폼 자동 편집기
         </div>
-        <div style={{fontSize:24,fontWeight:900,color:text,lineHeight:1.35,marginBottom:12}}>
-          1편의 롱폼으로<br/>
+        <div style={{fontSize:26,fontWeight:900,color:text,lineHeight:1.35,marginBottom:12}}>
+          긴 영상 한 편으로<br/>
           <span style={{background:"linear-gradient(135deg,#a855f7,#ec4899)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>재생 가능한 세로 숏폼을</span>
         </div>
         <div style={{fontSize:13,color:muted,lineHeight:1.9,marginBottom:20}}>
-          유튜브 링크 → Vercel이 영상 스트리밍<br/>
-          ffmpeg.wasm이 브라우저에서 직접 9:16 변환<br/>
-          별도 서버 없이 재생 · 다운로드까지
+          영상 파일 업로드 → AI가 핵심 구간 자동 선정<br/>
+          6가지 레이아웃 · 자막 스타일 커스텀<br/>
+          1080×1920 세로 영상 자동 추출 · 다운로드
         </div>
-        {/* 동작 구조 */}
-        <div style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"14px 16px",marginBottom:20,textAlign:"left"}}>
-          <div style={{fontSize:11,fontWeight:800,color:text,marginBottom:8}}>📡 Vercel 전용 구조</div>
-          {[
-            ["1","유튜브 링크 입력","/api/youtube-info → 제목·썸네일·길이 취득"],
-            ["2","Vercel 프록시","/api/youtube-stream → Vercel이 유튜브 대신 다운로드"],
-            ["3","브라우저 편집","ffmpeg.wasm → 구간 자르기 + 9:16 세로 변환"],
-            ["4","완성","Blob URL → 즉시 재생 + MP4 다운로드"],
-          ].map(([n,t,d])=>(
-            <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
-              <div style={{width:20,height:20,borderRadius:6,background:`rgba(168,85,247,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:ACC,flexShrink:0}}>{n}</div>
-              <div><div style={{fontSize:11,fontWeight:700,color:text}}>{t}</div><div style={{fontSize:10,color:muted}}>{d}</div></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:20}}>
+          {[["📁","파일 업로드","MP4·MOV·WEBM"],["🤖","AI 분석","핵심 구간 자동 선정"],["✂️","자동 추출","9:16 세로 변환"]].map(([ic,t,d])=>(
+            <div key={t} style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontSize:22,marginBottom:6}}>{ic}</div>
+              <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:2}}>{t}</div>
+              <div style={{fontSize:10,color:muted}}>{d}</div>
             </div>
           ))}
         </div>
@@ -470,19 +581,21 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           ✂️ 숏폼 만들기 →
         </button>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
-  // ══ STEP 1: 입력 ══
+  // ══ STEP 1: 영상 입력 ══
   if(step===1)return(
     <div style={{flex:1,overflowY:"auto"}}>
       <div style={{maxWidth:720,margin:"0 auto",padding:"28px 18px 80px"}}>
         <div style={{textAlign:"center",marginBottom:22}}>
           <div style={{fontSize:19,fontWeight:900,color:text,marginBottom:3}}>영상을 불러와주세요</div>
-          <div style={{fontSize:12,color:muted}}>유튜브 링크 또는 파일을 올려주세요</div>
+          <div style={{fontSize:12,color:muted}}>파일 업로드 또는 유튜브 URL (제목 분석용)</div>
         </div>
+
         <div style={{display:"flex",borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,marginBottom:14}}>
-          {[["youtube","🔗 유튜브 링크"],["file","⬆️ 파일 업로드"]].map(([v,l])=>(
+          {[["file","📁 파일 업로드 (권장)"],["youtube","🔗 유튜브 분석"]].map(([v,l])=>(
             <button key={v} onClick={()=>setInputMode(v)}
               style={{flex:1,padding:"12px",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,
                 background:inputMode===v?`linear-gradient(135deg,${ACC},#ec4899)`:"transparent",color:inputMode===v?"#fff":muted}}>
@@ -491,11 +604,32 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           ))}
         </div>
 
+        {inputMode==="file"&&<>
+          <input ref={fileRef} type="file" accept="video/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
+          {!file
+            ?<div onClick={()=>fileRef.current?.click()} onDrop={e=>{e.preventDefault();handleFile(e.dataTransfer.files[0]);}} onDragOver={e=>e.preventDefault()}
+                style={{border:`2px dashed ${bdr}`,borderRadius:14,padding:"48px 20px",textAlign:"center",cursor:"pointer",background:card}}>
+                <div style={{fontSize:44,marginBottom:12}}>📁</div>
+                <div style={{fontSize:15,fontWeight:800,color:text,marginBottom:6}}>드래그하거나 클릭해서 파일 선택</div>
+                <div style={{fontSize:12,color:muted}}>MP4, MOV, WEBM, MKV · 브라우저에서 직접 처리</div>
+              </div>
+            :<div style={{borderRadius:12,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.06)`,overflow:"hidden"}}>
+                <video controls preload="metadata" style={{width:"100%",maxHeight:240,background:"#000",display:"block"}} src={fileObjUrl.current}/>
+                <div style={{padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:800,color:text}}>{file.name}</div>
+                    <div style={{fontSize:11,color:muted}}>{(file.size/1024/1024).toFixed(1)}MB{fileDur?` · ${toMMSS(fileDur)}`:""}</div>
+                  </div>
+                  <button onClick={()=>{setFile(null);setFileDur(0);}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:12,cursor:"pointer"}}>제거</button>
+                </div>
+              </div>}
+        </>}
+
         {inputMode==="youtube"&&<>
-          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.25)",marginBottom:10,fontSize:11,color:"#fbbf24",lineHeight:1.7}}>
-            ⚠️ <b>YouTube 직접 스트리밍은 봇 감지로 차단됩니다.</b><br/>
-            AI 클립 분석 후 → 영상을 직접 다운로드해서 "파일 업로드" 탭으로 편집하세요.<br/>
-            <span style={{opacity:0.7}}>유튜브 앱 or 별도 도구로 다운로드 후 업로드 권장</span>
+          <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.25)",marginBottom:12,fontSize:11,color:"#fbbf24",lineHeight:1.7}}>
+            ⚠️ <b>유튜브 모드는 제목·썸네일 분석 + AI 구간 기획 전용입니다.</b><br/>
+            실제 영상 편집·추출은 파일을 직접 다운로드 후 <b>"파일 업로드"</b>로 진행해주세요.<br/>
+            <span style={{opacity:0.7}}>유튜브 다운로더 앱(예: 4K Video Downloader) 사용 권장</span>
           </div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1,position:"relative"}}>
@@ -516,196 +650,207 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
               <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:3}}>{ytInfo.title}</div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                 {ytInfo.duration&&<span style={{fontSize:11,color:muted}}>길이: {toMMSS(ytInfo.duration)}</span>}
-                {ytInfo.fallback
-                  ?<span style={{fontSize:10,padding:"2px 8px",borderRadius:8,background:"rgba(245,158,11,0.15)",color:"#fbbf24",fontWeight:700}}>⚠️ /api/youtube-info 미동작 — 영상길이 모름</span>
-                  :<span style={{fontSize:10,padding:"2px 8px",borderRadius:8,background:"rgba(74,222,128,0.15)",color:"#4ade80",fontWeight:700}}>✓ API 정상 — 스트리밍 준비됨</span>}
+                <span style={{fontSize:10,padding:"2px 8px",borderRadius:8,background:"rgba(74,222,128,0.15)",color:"#4ade80",fontWeight:700}}>✓ 제목 확인됨 · AI 기획 가능</span>
               </div>
             </div>
           </div>}
           {ytInfo?.error&&<div style={{fontSize:12,color:"#f87171",padding:"6px 0"}}>⚠️ {ytInfo.title}</div>}
         </>}
 
-        {inputMode==="file"&&<>
-          <input ref={fileRef} type="file" accept="video/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
-          {!file
-            ?<div onClick={()=>fileRef.current?.click()} onDrop={e=>{e.preventDefault();handleFile(e.dataTransfer.files[0]);}} onDragOver={e=>e.preventDefault()}
-                style={{border:`2px dashed ${bdr}`,borderRadius:14,padding:"40px 20px",textAlign:"center",cursor:"pointer",background:card}}>
-                <div style={{fontSize:40,marginBottom:10}}>📁</div>
-                <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:4}}>드래그하거나 클릭해서 파일 선택</div>
-                <div style={{fontSize:11,color:muted}}>MP4, MOV, WEBM, MKV · 브라우저에서 직접 처리</div>
-              </div>
-            :<div style={{borderRadius:12,border:`1px solid ${ACC}40`,background:`rgba(168,85,247,0.06)`,overflow:"hidden"}}>
-                <video controls preload="metadata" style={{width:"100%",maxHeight:220,background:"#000",display:"block"}} src={fileObjUrl.current}/>
-                <div style={{padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:800,color:text}}>{file.name}</div>
-                    <div style={{fontSize:11,color:muted}}>{(file.size/1024/1024).toFixed(1)}MB{fileDur?` · ${toMMSS(fileDur)}`:""}</div>
-                  </div>
-                  <button onClick={()=>{setFile(null);setFileDur(0);}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer"}}>제거</button>
-                </div>
-              </div>}
-        </>}
-
-        <div style={{display:"flex",gap:10,marginTop:16}}>
-          <button onClick={()=>setStep(0)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>취소</button>
+        <div style={{display:"flex",gap:10,marginTop:18}}>
+          <button onClick={()=>setStep(0)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 처음으로</button>
           <button onClick={()=>setStep(2)} disabled={inputMode==="youtube"?!ytInfo||ytInfo.error:!file}
             style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#a855f7,#ec4899)",color:"#fff",fontSize:14,fontWeight:900,
               opacity:(inputMode==="youtube"?!ytInfo||ytInfo.error:!file)?0.4:1}}>
-            다음 → 세부 설정
+            다음 → 기본 설정
           </button>
         </div>
       </div>
     </div>
   );
 
-  // ══ STEP 2: 설정 ══
+  // ══ STEP 2: 기본 설정 ══
   if(step===2)return(
     <div style={{flex:1,overflowY:"auto"}}>
       <div style={{maxWidth:740,margin:"0 auto",padding:"22px 18px 80px"}}>
-        {/* 요약 */}
+        {/* 소스 요약 */}
         <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
           {inputMode==="youtube"&&ytInfo?.thumbnail&&<img src={ytInfo.thumbnail} alt="" style={{width:68,height:42,objectFit:"cover",borderRadius:6,flexShrink:0}}/>}
           {inputMode==="file"&&<div style={{width:68,height:42,background:"#1a1a2e",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎬</div>}
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inputMode==="youtube"?ytInfo?.title:file?.name}</div>
-            <div style={{fontSize:10,color:muted}}>{inputMode==="youtube"?"유튜브":"업로드 파일"}</div>
+            <div style={{fontSize:10,color:muted}}>{inputMode==="youtube"?"유튜브":"업로드 파일"}{(fileDur||ytInfo?.duration)?` · ${toMMSS(fileDur||ytInfo?.duration)}`:""}  </div>
           </div>
           <button onClick={()=>setStep(1)} style={{fontSize:11,color:ACC,background:"transparent",border:"none",cursor:"pointer"}}>변경</button>
         </div>
 
-        {/* 길이 */}
+        {/* 쇼츠 길이 */}
         <div style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"14px",marginBottom:10}}>
           <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:9}}>⏱ 쇼츠 길이</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
             {LENGTHS.map(l=>{const s=lenId===l.id;return(
-              <button key={l.id} onClick={()=>setLenId(l.id)} style={{padding:"9px 4px",borderRadius:9,border:`2px solid ${s?ACC:bdr}`,background:s?`rgba(168,85,247,0.15)`:"transparent",cursor:"pointer",textAlign:"center"}}>
-                <div style={{fontSize:10,fontWeight:800,color:s?ACC:text}}>{l.label}</div>
+              <button key={l.id} onClick={()=>setLenId(l.id)} style={{padding:"10px 4px",borderRadius:9,border:`2px solid ${s?ACC:bdr}`,background:s?`rgba(168,85,247,0.15)`:"transparent",cursor:"pointer",textAlign:"center"}}>
+                <div style={{fontSize:11,fontWeight:800,color:s?ACC:text}}>{l.label}</div>
               </button>
             );})}
           </div>
         </div>
 
-        {/* 자막 스타일 */}
-        <div style={{borderRadius:12,border:`2px solid ${ACC}40`,background:card,padding:"14px",marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:10}}>📺 자막 스타일</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-            <div>
-              <div style={{fontSize:10,color:muted,marginBottom:4}}>글꼴</div>
-              <select value={capStyle.font} onChange={e=>setCapStyle(p=>({...p,font:e.target.value}))} style={{...inp,padding:"7px 9px",fontSize:11}}>
-                {["Noto Sans KR","나눔고딕","나눔스퀘어","Pretendard","Arial"].map(f=><option key={f}>{f}</option>)}
-              </select>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:muted,marginBottom:4}}>위치</div>
-              <div style={{display:"flex",gap:4}}>
-                {[["top","상단"],["center","중앙"],["bottom","하단"]].map(([v,l])=>{const s=capStyle.pos===v;return(
-                  <button key={v} onClick={()=>setCapStyle(p=>({...p,pos:v}))} style={{flex:1,padding:"7px 2px",borderRadius:7,border:`1.5px solid ${s?ACC:bdr}`,background:s?`rgba(168,85,247,0.15)`:"transparent",color:s?ACC:muted,fontSize:9,cursor:"pointer"}}>{l}</button>
-                );})}
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:muted,marginBottom:4}}>색상</div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <input type="color" value={capStyle.color} onChange={e=>setCapStyle(p=>({...p,color:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
-                <span style={{fontSize:9,color:muted}}>기본</span>
-                <input type="color" value={capStyle.hl} onChange={e=>setCapStyle(p=>({...p,hl:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
-                <span style={{fontSize:9,color:muted}}>강조</span>
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:muted,marginBottom:4}}>크기 {capStyle.size}pt</div>
-              <input type="range" min={14} max={32} value={capStyle.size} onChange={e=>setCapStyle(p=>({...p,size:Number(e.target.value)}))} style={{width:"100%",accentColor:ACC}}/>
-            </div>
-          </div>
-          {/* 미리보기 */}
-          <div style={{borderRadius:8,background:"#000",height:64,display:"flex",alignItems:capStyle.pos==="top"?"flex-start":capStyle.pos==="center"?"center":"flex-end",justifyContent:"center",padding:"7px"}}>
-            <div style={{fontFamily:capStyle.font,fontSize:capStyle.size-5,fontWeight:900,color:capStyle.color,textShadow:"2px 2px 6px rgba(0,0,0,0.9)",background:`rgba(0,0,0,${capStyle.bgOp})`,padding:"2px 8px",borderRadius:4}}>
-              <span>자막이 </span><span style={{color:capStyle.hl}}>이렇게</span><span> 보여요</span>
-            </div>
-          </div>
-        </div>
-
         {/* 구간 + 개수 */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"12px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-              <span style={{fontSize:11,fontWeight:700,color:text}}>✂️ 구간</span>
-              <span style={{fontSize:10,color:ACC}}>00:00~{toMMSS(rangeEnd)}</span>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <span style={{fontSize:12,fontWeight:700,color:text}}>✂️ 분석 구간</span>
+              <span style={{fontSize:11,color:ACC,fontWeight:700}}>00:00 ~ {toMMSS(rangeEnd)}</span>
             </div>
             <input type="range" min={0} max={totalDur} value={rangeEnd} onChange={e=>setRangeEnd(Number(e.target.value))} style={{width:"100%",accentColor:ACC}}/>
+            <div style={{fontSize:10,color:muted,marginTop:4}}>전체 {toMMSS(totalDur)} 중 앞부분 분석</div>
           </div>
-          <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"12px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
-              <span style={{fontSize:11,fontWeight:700,color:text}}>생성 수</span>
-              <span style={{fontSize:15,fontWeight:900,color:ACC}}>{count}개</span>
+          <div style={{borderRadius:11,border:`1px solid ${bdr}`,background:card,padding:"14px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:12,fontWeight:700,color:text}}>생성 수</span>
+              <span style={{fontSize:18,fontWeight:900,color:ACC}}>{count}개</span>
             </div>
             <input type="range" min={1} max={10} value={count} onChange={e=>setCount(Number(e.target.value))} style={{width:"100%",accentColor:ACC}}/>
+            <div style={{fontSize:10,color:muted,marginTop:4}}>숏폼 클립 {count}개 생성</div>
           </div>
         </div>
 
-        {/* 화면 레이아웃 */}
-        <div style={{borderRadius:12,border:`2px solid ${ACC}40`,background:card,padding:"14px",marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:12,fontWeight:800,color:text}}>🎬 화면 레이아웃</div>
-            <div style={{display:"flex",gap:4}}>
-              {[["split","상단제목+얼굴+하단자막"],["full","풀화면"]].map(([v,l])=>{const s=layout.split===(v==="split");return(
-                <button key={v} onClick={()=>setLayout(p=>({...p,split:v==="split"}))}
-                  style={{padding:"5px 12px",borderRadius:7,border:`1.5px solid ${s?ACC:bdr}`,background:s?`rgba(168,85,247,0.15)`:"transparent",color:s?ACC:muted,fontSize:10,cursor:"pointer",fontWeight:s?800:500}}>{l}</button>
-              );})}
-            </div>
-          </div>
-          {layout.split&&(
-            <div>
-              {/* 레이아웃 미리보기 */}
-              <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-start"}}>
-                <div style={{width:80,flexShrink:0}}>
-                  <div style={{width:80,height:142,borderRadius:8,background:"#111",overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)",display:"flex",flexDirection:"column"}}>
-                    <div style={{height:21,background:"linear-gradient(rgba(0,0,0,0.9),rgba(0,0,0,0.2))",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <span style={{fontSize:6,fontWeight:900,color:layout.topColor||"#fff"}}>제목 텍스트</span>
-                    </div>
-                    <div style={{flex:1,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <span style={{fontSize:8}}>👤</span>
-                    </div>
-                    <div style={{height:21,background:"linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.9))",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <span style={{fontSize:6,fontWeight:700,color:layout.botColor||"#ff0"}}>자막 텍스트</span>
-                    </div>
-                  </div>
-                  <div style={{fontSize:8,color:muted,textAlign:"center",marginTop:4}}>1080×1920</div>
-                </div>
-                <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  <div>
-                    <div style={{fontSize:10,color:muted,marginBottom:4}}>상단 제목 색상</div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <input type="color" value={layout.topColor||"#ffffff"} onChange={e=>setLayout(p=>({...p,topColor:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
-                      <span style={{fontSize:10,color:muted}}>흰색 추천</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:10,color:muted,marginBottom:4}}>하단 자막 색상</div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <input type="color" value={layout.botColor||"#ffff00"} onChange={e=>setLayout(p=>({...p,botColor:e.target.value}))} style={{width:34,height:28,borderRadius:5,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
-                      <span style={{fontSize:10,color:muted}}>노랑 추천</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div style={{padding:"8px 10px",borderRadius:8,background:`rgba(168,85,247,0.06)`,border:`1px solid ${ACC}20`,fontSize:10,color:muted,lineHeight:1.6}}>
-                👆 <b>상단</b>: AI가 생성한 후킹 제목 | 🎯 <b>중간</b>: 얼굴 감지로 자동 크롭 | 👇 <b>하단</b>: 첫 3초 멘트
-              </div>
-            </div>
-          )}
+        <div style={{display:"flex",gap:10,marginTop:16}}>
+          <button onClick={()=>setStep(1)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 이전</button>
+          <button onClick={()=>setStep(3)}
+            style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#a855f7,#ec4899)",color:"#fff",fontSize:14,fontWeight:900}}>
+            다음 → 레이아웃 선택
+          </button>
         </div>
-
-        {err&&<div style={{padding:"9px 12px",borderRadius:9,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"#f87171",fontSize:11,marginBottom:12}}>⚠️ {err}</div>}
-        <button onClick={generate} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#a855f7,#ec4899)",color:"#fff",fontSize:14,fontWeight:900}}>
-          ✂️ 숏폼 {count}개 AI 분석 생성 →
-        </button>
       </div>
     </div>
   );
 
-  // ══ STEP 3: 생성중 ══
-  if(step===3)return(
+  // ══ STEP 3: 레이아웃 & 스타일 선택 ══
+  if(step===3){
+    const curLayout=LAYOUTS.find(l=>l.id===layoutType)||LAYOUTS[0];
+    const curPreset=CAP_PRESETS.find(p=>p.id===presetId)||CAP_PRESETS[0];
+    return(
+      <div style={{flex:1,overflowY:"auto"}}>
+        <div style={{maxWidth:860,margin:"0 auto",padding:"22px 18px 80px"}}>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:19,fontWeight:900,color:text,marginBottom:3}}>화면 레이아웃 & 자막 스타일</div>
+            <div style={{fontSize:12,color:muted}}>원하는 화면 구성과 자막 스타일을 선택하세요</div>
+          </div>
+
+          {/* ── 레이아웃 선택 ── */}
+          <div style={{borderRadius:14,border:`1px solid ${bdr}`,background:card,padding:"16px",marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:14}}>🎬 화면 레이아웃 선택</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+              {LAYOUTS.map(lay=>{
+                const sel=layoutType===lay.id;
+                return(
+                  <button key={lay.id} onClick={()=>setLayoutType(lay.id)}
+                    style={{padding:0,border:`2px solid ${sel?ACC:bdr}`,borderRadius:14,background:sel?`rgba(168,85,247,0.1)`:"transparent",cursor:"pointer",overflow:"hidden",textAlign:"left",
+                      boxShadow:sel?`0 0 0 2px ${ACC}40`:"none",transition:"all 0.15s"}}>
+                    {/* 레이아웃 프리뷰 */}
+                    <div style={{aspectRatio:"9/16",width:"100%",background:"#111",overflow:"hidden",maxHeight:160,position:"relative"}}>
+                      {lay.preview(capStyle.topColor,capStyle.botColor)}
+                      {sel&&<div style={{position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:ACC,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900}}>✓</div>}
+                    </div>
+                    <div style={{padding:"8px 10px",borderTop:`1px solid ${sel?ACC+"40":bdr}`}}>
+                      <div style={{fontSize:11,fontWeight:800,color:sel?ACC:text,marginBottom:2}}>{lay.label}</div>
+                      <div style={{fontSize:9,color:muted,lineHeight:1.5,whiteSpace:"pre-line"}}>{lay.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── 자막 스타일 프리셋 ── */}
+          <div style={{borderRadius:14,border:`1px solid ${bdr}`,background:card,padding:"16px",marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:12}}>✨ 자막 스타일 프리셋</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+              {CAP_PRESETS.map(p=>{
+                const sel=presetId===p.id;
+                return(
+                  <button key={p.id} onClick={()=>applyPreset(p.id)}
+                    style={{padding:"10px 8px",borderRadius:10,border:`2px solid ${sel?ACC:bdr}`,background:sel?`rgba(168,85,247,0.1)`:"transparent",cursor:"pointer",
+                      display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                    {/* 미니 색상 미리보기 */}
+                    <div style={{width:"100%",height:36,borderRadius:6,background:"#111",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"4px"}}>
+                      <div style={{fontSize:7,fontWeight:900,color:p.topColor,textShadow:"1px 1px 3px #000",lineHeight:1,textAlign:"center"}}>제목 텍스트</div>
+                      <div style={{fontSize:7,fontWeight:900,color:p.botColor,textShadow:"1px 1px 3px #000",lineHeight:1,textAlign:"center"}}>자막 텍스트</div>
+                    </div>
+                    <div style={{fontSize:11,fontWeight:700,color:sel?ACC:text}}>{p.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 커스텀 색상 */}
+            <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:ibg,padding:"12px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:text,marginBottom:10}}>🎨 색상 직접 설정</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div>
+                  <div style={{fontSize:10,color:muted,marginBottom:6}}>상단 제목 색상</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <input type="color" value={capStyle.topColor||"#ffffff"} onChange={e=>setCapStyle(p=>({...p,topColor:e.target.value,color:e.target.value}))}
+                      style={{width:40,height:32,borderRadius:6,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
+                    <span style={{fontSize:13,fontWeight:900,color:capStyle.topColor,textShadow:"1px 1px 4px rgba(0,0,0,0.8)"}}>Aa</span>
+                    <span style={{fontSize:11,color:muted}}>{capStyle.topColor}</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:muted,marginBottom:6}}>하단 자막 색상</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <input type="color" value={capStyle.botColor||"#ffff00"} onChange={e=>setCapStyle(p=>({...p,botColor:e.target.value,hl:e.target.value}))}
+                      style={{width:40,height:32,borderRadius:6,border:`1px solid ${bdr}`,cursor:"pointer",padding:2}}/>
+                    <span style={{fontSize:13,fontWeight:900,color:capStyle.botColor,textShadow:"1px 1px 4px rgba(0,0,0,0.8)"}}>Aa</span>
+                    <span style={{fontSize:11,color:muted}}>{capStyle.botColor}</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:muted,marginBottom:6}}>글꼴</div>
+                  <select value={capStyle.font} onChange={e=>setCapStyle(p=>({...p,font:e.target.value}))}
+                    style={{...inp,padding:"7px 10px",fontSize:11}}>
+                    {["Noto Sans KR","나눔고딕","나눔스퀘어","Pretendard","Arial","Impact"].map(f=><option key={f}>{f}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:muted,marginBottom:6}}>배경 투명도 {Math.round(capStyle.bgOp*100)}%</div>
+                  <input type="range" min={0} max={100} value={Math.round(capStyle.bgOp*100)} onChange={e=>setCapStyle(p=>({...p,bgOp:Number(e.target.value)/100}))} style={{width:"100%",accentColor:ACC,marginTop:6}}/>
+                </div>
+              </div>
+            </div>
+
+            {/* 실제 미리보기 */}
+            <div style={{marginTop:12,borderRadius:10,background:"#000",padding:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:16}}>
+              <div style={{width:72,aspectRatio:"9/16",borderRadius:8,overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)"}}>
+                {curLayout.preview(capStyle.topColor,capStyle.botColor)}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,color:muted,marginBottom:6}}>미리보기</div>
+                <div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                  <div style={{fontFamily:capStyle.font,fontSize:13,fontWeight:900,color:capStyle.topColor,textShadow:"2px 2px 6px rgba(0,0,0,0.9)",marginBottom:4}}>후킹 제목 텍스트</div>
+                  <div style={{fontFamily:capStyle.font,fontSize:12,fontWeight:700,color:capStyle.botColor,textShadow:"2px 2px 6px rgba(0,0,0,0.9)"}}>첫 3초 자막</div>
+                </div>
+                <div style={{fontSize:10,color:muted}}>{curLayout.label} · {curPreset.label} 스타일</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setStep(2)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 이전</button>
+            <button onClick={generate}
+              style={{flex:1,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#a855f7,#ec4899)",color:"#fff",fontSize:14,fontWeight:900}}>
+              🤖 AI 분석 시작 → 숏폼 {count}개 생성
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ══ STEP 4: 생성중 ══
+  if(step===4)return(
     <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",alignItems:"center",padding:"30px 20px"}}>
       <div style={{maxWidth:500,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:18}}>
@@ -737,14 +882,14 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
     </div>
   );
 
-  // ══ STEP 4: 결과 ══
+  // ══ STEP 5: 결과 ══
   const TABS=[{id:"clips",l:"✂️ 숏폼"},{id:"archive",l:`🗂 보관함(${archive.length})`}];
 
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* 탭 바 */}
       <div style={{display:"flex",borderBottom:`1px solid ${bdr}`,background:card,flexShrink:0,alignItems:"center"}}>
-        <button onClick={()=>setStep(2)} style={{padding:"10px 12px",border:"none",background:"transparent",color:muted,fontSize:11,cursor:"pointer",borderRight:`1px solid ${bdr}`,whiteSpace:"nowrap"}}>← 재설정</button>
+        <button onClick={()=>setStep(3)} style={{padding:"10px 12px",border:"none",background:"transparent",color:muted,fontSize:11,cursor:"pointer",borderRight:`1px solid ${bdr}`,whiteSpace:"nowrap"}}>← 재설정</button>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
             style={{padding:"10px 12px",border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===t.id?800:500,color:tab===t.id?ACC:muted,background:"transparent",borderBottom:tab===t.id?`2px solid ${ACC}`:"2px solid transparent",whiteSpace:"nowrap"}}>
@@ -753,6 +898,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         ))}
         <div style={{flex:1}}/>
         {archMsg&&<div style={{fontSize:10,color:"#4ade80",padding:"0 8px",fontWeight:700}}>{archMsg}</div>}
+        {err&&<div style={{fontSize:10,color:"#f87171",padding:"0 6px"}}>{err}</div>}
         {autoMode&&<div style={{fontSize:10,color:ACC,padding:"0 6px",fontWeight:700,animation:"pulse 1s ease-in-out infinite"}}>⚡ 자동편집 {autoIdx}/{clips.length}</div>}
         <button onClick={()=>autoExtractAll(clips)} disabled={autoMode||rec}
           style={{margin:"0 4px",padding:"4px 10px",borderRadius:7,border:`1px solid ${ACC}`,background:`rgba(168,85,247,0.15)`,color:ACC,fontSize:10,cursor:autoMode||rec?"not-allowed":"pointer",fontWeight:700,whiteSpace:"nowrap",opacity:autoMode||rec?0.5:1}}>
@@ -762,7 +908,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         <div style={{padding:"0 8px",fontSize:10,color:muted,whiteSpace:"nowrap"}}>{clips.length}개</div>
       </div>
 
-      {/* 보관함 */}
+      {/* 보관함 탭 */}
       {tab==="archive"&&(
         <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
           <div style={{fontSize:14,fontWeight:900,color:text,marginBottom:14}}>🗂 숏폼 보관함</div>
@@ -789,12 +935,12 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         </div>
       )}
 
-      {/* 메인 레이아웃 */}
+      {/* 결과 메인 */}
       {tab==="clips"&&(
         <div style={{flex:1,display:"flex",overflow:"hidden"}}>
 
           {/* 왼쪽: 클립 목록 */}
-          <div style={{width:215,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
+          <div style={{width:220,borderRight:`1px solid ${bdr}`,overflowY:"auto",flexShrink:0}}>
             {clips.map((clip,i)=>{
               const hc=clip.hook_score>=80?"#4ade80":clip.hook_score>=60?"#f59e0b":"#f87171";
               const vc=clip.viral_score>=80?"#4ade80":clip.viral_score>=60?"#f59e0b":"#f87171";
@@ -806,11 +952,11 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                     borderLeft:selIdx===i?`3px solid ${ACC}`:"3px solid transparent"}}>
                   <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:7,background:"#0f0f0f",aspectRatio:"9/16",maxHeight:140}}>
                     {ex
-                      ? <video src={ex.url} style={{width:"100%",height:"100%",objectFit:"cover"}} muted playsInline/>
+                      ? <video src={ex.url} style={{width:"100%",height:"100%",objectFit:"cover"}} muted playsInline loop autoPlay/>
                       : inputMode==="youtube"&&ytInfo?.thumbnail
                         ? <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                         : <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🎬</div>}
-                    {clip.hook&&!ex&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"3px 4px",background:"linear-gradient(transparent,rgba(0,0,0,0.85))",fontFamily:capStyle.font,fontSize:7,fontWeight:900,color:capStyle.color,textAlign:"center"}}><span style={{color:capStyle.hl}}>{clip.hook?.slice(0,22)}</span></div>}
+                    {!ex&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"3px 4px",background:"linear-gradient(transparent,rgba(0,0,0,0.85))",fontFamily:capStyle.font,fontSize:7,fontWeight:900,color:capStyle.botColor,textAlign:"center"}}>{clip.hook?.slice(0,22)}</div>}
                     <div style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,0.8)",padding:"1px 4px",borderRadius:3,fontSize:8,color:"#fff"}}>{clip.duration}s</div>
                     {ex&&<div style={{position:"absolute",top:3,left:3,background:"#4ade80",borderRadius:4,padding:"1px 5px",fontSize:7,fontWeight:700,color:"#000"}}>✓완료</div>}
                   </div>
@@ -833,7 +979,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             })}
           </div>
 
-          {/* 가운데: 9:16 플레이어 — 화면 높이 기반으로 크게 */}
+          {/* 가운데: 9:16 플레이어 */}
           <div style={{flexShrink:0,display:"flex",flexDirection:"column",background:"#060606",borderRight:`1px solid ${bdr}`,
             width:"calc((100vh - 130px) * 9 / 16 + 20px)",minWidth:240,maxWidth:360}}>
             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px"}}>
@@ -853,12 +999,10 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                     <div style={{width:"100%",height:"100%",position:"relative"}}>
                       <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                       <div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 40%,rgba(0,0,0,0.75))"}}/>
-                      <div style={{position:"absolute",[capStyle.pos==="top"?"top":"bottom"]:12,left:8,right:8,textAlign:"center",
-                        fontFamily:capStyle.font,fontSize:Math.max(capStyle.size-6,11),fontWeight:900,color:capStyle.color,
-                        textShadow:"2px 2px 8px rgba(0,0,0,0.9)",background:`rgba(0,0,0,${capStyle.bgOp})`,
-                        padding:"4px 8px",borderRadius:5,lineHeight:1.4}}>
-                        <span>{cur.hook?.split(" ").slice(0,4).join(" ")||"미리보기"}</span>
-                        {cur.hook?.split(" ").length>4&&<><br/><span style={{color:capStyle.hl}}>{cur.hook?.split(" ").slice(4,8).join(" ")}</span></>}
+                      <div style={{position:"absolute",bottom:12,left:8,right:8,textAlign:"center",
+                        fontFamily:capStyle.font,fontSize:13,fontWeight:900,color:capStyle.botColor,
+                        textShadow:"2px 2px 8px rgba(0,0,0,0.9)",padding:"4px 8px",borderRadius:5,lineHeight:1.4}}>
+                        {cur.hook||"미리보기"}
                       </div>
                       <div style={{position:"absolute",top:8,left:8,background:"rgba(0,0,0,0.75)",padding:"2px 8px",borderRadius:5,fontSize:10,color:"#fff",fontWeight:700}}>{cur.startTime} ~ {cur.endTime}</div>
                       <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
@@ -867,7 +1011,10 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                         onClick={()=>extract(cur)}>▶</div>
                     </div>
                   );
-                  return<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:12}}>미리보기 없음</div>;
+                  return<div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:muted,fontSize:12,gap:8}}>
+                    <div>✂️ 추출 버튼을 눌러주세요</div>
+                    <div style={{fontSize:10,opacity:0.6}}>{cur.startTime} ~ {cur.endTime}</div>
+                  </div>;
                 })()}
                 {rec&&(
                   <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:"12px"}}>
@@ -887,8 +1034,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             </div>
             <div style={{padding:"8px 10px",borderTop:`1px solid rgba(255,255,255,0.06)`,display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
               {(()=>{
-                const k=cur.index??selIdx;
-                const ex=extracted[k];
+                const k=cur.index??selIdx;const ex=extracted[k];
                 return<>
                   {!ex?(
                     <button onClick={()=>extract(cur)} disabled={rec}
@@ -910,9 +1056,27 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             </div>
           </div>
 
-          {/* 오른쪽: 상세 정보 — 고정 너비 380px */}
-          <div style={{width:380,flexShrink:0,overflowY:"auto"}}>
+          {/* 오른쪽: 상세 정보 */}
+          <div style={{flex:1,minWidth:0,overflowY:"auto"}}>
             <div style={{padding:"16px 18px"}}>
+              {/* 자막 직접 편집 */}
+              <div style={{borderRadius:12,border:`2px solid ${ACC}40`,background:card,padding:"13px",marginBottom:11}}>
+                <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:9}}>✏️ 자막 직접 편집</div>
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:10,color:muted,marginBottom:4}}>상단 제목</div>
+                  <input value={topText} onChange={e=>setTopText(e.target.value)} style={{...inp,fontSize:12,padding:"8px 11px"}} placeholder="상단 제목 텍스트"/>
+                </div>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:10,color:muted,marginBottom:4}}>하단 자막</div>
+                  <input value={botText} onChange={e=>setBotText(e.target.value)} style={{...inp,fontSize:12,padding:"8px 11px"}} placeholder="하단 자막 텍스트"/>
+                </div>
+                <button onClick={()=>extract({...cur,title_a:topText,hook:botText},false,null,topText,botText)} disabled={rec}
+                  style={{width:"100%",padding:"8px",borderRadius:8,border:"none",cursor:rec?"not-allowed":"pointer",background:`linear-gradient(135deg,${ACC},#ec4899)`,color:"#fff",fontSize:11,fontWeight:800,opacity:rec?0.5:1}}>
+                  ✂️ 커스텀 자막으로 재추출
+                </button>
+              </div>
+
+              {/* 후킹 제목 3버전 */}
               <div style={{borderRadius:12,border:`1px solid ${bdr}`,background:card,padding:"13px",marginBottom:11}}>
                 <div style={{fontSize:12,fontWeight:800,color:text,marginBottom:9}}>🎯 후킹 제목 3버전</div>
                 {[["A","충격·후킹",cur.title_a,"#ef4444"],["B","감성·공감",cur.title_b,"#f59e0b"],["C","정보·궁금증",cur.title_c,"#06b6d4"]].map(([v,typ,t,col])=>(
@@ -922,10 +1086,11 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                       <div style={{fontSize:8,color:col,fontWeight:700,marginBottom:1}}>{typ}</div>
                       <div style={{fontSize:12,fontWeight:700,color:text,lineHeight:1.3}}>{t}</div>
                     </div>
-                    <button onClick={()=>cp(t||"","t"+v)} style={{padding:"2px 8px",borderRadius:5,border:`1px solid ${col}25`,background:"transparent",color:col,fontSize:9,cursor:"pointer",flexShrink:0}}>{copied==="t"+v?"✅":"복사"}</button>
+                    <button onClick={()=>{cp(t||"","t"+v);setTopText(t||"");}} style={{padding:"2px 8px",borderRadius:5,border:`1px solid ${col}25`,background:"transparent",color:col,fontSize:9,cursor:"pointer",flexShrink:0}}>{copied==="t"+v?"✅":"사용"}</button>
                   </div>
                 ))}
               </div>
+
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:11}}>
                 <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"12px"}}>
                   <div style={{fontSize:11,fontWeight:700,color:muted,marginBottom:8}}>🔥 AI 예측 점수</div>
@@ -949,6 +1114,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   <button onClick={()=>cp(cur.thumbnail_text||"","th")} style={{width:"100%",padding:"4px",borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:9,cursor:"pointer"}}>{copied==="th"?"✅":"복사"}</button>
                 </div>
               </div>
+
               <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"13px",marginBottom:11}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
                   <div style={{fontSize:12,fontWeight:800,color:text}}>📝 자막 스크립트</div>
@@ -957,6 +1123,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                 {cur.hook&&<div style={{padding:"6px 10px",borderRadius:7,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",marginBottom:7,fontSize:11,color:"#f87171",fontWeight:600}}>첫 3초: "{cur.hook}"</div>}
                 <div style={{padding:"9px 11px",borderRadius:8,background:ibg,fontSize:12,color:text,lineHeight:1.9,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto"}}>{cur.script}</div>
               </div>
+
               {cur.hashtags?.length>0&&(
                 <div style={{borderRadius:10,border:`1px solid ${bdr}`,background:card,padding:"12px",marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
@@ -979,6 +1146,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           </div>
         </div>
       )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
     </div>
   );
 }

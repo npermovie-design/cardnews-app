@@ -661,15 +661,8 @@ export default function App() {
           )}
         </div>
 
-        {/* 모바일 전용 컨트롤: 접속자수 + 다크모드 + 유저상태 */}
-        <div className="mobile-controls" style={{ display: "none", alignItems: "center", gap: 5, marginLeft: "auto", marginRight: 4, flexShrink: 0 }}>
-          {/* 접속자수 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 7px", borderRadius: 12,
-            background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80",
-              boxShadow: "0 0 4px #4ade80", animation: "pulse 2s infinite" }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#4ade80" }}>{onlineCount}명</span>
-          </div>
+        {/* 모바일 전용 컨트롤: 다크모드 + 유저상태 */}
+        <div className="mobile-controls" style={{ display: "none", alignItems: "center", gap: 6, marginLeft: "auto", marginRight: 4, flexShrink: 0 }}>
           {/* 다크/라이트 토글 */}
           <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", justifyContent: "center",
             width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
@@ -678,33 +671,18 @@ export default function App() {
           </button>
           {/* 유저 상태 */}
           {user ? (
-            <button onClick={() => { setMobileOpen(s => !s); }} style={{ width: 30, height: 30, borderRadius: "50%",
+            <button onClick={() => setMobileOpen(s => !s)} style={{ width: 30, height: 30, borderRadius: "50%",
               background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
               color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
               {(user.nick||"U")[0].toUpperCase()}
             </button>
           ) : (
-            <>
-              {(() => {
-                const left = Math.max(0, FREE_GUEST - guestUsageCount);
-                return (
-                  <div onClick={() => left === 0 && setShowPointsModal(true)}
-                    style={{ padding: "3px 7px", borderRadius: 10, cursor: left === 0 ? "pointer" : "default",
-                      background: left > 0 ? "rgba(99,102,241,0.1)" : "rgba(239,68,68,0.1)",
-                      border: `1px solid ${left > 0 ? "rgba(99,102,241,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: left > 0 ? "#a5b4fc" : "#f87171", whiteSpace: "nowrap" }}>
-                      {left > 0 ? `${left}회` : "소진⚡"}
-                    </span>
-                  </div>
-                );
-              })()}
-              <button onClick={() => { setShowAuth(true); }} style={{ padding: "5px 9px", borderRadius: 8, border: "none",
-                cursor: "pointer", fontWeight: 700, fontSize: 11,
-                background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0 }}>
-                로그인
-              </button>
-            </>
+            <button onClick={() => setShowAuth(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
+              cursor: "pointer", fontWeight: 700, fontSize: 12,
+              background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
+              로그인
+            </button>
           )}
         </div>
 
@@ -897,8 +875,8 @@ export default function App() {
         {renderPage()}
       </div>
 
-      {/* ── 푸터 ── */}
-      <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
+      {/* ── 푸터 (AI 페이지에선 숨김) ── */}
+      {page !== "ai" && <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
           <div style={{ maxWidth: 1000, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36 }}>
             <div style={{ maxWidth: 280 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -955,7 +933,7 @@ export default function App() {
             </div>
             <span style={{ fontSize: 11, color: C.muted }}>© 2025 SNS메이킷 · All rights reserved.</span>
           </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

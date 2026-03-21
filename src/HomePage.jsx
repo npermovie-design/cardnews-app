@@ -185,7 +185,7 @@ export default function HomePage({ navigate, C }) {
           <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.muted, lineHeight: 1.9, maxWidth: 580, margin: "0 auto 16px" }}>
             블로그·인스타·유튜브 글쓰기부터 카드뉴스·상세페이지·AI 이미지까지<br/>
             <b style={{ color: C.purpleL }}>20가지 AI 도구</b>가 한 곳에 모여 있어요.<br/>
-            <b style={{ color: C.purpleL }}>비회원 5회 무료 · 가입 즉시 200P 지급!</b>
+            <b style={{ color: C.purpleL }}>비회원 10회 무료 · 가입 즉시 200P 지급!</b>
           </p>
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
@@ -309,10 +309,10 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 포인트/요금 안내 ══ */}
       <SecWrap C={C}>
-        <SecTitle C={C} badge="Pricing" title="합리적인 포인트 시스템" sub="비회원도 5회 무료! 포인트 충전으로 더 많이 사용하세요." />
+        <SecTitle C={C} badge="Pricing" title="합리적인 포인트 시스템" sub="비회원도 10회 무료! 포인트 충전으로 더 많이 사용하세요." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
-            { icon: "🎁", title: "비회원 무료", point: "5회", desc: "로그인 없이 AI 생성기 5회 무료 체험", color: "#888", btnText: "무료 체험하기", onClick: () => navigate("ai") },
+            { icon: "🎁", title: "비회원 무료", point: "10회", desc: "로그인 없이 AI 생성기 10회 무료 체험", color: "#888", btnText: "무료 체험하기", onClick: () => navigate("ai") },
             { icon: "👤", title: "회원 가입", point: "200P 지급", desc: "가입 즉시 200P 지급 + 게시글·로그인 포인트 적립", color: "#22c55e", btnText: "무료 회원가입", onClick: () => navigate("ai") },
             { icon: "⚡", title: "Basic 충전", point: "500P", desc: "9,900원 · AI 50회 분량 · 유효기간 없음", color: "#6366f1", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: false },
             { icon: "🔥", title: "Pro 충전", point: "1,200P", desc: "19,900원 · AI 120회 분량 · 우선 고객지원", color: "#8b5cf6", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: true },
@@ -348,7 +348,7 @@ export default function HomePage({ navigate, C }) {
             { icon: "⚡", title: "빠른 생성 속도", desc: "블로그 글은 30초~3분, AI 이미지는 10~30초 이내 완성. 직접 만드는 것보다 10배 이상 빠릅니다." },
             { icon: "🎯", title: "SEO 자동 최적화", desc: "키워드를 자동으로 파악해 검색 상위 노출에 유리한 구조로 글을 작성합니다." },
             { icon: "🌏", title: "20가지+ 올인원 도구", desc: "글쓰기·이미지·영상 편집까지 하나의 플랫폼에서 모두 해결. 여러 툴을 오갈 필요 없어요." },
-            { icon: "💰", title: "합리적인 비용", desc: "월정액 없이 포인트 충전 방식. 비회원도 5회 무료로 바로 체험할 수 있어요." },
+            { icon: "💰", title: "합리적인 비용", desc: "월정액 없이 포인트 충전 방식. 비회원도 10회 무료로 바로 체험할 수 있어요." },
           ].map((d, i) => (
             <FadeIn key={d.title} delay={i * 0.1}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
@@ -377,7 +377,7 @@ export default function HomePage({ navigate, C }) {
             </span>
           </h2>
           <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 40 }}>
-            로그인 없이 지금 바로 5회 무료 체험!<br/>
+            로그인 없이 지금 바로 10회 무료 체험!<br/>
             회원가입하면 200P 추가 지급 + 포인트 적립으로 더 오래 사용하세요.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>

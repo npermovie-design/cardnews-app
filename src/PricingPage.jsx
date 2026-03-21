@@ -20,10 +20,10 @@ const SUB_PLANS = [
   {
     id: "free", name: "Free", icon: "🎁",
     monthlyPrice: 0, yearlyPrice: 0,
-    points: 10, color: "#888",
+    points: 200, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 시 10P 지급", ...COMMON_FEATURES],
+    features: ["가입 시 200P 지급", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
@@ -313,7 +313,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon:"🎁", action:"회원가입", pt:"+10P", desc:"가입 즉시" },
+            { icon:"🎁", action:"회원가입", pt:"+200P", desc:"가입 즉시" },
             { icon:"📝", action:"게시글 작성", pt:"+1P", desc:"글 1개당" },
             { icon:"☀️", action:"일일 로그인", pt:"+1P", desc:"하루 1회" },
           ].map((item, i) => (

@@ -165,7 +165,7 @@ export function AboutPage({ navigate, C }) {
           <div style={{ fontSize: 36, marginBottom: 12 }}>🚀</div>
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>지금 바로 시작해보세요</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
-            회원가입 없이 5회 무료 체험 가능해요.<br/>
+            회원가입 없이 10회 무료 체험 가능해요.<br/>
             가입하면 즉시 200P 지급 + AI 생성기 풀 이용 가능!
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -187,8 +187,8 @@ export function HowToPage({ navigate, C }) {
     {
       step: "01", icon: "🔐", color: "#6366f1",
       title: "회원가입 & 로그인",
-      desc: "오른쪽 상단 [로그인] 버튼을 눌러 회원가입하세요. 가입 즉시 200P가 자동 지급됩니다. 비회원도 5회 무료로 체험할 수 있어요.",
-      tips: ["구글·카카오 소셜 로그인 지원", "비회원 5회 → 회원 20회 무료", "가입 즉시 200P 지급"],
+      desc: "오른쪽 상단 [로그인] 버튼을 눌러 회원가입하세요. 가입 즉시 200P가 자동 지급됩니다. 비회원도 10회 무료로 체험할 수 있어요.",
+      tips: ["구글·카카오 소셜 로그인 지원", "비회원 10회 → 회원 20회 무료", "가입 즉시 200P 지급"],
     },
     {
       step: "02", icon: "🎯", color: "#8b5cf6",
@@ -218,22 +218,22 @@ export function HowToPage({ navigate, C }) {
       step: "06", icon: "💎", color: "#6366f1",
       title: "포인트 충전·관리",
       desc: "무료 횟수를 모두 사용했다면 [가격정책]에서 포인트를 충전하세요. 출석체크·게시글 작성으로도 포인트를 적립할 수 있어요.",
-      tips: ["출석체크: 매일 +3P (연속 보너스)", "게시글 작성: +5P", "AI 생성 1회: -10P"],
+      tips: ["출석체크: 매일 +3P (연속 보너스)", "게시글 작성: +1P", "AI 생성 1회: -10P"],
     },
   ];
 
   const POINT_INFO = [
-    { label: "비회원", val: "5회 무료", color: "#888", bg: "rgba(0,0,0,0.04)" },
+    { label: "비회원", val: "10회 무료", color: "#888", bg: "rgba(0,0,0,0.04)" },
     { label: "회원가입", val: "200P 즉시 지급", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
     { label: "출석체크", val: "매일 +3P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "게시글 작성", val: "+5P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "댓글 작성", val: "+1P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: "게시글 작성", val: "+1P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: "댓글 작성", val: "없음", color: "#888", bg: "rgba(0,0,0,0.04)" },
     { label: "AI 생성 1회", val: "-10P", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
   ];
 
   const FAQ = [
-    { q: "비회원도 사용할 수 있나요?", a: "네! 로그인 없이 AI 기능을 5회 무료로 체험할 수 있어요. 회원가입 시 200P를 즉시 드려요." },
-    { q: "포인트는 어떻게 쌓이나요?", a: "가입 즉시 200P, 매일 출석체크로 +3P, 게시글 작성 시 +5P가 적립돼요. 충전도 가능해요." },
+    { q: "비회원도 사용할 수 있나요?", a: "네! 로그인 없이 AI 기능을 10회 무료로 체험할 수 있어요. 회원가입 시 200P를 즉시 드려요." },
+    { q: "포인트는 어떻게 쌓이나요?", a: "가입 즉시 200P, 매일 출석체크로 +3P, 게시글 작성 시 +1P가 적립돼요. 충전도 가능해요." },
     { q: "생성된 콘텐츠를 상업적으로 사용해도 되나요?", a: "네, 생성된 콘텐츠는 자유롭게 사용하실 수 있어요. 단 법적 책임은 사용자에게 있습니다." },
     { q: "포인트 유효기간이 있나요?", a: "충전 포인트는 유효기간이 없어요. 마음껏 사용하세요." },
     { q: "생성 결과가 마음에 안 들면 어떻게 하나요?", a: "재생성 버튼을 누르면 다시 생성할 수 있어요. 단, 재생성 시에도 10P가 차감됩니다." },
@@ -319,7 +319,7 @@ export function HowToPage({ navigate, C }) {
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>이제 직접 써보세요!</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             이론보다 직접 해보는 게 훨씬 빨라요.<br/>
-            비회원도 5회 무료, 가입하면 200P 즉시!
+            비회원도 10회 무료, 가입하면 200P 즉시!
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <Btn C={C} onClick={() => navigate("ai")}>✨ AI 생성기 바로 체험</Btn>

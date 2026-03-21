@@ -61,7 +61,7 @@ function getDriveThumb(url) {
 }
 
 const ADMIN_PW = "nper2025admin";
-const FREE_GUEST  = 5;
+const FREE_GUEST  = 10;
 const FREE_MEMBER = 20;
 
 export default function AdminPage({ C, user: adminUser }) {
@@ -275,7 +275,7 @@ export default function AdminPage({ C, user: adminUser }) {
       const u = JSON.parse(localStorage.getItem("nper_ai_usage") || "{}");
       delete u["guest"];
       localStorage.setItem("nper_ai_usage", JSON.stringify(u));
-      showToast("비회원 사용 횟수 초기화 완료 (5회 재지급)");
+      showToast("비회원 사용 횟수 초기화 완료 (10회 재지급)");
     } catch(e) {}
   };
   const getAllUsage = () => {
@@ -428,7 +428,7 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>🌐 비회원 관리</div>
           <div style={{ fontSize: 13, color: C.muted, marginBottom: 20, lineHeight: 1.8 }}>
             비회원은 브라우저의 localStorage에 사용 기록이 저장됩니다.<br/>
-            특정 비회원의 사용 횟수를 초기화하면 다시 5회 무료 이용이 가능합니다.
+            특정 비회원의 사용 횟수를 초기화하면 다시 10회 무료 이용이 가능합니다.
           </div>
 
           {/* 현재 비회원 사용 현황 */}
@@ -448,7 +448,7 @@ export default function AdminPage({ C, user: adminUser }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 15, fontWeight: 800, color: guestUsed >= FREE_GUEST ? "#ef4444" : C.purpleL }}>{guestUsed}/{FREE_GUEST}회 사용</span>
                       <button onClick={resetGuestUsage} style={{ padding: "7px 16px", borderRadius: 9, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                        🔄 초기화 (5회 재지급)
+                        🔄 초기화 (10회 재지급)
                       </button>
                     </div>
                   </div>

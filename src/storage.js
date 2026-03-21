@@ -489,18 +489,34 @@ function postToRow(post) {
   };
 }
 
-/** 전체 게시글 가져오기 */
+/** 전체 게시글 목록 가져오기 (content 제외 — 빠른 로딩) */
 export async function getPostsFromDB() {
   try {
     const { data, error } = await supabase
       .from("posts")
-      .select("*")
-      .order("id", { ascending: false });
+      .select("id,title,author,author_uid,cat,subCat,tag,views,likes,created_at,images,comments")
+      .order("id", { ascending: false })
+      .limit(300);
     if (error) throw error;
     return (data || []).map(rowToPost);
   } catch (e) {
     console.error("getPostsFromDB error:", e);
     return [];
+  }
+}
+
+/** 단일 게시글 전체 가져오기 (content 포함 — 글 열 때 사용) */
+export async function getPostByIdFromDB(postId) {
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("id", String(postId))
+      .single();
+    if (error) throw error;
+    return data ? rowToPost(data) : null;
+  } catch (e) {
+    return null;
   }
 }
 
