@@ -197,12 +197,13 @@ function SlideCanvas({ slide, style, CW, CH, displayW }) {
 }
 
 // ── API 호출 ─────────────────────────────────────────────────
-async function generateSlideTexts({ category, productName, features, price, cta, target, extra, pageCount }) {
+async function generateSlideTexts({ category, productName, features, price, cta, target, extra, pageCount, sourceContent }) {
   const cat = CATEGORIES.find(c => c.key === category) || CATEGORIES[0];
   const types = SLIDE_TYPES.slice(0, pageCount);
+  const srcCtx = sourceContent ? `\n\n[참고할 원본 내용 - 이 내용을 기반으로 슬라이드를 구성하세요]\n${sourceContent.slice(0, 600)}` : "";
   const prompt = `한국 프리미엄 쇼핑몰 상세페이지 카피라이터입니다.
 상품명: ${productName} / 카테고리: ${cat.label}
-특징: ${features} / 가격: ${price || "미정"} / CTA: ${cta || "지금 구매하기"} / 타겟: ${target || "일반"} / 추가정보: ${extra || "없음"}
+특징: ${features} / 가격: ${price || "미정"} / CTA: ${cta || "지금 구매하기"} / 타겟: ${target || "일반"} / 추가정보: ${extra || "없음"}${srcCtx}
 
 슬라이드 ${pageCount}장의 텍스트를 작성해주세요.
 headline(14자 이내), subheadline(20자, 선택), body(50자, 선택), badge(8자, 선택)
@@ -220,8 +221,9 @@ JSON만 응답:
   }
 }
 
-async function suggestSlideText(form, cat, sc) {
-  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`상품: ${form.productName} (${cat.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}\n슬라이드: ${sc.label}(${sc.id})\nJSON만:\n{"headline":"헤드라인(14자)","subheadline":"서브(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}], 300);
+async function suggestSlideText(form, cat, sc, sourceContent) {
+  const srcCtx = sourceContent ? `\n참고 내용: ${sourceContent.slice(0,400)}` : "";
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`상품: ${form.productName} (${cat.label}) / 특징: ${form.features} / 가격: ${form.price||"미정"}\n슬라이드: ${sc.label}(${sc.id})${srcCtx}\nJSON만:\n{"headline":"헤드라인(14자)","subheadline":"서브(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"배지(8자,없으면빈문자)"}`}], 300);
   return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
@@ -240,6 +242,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const [urlInput,   setUrlInput]   = useState("");
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlResult,  setUrlResult]  = useState(null);
+  const [autoSuggest, setAutoSuggest] = useState(false);
 
   // Step1
   const [selCat,    setSelCat]    = useState(null);
@@ -338,8 +341,9 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const suggestOne = async (idx) => {
     const sc = slideContents[idx]; if(!sc) return;
     setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,aiLoading:true}:s));
+    const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,500) : null;
     try {
-      const parsed = await suggestSlideText(form, cat, sc);
+      const parsed = await suggestSlideText(form, cat, sc, srcContent);
       setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,...parsed,aiLoading:false}:s));
     } catch { setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,aiLoading:false}:s)); }
   };
@@ -356,6 +360,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
     if (!user) incrementGuestUsage();
     setLoading(true);
     try {
+      const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
       let slidesData;
       if (slideContents.length > 0 && slideContents.some(s=>s.headline)) {
         slidesData = slideContents.map(sc=>({
@@ -370,14 +375,14 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         }));
         const empty = slidesData.filter(s=>!s.title);
         if (empty.length>0) {
-          const fill = await generateSlideTexts({category:selCat,...form,pageCount});
+          const fill = await generateSlideTexts({category:selCat,...form,pageCount,sourceContent:srcContent});
           fill.slides?.forEach(fs=>{
             const idx=slidesData.findIndex(s=>s.id===fs.id&&!s.title);
             if(idx>=0) slidesData[idx]={...slidesData[idx],title:fs.headline,subtitle:fs.subheadline,body:fs.body,highlight:fs.badge,headline:fs.headline};
           });
         }
       } else {
-        const textData = await generateSlideTexts({category:selCat,...form,pageCount});
+        const textData = await generateSlideTexts({category:selCat,...form,pageCount,sourceContent:srcContent});
         slidesData = (textData.slides||[]).map(s=>({
           ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge
         }));
@@ -428,6 +433,13 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   };
 
   const resetAll = () => { setWizStep(1); setSelCat(null); setForm({productName:"",features:"",price:"",cta:"지금 구매하기",target:"",extra:""}); setPageCount(5); setAiSugg(null); setSlideContents([]); setSelPreset(null); setSelSize(0); setSlides([]); setSted({}); };
+
+  useEffect(() => {
+    if (autoSuggest && wizStep === 2 && slideContents.length > 0) {
+      setAutoSuggest(false);
+      suggestAll();
+    }
+  }, [autoSuggest, wizStep, slideContents.length]);
 
   // ═══ STEP 1 ═══════════════════════════════════════════════
   if (wizStep === 1) {
@@ -539,6 +551,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
               if(!canNext) return;
               setSlideContents(SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",subheadline:"",body:"",badge:"",aiLoading:false})));
               setWizStep(2);
+              if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#6366f1":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>
@@ -559,6 +572,19 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.</div>
           </div>
+          {urlResult && (
+            <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", display:"flex", alignItems:"center", gap:12 }}>
+              {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:44, height:32, objectFit:"cover", borderRadius:6, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
+                <div style={{ fontSize:11, color:muted, marginTop:2 }}>불러온 내용을 기반으로 슬라이드가 자동 구성돼요</div>
+              </div>
+              <button onClick={suggestAll} disabled={planLoading}
+                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#6366f1", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
+                {planLoading?"구성 중...":"재구성"}
+              </button>
+            </div>
+          )}
           <div style={{ display:"flex", gap:8, marginBottom:20, padding:"12px 16px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, alignItems:"center", justifyContent:"space-between" }}>
             <div>
               <div style={{ fontSize:13, fontWeight:700, color:text }}>전체 AI 추천</div>

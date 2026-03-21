@@ -483,6 +483,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [seoKeys,    setSeoKeys]    = useState([]);
   const [titleLoading, setTitleLoading] = useState(false);
   const [seoLoading,   setSeoLoading]   = useState(false);
+  const [urlInput,   setUrlInput]   = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlResult,  setUrlResult]  = useState(null);
 
   // 이탈 방지
   useEffect(() => {
@@ -537,6 +540,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const headerBg= isDark ? "rgba(0,0,0,0.20)"          : "#fff";
 
   const IS = {width:"100%", padding:"10px 12px", borderRadius:9, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
+
+  const fetchFromUrl = async () => {
+    if (!urlInput.trim()) return;
+    setUrlLoading(true); setUrlResult(null);
+    try {
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const data = await r.json();
+      if (data.error) { alert(data.error); setUrlLoading(false); return; }
+      setUrlResult(data);
+      // keyword = title, extra = description + content
+      if (data.title) setField("keyword", data.title.slice(0, 80));
+      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
+      if (desc) setField("extra", (fields.extra ? fields.extra + "\n" : "") + "참고 내용: " + desc);
+    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    setUrlLoading(false);
+  };
 
   const suggestTitle = async () => {
     if (!fields.keyword || !fields.keyword.trim()) { return; }
@@ -820,6 +839,31 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             <div style={{fontSize:11,color:muted,marginTop:2}}>글 타입과 정보를 입력하면 AI가 자동으로 작성해드려요</div>
           </div>
           <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
+            {/* URL 불러오기 */}
+            <div style={{marginBottom:14,padding:"12px 14px",borderRadius:10,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+              <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>🔗 URL로 내용 불러오기</div>
+              <div style={{fontSize:10,color:muted,marginBottom:8,lineHeight:1.6}}>뉴스 기사, 유튜브 링크를 붙여넣으면 주제를 자동으로 채워줘요</div>
+              <div style={{display:"flex",gap:6}}>
+                <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
+                  placeholder="https://... URL 붙여넣기"
+                  style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:11,fontFamily:"inherit",outline:"none"}}/>
+                <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                  style={{padding:"7px 12px",borderRadius:8,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:11,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap"}}>
+                  {urlLoading?"불러오는 중...":"불러오기"}
+                </button>
+              </div>
+              {urlResult && (
+                <div style={{marginTop:8,padding:"7px 10px",borderRadius:7,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:"1px solid rgba(99,102,241,0.2)",display:"flex",gap:8,alignItems:"center"}}>
+                  {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:36,height:26,objectFit:"cover",borderRadius:4,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
+                    <div style={{fontSize:10,color:muted,marginTop:1}}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} · 주제에 자동 입력됐어요</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 글 타입 */}
             <div style={{marginBottom:14}}>
               <div style={{fontSize:11,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>글 타입 선택</div>

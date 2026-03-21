@@ -224,10 +224,11 @@ function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
 }
 
 // ── API 호출 ─────────────────────────────────────────────────
-async function generateSlideTexts({ topic, pageCount }) {
+async function generateSlideTexts({ topic, pageCount, sourceContent }) {
   const types = SLIDE_TYPES.slice(0, pageCount);
+  const srcCtx = sourceContent ? `\n\n[참고할 원본 내용 - 이 내용을 기반으로 슬라이드를 구성하세요]\n${sourceContent.slice(0, 700)}` : "";
   const prompt = `한국 SNS 카드뉴스 카피라이터입니다.
-주제: ${topic}
+주제: ${topic}${srcCtx}
 
 카드뉴스 슬라이드 ${pageCount}장의 텍스트를 작성해주세요.
 각 슬라이드: headline(제목, 14자 이내), subheadline(부제목, 22자 이내, 선택), body(본문, 50자 이내, 선택), badge(강조문구, 8자 이내, 선택)
@@ -245,8 +246,9 @@ JSON만 응답:
   }
 }
 
-async function suggestSlideText(topic, sc) {
-  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`카드뉴스 주제:"${topic}" / 슬라이드:${sc.label}(${sc.id})\nJSON만:\n{"headline":"제목(14자)","subheadline":"부제목(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"강조(8자,없으면빈문자)"}`}], 300);
+async function suggestSlideText(topic, sc, sourceContent) {
+  const srcCtx = sourceContent ? `\n참고 내용: ${sourceContent.slice(0,400)}` : "";
+  const txt = await callAI("claude-sonnet-4-5", [{role:"user", content:`카드뉴스 주제:"${topic}" / 슬라이드:${sc.label}(${sc.id})${srcCtx}\nJSON만:\n{"headline":"제목(14자)","subheadline":"부제목(22자,없으면빈문자)","body":"본문(50자,없으면빈문자)","badge":"강조(8자,없으면빈문자)"}`}], 300);
   return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
@@ -275,6 +277,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [urlInput,    setUrlInput]    = useState("");
   const [urlLoading,  setUrlLoading]  = useState(false);
   const [urlResult,   setUrlResult]   = useState(null);
+  const [autoSuggest, setAutoSuggest] = useState(false);
 
   // Step1 - 카드뉴스용
   const [topic,     setTopic]     = useState(libItem?.topic || "");
@@ -298,6 +301,14 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
   useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
+
+  useEffect(() => {
+    if (autoSuggest && wizStep === 2 && slideContents.length > 0) {
+      setAutoSuggest(false);
+      suggestAll();
+    }
+  }, [autoSuggest, wizStep, slideContents.length]);
+
   const [showCreditPopup, setShowCreditPopup] = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
 
@@ -372,8 +383,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const suggestOne = async (idx) => {
     const sc = slideContents[idx]; if(!sc) return;
     setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,aiLoading:true}:s));
+    const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,500) : null;
     try {
-      const parsed = await suggestSlideText(topic, sc);
+      const parsed = await suggestSlideText(topic, sc, srcContent);
       setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,...parsed,aiLoading:false}:s));
     } catch { setSlideContents(prev=>prev.map((s,i)=>i===idx?{...s,aiLoading:false}:s)); }
   };
@@ -406,16 +418,18 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           body:sc.body||"", highlight:sc.badge||"",
           headline:sc.headline||"", subheadline:sc.subheadline||"", badge:sc.badge||"",
         }));
+        const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
         const empty = slidesData.filter(s=>!s.title);
         if (empty.length>0) {
-          const fill = await generateSlideTexts({topic, pageCount});
+          const fill = await generateSlideTexts({topic, pageCount, sourceContent: srcContent});
           fill.slides?.forEach(fs=>{
             const idx=slidesData.findIndex(s=>s.id===fs.id&&!s.title);
             if(idx>=0) slidesData[idx]={...slidesData[idx],title:fs.headline,subtitle:fs.subheadline,body:fs.body,highlight:fs.badge,headline:fs.headline};
           });
         }
       } else {
-        const textData = await generateSlideTexts({topic, pageCount});
+        const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
+        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent});
         slidesData = (textData.slides||[]).map(s=>({
           ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge
         }));
@@ -627,6 +641,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               if(!canNext) return;
               setSlideContents(SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",subheadline:"",body:"",badge:"",aiLoading:false})));
               setWizStep(2);
+              if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#6366f1":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>
@@ -647,6 +662,19 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.</div>
           </div>
+          {urlResult && (
+            <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", display:"flex", alignItems:"center", gap:12 }}>
+              {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:44, height:32, objectFit:"cover", borderRadius:6, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
+                <div style={{ fontSize:11, color:muted, marginTop:2 }}>불러온 내용을 기반으로 슬라이드가 자동 구성돼요</div>
+              </div>
+              <button onClick={suggestAll} disabled={planLoading}
+                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#6366f1", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
+                {planLoading?"구성 중...":"재구성"}
+              </button>
+            </div>
+          )}
           <div style={{ display:"flex", gap:8, marginBottom:20, padding:"12px 16px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, alignItems:"center", justifyContent:"space-between" }}>
             <div>
               <div style={{ fontSize:13, fontWeight:700, color:text }}>전체 AI 추천</div>
