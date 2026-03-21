@@ -9,7 +9,6 @@ import { PricingPage } from "./PricingPage";
 import { PaymentSuccessPage, PaymentFailPage } from "./PaymentPage";
 import { LegalPage } from "./LegalPage";
 import BoardPage from "./BoardPage";
-import ArchivePage from "./ArchivePage";
 import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 import MyPage from "./MyPage";
@@ -354,7 +353,7 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
-    if (page === "archive")  return <ArchivePage C={C} theme={theme} user={user} />;
+    if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
@@ -528,14 +527,14 @@ export default function App() {
             <DropBtn label="커뮤니티" open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
             {openMenu==="board" && (
               <DropMenu right>
-                <DropItem id="community" label="정보공유"   onClick={() => { navigateBoard("info");   setOpenMenu(null); }} />
-                <DropItem id="community" label="질문답변"   onClick={() => { navigateBoard("qna");    setOpenMenu(null); }} />
-                <DropItem id="community" label="자유게시판" onClick={() => { navigateBoard("free");   setOpenMenu(null); }} />
-                <DropItem id="community" label="사용후기"   onClick={() => { navigateBoard("review"); setOpenMenu(null); }} />
+                <DropItem id="community" label="정보공유"   onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
+                <DropItem id="community" label="질문답변"   onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
+                <DropItem id="community" label="자유게시판" onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
+                <DropItem id="community" label="사용후기"   onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
+                <DropItem id="community" label="📁 자료실"  onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <NavBtn id="archive" label="자료실" />
           <NavBtn id="pricing" label="가격정책" />
           <NavBtn id="contact" label="문의하기" />
         </div>
@@ -703,9 +702,8 @@ export default function App() {
         }}>
               {/* 기본 메뉴 */}
           {[
-            { id: "home",    label: "홈" },
-            { id: "about",   label: "소개" },
-            { id: "archive", label: "📂 자료실" },
+            { id: "home",  label: "홈" },
+            { id: "about", label: "소개" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -789,10 +787,11 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 커뮤니티</div>
           </div>
           {[
-            { board: "info",   label: "정보공유" },
-            { board: "qna",    label: "질문답변" },
-            { board: "free",   label: "자유게시판" },
-            { board: "review", label: "사용후기" },
+            { board: "info",    label: "정보공유" },
+            { board: "qna",     label: "질문답변" },
+            { board: "free",    label: "자유게시판" },
+            { board: "review",  label: "사용후기" },
+            { board: "archive", label: "📁 자료실" },
           ].map(m => (
             <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
