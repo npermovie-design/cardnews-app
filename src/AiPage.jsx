@@ -145,13 +145,14 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         </>}
 
         {/* 이미지 생성 그룹 */}
-        <Group label="이미지생성" icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu))} />
+        <Group label="이미지생성" icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
         {imageOpen && <>
           <Item id="product_shot" label="제품컷 생성"      indent />
           <Item id="logo_gen"     label="로고 생성"        indent />
           <Item id="mockup_gen"   label="목업 생성"        indent />
           <Item id="model_gen"    label="모델 생성"        indent />
-          <Item id="face_swap"    label="얼굴·의상 교체"   indent />
+          <Item id="face_swap"    label="얼굴 교체"         indent />
+          <Item id="outfit_swap"  label="의상 교체"         indent />
           <Item id="outpaint"     label="좌우 여백 채우기" indent />
         </>}
 
@@ -886,26 +887,10 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
   );
 }
 
-/* ── 얼굴·의상 교체 ─────────────────────────────────────── */
-function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
-  const C = useGenColors(isDark);
-  const { ACC, bg, card, bdr, text, muted } = C;
-  const [step, setStep] = useState(1);
-  const [srcImg, setSrcImg] = useState(null);
-  const [refImg, setRefImg] = useState(null);
-  const [swapMode, setSwapMode] = useState("both"); // face|outfit|both
-  const [result, setResult] = useState(null);
-  const [err, setErr] = useState("");
+/* ── 전후 비교 슬라이더 공용 컴포넌트 ──────────────────── */
+function BeforeAfterSlider({ srcImg, result, bdr, ACC, muted, text, onReset, downloadName }) {
   const [sliderPos, setSliderPos] = useState(50);
   const sliderRef = useRef(null);
-
-  const readFile = setter => e => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = ev => setter({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
-    reader.readAsDataURL(f);
-  };
-
   const startSlide = (clientX) => {
     const el = sliderRef.current; if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -918,6 +903,51 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     document.addEventListener("touchmove", move, {passive:true}); document.addEventListener("touchend", up);
     move({ clientX });
   };
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+        <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
+        <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>완료!</span>
+        <span style={{ fontSize:13, color:muted }}>슬라이더로 전후를 비교해보세요</span>
+      </div>
+      <div ref={sliderRef}
+        style={{ position:"relative", borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, cursor:"col-resize", animation:"ai-fadein 0.5s ease", userSelect:"none", touchAction:"none" }}
+        onMouseDown={e => startSlide(e.clientX)}
+        onTouchStart={e => startSlide(e.touches[0].clientX)}>
+        {srcImg && <img src={srcImg.url} alt="before" style={{ width:"100%", display:"block" }} />}
+        <div style={{ position:"absolute", inset:0, overflow:"hidden", clipPath:`inset(0 ${100-sliderPos}% 0 0)` }}>
+          <img src={result} alt="after" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+        </div>
+        <div style={{ position:"absolute", top:0, bottom:0, left:`${sliderPos}%`, transform:"translateX(-50%)", width:3, background:"#fff", boxShadow:"0 0 8px rgba(0,0,0,0.4)" }}>
+          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:36, height:36, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 12px rgba(0,0,0,0.3)", fontSize:14 }}>◀▶</div>
+        </div>
+        <div style={{ position:"absolute", top:10, left:10, padding:"3px 8px", borderRadius:6, background:"rgba(0,0,0,0.55)", color:"#fff", fontSize:11, fontWeight:700 }}>원본</div>
+        <div style={{ position:"absolute", top:10, right:10, padding:"3px 8px", borderRadius:6, background:`${ACC}cc`, color:"#fff", fontSize:11, fontWeight:700 }}>결과</div>
+      </div>
+      <div style={{ display:"flex", gap:10, marginTop:16 }}>
+        <a href={result} download={downloadName||"result.png"} style={{ flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none" }}>⬇ 다운로드</a>
+        <button onClick={onReset} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>🔄 다시 시작</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── 얼굴 교체 ───────────────────────────────────────────── */
+function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted } = C;
+  const [step, setStep] = useState(1);
+  const [srcImg, setSrcImg] = useState(null); // 원본 (얼굴 교체 대상)
+  const [refImg, setRefImg] = useState(null); // 참고 (교체할 얼굴)
+  const [result, setResult] = useState(null);
+  const [err, setErr] = useState("");
+
+  const readFile = setter => e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setter({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
@@ -925,17 +955,16 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
-    const modeMap = { face:"face only", outfit:"outfit and clothing only", both:"face and outfit" };
-    const prompt = `Swap the ${modeMap[swapMode]} from the reference photo onto the person in the main photo. Preserve the original pose, background, and lighting. Make the result photorealistic, seamless, and natural-looking with high quality.`;
+    const prompt = `Face swap task: The first image is the TARGET person. The second image is the REFERENCE face. Replace ONLY the face of the person in the first image with the face from the second image. Keep everything else identical: body shape, clothing, pose, hair (except where the face overlaps), background, lighting, and skin tone transition. The result must look photorealistic and seamless, as if it were an original photo. High quality, 4K resolution.`;
     try {
       const res = await fetch("/api/generate-image", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime })
+        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime, refImageB64: refImg.b64, refImageMime: refImg.mime })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
-      setResult(data.image); setSliderPos(50); setStep(4);
+      setResult(data.image); setStep(4);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
     finally { window.__isGenerating = false; }
@@ -945,43 +974,16 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
   if (step === 3) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="🔄" title="얼굴·의상 교체 중..." subtitle={"AI가 이미지를 분석하고 교체하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="😊" title="얼굴 교체 중..." subtitle={"AI가 얼굴을 분석하고 자연스럽게 합성하고 있어요\n예상 시간: 20~35초"} ACC={ACC} isDark={isDark} />
     </div>
   );
 
   if (step === 4 && result) return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-          <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
-          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>교체 완료!</span>
-          <span style={{ fontSize:13, color:muted }}>슬라이더로 전후를 비교해보세요</span>
-        </div>
-
-        {/* 비교 슬라이더 */}
-        <div ref={sliderRef}
-          style={{ position:"relative", borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, cursor:"col-resize", animation:"ai-fadein 0.5s ease", userSelect:"none", touchAction:"none" }}
-          onMouseDown={e => startSlide(e.clientX)}
-          onTouchStart={e => startSlide(e.touches[0].clientX)}>
-          {/* Before (원본) */}
-          {srcImg && <img src={srcImg.url} alt="before" style={{ width:"100%", display:"block" }} />}
-          {/* After (결과) */}
-          <div style={{ position:"absolute", inset:0, overflow:"hidden", clipPath:`inset(0 ${100-sliderPos}% 0 0)` }}>
-            <img src={result} alt="after" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
-          </div>
-          {/* 슬라이더 핸들 */}
-          <div style={{ position:"absolute", top:0, bottom:0, left:`${sliderPos}%`, transform:"translateX(-50%)", width:3, background:"#fff", boxShadow:"0 0 8px rgba(0,0,0,0.4)" }}>
-            <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:36, height:36, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 12px rgba(0,0,0,0.3)", fontSize:14 }}>◀▶</div>
-          </div>
-          {/* 라벨 */}
-          <div style={{ position:"absolute", top:10, left:10, padding:"3px 8px", borderRadius:6, background:"rgba(0,0,0,0.55)", color:"#fff", fontSize:11, fontWeight:700 }}>원본</div>
-          <div style={{ position:"absolute", top:10, right:10, padding:"3px 8px", borderRadius:6, background:`${ACC}cc`, color:"#fff", fontSize:11, fontWeight:700 }}>결과</div>
-        </div>
-
-        <div style={{ display:"flex", gap:10, marginTop:16 }}>
-          <a href={result} download="faceswap.png" style={{ flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none" }}>⬇ 결과 다운로드</a>
-          <button onClick={() => { setResult(null); setStep(1); setSrcImg(null); setRefImg(null); }} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>🔄 다시 시작</button>
-        </div>
+        <BeforeAfterSlider srcImg={srcImg} result={result} bdr={bdr} ACC={ACC} muted={muted} text={text}
+          onReset={() => { setResult(null); setStep(1); setSrcImg(null); setRefImg(null); }}
+          downloadName="face_swap.png" />
         {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
       </div>
     </div>
@@ -990,51 +992,188 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
-        <StepBar step={step} total={2} labels={["원본 업로드","참고 + 생성"]} ACC={ACC} />
+        <StepBar step={step} total={2} labels={["원본 업로드","참고 얼굴 + 생성"]} ACC={ACC} />
         {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
-        {step === 1 && (
+        {/* 두 이미지를 나란히 */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>원본 이미지 업로드</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>교체 기반이 될 인물 사진을 업로드해요.</div>
-            <label style={{ display:"block", cursor:"pointer", marginBottom:20 }}>
-              <div style={{ aspectRatio:"3/4", maxHeight:360, borderRadius:14, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10 }}>
-                {srcImg
-                  ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                  : <><span style={{ fontSize:48 }}>👤</span><span style={{ fontSize:14, color:muted }}>원본 인물 사진 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6 }}>① 원본 인물 사진</div>
+            <label style={{ display:"block", cursor:"pointer" }}>
+              <div style={{ aspectRatio:"3/4", borderRadius:12, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:6 }}>
+                {srcImg ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  : <><span style={{ fontSize:36 }}>👤</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>얼굴을 교체할<br/>원본 사진</span></>}
               </div>
               <input type="file" accept="image/*" onChange={readFile(setSrcImg)} style={{ display:"none" }} />
             </label>
-            <button onClick={() => { if(!srcImg){setErr("이미지를 업로드해주세요.");return;} setErr(""); setStep(2); }} style={{
-              width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
-              background: srcImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
-              color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6,
-            }}>다음 → 참고 이미지 업로드</button>
           </div>
-        )}
-
-        {step === 2 && (
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>참고 이미지 & 교체 설정</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>스타일을 가져올 참고 이미지를 업로드해요.</div>
-            <label style={{ display:"block", cursor:"pointer", marginBottom:16 }}>
-              <div style={{ aspectRatio:"3/4", maxHeight:280, borderRadius:14, border:`2px dashed ${refImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10 }}>
-                {refImg
-                  ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                  : <><span style={{ fontSize:48 }}>🎭</span><span style={{ fontSize:14, color:muted }}>교체할 스타일 참고 사진</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6 }}>② 참고 얼굴 사진</div>
+            <label style={{ display:"block", cursor:"pointer" }}>
+              <div style={{ aspectRatio:"3/4", borderRadius:12, border:`2px dashed ${refImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:6 }}>
+                {refImg ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  : <><span style={{ fontSize:36 }}>😊</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>가져올<br/>얼굴 사진</span></>}
               </div>
               <input type="file" accept="image/*" onChange={readFile(setRefImg)} style={{ display:"none" }} />
             </label>
-            <SelectGroup label="교체 범위" value={swapMode} onChange={setSwapMode} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"face",l:"😊 얼굴만"},{v:"outfit",l:"👗 의상만"},{v:"both",l:"🔄 얼굴+의상"}]} />
-            <div style={{ display:"flex", gap:10 }}>
-              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
-              <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                🔄 교체 생성하기 (10P)
-              </button>
-            </div>
           </div>
-        )}
+        </div>
+
+        <div style={{ padding:"10px 14px", borderRadius:10, background:`${ACC}10`, border:`1px solid ${ACC}30`, marginBottom:16, fontSize:12, color:muted, lineHeight:1.7 }}>
+          💡 <b style={{ color:text }}>원본</b>에서 얼굴만 교체되고 몸·의상·배경은 그대로 유지돼요.<br/>
+          정면 또는 약간 측면의 선명한 얼굴 사진이 가장 잘 됩니다.
+        </div>
+
+        <button onClick={generate} disabled={!srcImg||!refImg}
+          style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg&&refImg?"pointer":"not-allowed",
+            background: srcImg&&refImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
+            color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg&&refImg?1:0.6 }}>
+          😊 얼굴 교체 생성하기 (10P)
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── 의상 교체 ───────────────────────────────────────────── */
+function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted } = C;
+  const OUTFIT_ACC = "#ec4899";
+  const [srcImg, setSrcImg] = useState(null);
+  const [refImg, setRefImg] = useState(null);
+  const [outfitMode, setOutfitMode] = useState("ref"); // "ref" | "preset"
+  const [presetOutfit, setPresetOutfit] = useState("캐주얼");
+  const [result, setResult] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [err, setErr] = useState("");
+
+  const OUTFIT_PRESETS = [
+    { v:"캐주얼", l:"👕 캐주얼" }, { v:"비즈니스 정장", l:"👔 비즈니스 정장" },
+    { v:"드레스", l:"👗 드레스" }, { v:"스포츠웨어", l:"🏃 스포츠웨어" },
+    { v:"스트릿패션", l:"🧢 스트릿" }, { v:"한복", l:"🎎 한복" },
+    { v:"수영복", l:"👙 수영복" }, { v:"코트", l:"🧥 코트" },
+  ];
+
+  const readFile = setter => e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setter({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!srcImg) { setErr("원본 이미지를 업로드해주세요."); return; }
+    if (outfitMode === "ref" && !refImg) { setErr("참고 의상 이미지를 업로드해주세요."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    setGenerating(true); setErr("");
+    window.__isGenerating = true; window.__generatingCost = 10;
+    const outfitDesc = outfitMode === "ref"
+      ? "the outfit/clothing exactly as shown in the second reference image"
+      : `${presetOutfit} style outfit appropriate for the person`;
+    const prompt = `Outfit swap task: Change ONLY the clothing and outfit of the person in the first image to ${outfitDesc}. Keep everything else EXACTLY the same: face, hairstyle, body shape, skin color, pose, background, and lighting. The clothing change must look natural, well-fitted, and photorealistic. High quality 4K result.`;
+    try {
+      const body = { prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime };
+      if (outfitMode === "ref" && refImg) { body.refImageB64 = refImg.b64; body.refImageMime = refImg.mime; }
+      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
+      setResult(data.image);
+      if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
+    } catch(e) { setErr(e.message||"생성 실패"); }
+    finally { setGenerating(false); window.__isGenerating = false; }
+  };
+
+  const W = { maxWidth:640, margin:"0 auto" };
+
+  if (generating) return (
+    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
+      <GenLoading emoji="👗" title="의상 교체 중..." subtitle={"AI가 의상을 분석하고 자연스럽게 입히고 있어요\n예상 시간: 20~35초"} ACC={OUTFIT_ACC} isDark={isDark} />
+    </div>
+  );
+
+  if (result) return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={W}>
+        <BeforeAfterSlider srcImg={srcImg} result={result} bdr={bdr} ACC={OUTFIT_ACC} muted={muted} text={text}
+          onReset={() => { setResult(null); setSrcImg(null); setRefImg(null); }}
+          downloadName="outfit_swap.png" />
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
+      <div style={W}>
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+
+        {/* 원본 업로드 */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>① 원본 인물 사진</div>
+          <label style={{ display:"block", cursor:"pointer" }}>
+            <div style={{ aspectRatio:"3/4", maxHeight:300, borderRadius:12, border:`2px dashed ${srcImg?OUTFIT_ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
+              {srcImg ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                : <><span style={{ fontSize:42 }}>👤</span><span style={{ fontSize:13, color:muted }}>의상을 교체할 인물 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
+            </div>
+            <input type="file" accept="image/*" onChange={readFile(setSrcImg)} style={{ display:"none" }} />
+          </label>
+        </div>
+
+        {/* 의상 선택 방식 */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>② 의상 선택 방식</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
+            {[{v:"ref",l:"📸 참고 이미지로"},{v:"preset",l:"🎨 스타일 선택"}].map(o=>(
+              <button key={o.v} onClick={()=>setOutfitMode(o.v)}
+                style={{ padding:"11px", borderRadius:10, border:`2px solid ${outfitMode===o.v?OUTFIT_ACC:bdr}`, background:outfitMode===o.v?`${OUTFIT_ACC}15`:"transparent",
+                  color:outfitMode===o.v?OUTFIT_ACC:muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+
+          {outfitMode === "ref" ? (
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6 }}>입히고 싶은 의상 사진</div>
+              <label style={{ display:"block", cursor:"pointer" }}>
+                <div style={{ aspectRatio:"3/4", maxHeight:240, borderRadius:12, border:`2px dashed ${refImg?OUTFIT_ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
+                  {refImg ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                    : <><span style={{ fontSize:36 }}>👗</span><span style={{ fontSize:12, color:muted }}>의상 참고 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
+                </div>
+                <input type="file" accept="image/*" onChange={readFile(setRefImg)} style={{ display:"none" }} />
+              </label>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8 }}>의상 스타일 선택</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+                {OUTFIT_PRESETS.map(o=>(
+                  <button key={o.v} onClick={()=>setPresetOutfit(o.v)}
+                    style={{ padding:"9px 4px", borderRadius:9, border:`1.5px solid ${presetOutfit===o.v?OUTFIT_ACC:bdr}`,
+                      background:presetOutfit===o.v?`${OUTFIT_ACC}15`:"transparent",
+                      color:presetOutfit===o.v?OUTFIT_ACC:muted, fontSize:11, fontWeight:700, cursor:"pointer", textAlign:"center" }}>
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding:"10px 14px", borderRadius:10, background:`${OUTFIT_ACC}10`, border:`1px solid ${OUTFIT_ACC}30`, marginBottom:16, fontSize:12, color:muted, lineHeight:1.7 }}>
+          💡 <b style={{ color:text }}>얼굴·포즈·배경</b>은 그대로 유지하고 의상만 교체해요.<br/>
+          전신이 잘 보이는 사진일수록 더 잘 됩니다.
+        </div>
+
+        <button onClick={generate} disabled={!srcImg}
+          style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
+            background: srcImg?`linear-gradient(135deg,${OUTFIT_ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
+            color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6 }}>
+          👗 의상 교체 생성하기 (10P)
+        </button>
       </div>
     </div>
   );
@@ -1276,7 +1415,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "logo_gen",     icon: "🏷", title: "로고 생성",         desc: "AI 맞춤 로고 제작",        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
       { id: "mockup_gen",   icon: "🎨", title: "목업 생성",         desc: "제품·브랜드 목업 제작",    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
       { id: "model_gen",    icon: "🧍", title: "모델 생성",         desc: "여자/남자 광고 모델 생성", cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "face_swap",    icon: "🔄", title: "얼굴·의상 교체",   desc: "이미지 비교 슬라이더",     cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "face_swap",    icon: "🔄", title: "얼굴 교체",         desc: "얼굴만 교체 · 비교 슬라이더", cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "outfit_swap",  icon: "👗", title: "의상 교체",         desc: "옷·스타일 교체",           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     icon: "↔",  title: "좌우 여백 채우기", desc: "이미지 비율 확장",          cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: "숏폼편집 👑", desc: "유튜브→숏폼 AI 기획 (관리자)", cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
@@ -1778,11 +1918,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 얼굴·의상 교체 인트로
+  // 얼굴 교체 인트로
   if (aiMenu === "face_swap") {
     return (
-      <IntroScreen icon="🔄" title="얼굴·의상 교체" badge="비교 슬라이더 · 실시간 확인" color="#8b5cf6"
-        subtitle="원본 이미지와 참고 이미지를 업로드하면 AI가 얼굴 또는 의상을 교체해줘요. 슬라이더로 전후를 직접 비교해볼 수 있어요."
+      <IntroScreen icon="🔄" title="얼굴 교체" badge="비교 슬라이더 · 실시간 확인" color="#10b981"
+        subtitle="원본 이미지와 참고 얼굴 이미지를 업로드하면 AI가 얼굴만 자연스럽게 교체해줘요. 슬라이더로 전후를 직접 비교해볼 수 있어요."
         steps={[
           { title:"원본 업로드", desc:"교체 기반이 될 인물 사진을 업로드해요." },
           { title:"참고 업로드 & 설정", desc:"스타일을 가져올 이미지와 교체 범위(얼굴/의상/둘다)를 선택해요." },
@@ -1790,16 +1930,40 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
           { title:"슬라이더 비교", desc:"드래그 슬라이더로 전후 결과를 비교하고 다운로드해요." },
         ]}
         features={[
-          { icon:"😊", label:"얼굴 교체" }, { icon:"👗", label:"의상 교체" },
+          { icon:"😊", label:"얼굴만 교체" }, { icon:"🖼", label:"원본 보존" },
           { icon:"◀▶", label:"비교 슬라이더" }, { icon:"💎", label:"10P" },
         ]}
-        cta="얼굴·의상 교체 시작하기"
+        cta="얼굴 교체 시작하기"
         onStart={() => setAiMenu("face_swap_make")}
       />
     );
   }
   if (aiMenu === "face_swap_make") {
     return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+  }
+
+  // 의상 교체 인트로
+  if (aiMenu === "outfit_swap") {
+    return (
+      <IntroScreen icon="👗" title="의상 교체" badge="참고 이미지 · 스타일 선택" color="#ec4899"
+        subtitle="원본 이미지에서 의상만 바꿔드려요. 참고 이미지를 올리거나 원하는 스타일을 선택하면 AI가 자연스럽게 옷을 교체해줘요."
+        steps={[
+          { title:"원본 이미지 업로드", desc:"의상을 교체할 인물 이미지를 업로드해요." },
+          { title:"스타일 선택", desc:"참고 이미지를 올리거나 원하는 의상 스타일을 선택해요." },
+          { title:"AI 의상 교체", desc:"AI가 몸·자세·배경은 그대로 두고 의상만 자연스럽게 바꿔줘요." },
+          { title:"결과 비교", desc:"슬라이더로 전후를 비교하고 PNG로 저장해요." },
+        ]}
+        features={[
+          { icon:"👗", label:"의상만 교체" }, { icon:"🎨", label:"8가지 스타일" },
+          { icon:"◀▶", label:"비교 슬라이더" }, { icon:"💎", label:"10P" },
+        ]}
+        cta="의상 교체 시작하기"
+        onStart={() => setAiMenu("outfit_swap_make")}
+      />
+    );
+  }
+  if (aiMenu === "outfit_swap_make") {
+    return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
   // 좌우 여백 채우기 인트로
@@ -1934,7 +2098,8 @@ const MENU_LABELS = {
   logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
   blog_cafe: "네이버 카페", blog_cafe_intro: "네이버 카페", blog_cafe_make: "네이버 카페",
   model_gen: "모델 생성", model_gen_make: "모델 생성",
-  face_swap: "얼굴·의상 교체", face_swap_make: "얼굴·의상 교체",
+  face_swap: "얼굴 교체", face_swap_make: "얼굴 교체",
+  outfit_swap: "의상 교체", outfit_swap_make: "의상 교체",
   outpaint: "좌우 여백 채우기", outpaint_make: "좌우 여백 채우기",
   shorts: "숏폼편집",
 };

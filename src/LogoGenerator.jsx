@@ -369,11 +369,11 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
       </div>
 
         {/* 프로 디자인 문의 배너 */}
-        <div style={{ display:'flex', justifyContent:'center', marginTop:40, marginBottom:60 }}>
-          <div style={{ width:'60%', minWidth:320, maxWidth:560, borderRadius:20,
+        <div style={{ display:'flex', justifyContent:'center', marginTop:20, marginBottom:32 }}>
+          <div style={{ width:'100%', borderRadius:20,
             border:'1px solid rgba(6,182,212,0.3)',
             background: D ? 'rgba(6,182,212,0.06)' : 'rgba(6,182,212,0.04)',
-            padding:'28px 32px', display:'flex', flexDirection:'column', alignItems:'center', gap:16, textAlign:'center' }}>
+            padding:'20px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:12, textAlign:'center' }}>
             {/* 배지 */}
             <span style={{ fontSize:11, fontWeight:800, padding:'4px 14px', borderRadius:20,
               background:'rgba(6,182,212,0.15)', color:'#06b6d4' }}>전문 디자인 문의</span>

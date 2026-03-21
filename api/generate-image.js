@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     error: "GEMINI_API_KEY가 Vercel 환경변수에 설정되지 않았습니다. Vercel → Settings → Environment Variables에 추가하세요."
   });
 
-  const { prompt, productImageB64, productImageMime } = req.body;
+  const { prompt, productImageB64, productImageMime, refImageB64, refImageMime } = req.body;
   if (!prompt) return res.status(400).json({ error: "prompt 필요" });
 
   // 시도할 모델 목록 (최신순)
@@ -26,14 +26,13 @@ export default async function handler(req, res) {
   // 요청 파트 구성
   const parts = [];
 
-  // 상품 이미지가 있으면 참조 이미지로 포함
+  // 첫 번째 이미지 (원본/소스)
   if (productImageB64 && productImageMime) {
-    parts.push({
-      inline_data: {
-        mime_type: productImageMime,
-        data: productImageB64,
-      }
-    });
+    parts.push({ inline_data: { mime_type: productImageMime, data: productImageB64 } });
+  }
+  // 두 번째 이미지 (참고/스타일)
+  if (refImageB64 && refImageMime) {
+    parts.push({ inline_data: { mime_type: refImageMime, data: refImageB64 } });
   }
   parts.push({ text: prompt });
 
