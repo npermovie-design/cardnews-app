@@ -27,3 +27,4 @@ release/
 .env
 .vercel
 .env*.local
+.env.vercel
