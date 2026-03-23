@@ -536,6 +536,7 @@ export default function App() {
         {/* 데스크톱 메뉴 — 중앙 정렬 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
+          <NavBtn id="cases" label="고객사례" />
           {/* AI 도구 (생성기+분석기 통합) */}
           <div style={{ position: "relative" }}>
             <DropBtn label="AI 도구" open={openMenu==="aiTool"} active={page==="ai"||page==="analyzer"} onClick={() => setOpenMenu(m => m==="aiTool"?null:"aiTool")} />
@@ -607,11 +608,10 @@ export default function App() {
           <NavBtn id="event" label="이벤트" />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label={t("support")} open={openMenu==="support"} active={["about","cases","contact","howto"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
+            <DropBtn label={t("support")} open={openMenu==="support"} active={["about","contact","howto"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
             {openMenu==="support" && (
               <DropMenu right>
                 <DropItem id="about" label={t("about")} onClick={() => { navigate("about"); setOpenMenu(null); }} />
-                <DropItem id="cases" label="고객사례" onClick={() => { navigate("cases"); setOpenMenu(null); }} />
                 <DropItem id="contact" label={t("contact")} onClick={() => { navigate("contact"); setOpenMenu(null); }} />
                 <DropItem id="howto" label={t("howto")} onClick={() => { navigate("howto"); setOpenMenu(null); }} />
               </DropMenu>
