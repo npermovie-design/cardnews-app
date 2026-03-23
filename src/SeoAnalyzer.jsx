@@ -81,6 +81,158 @@ const PLATFORM_CONFIG = {
 - 팔로워 증가를 위한 참여율 개선 전략
 - 인스타그램 쇼핑/비즈니스 기능 활용법`,
   },
+  website: {
+    label: "홈페이지 분석", icon: "🌐", color: "#3b82f6",
+    placeholder: "https://example.com",
+    criteria: [
+      { key:"seo", label:"SEO 기본 설정", icon:"🔍", weight:20, guide:"title 태그, meta description, H1~H3 구조, canonical URL, sitemap.xml이 필수입니다." },
+      { key:"speed", label:"페이지 속도", icon:"⚡", weight:20, guide:"Core Web Vitals(LCP, FID, CLS) 최적화. 이미지 압축, 코드 최소화, CDN 활용이 중요합니다." },
+      { key:"mobile", label:"모바일 최적화", icon:"📱", weight:15, guide:"반응형 디자인, 터치 친화적 버튼(48px+), 뷰포트 메타태그 설정이 필수입니다." },
+      { key:"content", label:"콘텐츠 품질", icon:"📝", weight:20, guide:"E-E-A-T 기준 충족, 독창적 콘텐츠, 적절한 키워드 밀도(1~2%), 내부 링크 구조가 중요합니다." },
+      { key:"ux", label:"사용자 경험(UX)", icon:"🎨", weight:15, guide:"명확한 CTA, 직관적 네비게이션, 3초 이내 로딩, 접근성(a11y) 준수가 핵심입니다." },
+      { key:"technical", label:"기술 SEO", icon:"⚙️", weight:10, guide:"구조화 데이터(Schema.org), robots.txt, HTTPS, 404 처리, 리다이렉트 관리가 필요합니다." },
+    ],
+    systemPrompt: `당신은 웹사이트 SEO 및 UX 전문가입니다. 구글 검색 알고리즘, Core Web Vitals, 기술 SEO에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 구글 검색 1페이지 노출을 위한 온페이지 SEO 전략
+- Core Web Vitals 개선 방법 (LCP, FID, CLS)
+- 모바일 퍼스트 인덱싱 대응
+- 구조화 데이터(Schema) 적용 가이드
+- 경쟁 사이트 대비 차별화 전략`,
+  },
+  twitter: {
+    label: "X(트위터) 분석", icon: "𝕏", color: "#000000",
+    placeholder: "https://x.com/username/status/... 또는 @계정명",
+    criteria: [
+      { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"280자 제한 내 임팩트 있는 메시지, 첫 줄 훅(Hook)이 핵심. 스레드 활용으로 심층 콘텐츠 전달." },
+      { key:"engagement", label:"참여율 최적화", icon:"💬", weight:20, guide:"리플/리트윗/좋아요 유도. 질문형 트윗, 투표(Poll), 인용 리트윗이 알고리즘에 유리합니다." },
+      { key:"hashtag", label:"해시태그/키워드", icon:"#️⃣", weight:15, guide:"1~3개 관련 해시태그. 트렌딩 해시태그 활용, 키워드를 본문에 자연스럽게 포함." },
+      { key:"media", label:"미디어 활용", icon:"🖼", weight:15, guide:"이미지/GIF 포함 트윗은 참여율 150% 증가. 영상은 2분 15초 이내가 최적입니다." },
+      { key:"timing", label:"게시 타이밍", icon:"⏰", weight:10, guide:"타겟 오디언스 활동 시간대, 하루 3~5회 게시, 피크 시간(오전 9~11시, 오후 1~3시)." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:15, guide:"키워드 포함 바이오, 고정 트윗 활용, 프로필/헤더 이미지 브랜딩 일관성." },
+    ],
+    systemPrompt: `당신은 X(구 트위터) 마케팅 및 성장 전문가입니다. X 알고리즘, 바이럴 전략, 스레드 최적화에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- X 알고리즘이 선호하는 콘텐츠 유형과 구조
+- 팔로워 증가를 위한 참여율 개선 전략
+- 스레드(Thread) 작성 최적화 방법
+- X Premium(유료) 기능 활용 전략
+- 바이럴을 위한 콘텐츠 타이밍과 주제 선정`,
+  },
+  threads: {
+    label: "스레드 분석", icon: "🧵", color: "#000000",
+    placeholder: "https://www.threads.net/@username/post/... 또는 @계정명",
+    criteria: [
+      { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"500자 제한 내 임팩트 있는 메시지. 대화형 콘텐츠, 의견 제시, 스토리텔링이 핵심." },
+      { key:"engagement", label:"참여율 최적화", icon:"💬", weight:25, guide:"댓글 유도 질문, 의견 대립 주제, 공감형 콘텐츠가 알고리즘에 유리합니다." },
+      { key:"visual", label:"미디어 활용", icon:"🖼", weight:15, guide:"캐러셀 이미지, 짧은 영상 활용. 텍스트 전용 포스트도 강력하지만 비주얼 혼합이 효과적." },
+      { key:"hashtag", label:"주제 태그", icon:"#️⃣", weight:10, guide:"관련 주제 태그 1~3개 활용. 과도한 태그 사용은 역효과." },
+      { key:"consistency", label:"게시 일관성", icon:"📅", weight:15, guide:"주 3~5회 일정한 게시 빈도. 인스타그램 연동으로 크로스 플랫폼 시너지." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:10, guide:"간결한 바이오, 인스타그램 연동, 일관된 브랜드 아이덴티티." },
+    ],
+    systemPrompt: `당신은 Meta Threads 마케팅 전문가입니다. Threads 알고리즘, 텍스트 기반 SNS 전략에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- Threads 알고리즘이 선호하는 콘텐츠 유형
+- 인스타그램 연동을 통한 크로스 플랫폼 전략
+- 텍스트 기반 바이럴 콘텐츠 작성법
+- 커뮤니티 참여를 높이는 대화형 콘텐츠 전략
+- 경쟁 계정 대비 차별화 방법`,
+  },
+  cafe: {
+    label: "네이버 카페 분석", icon: "☕", color: "#2DB400",
+    placeholder: "https://cafe.naver.com/...",
+    criteria: [
+      { key:"title", label:"제목 최적화", icon:"📌", weight:20, guide:"네이버 검색에 노출되는 제목. 핵심 키워드를 앞에 배치하고 20~30자가 이상적입니다." },
+      { key:"content", label:"본문 품질", icon:"📝", weight:25, guide:"1,000자 이상, 소제목 활용, 이미지 3장 이상. 카페 특성에 맞는 정보성/후기 콘텐츠가 유리합니다." },
+      { key:"keyword", label:"키워드 전략", icon:"🔑", weight:15, guide:"카페 내 인기 키워드 + 네이버 검색 키워드 조합. 태그 기능 적극 활용." },
+      { key:"engagement", label:"댓글/공감 유도", icon:"💬", weight:20, guide:"질문형 마무리, 정보 공유 유도, 댓글 답변 신속 대응이 등업과 노출에 유리합니다." },
+      { key:"compliance", label:"카페 규정 준수", icon:"📋", weight:10, guide:"게시판 규정, 홍보 제한, 글 형식 규정 준수. 위반 시 삭제/차단 위험." },
+      { key:"seo", label:"네이버 SEO", icon:"🔍", weight:10, guide:"네이버 검색 노출을 위한 키워드 배치, 이미지 alt 태그, 링크 활용." },
+    ],
+    systemPrompt: `당신은 네이버 카페 운영 및 마케팅 전문가입니다. 네이버 카페 알고리즘, 커뮤니티 마케팅에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 네이버 검색 노출을 위한 카페 글 최적화 전략
+- 카페 등업/활동 점수를 높이는 방법
+- 커뮤니티 특성에 맞는 콘텐츠 작성법
+- 카페 규정을 준수하면서 홍보 효과를 높이는 방법
+- 카페 멤버 참여를 유도하는 커뮤니티 전략`,
+  },
+  facebook: {
+    label: "페이스북 분석", icon: "📘", color: "#1877f2",
+    placeholder: "https://www.facebook.com/... (게시물 또는 페이지 URL)",
+    criteria: [
+      { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"3줄 이내 훅(Hook) + 스토리텔링 본문. '더보기' 클릭을 유도하는 첫 문장이 핵심." },
+      { key:"engagement", label:"참여율 최적화", icon:"💬", weight:20, guide:"의미 있는 댓글(Meaningful Interaction)이 알고리즘 핵심. 긴 댓글 유도 질문이 효과적." },
+      { key:"media", label:"미디어 활용", icon:"🖼", weight:20, guide:"Reels 최우선, 다음 이미지/캐러셀. 네이티브 영상이 외부 링크보다 도달률 5배 높음." },
+      { key:"targeting", label:"타겟 전략", icon:"🎯", weight:15, guide:"그룹 활용, 페이지 인사이트 기반 타겟팅. 부스트 광고 시 관심사/유사 타겟 설정." },
+      { key:"timing", label:"게시 타이밍", icon:"⏰", weight:10, guide:"오전 9시~오후 1시, 수/목요일이 최적. 인사이트에서 팔로워 활동 시간 확인." },
+      { key:"profile", label:"페이지 최적화", icon:"👤", weight:10, guide:"카테고리 설정, CTA 버튼, About 섹션 키워드, 프로필/커버 이미지 브랜딩." },
+    ],
+    systemPrompt: `당신은 페이스북 마케팅 및 광고 전문가입니다. 페이스북/메타 알고리즘, 페이지 운영, 광고 최적화에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 페이스북 알고리즘(Meaningful Interaction)에 맞는 콘텐츠 전략
+- Reels/영상 콘텐츠 최적화 방법
+- 페이지 도달률을 높이는 게시 전략
+- 페이스북 그룹 활용 커뮤니티 전략
+- 광고 부스트 시 ROI를 높이는 타겟팅 가이드`,
+  },
+  linkedin: {
+    label: "링크드인 분석", icon: "💼", color: "#0a66c2",
+    placeholder: "https://www.linkedin.com/posts/... 또는 프로필 URL",
+    criteria: [
+      { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"전문성 어필 + 스토리텔링. 첫 3줄 훅, 줄바꿈 활용. 1,300자 이내가 최적." },
+      { key:"engagement", label:"참여율 최적화", icon:"💬", weight:20, guide:"댓글 유도 질문, 업계 인사이트 공유. 첫 1시간 내 댓글이 알고리즘에 핵심." },
+      { key:"hashtag", label:"해시태그/키워드", icon:"#️⃣", weight:10, guide:"3~5개 업계 관련 해시태그. 너무 많으면 스팸 처리. 니치 해시태그가 효과적." },
+      { key:"media", label:"미디어 활용", icon:"🖼", weight:15, guide:"캐러셀 문서(PDF), 인포그래픽, 네이티브 영상이 높은 참여율. 외부 링크는 도달률 하락." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:20, guide:"헤드라인에 키워드, 배너 이미지, About 섹션 SEO, 추천(Recommendation) 확보." },
+      { key:"networking", label:"네트워킹 전략", icon:"🤝", weight:10, guide:"업계 인플루언서 댓글 참여, 1촌 확장, 게시물 초반 자체 댓글로 알고리즘 부스트." },
+    ],
+    systemPrompt: `당신은 링크드인 마케팅 및 퍼스널 브랜딩 전문가입니다. 링크드인 알고리즘, B2B 마케팅, 채용 브랜딩에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 링크드인 알고리즘이 선호하는 콘텐츠 유형과 구조
+- 프로필 SEO 최적화 (검색 노출)
+- 퍼스널 브랜딩을 위한 콘텐츠 전략
+- B2B 리드 생성을 위한 링크드인 활용법
+- 네트워킹을 통한 영향력 확대 전략`,
+  },
+  tiktok: {
+    label: "틱톡 분석", icon: "🎵", color: "#010101",
+    placeholder: "https://www.tiktok.com/@username/video/... 또는 @계정명",
+    criteria: [
+      { key:"hook", label:"첫 3초 훅(Hook)", icon:"⚡", weight:25, guide:"시청자의 스크롤을 멈추는 첫 3초가 가장 중요. 질문/충격/호기심 유발." },
+      { key:"content", label:"콘텐츠 구조", icon:"📝", weight:20, guide:"15~60초가 최적. 시작-전개-반전 구조. 루프(Loop) 가능한 영상이 알고리즘에 유리." },
+      { key:"audio", label:"사운드/음악", icon:"🎵", weight:15, guide:"트렌딩 사운드 활용 시 도달률 증가. 오리지널 오디오도 바이럴 가능." },
+      { key:"hashtag", label:"해시태그 전략", icon:"#️⃣", weight:15, guide:"3~5개 관련 해시태그. #fyp #foryou 보다 니치 해시태그가 타겟팅에 효과적." },
+      { key:"engagement", label:"참여 유도", icon:"💬", weight:15, guide:"댓글 유도, 듀엣/스티치 활용, CTA로 팔로우/좋아요 유도. 댓글 답변 필수." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:10, guide:"1줄 바이오, 링크 활용, 프로필 사진, 고정 영상 3개로 첫인상 최적화." },
+    ],
+    systemPrompt: `당신은 틱톡 마케팅 및 숏폼 콘텐츠 전문가입니다. 틱톡 알고리즘, For You Page(FYP), 바이럴 전략에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 틱톡 알고리즘(FYP)에 최적화된 콘텐츠 전략
+- 첫 3초 훅(Hook)으로 시청 지속시간 높이는 방법
+- 트렌딩 사운드/챌린지 활용 전략
+- 숏폼 콘텐츠 구조 최적화 (루프, 스토리텔링)
+- 크리에이터 수익화(Creator Fund, 라이브) 전략`,
+  },
+  pinterest: {
+    label: "핀터레스트 분석", icon: "📌", color: "#e60023",
+    placeholder: "https://www.pinterest.com/pin/... 또는 프로필 URL",
+    criteria: [
+      { key:"visual", label:"비주얼 품질", icon:"🖼", weight:25, guide:"세로 2:3 비율(1000x1500px), 고화질 이미지, 텍스트 오버레이, 브랜드 색상 일관성." },
+      { key:"seo", label:"핀 SEO", icon:"🔍", weight:25, guide:"제목에 키워드 포함(40~100자), 설명에 키워드 자연 배치(500자), 보드명 키워드 최적화." },
+      { key:"content", label:"콘텐츠 전략", icon:"📝", weight:20, guide:"튜토리얼, 리스트, 인포그래픽이 저장률 높음. 시즌/트렌드 콘텐츠 3개월 선행 게시." },
+      { key:"board", label:"보드 구성", icon:"📂", weight:10, guide:"8~12개 주제별 보드, 키워드 포함 보드명, 보드 설명 작성, 보드 커버 이미지 설정." },
+      { key:"consistency", label:"게시 일관성", icon:"📅", weight:10, guide:"하루 5~15핀 게시, 일정한 시간대, Rich Pin 활용으로 클릭률 향상." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:10, guide:"비즈니스 계정 전환, 키워드 포함 바이오, 웹사이트 인증, 프로필 이미지 브랜딩." },
+    ],
+    systemPrompt: `당신은 핀터레스트 마케팅 및 비주얼 검색 SEO 전문가입니다. 핀터레스트 알고리즘, Rich Pin, 쇼핑 기능에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 핀터레스트 검색 알고리즘에 맞는 키워드 전략
+- 높은 저장률/클릭률을 위한 핀 디자인 가이드
+- 보드 구성 및 SEO 최적화 방법
+- 핀터레스트 광고(프로모션 핀) 활용 전략
+- 이커머스/블로그 트래픽 유도 방법`,
+  },
 };
 
 export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingChange }) {

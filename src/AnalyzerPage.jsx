@@ -8,6 +8,14 @@ const MENU_ITEMS = [
   { id:"seo_youtube", label:"유튜브 분석",         icon:"▶️" },
   { id:"seo_tistory", label:"티스토리 분석",       icon:"📖" },
   { id:"seo_insta",   label:"인스타그램 분석",     icon:"📸" },
+  { id:"seo_website", label:"홈페이지 분석",       icon:"🌐" },
+  { id:"seo_twitter", label:"X(트위터) 분석",      icon:"𝕏" },
+  { id:"seo_threads", label:"스레드 분석",         icon:"🧵" },
+  { id:"seo_cafe",    label:"네이버 카페 분석",     icon:"☕" },
+  { id:"seo_facebook",label:"페이스북 분석",       icon:"📘" },
+  { id:"seo_linkedin",label:"링크드인 분석",       icon:"💼" },
+  { id:"seo_tiktok",  label:"틱톡 분석",          icon:"🎵" },
+  { id:"seo_pinterest",label:"핀터레스트 분석",    icon:"📌" },
 ];
 
 const RANK_ITEMS = [
