@@ -4,11 +4,11 @@ import { useI18n } from "./i18n.jsx";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
-  { id: "info",    label: "정보공유",   icon: "📌", color: "#7c6aff" },
-  { id: "qna",     label: "질문답변",   icon: "❓", color: "#f59e0b" },
-  { id: "free",    label: "자유게시판", icon: "🗣", color: "#10b981" },
-  { id: "review",  label: "사용후기",   icon: "⭐", color: "#ec4899" },
-  { id: "archive", label: "자료실",     icon: "📁", color: "#3b82f6" },
+  { id: "info",    label: "정보공유",   icon: "", color: "#7c6aff" },
+  { id: "qna",     label: "질문답변",   icon: "", color: "#f59e0b" },
+  { id: "free",    label: "자유게시판", icon: "", color: "#10b981" },
+  { id: "review",  label: "사용후기",   icon: "", color: "#ec4899" },
+  { id: "archive", label: "자료실",     icon: "", color: "#3b82f6" },
 ];
 
 const isVideoUrl = url => /\.(mp4|mov|avi|mkv|webm|m4v)/i.test(url);
@@ -330,9 +330,9 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
   // 3탭: GIF / 사진 / 영상
   const TABS = [
-    { id:"gif",   label:"🎞 GIF / 짤" },
-    { id:"photo", label:"📷 무료 사진" },
-    { id:"video", label:"🎬 무료 영상" },
+    { id:"gif",   label:"GIF / 짤" },
+    { id:"photo", label:"무료 사진" },
+    { id:"video", label:"무료 영상" },
   ];
   const [tab, setTab] = useState("gif");
   const [inputVal, setInputVal] = useState("");
@@ -1625,7 +1625,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 자료실 전용 탭 (영상/사진/GIF/무료이미지) */}
             {subCat==="archive" && (
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid "+bdr,paddingBottom:0}}>
-                {[["posts","📁 자료실"],["search","🔍 무료 이미지·GIF"]].map(([v,l])=>(
+                {[["posts","자료실"],["search","무료 이미지·GIF"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setArchiveView(v)} style={{
                     padding:"9px 18px",border:"none",cursor:"pointer",fontSize:13,fontWeight:archiveView===v?700:500,
                     background:"transparent",borderRadius:"8px 8px 0 0",
@@ -1849,7 +1849,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 자료실 전용 유형 필터 */}
             {subCat==="archive" && (
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-                {[{id:"all",label:"전체",icon:"📁"},{id:"video",label:"영상",icon:"🎬"},{id:"photo",label:"사진",icon:"📷"},{id:"gif",label:"GIF·짤",icon:"🎞"},{id:"music",label:"음악",icon:"🎵"}].map(t=>{
+                {[{id:"all",label:"전체"},{id:"video",label:"영상"},{id:"photo",label:"사진"},{id:"gif",label:"GIF·짤"},{id:"music",label:"음악"}].map(t=>{
                   const active = filterTag===(t.id==="all"?"":t.id);
                   const cnt = t.id==="all" ? activeFiltered.length : posts.filter(p=>(p.subCat==="archive")&&(
                     t.id==="video" ? (p.images||[]).some(u=>/\.(mp4|mov|avi|webm)/i.test(u)) :
@@ -1863,7 +1863,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         border:`1px solid ${active?"#7c6aff":bdr}`,
                         background:active?"rgba(99,102,241,0.15)":"transparent",
                         color:active?"#a5b4fc":C.muted,fontWeight:active?700:400}}>
-                      {t.icon} {t.label} <span style={{fontSize:10,opacity:0.6}}>({cnt})</span>
+                      {t.label} <span style={{fontSize:10,opacity:0.6}}>({cnt})</span>
                     </button>
                   );
                 })}
@@ -1968,10 +1968,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseEnter={e=>e.currentTarget.style.background=hover}
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                        {thumb
-                          ? <img src={toThumb(thumb,96,72)} alt="" loading="eager" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}} onError={e=>e.target.style.display="none"}/>
-                          : <div style={{width:48,height:36,borderRadius:6,flexShrink:0,marginTop:2,background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{subInfo?.icon||"📋"}</div>
-                        }
+                        {thumb && <img src={toThumb(thumb,96,72)} alt="" loading="eager" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}} onError={e=>e.target.style.display="none"}/>}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
                             {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
@@ -2018,7 +2015,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
                         {thumb
                           ? <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>e.target.style.display="none"}/>
-                          : <div style={{width:36,height:28,borderRadius:5,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{subInfo?.icon||"📋"}</div>
+                          : <div style={{width:36,height:28}} />
                         }
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>

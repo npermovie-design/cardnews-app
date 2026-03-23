@@ -125,7 +125,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="library" label={t("library")} icon="" />
 
         {/* SNS 글쓰기 그룹 */}
-        <Group label={t("snsWrite")} icon="✍️" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
+        <Group label={t("snsWrite")} icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
           <Item id="blog_naver_intro"   label={t("naverBlog")}      indent />
           <Item id="blog_cafe"          label={t("naverCafe")}      indent />
@@ -138,7 +138,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         </>}
 
         {/* SNS 이미지 그룹 */}
-        <Group label={t("snsImage")} icon="🖼" active={!!(aiMenu && ["cardnews_simple","detail_simple","thumbnail_gen"].some(x=>aiMenu.startsWith(x)))} />
+        <Group label={t("snsImage")} icon="" active={!!(aiMenu && ["cardnews_simple","detail_simple","thumbnail_gen"].some(x=>aiMenu.startsWith(x)))} />
         {cardOpen && <>
           <Item id="cardnews_simple" label={t("cardNews")||"카드뉴스"}    indent />
           <Item id="detail_simple"   label={t("detailPage")||"상세페이지"}  indent />
@@ -147,7 +147,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         </>}
 
         {/* 이미지 생성 그룹 */}
-        <Group label={t("imageGen")} icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
+        <Group label={t("imageGen")} icon="" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
         {imageOpen && <>
           <Item id="product_shot" label={t("productShot")}  indent />
           <Item id="logo_gen"     label={t("logoGen")}      indent />
