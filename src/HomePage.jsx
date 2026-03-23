@@ -146,6 +146,15 @@ export default function HomePage({ navigate, C }) {
         { icon: "📲", title: p("tShorts"), desc: p("tShortsD"), tag: p("tagNew"), color: "#ef4444" },
       ],
     },
+    {
+      cat: p("catAnalyzer"), catColor: "#22c55e", navTarget: "analyzer",
+      items: [
+        { icon: "🔍", title: p("tAnalyze"), desc: p("tAnalyzeD"), tag: p("tagNew"), color: "#22c55e" },
+        { icon: "📊", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#6366f1" },
+        { icon: "🏆", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#8b5cf6" },
+        { icon: "🏢", title: p("tBrandRank"), desc: p("tBrandRankD"), tag: "", color: "#06b6d4" },
+      ],
+    },
   ];
 
   return (
@@ -200,13 +209,13 @@ export default function HomePage({ navigate, C }) {
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
             <Btn C={C} onClick={() => navigate("ai")}>{p("heroCta1")}</Btn>
-            <Btn C={C} onClick={() => navigate("pricing")} ghost>{p("heroCta2")}</Btn>
+            <Btn C={C} onClick={() => navigate("analyzer")} ghost>📊 AI 분석기획기</Btn>
           </div>
 
           {/* 실시간 통계 */}
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
-              { val: 20,   suffix: p("statToolsSuffix"), label: p("statTools") },
+              { val: 25,   suffix: p("statToolsSuffix"), label: p("statTools") },
               { val: statsCount, suffix: p("statContentsSuffix"), label: p("statContents") },
               { val: 3,    suffix: p("statTimeSuffix"),  label: p("statTime") },
             ].map(({ val, suffix, label }) => (
@@ -238,7 +247,7 @@ export default function HomePage({ navigate, C }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(180px,100%),1fr))", gap: 12 }}>
               {cat.items.map((tool, i) => (
                 <FadeIn key={tool.title} delay={i * 0.06}>
-                  <div className="tool-card" onClick={() => navigate("ai")}
+                  <div className="tool-card" onClick={() => navigate(cat.navTarget || "ai")}
                     style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 16px", cursor: "pointer", position: "relative", transition: "all 0.25s", boxShadow: C.shadow, height: "100%" }}>
                     {tool.tag && (
                       <div style={{ position: "absolute", top: 10, right: 10, fontSize: 9, fontWeight: 800, background: tool.color, color: "#fff", padding: "2px 7px", borderRadius: 7 }}>{tool.tag}</div>
