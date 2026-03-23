@@ -60,7 +60,7 @@ const HOME_FEATURES = [
   { id:"library",    icon:"📂", label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
 ];
 
-export default function AnalyzerPage({ C, theme, user, navigate }) {
+export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate }) {
   const isDark = theme === "dark";
   const [menu, setMenu] = useState("home");
   const [sideOpen, setSideOpen] = useState(false);
@@ -309,7 +309,7 @@ export default function AnalyzerPage({ C, theme, user, navigate }) {
 
           {/* 분석기 */}
           {menu.startsWith("seo_") && (
-            <SeoAnalyzer isDark={isDark} menu={menu} user={user} onSave={onAnalysisDone} onAnalyzingChange={setIsAnalyzing} />
+            <SeoAnalyzer isDark={isDark} menu={menu} user={user} onSave={onAnalysisDone} onAnalyzingChange={setIsAnalyzing} navigate={navigate} onUserUpdate={onUserUpdate} />
           )}
 
           {/* 실시간 인플루언서 랭킹 */}

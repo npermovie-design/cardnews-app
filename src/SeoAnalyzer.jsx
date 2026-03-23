@@ -1,5 +1,45 @@
 import { useState, useEffect, useRef } from "react";
 import { callAI } from "./aiClient";
+import { changePoints } from "./storage";
+
+/* ── 분석기 사용량 관리 (localStorage) ── */
+const AZ_USAGE_KEY = "nper_analyzer_usage";
+const AZ_FREE_GUEST = 5;
+const AZ_FREE_MEMBER = 10;
+const AZ_COST = 10; // 무료 초과 시 포인트
+
+function getAnalyzerUsage() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(AZ_USAGE_KEY) || "{}");
+    const today = new Date().toISOString().slice(0, 10);
+    if (raw.date !== today) return { date: today, guest: 0, members: {} };
+    return raw;
+  } catch { return { date: new Date().toISOString().slice(0, 10), guest: 0, members: {} }; }
+}
+function setAnalyzerUsage(data) {
+  try { localStorage.setItem(AZ_USAGE_KEY, JSON.stringify(data)); } catch {}
+}
+function getUsedCount(user) {
+  const u = getAnalyzerUsage();
+  if (!user) return u.guest || 0;
+  return u.members?.[user.uid] || 0;
+}
+function incrementUsage(user) {
+  const u = getAnalyzerUsage();
+  if (!user) { u.guest = (u.guest || 0) + 1; }
+  else { if (!u.members) u.members = {}; u.members[user.uid] = (u.members[user.uid] || 0) + 1; }
+  setAnalyzerUsage(u);
+}
+function getFreeLimit(user) { return user ? AZ_FREE_MEMBER : AZ_FREE_GUEST; }
+function getAnalyzerLeft(user) {
+  const used = getUsedCount(user);
+  const limit = getFreeLimit(user);
+  const freeLeft = Math.max(0, limit - used);
+  if (!user) return { used, limit, freeLeft, canUse: freeLeft > 0, needPoints: false };
+  const pts = user.points || 0;
+  const extraFromPts = Math.floor(pts / AZ_COST);
+  return { used, limit, freeLeft, canUse: freeLeft > 0 || pts >= AZ_COST, needPoints: freeLeft <= 0, extraFromPts };
+}
 
 const CATEGORIES = ["전체","IT/테크","경제/금융","엔터테인먼트","스포츠","건강/의학","교육","여행","음식","패션/뷰티"];
 
@@ -235,7 +275,7 @@ const PLATFORM_CONFIG = {
   },
 };
 
-export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingChange }) {
+export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingChange, navigate, onUserUpdate }) {
   const D = isDark;
   const text = D ? "#e8eaed" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
@@ -341,10 +381,35 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
   };
 
   // SEO 분석
+  const [usageInfo, setUsageInfo] = useState(() => getAnalyzerLeft(user));
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showPointPrompt, setShowPointPrompt] = useState(false);
+
   const analyzeUrl = async (type) => {
     if (!url.trim()) return;
     const config = PLATFORM_CONFIG[type];
     if (!config) return;
+
+    // 사용량 체크
+    const info = getAnalyzerLeft(user);
+    setUsageInfo(info);
+    if (!info.canUse) {
+      if (!user) { setShowLoginPrompt(true); return; }
+      else { setShowPointPrompt(true); return; }
+    }
+
+    // 무료 초과 시 포인트 차감
+    if (info.needPoints && user?.uid) {
+      try {
+        const newPts = await changePoints(user.uid, -AZ_COST, "AI 분석기 사용");
+        if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
+      } catch { setShowPointPrompt(true); return; }
+    }
+
+    // 사용 횟수 증가
+    incrementUsage(user);
+    setUsageInfo(getAnalyzerLeft(user));
+
     setAnalyzing(true); setResult(null); setExpandedCriteria(null);
     if (onAnalyzingChange) onAnalyzingChange(true);
 
@@ -659,7 +724,12 @@ JSON만 응답:
 
         {/* 일 분석 횟수 안내 */}
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:20 }}>
-          <span style={{ fontSize:11, color:muted }}>오늘 <b style={{color:config.color}}>무제한</b> 분석 가능</span>
+          <span style={{ fontSize:11, color:muted }}>
+            오늘 {usageInfo.freeLeft > 0
+              ? <><b style={{color:config.color}}>{usageInfo.freeLeft}회</b> 무료 분석 가능</>
+              : user ? <><b style={{color:"#f59e0b"}}>10P</b>로 분석 가능 (보유: {user.points||0}P)</>
+              : <>무료 소진 · <b style={{color:config.color}}>로그인</b>하면 10회 추가</>}
+          </span>
         </div>
 
         {/* 분석 기준 안내 (분석 전) */}
@@ -949,6 +1019,85 @@ JSON만 응답:
                 </div>
               </div>
             )}
+
+            {/* AI 생성기 유도 CTA */}
+            <div style={{ padding:"24px", borderRadius:16, background:"linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.06))",
+              border:`1px solid ${D?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.12)"}` }}>
+              <div style={{ fontSize:16, fontWeight:900, color:text, marginBottom:8 }}>✨ 분석 결과를 바탕으로 콘텐츠를 만들어보세요!</div>
+              <div style={{ fontSize:13, color:muted, lineHeight:1.7, marginBottom:16 }}>
+                AI가 분석한 추천 제목과 키워드를 활용해서 바로 콘텐츠를 생성할 수 있어요.
+              </div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                <button onClick={() => navigate?.("ai")}
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  ✍️ AI 블로그 글쓰기
+                </button>
+                <button onClick={() => navigate?.("ai")}
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#ec4899,#f43f5e)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  🖼 카드뉴스 만들기
+                </button>
+                <button onClick={() => navigate?.("ai")}
+                  style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${bdr}`, background:cardBg, color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  🎬 썸네일 생성
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 로그인 유도 팝업 */}
+        {showLoginPrompt && (
+          <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" }}
+            onClick={() => setShowLoginPrompt(false)}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ width:"min(400px,90vw)", background:D?"#1a1730":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
+                boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
+              <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>무료 분석 횟수를 다 사용했어요</div>
+              <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:20 }}>
+                비회원은 하루 <b style={{color:"#6366f1"}}>{AZ_FREE_GUEST}회</b> 무료 분석 가능합니다.<br/>
+                로그인하면 <b style={{color:"#22c55e"}}>{AZ_FREE_MEMBER}회</b>로 늘어나고,<br/>
+                이후에는 <b style={{color:"#f59e0b"}}>10P</b>로 추가 분석할 수 있어요!
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setShowLoginPrompt(false)}
+                  style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, cursor:"pointer" }}>
+                  닫기
+                </button>
+                <button onClick={() => { setShowLoginPrompt(false); navigate?.("login"); }}
+                  style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                  로그인하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 포인트 부족 팝업 */}
+        {showPointPrompt && (
+          <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" }}
+            onClick={() => setShowPointPrompt(false)}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ width:"min(400px,90vw)", background:D?"#1a1730":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
+                boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>💎</div>
+              <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>포인트가 부족해요</div>
+              <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:20 }}>
+                오늘 무료 {AZ_FREE_MEMBER}회를 모두 사용했습니다.<br/>
+                추가 분석에는 <b style={{color:"#f59e0b"}}>10P</b>가 필요합니다.<br/>
+                현재 보유: <b style={{color:"#ef4444"}}>{user?.points||0}P</b>
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setShowPointPrompt(false)}
+                  style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, cursor:"pointer" }}>
+                  닫기
+                </button>
+                <button onClick={() => { setShowPointPrompt(false); navigate?.("pricing"); }}
+                  style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#f59e0b,#f97316)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                  포인트 충전하기
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
