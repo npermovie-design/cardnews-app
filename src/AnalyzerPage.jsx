@@ -19,6 +19,19 @@ const RANK_ITEMS = [
 
 const BRAND_CATEGORIES = ["전체","뷰티/화장품","패션/의류","식품/음료","IT/전자","자동차","금융","교육","여행","엔터테인먼트","헬스/피트니스","인테리어/리빙"];
 
+/* ── AI 결과 캐시 (1시간 TTL) ── */
+const CACHE_TTL = 60 * 60 * 1000; // 1시간
+function getCached(key) {
+  try {
+    const raw = JSON.parse(localStorage.getItem("az_cache_" + key));
+    if (raw && Date.now() - raw.ts < CACHE_TTL) return raw.data;
+  } catch {}
+  return null;
+}
+function setCache(key, data) {
+  try { localStorage.setItem("az_cache_" + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+
 const SAVE_KEY = "nper_analyzer_history";
 function getHistory() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)||"[]"); } catch { return []; } }
 function addHistory(item) {
@@ -555,17 +568,23 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const [detail, setDetail] = useState(null);
 
   const fetchRanking = async (category) => {
-    setLoading(true); setRanking([]); setDetail(null);
+    setDetail(null);
+    const cacheKey = `rank_${menu}_${category}_${country}_${ageGroup}_${keyword}`;
+    const cached = getCached(cacheKey);
+    if (cached) { setRanking(cached); setLoading(false); return; }
+    setLoading(true); setRanking([]);
     try {
-
       const urlBase = config.platform==="유튜브"?"https://www.youtube.com/@":config.platform==="인스타그램"?"https://www.instagram.com/":config.platform==="틱톡"?"https://www.tiktok.com/@":config.platform==="네이버 블로그"?"https://blog.naver.com/":"";
-      const countryStr = country!=="한국" ? ` 국가:${country}` : "";
       const ageStr = ageGroup!=="전체" ? ` 주요 시청자층:${ageGroup}` : "";
       const kwStr = keyword.trim() ? ` 키워드:"${keyword.trim()}" 관련` : "";
       const prompt = `${country} ${config.platform} ${category==="전체"?"전체":category}${kwStr}${ageStr} 인기 TOP 20. 각: rank,name,category,followers(숫자+만/억),desc(한줄),feature(한줄),url(${urlBase}계정ID),revenue(월 추정 수익),views(월 평균 조회수),age(주요 팬층 연령대). JSON만:{"ranking":[...]}`;
       const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
       const m = raw.match(/\{[\s\S]*\}/);
-      if (m) setRanking(JSON.parse(m[0]).ranking || []);
+      if (m) {
+        const data = JSON.parse(m[0]).ranking || [];
+        setRanking(data);
+        setCache(cacheKey, data);
+      }
     } catch {}
     setLoading(false);
   };
@@ -729,16 +748,23 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const autoFetched = useRef(false);
 
   const fetchBrands = async (category) => {
-    setLoading(true); setRanking([]); setDetail(null);
+    setDetail(null);
+    const cacheKey = `brand_${category}_${keyword}`;
+    const cached = getCached(cacheKey);
+    if (cached) { setRanking(cached); setLoading(false); return; }
+    setLoading(true); setRanking([]);
     try {
-
       const kwStr = keyword.trim() ? ` "${keyword.trim()}" 관련` : "";
       const prompt = `한국에서 SNS 마케팅을 잘하는 ${category==="전체"?"전체 업종":category}${kwStr} 브랜드 TOP 20.
 각: rank,name(브랜드명),industry(업종),snsScore(SNS 영향력 점수 1~100),revenue(연매출 추정),engagement(SNS 참여율),mainSns(주력 SNS),followers(총 팔로워),strategy(SNS 전략 한줄),website(공식 사이트URL).
 JSON만:{"ranking":[...]}`;
       const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
       const m = raw.match(/\{[\s\S]*\}/);
-      if (m) setRanking(JSON.parse(m[0]).ranking || []);
+      if (m) {
+        const data = JSON.parse(m[0]).ranking || [];
+        setRanking(data);
+        setCache(cacheKey, data);
+      }
     } catch {}
     setLoading(false);
   };

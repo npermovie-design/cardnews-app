@@ -116,8 +116,19 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
 
   const [trendEngine, setTrendEngine] = useState("전체");
 
-  // 실시간 검색어 — 판다랭크 스타일: 2열 20개, 변동 표시
+  // 실시간 검색어 — 캐시 적용 (30분 TTL)
+  const TREND_TTL = 30 * 60 * 1000;
+  const getTrendCache = (key) => {
+    try { const r = JSON.parse(localStorage.getItem("az_trend_" + key)); if (r && Date.now() - r.ts < TREND_TTL) return r.data; } catch {} return null;
+  };
+  const setTrendCache = (key, data) => {
+    try { localStorage.setItem("az_trend_" + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+  };
+
   const fetchTrends = async (cat) => {
+    const cacheKey = cat;
+    const cached = getTrendCache(cacheKey);
+    if (cached) { setTrends(cached); setTrendLoading(false); return; }
     setTrendLoading(true); setTrends([]);
     try {
       const prompt = `현재 한국에서 ${cat==="전체"?"모든 분야":cat+" 분야"}의 실시간 인기 검색어를 검색엔진별로 알려주세요.
@@ -128,7 +139,11 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
 JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","category":"분류","reason":"이유","volume":"약 50,000","change":"new"},...]}`;
       const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
       const m = raw.match(/\{[\s\S]*\}/);
-      if (m) setTrends(JSON.parse(m[0]).trends || []);
+      if (m) {
+        const data = JSON.parse(m[0]).trends || [];
+        setTrends(data);
+        setTrendCache(cacheKey, data);
+      }
     } catch {}
     setTrendLoading(false);
   };
