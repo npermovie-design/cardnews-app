@@ -133,8 +133,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="blog_insta_intro"   label={t("instaCap")}       indent />
           <Item id="blog_youtube_intro" label={t("youtubeScript")}  indent />
           <Item id="blog_thread_intro"  label={t("thread")}         indent />
-          <Item id="blog_yt_blog_intro" label={t("ytBlog")}         indent />
-          <Item id="blog_news_intro"    label={t("newsBlog")}       indent />
+          <Item id="blog_link_intro"    label="링크 글쓰기"           indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
@@ -334,7 +333,8 @@ const BLOG_MAP = {
   blog_insta:   { type: "blog_insta",   label: "인스타그램 캡션 생성" },
   blog_youtube: { type: "blog_youtube", label: "유튜브 대본 & 설명 생성" },
   blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
-  blog_yt_blog: { type: "blog_yt_blog", label: "유튜브로 글쓰기" },
+  blog_yt_blog: { type: "blog_yt_blog", label: "링크 글쓰기" },
+  blog_link:    { type: "blog_link",   label: "링크 글쓰기" },
   blog_cafe:    { type: "blog_cafe",    label: "네이버 카페 글쓰기" },
 };
 
@@ -400,13 +400,13 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
-    blog_youtube:"유튜브", blog_thread:"스레드", blog_news:"뉴스블로그",
-    blog_yt_blog:"유튜브블로그"
+    blog_youtube:"유튜브", blog_thread:"스레드", blog_news:"링크",
+    blog_yt_blog:"링크", blog_link:"링크"
   };
   const typeColor = {
     blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#ec4899",
-    blog_youtube:"#ef4444", blog_thread:"#7c6aff", blog_news:"#06b6d4",
-    blog_yt_blog:"#ef4444"
+    blog_youtube:"#ef4444", blog_thread:"#7c6aff", blog_news:"#6366f1",
+    blog_yt_blog:"#6366f1", blog_link:"#6366f1"
   };
 
   const snsImageCount = cardList.length + imgCardList.length + detailList.length + simpleDetailList.length;
@@ -1654,8 +1654,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "blog_insta_intro",    icon: "📱", title: _s("인스타그램 캡션","Instagram Caption"), desc: _s("인스타 게시물 캡션","Instagram post caption"),       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "blog_youtube_intro",  icon: "▶️", title: _s("유튜브 대본","YouTube Script"),     desc: _s("영상 대본 & 설명란","Video script & description"),       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
       { id: "blog_thread_intro",   icon: "🧵", title: _s("스레드","Threads"),          desc: _s("스레드 게시물 작성","Threads post writing"),       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "blog_yt_blog_intro",  icon: "YB", title: _s("유튜브로 글쓰기","YouTube to Blog"), desc: _s("유튜브 영상으로 글 작성","Write from YouTube video"),  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
-      { id: "blog_news_intro",     icon: "NW", title: _s("뉴스로 글쓰기","News to Blog"),   desc: _s("뉴스 기사로 블로그 작성","Write blog from news article"),  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "blog_link_intro",     icon: "LK", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스 링크로 글 작성","Write from YouTube or News link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
       { id: "cardnews_simple",  icon: "✨", title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
       { id: "detail_simple",    icon: "📋", title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "thumbnail_gen",    icon: "🎬", title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
@@ -1881,35 +1880,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       cta:_s("스레드 게시물 작성하기","Write Thread Post"),
     },
-    blog_yt_blog: {
-      icon:"📺", title:_s("유튜브로 글쓰기","YouTube to Blog"), badge:_s("영상 → 블로그 자동 변환","Video → Blog Auto Convert"), color:"#ef4444",
-      subtitle:_s("유튜브 영상 URL을 입력하면 블로그 포스트로 자동 변환해줘요.","Enter a YouTube URL and AI converts it to a blog post."),
+    blog_link: {
+      icon:"LK", title:_s("링크 글쓰기","Link to Blog"), badge:_s("유튜브·뉴스 → 블로그 자동 변환","YouTube/News → Blog Auto Convert"), color:"#6366f1",
+      subtitle:_s("유튜브 영상이나 뉴스 기사 URL을 입력하면 블로그 포스트로 자동 변환해줘요.","Enter a YouTube or News URL and AI converts it to a blog post."),
       steps:[
-        { title:_s("유튜브 URL 입력","Enter YouTube URL"), desc:_s("변환할 영상 URL을 붙여넣기해요.","Paste the YouTube video URL.") },
-        { title:_s("AI 영상 분석","AI Analysis"), desc:_s("AI가 영상의 자막·내용을 분석해요.","AI analyzes subtitles and content.") },
-        { title:_s("블로그 글 변환","Convert to Blog"), desc:_s("영상 내용을 블로그 포스트로 변환해요.","Converts video content to a blog post.") },
+        { title:_s("링크 타입 선택","Select Link Type"), desc:_s("유튜브 또는 뉴스 기사를 선택해요.","Choose YouTube or News article.") },
+        { title:_s("URL 입력","Enter URL"), desc:_s("변환할 콘텐츠의 URL을 붙여넣기해요.","Paste the content URL.") },
+        { title:_s("AI 자동 분석","AI Analysis"), desc:_s("AI가 콘텐츠를 분석하고 블로그 글로 변환해요.","AI analyzes content and converts to a blog post.") },
         { title:_s("복사 & 활용","Copy & Use"), desc:_s("완성된 글을 복사해 바로 사용해요.","Copy and use the generated post.") },
       ],
       features:[
-        { icon:"🔗", label:_s("URL만 입력","URL Only") }, { icon:"🤖", label:_s("AI 자동 분석","AI Analysis") },
-        { icon:"💎", label:"10P" }, { icon:"⚡", label:_s("빠른 변환","Fast Convert") },
+        { icon:"", label:_s("URL만 입력","URL Only") }, { icon:"", label:_s("AI 자동 분석","AI Analysis") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("빠른 변환","Fast Convert") },
       ],
-      cta:_s("유튜브 영상으로 글쓰기","Write from YouTube"),
-    },
-    blog_news: {
-      icon:"📰", title:_s("뉴스로 글쓰기","News to Blog"), badge:_s("뉴스 기사 → 블로그 변환","News → Blog Convert"), color:"#06b6d4",
-      subtitle:_s("뉴스 기사 URL을 입력하면 블로그 포스트로 자동 변환해줘요.","Enter a news URL and AI converts it to your blog post."),
-      steps:[
-        { title:_s("뉴스 URL 입력","Enter News URL"), desc:_s("활용할 뉴스 기사 URL을 붙여넣기해요.","Paste the news article URL.") },
-        { title:_s("AI 기사 분석","AI Analysis"), desc:_s("AI가 기사의 핵심 내용을 파악해요.","AI identifies key content from the article.") },
-        { title:_s("블로그 글 변환","Convert to Blog"), desc:_s("기사 내용을 나만의 블로그 글로 생성해요.","Creates your own blog post from the article.") },
-        { title:_s("복사 & 활용","Copy & Use"), desc:_s("완성된 포스트를 복사해 게시해요.","Copy and publish the generated post.") },
-      ],
-      features:[
-        { icon:"🔗", label:_s("URL만 입력","URL Only") }, { icon:"📡", label:_s("최신 트렌드","Latest Trends") },
-        { icon:"💎", label:"10P" }, { icon:"✍️", label:_s("나만의 시각","Your Perspective") },
-      ],
-      cta:_s("뉴스로 블로그 글쓰기","Write from News"),
+      cta:_s("링크로 글쓰기 시작","Start Writing from Link"),
     },
     blog_cafe: {
       icon:"☕", title:_s("네이버 카페 글쓰기","Naver Cafe Post"), badge:_s("짧고 친근한 · 커뮤니티형","Short & Friendly · Community"), color:"#03C75A",
@@ -1928,30 +1912,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     },
   };
 
-  // 뉴스로 글쓰기
-  if (aiMenu === "blog_news") {
-    return (
-      <div key="news_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // 링크 글쓰기 (유튜브 + 뉴스 통합)
+  if (aiMenu === "blog_link") {
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
   }
-  if (aiMenu === "blog_news_intro") {
-    const d = BLOG_INTRO.blog_news;
-    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_news")} />;
+  if (aiMenu === "blog_link_intro") {
+    const d = BLOG_INTRO.blog_link;
+    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_link")} />;
   }
-
-  // 유튜브로 글쓰기
-  if (aiMenu === "blog_yt_blog") {
-    return (
-      <div key="yt_blog" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
+  if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultTab="news" />;
   }
-  if (aiMenu === "blog_yt_blog_intro") {
-    const d = BLOG_INTRO.blog_yt_blog;
-    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_yt_blog")} />;
+  if (aiMenu === "blog_yt_blog" || aiMenu === "blog_yt_blog_intro") {
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultTab="youtube" />;
   }
 
   // 블로그 계열 인트로
@@ -2367,8 +2341,9 @@ const MENU_LABELS = {
   blog_insta_intro: "인스타그램 캡션", blog_insta: "인스타그램 캡션",
   blog_youtube_intro: "유튜브 대본", blog_youtube: "유튜브 대본",
   blog_thread_intro: "스레드", blog_thread: "스레드",
-  blog_yt_blog_intro: "유튜브로 글쓰기", blog_yt_blog: "유튜브로 글쓰기",
-  blog_news_intro: "뉴스로 글쓰기", blog_news: "뉴스로 글쓰기",
+  blog_yt_blog_intro: "링크 글쓰기", blog_yt_blog: "링크 글쓰기",
+  blog_news_intro: "링크 글쓰기", blog_news: "링크 글쓰기",
+  blog_link_intro: "링크 글쓰기", blog_link: "링크 글쓰기",
   cardnews_simple: "카드뉴스", cardnews_simple_make: "카드뉴스",
   detail_simple: "상세페이지", detail_simple_make: "상세페이지", detail_simple_open: "상세페이지",
   thumbnail_gen: "썸네일 생성", thumbnail_gen_make: "썸네일 생성",
@@ -2382,6 +2357,57 @@ const MENU_LABELS = {
   outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
   shorts: "숏폼편집",
 };
+
+/* ── 링크 글쓰기 통합 컴포넌트 ── */
+function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTab }) {
+  const [tab, setTab] = useState(defaultTab || "youtube");
+  const isDark = theme === "dark";
+  const text = isDark ? "#e8eaed" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const accent = "#6366f1";
+  const tabs = [
+    { id: "youtube", label: "유튜브 영상", desc: "영상 URL을 블로그 글로 변환" },
+    { id: "news",    label: "뉴스 기사",   desc: "뉴스 URL을 블로그 글로 변환" },
+  ];
+
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {/* 탭 헤더 */}
+      <div style={{ flexShrink:0, padding:"16px 20px 0", borderBottom:`1px solid ${bdr}`,
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(249,250,251,0.8)" }}>
+        <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>링크 글쓰기</div>
+        <div style={{ fontSize:12, color:muted, marginBottom:14 }}>유튜브 영상이나 뉴스 기사 URL을 입력하면 AI가 블로그 글로 변환해줘요</div>
+        <div style={{ display:"flex", gap:4 }}>
+          {tabs.map(t => {
+            const active = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{
+                  padding:"10px 20px", borderRadius:"10px 10px 0 0", border:"none", cursor:"pointer",
+                  background: active ? (isDark?"rgba(99,102,241,0.15)":"#fff") : "transparent",
+                  color: active ? accent : muted, fontSize:14, fontWeight: active ? 800 : 500,
+                  borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
+                  transition: "all 0.15s",
+                }}>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 컨텐츠 */}
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        {tab === "youtube" ? (
+          <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        ) : (
+          <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
   const { t: tt } = useI18n();
