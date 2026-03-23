@@ -333,23 +333,23 @@ export default function App() {
   const isAi    = page === "ai";
 
   /* ── 네비 버튼 컴포넌트 ── */
-  const NavBtn = ({ id, label, active }) => (
-    <button onClick={() => navigate(id)} style={{
+  const NavBtn = ({ id, label, active, onClick }) => (
+    <button onClick={onClick || (() => navigate(id))} style={{
       background: (active || page === id) ? "rgba(124,106,255,0.08)" : "transparent",
-      border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 8, fontSize: 14,
+      border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || page === id) ? 700 : 500,
       color: (active || page === id) ? C.purpleL : C.muted,
-      transition: "all 0.15s",
+      transition: "all 0.15s", whiteSpace: "nowrap",
     }}>{label}</button>
   );
 
   const DropBtn = ({ label, open, onClick, active }) => (
     <button onClick={onClick} style={{
       background: (active || open) ? "rgba(124,106,255,0.08)" : "transparent",
-      border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 8, fontSize: 14,
+      border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || open) ? 700 : 500,
       color: (active || open) ? C.purpleL : C.muted,
-      display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
+      display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", whiteSpace: "nowrap",
     }}>
       {label}
       <span style={{ fontSize: 10, opacity: 0.5, display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
@@ -533,50 +533,12 @@ export default function App() {
           </div>
         </button>
 
-        {/* 데스크톱 메뉴 */}
-        <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
+        {/* 데스크톱 메뉴 — 왼쪽 정렬 */}
+        <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}>
           <NavBtn id="home" label={t("home")} />
-          <NavBtn id="about" label={t("about")} />
-          <NavBtn id="cases" label="고객사례" />
-          <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
-          {/* AI 분석기획기 드롭다운 */}
+          {/* AI 생성기 드롭다운 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label="AI 분석기획기" open={openMenu==="aiAnalysis"} active={page==="ai"&&aiMenu?.startsWith("seo_")} onClick={() => setOpenMenu(m => m==="aiAnalysis"?null:"aiAnalysis")} />
-            {openMenu==="aiAnalysis" && (
-              <div style={{
-                position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
-                background: C.modalBg, border: "1px solid " + C.border,
-                borderRadius: 13, padding: 8, minWidth: 260,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
-              }}>
-                {[
-                  { key:"seo_home",    label:"📊 실시간 검색어",      desc:"네이버·구글·다음 트렌드" },
-                  { key:"seo_blog",    label:"📝 네이버 블로그 분석",  desc:"SEO 점수 및 개선 제안" },
-                  { key:"seo_youtube", label:"▶️ 유튜브 분석",        desc:"영상 SEO 최적화 분석" },
-                  { key:"seo_tistory", label:"📖 티스토리 분석",      desc:"블로그 SEO 종합 평가" },
-                  { key:"seo_insta",   label:"📸 인스타그램 분석",    desc:"피드·릴스·해시태그 최적화" },
-                ].map(item => (
-                  <button key={item.key} onClick={() => { navigate("analyzer"); setOpenMenu(null); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, width: "100%",
-                      padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
-                      background: page==="analyzer" ? "rgba(99,102,241,0.08)" : "transparent",
-                      textAlign: "left", transition: "background 0.1s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background = page==="analyzer" ? "rgba(99,102,241,0.08)" : "transparent"}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{item.label}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* AI 생성기 통합 드롭다운 */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label={t("aiGen")} open={openMenu==="aiGen"} active={page==="ai"&&!aiMenu?.startsWith("seo_")} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
+            <DropBtn label={t("aiGen")} open={openMenu==="aiGen"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
             {openMenu==="aiGen" && (
               <div style={{
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
@@ -593,16 +555,11 @@ export default function App() {
                     style={{
                       display: "flex", alignItems: "center", gap: 12, width: "100%",
                       padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
-                      background: (page==="ai" &&
-                        ((item.key==="snsWrite" && aiMenu?.startsWith("blog_")) ||
-                         (item.key==="snsImage" && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu?.startsWith(x))) ||
-                         (item.key==="imageGen" && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outpaint"].includes(aiMenu))))
-                        ? "rgba(124,106,255,0.08)" : "transparent",
-                      textAlign: "left", transition: "background 0.12s",
+                      background: "transparent", textAlign: "left", transition: "background 0.12s",
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <div style={{ fontSize: 26 }}>{item.label.split(" ")[0]}</div>
+                    <div style={{ fontSize: 22 }}>{item.label.split(" ")[0]}</div>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label.slice(3)}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
@@ -612,26 +569,64 @@ export default function App() {
               </div>
             )}
           </div>
+          {/* AI 분석기획기 드롭다운 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="AI 분석기획기" open={openMenu==="aiAnalysis"} active={page==="analyzer"} onClick={() => setOpenMenu(m => m==="aiAnalysis"?null:"aiAnalysis")} />
+            {openMenu==="aiAnalysis" && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
+                background: C.modalBg, border: "1px solid " + C.border,
+                borderRadius: 13, padding: 8, minWidth: 280,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
+                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4,
+              }}>
+                {[
+                  { label:"📊 실시간 검색어" }, { label:"📝 블로그 분석" },
+                  { label:"▶️ 유튜브 분석" },  { label:"📖 티스토리 분석" },
+                  { label:"📸 인스타 분석" },   { label:"🌐 홈페이지 분석" },
+                  { label:"𝕏 X(트위터)" },     { label:"🧵 스레드 분석" },
+                  { label:"📘 페이스북" },      { label:"💼 링크드인" },
+                  { label:"🎵 틱톡 분석" },     { label:"📌 핀터레스트" },
+                  { label:"🏆 인플루언서 랭킹" },{ label:"🏢 브랜드 TOP100" },
+                ].map(item => (
+                  <button key={item.label} onClick={() => { navigate("analyzer"); setOpenMenu(null); }}
+                    style={{
+                      padding: "8px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                      background: page==="analyzer" ? "rgba(99,102,241,0.06)" : "transparent",
+                      textAlign: "left", transition: "background 0.1s",
+                      fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.08)"}
+                    onMouseLeave={e => e.currentTarget.style.background = page==="analyzer" ? "rgba(99,102,241,0.06)" : "transparent"}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
             {openMenu==="board" && (
-              <DropMenu right>
+              <DropMenu>
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
                 <DropItem id="community" label={t("free")}    onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("review")}  onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
-                <DropItem id="community" label={t("archive")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
+          <NavBtn id="archive" label={t("archive")} active={page==="community"&&boardCat==="archive"} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
           <NavBtn id="event" label="이벤트" />
-          {/* 고객센터 드롭다운 */}
+          {/* 더보기 (소개/사례/고객센터) */}
           <div style={{ position: "relative" }}>
-            <DropBtn label={t("support")} open={openMenu==="support"} active={page==="contact"} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
-            {openMenu==="support" && (
+            <DropBtn label="더보기" open={openMenu==="more"} active={["about","cases","contact","howto"].includes(page)} onClick={() => setOpenMenu(m => m==="more"?null:"more")} />
+            {openMenu==="more" && (
               <DropMenu right>
+                <DropItem id="about" label={t("about")} onClick={() => { navigate("about"); setOpenMenu(null); }} />
+                <DropItem id="cases" label="고객사례" onClick={() => { navigate("cases"); setOpenMenu(null); }} />
                 <DropItem id="contact" label={t("contact")} onClick={() => { navigate("contact"); setOpenMenu(null); }} />
                 <DropItem id="howto" label={t("howto")} onClick={() => { navigate("howto"); setOpenMenu(null); }} />
               </DropMenu>
@@ -860,8 +855,6 @@ export default function App() {
               {/* 기본 메뉴 */}
           {[
             { id: "home",  label: t("home") },
-            { id: "about", label: t("about") },
-            { id: "cases", label: "고객사례" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -940,6 +933,19 @@ export default function App() {
             }}>{m.label}</button>
           ))}
 
+          {/* AI 분석기획기 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>📊 AI 분석기획기</div>
+          </div>
+          <button onClick={() => { navigate("analyzer"); setMobileOpen(false); }} style={{
+            display: "block", width: "100%", textAlign: "left",
+            padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+            background: page==="analyzer" ? "rgba(124,106,255,0.08)" : "transparent",
+            color: page==="analyzer" ? C.purpleL : C.muted,
+            fontSize: 14, fontWeight: page==="analyzer" ? 700 : 400,
+            borderLeft: page==="analyzer" ? "3px solid #7c6aff" : "3px solid transparent",
+          }}>SNS 분석기 · 검색어 · 랭킹</button>
+
           {/* 커뮤니티 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 {t("community")}</div>
@@ -949,7 +955,6 @@ export default function App() {
             { board: "qna",     label: t("qna") },
             { board: "free",    label: t("free") },
             { board: "review",  label: t("review") },
-            { board: "archive", label: t("archive") },
           ].map(m => (
             <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -964,43 +969,21 @@ export default function App() {
           {/* 기타 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
           {[
-            { id: "pricing", label: "💎 "+t("pricing") },
+            { id: "archive", label: "📂 "+t("archive"), onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
+            { id: "pricing", label: "💎 "+t("pricing"), onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
+            { id: "event",   label: "🎉 이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
+            { id: "about",   label: "ℹ️ "+t("about"),    onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
+            { id: "cases",   label: "📁 고객사례",        onClick: () => { navigate("cases"); setMobileOpen(false); },   active: page==="cases" },
+            { id: "contact", label: "📞 "+t("contact"),  onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
+            { id: "howto",   label: "📖 "+t("howto"),    onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
           ].map(m => (
-            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+            <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
-              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
-              color: page === m.id ? C.purpleL : C.text,
-              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* 이벤트 (독립) */}
-          <button onClick={() => { navigate("event"); setMobileOpen(false); }} style={{
-            display: "block", width: "100%", textAlign: "left",
-            padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-            background: page === "event" ? "rgba(124,106,255,0.08)" : "transparent",
-            color: page === "event" ? C.purpleL : C.text,
-            fontSize: 15, fontWeight: page === "event" ? 700 : 500,
-            borderLeft: page === "event" ? "3px solid #7c6aff" : "3px solid transparent",
-          }}>이벤트</button>
-
-          {/* 고객센터 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>📞 {t("support")}</div>
-          </div>
-          {[
-            { id: "contact", label: t("contact") },
-            { id: "howto",   label: t("howto") },
-          ].map(m => (
-            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
-              color: page === m.id ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: page === m.id ? 700 : 400,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+              padding: "12px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
+              color: m.active ? C.purpleL : C.text,
+              fontSize: 14, fontWeight: m.active ? 700 : 500,
+              borderLeft: m.active ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
