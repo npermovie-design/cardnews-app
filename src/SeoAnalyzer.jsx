@@ -100,10 +100,9 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
   const [progress, setProgress] = useState("");
   const [result, setResult] = useState(null);
   const [expandedCriteria, setExpandedCriteria] = useState(null);
-  const [fetchedPreview, setFetchedPreview] = useState(null); // {title, desc, thumb, type, tags, transcript}
+  const [fetchedPreview, setFetchedPreview] = useState(null);
   const [prevMenu, setPrevMenu] = useState(menu);
 
-  // 메뉴 변경 시 결과 초기화
   if (menu !== prevMenu) {
     setPrevMenu(menu);
     setResult(null);
@@ -116,16 +115,16 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
 
   const [trendEngine, setTrendEngine] = useState("전체");
 
-  // 실시간 검색어
+  // 실시간 검색어 — 판다랭크 스타일: 2열 20개, 변동 표시
   const fetchTrends = async (cat) => {
     setTrendLoading(true); setTrends([]);
     try {
       const prompt = `현재 한국에서 ${cat==="전체"?"모든 분야":cat+" 분야"}의 실시간 인기 검색어를 검색엔진별로 알려주세요.
 
 네이버, 구글, 다음, 빙 각각 TOP 10씩 총 40개를 알려주세요.
-각 검색어에 대해 검색엔진, 순위, 카테고리, 간단한 이유, 검색량 추정치를 포함해주세요.
+각 검색어에 대해 검색엔진, 순위, 카테고리, 간단한 이유, 검색량 추정치, 변동(up/down/new/stable)을 포함해주세요.
 
-JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","category":"분류","reason":"이유","volume":"약 50,000"},...]}`;
+JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","category":"분류","reason":"이유","volume":"약 50,000","change":"new"},...]}`;
       const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
       const m = raw.match(/\{[\s\S]*\}/);
       if (m) setTrends(JSON.parse(m[0]).trends || []);
@@ -133,7 +132,7 @@ JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","catego
     setTrendLoading(false);
   };
 
-  // URL 콘텐츠 가져오기 (자체 API 프록시)
+  // URL 콘텐츠 가져오기
   const fetchUrlContent = async (targetUrl) => {
     try {
       const res = await fetch("/api/fetch-url", {
@@ -177,7 +176,6 @@ JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","catego
 
     setProgress("URL 콘텐츠를 가져오는 중...");
 
-    // 플랫폼별 전용 API 사용
     let content = null;
     let ytData = null;
     let instaData = null;
@@ -201,7 +199,6 @@ JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","catego
       content = await fetchUrlContent(url);
     }
 
-    // 미리보기 설정
     if (instaData && instaData.hasData) {
       setFetchedPreview({
         type:"insta", title: instaData.title?.slice(0,80), desc: instaData.description?.slice(0,200),
@@ -325,128 +322,205 @@ JSON만 응답:
     return pct >= 80 ? "#22c55e" : pct >= 60 ? "#f59e0b" : "#ef4444";
   };
 
-  // ═══ 실시간 검색어 화면 ═══
+  const changeIcon = (c) => c==="up"?"🔺":c==="down"?"🔻":c==="new"?"🆕":"—";
+  const changeColor = (c) => c==="up"?"#ef4444":c==="down"?"#3b82f6":c==="new"?"#22c55e":muted;
+
+  // ═══ 실시간 검색어 화면 (판다랭크 스타일) ═══
   if (menu === "seo_home") {
+    const filtered = trends.filter(t => trendEngine==="전체" || t.engine===trendEngine);
+    const now = new Date();
+    const timeStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}시 기준`;
+
     return (
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
         <div style={{ maxWidth:900, margin:"0 auto" }}>
-          <div style={{ marginBottom:24 }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text }}>실시간 인기 검색어</div>
-            <div style={{ fontSize:13, color:muted, marginTop:4 }}>네이버·구글·다음 검색 트렌드를 카테고리별로 확인하세요</div>
+          {/* 헤더 */}
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>
+              오늘 콘텐츠, 어떤 키워드로 시작할까요?
+            </div>
+            <div style={{ fontSize:13, color:muted }}>실시간 인기 검색어를 분석하고 콘텐츠도 제작해 보세요</div>
           </div>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:20 }}>
+
+          {/* 검색 바 */}
+          <div style={{
+            display:"flex", alignItems:"center", gap:8, maxWidth:600, margin:"0 auto 28px",
+            background:cardBg, borderRadius:12, border:`1px solid ${bdr}`, padding:"5px 5px 5px 16px",
+            boxShadow:D?"0 2px 12px rgba(0,0,0,0.3)":"0 2px 12px rgba(0,0,0,0.04)",
+          }}>
+            <input placeholder="분석할 키워드를 입력하세요"
+              style={{ flex:1, border:"none", background:"transparent", color:text, fontSize:14, outline:"none", padding:"8px 0" }} />
+            <button style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"#22c55e", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+              🔍 분석
+            </button>
+          </div>
+
+          {/* 카테고리 필터 */}
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:20, justifyContent:"center" }}>
             {CATEGORIES.map(c => (
               <button key={c} onClick={()=>{setTrendCat(c);fetchTrends(c);}}
-                style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${trendCat===c?"#6366f1":bdr}`,
-                  background:trendCat===c?"rgba(99,102,241,0.15)":"transparent",
-                  color:trendCat===c?"#a5b4fc":muted, fontSize:12, fontWeight:trendCat===c?700:400, cursor:"pointer" }}>
+                style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${trendCat===c?"#22c55e":bdr}`,
+                  background:trendCat===c?"rgba(34,197,94,0.12)":"transparent",
+                  color:trendCat===c?"#22c55e":muted, fontSize:12, fontWeight:trendCat===c?700:400, cursor:"pointer" }}>
                 {c}
               </button>
             ))}
           </div>
-          {/* 검색엔진 필터 */}
-          {trends.length > 0 && (
-            <div style={{ display:"flex", gap:4, marginBottom:14, borderBottom:"1px solid "+bdr, paddingBottom:0 }}>
-              {["전체","네이버","구글","다음","빙"].map(eng => (
-                <button key={eng} onClick={()=>setTrendEngine(eng)}
-                  style={{ padding:"8px 16px", border:"none", cursor:"pointer", fontSize:12, fontWeight:trendEngine===eng?700:400,
-                    background:"transparent", borderBottom:trendEngine===eng?"2px solid #6366f1":"2px solid transparent",
-                    color:trendEngine===eng?"#a5b4fc":muted, marginBottom:-1 }}>
-                  {eng} <span style={{fontSize:10,opacity:0.6}}>({trends.filter(t=>eng==="전체"||t.engine===eng).length})</span>
-                </button>
-              ))}
-            </div>
-          )}
 
-          {trendLoading ? (
-            <div style={{ textAlign:"center", padding:"60px 0" }}>
-              <div style={{ width:32,height:32,border:"3px solid #6366f1",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:14, color:muted }}>AI가 실시간 트렌드를 분석하고 있어요...</div>
+          {/* 실시간 인기 검색어 영역 */}
+          <div style={{ padding:"24px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ fontSize:18, fontWeight:900, color:text }}>실시간 인기 검색어</div>
+              <div style={{ fontSize:11, color:muted }}>{timeStr}</div>
             </div>
-          ) : trends.length > 0 ? (
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {trends.filter(t=>trendEngine==="전체"||t.engine===trendEngine).map((t, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 18px", borderRadius:12,
-                  border:`1px solid ${bdr}`, background:cardBg, cursor:"pointer" }}
-                  onClick={()=>{
-                    const searchUrl = t.engine==="구글"?`https://www.google.com/search?q=${encodeURIComponent(t.keyword)}`
-                      :t.engine==="다음"?`https://search.daum.net/search?q=${encodeURIComponent(t.keyword)}`
-                      :t.engine==="빙"?`https://www.bing.com/search?q=${encodeURIComponent(t.keyword)}`
-                      :`https://search.naver.com/search.naver?query=${encodeURIComponent(t.keyword)}`;
-                    window.open(searchUrl,"_blank");
-                  }}>
-                  <span style={{ fontSize:20, fontWeight:900, color:i<3?"#ef4444":i<6?"#f59e0b":"#6b7280", minWidth:32, textAlign:"center" }}>{t.rank||i+1}</span>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:3 }}>{t.keyword}</div>
-                    <div style={{ fontSize:11, color:muted }}>{t.reason}</div>
+
+            {/* 엔진 탭 (판다랭크 스타일 밑줄 탭) */}
+            <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${bdr}`, marginBottom:16 }}>
+              {["전체","네이버","구글","다음","빙"].map(eng => {
+                const active = trendEngine===eng;
+                const engColor = eng==="네이버"?"#22c55e":eng==="구글"?"#4285f4":eng==="다음"?"#f59e0b":eng==="빙"?"#0078d4":"#6366f1";
+                return (
+                  <button key={eng} onClick={()=>setTrendEngine(eng)}
+                    style={{ padding:"10px 20px", border:"none", cursor:"pointer", fontSize:13, fontWeight:active?700:400,
+                      background:"transparent", borderBottom:active?`2px solid ${engColor}`:"2px solid transparent",
+                      color:active?engColor:muted, marginBottom:-1 }}>
+                    {eng}
+                  </button>
+                );
+              })}
+            </div>
+
+            {trendLoading ? (
+              <div style={{ textAlign:"center", padding:"60px 0" }}>
+                <div style={{ width:32,height:32,border:"3px solid #22c55e",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
+                <div style={{ fontSize:14, color:muted }}>AI가 실시간 트렌드를 분석하고 있어요...</div>
+              </div>
+            ) : filtered.length > 0 ? (
+              /* 2열 레이아웃 (판다랭크 스타일) */
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0" }}>
+                {filtered.slice(0,20).map((t, i) => (
+                  <div key={i}
+                    style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px",
+                      borderBottom:`1px solid ${D?"rgba(255,255,255,0.04)":"#f3f4f6"}`,
+                      cursor:"pointer", transition:"background 0.1s" }}
+                    onMouseEnter={e => e.currentTarget.style.background=D?"rgba(255,255,255,0.03)":"#f9fafb"}
+                    onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                    onClick={()=>{
+                      const searchUrl = t.engine==="구글"?`https://www.google.com/search?q=${encodeURIComponent(t.keyword)}`
+                        :t.engine==="다음"?`https://search.daum.net/search?q=${encodeURIComponent(t.keyword)}`
+                        :t.engine==="빙"?`https://www.bing.com/search?q=${encodeURIComponent(t.keyword)}`
+                        :`https://search.naver.com/search.naver?query=${encodeURIComponent(t.keyword)}`;
+                      window.open(searchUrl,"_blank");
+                    }}>
+                    {/* 순위 */}
+                    <span style={{ fontSize:14, fontWeight:900, color:i<3?"#ef4444":i<6?"#f59e0b":text, minWidth:24, textAlign:"center" }}>
+                      {t.rank||i+1}
+                    </span>
+                    {/* 변동 */}
+                    <span style={{ fontSize:10, color:changeColor(t.change), minWidth:20, textAlign:"center", fontWeight:700 }}>
+                      {t.change==="new"?"N":t.change==="up"?"▲":t.change==="down"?"▼":"—"}
+                    </span>
+                    {/* 키워드 */}
+                    <span style={{ flex:1, fontSize:14, fontWeight:i<3?700:500, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {t.keyword}
+                    </span>
+                    {/* 엔진 뱃지 (전체 탭일 때만) */}
+                    {trendEngine==="전체" && (
+                      <span style={{ fontSize:9, padding:"2px 6px", borderRadius:4, fontWeight:600, flexShrink:0,
+                        background:t.engine==="네이버"?"rgba(34,197,94,0.1)":t.engine==="구글"?"rgba(66,133,244,0.1)":t.engine==="빙"?"rgba(0,120,212,0.1)":"rgba(245,158,11,0.1)",
+                        color:t.engine==="네이버"?"#22c55e":t.engine==="구글"?"#4285f4":t.engine==="빙"?"#0078d4":"#f59e0b" }}>
+                        {t.engine}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"flex-end", flexShrink:0 }}>
-                    <span style={{ padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600,
-                      background:t.engine==="네이버"?"rgba(34,197,94,0.12)":t.engine==="구글"?"rgba(66,133,244,0.12)":t.engine==="빙"?"rgba(0,120,212,0.12)":"rgba(245,158,11,0.12)",
-                      color:t.engine==="네이버"?"#22c55e":t.engine==="구글"?"#4285f4":t.engine==="빙"?"#0078d4":"#f59e0b" }}>{t.engine}</span>
-                    {t.volume && <span style={{ fontSize:9, color:muted }}>{t.volume}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
-              <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>카테고리를 선택하면 트렌드를 분석해요</div>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign:"center", padding:"50px 0", color:muted }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
+                <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>카테고리를 선택하면 트렌드를 분석해요</div>
+                <div style={{ fontSize:13 }}>인기 검색어를 분석하고 콘텐츠도 제작해 보세요</div>
+              </div>
+            )}
+          </div>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  // ═══ 분석기 화면 ═══
+  // ═══ SNS 분석기 화면 (판다랭크 블로그분석 스타일) ═══
   const analyzerType = menu.replace("seo_","");
   const config = PLATFORM_CONFIG[analyzerType];
   if (!config) return null;
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
-      <div style={{ maxWidth:860, margin:"0 auto" }}>
-        <div style={{ marginBottom:24 }}>
-          <div style={{ fontSize:22, fontWeight:900, color:text }}>{config.icon} {config.label}</div>
-          <div style={{ fontSize:13, color:muted, marginTop:4 }}>URL을 입력하면 AI가 {config.criteria.length}가지 항목을 세부 분석합니다</div>
+      <div style={{ maxWidth:900, margin:"0 auto" }}>
+        {/* 헤더 — 블로그 진단 / 게시글 진단 스타일 */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:6 }}>
+            <span style={{ fontSize:22, fontWeight:900, color:config.color }}>{config.label.split(" ")[0]}</span>
+            <span style={{ fontSize:18, fontWeight:600, color:muted }}>게시글 진단</span>
+          </div>
         </div>
 
-        {/* URL 입력 */}
-        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+        {/* URL 입력 (판다랭크 스타일: 넓은 검색바) */}
+        <div style={{
+          display:"flex", alignItems:"center", gap:8,
+          padding:"6px 6px 6px 20px", borderRadius:14,
+          border:`1px solid ${bdr}`, background:cardBg,
+          boxShadow:D?"0 2px 12px rgba(0,0,0,0.2)":"0 2px 12px rgba(0,0,0,0.03)",
+          marginBottom:10,
+        }}>
           <input value={url} onChange={e=>setUrl(e.target.value)} onKeyDown={e=>e.key==="Enter"&&analyzeUrl(analyzerType)}
             placeholder={config.placeholder}
-            style={{ flex:1, padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:14, outline:"none" }}/>
+            style={{ flex:1, border:"none", background:"transparent", color:text, fontSize:14, outline:"none", padding:"10px 0" }}/>
           <button onClick={()=>analyzeUrl(analyzerType)} disabled={analyzing || !url.trim()}
-            style={{ padding:"14px 28px", borderRadius:12, border:"none", background:config.color, color:"#fff", fontSize:14, fontWeight:800,
-              cursor:analyzing?"wait":"pointer", opacity:analyzing?0.6:1, whiteSpace:"nowrap" }}>
-            {analyzing ? "분석중..." : "🔍 분석"}
+            style={{ padding:"12px 24px", borderRadius:10, border:"none", background:config.color, color:"#fff", fontSize:14, fontWeight:700,
+              cursor:analyzing?"wait":"pointer", opacity:analyzing?0.6:1, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6 }}>
+            🔍 {analyzing ? "분석중..." : "분석"}
           </button>
         </div>
 
-        {/* 분석 기준 안내 */}
+        {/* 일 분석 횟수 안내 */}
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:20 }}>
+          <span style={{ fontSize:11, color:muted }}>오늘 <b style={{color:config.color}}>무제한</b> 분석 가능</span>
+        </div>
+
+        {/* 분석 기준 안내 (분석 전) */}
         {!result && !analyzing && (
-          <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
-            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>📋 분석 항목 ({config.criteria.length}가지)</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+          <div style={{ padding:"24px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:16 }}>📋 {config.criteria.length}가지 항목을 AI가 분석합니다</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
               {config.criteria.map(c => (
-                <div key={c.key} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}` }}>
-                  <span style={{ fontSize:16 }}>{c.icon}</span>
+                <div key={c.key} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, border:`1px solid ${bdr}`,
+                  background:D?"rgba(255,255,255,0.02)":"#fafafa" }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:config.color+"12", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                    {c.icon}
+                  </div>
                   <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:text }}>{c.label}</div>
-                    <div style={{ fontSize:10, color:muted }}>{c.weight}점 배점</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:text }}>{c.label}</div>
+                    <div style={{ fontSize:11, color:muted }}>{c.weight}점 배점</div>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* 판다랭크 스타일 안내 배너 */}
+            <div style={{ marginTop:20, padding:"16px 20px", borderRadius:12, background:D?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.03)", border:"1px solid rgba(34,197,94,0.15)", display:"flex", gap:12, alignItems:"center" }}>
+              <span style={{ fontSize:28 }}>{config.icon}</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>URL을 입력하면 AI가 실시간으로 콘텐츠를 분석합니다</div>
+                <div style={{ fontSize:11, color:muted }}>제목, 키워드, 본문 구조, 이미지 활용까지 종합 진단 후 구체적인 수정 가이드를 제공합니다</div>
+              </div>
             </div>
           </div>
         )}
 
         {/* 콘텐츠 미리보기 */}
         {fetchedPreview && fetchedPreview.type !== "none" && (
-          <div style={{ padding:"16px 18px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16, display:"flex", gap:14, alignItems:"flex-start" }}>
+          <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16, display:"flex", gap:14, alignItems:"flex-start" }}>
             {fetchedPreview.thumb && (
               <img src={fetchedPreview.thumb} alt="" style={{ width:120, height:68, borderRadius:8, objectFit:"cover", flexShrink:0 }} onError={e=>e.target.style.display="none"}/>
             )}
@@ -474,13 +548,13 @@ JSON만 응답:
           </div>
         )}
 
-        {/* 분석 중 — 체크리스트 */}
+        {/* 분석 중 — 프로그레스 */}
         {analyzing && (
-          <div style={{ padding:"32px 24px", textAlign:"center" }}>
-            <div style={{ width:48,height:48,border:`3px solid ${config.color}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
-            <div style={{ fontSize:18, fontWeight:700, color:text, marginBottom:6 }}>{progress}</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>{config.criteria.length}가지 항목을 세부 분석합니다</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:10, maxWidth:300, margin:"0 auto", textAlign:"left" }}>
+          <div style={{ padding:"40px 24px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg, textAlign:"center" }}>
+            <div style={{ width:56,height:56,border:`3px solid ${config.color}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 20px" }}/>
+            <div style={{ fontSize:18, fontWeight:800, color:text, marginBottom:8 }}>{progress}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:24 }}>{config.criteria.length}가지 항목을 세부 분석합니다</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, maxWidth:320, margin:"0 auto", textAlign:"left" }}>
               {[
                 { label:"URL 콘텐츠 수집", done: progress.includes("AI가") },
                 { label:"제목/키워드 분석", done: false },
@@ -492,7 +566,7 @@ JSON만 응답:
                 const isActive = !isDone && (i === 0 ? !progress.includes("AI가") : progress.includes("AI가"));
                 return (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, opacity:isDone||isActive?1:0.3 }}>
-                    <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                    <div style={{ width:24, height:24, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
                       background:isDone?"#4ade80":isActive?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
                       border:isDone?"2px solid #4ade80":isActive?`2px solid ${config.color}`:"2px solid rgba(255,255,255,0.1)" }}>
                       {isDone ? <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>
@@ -508,28 +582,71 @@ JSON만 응답:
           </div>
         )}
 
-        {/* 분석 결과 */}
+        {/* ═══ 분석 결과 (판다랭크 블로그 진단 스타일) ═══ */}
         {result && (
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-            {/* 종합 점수 카드 */}
-            <div style={{ padding:"28px", borderRadius:16, background:`linear-gradient(135deg,${config.color}15,${config.color}05)`, border:`1px solid ${config.color}30` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:56, fontWeight:900, color:scoreColor(result.totalScore) }}>{result.totalScore}</div>
-                  <div style={{ fontSize:20, fontWeight:900, color:scoreColor(result.totalScore) }}>{result.totalGrade}</div>
+            {/* 종합 점수 카드 (판다랭크 스타일: 중앙 큰 점수 + 등급 뱃지) */}
+            <div style={{ padding:"32px", borderRadius:20, background:cardBg, border:`1px solid ${bdr}`,
+              boxShadow:D?"0 4px 24px rgba(0,0,0,0.2)":"0 4px 24px rgba(0,0,0,0.04)" }}>
+              <div style={{ textAlign:"center", marginBottom:20 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:config.color, marginBottom:8 }}>
+                  {config.icon} {config.label} 결과
                 </div>
-                <div style={{ flex:1, minWidth:200 }}>
-                  <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>종합 분석 결과</div>
-                  <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>{result.overallSummary}</div>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:16, padding:"16px 32px", borderRadius:16,
+                  background:`linear-gradient(135deg,${config.color}10,${config.color}05)`, border:`1px solid ${config.color}30` }}>
+                  <div>
+                    <div style={{ fontSize:64, fontWeight:900, color:scoreColor(result.totalScore), lineHeight:1 }}>{result.totalScore}</div>
+                    <div style={{ fontSize:12, color:muted, marginTop:4 }}>/ 100점</div>
+                  </div>
+                  <div style={{ width:1, height:60, background:bdr }} />
+                  <div style={{ textAlign:"left" }}>
+                    <div style={{ padding:"4px 16px", borderRadius:20, fontSize:18, fontWeight:900,
+                      background:scoreColor(result.totalScore)+"20", color:scoreColor(result.totalScore), display:"inline-block", marginBottom:6 }}>
+                      {result.totalGrade}
+                    </div>
+                    <div style={{ fontSize:12, color:muted }}>
+                      {result.totalScore>=80?"상위 10% 수준입니다":result.totalScore>=60?"보통 수준입니다":"개선이 필요합니다"}
+                    </div>
+                  </div>
                 </div>
               </div>
-              {result.topPriority && (
-                <div style={{ marginTop:16, padding:"12px 16px", borderRadius:10, background:D?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.05)", border:"1px solid rgba(239,68,68,0.2)" }}>
-                  <div style={{ fontSize:12, fontWeight:800, color:"#ef4444", marginBottom:4 }}>🚨 최우선 수정 사항</div>
-                  <div style={{ fontSize:13, color:text, lineHeight:1.6 }}>{result.topPriority}</div>
-                </div>
-              )}
+
+              {/* 항목별 미니 바 차트 */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16 }}>
+                {config.criteria.map(criterion => {
+                  const data = result.criteria?.[criterion.key];
+                  if (!data) return null;
+                  const pct = Math.round((data.score/criterion.weight)*100);
+                  return (
+                    <div key={criterion.key} style={{ padding:"12px", borderRadius:10, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.02)":"#fafafa" }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                        <span style={{ fontSize:11, fontWeight:600, color:text }}>{criterion.icon} {criterion.label}</span>
+                        <span style={{ fontSize:12, fontWeight:800, color:scoreColor(data.score, criterion.weight) }}>{data.score}/{criterion.weight}</span>
+                      </div>
+                      <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.06)":"#e5e7eb", overflow:"hidden" }}>
+                        <div style={{ height:"100%", borderRadius:3, background:scoreColor(data.score, criterion.weight), width:`${pct}%`, transition:"width 0.5s ease" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 종합 요약 */}
+              <div style={{ fontSize:13, color:text, lineHeight:1.8, padding:"14px 16px", borderRadius:10, background:D?"rgba(255,255,255,0.02)":"#f9fafb", border:`1px solid ${bdr}` }}>
+                {result.overallSummary}
+              </div>
             </div>
+
+            {/* 최우선 수정사항 */}
+            {result.topPriority && (
+              <div style={{ padding:"18px 22px", borderRadius:16, background:D?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.03)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", gap:14, alignItems:"flex-start" }}>
+                <div style={{ fontSize:28, flexShrink:0 }}>🚨</div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:800, color:"#ef4444", marginBottom:4 }}>최우선 수정 사항</div>
+                  <div style={{ fontSize:13, color:text, lineHeight:1.7 }}>{result.topPriority}</div>
+                </div>
+              </div>
+            )}
 
             {/* 항목별 상세 분석 */}
             {config.criteria.map(criterion => {
@@ -537,36 +654,34 @@ JSON만 응답:
               if (!data) return null;
               const isExpanded = expandedCriteria === criterion.key;
               return (
-                <div key={criterion.key} style={{ borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
-                  {/* 헤더 (클릭하면 펼침) */}
+                <div key={criterion.key} style={{ borderRadius:16, border:`1px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
                   <div onClick={()=>setExpandedCriteria(isExpanded?null:criterion.key)}
-                    style={{ display:"flex", alignItems:"center", gap:12, padding:"16px 20px", cursor:"pointer", transition:"background 0.1s" }}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"18px 22px", cursor:"pointer", transition:"background 0.1s" }}
                     onMouseEnter={e=>e.currentTarget.style.background=D?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.01)"}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <span style={{ fontSize:20 }}>{criterion.icon}</span>
+                    <div style={{ width:40, height:40, borderRadius:10, background:config.color+"10", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
+                      {criterion.icon}
+                    </div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14, fontWeight:700, color:text }}>{criterion.label}</div>
-                      <div style={{ fontSize:11, color:muted, marginTop:2 }}>{data.summary}</div>
+                      <div style={{ fontSize:12, color:muted, marginTop:2 }}>{data.summary}</div>
                     </div>
-                    <div style={{ textAlign:"right" }}>
+                    <div style={{ textAlign:"right", flexShrink:0 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:scoreColor(data.score, criterion.weight) }}>{data.score}<span style={{fontSize:12,color:muted}}>/{criterion.weight}</span></div>
                       <div style={{ fontSize:11, fontWeight:700, color:scoreColor(data.score, criterion.weight) }}>{data.grade}</div>
                     </div>
                     <span style={{ fontSize:14, color:muted, marginLeft:4 }}>{isExpanded?"▲":"▼"}</span>
                   </div>
 
-                  {/* 상세 내용 */}
                   {isExpanded && (
-                    <div style={{ padding:"0 20px 20px", borderTop:`1px solid ${bdr}` }}>
-                      {/* 기준 안내 */}
-                      <div style={{ padding:"12px 14px", margin:"12px 0", borderRadius:8, background:D?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                    <div style={{ padding:"0 22px 22px", borderTop:`1px solid ${bdr}` }}>
+                      <div style={{ padding:"12px 14px", margin:"14px 0", borderRadius:10, background:D?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.1)" }}>
                         <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", marginBottom:4 }}>📖 평가 기준</div>
                         <div style={{ fontSize:12, color:muted, lineHeight:1.6 }}>{criterion.guide}</div>
                       </div>
 
-                      {/* 잘하고 있는 점 */}
                       {data.good?.length > 0 && (
-                        <div style={{ marginBottom:12 }}>
+                        <div style={{ marginBottom:14 }}>
                           <div style={{ fontSize:12, fontWeight:700, color:"#22c55e", marginBottom:6 }}>✅ 잘하고 있는 점</div>
                           {data.good.map((g,i) => (
                             <div key={i} style={{ display:"flex", gap:8, marginBottom:4, alignItems:"flex-start" }}>
@@ -577,9 +692,8 @@ JSON만 응답:
                         </div>
                       )}
 
-                      {/* 개선 필요 */}
                       {data.bad?.length > 0 && (
-                        <div style={{ marginBottom:12 }}>
+                        <div style={{ marginBottom:14 }}>
                           <div style={{ fontSize:12, fontWeight:700, color:"#ef4444", marginBottom:6 }}>❌ 개선이 필요한 점</div>
                           {data.bad.map((b,i) => (
                             <div key={i} style={{ display:"flex", gap:8, marginBottom:4, alignItems:"flex-start" }}>
@@ -590,10 +704,9 @@ JSON만 응답:
                         </div>
                       )}
 
-                      {/* 구체적 수정 가이드 */}
                       {data.howToFix?.length > 0 && (
-                        <div style={{ marginBottom:12, padding:"14px", borderRadius:10, background:D?"rgba(245,158,11,0.06)":"rgba(245,158,11,0.03)", border:"1px solid rgba(245,158,11,0.15)" }}>
-                          <div style={{ fontSize:12, fontWeight:700, color:"#f59e0b", marginBottom:8 }}>🔧 수정 가이드 (이렇게 바꾸세요)</div>
+                        <div style={{ marginBottom:14, padding:"16px", borderRadius:12, background:D?"rgba(245,158,11,0.06)":"rgba(245,158,11,0.03)", border:"1px solid rgba(245,158,11,0.15)" }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#f59e0b", marginBottom:8 }}>🔧 수정 가이드</div>
                           {data.howToFix.map((fix,i) => (
                             <div key={i} style={{ display:"flex", gap:8, marginBottom:6, alignItems:"flex-start" }}>
                               <span style={{ fontSize:12, fontWeight:900, color:"#f59e0b", flexShrink:0, minWidth:16 }}>{i+1}.</span>
@@ -603,9 +716,8 @@ JSON만 응답:
                         </div>
                       )}
 
-                      {/* 수정 예시 */}
                       {data.example && (
-                        <div style={{ padding:"12px 14px", borderRadius:8, background:D?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.03)", border:"1px solid rgba(34,197,94,0.15)" }}>
+                        <div style={{ padding:"14px 16px", borderRadius:10, background:D?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.03)", border:"1px solid rgba(34,197,94,0.15)" }}>
                           <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>💡 수정 예시</div>
                           <div style={{ fontSize:12, color:text, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{data.example}</div>
                         </div>
@@ -618,14 +730,16 @@ JSON만 응답:
 
             {/* 추천 제목 */}
             {result.recommendedTitles?.length > 0 && (
-              <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
-                <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>✨ SEO 최적화 추천 제목 ({result.recommendedTitles.length}개)</div>
+              <div style={{ padding:"22px 24px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
+                <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>✨ SEO 최적화 추천 제목</div>
                 {result.recommendedTitles.map((t,i) => (
-                  <div key={i} onClick={()=>navigator.clipboard.writeText(t)}
-                    style={{ padding:"10px 14px", marginBottom:6, borderRadius:8, border:`1px solid ${bdr}`, cursor:"pointer",
-                      background:D?"rgba(255,255,255,0.03)":"#fafafa", fontSize:13, color:text, fontWeight:600, display:"flex", alignItems:"center", gap:8 }}
+                  <div key={i} onClick={()=>navigator.clipboard?.writeText(t)}
+                    style={{ padding:"12px 16px", marginBottom:8, borderRadius:10, border:`1px solid ${bdr}`, cursor:"pointer",
+                      background:D?"rgba(255,255,255,0.03)":"#fafafa", fontSize:13, color:text, fontWeight:600, display:"flex", alignItems:"center", gap:10, transition:"all 0.1s" }}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=config.color}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=bdr}
                     title="클릭하면 복사">
-                    <span style={{ color:config.color, fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                    <span style={{ width:24, height:24, borderRadius:6, background:config.color+"15", color:config.color, fontWeight:900, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i+1}</span>
                     <span style={{ flex:1 }}>{t}</span>
                     <span style={{ fontSize:10, color:muted, flexShrink:0 }}>📋 복사</span>
                   </div>
@@ -635,13 +749,17 @@ JSON만 응답:
 
             {/* 추천 키워드 */}
             {result.recommendedKeywords?.length > 0 && (
-              <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
-                <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>🏷 추천 키워드 ({result.recommendedKeywords.length}개)</div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              <div style={{ padding:"22px 24px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
+                <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>🏷 추천 키워드</div>
+                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                   {result.recommendedKeywords.map((k,i) => (
-                    <span key={i} onClick={()=>navigator.clipboard.writeText(k)}
-                      style={{ padding:"6px 14px", borderRadius:20, background:`${config.color}12`, border:`1px solid ${config.color}25`,
-                        color:config.color, fontSize:12, fontWeight:600, cursor:"pointer" }}>{k}</span>
+                    <span key={i} onClick={()=>navigator.clipboard?.writeText(k)}
+                      style={{ padding:"8px 16px", borderRadius:20, background:config.color+"10", border:`1px solid ${config.color}25`,
+                        color:config.color, fontSize:12, fontWeight:600, cursor:"pointer", transition:"all 0.1s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=config.color+"20"}
+                      onMouseLeave={e=>e.currentTarget.style.background=config.color+"10"}>
+                      #{k}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -649,9 +767,12 @@ JSON만 응답:
 
             {/* 경쟁 차별화 전략 */}
             {result.competitorTip && (
-              <div style={{ padding:"18px 20px", borderRadius:14, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)" }}>
-                <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:8 }}>🎯 경쟁 차별화 전략</div>
-                <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
+              <div style={{ padding:"22px 24px", borderRadius:16, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)", display:"flex", gap:14, alignItems:"flex-start" }}>
+                <div style={{ fontSize:28, flexShrink:0 }}>🎯</div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:6 }}>경쟁 차별화 전략</div>
+                  <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
+                </div>
               </div>
             )}
           </div>

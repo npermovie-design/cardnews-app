@@ -106,48 +106,18 @@ export default function AnalyzerPage({ C, theme, user, navigate }) {
         </div>
 
         <div style={{ flex:1, overflow:"hidden", display:"flex" }}>
-          {/* ══ 홈 (판다랭크 스타일) ══ */}
+          {/* ══ 홈 ══ */}
           {menu === "home" && (
-            <div style={{ flex:1, overflowY:"auto", padding:"0 0 60px" }}>
-              {/* 히어로 섹션 */}
-              <div style={{
-                background: isDark
-                  ? "linear-gradient(135deg, #0f0c29 0%, #1a1040 50%, #0f0c29 100%)"
-                  : "linear-gradient(135deg, #f8f9ff 0%, #eef1ff 50%, #f5f0ff 100%)",
-                padding: "48px 24px 40px", textAlign: "center",
-                borderBottom: `1px solid ${bdr}`,
-              }}>
-                <div style={{ maxWidth: 700, margin: "0 auto" }}>
-                  <div style={{ fontSize: "clamp(28px,4.5vw,42px)", fontWeight: 900, color: text, lineHeight: 1.3, marginBottom: 12 }}>
-                    크리에이터 <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>수익화</span> 플랫폼
-                  </div>
-                  <div style={{ fontSize: "clamp(14px,2vw,17px)", color: muted, marginBottom: 32, lineHeight: 1.6 }}>
-                    데이터와 AI로 채널 성장을 만듭니다
-                  </div>
-
-                  {/* 검색 바 */}
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    maxWidth: 560, margin: "0 auto",
-                    background: cardBg, borderRadius: 14,
-                    border: `1px solid ${bdr}`,
-                    padding: "6px 6px 6px 18px",
-                    boxShadow: isDark ? "0 4px 24px rgba(0,0,0,0.3)" : "0 4px 24px rgba(99,102,241,0.08)",
-                  }}>
-                    <input placeholder="분석할 키워드를 입력해 주세요"
-                      style={{ flex:1, border:"none", background:"transparent", color:text, fontSize:14, outline:"none", padding:"8px 0" }}
-                      onKeyDown={e => { if(e.key==="Enter" && e.target.value.trim()) { safeSetMenu("seo_home"); } }} />
-                    <button onClick={() => safeSetMenu("seo_home")}
-                      style={{ padding:"10px 18px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
-                      🔍 분석
-                    </button>
-                  </div>
+            <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 60px" }}>
+              <div style={{ maxWidth: 800, margin: "0 auto" }}>
+                <div style={{ textAlign:"center", marginBottom:32 }}>
+                  <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기획기</div>
+                  <div style={{ fontSize:14, color:muted }}>SNS 콘텐츠를 AI가 분석하고 SEO 점수를 매겨드려요</div>
                 </div>
-              </div>
 
-              <div style={{ maxWidth: 800, margin: "0 auto", padding: "32px 20px" }}>
-                {/* 기능 아이콘 그리드 (판다랭크 스타일) */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12, marginBottom: 36 }}>
+                {/* 기능 그리드 */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12, marginBottom: 32 }}>
                   {HOME_FEATURES.map((f, i) => (
                     <div key={f.id} onClick={() => safeSetMenu(f.id)}
                       style={{
@@ -166,7 +136,7 @@ export default function AnalyzerPage({ C, theme, user, navigate }) {
                   ))}
                 </div>
 
-                {/* 최근 분석 기록 (미니) */}
+                {/* 최근 분석 기록 */}
                 {history.length > 0 && (
                   <div style={{ marginBottom: 32 }}>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
@@ -187,26 +157,12 @@ export default function AnalyzerPage({ C, theme, user, navigate }) {
                             <div style={{ fontSize:13, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.url}</div>
                             <div style={{ fontSize:11, color:muted }}>{h.platform} · {h.date}</div>
                           </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                            <div style={{ fontSize:22, fontWeight:900, color:h.score>=80?"#22c55e":h.score>=60?"#f59e0b":"#ef4444" }}>{h.score}</div>
-                            <span style={{ fontSize:11, color:muted }}>점</span>
-                          </div>
+                          <div style={{ fontSize:22, fontWeight:900, color:h.score>=80?"#22c55e":h.score>=60?"#f59e0b":"#ef4444", flexShrink:0 }}>{h.score}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-
-                {/* 활용 팁 */}
-                <div style={{ padding:"22px 24px", borderRadius:16, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid rgba(99,102,241,0.12)` }}>
-                  <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:12 }}>💡 이렇게 활용하세요</div>
-                  <div style={{ fontSize:13, color:muted, lineHeight:2 }}>
-                    1. <b style={{color:text}}>실시간 검색어</b>로 트렌드를 파악하고 콘텐츠 주제를 선정하세요<br/>
-                    2. 콘텐츠를 작성한 후 <b style={{color:text}}>SNS 분석기</b>로 SEO 점수를 확인하세요<br/>
-                    3. AI가 제시하는 <b style={{color:text}}>수정 가이드</b>를 따라 제목·키워드·구조를 개선하세요<br/>
-                    4. <b style={{color:text}}>내 보관함</b>에서 이전 분석 결과를 비교하며 성장을 확인하세요
-                  </div>
-                </div>
               </div>
             </div>
           )}
