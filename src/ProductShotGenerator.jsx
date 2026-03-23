@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import StepBar from "./StepBar.jsx";
 
 /* ═══════════════════════════════════════════════════════════
    ProductShotGenerator.jsx  ·  AI 제품컷 생성기
@@ -139,6 +140,12 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   const inputBg= D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
   const accent = "#f97316";
 
+  const STEPS = [
+    { n:1, label:"설정" },
+    { n:2, label:"AI 생성중" },
+    { n:3, label:"결과 확인" },
+  ];
+
   const [step, setStep] = useState(0); // 0=intro, 1=설정, 2=생성중, 3=결과
   useGeneratingGuard(step === 2, 10);
 
@@ -188,9 +195,9 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
       for (let i = 0; i < imgCount; i++) {
         const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
         imgs.push(img);
+        setResults([...imgs]);
         setGenProgress(i + 1);
       }
-      setResults(imgs);
       if (user) {
         const updated = await changePoints(user.uid, -cost, `제품컷 생성 (${imgCount}장)`);
         if (updated !== null && onUserUpdate) onUserUpdate({ ...user, points: updated });
@@ -266,7 +273,6 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   if (step === 0) return (
     <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
       <div style={{ maxWidth:520, width:"100%", textAlign:"center" }}>
-        <div style={{ fontSize:60, marginBottom:14 }}>🛍</div>
         <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:`rgba(249,115,22,0.15)`, border:`1px solid rgba(249,115,22,0.3)`, fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
           AI 광고 이미지 · 제품컷 자동 생성
         </div>
@@ -295,7 +301,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
 
         {/* 배지 */}
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
-          {["📦 제품만 생성","🧍 모델과 함께","🎬 8가지 분위기","🎨 6가지 색감 톤","💎 10P"].map(b => (
+          {["📦 제품만 생성","🧍 모델과 함께","🎬 8가지 분위기","🎨 6가지 색감 톤","10P"].map(b => (
             <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
           ))}
         </div>
@@ -314,7 +320,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
      STEP 2: 로딩
   ══════════════════════════════════════ */
   if (step === 2) return (
-    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+      <StepBar steps={STEPS} current={2} isDark={isDark} />
       <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
         {/* 이중 링 스피너 */}
         <div style={{ position:"relative", width:100, height:100, margin:"0 auto 28px" }}>
@@ -332,13 +339,23 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
             <span>생성 중...</span>
             <span style={{ color:accent, fontWeight:800 }}>{genProgress} / {imgCount}</span>
           </div>
-          <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden" }}>
+          <div style={{ height:6, borderRadius:3, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:16 }}>
             <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ea580c)`,
               width:`${imgCount > 0 ? Math.max(5,(genProgress/imgCount)*100) : 5}%`, transition:"width 0.5s ease" }}/>
           </div>
+          {/* 생성된 이미지 실시간 표시 */}
+          {results.length > 0 && (
+            <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap" }}>
+              {results.map((img,i) => img && (
+                <div key={i} style={{ width:80, height:80, borderRadius:10, overflow:"hidden", border:`2px solid ${accent}`, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+                  <img src={img} alt={`${i+1}`} className="pixel-reveal" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
     </div>
   );
 
@@ -346,7 +363,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
      STEP 3: 결과
   ══════════════════════════════════════ */
   if (step === 3 && results.length > 0) return (
-    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 80px" }}>
+    <div style={{ flex:1, overflowY:"auto", padding:"40px 20px 80px" }}>
+      <StepBar steps={STEPS} current={3} isDark={isDark} />
       <div style={{ maxWidth: results.length > 1 ? 880 : 640, margin:"0 auto" }}>
 
         {/* 헤더 */}
@@ -418,7 +436,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
      STEP 1: 설정 화면
   ══════════════════════════════════════ */
   return (
-    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 80px" }}>
+    <div style={{ flex:1, overflowY:"auto", padding:"40px 20px 80px" }}>
+      <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:620, margin:"0 auto" }}>
 
         {/* 헤더 */}
@@ -667,7 +686,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
               opacity:(!productImg||!mode)?0.6:1,
               boxShadow:(!productImg||!mode)?"none":`0 6px 20px rgba(249,115,22,0.3)`,
             }}>
-            {user ? `🛍 제품컷 생성하기 · 💎 10P` : "✦ 1회 생성하기"}
+            {user ? "🛍 제품컷 생성하기 · 10P" : "✦ 1회 생성하기"}
           </button>
         </div>
 

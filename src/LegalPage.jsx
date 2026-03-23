@@ -132,8 +132,8 @@ function LegalContent({ items, C }) {
 }
 
 /* ── 메인 법적 방침 페이지 ── */
-export function LegalPage({ C, navigate }) {
-  const [tab, setTab] = useState("terms");
+export function LegalPage({ C, navigate, initialTab }) {
+  const [tab, setTab] = useState(initialTab || "terms");
   const isDark = C?.border?.includes("255");
 
   const tabs = [

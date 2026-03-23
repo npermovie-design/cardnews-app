@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
-
+import StepBar from "./StepBar.jsx";
+import LoadingAnimation from "./LoadingAnimation.jsx";
 import { callAIStream } from "./aiClient";
 
 /* ── 유튜브 ID 추출 ── */
@@ -117,7 +118,9 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
   const [extra,       setExtra]       = useState("");
   const [result,      setResult]      = useState("");
   const [generating,  setGenerating]  = useState(false);
-  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(generating, 10);
+  const wizStep = generating ? 2 : result ? 3 : 1;
+  const STEPS = [{n:1,label:"내용 입력"},{n:2,label:"AI 생성중"},{n:3,label:"결과 확인"}];
   const [genErr,      setGenErr]      = useState("");
   const [copied,      setCopied]      = useState(false);
   const transcriptRef = useRef(null);
@@ -360,7 +363,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
   return (
     <div style={{
-      display:"flex", flex:1, height:"100%", overflow:"hidden",
+      display:"flex", flex:1, height:"100%", overflow:"hidden", flexDirection:"column",
       fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",
     }}>
       <style>{`
@@ -369,31 +372,15 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         @keyframes yt-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .yt-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
         .yt-type-card:hover{border-color:${accentRaw}!important;transform:translateY(-2px)}
-        @media(max-width:768px){
-          .yt-desktop-split{flex-direction:column!important}
-          .yt-panel-left{width:100%!important;max-height:50vh;overflow-y:auto}
-        }
       `}</style>
 
-      {/* ── 좌측: 입력 패널 ── */}
-      <div className="yt-panel-left" style={{
-        width:480, flexShrink:0, background:panelBg,
-        borderRight:`1px solid ${border}`,
-        display:"flex", flexDirection:"column", overflow:"hidden",
-      }}>
-        {/* 헤더 */}
-        <div style={{padding:"22px 28px", borderBottom:`1px solid ${border}`, background:headerBg, flexShrink:0}}>
-          <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>▶️</div>
-            <div>
-              <div style={{fontSize:19,fontWeight:900,color:text,letterSpacing:-0.5}}>유튜브로 글쓰기</div>
-              <div style={{fontSize:13,color:muted,marginTop:1}}>유튜브 링크만 넣으면 AI가 블로그 글을 자동으로 작성해드려요</div>
-            </div>
-          </div>
-        </div>
+      {/* 스텝 바 */}
+      <StepBar steps={STEPS} current={wizStep} isDark={isDark} />
 
-        {/* 스크롤 영역 */}
-        <div style={{flex:1, overflowY:"auto", padding:"24px 28px"}}>
+      {/* 본문 */}
+      <div style={{flex:1,overflowY:"auto"}}>
+      {wizStep===1 && (
+        <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
 
           {/* URL 입력 */}
           <div style={{marginBottom:20}}>
@@ -551,39 +538,37 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                 style={{...IS,resize:"none",lineHeight:1.7,fontSize:14}}/>
             </div>
           )}
-        </div>
 
-        {/* 생성 버튼 */}
-        {videoInfo && (
-          <div style={{padding:"16px 28px 24px", flexShrink:0, borderTop:`1px solid ${border}`}}>
+          {/* 생성 버튼 */}
+          {videoInfo && (
             <button onClick={generate} disabled={generating}
               style={{
-                width:"100%", padding:"16px", borderRadius:12, border:"none",
+                width:"100%", padding:"15px", borderRadius:12, border:"none", marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"linear-gradient(135deg,#FF0000,#cc0000)",
-                color:"#fff", fontSize:16, fontWeight:800,
+                background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                color:"#fff", fontSize:15, fontWeight:800,
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                boxShadow:"0 4px 20px rgba(255,0,0,0.3)", transition:"all 0.2s",
               }}>
               {generating
-                ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : user ? <span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span> : <span>✦ 1회 생성해보기</span>
+                ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>생성 중...</>
+                : user ? <span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span> : <span>✦ 1회 생성해보기</span>
               }
             </button>
-            {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
-          </div>
-        )}
-      </div>
+          )}
+          {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
+        </div>
+      )}
 
-      {/* ── 우측: 결과 패널 ── */}
-      {(() => {
-        const _u3 = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
-        const _k3 = user ? ("member_" + (user.uid || "u")) : "guest";
-        const _ex3 = (_u3[_k3]||0) >= (user?20:5) && (user?(user.points||0):0) < 10;
-        if (_ex3 && !generating && !result) return <PointsExhausted isDark={isDark} isGuest={!user} title="유튜브 블로그" />;
-        return null;
-      })()}
-      <div style={{flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:resultBg}}>
+      {/* 결과 영역 */}
+      {wizStep>=2 && (
+        <div style={{maxWidth:900,margin:"0 auto",width:"100%"}}>
+        {(() => {
+          const _u3 = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+          const _k3 = user ? ("member_" + (user.uid || "u")) : "guest";
+          const _ex3 = (_u3[_k3]||0) >= (user?20:5) && (user?(user.points||0):0) < 10;
+          if (_ex3 && !generating && !result) return <PointsExhausted isDark={isDark} isGuest={!user} title="유튜브 블로그" />;
+          return null;
+        })()}
         {/* 결과 헤더 */}
         {result && (
           <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
@@ -607,7 +592,6 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         <div style={{flex:1,overflowY:"auto",padding:result?"28px 32px":"0"}}>
           {!result && !generating && (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"48px 32px",textAlign:"center"}}>
-              <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(255,0,0,0.1)":"rgba(255,0,0,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>▶️</div>
               <div>
                 <div style={{fontSize:18,fontWeight:800,color:text,marginBottom:8,opacity:0.6}}>유튜브 URL을 입력해주세요</div>
                 <div style={{fontSize:14,color:muted,lineHeight:1.9,maxWidth:320}}>
@@ -620,13 +604,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
           )}
 
           {generating && !result && (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:20,padding:"48px 32px",textAlign:"center"}}>
-              <div style={{width:64,height:64,borderRadius:20,background:"rgba(255,0,0,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <div style={{width:32,height:32,border:"3px solid rgba(255,0,0,0.2)",borderTopColor:"#FF0000",borderRadius:"50%",animation:"yt-spin 0.8s linear infinite"}}/>
-              </div>
-              <div style={{fontSize:16,fontWeight:700,color:text}}>AI가 블로그 글을 작성 중이에요...</div>
-              <div style={{fontSize:13,color:muted}}>{transcript.length>0?"자막 내용을 분석해서 작성 중":"영상 제목 기반으로 작성 중"}</div>
-            </div>
+            <LoadingAnimation icon="▶️✨" title="AI가 블로그 글을 작성하고 있어요" subtitle={videoInfo?.title||""} isDark={isDark} />
           )}
 
           {result && (
@@ -636,6 +614,8 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
             </div>
           )}
         </div>
+        </div>
+      )}
       </div>
     </div>
   );

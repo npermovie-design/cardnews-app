@@ -158,6 +158,22 @@ export default function SimpleDetailPage({ isDark, user }) {
   const [productImages, setProductImages] = useState([]);
   const productFileRef = useRef(null);
 
+  // ── URL 불러오기 ──────────────────────────────────────────────
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const fetchFromUrl = async () => {
+    if (!urlInput.trim()) return;
+    setUrlLoading(true);
+    try {
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const data = await r.json();
+      if (data.title) setTopic(data.title.slice(0, 80));
+      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 500);
+      if (desc) setContent(prev => prev ? prev + "\n" + desc : desc);
+    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    setUrlLoading(false);
+  };
+
   // ── Step 2: 슬라이드 기획 ───────────────────────────────────
   const [slideContents, setSlideContents] = useState([]);
   const [planGenLoading, setPlanGenLoading] = useState(false);
@@ -353,7 +369,7 @@ export default function SimpleDetailPage({ isDark, user }) {
 
   // ── 위저드 진행 바 ──────────────────────────────────────────
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
+    <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
         {[["1","주제 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","AI 생성"]].map(([n, label], i) => {
           const step = parseInt(n);
@@ -393,6 +409,22 @@ export default function SimpleDetailPage({ isDark, user }) {
             </div>
             <div style={{ fontSize:13, color:muted }}>
               상품명과 핵심 내용만 입력하면 AI가 상세페이지 슬라이드를 구성해요
+            </div>
+          </div>
+
+          {/* URL 불러오기 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6, letterSpacing:0.5 }}>🔗 URL로 내용 불러오기</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:8 }}>뉴스·유튜브·블로그·인스타 URL을 붙여넣으면 내용을 자동으로 채워줘요</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}
+                placeholder="https://... URL 붙여넣기"
+                style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
+              <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                {urlLoading?"불러오는 중...":"불러오기"}
+              </button>
             </div>
           </div>
 
@@ -561,7 +593,7 @@ export default function SimpleDetailPage({ isDark, user }) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader />
-        <div style={{ maxWidth:900, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
 
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>

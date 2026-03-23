@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
+import { useI18n } from "./i18n.jsx";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
@@ -51,6 +52,7 @@ function useOnlineCount() {
 
 
 function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigate, onLogout }) {
+  const { t } = useI18n();
   const isDark = theme === "dark";
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
   const sideBdr  = isDark ? "rgba(255,255,255,0.07)"     : "#e5e3f5";
@@ -112,48 +114,48 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       {/* 브랜드 */}
       <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}` }}>
         <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
-        <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>AI 콘텐츠 생성기</div>
+        <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>{t("aiGen")}</div>
       </div>
 
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1, overflowY: "auto", overflowX: "visible" }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label="홈" icon="" />
-        <Item id="library" label="보관함" icon="" />
+        <Item id="home" label={t("home")} icon="" />
+        <Item id="library" label={t("library")} icon="" />
 
         {/* SNS 글쓰기 그룹 */}
-        <Group label="SNS 글쓰기" icon="✍️" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
+        <Group label={t("snsWrite")} icon="✍️" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
-          <Item id="blog_naver_intro"   label="네이버 블로그"   indent />
-          <Item id="blog_cafe"          label="네이버 카페"     indent />
-          <Item id="blog_tistory_intro" label="티스토리"        indent />
-          <Item id="blog_insta_intro"   label="인스타그램 캡션" indent />
-          <Item id="blog_youtube_intro" label="유튜브 대본"     indent />
-          <Item id="blog_thread_intro"  label="스레드"          indent />
-          <Item id="blog_yt_blog_intro" label="유튜브로 글쓰기" indent />
-          <Item id="blog_news_intro"    label="뉴스로 글쓰기"   indent />
+          <Item id="blog_naver_intro"   label={t("naverBlog")}      indent />
+          <Item id="blog_cafe"          label={t("naverCafe")}      indent />
+          <Item id="blog_tistory_intro" label={t("tistory")}        indent />
+          <Item id="blog_insta_intro"   label={t("instaCap")}       indent />
+          <Item id="blog_youtube_intro" label={t("youtubeScript")}  indent />
+          <Item id="blog_thread_intro"  label={t("thread")}         indent />
+          <Item id="blog_yt_blog_intro" label={t("ytBlog")}         indent />
+          <Item id="blog_news_intro"    label={t("newsBlog")}       indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
-        <Group label="SNS 이미지" icon="🖼" active={!!(aiMenu && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu.startsWith(x)))} />
+        <Group label={t("snsImage")} icon="🖼" active={!!(aiMenu && ["cardnews_simple","cardnews_image","detail_simple","detail_image"].some(x=>aiMenu.startsWith(x)))} />
         {cardOpen && <>
-          <Item id="cardnews_simple" label="심플 카드뉴스"    indent />
-          <Item id="cardnews_image"  label="이미지 카드뉴스"  indent />
-          <Item id="detail_simple"   label="심플 상세페이지"  indent />
-          <Item id="detail_image"    label="이미지 상세페이지" indent />
-          {user?.role === "admin" && <Item id="shorts" label="쇼츠 편집 👑" indent />}
+          <Item id="cardnews_simple" label={t("simpleCard")}    indent />
+          <Item id="cardnews_image"  label={t("imageCard")}     indent />
+          <Item id="detail_simple"   label={t("simpleDetail")}  indent />
+          <Item id="detail_image"    label={t("imageDetail")}   indent />
+          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")+" 👑"} indent />}
         </>}
 
         {/* 이미지 생성 그룹 */}
-        <Group label="이미지생성" icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
+        <Group label={t("imageGen")} icon="🎨" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
         {imageOpen && <>
-          <Item id="product_shot" label="제품컷 생성"      indent />
-          <Item id="logo_gen"     label="로고 생성"        indent />
-          <Item id="mockup_gen"   label="목업 생성"        indent />
-          <Item id="model_gen"    label="모델 생성"        indent />
-          <Item id="face_swap"    label="얼굴 교체"         indent />
-          <Item id="outfit_swap"  label="의상 교체"         indent />
-          <Item id="outpaint"     label="여백 늘리기" indent />
+          <Item id="product_shot" label={t("productShot")}  indent />
+          <Item id="logo_gen"     label={t("logoGen")}      indent />
+          <Item id="mockup_gen"   label={t("mockupGen")}    indent />
+          <Item id="model_gen"    label={t("modelGen")}     indent />
+          <Item id="face_swap"    label={t("faceSwap")}     indent />
+          <Item id="outfit_swap"  label={t("outfitSwap")}   indent />
+          <Item id="outpaint"     label={t("outpaint")}     indent />
         </>}
 
 
@@ -358,13 +360,26 @@ function getDetailSaves() { try { return JSON.parse(localStorage.getItem(DETAIL_
 function deleteDetailSave(id) {
   try { localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(getDetailSaves().filter(x => x.id !== id))); } catch(e) {}
 }
+const IMGCARD_SAVES_KEY = "nper_imgcard_saves_v1";
+function getImgCardSaves() { try { return JSON.parse(localStorage.getItem(IMGCARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function deleteImgCardSave(id) {
+  try { localStorage.setItem(IMGCARD_SAVES_KEY, JSON.stringify(getImgCardSaves().filter(x => x.id !== id))); } catch(e) {}
+}
+const SIMPLEDETAIL_SAVES_KEY = "nper_simpledetail_saves_v1";
+function getSimpleDetailSaves() { try { return JSON.parse(localStorage.getItem(SIMPLEDETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function deleteSimpleDetailSave(id) {
+  try { localStorage.setItem(SIMPLEDETAIL_SAVES_KEY, JSON.stringify(getSimpleDetailSaves().filter(x => x.id !== id))); } catch(e) {}
+}
 
 // ── LibraryPage 컴포넌트 ──────────────────────────────────────────────────────
 function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState("blog");
   const [blogList, setBlogList] = useState(getBlogSaves);
   const [cardList, setCardList] = useState(getCardSaves);
   const [detailList, setDetailList] = useState(getDetailSaves);
+  const [imgCardList, setImgCardList] = useState(getImgCardSaves);
+  const [simpleDetailList, setSimpleDetailList] = useState(getSimpleDetailSaves);
   const [search, setSearch] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
 
@@ -381,7 +396,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
   );
-  const total = blogList.length + cardList.length + detailList.length;
+  const total = blogList.length + cardList.length + detailList.length + imgCardList.length + simpleDetailList.length;
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
@@ -394,32 +409,36 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
     blog_yt_blog:"#ef4444"
   };
 
+  const snsImageCount = cardList.length + imgCardList.length + detailList.length + simpleDetailList.length;
+
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:800, margin:"0 auto" }}>
       {/* 헤더 */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div>
-          <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>📁 내 보관함</div>
-          <div style={{ fontSize:13, color:muted }}>총 {total}개 저장됨 · 자동 저장됩니다</div>
+          <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>{"📁 " + t("library")}</div>
+          <div style={{ fontSize:13, color:muted }}>{t("totalN")} {total}{t("totalSaved")} · {t("autoSaved")}</div>
         </div>
         <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="검색..."
+          placeholder={t("search")}
           style={{ padding:"8px 14px", borderRadius:9, border:`1px solid ${bdr}`, background:inputBg,
             color:text, fontSize:13, outline:"none", width:180 }} />
       </div>
 
-      {/* 탭 */}
+      {/* 탭 — 3개 폴더 */}
       <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
-        {[["blog","✍️ 블로그·SNS 글","blog"], ["card","🖼 카드뉴스","card"], ["detail","🛍 상세페이지","detail"]].map(([id, label]) => (
+        {[
+          ["blog","✍️ SNS 글쓰기", blogList.length],
+          ["snsimg","🖼 SNS 이미지", snsImageCount],
+        ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
-            style={{ padding:"7px 16px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+            style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
               background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
               color: tab===id ? (isDark?"#fff":accent) : muted,
               boxShadow: tab===id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
             {label}
-            <span style={{ marginLeft:6, fontSize:11, opacity:0.7 }}>
-              {id==="blog" ? blogList.length : id==="card" ? cardList.length : detailList.length}
-            </span>
+            <span style={{ marginLeft:5, fontSize:11, opacity:0.7 }}>{cnt}</span>
           </button>
         ))}
       </div>
@@ -571,10 +590,10 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         </>
       )}
 
-      {/* 상세페이지 탭 */}
+      {/* 상세페이지 탭 (심플+이미지 통합) */}
       {tab === "detail" && (
         <>
-          {detailList.length === 0 ? (
+          {(detailList.length + simpleDetailList.length) === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🛍</div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 상세페이지가 없어요</div>
@@ -587,6 +606,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
             </div>
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14 }}>
+              {/* 심플 상세페이지 */}
               {detailList.map(item => (
                 <div key={item.id} style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, background:bg }}>
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
@@ -594,6 +614,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                       ? <img src={item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
                       : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count}장</div>
+                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(16,185,129,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>심플</div>
                   </div>
                   <div style={{ padding:"12px 14px" }}>
                     <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName}</div>
@@ -610,13 +631,34 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                         style={{ padding:"6px 10px", borderRadius:7, border:"none",
                           background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>삭제</button>
                     </div>
-                    {item.images?.length > 1 && (
-                      <div style={{ display:"flex", gap:4, marginTop:8, overflowX:"auto" }}>
-                        {item.images.slice(1,5).map((img,i)=>(
-                          <img key={i} src={img} alt="" style={{ width:36, height:36, objectFit:"cover", borderRadius:5, flexShrink:0 }}/>
-                        ))}
-                      </div>
-                    )}
+                  </div>
+                </div>
+              ))}
+              {/* 이미지 상세페이지 */}
+              {simpleDetailList.map(item => (
+                <div key={item.id} style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, background:bg }}>
+                  <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
+                    {item.thumb || item.thumbnail
+                      ? <img src={item.thumb||item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🖼</div>}
+                    <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count||item.slides?.length||0}장</div>
+                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(99,102,241,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>이미지</div>
+                  </div>
+                  <div style={{ padding:"12px 14px" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName||item.topic||"제목 없음"}</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
+                      <button onClick={()=>{
+                        try { localStorage.setItem("nper_open_simpledetail", JSON.stringify(item)); } catch {}
+                        setAiMenu("detail_image_open");
+                      }}
+                        style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
+                          background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer", marginRight:6 }}>
+                        열기
+                      </button>
+                      <button onClick={()=>{ if(window.confirm("삭제할까요?")){ deleteSimpleDetailSave(item.id); setSimpleDetailList(getSimpleDetailSaves()); } }}
+                        style={{ padding:"6px 10px", borderRadius:7, border:"none",
+                          background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>삭제</button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -624,6 +666,65 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
           )}
         </>
       )}
+
+      {/* 이미지 카드뉴스 탭 */}
+      {tab === "imgcard" && (
+        <>
+          {imgCardList.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🎨</div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 이미지 카드뉴스가 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>이미지 카드뉴스 생성 후 자동으로 여기 저장됩니다</div>
+              <button onClick={()=>setAiMenu("cardnews_image")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                이미지 카드뉴스 만들기 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
+              {imgCardList.map(item => (
+                <div key={item.id}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:14, overflow:"hidden",
+                    display:"flex", flexDirection:"column" }}>
+                  {item.thumb ? (
+                    <img src={item.thumb} alt={item.topic}
+                      style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
+                  ) : (
+                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)",
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🎨</div>
+                  )}
+                  <div style={{ padding:"12px 12px 10px" }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4,
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {item.topic || "제목 없음"}
+                    </div>
+                    <div style={{ fontSize:11, color:muted, marginBottom:10 }}>
+                      {item.count||item.slides?.length||0}장 · {item.date}
+                    </div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={()=>{
+                        try { localStorage.setItem("nper_open_imgcard", JSON.stringify(item)); } catch {}
+                        setAiMenu("cardnews_image_open");
+                      }}
+                        style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`,
+                          background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                        열기
+                      </button>
+                      <button onClick={()=>{ deleteImgCardSave(item.id); setImgCardList(getImgCardSaves()); }}
+                        style={{ padding:"6px 10px", borderRadius:7, border:"none",
+                          background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      </div>{/* maxWidth:800 */}
     </div>
   );
 }
@@ -1510,6 +1611,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   const cardBdr   = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardDescC = isDark ? "rgba(255,255,255,0.4)"  : "#888";
 
+  const { t: tt } = useI18n();
+  const { lang: _lang } = useI18n();
+  const isKo = _lang === "ko";
+  const _s = (ko, en) => isKo ? ko : en;
+
   // 보관함
   if (aiMenu === "library") {
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} />;
@@ -1518,32 +1624,32 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_naver_intro",    icon: "📝", title: "네이버 블로그",   desc: "SEO 최적화 블로그 포스트", cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_tistory_intro",  icon: "🟠", title: "티스토리",        desc: "티스토리용 블로그 글",     cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
-      { id: "blog_insta_intro",    icon: "📱", title: "인스타그램 캡션", desc: "인스타 게시물 캡션",       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "blog_youtube_intro",  icon: "▶️", title: "유튜브 대본",     desc: "영상 대본 & 설명란",       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
-      { id: "blog_thread_intro",   icon: "🧵", title: "스레드",          desc: "스레드 게시물 작성",       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "blog_yt_blog_intro",  icon: "📺", title: "유튜브로 글쓰기", desc: "유튜브 영상으로 글 작성",  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
-      { id: "blog_news_intro",     icon: "📰", title: "뉴스로 글쓰기",   desc: "뉴스 기사로 블로그 작성",  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "cardnews_simple",  icon: "✨", title: "심플 카드뉴스",    desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "cardnews_image",   icon: "🖼", title: "이미지 카드뉴스",  desc: "AI 이미지 슬라이드 생성",  cr: 30, darkColor: "rgba(139,92,246,0.18)",  lightColor: "rgba(139,92,246,0.07)"  },
-      { id: "detail_simple",    icon: "📋", title: "심플 상세페이지",  desc: "텍스트 편집 방식",         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "detail_image",     icon: "🛍", title: "이미지 상세페이지",desc: "AI 이미지 상세페이지",     cr: 30, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      { id: "image_gen",        icon: "🎨", title: "이미지 생성",      desc: "AI 이미지 자유 생성",      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "product_shot", icon: "🛍", title: "제품컷 생성",       desc: "AI 광고용 제품 이미지",    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
-      { id: "logo_gen",     icon: "🏷", title: "로고 생성",         desc: "AI 맞춤 로고 제작",        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "mockup_gen",   icon: "🎨", title: "목업 생성",         desc: "제품·브랜드 목업 제작",    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
-      { id: "model_gen",    icon: "🧍", title: "모델 생성",         desc: "여자/남자 광고 모델 생성", cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "face_swap",    icon: "🔄", title: "얼굴 교체",         desc: "얼굴만 교체 · 비교 슬라이더", cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "outfit_swap",  icon: "👗", title: "의상 교체",         desc: "옷·스타일 교체",           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "outpaint",     icon: "↔",  title: "여백 늘리기",      desc: "수동 크기 조절 + AI 채우기", cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: "숏폼편집 👑", desc: "유튜브→숏폼 AI 기획 (관리자)", cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
+      { id: "blog_naver_intro",    icon: "📝", title: _s("네이버 블로그","Naver Blog"),   desc: _s("SEO 최적화 블로그 포스트","SEO-optimized blog post"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_tistory_intro",  icon: "🟠", title: _s("티스토리","Tistory"),        desc: _s("티스토리용 블로그 글","Tistory blog post"),     cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
+      { id: "blog_insta_intro",    icon: "📱", title: _s("인스타그램 캡션","Instagram Caption"), desc: _s("인스타 게시물 캡션","Instagram post caption"),       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "blog_youtube_intro",  icon: "▶️", title: _s("유튜브 대본","YouTube Script"),     desc: _s("영상 대본 & 설명란","Video script & description"),       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
+      { id: "blog_thread_intro",   icon: "🧵", title: _s("스레드","Threads"),          desc: _s("스레드 게시물 작성","Threads post writing"),       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
+      { id: "blog_yt_blog_intro",  icon: "📺", title: _s("유튜브로 글쓰기","YouTube to Blog"), desc: _s("유튜브 영상으로 글 작성","Write from YouTube video"),  cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.05)"   },
+      { id: "blog_news_intro",     icon: "📰", title: _s("뉴스로 글쓰기","News to Blog"),   desc: _s("뉴스 기사로 블로그 작성","Write blog from news article"),  cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "cardnews_simple",  icon: "✨", title: _s("심플 카드뉴스","Simple Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "cardnews_image",   icon: "🖼", title: _s("이미지 카드뉴스","Image Card News"),  desc: _s("AI 이미지 슬라이드 생성","AI image slide generation"),  cr: 30, darkColor: "rgba(139,92,246,0.18)",  lightColor: "rgba(139,92,246,0.07)"  },
+      { id: "detail_simple",    icon: "📋", title: _s("심플 상세페이지","Simple Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "detail_image",     icon: "🛍", title: _s("이미지 상세페이지","Image Detail Page"),desc: _s("AI 이미지 상세페이지","AI image detail page"),     cr: 30, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      { id: "image_gen",        icon: "🎨", title: _s("이미지 생성","Image Generation"),      desc: _s("AI 이미지 자유 생성","AI free image generation"),      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "product_shot", icon: "🛍", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
+      { id: "logo_gen",     icon: "🏷", title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "mockup_gen",   icon: "🎨", title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
+      { id: "model_gen",    icon: "🧍", title: _s("모델 생성","Model Generator"),         desc: _s("여자/남자 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "face_swap",    icon: "🔄", title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "outfit_swap",  icon: "👗", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "outpaint",     icon: "↔",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: _s("숏폼편집 👑","Short-form Edit 👑"), desc: _s("유튜브→숏폼 AI 기획 (관리자)","YouTube to Short-form AI (Admin)"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
         <div style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>AI 생성기에 오신 걸 환영해요! 👋</div>
-          <div style={{ fontSize: 13, color: homeMuted }}>왼쪽 메뉴에서 원하는 콘텐츠 타입을 선택해주세요</div>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>{tt("aiWelcome")}</div>
+          <div style={{ fontSize: 13, color: homeMuted }}>{tt("aiWelcomeSub")}</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
           {MENUS.map(m => (
@@ -1588,7 +1694,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
             <div style={{ fontSize:14, color:m, lineHeight:1.8, maxWidth:440, margin:"0 auto" }}>{subtitle}</div>
           </div>
           <div style={{ marginBottom:28 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:14 }}>📋 이런 순서로 제작돼요</div>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:14 }}>{tt("introSteps")}</div>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {steps.map((s,i)=>(
                 <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"12px 14px", borderRadius:11, background:cardBg, border:`1px solid ${bdr}` }}>
@@ -1602,7 +1708,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
             </div>
           </div>
           <div style={{ padding:"16px 18px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, marginBottom:28 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:12 }}>✨ 주요 특징</div>
+            <div style={{ fontSize:13, fontWeight:800, color:t, marginBottom:12 }}>{tt("introFeatures")}</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
               {features.map((f,i)=>(
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:`${color}10`, border:`1px solid ${color}30` }}>
@@ -1621,127 +1727,127 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   };
 
-  // ── 블로그 인트로 데이터 ───────────────────────────────────
+  // ── 블로그 인트로 데이터 (다국어) ─────────────────────────
   const BLOG_INTRO = {
     blog_naver: {
-      icon:"📝", title:"네이버 블로그", badge:"SEO 최적화 · 장문 콘텐츠", color:"#4ade80",
-      subtitle:"키워드 기반 SEO 최적화 네이버 블로그 포스트를 AI가 자동 작성해줘요. 소제목 구조와 자연스러운 문체로 완성돼요.",
+      icon:"📝", title:_s("네이버 블로그","Naver Blog"), badge:_s("SEO 최적화 · 장문 콘텐츠","SEO Optimized · Long-form"), color:"#4ade80",
+      subtitle:_s("키워드 기반 SEO 최적화 네이버 블로그 포스트를 AI가 자동 작성해줘요.","AI auto-writes SEO-optimized Naver blog posts based on keywords."),
       steps:[
-        { title:"주제 입력", desc:"블로그 주제나 키워드를 입력하거나 예시에서 선택해요." },
-        { title:"세부 설정", desc:"글의 톤(친근/전문), 분량, 대상 독자를 설정해요." },
-        { title:"AI 글쓰기", desc:"AI가 서론·본론·결론 구조로 완성된 블로그 글을 작성해요." },
-        { title:"복사 & 활용", desc:"생성된 글을 복사해 네이버 블로그에 바로 붙여넣기해요." },
+        { title:_s("주제 입력","Enter Topic"), desc:_s("블로그 주제나 키워드를 입력하거나 예시에서 선택해요.","Enter a blog topic/keyword or choose from examples.") },
+        { title:_s("세부 설정","Settings"), desc:_s("글의 톤, 분량, 대상 독자를 설정해요.","Set tone, length, and target audience.") },
+        { title:_s("AI 글쓰기","AI Writing"), desc:_s("AI가 서론·본론·결론 구조로 완성된 블로그 글을 작성해요.","AI writes a complete blog post with intro, body, conclusion.") },
+        { title:_s("복사 & 활용","Copy & Use"), desc:_s("생성된 글을 복사해 바로 붙여넣기해요.","Copy and paste the generated text directly.") },
       ],
       features:[
-        { icon:"🔍", label:"SEO 최적화" }, { icon:"📄", label:"장문 작성" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"🔍", label:_s("SEO 최적화","SEO Optimized") }, { icon:"📄", label:_s("장문 작성","Long-form") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"네이버 블로그 글 작성하기",
+      cta:_s("네이버 블로그 글 작성하기","Write Naver Blog Post"),
     },
     blog_tistory: {
-      icon:"🟠", title:"티스토리 블로그", badge:"구조화된 포스팅 · HTML 지원", color:"#f97316",
-      subtitle:"티스토리에 최적화된 구조로 블로그 포스트를 생성해줘요. 가독성 높은 소제목과 정보 구조로 완성돼요.",
+      icon:"🟠", title:_s("티스토리 블로그","Tistory Blog"), badge:_s("구조화된 포스팅 · HTML 지원","Structured Post · HTML"), color:"#f97316",
+      subtitle:_s("티스토리에 최적화된 구조로 블로그 포스트를 생성해줘요.","AI generates blog posts optimized for Tistory format."),
       steps:[
-        { title:"주제 입력", desc:"포스팅할 주제나 키워드를 입력해요." },
-        { title:"세부 설정", desc:"글의 톤, 분량, 포함할 내용을 설정해요." },
-        { title:"AI 글쓰기", desc:"AI가 티스토리 형식에 맞는 포스트를 작성해요." },
-        { title:"복사 & 활용", desc:"생성된 글을 복사해 티스토리에 바로 붙여넣기해요." },
+        { title:_s("주제 입력","Enter Topic"), desc:_s("포스팅할 주제나 키워드를 입력해요.","Enter topic or keyword to post about.") },
+        { title:_s("세부 설정","Settings"), desc:_s("글의 톤, 분량, 포함할 내용을 설정해요.","Set tone, length, and content to include.") },
+        { title:_s("AI 글쓰기","AI Writing"), desc:_s("AI가 티스토리 형식에 맞는 포스트를 작성해요.","AI writes a post formatted for Tistory.") },
+        { title:_s("복사 & 활용","Copy & Use"), desc:_s("생성된 글을 복사해 바로 붙여넣기해요.","Copy and paste directly to Tistory.") },
       ],
       features:[
-        { icon:"📑", label:"구조화 포스팅" }, { icon:"✍️", label:"자연스러운 문체" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"📑", label:_s("구조화 포스팅","Structured") }, { icon:"✍️", label:_s("자연스러운 문체","Natural Style") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"티스토리 글 작성하기",
+      cta:_s("티스토리 글 작성하기","Write Tistory Post"),
     },
     blog_insta: {
-      icon:"📱", title:"인스타그램 캡션", badge:"짧고 임팩트있는 · 해시태그 포함", color:"#ec4899",
-      subtitle:"인스타그램 게시물에 딱 맞는 캡션과 해시태그를 AI가 생성해줘요. 감성적이고 임팩트 있는 문구로 완성돼요.",
+      icon:"📱", title:_s("인스타그램 캡션","Instagram Caption"), badge:_s("짧고 임팩트있는 · 해시태그 포함","Short & Impactful · Hashtags"), color:"#ec4899",
+      subtitle:_s("인스타그램 게시물에 딱 맞는 캡션과 해시태그를 AI가 생성해줘요.","AI generates perfect captions and hashtags for Instagram posts."),
       steps:[
-        { title:"주제/이미지 설명 입력", desc:"게시할 사진이나 영상의 주제·내용을 설명해요." },
-        { title:"톤 설정", desc:"감성적·유머러스·정보성 등 원하는 분위기를 선택해요." },
-        { title:"AI 캡션 생성", desc:"AI가 캡션 본문과 관련 해시태그를 함께 작성해줘요." },
-        { title:"복사 & 게시", desc:"캡션을 복사해 인스타그램에 바로 붙여넣기해요." },
+        { title:_s("주제 입력","Enter Topic"), desc:_s("게시할 사진이나 영상의 주제를 설명해요.","Describe the photo/video topic to post.") },
+        { title:_s("톤 설정","Set Tone"), desc:_s("감성적·유머러스·정보성 등 분위기를 선택해요.","Choose mood: emotional, humorous, informative, etc.") },
+        { title:_s("AI 캡션 생성","AI Caption"), desc:_s("AI가 캡션과 해시태그를 함께 작성해줘요.","AI writes caption text with relevant hashtags.") },
+        { title:_s("복사 & 게시","Copy & Post"), desc:_s("캡션을 복사해 인스타그램에 붙여넣기해요.","Copy and paste to Instagram.") },
       ],
       features:[
-        { icon:"#️⃣", label:"해시태그 자동 생성" }, { icon:"💬", label:"감성 문구" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"#️⃣", label:_s("해시태그 자동","Auto Hashtags") }, { icon:"💬", label:_s("감성 문구","Catchy Copy") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"인스타그램 캡션 작성하기",
+      cta:_s("인스타그램 캡션 작성하기","Write Instagram Caption"),
     },
     blog_youtube: {
-      icon:"▶️", title:"유튜브 대본", badge:"영상 대본 · 설명란 포함", color:"#ef4444",
-      subtitle:"유튜브 영상 대본과 설명란 텍스트를 AI가 작성해줘요. 시청자의 흥미를 끄는 인트로부터 아웃트로까지 완성돼요.",
+      icon:"▶️", title:_s("유튜브 대본","YouTube Script"), badge:_s("영상 대본 · 설명란 포함","Script · Description"), color:"#ef4444",
+      subtitle:_s("유튜브 영상 대본과 설명란 텍스트를 AI가 작성해줘요.","AI writes YouTube video scripts and description text."),
       steps:[
-        { title:"영상 주제 입력", desc:"만들 영상의 주제와 핵심 내용을 입력해요." },
-        { title:"채널 스타일 설정", desc:"채널 분위기와 대상 시청자층을 설정해요." },
-        { title:"AI 대본 생성", desc:"AI가 인트로·본론·아웃트로 구조의 대본을 작성해요." },
-        { title:"복사 & 활용", desc:"대본과 설명란 텍스트를 복사해 바로 사용해요." },
+        { title:_s("영상 주제 입력","Enter Video Topic"), desc:_s("만들 영상의 주제와 핵심 내용을 입력해요.","Enter the video topic and key points.") },
+        { title:_s("채널 스타일 설정","Channel Style"), desc:_s("채널 분위기와 대상 시청자층을 설정해요.","Set channel mood and target audience.") },
+        { title:_s("AI 대본 생성","AI Script"), desc:_s("AI가 인트로·본론·아웃트로 구조의 대본을 작성해요.","AI writes script with intro, body, outro structure.") },
+        { title:_s("복사 & 활용","Copy & Use"), desc:_s("대본과 설명란을 복사해 바로 사용해요.","Copy script and description to use directly.") },
       ],
       features:[
-        { icon:"🎬", label:"대본 + 설명란" }, { icon:"🎤", label:"자연스러운 말투" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"🎬", label:_s("대본 + 설명란","Script + Desc") }, { icon:"🎤", label:_s("자연스러운 말투","Natural Tone") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"유튜브 대본 작성하기",
+      cta:_s("유튜브 대본 작성하기","Write YouTube Script"),
     },
     blog_thread: {
-      icon:"🧵", title:"스레드", badge:"짧고 임팩트있는 · 연속 게시", color:"#a855f7",
-      subtitle:"스레드(Threads)에 올릴 짧고 임팩트 있는 게시물을 AI가 작성해줘요. 연속 스레드 형식으로도 생성돼요.",
+      icon:"🧵", title:_s("스레드","Threads"), badge:_s("짧고 임팩트있는 · 연속 게시","Short & Bold · Thread Series"), color:"#a855f7",
+      subtitle:_s("스레드에 올릴 짧고 임팩트 있는 게시물을 AI가 작성해줘요.","AI writes short, impactful posts for Threads."),
       steps:[
-        { title:"주제 입력", desc:"스레드에 올릴 주제나 하고 싶은 이야기를 입력해요." },
-        { title:"형식 선택", desc:"단일 포스트 또는 연속 스레드 형식을 선택해요." },
-        { title:"AI 글쓰기", desc:"AI가 스레드 특유의 짧고 임팩트 있는 글을 작성해요." },
-        { title:"복사 & 게시", desc:"완성된 게시물을 복사해 스레드에 바로 올려요." },
+        { title:_s("주제 입력","Enter Topic"), desc:_s("스레드에 올릴 주제를 입력해요.","Enter the topic for your thread post.") },
+        { title:_s("형식 선택","Format"), desc:_s("단일 포스트 또는 연속 스레드를 선택해요.","Choose single post or thread series.") },
+        { title:_s("AI 글쓰기","AI Writing"), desc:_s("AI가 짧고 임팩트 있는 글을 작성해요.","AI writes short, bold text for Threads.") },
+        { title:_s("복사 & 게시","Copy & Post"), desc:_s("완성된 게시물을 복사해 올려요.","Copy and post to Threads.") },
       ],
       features:[
-        { icon:"⚡", label:"짧고 강렬한 글" }, { icon:"🔗", label:"연속 스레드" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"⚡", label:_s("짧고 강렬한","Short & Bold") }, { icon:"🔗", label:_s("연속 스레드","Thread Series") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"스레드 게시물 작성하기",
+      cta:_s("스레드 게시물 작성하기","Write Thread Post"),
     },
     blog_yt_blog: {
-      icon:"📺", title:"유튜브로 글쓰기", badge:"영상 → 블로그 자동 변환", color:"#ef4444",
-      subtitle:"유튜브 영상 URL을 입력하면 영상 내용을 분석해 블로그 포스트로 자동 변환해줘요. 영상 하나로 블로그 글까지!",
+      icon:"📺", title:_s("유튜브로 글쓰기","YouTube to Blog"), badge:_s("영상 → 블로그 자동 변환","Video → Blog Auto Convert"), color:"#ef4444",
+      subtitle:_s("유튜브 영상 URL을 입력하면 블로그 포스트로 자동 변환해줘요.","Enter a YouTube URL and AI converts it to a blog post."),
       steps:[
-        { title:"유튜브 URL 입력", desc:"변환할 유튜브 영상 URL을 붙여넣기해요." },
-        { title:"AI 영상 분석", desc:"AI가 영상의 자막·내용을 분석해요." },
-        { title:"블로그 글 변환", desc:"영상 내용을 구조화된 블로그 포스트로 변환해요." },
-        { title:"복사 & 활용", desc:"완성된 블로그 글을 복사해 바로 사용해요." },
+        { title:_s("유튜브 URL 입력","Enter YouTube URL"), desc:_s("변환할 영상 URL을 붙여넣기해요.","Paste the YouTube video URL.") },
+        { title:_s("AI 영상 분석","AI Analysis"), desc:_s("AI가 영상의 자막·내용을 분석해요.","AI analyzes subtitles and content.") },
+        { title:_s("블로그 글 변환","Convert to Blog"), desc:_s("영상 내용을 블로그 포스트로 변환해요.","Converts video content to a blog post.") },
+        { title:_s("복사 & 활용","Copy & Use"), desc:_s("완성된 글을 복사해 바로 사용해요.","Copy and use the generated post.") },
       ],
       features:[
-        { icon:"🔗", label:"URL만 입력" }, { icon:"🤖", label:"AI 자동 분석" },
-        { icon:"💎", label:"10P" }, { icon:"⚡", label:"빠른 변환" },
+        { icon:"🔗", label:_s("URL만 입력","URL Only") }, { icon:"🤖", label:_s("AI 자동 분석","AI Analysis") },
+        { icon:"💎", label:"10P" }, { icon:"⚡", label:_s("빠른 변환","Fast Convert") },
       ],
-      cta:"유튜브 영상으로 글쓰기",
+      cta:_s("유튜브 영상으로 글쓰기","Write from YouTube"),
     },
     blog_news: {
-      icon:"📰", title:"뉴스로 글쓰기", badge:"뉴스 기사 → 블로그 변환", color:"#06b6d4",
-      subtitle:"뉴스 기사 URL을 입력하면 기사 내용을 분석해 나만의 블로그 포스트로 자동 변환해줘요. 트렌드를 콘텐츠로!",
+      icon:"📰", title:_s("뉴스로 글쓰기","News to Blog"), badge:_s("뉴스 기사 → 블로그 변환","News → Blog Convert"), color:"#06b6d4",
+      subtitle:_s("뉴스 기사 URL을 입력하면 블로그 포스트로 자동 변환해줘요.","Enter a news URL and AI converts it to your blog post."),
       steps:[
-        { title:"뉴스 URL 입력", desc:"활용할 뉴스 기사 URL을 붙여넣기해요." },
-        { title:"AI 기사 분석", desc:"AI가 기사의 핵심 내용을 파악해요." },
-        { title:"블로그 글 변환", desc:"기사 내용을 나만의 시각으로 재작성한 블로그 글을 생성해요." },
-        { title:"복사 & 활용", desc:"완성된 포스트를 복사해 블로그에 게시해요." },
+        { title:_s("뉴스 URL 입력","Enter News URL"), desc:_s("활용할 뉴스 기사 URL을 붙여넣기해요.","Paste the news article URL.") },
+        { title:_s("AI 기사 분석","AI Analysis"), desc:_s("AI가 기사의 핵심 내용을 파악해요.","AI identifies key content from the article.") },
+        { title:_s("블로그 글 변환","Convert to Blog"), desc:_s("기사 내용을 나만의 블로그 글로 생성해요.","Creates your own blog post from the article.") },
+        { title:_s("복사 & 활용","Copy & Use"), desc:_s("완성된 포스트를 복사해 게시해요.","Copy and publish the generated post.") },
       ],
       features:[
-        { icon:"🔗", label:"URL만 입력" }, { icon:"📡", label:"최신 트렌드" },
-        { icon:"💎", label:"10P" }, { icon:"✍️", label:"나만의 시각" },
+        { icon:"🔗", label:_s("URL만 입력","URL Only") }, { icon:"📡", label:_s("최신 트렌드","Latest Trends") },
+        { icon:"💎", label:"10P" }, { icon:"✍️", label:_s("나만의 시각","Your Perspective") },
       ],
-      cta:"뉴스로 블로그 글쓰기",
+      cta:_s("뉴스로 블로그 글쓰기","Write from News"),
     },
     blog_cafe: {
-      icon:"☕", title:"네이버 카페 글쓰기", badge:"짧고 친근한 · 커뮤니티형", color:"#03C75A",
-      subtitle:"네이버 카페에 어울리는 친근하고 자연스러운 게시글을 AI가 작성해줘요. 정보 공유부터 후기, 질문, 자유 게시글까지 다양하게 지원해요.",
+      icon:"☕", title:_s("네이버 카페 글쓰기","Naver Cafe Post"), badge:_s("짧고 친근한 · 커뮤니티형","Short & Friendly · Community"), color:"#03C75A",
+      subtitle:_s("네이버 카페에 어울리는 친근한 게시글을 AI가 작성해줘요.","AI writes friendly community posts for Naver Cafe."),
       steps:[
-        { title:"카테고리 선택", desc:"정보·꿀팁, 후기·리뷰, 질문·도움, 자유 게시글 중 선택해요." },
-        { title:"주제 입력", desc:"키워드나 주제를 입력하고 예시에서 골라도 돼요." },
-        { title:"AI 글쓰기", desc:"카페 분위기에 맞는 친근하고 자연스러운 글을 AI가 작성해줘요." },
-        { title:"복사 & 게시", desc:"완성된 글을 복사해 네이버 카페에 바로 붙여넣기해요." },
+        { title:_s("카테고리 선택","Select Category"), desc:_s("정보, 후기, 질문, 자유 게시글 중 선택해요.","Choose from info, review, Q&A, or free post.") },
+        { title:_s("주제 입력","Enter Topic"), desc:_s("키워드나 주제를 입력해요.","Enter keyword or topic.") },
+        { title:_s("AI 글쓰기","AI Writing"), desc:_s("카페 분위기에 맞는 글을 AI가 작성해요.","AI writes a post matching cafe atmosphere.") },
+        { title:_s("복사 & 게시","Copy & Post"), desc:_s("완성된 글을 복사해 카페에 붙여넣기해요.","Copy and paste to Naver Cafe.") },
       ],
       features:[
-        { icon:"💬", label:"자연스러운 문체" }, { icon:"📋", label:"다양한 카테고리" },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:"복사 저장" },
+        { icon:"💬", label:_s("자연스러운 문체","Natural Style") }, { icon:"📋", label:_s("다양한 카테고리","Various Categories") },
+        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
       ],
-      cta:"네이버 카페 글 작성하기",
+      cta:_s("네이버 카페 글 작성하기","Write Naver Cafe Post"),
     },
   };
 
@@ -1825,24 +1931,24 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
     if (aiMenu === "cardnews_simple") {
       return (
-        <IntroScreen menuId="cardnews_simple" icon="" title="심플 카드뉴스" badge="텍스트 편집 방식 · 빠른 제작"
-          subtitle="주제만 입력하면 AI가 슬라이드 텍스트를 자동 생성해줘요. 배경색과 글자 스타일을 자유롭게 수정할 수 있어요."
+        <IntroScreen menuId="cardnews_simple" icon="" title={_s("심플 카드뉴스","Simple Card News")} badge={_s("텍스트 편집 방식 · 빠른 제작","Text Edit · Fast Creation")}
+          subtitle={_s("주제만 입력하면 AI가 슬라이드 텍스트를 자동 생성해줘요.","Just enter a topic and AI auto-generates slide text.")}
           color="#6366f1"
           steps={[
-            { title:"주제 입력", desc:"만들고 싶은 카드뉴스 주제를 입력해요. AI 추천으로 더 구체적인 방향을 잡을 수 있어요." },
-            { title:"슬라이드 기획", desc:"각 슬라이드의 제목·내용을 AI가 자동 추천하거나 직접 입력할 수 있어요." },
-            { title:"디자인 선택 + 사이즈", desc:"스타일 프리셋과 이미지 크기를 선택해요." },
-            { title:"텍스트 편집 + 저장", desc:"제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장" },
+            { title:_s("주제 입력","Enter Topic"), desc:_s("카드뉴스 주제를 입력해요.","Enter card news topic.") },
+            { title:_s("슬라이드 기획","Slide Planning"), desc:_s("각 슬라이드의 내용을 AI가 추천해요.","AI suggests content for each slide.") },
+            { title:_s("디자인 선택","Design Selection"), desc:_s("스타일 프리셋과 크기를 선택해요.","Choose style preset and size.") },
+            { title:_s("편집 + 저장","Edit & Save"), desc:_s("텍스트 수정, 색상 변경 후 PNG/ZIP 저장","Edit text, colors, then save as PNG/ZIP") },
           ]}
           features={[
-            { icon:"⚡", label:"빠른 제작" },
+            { icon:"⚡", label:_s("빠른 제작","Fast") },
             { icon:"💎", label:"10P" },
-            { icon:"🎨", label:"배경색 자유 변경" },
-            { icon:"📸", label:"배경 이미지 업로드" },
-            { icon:"↔", label:"정렬 조절" },
-            { icon:"📥", label:"PNG/ZIP 저장" },
+            { icon:"🎨", label:_s("배경색 변경","BG Color") },
+            { icon:"📸", label:_s("배경 이미지","BG Image") },
+            { icon:"↔", label:_s("정렬 조절","Alignment") },
+            { icon:"📥", label:"PNG/ZIP" },
           ]}
-          cta="심플 카드뉴스 만들기"
+          cta={_s("심플 카드뉴스 만들기","Create Simple Card News")}
           onStart={()=>setAiMenu("cardnews_simple_make")}
         />
       );
@@ -1865,24 +1971,24 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   if (aiMenu === "cardnews_image" || aiMenu === "cardnews_image_make") {
     if (aiMenu === "cardnews_image") {
       return (
-        <IntroScreen menuId="cardnews_image" icon="" title="이미지 카드뉴스" badge="AI 이미지 생성 방식 · 고품질"
-          subtitle="주제를 입력하면 AI가 실제 사진 품질의 이미지 슬라이드를 생성해줘요. 슬라이드마다 재생성이 가능해요."
+        <IntroScreen menuId="cardnews_image" icon="" title={_s("이미지 카드뉴스","Image Card News")} badge={_s("AI 이미지 생성 방식 · 고품질","AI Image Generation · High Quality")}
+          subtitle={_s("주제를 입력하면 AI가 실제 사진 품질의 이미지 슬라이드를 생성해줘요.","Enter a topic and AI generates photo-quality image slides.")}
           color="#8b5cf6"
           steps={[
-            { title:"주제 입력", desc:"카드뉴스 주제와 들어갈 내용을 입력해요. AI 추천으로 더 구체적인 방향을 잡을 수 있어요." },
-            { title:"슬라이드 기획", desc:"각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요." },
-            { title:"디자인 스타일 + 사이즈", desc:"10가지 스타일 템플릿과 이미지 크기를 선택해요." },
-            { title:"AI 이미지 생성 + 저장", desc:"AI가 슬라이드마다 고품질 이미지를 생성해요. PNG/ZIP 저장 가능" },
+            { title:_s("주제 입력","Enter Topic"), desc:_s("카드뉴스 주제와 들어갈 내용을 입력해요. AI 추천으로 더 구체적인 방향을 잡을 수 있어요.","Enter the card news topic and content. AI suggestions help refine direction.") },
+            { title:_s("슬라이드 기획","Plan Slides"), desc:_s("각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요.","AI auto-suggests headlines and body text for each slide, or enter manually.") },
+            { title:_s("디자인 스타일 + 사이즈","Design Style + Size"), desc:_s("10가지 스타일 템플릿과 이미지 크기를 선택해요.","Choose from 10 style templates and image sizes.") },
+            { title:_s("AI 이미지 생성 + 저장","AI Image Generation + Save"), desc:_s("AI가 슬라이드마다 고품질 이미지를 생성해요. PNG/ZIP 저장 가능","AI generates high-quality images per slide. Save as PNG/ZIP.") },
           ]}
           features={[
-            { icon:"🤖", label:"AI 이미지 생성" },
-            { icon:"💎", label:"슬라이드당 30P" },
-            { icon:"🎨", label:"10가지 스타일" },
-            { icon:"🔄", label:"슬라이드 재생성" },
-            { icon:"📐", label:"4가지 사이즈" },
-            { icon:"📦", label:"ZIP 다운로드" },
+            { icon:"🤖", label:_s("AI 이미지 생성","AI Image Gen") },
+            { icon:"💎", label:_s("슬라이드당 30P","30P per slide") },
+            { icon:"🎨", label:_s("10가지 스타일","10 Styles") },
+            { icon:"🔄", label:_s("슬라이드 재생성","Regenerate Slides") },
+            { icon:"📐", label:_s("4가지 사이즈","4 Sizes") },
+            { icon:"📦", label:_s("ZIP 다운로드","ZIP Download") },
           ]}
-          cta="이미지 카드뉴스 만들기"
+          cta={_s("이미지 카드뉴스 만들기","Create Image Card News")}
           onStart={()=>setAiMenu("cardnews_image_make")}
         />
       );
@@ -1898,24 +2004,24 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
     if (aiMenu === "detail_simple") {
       return (
-        <IntroScreen menuId="detail_simple" icon="" title="심플 상세페이지" badge="텍스트 편집 방식 · 빠른 제작"
-          subtitle="상품 정보를 입력하면 AI가 상세페이지 슬라이드 텍스트를 자동 구성해줘요. 배경과 글자 스타일을 자유롭게 수정할 수 있어요."
+        <IntroScreen menuId="detail_simple" icon="" title={_s("심플 상세페이지","Simple Detail Page")} badge={_s("텍스트 편집 방식 · 빠른 제작","Text Editing · Quick Creation")}
+          subtitle={_s("상품 정보를 입력하면 AI가 상세페이지 슬라이드 텍스트를 자동 구성해줘요.","Enter product info and AI auto-generates detail page slide text.")}
           color="#10b981"
           steps={[
-            { title:"상품 정보 입력", desc:"카테고리·상품명·핵심 특징 등 상품 정보를 입력해요. AI 문구 추천도 제공해요." },
-            { title:"슬라이드 기획", desc:"각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요." },
-            { title:"디자인 선택 + 사이즈", desc:"스타일 프리셋과 이미지 크기를 선택해요. 세로형이 기본이에요." },
-            { title:"텍스트 편집 + 저장", desc:"제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장" },
+            { title:_s("상품 정보 입력","Enter Product Info"), desc:_s("카테고리·상품명·핵심 특징 등 상품 정보를 입력해요. AI 문구 추천도 제공해요.","Enter category, product name, key features. AI also suggests copy.") },
+            { title:_s("슬라이드 기획","Plan Slides"), desc:_s("각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요.","AI auto-suggests headlines and body for each slide, or enter manually.") },
+            { title:_s("디자인 선택 + 사이즈","Design + Size"), desc:_s("스타일 프리셋과 이미지 크기를 선택해요. 세로형이 기본이에요.","Choose style presets and image size. Vertical is default.") },
+            { title:_s("텍스트 편집 + 저장","Edit Text + Save"), desc:_s("제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장","Edit title/body, change background/text color, set alignment, save as PNG/ZIP.") },
           ]}
           features={[
-            { icon:"⚡", label:"빠른 제작" },
+            { icon:"⚡", label:_s("빠른 제작","Quick Creation") },
             { icon:"💎", label:"10P" },
-            { icon:"🎨", label:"배경색 자유 변경" },
-            { icon:"📸", label:"배경 이미지 업로드" },
-            { icon:"↕", label:"세로/가로 정렬" },
-            { icon:"📥", label:"PNG/ZIP 저장" },
+            { icon:"🎨", label:_s("배경색 자유 변경","Custom Background") },
+            { icon:"📸", label:_s("배경 이미지 업로드","Upload BG Image") },
+            { icon:"↕", label:_s("세로/가로 정렬","Vertical/Horizontal") },
+            { icon:"📥", label:_s("PNG/ZIP 저장","Save PNG/ZIP") },
           ]}
-          cta="심플 상세페이지 만들기"
+          cta={_s("심플 상세페이지 만들기","Create Simple Detail Page")}
           onStart={()=>setAiMenu("detail_simple_make")}
         />
       );
@@ -1931,24 +2037,24 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   if (aiMenu === "detail_image" || aiMenu === "detail_image_make" || aiMenu === "detail_page") {
     if (aiMenu === "detail_image") {
       return (
-        <IntroScreen menuId="detail_image" icon="" title="이미지 상세페이지" badge="AI 이미지 생성 방식 · 최고 품질"
-          subtitle="상품 정보를 입력하면 AI가 실제 사진 품질의 상세페이지 이미지를 생성해줘요. 참고 이미지 스타일 분석도 가능해요."
+        <IntroScreen menuId="detail_image" icon="" title={_s("이미지 상세페이지","Image Detail Page")} badge={_s("AI 이미지 생성 방식 · 최고 품질","AI Image Generation · Top Quality")}
+          subtitle={_s("상품 정보를 입력하면 AI가 실제 사진 품질의 상세페이지 이미지를 생성해줘요.","Enter product info and AI generates photo-quality detail page images.")}
           color="#f59e0b"
           steps={[
-            { title:"상품 정보 입력", desc:"카테고리·상품명·특징·가격·타겟 고객 등 상세 정보를 입력해요." },
-            { title:"슬라이드 기획", desc:"최대 20장의 슬라이드 구성을 기획해요. 각 슬라이드 문구를 AI가 추천해줘요." },
-            { title:"디자인 + 사이즈 선택", desc:"10가지 스타일 템플릿, 참고 이미지 업로드, 이미지 크기를 선택해요." },
-            { title:"AI 이미지 생성 + 저장", desc:"AI가 각 슬라이드를 고품질 상업용 이미지로 생성해요. 개별 재생성 가능" },
+            { title:_s("상품 정보 입력","Enter Product Info"), desc:_s("카테고리·상품명·특징·가격·타겟 고객 등 상세 정보를 입력해요.","Enter category, product name, features, price, target customer details.") },
+            { title:_s("슬라이드 기획","Plan Slides"), desc:_s("최대 20장의 슬라이드 구성을 기획해요. 각 슬라이드 문구를 AI가 추천해줘요.","Plan up to 20 slides. AI suggests copy for each slide.") },
+            { title:_s("디자인 + 사이즈 선택","Design + Size"), desc:_s("10가지 스타일 템플릿, 참고 이미지 업로드, 이미지 크기를 선택해요.","Choose from 10 style templates, upload reference images, select size.") },
+            { title:_s("AI 이미지 생성 + 저장","AI Image Generation + Save"), desc:_s("AI가 각 슬라이드를 고품질 상업용 이미지로 생성해요. 개별 재생성 가능","AI generates high-quality commercial images per slide. Individual regeneration available.") },
           ]}
           features={[
-            { icon:"🤖", label:"AI 이미지 생성" },
-            { icon:"💎", label:"슬라이드당 30P" },
-            { icon:"🖼", label:"참고 이미지 분석" },
-            { icon:"🔄", label:"개별 재생성" },
-            { icon:"📐", label:"최대 20장" },
-            { icon:"📦", label:"ZIP 다운로드" },
+            { icon:"🤖", label:_s("AI 이미지 생성","AI Image Gen") },
+            { icon:"💎", label:_s("슬라이드당 30P","30P per slide") },
+            { icon:"🖼", label:_s("참고 이미지 분석","Reference Analysis") },
+            { icon:"🔄", label:_s("개별 재생성","Individual Regen") },
+            { icon:"📐", label:_s("최대 20장","Up to 20 Slides") },
+            { icon:"📦", label:_s("ZIP 다운로드","ZIP Download") },
           ]}
-          cta="이미지 상세페이지 만들기"
+          cta={_s("이미지 상세페이지 만들기","Create Image Detail Page")}
           onStart={()=>setAiMenu("detail_image_make")}
         />
       );
@@ -2016,19 +2122,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 모델 생성 인트로
   if (aiMenu === "model_gen") {
     return (
-      <IntroScreen icon="🧍" title="모델 생성" badge="AI 광고 모델 · 다양한 설정" color="#6366f1"
-        subtitle="성별·나이대·국적·의상·배경·포즈를 설정하거나 직접 프롬프트를 입력해 AI 광고 모델 이미지를 생성해요. 참고 이미지의 스타일도 반영할 수 있어요."
+      <IntroScreen icon="🧍" title={_s("모델 생성","Model Generator")} badge={_s("AI 광고 모델 · 다양한 설정","AI Ad Model · Various Settings")} color="#6366f1"
+        subtitle={_s("성별·나이대·국적·의상·배경·포즈를 설정하거나 직접 프롬프트를 입력해 AI 광고 모델 이미지를 생성해요.","Set gender, age, nationality, outfit, background, pose or enter a custom prompt to generate AI ad model images.")}
         steps={[
-          { title:"기본 설정", desc:"성별, 나이대, 국적을 선택해요." },
-          { title:"스타일 설정", desc:"의상, 배경, 포즈를 선택해요. 직접 프롬프트 입력도 가능해요." },
-          { title:"참고 이미지 & 생성", desc:"참고 이미지를 추가하거나 바로 생성해요." },
-          { title:"결과 확인", desc:"생성된 모델 이미지를 확인하고 다운로드해요." },
+          { title:_s("기본 설정","Basic Settings"), desc:_s("성별, 나이대, 국적을 선택해요.","Select gender, age range, and nationality.") },
+          { title:_s("스타일 설정","Style Settings"), desc:_s("의상, 배경, 포즈를 선택해요. 직접 프롬프트 입력도 가능해요.","Choose outfit, background, pose. Custom prompt also available.") },
+          { title:_s("참고 이미지 & 생성","Reference Image & Generate"), desc:_s("참고 이미지를 추가하거나 바로 생성해요.","Add reference images or generate directly.") },
+          { title:_s("결과 확인","View Results"), desc:_s("생성된 모델 이미지를 확인하고 다운로드해요.","View and download the generated model images.") },
         ]}
         features={[
-          { icon:"👗", label:"8가지 의상" }, { icon:"🌏", label:"6가지 국적" },
-          { icon:"✍️", label:"직접 프롬프트" }, { icon:"💎", label:"10P" },
+          { icon:"👗", label:_s("8가지 의상","8 Outfits") }, { icon:"🌏", label:_s("6가지 국적","6 Nationalities") },
+          { icon:"✍️", label:_s("직접 프롬프트","Custom Prompt") }, { icon:"💎", label:"10P" },
         ]}
-        cta="모델 이미지 생성하기"
+        cta={_s("모델 이미지 생성하기","Generate Model Image")}
         onStart={() => setAiMenu("model_gen_make")}
       />
     );
@@ -2040,19 +2146,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 얼굴 교체 인트로
   if (aiMenu === "face_swap") {
     return (
-      <IntroScreen icon="🔄" title="얼굴 교체" badge="비교 슬라이더 · 실시간 확인" color="#10b981"
-        subtitle="원본 이미지와 참고 얼굴 이미지를 업로드하면 AI가 얼굴만 자연스럽게 교체해줘요. 슬라이더로 전후를 직접 비교해볼 수 있어요."
+      <IntroScreen icon="🔄" title={_s("얼굴 교체","Face Swap")} badge={_s("비교 슬라이더 · 실시간 확인","Comparison Slider · Real-time Preview")} color="#10b981"
+        subtitle={_s("원본 이미지와 참고 얼굴 이미지를 업로드하면 AI가 얼굴만 자연스럽게 교체해줘요.","Upload an original and a reference face image, and AI naturally swaps just the face.")}
         steps={[
-          { title:"원본 업로드", desc:"교체 기반이 될 인물 사진을 업로드해요." },
-          { title:"참고 업로드 & 설정", desc:"스타일을 가져올 이미지와 교체 범위(얼굴/의상/둘다)를 선택해요." },
-          { title:"AI 교체 생성", desc:"AI가 자연스럽게 교체한 이미지를 생성해요." },
-          { title:"슬라이더 비교", desc:"드래그 슬라이더로 전후 결과를 비교하고 다운로드해요." },
+          { title:_s("원본 업로드","Upload Original"), desc:_s("교체 기반이 될 인물 사진을 업로드해요.","Upload the person photo to use as the base.") },
+          { title:_s("참고 업로드 & 설정","Upload Reference & Settings"), desc:_s("스타일을 가져올 이미지와 교체 범위(얼굴/의상/둘다)를 선택해요.","Select the style reference image and swap scope (face/outfit/both).") },
+          { title:_s("AI 교체 생성","AI Swap Generation"), desc:_s("AI가 자연스럽게 교체한 이미지를 생성해요.","AI generates a naturally swapped image.") },
+          { title:_s("슬라이더 비교","Slider Comparison"), desc:_s("드래그 슬라이더로 전후 결과를 비교하고 다운로드해요.","Compare before/after with a drag slider and download.") },
         ]}
         features={[
-          { icon:"😊", label:"얼굴만 교체" }, { icon:"🖼", label:"원본 보존" },
-          { icon:"◀▶", label:"비교 슬라이더" }, { icon:"💎", label:"10P" },
+          { icon:"😊", label:_s("얼굴만 교체","Face Only Swap") }, { icon:"🖼", label:_s("원본 보존","Preserve Original") },
+          { icon:"◀▶", label:_s("비교 슬라이더","Comparison Slider") }, { icon:"💎", label:"10P" },
         ]}
-        cta="얼굴 교체 시작하기"
+        cta={_s("얼굴 교체 시작하기","Start Face Swap")}
         onStart={() => setAiMenu("face_swap_make")}
       />
     );
@@ -2064,19 +2170,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 의상 교체 인트로
   if (aiMenu === "outfit_swap") {
     return (
-      <IntroScreen icon="👗" title="의상 교체" badge="참고 이미지 · 스타일 선택" color="#ec4899"
-        subtitle="원본 이미지에서 의상만 바꿔드려요. 참고 이미지를 올리거나 원하는 스타일을 선택하면 AI가 자연스럽게 옷을 교체해줘요."
+      <IntroScreen icon="👗" title={_s("의상 교체","Outfit Swap")} badge={_s("참고 이미지 · 스타일 선택","Reference Image · Style Selection")} color="#ec4899"
+        subtitle={_s("원본 이미지에서 의상만 바꿔드려요. 참고 이미지를 올리거나 원하는 스타일을 선택하면 AI가 자연스럽게 옷을 교체해줘요.","Swap only the outfit in the original image. Upload a reference or select a style and AI naturally changes the clothing.")}
         steps={[
-          { title:"원본 이미지 업로드", desc:"의상을 교체할 인물 이미지를 업로드해요." },
-          { title:"스타일 선택", desc:"참고 이미지를 올리거나 원하는 의상 스타일을 선택해요." },
-          { title:"AI 의상 교체", desc:"AI가 몸·자세·배경은 그대로 두고 의상만 자연스럽게 바꿔줘요." },
-          { title:"결과 비교", desc:"슬라이더로 전후를 비교하고 PNG로 저장해요." },
+          { title:_s("원본 이미지 업로드","Upload Original Image"), desc:_s("의상을 교체할 인물 이미지를 업로드해요.","Upload the person image to change outfit.") },
+          { title:_s("스타일 선택","Select Style"), desc:_s("참고 이미지를 올리거나 원하는 의상 스타일을 선택해요.","Upload a reference image or choose a desired outfit style.") },
+          { title:_s("AI 의상 교체","AI Outfit Swap"), desc:_s("AI가 몸·자세·배경은 그대로 두고 의상만 자연스럽게 바꿔줘요.","AI keeps body, pose, and background intact while naturally swapping the outfit.") },
+          { title:_s("결과 비교","Compare Results"), desc:_s("슬라이더로 전후를 비교하고 PNG로 저장해요.","Compare before/after with slider and save as PNG.") },
         ]}
         features={[
-          { icon:"👗", label:"의상만 교체" }, { icon:"🎨", label:"8가지 스타일" },
-          { icon:"◀▶", label:"비교 슬라이더" }, { icon:"💎", label:"10P" },
+          { icon:"👗", label:_s("의상만 교체","Outfit Only Swap") }, { icon:"🎨", label:_s("8가지 스타일","8 Styles") },
+          { icon:"◀▶", label:_s("비교 슬라이더","Comparison Slider") }, { icon:"💎", label:"10P" },
         ]}
-        cta="의상 교체 시작하기"
+        cta={_s("의상 교체 시작하기","Start Outfit Swap")}
         onStart={() => setAiMenu("outfit_swap_make")}
       />
     );
@@ -2088,19 +2194,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 여백 늘리기 인트로
   if (aiMenu === "outpaint") {
     return (
-      <IntroScreen icon="↔" title="여백 늘리기" badge="AI Outpainting · 수동 크기 조절" color="#f59e0b"
-        subtitle="이미지 주변의 빈 공간을 AI가 자연스럽게 채워 확장해줘요. 방향별 수동 크기 설정 또는 비율 자동으로 빠르게 완성할 수 있어요."
+      <IntroScreen icon="↔" title={_s("여백 늘리기","Outpaint")} badge={_s("AI Outpainting · 수동 크기 조절","AI Outpainting · Manual Resize")} color="#f59e0b"
+        subtitle={_s("이미지 주변의 빈 공간을 AI가 자연스럽게 채워 확장해줘요.","AI naturally fills and extends the empty space around your image.")}
         steps={[
-          { title:"이미지 업로드", desc:"여백을 늘릴 이미지를 업로드해요." },
-          { title:"크기 설정", desc:"수동(방향별 px)으로 직접 조절하거나, 비율을 선택해서 자동으로 설정해요." },
-          { title:"AI 여백 늘리기", desc:"AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요." },
-          { title:"결과 다운로드", desc:"확장된 이미지를 확인하고 PNG로 저장해요." },
+          { title:_s("이미지 업로드","Upload Image"), desc:_s("여백을 늘릴 이미지를 업로드해요.","Upload the image to extend.") },
+          { title:_s("크기 설정","Set Size"), desc:_s("수동(방향별 px)으로 직접 조절하거나, 비율을 선택해서 자동으로 설정해요.","Manually adjust per direction (px) or select a ratio for auto settings.") },
+          { title:_s("AI 여백 늘리기","AI Outpaint"), desc:_s("AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요.","AI fills empty space to blend naturally with the original image.") },
+          { title:_s("결과 다운로드","Download Result"), desc:_s("확장된 이미지를 확인하고 PNG로 저장해요.","View the extended image and save as PNG.") },
         ]}
         features={[
-          { icon:"✏️", label:"수동 크기 조절" }, { icon:"📐", label:"비율 자동 선택" },
-          { icon:"🌊", label:"자연스러운 연결" }, { icon:"💎", label:"10P" },
+          { icon:"✏️", label:_s("수동 크기 조절","Manual Resize") }, { icon:"📐", label:_s("비율 자동 선택","Auto Ratio") },
+          { icon:"🌊", label:_s("자연스러운 연결","Seamless Blend") }, { icon:"💎", label:"10P" },
         ]}
-        cta="여백 늘리기 시작하기"
+        cta={_s("여백 늘리기 시작하기","Start Outpaint")}
         onStart={() => setAiMenu("outpaint_make")}
       />
     );
@@ -2224,6 +2330,7 @@ const MENU_LABELS = {
 };
 
 export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
+  const { t: tt } = useI18n();
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -2322,6 +2429,8 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+        @keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}
+        .pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}
         @keyframes ai-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.05)}}
         @keyframes ai-progress{from{width:0%}to{width:92%}}
         @keyframes ai-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -2389,13 +2498,6 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
-        </div>
-        {/* 미니 푸터 */}
-        <div style={{ flexShrink:0, borderTop:"1px solid "+topBdr, padding:"6px 16px", display:"flex", alignItems:"center", justifyContent:"center", flexWrap:"wrap", gap:"0 16px" }}>
-          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>© 2025 SNS메이킷</span>
-          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>상호: 엔퍼그로스 · 대표: 김선봉 · 사업자: 598-09-02769</span>
-          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>통신판매업: 2024-서울금천-1997호</span>
-          <span style={{ fontSize:10, color:topClr, whiteSpace:"nowrap" }}>고객센터: npermovie@naver.com</span>
         </div>
       </div>
     </div>

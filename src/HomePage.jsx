@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge, SecWrap, SecTitle, Btn } from "./UI";
+import { useI18n } from "./i18n.jsx";
+import { getPageText } from "./i18n-pages.js";
 
 /* ── 스크롤 감지 훅 ── */
 function useInView(threshold = 0.15) {
@@ -79,7 +81,24 @@ function FadeIn({ children, delay = 0, style = {} }) {
 }
 
 export default function HomePage({ navigate, C }) {
-  const isDark = C.heroBg?.includes("0f0c29") || C.heroBg?.includes("gradient");
+  const { lang } = useI18n();
+  const p = (key) => getPageText(lang, key);
+
+  // 실시간 통계 (Supabase에서 posts 수 가져오기)
+  const [statsCount, setStatsCount] = useState(5200);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const sb = createClient(
+          import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
+          import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
+        );
+        const { count } = await sb.from("posts").select("*", { count: "exact", head: true });
+        if (count != null) setStatsCount(Math.max(count, 5200));
+      } catch {}
+    })();
+  }, []);
 
   /* 떠다니는 배경 파티클 */
   const particles = [
@@ -90,41 +109,41 @@ export default function HomePage({ navigate, C }) {
 
   const ALL_TOOLS = [
     {
-      cat: "✍️ SNS 글쓰기", catColor: "#6366f1",
+      cat: p("catWrite"), catColor: "#6366f1",
       items: [
-        { icon: "📝", title: "네이버 블로그", desc: "SEO 최적화 정보성 블로그 글 자동 생성", tag: "인기", color: "#22c55e" },
-        { icon: "☕", title: "네이버 카페", desc: "카페 커뮤니티에 최적화된 글 자동 작성", tag: "", color: "#06b6d4" },
-        { icon: "🟠", title: "티스토리", desc: "HTML 형식 블로그 포스트 자동 작성", tag: "", color: "#f59e0b" },
-        { icon: "📱", title: "인스타그램 캡션", desc: "해시태그 포함 인스타 게시물 자동 생성", tag: "", color: "#ec4899" },
-        { icon: "▶️", title: "유튜브 대본", desc: "영상 스크립트·설명란·SEO 태그 한번에", tag: "", color: "#ef4444" },
-        { icon: "🧵", title: "스레드", desc: "짧고 임팩트 있는 스레드 게시물 자동 작성", tag: "", color: "#a855f7" },
+        { icon: "📝", title: p("tNaver"), desc: p("tNaverD"), tag: p("tagPopular"), color: "#22c55e" },
+        { icon: "☕", title: p("tCafe"), desc: p("tCafeD"), tag: "", color: "#06b6d4" },
+        { icon: "🟠", title: p("tTistory"), desc: p("tTistoryD"), tag: "", color: "#f59e0b" },
+        { icon: "📱", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#ec4899" },
+        { icon: "▶️", title: p("tYoutube"), desc: p("tYoutubeD"), tag: "", color: "#ef4444" },
+        { icon: "🧵", title: p("tThread"), desc: p("tThreadD"), tag: "", color: "#a855f7" },
       ],
     },
     {
-      cat: "🖼 SNS 이미지", catColor: "#8b5cf6",
+      cat: p("catImage"), catColor: "#8b5cf6",
       items: [
-        { icon: "📰", title: "카드뉴스", desc: "AI 기획 + 이미지 자동 생성 카드뉴스", tag: "", color: "#8b5cf6" },
-        { icon: "🗂", title: "심플 카드뉴스", desc: "텍스트만 입력하면 감성 카드뉴스 완성", tag: "", color: "#6366f1" },
-        { icon: "📄", title: "상세페이지", desc: "제품 상세페이지 기획·이미지 자동 생성", tag: "", color: "#ec4899" },
-        { icon: "📋", title: "심플 상세페이지", desc: "빠르게 만드는 기본형 상세페이지", tag: "신규", color: "#10b981" },
+        { icon: "📰", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#8b5cf6" },
+        { icon: "🗂", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#6366f1" },
+        { icon: "📄", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#ec4899" },
+        { icon: "📋", title: p("tSimpleDetail"), desc: p("tSimpleDetailD"), tag: p("tagNew"), color: "#10b981" },
       ],
     },
     {
-      cat: "🎨 이미지 생성 AI", catColor: "#ec4899",
+      cat: p("catAiImg"), catColor: "#ec4899",
       items: [
-        { icon: "📸", title: "AI 제품 컷", desc: "상품 사진을 AI 배경으로 프로급 제품 사진", tag: "인기", color: "#f59e0b" },
-        { icon: "🏷", title: "AI 로고 생성", desc: "브랜드 콘셉트 설명으로 로고 자동 생성", tag: "", color: "#6366f1" },
-        { icon: "🖼", title: "AI 목업 생성", desc: "디자인을 목업 이미지에 자동 합성", tag: "", color: "#8b5cf6" },
-        { icon: "🧍", title: "AI 모델 생성", desc: "상품을 입은 AI 모델 이미지 자동 생성", tag: "", color: "#ec4899" },
-        { icon: "😊", title: "얼굴 교체", desc: "원하는 얼굴로 자연스럽게 교체", tag: "", color: "#10b981" },
-        { icon: "👗", title: "의상 교체", desc: "AI로 의상을 다른 스타일로 교체", tag: "", color: "#f59e0b" },
-        { icon: "🖌", title: "여백 채우기", desc: "이미지 여백을 AI가 자연스럽게 확장", tag: "신규", color: "#06b6d4" },
+        { icon: "📸", title: p("tProduct"), desc: p("tProductD"), tag: p("tagPopular"), color: "#f59e0b" },
+        { icon: "🏷", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#6366f1" },
+        { icon: "🖼", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#8b5cf6" },
+        { icon: "🧍", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#ec4899" },
+        { icon: "😊", title: p("tFace"), desc: p("tFaceD"), tag: "", color: "#10b981" },
+        { icon: "👗", title: p("tOutfit"), desc: p("tOutfitD"), tag: "", color: "#f59e0b" },
+        { icon: "🖌", title: p("tOutpaint"), desc: p("tOutpaintD"), tag: p("tagNew"), color: "#06b6d4" },
       ],
     },
     {
-      cat: "🎬 영상 편집", catColor: "#ef4444",
+      cat: p("catVideo"), catColor: "#ef4444",
       items: [
-        { icon: "📲", title: "숏폼 편집기", desc: "영상 파일로 숏폼 자동 편집·자막 추가", tag: "신규", color: "#ef4444" },
+        { icon: "📲", title: p("tShorts"), desc: p("tShortsD"), tag: p("tagNew"), color: "#ef4444" },
       ],
     },
   ];
@@ -161,44 +180,35 @@ export default function HomePage({ navigate, C }) {
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 820 }}>
           <div style={{ opacity: 1, transform: "none", animation: "none" }}>
-            <Badge C={C}>🚀 SNS 콘텐츠 자동 생성 올인원 플랫폼</Badge>
+            <Badge C={C}>{p("heroBadge")}</Badge>
           </div>
 
           <h1 style={{ fontSize: "clamp(28px,5.5vw,66px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -2, color: C.text, margin: "0 0 12px" }}>
-            <TypeWriter
-              texts={[
-                "블로그 글, 3분만에 AI가 완성",
-                "카드뉴스·상세페이지 자동 생성",
-                "AI 제품컷·로고·목업 한번에",
-                "숏폼 영상도 자동 편집·자막",
-                "SNS 콘텐츠, 이제 AI가 대신해요",
-              ]}
-              speed={55} pause={2200}
-            />
+            <TypeWriter texts={p("heroTyping")} speed={55} pause={2200} />
           </h1>
           <h2 style={{ fontSize: "clamp(22px,4vw,52px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -1.5, color: C.text, margin: "0 0 28px" }}>
-            글쓰기부터 이미지·영상까지,{" "}
+            {p("heroSub1")}
             <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              SNS메이킷 하나로 끝
+              {p("heroHighlight")}
             </span>
           </h2>
           <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.muted, lineHeight: 1.9, maxWidth: 580, margin: "0 auto 16px" }}>
-            블로그·인스타·유튜브 글쓰기부터 카드뉴스·상세페이지·AI 이미지까지<br/>
-            <b style={{ color: C.purpleL }}>20가지 AI 도구</b>가 한 곳에 모여 있어요.<br/>
-            <b style={{ color: C.purpleL }}>비회원 10회 무료 · 가입 즉시 200P 지급!</b>
+            {p("heroDesc1")}<br/>
+            <b style={{ color: C.purpleL }}>{p("heroDesc2")}</b>{p("heroDesc2b")}<br/>
+            <b style={{ color: C.purpleL }}>{p("heroDesc3")}</b>
           </p>
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
-            <Btn C={C} onClick={() => navigate("ai")}>✨ AI 생성기 무료 체험</Btn>
-            <Btn C={C} onClick={() => navigate("pricing")} ghost>💎 요금제 보기</Btn>
+            <Btn C={C} onClick={() => navigate("ai")}>{p("heroCta1")}</Btn>
+            <Btn C={C} onClick={() => navigate("pricing")} ghost>{p("heroCta2")}</Btn>
           </div>
 
           {/* 실시간 통계 */}
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
-              { val: 20,   suffix: "가지+", label: "AI 도구" },
-              { val: 5200, suffix: "+",     label: "생성된 콘텐츠" },
-              { val: 3,    suffix: "분",    label: "평균 생성 시간" },
+              { val: 20,   suffix: p("statToolsSuffix"), label: p("statTools") },
+              { val: statsCount, suffix: p("statContentsSuffix"), label: p("statContents") },
+              { val: 3,    suffix: p("statTimeSuffix"),  label: p("statTime") },
             ].map(({ val, suffix, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 900, background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
@@ -218,8 +228,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ AI 도구 소개 (카테고리별) ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="AI Tools" title="20가지 AI 도구가 한 곳에"
-          sub="SNS 글쓰기부터 이미지 생성, 숏폼 편집까지 — SNS 콘텐츠 제작에 필요한 모든 도구를 SNS메이킷에서 만나세요." />
+        <SecTitle C={C} badge={p("toolsBadge")} title={p("toolsTitle")} sub={p("toolsSub")} />
         {ALL_TOOLS.map((cat, ci) => (
           <div key={cat.cat} style={{ marginBottom: ci < ALL_TOOLS.length - 1 ? 36 : 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -237,7 +246,7 @@ export default function HomePage({ navigate, C }) {
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{tool.icon}</div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 6 }}>{tool.title}</div>
                     <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.7 }}>{tool.desc}</div>
-                    <div style={{ marginTop: 12, fontSize: 11, color: tool.color, fontWeight: 700 }}>바로 사용하기 →</div>
+                    <div style={{ marginTop: 12, fontSize: 11, color: tool.color, fontWeight: 700 }}>{p("toolUse")}</div>
                   </div>
                 </FadeIn>
               ))}
@@ -248,12 +257,12 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 사용 방법 (3단계) ══ */}
       <SecWrap C={C}>
-        <SecTitle C={C} badge="How it works" title="3단계로 완성되는 AI 콘텐츠" />
+        <SecTitle C={C} badge={p("howBadge")} title={p("howTitle")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 20 }}>
           {[
-            { step: "01", icon: "🎯", title: "키워드 또는 파일 입력", desc: "주제·키워드를 입력하거나 이미지·영상 파일을 올리세요. 대상 독자, 글 톤, 분량까지 간단히 설정하면 준비 끝!", color: "#6366f1" },
-            { step: "02", icon: "🤖", title: "AI가 자동 생성", desc: "AI가 글·이미지·영상 편집을 자동으로 완성해요. 블로그 글은 30초~3분, 이미지는 10~30초 이내로 완성됩니다.", color: "#8b5cf6" },
-            { step: "03", icon: "📋", title: "복사·다운로드·활용", desc: "생성된 글은 그대로 복사해서 붙여넣기, 이미지는 바로 다운로드. SNS에 올리면 끝!", color: "#ec4899" },
+            { step: "01", icon: "🎯", title: p("how1"), desc: p("how1d"), color: "#6366f1" },
+            { step: "02", icon: "🤖", title: p("how2"), desc: p("how2d"), color: "#8b5cf6" },
+            { step: "03", icon: "📋", title: p("how3"), desc: p("how3d"), color: "#ec4899" },
           ].map((s, i) => (
             <FadeIn key={s.step} delay={i * 0.15}>
               <div style={{ position: "relative", background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", boxShadow: C.shadow, overflow: "hidden" }}>
@@ -270,15 +279,15 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Reviews" title="실제 사용자 후기" sub="SNS메이킷을 사용해본 분들의 생생한 후기예요." />
+        <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 16 }}>
           {[
-            { name: "김블로그", job: "네이버 블로그 운영자", avatar: "🙋‍♀️", rating: 5, platform: "네이버 블로그", text: "예전엔 글 하나 쓰는데 2~3시간 걸렸는데 이제 30분이면 돼요. SEO 키워드도 알아서 넣어줘서 상위 노출도 잘 되고 있어요. 진짜 신세계입니다 ㅋㅋ", result: "글 작성 시간 85% 단축" },
-            { name: "마케터 이씨", job: "인스타 마케터", avatar: "💁‍♂️", rating: 5, platform: "인스타그램", text: "캡션 쓰는 게 매일 스트레스였는데 이제 클릭 몇 번이면 끝나요. 해시태그도 잘 추천해주고 팔로워도 조금씩 늘고 있어요.", result: "팔로워 월 200명 증가" },
-            { name: "유튜버 박씨", job: "유튜브 채널 운영", avatar: "🎬", rating: 5, platform: "유튜브", text: "대본이랑 설명란 작성이 제일 힘들었는데 이 툴 쓰고 나서 영상 발행 속도가 2배 빨라졌어요. 숏폼 편집기로 클립 만드는 것도 너무 편해요.", result: "영상 발행 속도 2배" },
-            { name: "소상공인 최씨", job: "카페 사장님", avatar: "☕", rating: 5, platform: "블로그 + 인스타", text: "홍보 글 쓸 줄 몰라서 항상 고민이었는데 이제 메뉴 소개, 이벤트 공지 다 AI로 뚝딱 만들어요. AI 제품컷으로 메뉴 사진도 예쁘게 바꾸고 있어요.", result: "월 홍보 비용 60% 절감" },
-            { name: "강사 정씨", job: "온라인 강의 운영", avatar: "👩‍🏫", rating: 5, platform: "티스토리 + 카드뉴스", text: "강의 관련 블로그 포스팅을 매주 올리는데 AI 카드뉴스까지 같이 만드니까 콘텐츠 퀄리티가 훨씬 올라갔어요. 수강생들 반응도 좋아졌어요.", result: "포스팅 발행 주 2회→5회" },
-            { name: "쇼핑몰 한씨", job: "패션 쇼핑몰 운영", avatar: "👗", rating: 5, platform: "AI 이미지 생성", text: "AI 제품컷이랑 의상 교체 기능으로 모델 촬영비가 확 줄었어요. 상세페이지도 AI로 뚝딱 만드니까 신상 등록이 3배 빨라졌습니다.", result: "이미지 제작비 70% 절감" },
+            { name: p("r1name"), job: p("r1job"), avatar: "🙋‍♀️", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
+            { name: p("r2name"), job: p("r2job"), avatar: "💁‍♂️", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },
+            { name: p("r3name"), job: p("r3job"), avatar: "🎬", rating: 5, platform: p("r3plat"), text: p("r3text"), result: p("r3result") },
+            { name: p("r4name"), job: p("r4job"), avatar: "☕", rating: 5, platform: p("r4plat"), text: p("r4text"), result: p("r4result") },
+            { name: p("r5name"), job: p("r5job"), avatar: "👩‍🏫", rating: 5, platform: p("r5plat"), text: p("r5text"), result: p("r5result") },
+            { name: p("r6name"), job: p("r6job"), avatar: "👗", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
           ].map((r, i) => (
             <FadeIn key={r.name} delay={i * 0.08}>
               <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
@@ -309,13 +318,13 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 포인트/요금 안내 ══ */}
       <SecWrap C={C}>
-        <SecTitle C={C} badge="Pricing" title="합리적인 포인트 시스템" sub="비회원도 10회 무료! 포인트 충전으로 더 많이 사용하세요." />
+        <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
-            { icon: "🎁", title: "비회원 무료", point: "10회", desc: "로그인 없이 AI 생성기 10회 무료 체험", color: "#888", btnText: "무료 체험하기", onClick: () => navigate("ai") },
-            { icon: "👤", title: "회원 가입", point: "200P 지급", desc: "가입 즉시 200P 지급 + 게시글·로그인 포인트 적립", color: "#22c55e", btnText: "무료 회원가입", onClick: () => navigate("ai") },
-            { icon: "⚡", title: "Basic 충전", point: "500P", desc: "9,900원 · AI 50회 분량 · 유효기간 없음", color: "#6366f1", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: false },
-            { icon: "🔥", title: "Pro 충전", point: "1,200P", desc: "19,900원 · AI 120회 분량 · 우선 고객지원", color: "#8b5cf6", btnText: "충전하기", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "🎁", title: p("p1title"), point: p("p1point"), desc: p("p1desc"), color: "#888", btnText: p("p1btn"), onClick: () => navigate("ai") },
+            { icon: "👤", title: p("p2title"), point: p("p2point"), desc: p("p2desc"), color: "#22c55e", btnText: p("p2btn"), onClick: () => navigate("ai") },
+            { icon: "⚡", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#6366f1", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
+            { icon: "🔥", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#8b5cf6", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -326,7 +335,7 @@ export default function HomePage({ navigate, C }) {
                 transition: "all 0.2s", cursor: "default",
                 position: "relative", overflow: "hidden",
               }}>
-                {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>추천</div>}
+                {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>{getPageText(lang,"recommend")}</div>}
                 <div style={{ fontSize: 32, marginBottom: 10 }}>{p.icon}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 6 }}>{p.title}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: p.color, marginBottom: 8 }}>{p.point}</div>
@@ -342,13 +351,13 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ 차별점 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Why SNS메이킷" title="왜 SNS메이킷 AI인가요?" sub="SNS 콘텐츠 제작의 어려움을 해결하기 위해 만들었습니다." />
+        <SecTitle C={C} badge={p("whyBadge")} title={p("whyTitle")} sub={p("whySub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 12 }}>
           {[
-            { icon: "⚡", title: "빠른 생성 속도", desc: "블로그 글은 30초~3분, AI 이미지는 10~30초 이내 완성. 직접 만드는 것보다 10배 이상 빠릅니다." },
-            { icon: "🎯", title: "SEO 자동 최적화", desc: "키워드를 자동으로 파악해 검색 상위 노출에 유리한 구조로 글을 작성합니다." },
-            { icon: "🌏", title: "20가지+ 올인원 도구", desc: "글쓰기·이미지·영상 편집까지 하나의 플랫폼에서 모두 해결. 여러 툴을 오갈 필요 없어요." },
-            { icon: "💰", title: "합리적인 비용", desc: "월정액 없이 포인트 충전 방식. 비회원도 10회 무료로 바로 체험할 수 있어요." },
+            { icon: "⚡", title: p("w1"), desc: p("w1d") },
+            { icon: "🎯", title: p("w2"), desc: p("w2d") },
+            { icon: "🌏", title: p("w3"), desc: p("w3d") },
+            { icon: "💰", title: p("w4"), desc: p("w4d") },
           ].map((d, i) => (
             <FadeIn key={d.title} delay={i * 0.1}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
@@ -369,20 +378,19 @@ export default function HomePage({ navigate, C }) {
       <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, borderRadius: "50%", background: "rgba(124,106,255,0.07)", filter: "blur(80px)", pointerEvents: "none", animation: "pulse 4s ease-in-out infinite" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
-          <Badge C={C}>🚀 지금 무료로 시작하세요</Badge>
+          <Badge C={C}>{p("ctaBadge")}</Badge>
           <h2 style={{ fontSize: "clamp(26px,5vw,54px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.15, margin: "0 0 20px" }}>
-            콘텐츠 제작,<br/>
+            {p("ctaTitle1")}<br/>
             <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              AI로 더 빠르고 쉽게
+              {p("ctaHighlight")}
             </span>
           </h2>
-          <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 40 }}>
-            로그인 없이 지금 바로 10회 무료 체험!<br/>
-            회원가입하면 200P 추가 지급 + 포인트 적립으로 더 오래 사용하세요.
+          <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 40, whiteSpace: "pre-line" }}>
+            {p("ctaDesc")}
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Btn C={C} onClick={() => navigate("ai")}>✨ AI 생성기 무료 체험</Btn>
-            <Btn C={C} onClick={() => navigate("about")} ghost>서비스 소개 보기</Btn>
+            <Btn C={C} onClick={() => navigate("ai")}>{p("ctaBtn1")}</Btn>
+            <Btn C={C} onClick={() => navigate("about")} ghost>{p("ctaBtn2")}</Btn>
           </div>
         </div>
       </section>

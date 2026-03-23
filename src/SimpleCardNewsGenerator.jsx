@@ -12,6 +12,17 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 
 import { callAI } from "./aiClient";
 
+// ── Google Fonts 동적 로더 ───────────────────────────────────
+const loadedFonts = new Set();
+function loadGFont(family) {
+  if (!family || family === "sans-serif" || family === "monospace" || loadedFonts.has(family)) return;
+  loadedFonts.add(family);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;700;900&display=swap`;
+  document.head.appendChild(link);
+}
+
 // ── 예시 주제 ────────────────────────────────────────────────
 const TOPIC_EXAMPLES = [
   { label:"직장인 번아웃", text:"직장인 번아웃 극복법 5가지" },
@@ -56,6 +67,15 @@ const DESIGN_PRESETS = [
   { key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:30, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4,  lineHeightBody:1.8 },
   { key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3,  lineHeightBody:1.7 },
   { key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  // 참고이미지 기반 신규 프리셋
+  { key:"magazine",   label:"매거진",     bgColor:"#111111", textColor:"#ffffff", titleSize:38, bodySize:14, subtitleSize:11, highlightSize:14, titleWeight:"900", textAlign:"left",   textValign:"bottom", hlMode:"none",      lineHeightTitle:1.2,  lineHeightBody:1.6 },
+  { key:"tech_blue",  label:"테크 블루",  bgColor:"#0a192f", textColor:"#e2e8f0", titleSize:36, bodySize:15, subtitleSize:11, highlightSize:14, titleWeight:"900", textAlign:"left",   textValign:"bottom", hlMode:"pill",      lineHeightTitle:1.25, lineHeightBody:1.7 },
+  { key:"pastel",     label:"파스텔",     bgColor:"#fef3c7", textColor:"#1f2937", titleSize:30, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.35, lineHeightBody:1.8 },
+  { key:"gradient_pk",label:"핑크 그라디", bgColor:"#831843", textColor:"#fce7f3", titleSize:34, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"900", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  { key:"pure_white", label:"퓨어 화이트",bgColor:"#ffffff", textColor:"#111827", titleSize:32, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"underline", lineHeightTitle:1.35, lineHeightBody:1.7 },
+  { key:"retro",      label:"레트로",     bgColor:"#1a1a2e", textColor:"#e94560", titleSize:36, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"900", textAlign:"left",   textValign:"bottom", hlMode:"box",       lineHeightTitle:1.2,  lineHeightBody:1.6 },
+  { key:"nature",     label:"네이처",     bgColor:"#064e3b", textColor:"#d1fae5", titleSize:30, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.35, lineHeightBody:1.8 },
+  { key:"mono",       label:"모노톤",     bgColor:"#27272a", textColor:"#d4d4d8", titleSize:32, bodySize:14, subtitleSize:11, highlightSize:14, titleWeight:"700", textAlign:"left",   textValign:"middle", hlMode:"underline", lineHeightTitle:1.3,  lineHeightBody:1.7 },
 ];
 
 // ── Canvas 유틸 ──────────────────────────────────────────────
@@ -91,8 +111,15 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
     let sw, sh, sx = 0, sy = 0;
     if (iR > cR) { sh = CH; sw = CH * iR; sx = (CW - sw) / 2; }
     else { sw = CW; sh = CW / iR; sy = (CH - sh) / 2; }
+    ctx.save();
+    ctx.globalAlpha = slide.bgOpacity ?? 1;
     ctx.drawImage(bgImageEl, sx, sy, sw, sh);
-    ctx.fillStyle = "rgba(0,0,0,0.48)";
+    ctx.restore();
+    // 오버레이
+    const oc = slide.overlayColor || "#000000";
+    const oo = slide.overlayOpacity ?? 0.48;
+    const r = parseInt(oc.slice(1,3),16), g = parseInt(oc.slice(3,5),16), b = parseInt(oc.slice(5,7),16);
+    ctx.fillStyle = `rgba(${r},${g},${b},${oo})`;
     ctx.fillRect(0, 0, CW, CH);
   } else {
     ctx.fillStyle = style.bgColor || "#1c1c1e";
@@ -300,6 +327,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
+  const [customFonts, setCustomFonts] = useState([]);
+  const fontFileRef = useRef(null);
   useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
 
   useEffect(() => {
@@ -331,7 +360,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // WizHeader
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
+    <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
         {[["1","주제 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","편집"]].map(([n,label],i)=>{
           const step=parseInt(n); const done=wizStep>step; const active=wizStep===step;
@@ -445,8 +474,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const getCurSlide = (idx) => {
     const base = slides[idx]||{};
     const ed = sted[idx]||{};
-    // text fields only (exclude style overrides)
-    const { bgColor, bgImage, textColor, titleSize, bodySize, textAlign, textValign, ...textEd } = ed;
+    // text fields + bg overlay (exclude pure style overrides)
+    const { bgColor, bgImage, textColor, titleSize, bodySize, textAlign, textValign, fontFamily, ...textEd } = ed;
     return { ...base, ...textEd };
   };
   const getSlideStyle = (idx) => {
@@ -536,7 +565,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader/>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"16px 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>주제를 입력하세요</div>
             <div style={{ fontSize:13, color:muted }}>주제를 입력하면 AI가 카드뉴스 슬라이드를 자동 구성해줘요</div>
@@ -657,7 +686,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader/>
-        <div style={{ maxWidth:860, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.</div>
@@ -731,7 +760,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader/>
-        <div style={{ maxWidth:900, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
             <div style={{ fontSize:13, color:muted }}>선택 안 해도 기본 스타일로 생성돼요</div>
@@ -743,21 +772,32 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:14, fontWeight:800, color:text }}>스타일 선택</div>
               {selPreset&&<button onClick={()=>setSelPreset(null)} style={{ fontSize:11,color:muted,background:"transparent",border:`1px solid ${bdr}`,borderRadius:6,padding:"4px 10px",cursor:"pointer" }}>선택 해제</button>}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))", gap:8 }}>
               {DESIGN_PRESETS.map(dp=>{
                 const isSel=selPreset?.key===dp.key;
                 return (
                   <button key={dp.key} onClick={()=>setSelPreset(isSel?null:dp)}
                     style={{ border:`2px solid ${isSel?"#6366f1":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(99,102,241,0.3)":"0 2px 8px rgba(0,0,0,0.15)" }}>
-                    {/* 미리보기 박스 */}
+                    {/* 시각화된 미리보기 */}
                     <div style={{ width:"100%", paddingBottom:"130%", position:"relative", background:dp.bgColor }}>
-                      <div style={{ position:"absolute",inset:0,padding:"8px 7px",display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
-                        <div style={{ flex:1,borderRadius:4,background:`${dp.textColor}15`,marginBottom:6 }}/>
-                        <div style={{ height:4,borderRadius:2,background:dp.textColor,width:"50%",marginBottom:4,opacity:0.9 }}/>
-                        <div style={{ height:3,borderRadius:1,background:dp.textColor,width:"80%",marginBottom:2,opacity:0.6 }}/>
-                        <div style={{ height:7,borderRadius:3,background:dp.textColor,width:"100%",opacity:0.3 }}/>
+                      <div style={{ position:"absolute",inset:0,padding:"10px 8px",display:"flex",flexDirection:"column",justifyContent:dp.textValign==="top"?"flex-start":dp.textValign==="bottom"?"flex-end":"center",textAlign:dp.textAlign||"left" }}>
+                        <div style={{ fontSize:8,fontWeight:dp.titleWeight||700,color:dp.textColor,lineHeight:1.3,marginBottom:4 }}>
+                          {topic?.slice(0,8)||"제목 미리보기"}
+                        </div>
+                        <div style={{ fontSize:5,color:dp.textColor,opacity:0.6,lineHeight:1.5 }}>
+                          본문 텍스트가<br/>여기에 표시됩니다
+                        </div>
+                        {dp.hlMode!=="none"&&(
+                          <div style={{ marginTop:4,fontSize:5,fontWeight:700,color:dp.hlMode==="box"?"#fff":dp.textColor,
+                            background:dp.hlMode==="box"?dp.textColor+"40":dp.hlMode==="pill"?dp.textColor+"25":"transparent",
+                            borderBottom:dp.hlMode==="underline"?`1px solid ${dp.textColor}`:"none",
+                            padding:dp.hlMode==="pill"?"1px 4px":dp.hlMode==="box"?"1px 3px":"0",
+                            borderRadius:dp.hlMode==="pill"?8:dp.hlMode==="box"?2:0,display:"inline-block" }}>
+                            강조문구
+                          </div>
+                        )}
                       </div>
-                      {isSel&&<div style={{ position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900 }}>✓</div>}
+                      {isSel&&<div style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900 }}>✓</div>}
                     </div>
                     <div style={{ padding:"6px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)" }}>
                       <div style={{ fontSize:10,fontWeight:isSel?800:600,color:isSel?"#a5b4fc":text }}>{dp.label}</div>
@@ -917,6 +957,34 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 ))}
               </div>
 
+              {/* 디자인 프리셋 빠른 변경 */}
+              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"10px 12px",marginBottom:0 }}>
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
+                  <div style={{ fontSize:10,fontWeight:700,color:muted }}>🎯 디자인 프리셋</div>
+                  <div style={{ display:"flex",gap:4 }}>
+                    <button onClick={()=>{ if(selPreset) setSelPreset({...selPreset}); }}
+                      style={{ fontSize:9,padding:"2px 8px",borderRadius:5,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>
+                      전체 적용
+                    </button>
+                    <button onClick={()=>{ if(selPreset){ const so2={...(sted[selIdx]||{})}; Object.assign(so2,{bgColor:selPreset.bgColor,textColor:selPreset.textColor,titleSize:selPreset.titleSize,bodySize:selPreset.bodySize,textAlign:selPreset.textAlign,textValign:selPreset.textValign}); setSted(prev=>({...prev,[selIdx]:so2})); } }}
+                      style={{ fontSize:9,padding:"2px 8px",borderRadius:5,border:`1px solid #6366f1`,background:"rgba(99,102,241,0.15)",color:"#a5b4fc",cursor:"pointer",fontWeight:700 }}>
+                      이 슬라이드만
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display:"flex",gap:4,overflowX:"auto",paddingBottom:4 }}>
+                  {DESIGN_PRESETS.map(dp=>{
+                    const isSel=selPreset?.key===dp.key;
+                    return <button key={dp.key} onClick={()=>setSelPreset(dp)}
+                      style={{ flexShrink:0,padding:"6px 10px",borderRadius:6,border:`1.5px solid ${isSel?"#6366f1":"transparent"}`,
+                        background:dp.bgColor,color:dp.textColor,fontSize:10,fontWeight:isSel?800:500,cursor:"pointer",whiteSpace:"nowrap",
+                        boxShadow:isSel?"0 0 0 2px rgba(99,102,241,0.4)":"0 1px 4px rgba(0,0,0,0.2)" }}>
+                      {dp.label}
+                    </button>;
+                  })}
+                </div>
+              </div>
+
               <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
                 <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:10 }}>🎨 스타일</div>
                 <div style={{ display:"flex",gap:8,marginBottom:10 }}>
@@ -935,23 +1003,55 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                   </div>
                 </div>
-                {/* 폰트 선택 */}
+                {/* 폰트 선택 (드롭다운) */}
                 <div style={{ marginBottom:10 }}>
                   <div style={{ fontSize:10,color:muted,marginBottom:4 }}>폰트</div>
-                  <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
-                    {[
-                      { label:"기본", val:"sans-serif" },
-                      { label:"명조", val:"Nanum Myeongjo" },
-                      { label:"고딕", val:"Noto Sans KR" },
-                      { label:"둥근", val:"Nanum Gothic" },
-                      { label:"배민", val:"BMDOHYEON" },
-                      { label:"넥슨", val:"NeoDunggeunmo" },
-                    ].map(f=>{
-                      const cur = so.fontFamily||curStyle.fontFamily||"sans-serif";
-                      const isCur = cur===f.val;
-                      return <button key={f.val} onClick={()=>updSted(selIdx,"fontFamily",f.val)}
-                        style={{ padding:"5px 10px",borderRadius:6,border:`1px solid ${isCur?"#6366f1":bdr}`,background:isCur?"rgba(99,102,241,0.2)":"transparent",color:isCur?"#a5b4fc":muted,cursor:"pointer",fontSize:11,fontWeight:isCur?700:400 }}>{f.label}</button>;
-                    })}
+                  <select value={so.fontFamily||curStyle.fontFamily||"sans-serif"} onChange={e=>{loadGFont(e.target.value);updSted(selIdx,"fontFamily",e.target.value);}}
+                    style={{ width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${bdr}`,background:inputBg,color:text,fontSize:12,outline:"none",cursor:"pointer",fontFamily:so.fontFamily||curStyle.fontFamily||"sans-serif" }}>
+                    <option value="sans-serif">기본 (시스템 고딕)</option>
+                    <option value="Noto Sans KR">Noto Sans KR (고딕)</option>
+                    <option value="Nanum Gothic">나눔 고딕</option>
+                    <option value="Nanum Myeongjo">나눔 명조</option>
+                    <option value="Nanum Pen Script">나눔 손글씨 펜</option>
+                    <option value="Gamja Flower">감자꽃 (귀여운체)</option>
+                    <option value="Do Hyeon">도현체 (배민)</option>
+                    <option value="Jua">주아체 (배민)</option>
+                    <option value="Black Han Sans">검은 한산스</option>
+                    <option value="Gugi">구기체</option>
+                    <option value="Single Day">싱글데이</option>
+                    <option value="Sunflower">해바라기</option>
+                    <option value="Poor Story">가난한 이야기</option>
+                    <option value="Gothic A1">고딕 A1</option>
+                    <option value="Gowun Dodum">고운 돋움</option>
+                    <option value="Gowun Batang">고운 바탕</option>
+                    <option value="IBM Plex Sans KR">IBM 플렉스 한글</option>
+                    <option value="Hahmlet">함렛 세리프</option>
+                    <option value="Georgia">Georgia (영문 세리프)</option>
+                    <option value="Arial">Arial (영문 산세리프)</option>
+                    <option value="Playfair Display">Playfair Display</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="monospace">Monospace (코딩체)</option>
+                    {customFonts.map(cf=><option key={cf.name} value={cf.name}>{cf.name} (업로드)</option>)}
+                  </select>
+                  {/* 커스텀 폰트 업로드 */}
+                  <div style={{ marginTop:6 }}>
+                    <button type="button" onClick={()=>fontFileRef.current?.click()}
+                      style={{ width:"100%",padding:"7px 10px",borderRadius:7,border:`1px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",textAlign:"center" }}>
+                      + 내 폰트 업로드 (.otf, .ttf, .woff2)
+                    </button>
+                    <input ref={fontFileRef} type="file" accept=".otf,.ttf,.woff,.woff2" style={{display:"none"}} onChange={async e=>{
+                      const file = e.target.files?.[0]; if(!file) return;
+                      const fontName = file.name.replace(/\.(otf|ttf|woff2?)/i,"");
+                      try {
+                        const buf = await file.arrayBuffer();
+                        const ff = new FontFace(fontName, buf);
+                        await ff.load();
+                        document.fonts.add(ff);
+                        setCustomFonts(prev=>[...prev.filter(f=>f.name!==fontName),{name:fontName}]);
+                        updSted(selIdx,"fontFamily",fontName);
+                      } catch(err){ alert("폰트 로드 실패: "+err.message); }
+                      e.target.value="";
+                    }}/>
                   </div>
                 </div>
                 <div style={{ marginBottom:10 }}>
@@ -998,10 +1098,36 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   </div>
                 </div>
                 {so.bgImage ? (
-                  <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:inputBg }}>
-                    <img src={so.bgImage} alt="" style={{ width:38,height:38,objectFit:"cover",borderRadius:5,flexShrink:0 }}/>
-                    <span style={{ flex:1,fontSize:11,color:muted }}>배경 이미지 적용됨</span>
-                    <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
+                  <div>
+                    <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:inputBg,marginBottom:8 }}>
+                      <img src={so.bgImage} alt="" style={{ width:38,height:38,objectFit:"cover",borderRadius:5,flexShrink:0 }}/>
+                      <span style={{ flex:1,fontSize:11,color:muted }}>배경 이미지 적용됨</span>
+                      <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
+                    </div>
+                    {/* 배경 이미지 투명도 */}
+                    <div style={{ marginBottom:8 }}>
+                      <div style={{ fontSize:10,color:muted,marginBottom:4 }}>배경 투명도 ({Math.round((so.bgOpacity??1)*100)}%)</div>
+                      <input type="range" min="0" max="100" value={Math.round((so.bgOpacity??1)*100)}
+                        onChange={e=>updSted(selIdx,"bgOpacity",parseInt(e.target.value)/100)}
+                        style={{ width:"100%",accentColor:"#6366f1" }}/>
+                    </div>
+                    {/* 이미지 위 오버레이 색상 */}
+                    <div style={{ display:"flex",gap:8,alignItems:"center" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:10,color:muted,marginBottom:4 }}>오버레이 색상</div>
+                        <div style={{ display:"flex",gap:5,alignItems:"center" }}>
+                          <input type="color" value={so.overlayColor||"#000000"} onChange={e=>updSted(selIdx,"overlayColor",e.target.value)}
+                            style={{ width:30,height:30,borderRadius:6,border:`1px solid ${bdr}`,cursor:"pointer",padding:1 }}/>
+                          {so.overlayColor&&<button onClick={()=>{updSted(selIdx,"overlayColor",undefined);updSted(selIdx,"overlayOpacity",undefined);}} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
+                        </div>
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:10,color:muted,marginBottom:4 }}>오버레이 투명도 ({Math.round((so.overlayOpacity??0.3)*100)}%)</div>
+                        <input type="range" min="0" max="100" value={Math.round((so.overlayOpacity??0.3)*100)}
+                          onChange={e=>updSted(selIdx,"overlayOpacity",parseInt(e.target.value)/100)}
+                          style={{ width:"100%",accentColor:"#6366f1" }}/>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <button onClick={()=>bgFileRef.current?.click()} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 배경 이미지 업로드</button>
@@ -1015,10 +1141,18 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
 
             {/* 미리보기 */}
-            <div style={{ flexShrink:0,width:260,display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
+            <div style={{ flexShrink:0,width:360,display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
               <div style={{ fontSize:11,fontWeight:700,color:muted }}>미리보기</div>
-              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%" }}>
-                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={258} bgImageSrc={so.bgImage||undefined}/>
+              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%",cursor:"pointer" }}
+                onClick={()=>{
+                  // 전체화면 미리보기
+                  const canvas = document.createElement("canvas");
+                  drawDetailSlide(canvas, curSlide, curStyle, imgW, imgH, null);
+                  const url = canvas.toDataURL("image/png");
+                  const w = window.open("","_blank","width="+Math.min(imgW,1200)+",height="+Math.min(imgH,900));
+                  if(w){w.document.write(`<img src="${url}" style="max-width:100%;max-height:100vh;display:block;margin:auto"/>`);w.document.title="미리보기";}
+                }}>
+                <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={358} bgImageSrc={so.bgImage||undefined}/>
               </div>
               <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
               <div style={{ display:"flex",gap:6,width:"100%" }}>

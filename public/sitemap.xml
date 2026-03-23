@@ -1,9 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- 홈 -->
   <url>
     <loc>https://www.snsmakeit.com/</loc>
-    <lastmod>2026-03-20</lastmod>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.snsmakeit.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.snsmakeit.com/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.snsmakeit.com/?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.snsmakeit.com/?lang=zh"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.snsmakeit.com/"/>
+    <lastmod>2026-03-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- 소개 -->
+  <url>
+    <loc>https://www.snsmakeit.com/about</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.snsmakeit.com/about"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.snsmakeit.com/about?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.snsmakeit.com/about?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.snsmakeit.com/about?lang=zh"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 이용방법 -->
+  <url>
+    <loc>https://www.snsmakeit.com/howto</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.snsmakeit.com/howto"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.snsmakeit.com/howto?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.snsmakeit.com/howto?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.snsmakeit.com/howto?lang=zh"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- AI 생성기 -->
+  <url>
+    <loc>https://www.snsmakeit.com/ai</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.snsmakeit.com/ai"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.snsmakeit.com/ai?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.snsmakeit.com/ai?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.snsmakeit.com/ai?lang=zh"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 가격정책 -->
+  <url>
+    <loc>https://www.snsmakeit.com/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://www.snsmakeit.com/pricing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.snsmakeit.com/pricing?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://www.snsmakeit.com/pricing?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.snsmakeit.com/pricing?lang=zh"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 커뮤니티 -->
+  <url>
+    <loc>https://www.snsmakeit.com/community</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 문의하기 -->
+  <url>
+    <loc>https://www.snsmakeit.com/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 이벤트 -->
+  <url>
+    <loc>https://www.snsmakeit.com/event</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 약관 -->
+  <url>
+    <loc>https://www.snsmakeit.com/legal</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

@@ -102,6 +102,49 @@ DROP POLICY IF EXISTS "videos_write_admin" ON videos;
 CREATE POLICY "videos_write_admin"
   ON videos FOR ALL USING (true);
 
+-- ── 6. inquiries 테이블 (문의하기) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS inquiries (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  subject    TEXT DEFAULT '',
+  message    TEXT NOT NULL,
+  status     TEXT DEFAULT 'pending',
+  reply      TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "inquiries_insert_all" ON inquiries;
+CREATE POLICY "inquiries_insert_all"
+  ON inquiries FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "inquiries_select_all" ON inquiries;
+CREATE POLICY "inquiries_select_all"
+  ON inquiries FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "inquiries_update_all" ON inquiries;
+CREATE POLICY "inquiries_update_all"
+  ON inquiries FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "inquiries_delete_all" ON inquiries;
+CREATE POLICY "inquiries_delete_all"
+  ON inquiries FOR DELETE USING (true);
+
+-- ── 7. online_users 테이블 (실시간 접속자 카운트) ───────────────
+CREATE TABLE IF NOT EXISTS online_users (
+  id         TEXT PRIMARY KEY,
+  device     TEXT DEFAULT 'desktop',
+  last_seen  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE online_users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "online_users_all" ON online_users;
+CREATE POLICY "online_users_all"
+  ON online_users FOR ALL USING (true);
+
 -- ── 6. posts 테이블에 tag / subCat 컬럼 추가 ────────────────────
 -- 세부 카테고리(태그) 필터 기능을 위해 필요
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS tag     TEXT DEFAULT '';

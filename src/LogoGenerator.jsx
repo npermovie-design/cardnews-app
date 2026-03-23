@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import StepBar from "./StepBar.jsx";
 
 const LOGO_STYLES = [
   { id:"free",       label:"자유로운 로고",      desc:"창의적·독창적",       color:"#ec4899", bg:"rgba(236,72,153,0.15)" },
@@ -57,6 +58,12 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   const bdr     = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
   const inputBdr= D ? "rgba(255,255,255,0.15)" : "#ddd";
+
+  const STEPS = [
+    { n:1, label:"설정" },
+    { n:2, label:"AI 생성중" },
+    { n:3, label:"결과 확인" },
+  ];
 
   const [step,      setStep]      = useState(0);
   useGeneratingGuard(step === 2, 10); // 생성 중 이탈 방지
@@ -146,7 +153,6 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   if (step === 0) return (
     <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
       <div style={{ maxWidth:540, width:"100%", textAlign:"center" }}>
-        <div style={{ fontSize:60, marginBottom:14 }}>🏷</div>
         <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:"rgba(6,182,212,0.15)", border:"1px solid rgba(6,182,212,0.3)", fontSize:12, fontWeight:700, color:"#06b6d4", marginBottom:14 }}>
           AI 로고 생성 · 4가지 버전 동시 제작
         </div>
@@ -166,7 +172,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
           ))}
         </div>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
-          {["✨ 11가지 스타일","💎 ${genCount * 10}P","📎 참고이미지 업로드","📥 PNG 다운로드"].map(b => (
+          {[`✨ 11가지 스타일`,`${genCount * 10}P`,`📎 참고이미지 업로드`,`📥 PNG 다운로드`].map(b => (
             <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
           ))}
         </div>
@@ -180,6 +186,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   // ── STEP 1: 설정
   if (step === 1) return (
     <div style={{ flex:1, overflowY:"auto" }}>
+      <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:820, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
           <button onClick={() => setStep(0)} style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>← 소개</button>
@@ -271,7 +278,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
           </div>
           <button onClick={generate} disabled={!canGenerate}
             style={{ padding:"13px 40px", borderRadius:11, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?"linear-gradient(135deg,#06b6d4,#0891b2)":"rgba(6,182,212,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
-            {user ? `🏷 로고 생성하기 → 💎 ${genCount * 10}P` : "✦ 1회 생성하기"}
+            {user ? `🏷 로고 생성하기 → ${genCount * 10}P` : "✦ 1회 생성하기"}
           </button>
         </div>
       </div>
@@ -299,20 +306,19 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
           <div style={{ height:7, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:14 }}>
             <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#06b6d4,#0891b2)", width:`${pct}%`, transition:"width 0.5s ease" }}/>
           </div>
-          <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16 }}>
+          <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
             {Array.from({length:genCount},(_,i)=>i).map(i => {
               const done = results[i]; const isGen = genIdx === i;
               return (
-                <div key={i} style={{ width:54, height:54, borderRadius:10, border:`2px solid ${done?"#06b6d4":isGen?"rgba(6,182,212,0.5)":bdr}`, background:done?"rgba(6,182,212,0.12)":isGen?"rgba(6,182,212,0.04)":cardBg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:3 }}>
-                  {done ? <span style={{ fontSize:18 }}>✅</span> : isGen ? <div style={{ width:16, height:16, borderRadius:"50%", border:"2px solid rgba(6,182,212,0.3)", borderTopColor:"#06b6d4", animation:"spin 0.8s linear infinite" }}/> : <span style={{ fontSize:14, color:muted }}>⏳</span>}
-                  <div style={{ fontSize:9, color:done?"#06b6d4":muted }}>v{i+1}</div>
+                <div key={i} style={{ width:80, height:80, borderRadius:12, border:`2px solid ${done?"#06b6d4":isGen?"rgba(6,182,212,0.5)":bdr}`, background:done?"transparent":isGen?"rgba(6,182,212,0.04)":cardBg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", overflow:"hidden" }}>
+                  {done ? <img src={done} alt={`v${i+1}`} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : isGen ? <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid rgba(6,182,212,0.3)", borderTopColor:"#06b6d4", animation:"spin 0.8s linear infinite" }}/> : <span style={{ fontSize:14, color:muted }}>⏳</span>}
                 </div>
               );
             })}
           </div>
           <div style={{ fontSize:11, color:muted, lineHeight:1.7 }}>각 버전은 약 10~20초 소요됩니다.<br/>페이지를 닫지 말고 기다려주세요.</div>
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
       </div>
     );
   }
@@ -320,6 +326,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   // ── STEP 3: 결과
   return (
     <div style={{ flex:1, overflowY:"auto" }}>
+      <StepBar steps={STEPS} current={3} isDark={isDark} />
       <div style={{ maxWidth:940, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18, flexWrap:"wrap" }}>
           <button onClick={reset} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>← 다시 만들기</button>
@@ -410,7 +417,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
             </div>
           </div>
         </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
     </div>
   );
 }

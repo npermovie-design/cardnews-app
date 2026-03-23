@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
+import { useI18n } from "./i18n.jsx";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
@@ -13,6 +14,17 @@ const DEFAULT_CATS = [
 const isVideoUrl = url => /\.(mp4|mov|avi|mkv|webm|m4v)/i.test(url);
 const isImageUrl = url => /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)/i.test(url);
 const safeName   = n  => n.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+/* ── Supabase Storage → WebP 썸네일 URL 변환 ── */
+const SB_STORAGE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1";
+function toThumb(url, w=400, h=300) {
+  if (!url || typeof url !== "string") return url;
+  if (url.includes(SB_STORAGE + "/object/public/")) {
+    const path = url.split("/object/public/")[1];
+    return `${SB_STORAGE}/render/image/public/${path}?width=${w}&height=${h}&resize=cover&format=webp&quality=80`;
+  }
+  return url; // 외부 URL은 그대로
+}
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
 const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "📁", color: "#3b82f6" };
@@ -66,56 +78,247 @@ async function deleteTag(catId, tagId) {
 /* ─── 무료 미디어 검색 (자료실용) ──────────────────────────── */
 const GIPHY_KEY    = import.meta.env.VITE_GIPHY_KEY    || "dc6zaTOxFJmzC";
 const PIXABAY_KEY2 = import.meta.env.VITE_PIXABAY_KEY  || "";
+const PEXELS_KEY   = import.meta.env.VITE_PEXELS_KEY   || "";
+const UNSPLASH_KEY = import.meta.env.VITE_UNSPLASH_KEY || "";
+const TENOR_KEY    = import.meta.env.VITE_TENOR_KEY    || "";
 
-async function fetchGiphyData(q = "", offset = 0) {
+/* fetch helpers */
+async function _get(url, headers={}) {
+  const res = await fetch(url, Object.keys(headers).length ? { headers } : undefined);
+  return res.json();
+}
+
+async function fetchGiphyData(q="", offset=0) {
   try {
     const url = q
       ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=24&offset=${offset}&rating=g&lang=ko`
       : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=24&offset=${offset}&rating=g`;
-    const res = await fetch(url);
-    const d = await res.json();
-    return (d.data || []).map(g => ({
-      id: g.id, title: g.title || "GIF",
-      url: g.images?.original?.url || g.images?.fixed_height?.url || "",
-      preview: g.images?.fixed_height?.url || g.images?.original?.url || "",
-      type: "gif",
-    }));
-  } catch { return []; }
+    const d = await _get(url);
+    return { items: (d.data||[]).map(g=>({ id:g.id, title:g.title||"GIF",
+      url: g.images?.original?.url||g.images?.fixed_height?.url||"",
+      preview: g.images?.fixed_height?.url||g.images?.original?.url||"",
+      type:"gif", src:"GIPHY" })), next:"" };
+  } catch { return {items:[],next:""}; }
 }
 
-async function fetchPixabayData(q = "nature", page = 1) {
-  if (!PIXABAY_KEY2) return [];
+async function fetchTenorData(q="", pos="") {
+  if (!TENOR_KEY) return {items:[],next:""};
   try {
-    const url = `https://pixabay.com/api/?key=${PIXABAY_KEY2}&q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true`;
-    const res = await fetch(url);
-    const d = await res.json();
-    return (d.hits || []).map(h => ({
-      id: h.id, title: h.tags,
-      url: h.largeImageURL || h.webformatURL,
-      preview: h.webformatURL || h.previewURL,
-      type: "image",
-    }));
-  } catch { return []; }
+    const base = q
+      ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=24&media_filter=gif${pos?"&pos="+pos:""}`
+      : `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=24&media_filter=gif${pos?"&pos="+pos:""}`;
+    const d = await _get(base);
+    return { items: (d.results||[]).map(g=>({ id:g.id, title:g.content_description||"GIF",
+      url: g.media_formats?.gif?.url||g.media_formats?.tinygif?.url||"",
+      preview: g.media_formats?.tinygif?.url||g.media_formats?.gif?.url||"",
+      type:"gif", src:"Tenor" })), next: d.next||"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchPixabayPhotos(q="nature", page=1) {
+  if (!PIXABAY_KEY2) return {items:[],next:""};
+  try {
+    const d = await _get(`https://pixabay.com/api/?key=${PIXABAY_KEY2}&q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true&image_type=photo`);
+    return { items: (d.hits||[]).map(h=>({ id:h.id, title:h.tags,
+      url:h.largeImageURL||h.webformatURL, preview:h.webformatURL||h.previewURL,
+      type:"image", src:"Pixabay" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchPixabayVideos(q="nature", page=1) {
+  if (!PIXABAY_KEY2) return {items:[],next:""};
+  try {
+    const d = await _get(`https://pixabay.com/api/videos/?key=${PIXABAY_KEY2}&q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true`);
+    return { items: (d.hits||[]).map(h=>({ id:h.id, title:h.tags,
+      url: h.videos?.medium?.url||h.videos?.small?.url||"",
+      preview: h.videos?.tiny?.thumbnail||"", type:"video", src:"Pixabay" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchPexelsPhotos(q="", page=1) {
+  if (!PEXELS_KEY) return {items:[],next:""};
+  try {
+    const url = q
+      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=24&page=${page}`
+      : `https://api.pexels.com/v1/curated?per_page=24&page=${page}`;
+    const d = await _get(url, {Authorization: PEXELS_KEY});
+    return { items: (d.photos||[]).map(p=>({ id:p.id, title:p.photographer||"Pexels",
+      url:p.src?.large2x||p.src?.large||"", preview:p.src?.medium||"",
+      type:"image", src:"Pexels" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchPexelsVideos(q="", page=1) {
+  if (!PEXELS_KEY) return {items:[],next:""};
+  try {
+    const url = q
+      ? `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=24&page=${page}`
+      : `https://api.pexels.com/videos/popular?per_page=24&page=${page}`;
+    const d = await _get(url, {Authorization: PEXELS_KEY});
+    return { items: (d.videos||[]).map(v=>({ id:v.id, title:v.user?.name||"Pexels Video",
+      url: (v.video_files||[]).find(f=>f.quality==="hd")?.link||(v.video_files||[])[0]?.link||"",
+      preview:v.image||"", type:"video", src:"Pexels" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchUnsplash(q="", page=1) {
+  if (!UNSPLASH_KEY) return {items:[],next:""};
+  try {
+    const url = q
+      ? `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=24&page=${page}&client_id=${UNSPLASH_KEY}`
+      : `https://api.unsplash.com/photos?per_page=24&page=${page}&order_by=popular&client_id=${UNSPLASH_KEY}`;
+    const d = await _get(url);
+    const photos = q ? (d.results||[]) : (Array.isArray(d)?d:[]);
+    return { items: photos.map(p=>({ id:p.id, title:p.description||p.alt_description||"Unsplash",
+      url:p.urls?.full||p.urls?.regular||"", preview:p.urls?.regular||p.urls?.small||"",
+      type:"image", src:"Unsplash" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchPicsum(page=1) {
+  try {
+    const d = await _get(`https://picsum.photos/v2/list?page=${page}&limit=24`);
+    return { items: (d||[]).map(p=>({ id:p.id, title:p.author||"Picsum",
+      url:`https://picsum.photos/id/${p.id}/1200/800`,
+      preview:`https://picsum.photos/id/${p.id}/400/300`,
+      type:"image", src:"Picsum" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchOpenverse(q="nature", page=1) {
+  try {
+    const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q||"nature")}&page_size=24&page=${page}&license_type=commercial,modification`;
+    const d = await _get(url);
+    return { items: (d.results||[]).map(p=>({ id:p.id||p.url, title:p.title||"Openverse",
+      url: p.url||"", preview: p.thumbnail||p.url||"",
+      type:"image", src:"Openverse", credit: p.creator||"" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchArtChicago(q="", page=1) {
+  try {
+    const from = (page-1)*24;
+    const url = q
+      ? `https://api.artic.edu/api/v1/artworks/search?q=${encodeURIComponent(q)}&fields=id,title,image_id,artist_title&limit=24&from=${from}`
+      : `https://api.artic.edu/api/v1/artworks?fields=id,title,image_id,artist_title&limit=24&page=${page}`;
+    const d = await _get(url);
+    const list = (d.data||[]).filter(a=>a.image_id);
+    return { items: list.map(a=>({ id:String(a.id), title:a.title||"AIC",
+      url:`https://www.artic.edu/iiif/2/${a.image_id}/full/1686,/0/default.jpg`,
+      preview:`https://www.artic.edu/iiif/2/${a.image_id}/full/400,/0/default.jpg`,
+      type:"image", src:"AIC 미술관", credit:a.artist_title||"" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchNASA(page=1) {
+  try {
+    const d = await _get(`https://api.nasa.gov/planetary/apod?count=24&api_key=DEMO_KEY&thumbs=true`);
+    const list = Array.isArray(d) ? d : [];
+    return { items: list.map((a,i)=>({ id:a.date||String(i), title:a.title||"NASA",
+      url: a.media_type==="video" ? (a.thumbnail_url||"") : (a.hdurl||a.url||""),
+      preview: a.media_type==="video" ? (a.thumbnail_url||"") : (a.url||""),
+      type: a.media_type==="video" ? "video" : "image", src:"NASA" }))
+      .filter(a=>a.preview), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+async function fetchWikimedia(q="nature", page=1) {
+  try {
+    const offset = (page-1)*24;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&prop=imageinfo&iiprop=url|thumburl|mediatype|size&iiurlwidth=400&format=json&gsrlimit=24&gsroffset=${offset}&origin=*`;
+    const d = await _get(url);
+    const pages = Object.values(d?.query?.pages||{});
+    return { items: pages.filter(p=>p.imageinfo?.[0]?.thumburl).map(p=>({
+      id:String(p.pageid), title:p.title?.replace("File:","").replace(/\.[^.]+$/,"")||"Wikimedia",
+      url: p.imageinfo[0].url||"",
+      preview: p.imageinfo[0].thumburl||"",
+      type: (p.imageinfo[0].mediatype||"").toLowerCase().includes("video") ? "video" : "image",
+      src:"Wikimedia" })), next:"" };
+  } catch { return {items:[],next:""}; }
+}
+
+/* ── 소스 목록 (키가 설정된 것만 활성화) ─── */
+function buildSources() {
+  const s = [];
+  s.push({ id:"giphy",     label:"🎞 Giphy GIF",      group:"gif"   });
+  if (TENOR_KEY)    s.push({ id:"tenor",   label:"😂 Tenor GIF",      group:"gif"   });
+  if (PIXABAY_KEY2) s.push({ id:"pixphoto",label:"🖼 Pixabay 사진",   group:"photo" });
+  if (PEXELS_KEY)   s.push({ id:"pexphoto",label:"📷 Pexels 사진",    group:"photo" });
+  if (UNSPLASH_KEY) s.push({ id:"unsplash",label:"🏔 Unsplash",        group:"photo" });
+  s.push({ id:"openverse", label:"🌍 Openverse",       group:"photo" });
+  s.push({ id:"wikimedia", label:"📚 Wikimedia",        group:"photo" });
+  if (PIXABAY_KEY2) s.push({ id:"pixvid",  label:"🎬 Pixabay 영상",   group:"video" });
+  if (PEXELS_KEY)   s.push({ id:"pexvid",  label:"🎬 Pexels 영상",    group:"video" });
+  s.push({ id:"nasa",      label:"🚀 NASA 우주",        group:"art"   });
+  s.push({ id:"aic",       label:"🎨 시카고미술관",    group:"art"   });
+  s.push({ id:"picsum",    label:"🎲 랜덤 사진",        group:"random" });
+  return s;
 }
 
 function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
   const [hov, setHov] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const cardRef = useRef(null);
+  const isVid = item.type === "video";
+  const badge = { gif:"GIF", video:"VIDEO", image:null }[item.type];
+
+  const handleMouseEnter = () => { setHov(true); setShowPreview(true); };
+  const handleMouseLeave = () => { setHov(false); setShowPreview(false); };
+
   return (
-    <div style={{borderRadius:10,overflow:"hidden",border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.03)":"#f3f4f6",position:"relative",cursor:"pointer",aspectRatio:"1"}}
-      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+    <div ref={cardRef} style={{borderRadius:10,overflow:"hidden",border:"1px solid "+bdr,
+      background:isDark?"rgba(255,255,255,0.03)":"#f3f4f6",
+      position:"relative",cursor:"pointer",aspectRatio:"1"}}
+      onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
       onClick={()=>window.open(item.url,"_blank")}>
-      <img src={item.preview} alt={item.title} loading="lazy"
-        style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
-        onError={e=>{ e.target.src = item.url; }}/>
-      {item.type==="gif" && (
-        <div style={{position:"absolute",top:4,left:4,fontSize:9,padding:"2px 6px",borderRadius:4,background:"rgba(0,0,0,0.65)",color:"#fff",fontWeight:800}}>GIF</div>
-      )}
+      {item.preview
+        ? <img src={item.preview} alt={item.title} loading="lazy"
+            style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+            onError={e=>{ e.target.style.display="none"; }}/>
+        : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>
+            {isVid?"🎬":"🖼"}
+          </div>
+      }
+      {badge && <div style={{position:"absolute",top:4,left:4,fontSize:9,padding:"2px 6px",
+        borderRadius:4,background:"rgba(0,0,0,0.65)",color:"#fff",fontWeight:800}}>{badge}</div>}
+      <div style={{position:"absolute",bottom:4,right:4,fontSize:9,padding:"1px 5px",
+        borderRadius:4,background:"rgba(0,0,0,0.5)",color:"rgba(255,255,255,0.8)"}}>{item.src}</div>
       {hov && (
-        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
           <button onClick={e=>onDl(item,e)}
-            style={{padding:"7px 14px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.92)",color:"#1a1730",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+            style={{padding:"7px 14px",borderRadius:8,border:"none",
+              background:"rgba(255,255,255,0.92)",color:"#1a1730",fontSize:12,fontWeight:700,cursor:"pointer"}}>
             {dlId===item.id?"저장중...":"⬇ 저장"}
           </button>
+        </div>
+      )}
+      {/* 호버 프리뷰 팝업 */}
+      {showPreview && (
+        <div style={{position:"fixed",zIndex:9999,pointerEvents:"none",
+          top: (() => { const r = cardRef.current?.getBoundingClientRect(); return r ? Math.min(r.top, window.innerHeight - 380) : 100; })(),
+          left: (() => { const r = cardRef.current?.getBoundingClientRect(); return r ? (r.right + 320 > window.innerWidth ? r.left - 320 : r.right + 10) : 200; })(),
+          width:300,background:isDark?"rgba(15,12,41,0.97)":"#fff",border:"1px solid "+(isDark?"rgba(255,255,255,0.15)":"#ddd"),
+          borderRadius:14,boxShadow:"0 12px 40px rgba(0,0,0,0.35)",overflow:"hidden"}}>
+          {isVid && item.url ? (
+            <video src={item.url} autoPlay muted loop playsInline
+              style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block",background:"#000"}}/>
+          ) : (
+            <img src={item.preview||item.url} alt="" style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block"}}
+              onError={e=>e.target.style.display="none"}/>
+          )}
+          <div style={{padding:"10px 12px"}}>
+            <div style={{fontSize:12,fontWeight:700,color:isDark?"#fff":"#1a1a2e",marginBottom:4,
+              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.title}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",fontSize:10,color:isDark?"rgba(255,255,255,0.5)":"#888",lineHeight:1.8}}>
+              <span>📂 {item.src}</span>
+              <span>🏷 {item.type==="gif"?"GIF":item.type==="video"?"영상":"사진"}</span>
+              {item.credit && <span>👤 {item.credit}</span>}
+            </div>
+            <div style={{fontSize:9,color:isDark?"rgba(255,255,255,0.3)":"#aaa",marginTop:4}}>
+              클릭하면 원본 열기 · ⬇ 저장 가능
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -123,82 +326,187 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
 }
 
 function FreeMediaSearch({ C, isDark, bdr }) {
-  const sources = [{ id:"giphy", label:"🎞 GIF" }];
-  if (PIXABAY_KEY2) sources.push({ id:"pixabay", label:"🖼 사진" });
+  const tenorCursor = useRef("");
 
-  const [src,      setSrc]      = useState("giphy");
+  // 3탭: GIF / 사진 / 영상
+  const TABS = [
+    { id:"gif",   label:"🎞 GIF / 짤" },
+    { id:"photo", label:"📷 무료 사진" },
+    { id:"video", label:"🎬 무료 영상" },
+  ];
+  const [tab, setTab] = useState("gif");
   const [inputVal, setInputVal] = useState("");
-  const [query,    setQuery]    = useState("");
-  const [items,    setItems]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [page,     setPage]     = useState(0);
-  const [hasMore,  setHasMore]  = useState(true);
-  const [dlId,     setDlId]     = useState(null);
+  const [query, setQuery] = useState("");
+  const [allItems, setAllItems] = useState({});  // {sourceId: items[]}
+  const [loading, setLoading] = useState(true);
+  const [dlId, setDlId] = useState(null);
 
-  const load = async (q, p, source, append=false) => {
+  // 탭별 소스 목록
+  const tabSources = {
+    gif: [
+      { id:"giphy", label:"Giphy" },
+      ...(TENOR_KEY ? [{ id:"tenor", label:"Tenor" }] : []),
+    ],
+    photo: [
+      ...(PIXABAY_KEY2 ? [{ id:"pixphoto", label:"Pixabay" }] : []),
+      ...(PEXELS_KEY ? [{ id:"pexphoto", label:"Pexels" }] : []),
+      ...(UNSPLASH_KEY ? [{ id:"unsplash", label:"Unsplash" }] : []),
+      { id:"openverse", label:"Openverse" },
+      { id:"wikimedia", label:"Wikimedia" },
+      { id:"aic", label:"미술관" },
+      { id:"nasa", label:"NASA" },
+      { id:"picsum", label:"랜덤" },
+    ],
+    video: [
+      ...(PIXABAY_KEY2 ? [{ id:"pixvid", label:"Pixabay" }] : []),
+      ...(PEXELS_KEY ? [{ id:"pexvid", label:"Pexels" }] : []),
+    ],
+  };
+
+  const fetchSource = async (sourceId, q) => {
+    const fns = {
+      giphy:    ()=>fetchGiphyData(q, 0),
+      tenor:    ()=>fetchTenorData(q, ""),
+      pixphoto: ()=>fetchPixabayPhotos(q||"nature", 1),
+      pixvid:   ()=>fetchPixabayVideos(q||"nature", 1),
+      pexphoto: ()=>fetchPexelsPhotos(q, 1),
+      pexvid:   ()=>fetchPexelsVideos(q, 1),
+      unsplash: ()=>fetchUnsplash(q, 1),
+      picsum:   ()=>fetchPicsum(1),
+      openverse:()=>fetchOpenverse(q||"nature", 1),
+      aic:      ()=>fetchArtChicago(q, 1),
+      nasa:     ()=>fetchNASA(1),
+      wikimedia:()=>fetchWikimedia(q||"nature", 1),
+    };
+    try { return await (fns[sourceId]||fns.giphy)(); }
+    catch { return {items:[],next:""}; }
+  };
+
+  // 모든 소스 병렬 로드
+  const loadAll = async (q) => {
     setLoading(true);
-    let data = [];
-    if (source === "giphy")   data = await fetchGiphyData(q, p * 24);
-    if (source === "pixabay") data = await fetchPixabayData(q || "nature", p + 1);
-    if (append) setItems(prev => [...prev, ...data]);
-    else        setItems(data);
-    setHasMore(data.length >= 24);
+    tenorCursor.current = "";
+    const sources = tabSources[tab] || [];
+    const results = await Promise.allSettled(sources.map(s => fetchSource(s.id, q)));
+    const map = {};
+    sources.forEach((s, i) => {
+      const r = results[i];
+      map[s.id] = r.status === "fulfilled" ? r.value.items : [];
+      if (s.id === "tenor" && r.status === "fulfilled") tenorCursor.current = r.value.next;
+    });
+    setAllItems(map);
     setLoading(false);
   };
 
-  useEffect(() => { setPage(0); setItems([]); setQuery(""); setInputVal(""); load("", 0, src); }, [src]);
+  useEffect(() => {
+    setAllItems({}); setQuery(""); setInputVal("");
+    loadAll("");
+  }, [tab]);
 
-  const doSearch = () => { setPage(0); setQuery(inputVal); load(inputVal, 0, src); };
-  const loadMore = () => { const next = page+1; setPage(next); load(query, next, src, true); };
+  const doSearch = () => { setQuery(inputVal); loadAll(inputVal); };
 
   const download = async (item, e) => {
     e.stopPropagation(); setDlId(item.id);
+    const ext = item.type==="gif" ? ".gif" : item.type==="video" ? ".mp4" : ".jpg";
     try {
       const res = await fetch(item.url);
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = (item.title||"image").slice(0,30) + (item.type==="gif"?".gif":".jpg");
+      a.download = (item.title||"file").slice(0,30) + ext;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     } catch { window.open(item.url, "_blank"); }
     setDlId(null);
   };
 
+  const sources = tabSources[tab] || [];
+  const totalItems = sources.reduce((sum, s) => sum + (allItems[s.id]?.length||0), 0);
+
   return (
     <div>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-        <div style={{display:"flex",gap:4}}>
-          {sources.map(s=>(
-            <button key={s.id} onClick={()=>setSrc(s.id)} style={{
-              padding:"5px 12px",borderRadius:14,fontSize:12,cursor:"pointer",fontWeight:src===s.id?700:400,
-              border:"1px solid "+(src===s.id?"#6366f1":bdr),
-              background:src===s.id?"rgba(99,102,241,0.15)":"transparent",
-              color:src===s.id?"#a5b4fc":C.muted,
-            }}>{s.label}</button>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
-          <input value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()}
-            placeholder="검색어 입력..."
-            style={{padding:"7px 12px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:13,outline:"none",width:150}}/>
-          <button onClick={doSearch} style={{padding:"7px 16px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>검색</button>
-        </div>
-      </div>
-      {loading && <div style={{textAlign:"center",padding:"40px 0",color:C.muted,fontSize:13}}>불러오는 중...</div>}
-      {!loading && items.length===0 && <div style={{textAlign:"center",padding:"32px 0",color:C.muted,fontSize:13}}>결과가 없어요</div>}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
-        {items.map((item,i)=>(
-          <MediaCard key={item.id||i} item={item} isDark={isDark} bdr={bdr} C={C} onDl={download} dlId={dlId}/>
+      {/* 3탭 */}
+      <div style={{display:"flex",gap:0,marginBottom:14,borderBottom:"2px solid "+bdr}}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontSize:14,fontWeight:tab===t.id?800:500,
+              background:"transparent",
+              color:tab===t.id?(isDark?"#a5b4fc":"#6366f1"):C.muted,
+              borderBottom:tab===t.id?"3px solid #6366f1":"3px solid transparent",
+              transition:"all 0.15s"}}>
+            {t.label}
+          </button>
         ))}
       </div>
-      {hasMore && !loading && items.length>0 && (
-        <div style={{textAlign:"center",marginTop:16}}>
-          <button onClick={loadMore} style={{padding:"9px 28px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:13,fontWeight:600,cursor:"pointer"}}>더 보기</button>
+
+      {/* 검색창 */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <input value={inputVal} onChange={e=>setInputVal(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="키워드로 검색 (예: 풍경, 음식, 사람...)"
+          style={{flex:1,padding:"10px 14px",borderRadius:10,border:"1px solid "+bdr,
+            background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
+        <button onClick={doSearch} disabled={loading}
+          style={{padding:"10px 20px",borderRadius:10,border:"none",
+            background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
+            cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1,whiteSpace:"nowrap",flexShrink:0}}>
+          {loading?"검색중...":"🔍 검색"}
+        </button>
+      </div>
+
+      {loading && (
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+          {Array.from({length:12}).map((_,i)=>(
+            <div key={i} style={{aspectRatio:"1",borderRadius:10,background:isDark?"rgba(255,255,255,0.04)":"#f0f0f6",
+              border:"1px solid "+bdr,animation:"pulse 1.5s ease-in-out infinite"}}/>
+          ))}
         </div>
       )}
-      <div style={{textAlign:"center",marginTop:10,fontSize:10,color:C.muted,opacity:0.7}}>
-        {src==="giphy"?"Powered by GIPHY · 상업적 무료 이용 가능":"Powered by Pixabay · 상업적 무료 이용 가능"}
+
+      {!loading && totalItems===0 && (
+        <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
+          <div style={{fontSize:40,marginBottom:8}}>{tab==="gif"?"🎞":"📷"}</div>
+          <div style={{fontSize:14,fontWeight:700}}>결과가 없어요</div>
+          <div style={{fontSize:12,marginTop:4}}>다른 키워드로 검색해보세요</div>
+        </div>
+      )}
+
+      {/* 소스별 섹션으로 표시 */}
+      {!loading && sources.map(s => {
+        const items = allItems[s.id] || [];
+        if (items.length === 0) return null;
+        return (
+          <div key={s.id} style={{marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:800,color:C.text}}>{s.label}</span>
+              <span style={{fontSize:11,color:C.muted}}>{items.length}개</span>
+              <div style={{flex:1,height:1,background:bdr}}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+              {items.slice(0,12).map((item,i)=>(
+                <MediaCard key={item.id||i} item={item} isDark={isDark} bdr={bdr} C={C} onDl={download} dlId={dlId}/>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* 이용 가이드 */}
+      <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,
+        background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.04)",
+        border:"1px solid "+(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)")}}>
+        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#6366f1",marginBottom:8}}>💡 이용 가이드</div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:2}}>
+          <b style={{color:C.text}}>⬇ 저장</b> — 이미지/GIF를 PC에 바로 다운로드<br/>
+          <b style={{color:C.text}}>🖱 클릭</b> — 원본 사이트에서 고해상도로 보기<br/>
+          <b style={{color:C.text}}>🔍 검색</b> — 키워드를 입력하면 모든 소스에서 동시 검색<br/>
+          <b style={{color:C.text}}>마우스 올리기</b> — 이미지 확대 프리뷰 + 상세 정보 확인
+        </div>
+        <div style={{fontSize:10,color:C.muted,marginTop:8,opacity:0.6,lineHeight:1.8}}>
+          📌 Pixabay · Pexels: 무료 상업적 이용 가능 (별도 출처 표기 불요)<br/>
+          📌 Giphy · Tenor: GIF 공유 목적, 상업적 이용 시 출처 표기 권장<br/>
+          📌 Openverse · Wikimedia: CC 라이선스, 출처 표기 필수<br/>
+          📌 NASA · 미술관: 퍼블릭 도메인, 자유롭게 사용 가능
+        </div>
       </div>
     </div>
   );
@@ -375,6 +683,7 @@ function RichBody({ html, C }) {
 
 /* ─── 글쓰기 폼 ─────────────────────────────────────────── */
 function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, allTags }) {
+  const { t } = useI18n();
   const [title,         setTitle]        = useState(initial?.title || "");
   const [body,          setBody]         = useState(initial?.body  || "");
   const [pickedCat,     setPickedCat]    = useState(initial?.subCat || subCat || (cats[0]?.id || "info"));
@@ -383,18 +692,44 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
     (initial?.images || []).map(url => ({ url, type: isVideoUrl(url) ? "video" : "image" }))
   );
   const [uploading,     setUploading]    = useState(false);
+  const [priceType,    setPriceType]    = useState(initial?.priceType || "free"); // "free" | "paid"
+  const [price,        setPrice]        = useState(initial?.price || "");
   const fileInputRef = useRef(null);
 
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#d1d5db";
   const sub = cats.find(s=>s.id===pickedCat) || cats[0];
   const tags = allTags[pickedCat] || [];
 
+  const toWebP = (file) => new Promise(resolve => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      // 최대 1600px로 축소
+      const MAX = 1600;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(objUrl);
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
+      }, "image/webp", 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); }; // 변환 실패 시 원본 사용
+    img.src = objUrl;
+  });
+
   const handleFileUpload = async (files) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    for (const file of Array.from(files)) {
+    for (let file of Array.from(files)) {
       if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 파일 크기는 50MB 이하여야 합니다.`); continue; }
       try {
+        // 이미지는 WebP로 변환
+        if (file.type.startsWith("image/") && file.type !== "image/gif") {
+          file = await toWebP(file);
+        }
         const path = `posts/${Date.now()}_${safeName(file.name)}`;
         const url = await uploadFileToStorage(file, path);
         const type = file.type.startsWith("video") ? "video" : "image";
@@ -488,10 +823,32 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
           )}
         </div>
 
+        {/* 자료실 유료/무료 선택 */}
+        {pickedCat==="archive" && (
+          <div style={{marginBottom:16,padding:"14px 18px",borderRadius:12,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>자료 유형</div>
+            <div style={{display:"flex",gap:8,marginBottom:priceType==="paid"?12:0}}>
+              {[["free","무료","#22c55e"],["paid","유료","#f59e0b"]].map(([v,l,c])=>(
+                <button key={v} type="button" onClick={()=>setPriceType(v)}
+                  style={{flex:1,padding:"10px 16px",borderRadius:10,border:`2px solid ${priceType===v?c:bdr}`,
+                    background:priceType===v?c+"15":"transparent",
+                    color:priceType===v?c:C.muted,fontSize:13,fontWeight:priceType===v?800:500,cursor:"pointer",transition:"all 0.15s"}}>
+                  {v==="free"?"🆓 ":"💰 "}{l}
+                </button>
+              ))}
+            </div>
+            {priceType==="paid" && (
+              <input value={price} onChange={e=>setPrice(e.target.value)} placeholder="가격 입력 (예: 5,000원)"
+                style={{width:"100%",padding:"10px 14px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+            )}
+          </div>
+        )}
+
         <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
-          <button type="button" onClick={onCancel} style={{padding:"11px 24px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer",fontWeight:600}}>취소</button>
+          <button type="button" onClick={onCancel} style={{padding:"11px 24px",borderRadius:10,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer",fontWeight:600}}>{t("cancel")}</button>
           <button type="button" onClick={()=>{
-            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url)});
+            if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url),
+              ...(pickedCat==="archive"?{priceType,price:priceType==="paid"?price:""}:{})});
             else alert("제목과 내용을 입력해주세요.");
           }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
             {initial?"수정 완료":"등록하기"}
@@ -515,6 +872,7 @@ function extractText(html, maxLen = 120) {
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost, onUserUpdate }) {
+  const { t } = useI18n();
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [subCat,  setSubCat]  = useState(initialCat || "info");
   const [subCats, setSubCats] = useState(DEFAULT_CATS);
@@ -530,8 +888,33 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [toast,   setToast]   = useState("");
   const [filterTag,   setFilterTag]   = useState(""); // 세부 태그 필터
   const [archiveView, setArchiveView] = useState("posts"); // "posts" | "search"
+  const [viewMode,    setViewMode]    = useState("list"); // "list" | "gallery" | "compact"
   const [showCatMgr, setShowCatMgr] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
+  const archiveFileRef = useRef(null);
+
+  const handleArchiveUpload = async (files) => {
+    if (!files || files.length === 0 || !user || user.role !== "admin") return;
+    for (const file of Array.from(files)) {
+      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 50MB 초과`); continue; }
+      try {
+        const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const url = await uploadFileToStorage(file, path);
+        const type = file.type.startsWith("video") ? "video" : file.type.startsWith("image") ? "image" : "file";
+        const newPost = {
+          title: file.name.replace(/\.[^.]+$/, ""),
+          body: `<p>${type === "video" ? "영상" : type === "image" ? "이미지" : "파일"} 자료</p>`,
+          subCat: "archive", tag: "", images: [url],
+          priceType: "free", price: "",
+          nick: user.nick, date: new Date().toISOString().slice(0, 10),
+          views: 0, likes: 0, comments: [],
+        };
+        await submitPost(newPost);
+        showToast("✅ 자료가 등록됐어요!", "success");
+      } catch (e) { alert(`${file.name} 업로드 실패: ${e.message}`); }
+    }
+    try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
+  };
   const snippetCache = useRef({}); // postId → snippet text
   const hoverTimer = useRef(null);
   const PER = 20;
@@ -541,6 +924,22 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const head = isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6";
   const hover= isDark ? "rgba(255,255,255,0.03)" : "#f9fafb";
   const cardBg = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+
+  const [translatedBody, setTranslatedBody] = useState(null);
+  const [translating, setTranslating] = useState(false);
+  const translatePost = async () => {
+    if (!view || translating) return;
+    const { lang: curLang } = window.__i18nLang || {};
+    const targetLang = curLang === "ko" ? "en" : curLang === "en" ? "ko" : curLang || "en";
+    const langNames = { ko:"한국어", en:"English", ja:"日本語", zh:"中文" };
+    setTranslating(true);
+    try {
+      const { callAI } = await import("./aiClient");
+      const txt = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 글을 ${langNames[targetLang]||"English"}로 번역해주세요. 번역된 텍스트만 출력하세요:\n\n제목: ${view.title}\n\n${view.body?.replace(/<[^>]*>/g,"").slice(0,2000)}`}], 2000);
+      setTranslatedBody(txt);
+    } catch(e) { alert("번역 실패: " + e.message); }
+    setTranslating(false);
+  };
 
   const showToast = (msg,type="success") => {
     setToast({msg,type});
@@ -623,19 +1022,31 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   },[posts,subCat,search,sort,filterTag]);
 
   const hotPosts = useMemo(()=>
-    [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,3),
+    [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts,subCat]);
 
-  const totalPages=Math.ceil(filtered.length/PER);
-  const pageItems=filtered.slice((page-1)*PER,page*PER);
+  // 자료실 탭: 첨부파일 있는 전체 게시물
+  const archiveFiltered = useMemo(()=>{
+    let list = posts.filter(p=>(p.images||[]).length>0);
+    if(search.trim()){const q=search.toLowerCase();list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q));}
+    return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
+          :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
+          :[...list].sort((a,b)=>b.id-a.id);
+  },[posts,search,sort]);
+
+  const isArchivePostsView = subCat==="archive" && archiveView==="posts";
+  const activeFiltered = isArchivePostsView ? archiveFiltered : filtered;
+  const totalPages=Math.ceil(activeFiltered.length/PER);
+  const pageItems=activeFiltered.slice((page-1)*PER,page*PER);
 
   /* 글 등록 - Supabase 저장 + 1P 지급 */
-  const submitPost = async ({title, body, subCat: formCat, tag, images}) => {
+  const submitPost = async ({title, body, subCat: formCat, tag, images, priceType, price}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const cat = formCat || subCat;
     const p={id:Date.now(),cat,subCat:cat,tag:tag||"",nick:user.nick,title,body,
              date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[],
-             images: Array.isArray(images) ? images : []};
+             images: Array.isArray(images) ? images : [],
+             ...(priceType?{priceType,price:price||""}:{})};
     const nextPosts = [p, ...posts];
     syncLocal(nextPosts);
     setPosts(nextPosts); // 항상 localStorage에 저장 (Supabase 성공 여부 무관)
@@ -750,6 +1161,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     else { navigator.clipboard.writeText(url); showToast("🔗 링크가 복사됐어요","info"); }
   };
 
+  /* 파일 다운로드 */
+  const downloadFile = async (url) => {
+    const ext = isVideoUrl(url) ? ".mp4" : isImageUrl(url) ? ".jpg" : ".bin";
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "download_" + Date.now() + ext;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    } catch { window.open(url, "_blank"); }
+  };
+
   /* 인쇄 */
   const printPost = post => {
     const w = window.open("","_blank","width=800,height=600");
@@ -793,15 +1218,27 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🔗 공유</button>
                 <button onClick={()=>printPost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🖨 인쇄</button>
+                <button onClick={translatePost} disabled={translating} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:translatedBody?"rgba(99,102,241,0.1)":"transparent",color:translatedBody?"#6366f1":C.muted,fontSize:12,cursor:translating?"wait":"pointer"}}>
+                  {translating?"번역중...":translatedBody?"✓ 번역됨":"🌐 번역"}
+                </button>
                 {own(view)&&<>
                   <button onClick={()=>setMode("edit")} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>수정</button>
-                  <button onClick={()=>del(view.id)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.05)",color:"#ef4444",fontSize:12,cursor:"pointer"}}>삭제</button>
+                  <button onClick={()=>del(view.id)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.05)",color:"#ef4444",fontSize:12,cursor:"pointer"}}>{t("delete")}</button>
                 </>}
               </div>
             </div>
           </div>
           <div style={{padding:"28px 28px 24px"}}>
             <RichBody html={view.body} C={C}/>
+            {translatedBody && (
+              <div style={{marginTop:16,padding:"16px 20px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)",border:"1px solid rgba(99,102,241,0.2)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                  <span style={{fontSize:12,fontWeight:700,color:"#6366f1"}}>🌐 번역 결과</span>
+                  <button onClick={()=>setTranslatedBody(null)} style={{fontSize:11,padding:"2px 8px",borderRadius:6,border:"1px solid rgba(99,102,241,0.3)",background:"transparent",color:"#6366f1",cursor:"pointer"}}>닫기</button>
+                </div>
+                <div style={{fontSize:14,color:C.text,lineHeight:1.9,whiteSpace:"pre-wrap"}}>{translatedBody}</div>
+              </div>
+            )}
             {/* 첨부 이미지/영상 */}
             {(view.images||[]).length > 0 && (
               <div style={{marginTop:24,borderTop:"1px solid "+bdr,paddingTop:20}}>
@@ -814,7 +1251,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#6366f1",textDecoration:"none"}}>⬇ 다운로드</a>
                       </div>
                     ) : isImageUrl(url) ? (
-                      <img key={i} src={url} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
+                      <img key={i} src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
                         onClick={()=>window.open(url,"_blank")} onError={e=>e.target.style.display="none"}/>
                     ) : (
                       <a key={i} href={url} download rel="noopener noreferrer"
@@ -893,7 +1330,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     <div style={{fontSize:14,color:C.text,lineHeight:1.7}}>{cm.text}</div>
                   </div>
                   {user&&(user.nick===cm.nick||user.role==="admin")&&(
-                    <button onClick={()=>delComment(view.id,i)} style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:11,cursor:"pointer",flexShrink:0}}>삭제</button>
+                    <button onClick={()=>delComment(view.id,i)} style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:11,cursor:"pointer",flexShrink:0}}>{t("delete")}</button>
                   )}
                 </div>
               </div>
@@ -1018,7 +1455,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     onChange={e=>saveCat({...c, color:e.target.value})}
                     style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",padding:2,background:"none"}} />
                   <button onClick={()=>removeCat(c.id)}
-                    style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:12,cursor:"pointer",fontWeight:700}}>삭제</button>
+                    style={{padding:"4px 10px",borderRadius:7,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:12,cursor:"pointer",fontWeight:700}}>{t("delete")}</button>
                 </div>
               ))}
             </div>
@@ -1114,7 +1551,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {loading && (
         <div style={{textAlign:"center",padding:"80px 0",color:C.muted}}>
           <div style={{fontSize:32,marginBottom:12,display:"inline-block",animation:"spin 1s linear infinite"}}>⏳</div>
-          <div style={{fontSize:14}}>게시글 불러오는 중...</div>
+          <div style={{fontSize:14}}>{t("loadingPosts")}</div>
         </div>
       )}
 
@@ -1159,7 +1596,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 자료실 전용 탭 토글 */}
             {subCat==="archive" && (
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid "+bdr,paddingBottom:0}}>
-                {[["posts","📂 업로드 자료"],["search","🔍 무료 이미지·GIF"]].map(([v,l])=>(
+                {[["posts",t("archivePosts")],["search",t("freeMediaSearch")]].map(([v,l])=>(
                   <button key={v} onClick={()=>setArchiveView(v)} style={{
                     padding:"9px 18px",border:"none",cursor:"pointer",fontSize:13,fontWeight:archiveView===v?700:500,
                     background:"transparent",borderRadius:"8px 8px 0 0",
@@ -1175,6 +1612,18 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <FreeMediaSearch C={C} isDark={isDark} bdr={bdr}/>
             )}
 
+            {/* 자료실 다이렉트 업로드 (관리자) */}
+            {subCat==="archive" && archiveView==="posts" && user?.role==="admin" && (
+              <div style={{marginBottom:16,padding:"16px 20px",borderRadius:14,border:`2px dashed ${bdr}`,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)",textAlign:"center",cursor:"pointer",position:"relative"}}
+                onClick={()=>archiveFileRef.current?.click()}
+                onDrop={async e=>{e.preventDefault();await handleArchiveUpload(e.dataTransfer.files);}}
+                onDragOver={e=>e.preventDefault()}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>파일을 드래그하거나 클릭해서 업로드</div>
+                <div style={{fontSize:11,color:C.muted}}>이미지, 영상, 문서 등 모든 파일 가능 (최대 50MB)</div>
+                <input ref={archiveFileRef} type="file" multiple style={{display:"none"}} onChange={e=>handleArchiveUpload(e.target.files)}/>
+              </div>
+            )}
+
             {/* 업로드 자료 뷰 (자료실이 아니거나 posts 탭일 때) */}
             {(subCat!=="archive" || archiveView==="posts") && <>
 
@@ -1182,24 +1631,38 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:15,fontWeight:800,color:C.text}}>{subInfo.icon} {subInfo.label}</span>
-                <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>총 {filtered.length}개</span>
+                <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>{t("totalN")} {activeFiltered.length}{t("itemsUnit")}{isArchivePostsView?" "+t("withAttach"):""}</span>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
-                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="검색..."
+                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder={t("search")}
                     style={{padding:"7px 10px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?80:150}}/>
                   {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 8px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
                 </div>
                 <select value={sort} onChange={e=>setSort(e.target.value)}
                   style={{padding:"7px 8px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
-                  <option value="latest">최신순</option>
-                  <option value="views">조회순</option>
-                  <option value="likes">추천순</option>
+                  <option value="latest">{t("sortLatest")}</option>
+                  <option value="views">{t("sortViews")}</option>
+                  <option value="likes">{t("sortLikes")}</option>
                 </select>
-                <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                  style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
-                  ✏️ 글쓰기 (+1P)
-                </button>
+                {/* 뷰 모드 토글 */}
+                <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:8,overflow:"hidden"}}>
+                  {[["list","☰",t("viewList")],["gallery","⊞",t("viewGallery")],["compact","▤",t("viewCompact")]].map(([vm,icon,label])=>(
+                    <button key={vm} onClick={()=>setViewMode(vm)} title={label}
+                      style={{padding:"7px 9px",border:"none",cursor:"pointer",fontSize:14,lineHeight:1,
+                        background:viewMode===vm?(isDark?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)"):(isDark?"rgba(255,255,255,0.04)":"#fff"),
+                        color:viewMode===vm?"#6366f1":C.muted}}>
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+                {/* 자료실은 관리자만 글쓰기 가능 */}
+                {(subCat!=="archive" || user?.role==="admin") && (
+                  <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
+                    style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
+                    ✏️ {subCat==="archive"?"자료 등록":t("writePost")}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1225,32 +1688,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
 
-            {/* 테이블 헤더 - 데스크톱만 */}
-            {!isMobile && (
-              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 12px",
-                display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
-                fontSize:11,fontWeight:700,color:C.muted,alignItems:"center"}}>
-                <span style={{textAlign:"center"}}>번호</span>
-                <span style={{textAlign:"center"}}>이미지</span>
-                <span style={{paddingLeft:6}}>제목</span>
-                <span style={{textAlign:"center"}}>작성자</span>
-                <span style={{textAlign:"center"}}>날짜</span>
-                <span style={{textAlign:"center"}}>조회</span>
-                <span style={{textAlign:"center"}}>추천</span>
-              </div>
-            )}
-            {isMobile && (
-              <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 14px",
-                fontSize:12,fontWeight:700,color:C.muted}}>
-                게시글 목록
-              </div>
-            )}
-
+            {/* 빈 목록 */}
             {pageItems.length===0&&(
-              <div style={{background:cardBg,border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",padding:"70px 0",textAlign:"center",color:C.muted}}>
+              <div style={{background:cardBg,border:"1px solid "+bdr,borderRadius:10,padding:"70px 0",textAlign:"center",color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:12}}>{subInfo?.icon||"📋"}</div>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>
-                  {search?`"${search}" 검색 결과가 없어요`:"아직 게시글이 없어요"}
+                  {search?`"${search}" ${t("noSearchResult")}`:t("noPosts")}
                 </div>
                 <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
                 {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
@@ -1267,7 +1710,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 borderRadius:14, boxShadow:"0 12px 40px rgba(0,0,0,0.22)", overflow:"hidden",
               }}>
                 {hoverPreview.thumb && (
-                  <img src={hoverPreview.thumb} alt=""
+                  <img src={toThumb(hoverPreview.thumb,280,210)} alt=""
                     style={{width:"100%",maxHeight:420,objectFit:"contain",display:"block",background:isDark?"#0a0818":"#f0f0f6"}}
                     onError={e=>e.target.style.display="none"} />
                 )}
@@ -1282,116 +1725,204 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
 
-            <div style={{border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
-              {pageItems.map((p,idx)=>{
-                const num=filtered.length-(page-1)*PER-idx;
-                const today=Date.now()-p.id<86400000;
-                const thumb = (p.images && p.images[0]) || extractThumb(p.body);
-                return isMobile ? (
-                  /* 모바일 카드형 */
-                  <div key={p.id} onClick={()=>openPost(p)}
-                    style={{padding:"12px 14px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
-                    onMouseEnter={e=>e.currentTarget.style.background=hover}
-                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                      {/* 모바일 썸네일 */}
-                      {thumb
-                        ? <img src={thumb} alt="" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}}
-                            onError={e=>e.target.style.display="none"}/>
-                        : <div style={{width:48,height:36,borderRadius:6,flexShrink:0,marginTop:2,background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
-                            {subInfo?.icon||"📋"}
+            {/* ── 리스트 뷰 ── */}
+            {viewMode==="list" && pageItems.length>0 && <>
+              {!isMobile && (
+                <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 12px",
+                  display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px 36px",
+                  fontSize:11,fontWeight:700,color:C.muted,alignItems:"center"}}>
+                  <span style={{textAlign:"center"}}>{t("colNo")}</span>
+                  <span style={{textAlign:"center"}}>{t("colImage")}</span>
+                  <span style={{paddingLeft:6}}>{t("colTitle")}</span>
+                  <span style={{textAlign:"center"}}>{t("colAuthor")}</span>
+                  <span style={{textAlign:"center"}}>{t("colDate")}</span>
+                  <span style={{textAlign:"center"}}>{t("colViews")}</span>
+                  <span style={{textAlign:"center"}}>{t("colLikes")}</span>
+                  <span style={{textAlign:"center"}}>{t("colDownload")}</span>
+                </div>
+              )}
+              {isMobile && (
+                <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 14px",
+                  fontSize:12,fontWeight:700,color:C.muted}}>
+                  게시글 목록
+                </div>
+              )}
+              <div style={{border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
+                {pageItems.map((p,idx)=>{
+                  const num=filtered.length-(page-1)*PER-idx;
+                  const today=Date.now()-p.id<86400000;
+                  const thumb = (p.images && p.images[0]) || extractThumb(p.body);
+                  const hasDl = (p.images||[]).length > 0;
+                  return isMobile ? (
+                    <div key={p.id} onClick={()=>openPost(p)}
+                      style={{padding:"12px 14px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
+                      onMouseEnter={e=>e.currentTarget.style.background=hover}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                        {thumb
+                          ? <img src={toThumb(thumb,96,72)} alt="" loading="eager" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}} onError={e=>e.target.style.display="none"}/>
+                          : <div style={{width:48,height:36,borderRadius:6,flexShrink:0,marginTop:2,background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{subInfo?.icon||"📋"}</div>
+                        }
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
+                            {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
+                            <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
+                            {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>📎</span>}
+                            {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
+                            {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                           </div>
-                      }
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
-                          {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
-                          <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
-                          {(p.images||[]).length>0&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>📎</span>}
-                          {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
-                          {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
+                          <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:C.muted}}>
+                            <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
+                            <span>{p.date}</span><span>👁 {p.views||0}</span>
+                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍 {p.likes}</span>}
+                            {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"2px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:10,cursor:"pointer",fontWeight:700}}>⬇ 다운</button>}
+                          </div>
                         </div>
-                        <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:C.muted}}>
-                          <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
-                          <span>{p.date}</span>
-                          <span>👁 {p.views||0}</span>
-                          {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍 {p.likes}</span>}
+                        <span style={{fontSize:11,color:C.muted,flexShrink:0,paddingTop:2}}>#{num}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={p.id} onClick={()=>openPost(p)}
+                      style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px 36px",
+                        padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
+                      onMouseEnter={e=>{
+                        e.currentTarget.style.background=hover;
+                        const x=e.clientX+18, y=e.clientY-10;
+                        const popW=280, popH=thumb?220:100;
+                        const pos={x:x+popW>window.innerWidth?e.clientX-popW-10:x, y:y+popH>window.innerHeight?e.clientY-popH:y};
+                        if(snippetCache.current[p.id]!==undefined){
+                          setHoverPreview({post:p,thumb,snippet:snippetCache.current[p.id],...pos});
+                        } else {
+                          setHoverPreview({post:p,thumb,snippet:null,...pos});
+                          if(hoverTimer.current!==p.id){
+                            hoverTimer.current=p.id;
+                            getPostByIdFromDB(p.id).then(full=>{
+                              if(full){const snip=extractText(full.body);snippetCache.current[p.id]=snip;setHoverPreview(prev=>prev?.post?.id===p.id?{...prev,snippet:snip}:prev);}
+                              else{snippetCache.current[p.id]="";}
+                            }).catch(()=>{snippetCache.current[p.id]="";});
+                          }
+                        }
+                      }}
+                      onMouseMove={e=>{const x=e.clientX+18,y=e.clientY-10,popW=280,popH=thumb?220:100;const pos={x:x+popW>window.innerWidth?e.clientX-popW-10:x,y:y+popH>window.innerHeight?e.clientY-popH:y};setHoverPreview(prev=>prev?.post?.id===p.id?{...prev,...pos}:prev);}}
+                      onMouseLeave={e=>{e.currentTarget.style.background="transparent";setHoverPreview(null);}}>
+                      <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {thumb
+                          ? <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>e.target.style.display="none"}/>
+                          : <div style={{width:36,height:28,borderRadius:5,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{subInfo?.icon||"📋"}</div>
+                        }
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
+                        {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
+                        <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
+                        {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>📎</span>}
+                        {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
+                        {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
+                      </div>
+                      <div style={{textAlign:"center",minWidth:0}}>
+                        <span style={{fontSize:12,color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
+                      </div>
+                      <span style={{textAlign:"center",fontSize:11,color:C.muted}}>{p.date}</span>
+                      <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{p.views||0}</span>
+                      <span style={{textAlign:"center",fontSize:12,fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} title="첫 번째 첨부 다운로드"
+                          style={{padding:"3px 6px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:11,cursor:"pointer",fontWeight:700,lineHeight:1}}>⬇</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>}
+
+            {/* ── 갤러리 뷰 ── */}
+            {viewMode==="gallery" && pageItems.length>0 && (
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(auto-fill,minmax(210px,1fr))",gap:12}}>
+                {pageItems.map(p=>{
+                  const thumb=(p.images&&p.images[0])||extractThumb(p.body);
+                  const today=Date.now()-p.id<86400000;
+                  const hasDl=(p.images||[]).length>0;
+                  return (
+                    <div key={p.id} onClick={()=>openPost(p)}
+                      style={{borderRadius:12,border:"1px solid "+bdr,overflow:"hidden",cursor:"pointer",
+                        background:cardBg,transition:"transform 0.15s,box-shadow 0.15s",position:"relative"}}
+                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.15)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                      <div style={{width:"100%",aspectRatio:"16/9",background:isDark?"rgba(255,255,255,0.04)":"#f0f0f6",overflow:"hidden",position:"relative",flexShrink:0}}>
+                        {thumb && isVideoUrl(thumb)
+                          ? <video src={thumb} muted loop playsInline preload="metadata"
+                              style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                              onMouseEnter={e=>e.target.play().catch(()=>{})}
+                              onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
+                          : thumb
+                          ? <img src={toThumb(thumb,480,270)} alt="" loading="eager" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                          : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{subInfo?.icon||"📋"}</div>
+                        }
+                        {today&&<span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(239,68,68,0.9)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>NEW</span>}
+                        {/* 유료/무료 배지 */}
+                        {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>💰 유료{p.price?` ${p.price}`:""}</span>}
+                        {p.priceType==="free"&&subCat==="archive"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>🆓 무료</span>}
+                        {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
+                          style={{position:"absolute",bottom:6,right:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}>⬇</button>}
+                      </div>
+                      <div style={{padding:"10px 12px"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.4,marginBottom:6}}>
+                          {p.tag&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,marginRight:5}}>{p.tag}</span>}
+                          {p.title}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,color:C.muted}}>
+                          <span style={{color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"50%"}}>{p.nick}</span>
+                          <div style={{display:"flex",gap:8,flexShrink:0}}>
+                            <span>👁{p.views||0}</span>
+                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍{p.likes}</span>}
+                            {(p.comments||[]).length>0&&<span style={{color:C.purpleL,fontWeight:700}}>💬{p.comments.length}</span>}
+                          </div>
                         </div>
                       </div>
-                      <span style={{fontSize:11,color:C.muted,flexShrink:0,paddingTop:2}}>#{num}</span>
                     </div>
-                  </div>
-                ) : (
-                  /* 데스크톱 테이블형 */
-                  <div key={p.id} onClick={()=>openPost(p)}
-                    style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px",
-                      padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
-                    onMouseEnter={e=>{
-                      e.currentTarget.style.background=hover;
-                      const x = e.clientX + 18;
-                      const y = e.clientY - 10;
-                      const popW = 280, popH = thumb ? 220 : 100;
-                      const pos = {
-                        x: x + popW > window.innerWidth ? e.clientX - popW - 10 : x,
-                        y: y + popH > window.innerHeight ? e.clientY - popH : y,
-                      };
-                      if (snippetCache.current[p.id] !== undefined) {
-                        setHoverPreview({ post: p, thumb, snippet: snippetCache.current[p.id], ...pos });
-                      } else {
-                        setHoverPreview({ post: p, thumb, snippet: null, ...pos });
-                        if (hoverTimer.current !== p.id) {
-                          hoverTimer.current = p.id;
-                          getPostByIdFromDB(p.id).then(full => {
-                            if (full) {
-                              const snip = extractText(full.body);
-                              snippetCache.current[p.id] = snip;
-                              setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, snippet: snip } : prev);
-                            } else { snippetCache.current[p.id] = ""; }
-                          }).catch(() => { snippetCache.current[p.id] = ""; });
-                        }
-                      }
-                    }}
-                    onMouseMove={e=>{
-                      const x = e.clientX + 18;
-                      const y = e.clientY - 10;
-                      const popW = 280, popH = thumb ? 220 : 100;
-                      const pos = {
-                        x: x + popW > window.innerWidth ? e.clientX - popW - 10 : x,
-                        y: y + popH > window.innerHeight ? e.clientY - popH : y,
-                      };
-                      setHoverPreview(prev => prev?.post?.id === p.id ? { ...prev, ...pos } : prev);
-                    }}
-                    onMouseLeave={e=>{
-                      e.currentTarget.style.background="transparent";
-                      setHoverPreview(null);
-                    }}>
-                    <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
-                    {/* 썸네일 */}
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── 컴팩트 뷰 ── */}
+            {viewMode==="compact" && pageItems.length>0 && (
+              <div style={{border:"1px solid "+bdr,borderRadius:10,overflow:"hidden"}}>
+                {pageItems.map((p,idx)=>{
+                  const num=filtered.length-(page-1)*PER-idx;
+                  const thumb=(p.images&&p.images[0])||extractThumb(p.body);
+                  const today=Date.now()-p.id<86400000;
+                  const hasDl=(p.images||[]).length>0;
+                  return (
+                    <div key={p.id}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
+                      onClick={()=>openPost(p)}
+                      onMouseEnter={e=>e.currentTarget.style.background=hover}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <span style={{fontSize:11,color:C.muted,flexShrink:0,width:28,textAlign:"right"}}>#{num}</span>
                       {thumb
-                        ? <img src={thumb} alt="" style={{width:36,height:28,objectFit:"cover",borderRadius:5}}
-                            onError={e=>e.target.style.display="none"}/>
-                        : <div style={{width:36,height:28,borderRadius:5,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>
-                            {subInfo?.icon||"📋"}
-                          </div>
+                        ? <img src={toThumb(thumb,68,52)} alt="" loading="eager" style={{width:34,height:26,objectFit:"cover",borderRadius:4,display:"block",flexShrink:0}} onError={e=>e.target.style.display="none"}/>
+                        : <div style={{width:34,height:26,borderRadius:4,flexShrink:0,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{subInfo?.icon||"📋"}</div>
                       }
+                      <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5}}>
+                        {p.tag&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
+                        <span style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
+                        {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
+                        {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 4px",borderRadius:3,fontWeight:700,flexShrink:0}}>N</span>}
+                      </div>
+                      {!isMobile&&<>
+                        <span style={{fontSize:11,color:C.purpleL,fontWeight:600,flexShrink:0,width:68,overflow:"hidden",textOverflow:"ellipsis",textAlign:"right"}}>{p.nick}</span>
+                        <span style={{fontSize:11,color:C.muted,flexShrink:0,width:70,textAlign:"center"}}>{p.date}</span>
+                        <span style={{fontSize:11,color:C.muted,flexShrink:0,width:38,textAlign:"center"}}>👁{p.views||0}</span>
+                        {(p.likes||0)>0&&<span style={{fontSize:11,color:"#f59e0b",fontWeight:700,flexShrink:0}}>👍{p.likes}</span>}
+                      </>}
+                      {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
+                        style={{flexShrink:0,padding:"3px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
-                      {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#6366f1")+"22",color:subInfo?.color||"#6366f1",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
-                      <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
-                      {(p.images||[]).length>0&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>📎</span>}
-                      {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
-                      {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
-                    </div>
-                    <div style={{textAlign:"center",minWidth:0}}>
-                      <span style={{fontSize:12,color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
-                    </div>
-                    <span style={{textAlign:"center",fontSize:11,color:C.muted}}>{p.date}</span>
-                    <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{p.views||0}</span>
-                    <span style={{textAlign:"center",fontSize:12,fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {totalPages>1&&(
               <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:20}}>
@@ -1420,7 +1951,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
                 <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>
-                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>🔥 인기글 TOP3</span>
+                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>🔥 인기글 TOP10</span>
                 </div>
                 {hotPosts.map((p,i)=>(
                   <div key={p.id} onClick={()=>openPost(p)} style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}

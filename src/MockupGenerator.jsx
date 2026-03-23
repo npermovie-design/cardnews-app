@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import StepBar from "./StepBar.jsx";
 
 /* ═══════════════════════════════════════════════════
    MockupGenerator.jsx  ·  AI 목업 생성기
@@ -139,6 +140,12 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
   const inputBdr= D ? "rgba(255,255,255,0.15)" : "#ddd";
   const ACC     = "#7c3aed";
 
+  const STEPS = [
+    { n:1, label:"설정" },
+    { n:2, label:"AI 생성중" },
+    { n:3, label:"결과 확인" },
+  ];
+
   const [step,       setStep]       = useState(0); // 0=인트로 1=설정 2=생성중 3=결과
   useGeneratingGuard(step === 2, 30); // 생성 중 이탈 방지
   const [logoText,   setLogoText]   = useState("");
@@ -227,7 +234,6 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
   if (step === 0) return (
     <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
       <div style={{ maxWidth:560, width:"100%", textAlign:"center" }}>
-        <div style={{ fontSize:60, marginBottom:14 }}>🎨</div>
         <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:`rgba(124,58,237,0.15)`, border:`1px solid rgba(124,58,237,0.3)`, fontSize:12, fontWeight:700, color:ACC, marginBottom:14 }}>
           AI 목업 생성 · 16가지 제품 지원
         </div>
@@ -266,6 +272,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
   // ── STEP 1: 설정
   if (step === 1) return (
     <div style={{ flex:1, overflowY:"auto" }}>
+      <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:22 }}>
           <button onClick={() => setStep(0)} style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>← 소개</button>
@@ -369,7 +376,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
           </div>
           <button onClick={generate} disabled={!canGenerate}
             style={{ padding:"13px 40px", borderRadius:11, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?`linear-gradient(135deg,${ACC},#6d28d9)`:"rgba(124,58,237,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
-            {user ? `🎨 목업 생성하기 → 💎 ${selTypes.length * 10}P` : "✦ 1회 생성하기"}
+            {user ? `🎨 목업 생성하기 → ${selTypes.length * 10}P` : "✦ 1회 생성하기"}
           </button>
         </div>
       </div>
@@ -402,7 +409,8 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
     const tip = TIPS[curGen] || `${curType?.label || ""} 목업을 AI가 생성하고 있어요`;
 
     return (
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
+        <StepBar steps={STEPS} current={2} isDark={isDark} />
         <div style={{ maxWidth:520, width:"100%", textAlign:"center" }}>
 
           {/* 스피너 */}
@@ -464,10 +472,12 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
                     {isDone && !results[id] && <div style={{ fontSize:10, color:"#f87171", marginTop:1 }}>생성 실패</div>}
                     {isPending && <div style={{ fontSize:10, color:muted, marginTop:1 }}>대기 중</div>}
                   </div>
-                  <div style={{ fontSize:16, flexShrink:0 }}>
-                    {isDone && results[id] ? "✅" : isDone && !results[id] ? "❌" : isGen ? (
+                  <div style={{ flexShrink:0 }}>
+                    {isDone && results[id] ? (
+                      <img src={results[id]} alt="" style={{ width:40, height:40, objectFit:"cover", borderRadius:6, border:`1px solid ${ACC}` }}/>
+                    ) : isDone && !results[id] ? <span style={{ fontSize:16 }}>❌</span> : isGen ? (
                       <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${ACC}40`, borderTopColor:ACC, animation:"spin 0.8s linear infinite" }}/>
-                    ) : "·"}
+                    ) : <span style={{ fontSize:16 }}>·</span>}
                   </div>
                 </div>
               );
@@ -479,7 +489,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
             페이지를 닫지 말고 기다려주세요.
           </div>
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
       </div>
     );
   }
@@ -490,6 +500,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
 
   return (
     <div style={{ flex:1, overflowY:"auto" }}>
+      <StepBar steps={STEPS} current={3} isDark={isDark} />
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18, flexWrap:"wrap" }}>
           <button onClick={reset} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>← 다시 만들기</button>
@@ -598,7 +609,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
             </div>
           </div>
         </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
     </div>
   );
 }

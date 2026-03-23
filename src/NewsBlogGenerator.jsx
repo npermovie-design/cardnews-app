@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import StepBar from "./StepBar.jsx";
+import LoadingAnimation from "./LoadingAnimation.jsx";
 import { callAIStream } from "./aiClient";
 
 
@@ -205,6 +207,8 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
   const [loadStep,   setLoadStep]  = useState(0);
+  const wizStep = generating ? 2 : result ? 3 : 1;
+  const STEPS = [{n:1,label:"내용 입력"},{n:2,label:"AI 생성중"},{n:3,label:"결과 확인"}];
 
   const IS = {
     width:"100%", padding:"13px 16px", borderRadius:10,
@@ -397,7 +401,7 @@ ${articleSection}
   ];
 
   return (
-    <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif"}}>
+    <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column",fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif"}}>
       <style>{`
         @keyframes ns-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes ns-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -408,10 +412,13 @@ ${articleSection}
         .ns-type:hover{border-color:${accentRaw}!important;transform:translateY(-2px)}
       `}</style>
 
-      {/* ── 좌측: 입력 패널 ── */}
-      <div style={{width:480,flexShrink:0,background:panelBg,borderRight:`1px solid ${border}`,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <StepBar steps={STEPS} current={wizStep} isDark={isDark} />
+
+      <div style={{flex:1,overflowY:"auto"}}>
+      {wizStep===1 && (
+        <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
         {/* 헤더 */}
-        <div style={{padding:"22px 28px",borderBottom:`1px solid ${border}`,background:headerBg,flexShrink:0}}>
+        <div style={{marginBottom:18}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#ef4444,#dc2626)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>📰</div>
             <div>
@@ -565,27 +572,26 @@ ${articleSection}
           )}
         </div>
 
-        {/* 생성 버튼 */}
-        {newsInfo && (
-          <div style={{padding:"16px 28px 24px",flexShrink:0,borderTop:`1px solid ${border}`}}>
+          {/* 생성 버튼 */}
+          {newsInfo && (
             <button onClick={generate} disabled={generating}
-              style={{width:"100%",padding:"16px",borderRadius:12,border:"none",
+              style={{width:"100%",padding:"15px",borderRadius:12,border:"none",marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"linear-gradient(135deg,#ef4444,#dc2626)",
-                color:"#fff",fontSize:16,fontWeight:800,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                boxShadow:"0 4px 20px rgba(239,68,68,0.3)",transition:"all 0.2s"}}>
+                background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                color:"#fff",fontSize:15,fontWeight:800,
+                display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               {generating
-                ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>글 작성 중...</>
-                : user ? (<span>✍️ 블로그 글 작성하기 <span style={{fontSize:11,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 6px",borderRadius:8}}>💎 10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
+                ? <><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"ns-spin 0.8s linear infinite"}}/>생성 중...</>
+                : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
-            {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
-          </div>
-        )}
-      </div>
+          )}
+          {genErr && <div style={{marginTop:8,fontSize:12,color:"rgba(255,100,100,0.9)",textAlign:"center"}}>{genErr}</div>}
+        </div>
+      )}
 
-      {/* ── 우측: 결과 패널 ── */}
-      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:resultBg}}>
+      {/* 결과 영역 */}
+      {wizStep>=2 && (
+      <div style={{maxWidth:900,margin:"0 auto",width:"100%"}}>
 
         {/* 크레딧 소진 */}
         {(() => {
@@ -598,42 +604,12 @@ ${articleSection}
 
         {/* 로딩 화면 - 생성 중 */}
         {generating && (
-          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",padding:"40px 24px",textAlign:"center"}}>
-            <div style={{fontSize:64,marginBottom:16,display:"inline-block",animation:"ns-float 3s ease-in-out infinite",filter:"drop-shadow(0 8px 20px rgba(239,68,68,0.4))"}}>📰✨</div>
-            <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8,letterSpacing:"-0.5px"}}>AI가 글을 작성하고 있어요</div>
-            <div style={{fontSize:13,color:muted,marginBottom:24}}>{newsInfo?.title?.slice(0,35)}{newsInfo?.title?.length>35?"...":""} · 뉴스 블로그 글쓰기</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,textAlign:"left",maxWidth:260,margin:"0 auto 20px"}}>
-              {[
-                {step:1, l:"기사 내용 분석 중..."},
-                {step:2, l:"구조 기획 중..."},
-                {step:3, l:"본문 작성 중..."},
-                {step:4, l:"마무리 다듬는 중..."},
-              ].map(({step, l}) => {
-                const done = loadStep > step;
-                const active = loadStep === step;
-                return (
-                  <div key={step} style={{display:"flex",alignItems:"center",gap:10,opacity:done||active?1:0.3}}>
-                    <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
-                      background:done?"rgba(74,222,128,0.15)":active?"rgba(239,68,68,0.2)":"rgba(255,255,255,0.05)",
-                      border:done?"2px solid #4ade80":active?"2px solid #ef4444":"2px solid rgba(255,255,255,0.1)"}}>
-                      {done?<span style={{color:"#4ade80"}}>✓</span>:active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #ef4444",borderTopColor:"transparent",animation:"ns-spin 0.8s linear infinite"}}/>:null}
-                    </div>
-                    <span style={{fontSize:13,color:done?"#4ade80":active?text:muted,fontWeight:active?700:400}}>{l}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",maxWidth:260,margin:"0 auto 10px"}}>
-              <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#ef4444,#f97316,#ef4444)",animation:"ns-progress 12s ease-out forwards"}}/>
-            </div>
-            <div style={{fontSize:12,color:muted}}>보통 20~60초 소요</div>
-          </div>
+          <LoadingAnimation icon="📰✨" title="AI가 글을 작성하고 있어요" subtitle={newsInfo?.title?.slice(0,40)||"뉴스 블로그"} isDark={isDark} />
         )}
 
         {/* 초기 안내 화면 */}
         {!generating && !result && (
           <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center"}}>
-            <div style={{width:88,height:88,borderRadius:28,background:isDark?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44}}>📰</div>
             <div style={{fontSize:16,fontWeight:800,color:text}}>뉴스로 블로그 글쓰기</div>
             <div style={{fontSize:13,color:muted,lineHeight:1.9,maxWidth:320}}>
               왼쪽에 기사 링크를 입력하면<br/>
@@ -680,6 +656,8 @@ ${articleSection}
             </div>
           </>
         )}
+      </div>
+      )}
       </div>
     </div>
   );

@@ -60,14 +60,15 @@ function getDriveThumb(url) {
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : null;
 }
 
-const ADMIN_PW = "nper2025admin";
+const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "nper2025admin";
 const FREE_GUEST  = 10;
 const FREE_MEMBER = 20;
 
 export default function AdminPage({ C, user: adminUser }) {
   const [pw, setPw]        = useState("");
   const [auth, setAuth]    = useState(false);
-  const [tab, setTab]      = useState("members");
+  const [tab, setTab]      = useState("stats");
+  const [onlineCount, setOnlineCount] = useState(0);
   // 게시판 관리 상태
   const [boardCats, setBoardCats] = useState(DEFAULT_BOARD_CATS);
   const [selBoardCat, setSelBoardCat] = useState(null);
@@ -106,7 +107,12 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingPosts(false);
   };
 
-  useEffect(() => { if (auth) { loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); } }, [auth]);
+  useEffect(() => {
+    if (auth) {
+      loadMembers(); loadVideos(); loadPosts(); loadBoardCats();
+      supabase.from("online_users").select("*",{count:"exact",head:true}).then(({count})=>setOnlineCount(count||0)).catch(()=>{});
+    }
+  }, [auth]);
 
   const loadBoardCats = async () => {
     setBoardLoading(true);
@@ -320,7 +326,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4, width: "fit-content" }}>
-        {[["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
+        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "9px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -329,6 +335,131 @@ export default function AdminPage({ C, user: adminUser }) {
           }}>{l}</button>
         ))}
       </div>
+
+      {/* ─────────────── 통계 대시보드 ─────────────── */}
+      {tab === "stats" && (() => {
+        const totalMembers = members.length;
+        const totalPosts = posts.length;
+        const totalViews = posts.reduce((s,p) => s + (p.views||0), 0);
+        const totalLikes = posts.reduce((s,p) => s + (p.likes||0), 0);
+        const totalComments = posts.reduce((s,p) => s + (p.comments||[]).length, 0);
+        const todayStr = new Date().toISOString().slice(0,10);
+        const todayPosts = posts.filter(p => {
+          const d = typeof p.date === "string" ? p.date : "";
+          return d.includes(todayStr) || d.includes(new Date().toLocaleDateString("ko-KR"));
+        }).length;
+        const recentMembers = members.filter(m => {
+          if (!m.created_at) return false;
+          return Date.now() - new Date(m.created_at).getTime() < 7*86400000;
+        }).length;
+        const catStats = {};
+        posts.forEach(p => { const c = p.subCat||p.cat||"기타"; catStats[c] = (catStats[c]||0)+1; });
+        const topPosters = {};
+        posts.forEach(p => { if(p.nick) topPosters[p.nick] = (topPosters[p.nick]||0)+1; });
+        const topList = Object.entries(topPosters).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
+
+        const cardStyle = { padding:"20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}`, flex:1, minWidth:140 };
+        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#6366f1", marginBottom:4 };
+        const labelStyle = { fontSize:12, color:C.muted, fontWeight:600 };
+
+        return (
+        <div>
+          {/* 요약 카드 */}
+          <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:24 }}>
+            {[
+              { n: totalMembers, l: "전체 회원", icon: "👥", color: "#6366f1" },
+              { n: recentMembers, l: "이번주 신규", icon: "🆕", color: "#22c55e" },
+              { n: onlineCount||0, l: "실시간 접속", icon: "🟢", color: "#f59e0b" },
+              { n: totalPosts, l: "전체 게시글", icon: "📋", color: "#8b5cf6" },
+              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#ec4899" },
+              { n: totalViews.toLocaleString(), l: "총 조회수", icon: "👁", color: "#06b6d4" },
+              { n: totalLikes, l: "총 좋아요", icon: "👍", color: "#f59e0b" },
+              { n: totalComments, l: "총 댓글", icon: "💬", color: "#10b981" },
+            ].map((s,i) => (
+              <div key={i} style={cardStyle}>
+                <div style={{ fontSize:20, marginBottom:8 }}>{s.icon}</div>
+                <div style={{ ...numStyle, color: s.color }}>{s.n}</div>
+                <div style={labelStyle}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 카테고리별 게시글 */}
+          <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:24 }}>
+            <div style={{ ...cardStyle, minWidth:280 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>📂 카테고리별 게시글</div>
+              {Object.entries(catStats).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) => (
+                <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.text, minWidth:80 }}>{cat}</span>
+                  <div style={{ flex:1, height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0", overflow:"hidden" }}>
+                    <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6)", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
+                  </div>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#6366f1", minWidth:30, textAlign:"right" }}>{cnt}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* 활발한 작성자 TOP10 */}
+            <div style={{ ...cardStyle, minWidth:280 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🏆 활발한 작성자 TOP10</div>
+              {topList.map(([nick,cnt],i) => (
+                <div key={nick} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                  <span style={{ fontSize:13, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:20 }}>{i+1}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{nick}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#6366f1" }}>{cnt}건</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 인기 게시글 TOP10 */}
+          <div style={cardStyle}>
+            <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🔥 인기 게시글 TOP10 (조회수)</div>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                <thead>
+                  <tr style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}` }}>
+                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>#</th>
+                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>제목</th>
+                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>조회</th>
+                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>좋아요</th>
+                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>댓글</th>
+                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>작성자</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {popularPosts.map((p,i) => (
+                    <tr key={p.id} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f3f4f6"}` }}>
+                      <td style={{ padding:"8px 10px", fontWeight:700, color:i<3?"#f59e0b":C.muted }}>{i+1}</td>
+                      <td style={{ padding:"8px 10px", fontWeight:600, color:C.text, maxWidth:300, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#06b6d4" }}>{(p.views||0).toLocaleString()}</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{p.likes||0}</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#8b5cf6" }}>{(p.comments||[]).length}</td>
+                      <td style={{ padding:"8px 10px", color:C.muted }}>{p.nick}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 검색엔진 노출 안내 */}
+          <div style={{ marginTop:24, padding:"18px 22px", borderRadius:14, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>
+            <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:10 }}>🔍 검색엔진 노출 현황</div>
+            <div style={{ fontSize:12, color:C.muted, lineHeight:1.8 }}>
+              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
+              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (네이버 검색 노출)<br/>
+              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (해외 Bing 검색)<br/>
+              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
+              <br/>
+              <span style={{color:"#f59e0b",fontWeight:700}}>💡 추천:</span> Google Analytics를 연동하면 실시간 방문자, 페이지뷰, 유입 검색어, 검색엔진별 트래픽을 모두 확인할 수 있습니다.
+              GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
+            </div>
+          </div>
+        </div>
+        );
+      })()}
 
       {/* ─────────────── 회원 관리 ─────────────── */}
       {tab === "members" && (
@@ -749,6 +880,127 @@ export default function AdminPage({ C, user: adminUser }) {
               });
             })()}
           </div>
+        </div>
+      )}
+
+      {/* ─────────────── 문의 관리 ─────────────── */}
+      {tab === "inquiries" && <InquiryManager C={C} isDark={isDark} />}
+    </div>
+  );
+}
+
+/* ── 문의 관리 컴포넌트 ── */
+function InquiryManager({ C, isDark }) {
+  const [inquiries, setInquiries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e9ecef";
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("inquiries").select("*").order("created_at", { ascending: false });
+      setInquiries(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const updateStatus = async (id, status) => {
+    await supabase.from("inquiries").update({ status }).eq("id", id);
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+  };
+
+  const submitReply = async (id) => {
+    if (!replyText.trim()) return;
+    await supabase.from("inquiries").update({ reply: replyText, status: "replied" }).eq("id", id);
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, reply: replyText, status: "replied" } : i));
+    setReplyText("");
+  };
+
+  const deleteInquiry = async (id) => {
+    if (!window.confirm("삭제하시겠습니까?")) return;
+    await supabase.from("inquiries").delete().eq("id", id);
+    setInquiries(prev => prev.filter(i => i.id !== id));
+    if (selected?.id === id) setSelected(null);
+  };
+
+  const STATUS = { pending: { label: "대기중", color: "#f59e0b" }, replied: { label: "답변완료", color: "#4ade80" }, closed: { label: "종료", color: "#94a3b8" } };
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: muted }}>문의 목록 로딩 중...</div>;
+
+  if (selected) {
+    const s = selected;
+    const st = STATUS[s.status] || STATUS.pending;
+    return (
+      <div>
+        <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 13, marginBottom: 16, padding: 0 }}>← 목록으로</button>
+        <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 16, padding: "24px 28px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: st.color + "20", color: st.color }}>{st.label}</span>
+            <span style={{ fontSize: 12, color: muted }}>{new Date(s.created_at).toLocaleString("ko-KR")}</span>
+            <button onClick={() => deleteInquiry(s.id)} style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#f87171", fontSize: 11, cursor: "pointer" }}>삭제</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "8px 12px", fontSize: 13, marginBottom: 20 }}>
+            <span style={{ color: muted, fontWeight: 700 }}>이름</span><span style={{ color: text }}>{s.name}</span>
+            <span style={{ color: muted, fontWeight: 700 }}>이메일</span><span style={{ color: text }}>{s.email}</span>
+            <span style={{ color: muted, fontWeight: 700 }}>유형</span><span style={{ color: text }}>{s.subject || "-"}</span>
+          </div>
+          <div style={{ fontSize: 14, color: text, lineHeight: 1.9, whiteSpace: "pre-wrap", padding: "16px 18px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.03)" : "#f9f9fc", border: "1px solid " + bdr, marginBottom: 20 }}>{s.message}</div>
+
+          {s.reply && (
+            <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 6 }}>답변 내용</div>
+              <div style={{ fontSize: 13, color: text, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{s.reply}</div>
+            </div>
+          )}
+
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>답변 작성</div>
+          <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} placeholder="답변 내용을 입력하세요..."
+            style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", resize: "vertical" }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
+            {s.status !== "closed" && <button onClick={() => updateStatus(s.id, "closed")} style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>종료 처리</button>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: text }}>📩 문의 목록 ({inquiries.length}건)</div>
+      </div>
+      {inquiries.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>접수된 문의가 없습니다</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {inquiries.map(item => {
+            const st = STATUS[item.status] || STATUS.pending;
+            return (
+              <div key={item.id} onClick={() => { setSelected(item); setReplyText(item.reply || ""); }}
+                style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: st.color + "20", color: st.color }}>{st.label}</span>
+                    <span style={{ fontSize: 11, color: muted }}>{item.subject || "일반"}</span>
+                    <span style={{ fontSize: 11, color: muted }}>{new Date(item.created_at).toLocaleDateString("ko-KR")}</span>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 2 }}>{item.name} ({item.email})</div>
+                  <div style={{ fontSize: 12, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.message.slice(0, 80)}</div>
+                </div>
+                <span style={{ fontSize: 16, color: muted, flexShrink: 0 }}>→</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

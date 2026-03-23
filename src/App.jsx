@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST } from "./storage";
+import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
@@ -13,28 +14,43 @@ import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
 import MyPage from "./MyPage";
 import AttendanceModal from "./AttendanceModal";
+import Footer from "./Footer.jsx";
+import EventPage from "./EventPage.jsx";
 
-// 접속자 카운트 훅 (localStorage heartbeat)
+// 접속자 카운트 훅 (Supabase online_users 테이블 + localStorage 폴백)
 function useOnlineCount() {
   const [count, setCount] = useState(1);
   useEffect(() => {
     const myId = "u_" + Math.random().toString(36).slice(2, 8);
-    const KEY = "nper_online_users";
-    function hb() {
+    const device = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
+    async function hb() {
       try {
-        const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
-        const now = Date.now();
-        raw[myId] = now;
-        Object.keys(raw).forEach(k => { if (now - raw[k] > 30000) delete raw[k]; });
-        localStorage.setItem(KEY, JSON.stringify(raw));
-        setCount(Object.keys(raw).length);
-      } catch(e) {}
+        // Supabase heartbeat
+        await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
+        // 20초 이상 비활성 유저 삭제
+        const cutoff = new Date(Date.now() - 20000).toISOString();
+        await supabase.from("online_users").delete().lt("last_seen", cutoff);
+        // 현재 접속자 수
+        const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
+        if (cnt != null) setCount(cnt);
+      } catch(e) {
+        // Supabase 실패 시 localStorage 폴백
+        try {
+          const KEY = "nper_online_users";
+          const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
+          const now = Date.now();
+          raw[myId] = now;
+          Object.keys(raw).forEach(k => { if (now - raw[k] > 15000) delete raw[k]; });
+          localStorage.setItem(KEY, JSON.stringify(raw));
+          setCount(Object.keys(raw).length);
+        } catch(e2) {}
+      }
     }
     hb();
-    const t = setInterval(hb, 15000);
+    const t = setInterval(hb, 8000);
     return () => {
       clearInterval(t);
-      try { const raw = JSON.parse(localStorage.getItem(KEY) || "{}"); delete raw[myId]; localStorage.setItem(KEY, JSON.stringify(raw)); } catch(e) {}
+      supabase.from("online_users").delete().eq("id", myId).then(() => {});
     };
   }, []);
   return count;
@@ -97,6 +113,9 @@ export default function App() {
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showAttendance, setShowAttendance] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+  const { t, lang, setLang } = useI18n();
   const [guestUsageCount, setGuestUsageCount] = useState(() => {
     try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}").guest || 0; } catch { return 0; }
   });
@@ -226,12 +245,23 @@ export default function App() {
     });
   });
 
-  const navigate = async target => {
+  const [legalTab, setLegalTab] = useState("terms");
+  const navigate = async (target, extra) => {
     if (target === "login_trigger") { setShowAuth(true); return; }
     if (!(await confirmGuard())) return;
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
     setPage(target); setOpenMenu(null); setMobileOpen(false);
+    if (target === "legal" && extra) setLegalTab(extra);
+    // SEO: 다국어 동적 타이틀
+    const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
+    const titleMap = {
+      ko: { home:"SNS메이킷 - AI 카드뉴스·블로그·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
+      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
+    };
+    const titles = titleMap[lang] || titleMap.ko;
+    document.title = target === "home" ? titles.home : (titles[target] || target) + " - " + brand;
     window.scrollTo(0, 0);
   };
 
@@ -358,15 +388,28 @@ export default function App() {
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
+    if (page === "event")    return <EventPage C={C} navigate={navigate} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
-    if (page === "legal")           return <LegalPage C={C} navigate={navigate} />;
+    if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;
     if (page === "mypage" || page === "profile")   return <MyPage C={C} theme={theme} user={user} setUser={u => { setLocalUser(u); setUserState(u); }} navigate={navigate} />;
     if (page === "xk9m2p4q7") {
       if (!user) return <div style={{ minHeight: "80vh" }} />;
       if (user.role !== "admin") return <HomePage C={C} navigate={navigate} />;
       return <AdminPage C={C} user={user} />;
     }
+    // 404 - 알 수 없는 페이지
+    if (page !== "home") return (
+      <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>페이지를 찾을 수 없습니다</div>
+        <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>요청하신 페이지가 존재하지 않거나 이동되었어요.</div>
+        <button onClick={() => navigate("home")}
+          style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+          홈으로 돌아가기
+        </button>
+      </div>
+    );
     return <HomePage C={C} navigate={navigate} />;
   };
 
@@ -425,6 +468,14 @@ export default function App() {
           .cta-row button{padding:13px 20px!important;font-size:14px!important}
           table{display:block;overflow-x:auto}
         }
+        /* 모바일 최적화 */
+        @media(max-width:640px){
+          input,textarea,select{font-size:16px!important} /* iOS zoom 방지 */
+        }
+        @media(max-width:480px){
+          .preview-area{max-width:100%!important;margin:0!important}
+          .preview-area canvas{max-width:100%!important;height:auto!important}
+        }
       `}</style>
 
       {/* 생성 중 이탈 방지 모달 */}
@@ -480,13 +531,13 @@ export default function App() {
 
         {/* 데스크톱 메뉴 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
-          <NavBtn id="home" label="홈" />
-          <NavBtn id="about" label="소개" />
-          <NavBtn id="howto" label="이용방법" />
+          <NavBtn id="home" label={t("home")} />
+          <NavBtn id="about" label={t("about")} />
+          <NavBtn id="howto" label={t("howto")} />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
           {/* AI 생성기 통합 드롭다운 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label="AI 생성기" open={openMenu==="aiGen"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
+            <DropBtn label={t("aiGen")} open={openMenu==="aiGen"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
             {openMenu==="aiGen" && (
               <div style={{
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
@@ -495,9 +546,9 @@ export default function App() {
                 boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
               }}>
                 {[
-                  { key:"snsWrite", label:"✍️ SNS 글쓰기",  desc:"블로그·인스타·유튜브",  ai:"blog_naver_intro" },
-                  { key:"snsImage", label:"🖼 SNS 이미지",   desc:"카드뉴스·상세페이지",   ai:"cardnews_simple"  },
-                  { key:"imageGen", label:"🎨 이미지 생성",  desc:"제품컷·로고·모델·목업", ai:"product_shot"     },
+                  { key:"snsWrite", label:"✍️ "+t("snsWrite"),  desc:t("snsWriteDesc"),  ai:"blog_naver_intro" },
+                  { key:"snsImage", label:"🖼 "+t("snsImage"),   desc:t("snsImageDesc"),   ai:"cardnews_simple"  },
+                  { key:"imageGen", label:"🎨 "+t("imageGen"),  desc:t("imageGenDesc"), ai:"product_shot"     },
                 ].map(item => (
                   <button key={item.key} onClick={() => { navigateAi(item.ai); setOpenMenu(null); }}
                     style={{
@@ -524,19 +575,29 @@ export default function App() {
           </div>
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label="커뮤니티" open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
+            <DropBtn label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
             {openMenu==="board" && (
               <DropMenu right>
-                <DropItem id="community" label="정보공유"   onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
-                <DropItem id="community" label="질문답변"   onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
-                <DropItem id="community" label="자유게시판" onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
-                <DropItem id="community" label="사용후기"   onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
-                <DropItem id="community" label="자료실"  onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
+                <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
+                <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
+                <DropItem id="community" label={t("free")}    onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
+                <DropItem id="community" label={t("review")}  onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
+                <DropItem id="community" label={t("archive")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <NavBtn id="pricing" label="가격정책" />
-          <NavBtn id="contact" label="문의하기" />
+          <NavBtn id="pricing" label={t("pricing")} />
+          <NavBtn id="event" label="이벤트" />
+          {/* 고객센터 드롭다운 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label={t("support")} open={openMenu==="support"} active={page==="contact"} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
+            {openMenu==="support" && (
+              <DropMenu right>
+                <DropItem id="contact" label={t("contact")} onClick={() => { navigate("contact"); setOpenMenu(null); }} />
+                <DropItem id="howto" label={t("howto")} onClick={() => { navigate("howto"); setOpenMenu(null); }} />
+              </DropMenu>
+            )}
+          </div>
         </div>
 
         {/* 오른쪽: 접속자수 + 테마 + 로그인 */}
@@ -547,12 +608,42 @@ export default function App() {
             border: "1px solid rgba(74,222,128,0.2)" }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80",
               boxShadow: "0 0 6px #4ade80", animation: "pulse 2s infinite" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>{onlineCount}명 접속중</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>{onlineCount}{t("online")}</span>
           </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
-            {theme === "light" ? "🌙 다크" : "☀️ 라이트"}
+            {theme === "light" ? "🌙 "+t("darkMode") : "☀️ "+t("lightMode")}
           </button>
+          {/* 다국어 선택 */}
+          <div ref={langRef} style={{ position: "relative" }}>
+            <button onClick={() => setLangOpen(o => !o)}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 20, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700, color: C.muted, flexShrink: 0 }}>
+              🌐 <span style={{ fontSize: 11 }}>{LANGUAGES.find(l=>l.code===lang)?.label||t("translate")}</span>
+            </button>
+            {langOpen && (
+              <>
+                <div onClick={() => setLangOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 998 }} />
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 999,
+                  background: C.modalBg, border: "1px solid " + C.border, borderRadius: 12, padding: 6,
+                  minWidth: 140, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", animation: "fadeIn 0.15s ease" }}>
+                  {LANGUAGES.map(l => (
+                    <button key={l.code} onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                        borderRadius: 8, border: "none", cursor: "pointer",
+                        background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
+                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, textAlign: "left",
+                        fontWeight: lang===l.code ? 700 : 400 }}
+                      onMouseEnter={e => { if(lang!==l.code) e.currentTarget.style.background = "rgba(99,102,241,0.06)"; }}
+                      onMouseLeave={e => { if(lang!==l.code) e.currentTarget.style.background = "transparent"; }}>
+                      <span style={{ fontSize: 16 }}>{l.flag}</span>
+                      <span>{l.label}</span>
+                      {lang===l.code && <span style={{ marginLeft: "auto", fontSize: 11 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
           {user ? (
             <div ref={profileRef} style={{ position: "relative" }}>
@@ -669,6 +760,33 @@ export default function App() {
             background: C.toggleBg, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>
             {theme === "light" ? "🌙" : "☀️"}
           </button>
+          {/* 모바일 언어 선택 */}
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setLangOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "center",
+              width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
+              background: C.toggleBg, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
+              🌐
+            </button>
+            {langOpen && (
+              <>
+                <div onClick={() => setLangOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 998 }} />
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 999,
+                  background: C.modalBg, border: "1px solid " + C.border, borderRadius: 12, padding: 6,
+                  minWidth: 120, boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
+                  {LANGUAGES.map(l => (
+                    <button key={l.code} onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                        borderRadius: 8, border: "none", cursor: "pointer",
+                        background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
+                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, fontWeight: lang===l.code ? 700 : 400 }}>
+                      <span style={{ fontSize: 15 }}>{l.flag}</span>{l.label}
+                      {lang===l.code && <span style={{ marginLeft: "auto", fontSize: 11 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           {/* 유저 상태 */}
           {user ? (
             <button onClick={() => setMobileOpen(s => !s)} style={{ width: 30, height: 30, borderRadius: "50%",
@@ -702,8 +820,9 @@ export default function App() {
         }}>
               {/* 기본 메뉴 */}
           {[
-            { id: "home",  label: "홈" },
-            { id: "about", label: "소개" },
+            { id: "home",  label: t("home") },
+            { id: "about", label: t("about") },
+            { id: "howto", label: t("howto") },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -717,17 +836,17 @@ export default function App() {
 
           {/* SNS 글쓰기 */}
           <div style={{ margin: "8px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>✍️ SNS 글쓰기</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>✍️ {t("snsWrite")}</div>
           </div>
           {[
-            { ai: "blog_naver_intro",   label: "네이버 블로그" },
-            { ai: "blog_tistory_intro", label: "티스토리" },
-            { ai: "blog_insta_intro",   label: "인스타그램 캡션" },
-            { ai: "blog_youtube_intro", label: "유튜브 대본" },
-            { ai: "blog_thread_intro",  label: "스레드" },
-            { ai: "blog_yt_blog_intro", label: "유튜브로 글쓰기" },
-            { ai: "blog_news_intro",    label: "뉴스로 글쓰기" },
-            { ai: "blog_cafe",          label: "네이버 카페" },
+            { ai: "blog_naver_intro",   label: t("naverBlog") },
+            { ai: "blog_tistory_intro", label: t("tistory") },
+            { ai: "blog_insta_intro",   label: t("instaCap") },
+            { ai: "blog_youtube_intro", label: t("youtubeScript") },
+            { ai: "blog_thread_intro",  label: t("thread") },
+            { ai: "blog_yt_blog_intro", label: t("ytBlog") },
+            { ai: "blog_news_intro",    label: t("newsBlog") },
+            { ai: "blog_cafe",          label: t("naverCafe") },
           ].map(m => (
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -741,14 +860,14 @@ export default function App() {
 
           {/* SNS 이미지 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🖼 SNS 이미지</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🖼 {t("snsImage")}</div>
           </div>
           {[
-            { ai: "cardnews_simple", label: "심플 카드뉴스" },
-            { ai: "cardnews_image",  label: "이미지 카드뉴스" },
-            { ai: "detail_simple",   label: "심플 상세페이지" },
-            { ai: "detail_image",    label: "이미지 상세페이지" },
-            ...(user?.role === "admin" ? [{ ai: "shorts", label: "쇼츠영상 생성기 👑" }] : []),
+            { ai: "cardnews_simple", label: t("simpleCard") },
+            { ai: "cardnews_image",  label: t("imageCard") },
+            { ai: "detail_simple",   label: t("simpleDetail") },
+            { ai: "detail_image",    label: t("imageDetail") },
+            ...(user?.role === "admin" ? [{ ai: "shorts", label: t("shortsGen")+" 👑" }] : []),
           ].map(m => (
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -762,15 +881,15 @@ export default function App() {
 
           {/* 이미지 생성 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🎨 이미지생성</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🎨 {t("imageGen")}</div>
           </div>
           {[
-            { ai: "product_shot", label: "제품컷 생성" },
-            { ai: "logo_gen",     label: "로고 생성" },
-            { ai: "mockup_gen",   label: "목업 생성" },
-            { ai: "model_gen",    label: "모델 생성" },
-            { ai: "face_swap",    label: "얼굴·의상 교체" },
-            { ai: "outpaint",     label: "여백 늘리기" },
+            { ai: "product_shot", label: t("productShot") },
+            { ai: "logo_gen",     label: t("logoGen") },
+            { ai: "mockup_gen",   label: t("mockupGen") },
+            { ai: "model_gen",    label: t("modelGen") },
+            { ai: "face_swap",    label: t("faceSwap") },
+            { ai: "outpaint",     label: t("outpaint") },
           ].map(m => (
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -784,14 +903,14 @@ export default function App() {
 
           {/* 커뮤니티 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 커뮤니티</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 {t("community")}</div>
           </div>
           {[
-            { board: "info",    label: "정보공유" },
-            { board: "qna",     label: "질문답변" },
-            { board: "free",    label: "자유게시판" },
-            { board: "review",  label: "사용후기" },
-            { board: "archive", label: "자료실" },
+            { board: "info",    label: t("info") },
+            { board: "qna",     label: t("qna") },
+            { board: "free",    label: t("free") },
+            { board: "review",  label: t("review") },
+            { board: "archive", label: t("archive") },
           ].map(m => (
             <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -806,8 +925,7 @@ export default function App() {
           {/* 기타 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
           {[
-            { id: "pricing", label: "💎 가격정책" },
-            { id: "contact", label: "📬 문의하기" },
+            { id: "pricing", label: "💎 "+t("pricing") },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -818,6 +936,35 @@ export default function App() {
               borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
+
+          {/* 이벤트 (독립) */}
+          <button onClick={() => { navigate("event"); setMobileOpen(false); }} style={{
+            display: "block", width: "100%", textAlign: "left",
+            padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+            background: page === "event" ? "rgba(124,106,255,0.08)" : "transparent",
+            color: page === "event" ? C.purpleL : C.text,
+            fontSize: 15, fontWeight: page === "event" ? 700 : 500,
+            borderLeft: page === "event" ? "3px solid #7c6aff" : "3px solid transparent",
+          }}>이벤트</button>
+
+          {/* 고객센터 */}
+          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>📞 {t("support")}</div>
+          </div>
+          {[
+            { id: "contact", label: t("contact") },
+            { id: "howto",   label: t("howto") },
+          ].map(m => (
+            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              color: page === m.id ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: page === m.id ? 700 : 400,
+              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {user ? (
               <div>
@@ -832,11 +979,11 @@ export default function App() {
                       <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>💎 {(user.points||0).toLocaleString()}P · {Math.floor((user.points||0)/10)}회 가능</div>
                     </div>
                   </div>
-                  <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>로그아웃</button>
+                  <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 출석체크</button>
-                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 포인트 충전</button>
+                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 {t("attendance")}</button>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 {t("pointCharge")}</button>
                 </div>
               </div>
             ) : (
@@ -848,7 +995,7 @@ export default function App() {
                       background: left > 0 ? "rgba(99,102,241,0.08)" : "rgba(239,68,68,0.08)",
                       border: `1px solid ${left > 0 ? "rgba(99,102,241,0.25)" : "rgba(239,68,68,0.25)"}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: C.muted }}>비회원 AI 무료 사용</span>
+                        <span style={{ fontSize: 12, color: C.muted }}>{t("guestFree")}</span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
                           {left > 0 ? `${left}회 남음` : "소진 ⚡"}
                         </span>
@@ -862,7 +1009,7 @@ export default function App() {
                   );
                 })()}
                 <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
-                  로그인 / 회원가입
+                  {t("login")}
                 </button>
               </div>
             )}
@@ -876,65 +1023,7 @@ export default function App() {
       </div>
 
       {/* ── 푸터 ── */}
-      {page !== "ai" && <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px", background: C.footerBg }}>
-          <div style={{ maxWidth: 1000, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36 }}>
-            <div style={{ maxWidth: 280 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
-                  </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-                </div>
-              </div>
-              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85 }}>비즈니스를 위한 SNS 성장 파트너. AI를 활용해 더 빠르게, 더 스마트하게</p>
-            </div>
-            <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5, textTransform: "uppercase" }}>커뮤니티</div>
-                {[
-                  {id:"info",icon:"📌",label:"정보공유"},
-                  {id:"qna",icon:"❓",label:"질문답변"},
-                  {id:"free",icon:"🗣",label:"자유게시판"},
-                  {id:"review",icon:"⭐",label:"사용후기"},
-                ].map(cc => (
-                  <div key={cc.id} onClick={() => { navigateBoard(cc.id); setMobileOpen(false); }} style={{ fontSize: 14, color: C.muted, padding: "6px 0", cursor: "pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
-                    onMouseLeave={e => e.currentTarget.style.color = C.muted}>
-                    {cc.icon} {cc.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div style={{ maxWidth: 1000, margin: "24px auto 0", paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* 법적 방침 링크 */}
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              {[
-                { label: "이용약관", tab: "terms" },
-                { label: "개인정보처리방침", tab: "privacy" },
-                { label: "환불정책", tab: "refund" },
-              ].map(item => (
-                <button key={item.tab} onClick={() => navigate("legal")}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.muted, padding: 0, textDecoration: "underline" }}
-                  onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
-                  onMouseLeave={e => e.currentTarget.style.color = C.muted}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {/* 사업자 정보 */}
-            <div style={{ fontSize: 11, color: C.muted, lineHeight: 2 }}>
-              상호명: 엔퍼그로스 &nbsp;|&nbsp; 대표자: 김선봉 &nbsp;|&nbsp; 사업자등록번호: 598-09-02769
-              <br/>
-              사업장 주소: 서울특별시 금천구 디지털로9길 68, 대륭포스트타워 5차 1층 111(-377)호 (가산동)
-              <br/>
-              통신판매업 신고번호: 2024-서울금천-1997호 &nbsp;|&nbsp; 고객센터: npermovie@naver.com
-            </div>
-            <span style={{ fontSize: 11, color: C.muted }}>© 2025 SNS메이킷 · All rights reserved.</span>
-          </div>
-      </footer>}
+      <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />
     </div>
   );
 }

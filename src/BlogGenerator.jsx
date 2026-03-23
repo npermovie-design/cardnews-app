@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { useI18n } from "./i18n.jsx";
 
 import { callAI, callAIStream } from "./aiClient";
 
@@ -466,7 +467,8 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
 
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
-  const isDark = theme === "dark" || (!theme && !!embedded); // theme prop 우선, 없으면 embedded 기준
+  const isDark = theme === "dark" || (!theme && !!embedded);
+  const { t } = useI18n();
 
   const [subtype,    setSubtype]    = useState(cfg.subtypes[0].id);
   const [fields,     setFields]     = useState({});
@@ -486,6 +488,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [urlInput,   setUrlInput]   = useState("");
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlResult,  setUrlResult]  = useState(null);
+  const [suggestedImages, setSuggestedImages] = useState([]);
+  const [imgSearching,    setImgSearching]    = useState(false);
+  const [imgCopied,       setImgCopied]       = useState(null);
+  const [imgInput,        setImgInput]        = useState("");
 
   // 이탈 방지
   useEffect(() => {
@@ -626,6 +632,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setAiUsage(_newU2);
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
+      // 이미지 자동 추천
+      if (_savedFull && fields.keyword) fetchImages(fields.keyword);
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
         try {
@@ -638,6 +646,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         } catch(e) {}
       }
     }
+  };
+
+  /* ── 픽사베이·픽셀스 이미지 자동 추천 ── */
+  const fetchImages = async (keyword) => {
+    if (!keyword) return;
+    setImgSearching(true); setSuggestedImages([]);
+    const PX_KEY = import.meta.env.VITE_PIXABAY_KEY || "";
+    const PE_KEY = import.meta.env.VITE_PEXELS_KEY  || "";
+    const imgs = [];
+    try {
+      if (PX_KEY) {
+        const r = await fetch(`https://pixabay.com/api/?key=${PX_KEY}&q=${encodeURIComponent(keyword)}&per_page=10&safesearch=true&image_type=photo&lang=ko`);
+        const d = await r.json();
+        (d.hits||[]).forEach(h => imgs.push({ id:"px"+h.id, preview:h.webformatURL, url:h.largeImageURL||h.webformatURL, src:"Pixabay" }));
+      }
+      if (PE_KEY) {
+        const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=10`, { headers:{ Authorization: PE_KEY } });
+        const d = await r.json();
+        (d.photos||[]).forEach(p => imgs.push({ id:"pe"+p.id, preview:p.src.medium, url:p.src.large2x||p.src.large, src:"Pexels" }));
+      }
+    } catch(e) {}
+    setSuggestedImages(imgs);
+    setImgSearching(false);
   };
 
   const cleanText = (text) => {
@@ -713,16 +744,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);
       return (
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center"}}>
-          <div style={{fontSize:52}}>{sub?.icon||"✍️"}</div>
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:40,textAlign:"center",maxWidth:900,margin:"0 auto",width:"100%"}}>
           <div style={{fontSize:16,fontWeight:800,color:text}}>{sub?.label}</div>
-          <div style={{fontSize:13,color:muted,lineHeight:1.8}}>왼쪽에서 정보를 입력하고<br/>글 생성하기 버튼을 눌러주세요</div>
-          {examples.length>0&&<div style={{fontSize:11,color:muted,opacity:0.6}}>예시: {examples[0]}</div>}
+          <div style={{fontSize:13,color:muted,lineHeight:1.8,whiteSpace:"pre-line"}}>{t("introGuide")}</div>
+          {examples.length>0&&<div style={{fontSize:11,color:muted,opacity:0.6}}>{t("example")}: {examples[0]}</div>}
         </div>
       );
     }
     return (
-      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",maxWidth:900,margin:"0 auto",width:"100%"}}>
         <div style={{height:46,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 18px",borderBottom:`1px solid ${border}`,background:headerBg}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(
@@ -730,20 +760,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
               </button>
             ))}
-            {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>생성 결과</span>}
+            {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>{t("genResult")}</span>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {result&&(
               <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:8,
                 background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",
                 border:`1px solid ${border}`}}>
-                <span style={{fontSize:10,color:muted}}>전체</span>
+                <span style={{fontSize:10,color:muted}}>{t("charTotal")}</span>
                 <span style={{fontSize:12,fontWeight:700,color:text}}>{result.length.toLocaleString()}</span>
                 <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
-                <span style={{fontSize:10,color:muted}}>공백제외</span>
+                <span style={{fontSize:10,color:muted}}>{t("charNoSpace")}</span>
                 <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
                 <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
-                <span style={{fontSize:10,color:muted}}>공백포함</span>
+                <span style={{fontSize:10,color:muted}}>{t("charWithSpace")}</span>
                 <span style={{fontSize:12,fontWeight:700,color:muted}}>{result.replace(/\s/g," ").length.toLocaleString()}</span>
               </div>
             )}
@@ -753,7 +783,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
                   color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                {copied?"✓ 복사됨":"📋 복사"}
+                {copied?("✓ "+t("copyDone")):("📋 "+t("copyBtn"))}
               </button>
             )}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
@@ -771,6 +801,71 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
+
+          {/* 연관 이미지 추천 */}
+          {(imgSearching || suggestedImages.length > 0) && (
+            <div style={{marginTop:18}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,fontWeight:800,color:text}}>📷 {t("relatedImages")}</span>
+                <span style={{fontSize:11,color:muted,flex:1}}>Pixabay · Pexels</span>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input value={imgInput} onChange={e=>setImgInput(e.target.value)}
+                    onKeyDown={e=>e.key==="Enter"&&fetchImages(imgInput||fields.keyword)}
+                    placeholder={t("searchKw")}
+                    style={{padding:"5px 10px",borderRadius:8,border:`1px solid ${border}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:12,outline:"none",width:150}}/>
+                  <button onClick={()=>fetchImages(imgInput||fields.keyword)} disabled={imgSearching}
+                    style={{padding:"5px 12px",borderRadius:8,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:imgSearching?"not-allowed":"pointer",opacity:imgSearching?0.6:1,whiteSpace:"nowrap"}}>
+                    {imgSearching?"검색중...":"🔍 검색"}
+                  </button>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,paddingBottom:8}}>
+                {imgSearching && Array.from({length:6}).map((_,i)=>(
+                  <div key={i} style={{aspectRatio:"4/3",borderRadius:10,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f6",border:`1px solid ${border}`,animation:"pulse 1.5s ease-in-out infinite"}}/>
+                ))}
+                {suggestedImages.map(img=>(
+                  <div key={img.id} style={{borderRadius:10,overflow:"hidden",border:`1px solid ${border}`,position:"relative",cursor:"pointer",aspectRatio:"4/3"}}
+                    title="클릭: URL 복사 / ⬇: 다운로드">
+                    <img src={img.preview} alt="" loading="lazy"
+                      style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                      onError={e=>e.target.parentElement.style.display="none"}/>
+                    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0)",transition:"background 0.15s"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,0.5)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0)"}>
+                      <div style={{position:"absolute",top:4,right:4,display:"flex",gap:3}}>
+                        <button onClick={(e)=>{ e.stopPropagation(); navigator.clipboard.writeText(img.url); setImgCopied(img.id); setTimeout(()=>setImgCopied(null),2000); }}
+                          style={{padding:"3px 7px",borderRadius:5,border:"none",background:"rgba(255,255,255,0.9)",color:"#333",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                          {imgCopied===img.id?"✓":"📋"}
+                        </button>
+                        <button onClick={(e)=>{ e.stopPropagation();
+                          fetch(img.url).then(r=>r.blob()).then(b=>{
+                            const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="image.jpg";
+                            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+                          }).catch(()=>window.open(img.url,"_blank"));
+                        }}
+                          style={{padding:"3px 7px",borderRadius:5,border:"none",background:"rgba(255,255,255,0.9)",color:"#333",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                          ⬇
+                        </button>
+                      </div>
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 6px"}}>
+                        <span style={{fontSize:9,background:"rgba(0,0,0,0.6)",color:"#fff",padding:"1px 5px",borderRadius:4}}>{img.src}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:10,padding:"10px 14px",borderRadius:10,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}`}}>
+                <div style={{fontSize:12,fontWeight:700,color:accent,marginBottom:6}}>💡 복사한 이미지 URL 활용법</div>
+                <div style={{fontSize:11,color:muted,lineHeight:1.8}}>
+                  <b style={{color:text}}>① 네이버 블로그</b> → 글쓰기 → 사진 → URL로 삽입 → 붙여넣기<br/>
+                  <b style={{color:text}}>② 인스타그램</b> → 복사한 URL을 브라우저에서 열어 이미지 저장 후 업로드<br/>
+                  <b style={{color:text}}>③ 티스토리</b> → 글쓰기 → 이미지 → URL 삽입 → 붙여넣기<br/>
+                  <b style={{color:text}}>④ 직접 저장</b> → 이미지에 우클릭 → "이미지를 다른 이름으로 저장"
+                </div>
+                <div style={{fontSize:10,color:muted,marginTop:6,opacity:0.7}}>⚠️ 상업적 이용 시 Pixabay·Pexels 라이선스를 확인하세요. (대부분 무료 상업 이용 가능)</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -781,9 +876,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // 현재 단계: 1=입력, 2=생성중, 3=결과
   const wizStep = loading ? 2 : result ? 3 : 1;
   const WSTEPS = [
-    {n:1, label:"내용 입력", icon:"📝"},
-    {n:2, label:"AI 생성중", icon:"🤖"},
-    {n:3, label:"결과 확인", icon:"✅"},
+    {n:1, label:t("inputStep"), icon:"📝"},
+    {n:2, label:t("genStep"), icon:"🤖"},
+    {n:3, label:t("resultStep"), icon:"✅"},
   ];
 
   const content = (
@@ -793,8 +888,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
           <div style={{background:isDark?"rgba(18,16,58,0.98)":"#fff",border:"1px solid rgba(124,106,255,0.25)",borderRadius:20,padding:"36px 32px",maxWidth:380,width:"90%",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}}>
             <div style={{fontSize:44,marginBottom:14}}>🔄</div>
-            <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:8}}>다시 생성하시겠습니까?</div>
-            <div style={{fontSize:13,color:muted,lineHeight:1.8,marginBottom:24}}>현재 생성된 글이 사라지고<br/>처음부터 다시 시작합니다.</div>
+            <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:8}}>{t("regenTitle")}</div>
+            <div style={{fontSize:13,color:muted,lineHeight:1.8,marginBottom:24,whiteSpace:"pre-line"}}>{t("regenDesc")}</div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setShowRegenConfirm(false)}
                 style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer"}}>
@@ -802,7 +897,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
               <button onClick={()=>{ setShowRegenConfirm(false); setResult(""); setHtmlResult(""); generate(); }}
                 style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-                다시 생성
+                {t("regenBtn")}
               </button>
             </div>
           </div>
@@ -821,32 +916,35 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         .tistory-content ul{padding-left:20px;margin:8px 0}
         .tistory-content li{margin:4px 0}
       `}</style>
-      {/* 단계 표시 */}
-      <div style={{flexShrink:0,padding:"10px 20px",borderBottom:`1px solid ${border}`,background:panelBg,display:"flex",alignItems:"center",gap:0}}>
-        {WSTEPS.map((s,i)=>{
-          const done=wizStep>s.n, active=wizStep===s.n;
-          return <div key={s.n} style={{display:"flex",alignItems:"center",flex:i<WSTEPS.length-1?1:"unset"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,flexShrink:0,
-                background:done?"#6366f1":active?"linear-gradient(135deg,#6366f1,#8b5cf6)":"transparent",
-                border:done||active?"none":`2px solid ${border}`,
-                color:done||active?"#fff":muted}}>
-                {done?"✓":s.icon}
+      {/* 단계 표시 - 카드뉴스 스타일 */}
+      <div style={{flexShrink:0,padding:"16px 28px 0",maxWidth:900,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
+        <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:16}}>
+          {WSTEPS.map((s,i)=>{
+            const done=wizStep>s.n, active=wizStep===s.n;
+            return <div key={s.n} style={{display:"flex",alignItems:"center",flex:i<WSTEPS.length-1?1:"auto"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,cursor:done?"pointer":"default"}}
+                onClick={()=>{ if(done) { setResult(""); setHtmlResult(""); } }}>
+                <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:12,fontWeight:900,flexShrink:0,
+                  background:done||active?"#6366f1":(isDark?"rgba(255,255,255,0.1)":"#e5e5e5"),
+                  color:done||active?"#fff":(isDark?"rgba(255,255,255,0.3)":"#bbb")}}>
+                  {done?"✓":s.n}
+                </div>
+                <span style={{fontSize:13,fontWeight:active?800:500,color:active?text:muted,whiteSpace:"nowrap"}}>{s.label}</span>
               </div>
-              <span style={{fontSize:12,fontWeight:active?700:400,color:active?accent:done?"#6366f1":muted,whiteSpace:"nowrap"}}>{s.label}</span>
-            </div>
-            {i<WSTEPS.length-1&&<div style={{flex:1,height:1,background:wizStep>s.n?"#6366f1":border,margin:"0 10px"}}/>}
-          </div>;
-        })}
+              {i<WSTEPS.length-1&&<div style={{flex:1,height:2,background:done?"#6366f1":(isDark?"rgba(255,255,255,0.1)":"#e5e5e5"),margin:"0 12px",minWidth:16}}/>}
+            </div>;
+          })}
+        </div>
       </div>
       {/* 본문 */}
       <div style={{flex:1,overflowY:"auto"}}>
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
-          <div style={{maxWidth:720,margin:"0 auto",padding:"24px 20px"}}>
+          <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
             {/* URL 불러오기 */}
             <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>🔗 URL로 내용 불러오기</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>🔗 {t("urlImportLabel")}</div>
               <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>뉴스 기사, 유튜브 링크를 붙여넣으면 주제를 자동으로 채워줘요</div>
               <div style={{display:"flex",gap:8}}>
                 <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
@@ -869,9 +967,51 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               )}
             </div>
 
+            {/* 파일 업로드 분석 */}
+            <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>📎 {t("fileImport")}</div>
+              <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <input type="file" accept="image/*,.pdf,.txt,.doc,.docx" style={{display:"none"}} id="blog-file-input"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    e.target.value = "";
+                    if (file.size > 10 * 1024 * 1024) { alert("파일은 10MB 이하만 가능합니다."); return; }
+                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + "📎 파일 분석 중...");
+                    try {
+                      if (file.type.startsWith("image/")) {
+                        // 이미지: base64로 변환 후 AI 분석
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          const base64 = reader.result;
+                          const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
+                          setField("keyword", txt.split("\n")[0]?.slice(0,80) || file.name);
+                          setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 이미지 분석 결과: " + txt.slice(0, 200));
+                        };
+                        reader.readAsDataURL(file);
+                      } else {
+                        // 텍스트/PDF: 텍스트 추출
+                        const text2 = await file.text();
+                        const summary = text2.slice(0, 2000);
+                        setField("keyword", summary.split("\n").find(l => l.trim().length > 5)?.trim()?.slice(0,80) || file.name);
+                        setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 파일 내용: " + summary.slice(0, 300));
+                      }
+                    } catch(err) {
+                      setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 파일 분석 실패: " + err.message);
+                    }
+                  }}/>
+                <button onClick={() => document.getElementById("blog-file-input")?.click()}
+                  style={{padding:"8px 16px",borderRadius:9,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
+                  📎 {t("fileSelect")}
+                </button>
+                <span style={{fontSize:11,color:muted}}>{t("fileLimit")}</span>
+              </div>
+            </div>
+
             {/* 글 타입 */}
             <div style={{marginBottom:18}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:10}}>글 타입 선택</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:10}}>{t("selectType")}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
                 {cfg.subtypes.map(s=>{
                   const isA=subtype===s.id;
@@ -886,7 +1026,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
             {/* 예시 */}
             {examples.length>0&&<div style={{marginBottom:16}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>예시 글감</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("exampleTopics")}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:12,cursor:"pointer"}}>{ex}</button>)}
               </div>
@@ -935,7 +1075,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
             {/* 글 톤 */}
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>글 톤</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
               </div>
@@ -944,7 +1084,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* 분량 */}
             <div style={{marginBottom:24}}>
               <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>
-                {initialType==="blog_youtube"?"영상 길이":initialType==="blog_thread"?"글 개수":initialType==="blog_insta"?"글자 분량":"분량"}
+                {t("selectLength")}
               </div>
               {initialType==="blog_insta" && (
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -993,7 +1133,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
             {/* 생성 버튼 */}
             <button onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>💎 10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
+              {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
           </div>
         )}

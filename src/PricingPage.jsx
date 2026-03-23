@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
+import { useI18n } from "./i18n.jsx";
+import { getPageText } from "./i18n-pages.js";
 
-const TOSS_CLIENT_KEY = "test_ck_mBZ1gQ4YVX4vPzWKK551Vl2KPoqN";
+const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 
 // ✅ 결제 오픈 시 true로 변경
 const PAYMENT_ENABLED = false;
@@ -64,27 +66,45 @@ const ONE_OFF_PLANS = [
   { id:"pack5", name:"Pro",      amount:41900, points:9750, highlight:false },
 ];
 
-const FAQ = [
-  { q:"포인트는 어떻게 사용하나요?", a:"AI 글쓰기·카드뉴스 생성 1회 = 10 포인트, 상세페이지 슬라이드 1장 = 30 포인트가 차감됩니다." },
-  { q:"포인트 유효기간이 있나요?", a:"충전한 포인트는 유효기간이 없습니다. 게시글 작성(1P), 일일 로그인(1P)으로 무료 적립도 가능해요." },
-  { q:"연구독 할인은 얼마나 되나요?", a:"연구독 시 20% 할인이 적용됩니다. 월구독 대비 약 2.4개월을 무료로 사용하는 효과예요." },
-  { q:"환불이 가능한가요?", a:"구독 시작 후 7일 이내, 사용하지 않은 포인트에 대해 전액 환불 가능합니다. 문의하기로 연락해주세요." },
-];
+// FAQ는 컴포넌트 안에서 번역 함수로 동적 생성
 
 export function PricingPage({ navigate, C, user, onLogin }) {
+  const { lang } = useI18n();
+  const p = (key) => getPageText(lang, key);
   const [tab, setTab]         = useState("subscription");
   const [billing, setBilling] = useState("monthly");
   const [loading, setLoading] = useState(null);
   const [toast, setToast]     = useState("");
+  const [openFaq, setOpenFaq] = useState(null);
   const isDark = C?.border?.includes("255");
   const userPoints = user?.points || 0;
+
+  const COMMON_F = [
+    p("pFeatSns"), p("pFeatNewsBlog"), p("pFeatCard"), p("pFeatDetail"),
+    p("pFeatCommunity"), p("pFeatPostPt"), p("pFeatLoginPt"),
+  ];
+  const PLANS = SUB_PLANS.map(pl => ({
+    ...pl,
+    badge: pl.id==="deluxe" ? p("recommend") : pl.badge,
+    btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
+    features: [
+      pl.free ? p("pFeatSignup200") : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
+      ...COMMON_F,
+    ],
+  }));
+  const FAQ = [
+    { q: p("faqQ1"), a: p("faqA1") },
+    { q: p("faqQ2"), a: p("faqA2") },
+    { q: p("faqQ3"), a: p("faqA3") },
+    { q: p("faqQ4"), a: p("faqA4") },
+  ];
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
   const handleBuy = async (plan, isYearly = false) => {
     if (!user) { onLogin?.(); return; }
     if (plan.free) return;
-    if (!PAYMENT_ENABLED) { showToast("🔧 결제 서비스 준비 중입니다. 곧 오픈될 예정이에요!"); return; }
+    if (!PAYMENT_ENABLED) { showToast(p("pricingToast")); return; }
     setLoading(plan.id + (isYearly ? "_y" : ""));
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
@@ -115,7 +135,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
   const handleOneOff = async (plan) => {
     if (!user) { onLogin?.(); return; }
-    if (!PAYMENT_ENABLED) { showToast("🔧 결제 서비스 준비 중입니다. 곧 오픈될 예정이에요!"); return; }
+    if (!PAYMENT_ENABLED) { showToast(p("pricingToast")); return; }
     setLoading(plan.id);
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
@@ -157,23 +177,30 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>✦ 요금제</div>
-        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>포인트로 자유롭게 사용하세요</h2>
+        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("pricingBadge")}</div>
+        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>{p("pricingTitle")}</h2>
         <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
-          AI 글쓰기 · 카드뉴스 = <b style={{ color: C.text }}>10P</b> &nbsp;·&nbsp; 상세페이지 슬라이드 1장 = <b style={{ color: C.text }}>30P</b>
+          {p("pricingSub")}
         </p>
         {user && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, padding: "8px 20px", borderRadius: 20, background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
-            <span style={{ fontSize: 13, color: "#818cf8" }}>내 포인트</span>
+            <span style={{ fontSize: 13, color: "#818cf8" }}>{p("pricingMyPoints")}</span>
             <span style={{ fontSize: 20, fontWeight: 900, color: "#6366f1" }}>{userPoints.toLocaleString()} P</span>
           </div>
         )}
       </div>
 
+      {!PAYMENT_ENABLED && (
+        <div style={{ textAlign:"center", marginBottom:20, padding:"12px 20px", borderRadius:12, background:"rgba(249,115,22,0.1)", border:"1px solid rgba(249,115,22,0.25)", maxWidth:500, margin:"0 auto 20px" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b" }}>🔧 결제 서비스 준비 중입니다</div>
+          <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>현재 포인트 충전은 관리자에게 문의해주세요.</div>
+        </div>
+      )}
+
       {/* 탭 */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
-          {[["subscription","월 구독"],["oneoff","단건구매"]].map(([id,label]) => (
+          {[["subscription",p("pricingSubTab")],["oneoff",p("pricingOneoffTab")]].map(([id,label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: "10px 32px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700,
                 background: tab === id ? (isDark ? "#1e2a4a" : "#fff") : "transparent",
@@ -190,20 +217,20 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <>
           {/* 월간/연간 토글 */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <span style={{ fontSize: 14, fontWeight: billing==="monthly"?700:400, color: billing==="monthly"?C.text:C.muted }}>월간</span>
+            <span style={{ fontSize: 14, fontWeight: billing==="monthly"?700:400, color: billing==="monthly"?C.text:C.muted }}>{p("pricingMonthly")}</span>
             <div onClick={() => setBilling(b => b==="monthly"?"yearly":"monthly")}
               style={{ width: 52, height: 28, borderRadius: 14, background: billing==="yearly" ? "#6366f1" : (isDark?"rgba(255,255,255,0.15)":"#ddd"), cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
               <div style={{ position: "absolute", top: 4, left: billing==="yearly"?26:4, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
             </div>
-            <span style={{ fontSize: 14, fontWeight: billing==="yearly"?700:400, color: billing==="yearly"?C.text:C.muted }}>연간</span>
+            <span style={{ fontSize: 14, fontWeight: billing==="yearly"?700:400, color: billing==="yearly"?C.text:C.muted }}>{p("pricingYearly")}</span>
             {billing === "yearly" && (
-              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" }}>20% 할인</span>
+              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" }}>{p("pricingYearlyDiscount")}</span>
             )}
           </div>
 
           {/* 플랜 카드 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 56 }}>
-            {SUB_PLANS.map(plan => {
+            {PLANS.map(plan => {
               const isYearly = billing === "yearly";
               const price = isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
               const isLoading = loading === plan.id + (isYearly ? "_y" : "");
@@ -223,13 +250,13 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   <div style={{ fontSize: 17, fontWeight: 900, color: C.text, marginBottom: 10 }}>{plan.name}</div>
 
                   {plan.free ? (
-                    <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, marginBottom: 16 }}>무료</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, marginBottom: 16 }}>{p("pricingFree")}</div>
                   ) : (
                     <>
                       <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2 }}>
                         ₩{price.toLocaleString()}
                       </div>
-                      <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>/월</div>
+                      <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
                         <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
                       )}
@@ -256,11 +283,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                         filter: (!plan.free && !plan.free && PAYMENT_ENABLED === false) ? "blur(1.5px)" : "none",
                         opacity: (!plan.free && PAYMENT_ENABLED === false) ? 0.55 : 1,
                       }}>
-                      {!user ? "로그인 후 이용" : (plan.free && user) ? "현재 플랜" : isLoading ? "결제창 여는 중..." : plan.btnLabel}
+                      {!user ? p("pricingLogin") : (plan.free && user) ? p("pricingCurrent") : isLoading ? p("pricingOpening") : plan.btnLabel}
                     </button>
                     {!plan.free && !PAYMENT_ENABLED && (
                       <div onClick={() => handleBuy(plan, isYearly)} style={{ position: "absolute", inset: 0, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>🔧 준비 중</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>{p("pricingPreparing")}</span>
                       </div>
                     )}
                   </div>
@@ -275,17 +302,17 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {tab === "oneoff" && (
         <div style={{ marginBottom: 56 }}>
           <div style={{ textAlign: "center", padding: "12px 18px", borderRadius: 10, background: isDark ? "rgba(56,189,248,0.08)" : "rgba(56,189,248,0.05)", border: "1px solid rgba(56,189,248,0.15)", fontSize: 13, color: C.muted, marginBottom: 28, maxWidth: 500, margin: "0 auto 28px" }}>
-            <b style={{ color: C.text }}>단건구매</b>는 구독 없이 원하는 만큼만 충전해요. 충전된 포인트는 <b style={{ color: C.text }}>유효기간 없이 영구</b> 사용 가능해요.
+            {p("pricingOneoffDesc")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,45%),1fr))", gap: 14, maxWidth: 760, margin: "0 auto" }}>
             {ONE_OFF_PLANS.map(plan => (
               <div key={plan.id} style={{ borderRadius: 18, border: plan.highlight ? "2px solid #6366f1" : "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: plan.highlight ? "0 0 24px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", marginBottom: 4 }}>인기</div>}
+                {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
                 <div style={{ fontSize: 28, fontWeight: 900, color: "#6366f1" }}>₩{plan.amount.toLocaleString()}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
-                <div style={{ fontSize: 11, color: C.muted }}>AI 생성 약 {Math.floor(plan.points/10)}회</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
                 <div style={{ marginTop: 6, width: "100%", position: "relative" }}>
                   <button
                     onClick={() => handleOneOff(plan)}
@@ -294,11 +321,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                       filter: PAYMENT_ENABLED === false ? "blur(1.5px)" : "none",
                       opacity: PAYMENT_ENABLED === false ? 0.55 : 1,
                     }}>
-                    {!user ? "로그인 후 이용" : loading === plan.id ? "결제창 여는 중..." : "구매하기"}
+                    {!user ? p("pricingLogin") : loading === plan.id ? p("pricingOpening") : p("pricingBuy")}
                   </button>
                   {PAYMENT_ENABLED === false && (
                     <div onClick={() => handleOneOff(plan)} style={{ position: "absolute", inset: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>🔧 준비 중</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>{p("pricingPreparing")}</span>
                     </div>
                   )}
                 </div>
@@ -310,12 +337,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 무료 포인트 적립 안내 */}
       <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px", marginBottom: 48 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>💰 무료 포인트 적립 방법</div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>{p("pricingFreeMethod")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon:"🎁", action:"회원가입", pt:"+200P", desc:"가입 즉시" },
-            { icon:"📝", action:"게시글 작성", pt:"+1P", desc:"글 1개당" },
-            { icon:"☀️", action:"일일 로그인", pt:"+1P", desc:"하루 1회" },
+            { icon:"🎁", action:p("pricingSignup"), pt:p("pricingSignupPts"), desc:p("pricingSignupDesc") },
+            { icon:"📝", action:p("pricingPost"), pt:p("pricingPostPts"), desc:p("pricingPostDesc") },
+            { icon:"☀️", action:p("pricingDaily"), pt:p("pricingDailyPts"), desc:p("pricingDailyDesc") },
           ].map((item, i) => (
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
@@ -329,11 +356,17 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* FAQ */}
       <div>
-        <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 20 }}>자주 묻는 질문</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 20 }}>{p("pricingFaqTitle")}</div>
         {FAQ.map((item, i) => (
-          <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 22px", marginBottom: 10 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>Q. {item.q}</div>
-            <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>A. {item.a}</div>
+          <div key={i} onClick={() => setOpenFaq(openFaq === i ? null : i)}
+            style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 22px", marginBottom: 10, cursor: "pointer", transition: "all 0.15s" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Q. {item.q}</div>
+              <span style={{ fontSize: 18, color: C.muted, transition: "transform 0.2s", transform: openFaq === i ? "rotate(180deg)" : "none" }}>▾</span>
+            </div>
+            {openFaq === i && (
+              <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginTop: 12, paddingTop: 12, borderTop: "1px solid " + C.border }}>A. {item.a}</div>
+            )}
           </div>
         ))}
       </div>

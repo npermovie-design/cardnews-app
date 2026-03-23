@@ -234,46 +234,48 @@ function buildPrompt(slide, cat, productName, refStyle, imgW = 1000, imgH = 1000
     ? STYLE_TEMPLATES.find(t => t.id === styleTemplateId)
     : null;
 
+  const ratio = imgW > imgH ? "landscape" : imgW < imgH ? "portrait" : "square";
   const base = [
-    `한국 프리미엄 온라인 쇼핑몰 상세페이지 이미지를 생성해주세요.`,
+    `Create a BACKGROUND IMAGE for a Korean premium e-commerce product detail page.`,
     styleTemplate
-      ? `디자인 스타일: ${styleTemplate.prompt}`
-      : `카테고리: ${cat.label}. 디자인 스타일: ${cat.styleHint}.`,
-    !styleTemplate && refStyle ? `참고 이미지 스타일: ${refStyle}` : "",
-    `상품명: ${productName}. 첨부된 참조 이미지의 실제 제품을 최대한 반영해주세요.`,
-    `출력 비율: ${imgW}x${imgH} (${imgW > imgH ? "가로형 landscape" : imgW < imgH ? "세로형 portrait" : "정사각형 square"}).`,
-    `[필수 품질] 실제 상업 사진과 전문 그래픽 디자인 합성 스타일. 고해상도 사진 퀄리티. 워터마크 없음.`,
-    `[절대 사용 금지] 클립아트, 이모지, 아이콘, 벡터 일러스트, 만화, 카툰, 플랫 디자인 아이콘, 뱃지, 메달 그래픽, 체크마크 아이콘, 온도계 일러스트, 핸드셰이크 일러스트, 돋보기 아이콘, 트럭 클립아트 등 어떠한 일러스트/아이콘 요소도 절대 포함하지 마세요. 실제 사진이 아닌 일러스트는 모두 금지.`,
-    `[스타일 강제] 실제 프로 포토그래퍼가 촬영한 상업 사진, 실제 제품 사진, 실제 사람/음식/공간 사진만 사용. 텍스트는 디자인된 폰트 레이아웃으로만.`,
+      ? `Design style: ${styleTemplate.prompt}`
+      : `Category: ${cat.label}. Design style: ${cat.styleHint}.`,
+    !styleTemplate && refStyle ? `Reference style: ${refStyle}` : "",
+    `Product: ${productName}. Reflect the attached reference product image as much as possible.`,
+    `Aspect ratio: ${imgW}x${imgH} (${ratio}).`,
+    `CRITICAL: DO NOT include ANY text, letters, words, numbers, or typography in the image.`,
+    `The image must be a pure visual/photo background - text will be overlaid separately by the app.`,
+    `Required: Real commercial photography, high resolution, no watermarks.`,
+    `Forbidden: No text, no letters, no words, no clipart, no emoji, no cartoon, no vector illustrations.`,
   ].filter(Boolean).join(" ");
 
-  // 슬라이드별 레이아웃 지시
+  // 슬라이드별 레이아웃 지시 (텍스트 없이 배경만)
   const layouts = {
-    hero: `풀블리드 히어로 이미지. ${productName} 제품이 화면을 가득 채우는 드라마틱한 사진. 하단에 어두운 그라데이션 오버레이. 하단에 굵고 큰 한국어 제목 "${h}". 그 아래 부제목 "${sub}". ${badge ? `좌상단 배지: "${badge}".` : ""} 강렬하고 임팩트 있는 첫 인상.`,
+    hero: `Full-bleed hero background. Dramatic close-up photo of ${productName}. Dark gradient at bottom for text overlay space. Impactful first impression. NO TEXT.`,
 
-    intro: `브랜드 소개 레이아웃. 좌측 55%는 흰 배경의 텍스트 영역, 우측 45%는 ${productName} 라이프스타일 사진. 좌측 상단에 작은 영문 섹션 라벨, 그 아래 한국어 큰 제목 "${h}", 본문 "${body}". 좌측 상단에 얇은 가로선 포인트.`,
+    intro: `Brand intro background. Left 55% clean space for text overlay, right 45% lifestyle photo of ${productName}. Clean, elegant layout. NO TEXT.`,
 
-    feature: `핵심 특징 레이아웃. 상단에 섹션 라벨과 한국어 제목 "${h}". 하단에 3개의 카드가 나란히: 각 카드에 번호(01, 02, 03), 굵은 제목, 설명 텍스트. 각 카드 배경에 제품 관련 실제 사진(클로즈업 디테일 샷) 부드럽게 처리.`,
+    feature: `Feature highlight background. 3-column grid layout with product detail close-up photos. Clean spaces between for text overlay. NO TEXT.`,
 
-    detail1: `상세 설명 레이아웃. 상단 50%: ${productName} 클로즈업 고퀄리티 사진. 하단 50%: 흰 배경에 섹션 라벨, 한국어 제목 "${h}", 본문 텍스트 "${body}". 깔끔한 타이포그래피.`,
+    detail1: `Detail background. Top 50%: ${productName} high-quality close-up photo. Bottom 50%: clean white/light space for text overlay. NO TEXT.`,
 
-    detail2: `스펙 정보 레이아웃. 좌측 45%: 섹션 라벨, 한국어 제목 "${h}", 스펙 리스트(항목명: 값 형식으로). 우측 55%: ${productName} 제품 사진. 신뢰감 있고 정보가 명확한 레이아웃.`,
+    detail2: `Spec info background. Left 45% clean space for text overlay, right 55% ${productName} product photo. Professional layout. NO TEXT.`,
 
-    comparison: `비교 레이아웃. 상단에 제목 "${h}". 중앙에 좌우로 나뉜 카드: 왼쪽 "BEFORE"(회색 배경, 기존 문제점), 오른쪽 "AFTER"(${cat.accent} 강조색 배경, 흰 텍스트, 해결책). 하단에 차별점 목록.`,
+    comparison: `Before/After comparison background. Split layout: left side gray/muted, right side vibrant with ${cat.accent || "accent"} color. Space for text overlay. NO TEXT.`,
 
-    howto: `사용 방법 레이아웃. 상단에 제목 "${h}". 단계별 리스트: 큰 번호(01, 02, 03)와 각 단계 제목, 설명. ${productName} 실제 사용 장면 사진. 직관적이고 따라하기 쉬운 느낌.`,
+    howto: `How-to background. Step-by-step visual layout. ${productName} usage scene photos. Clean spaces for numbered text overlay. NO TEXT.`,
 
-    ingredient: `구성/성분 레이아웃. 좌측에 성분 리스트(각 항목: 왼쪽 포인트 라인 + 성분명 + 설명). 우측에 ${productName} 제품 사진. 상단에 제목 "${h}". 신뢰감 있는 디자인.`,
+    ingredient: `Ingredients/components background. Clean layout with ${productName} product photo on right. Left space for list text overlay. NO TEXT.`,
 
-    quality: `품질 인증 레이아웃. 배경에 ${productName} 품질을 보여주는 사진. 오버레이. 상단에 섹션 라벨과 제목 "${h}". 신뢰감 있는 고품질 배경 사진. 본문 "${body}". 신뢰와 고급스러움. 어떠한 배지나 아이콘 없이 타이포와 사진으로만 구성.`,
+    quality: `Quality certification background. Premium quality photo of ${productName}. Dark overlay for text space. Trustworthy, high-end feel. NO TEXT.`,
 
-    review: `고객 후기 레이아웃. 상단에 제목 "${h}". 3개의 후기 카드: 각각 별점(★★★★★), 이탤릭체 후기 텍스트, 구매자 닉네임. 따뜻하고 신뢰감 있는 디자인.`,
+    review: `Customer review background. Warm, trustworthy design. Soft bokeh or lifestyle background. Clean card spaces for review text overlay. NO TEXT.`,
 
-    trust: `신뢰 지표 레이아웃. 상단에 제목 "${h}". 3개의 수치 카드: 큰 볼드 숫자 + 설명 텍스트. 하단에 인증/보증 문구. ${productName} 브랜드 사진. 데이터 기반 신뢰감. 숫자와 텍스트 중심 디자인.`,
+    trust: `Trust metrics background. Data-driven design feel. ${productName} brand photo. Clean spaces for large numbers and text overlay. NO TEXT.`,
 
-    faq: `FAQ 레이아웃. 상단에 제목 "${h}". 3~4개의 질문-답변 항목이 세로로 나열. 각 항목: 강조색 "Q" + 질문, "A" + 답변. 깔끔하고 읽기 쉬운 타이포그래피.`,
+    faq: `FAQ section background. Clean, minimal design. Alternating light/dark rows for Q&A text overlay. Professional layout. NO TEXT.`,
 
-    gallery: `갤러리 레이아웃. 상단에 제목 "${h}". ${productName} 제품을 다양한 각도와 스타일로 촬영한 사진들이 그리드(2x2)로 배치. 고품질 제품 사진. 시각적으로 풍성한 구성.`,
+    gallery: `Gallery background. ${productName} photographed from multiple angles. 2x2 grid of high-quality product photos. NO TEXT.`,
 
     package: `구성품 안내 레이아웃. 상단에 제목 "${h}". ${productName} 구성품들이 배치된 플랫레이(flat lay) 사진. 각 구성품에 선과 텍스트로 설명. 깔끔한 화이트 배경.`,
 
@@ -372,6 +374,22 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
   const [pageCount,  setPageCount]  = useState(5);
   const productFileRef = useRef(null);
 
+  // ── URL 불러오기 ──────────────────────────────────────────────
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const fetchFromUrl = async () => {
+    if (!urlInput.trim()) return;
+    setUrlLoading(true);
+    try {
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const data = await r.json();
+      if (data.title) setForm(p => ({ ...p, productName: data.title.slice(0, 80) }));
+      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 500);
+      if (desc) setForm(p => ({ ...p, features: p.features ? p.features + "\n" + desc : desc }));
+    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    setUrlLoading(false);
+  };
+
   // ── Step 2: 디자인 선택 ─────────────────────────────────────
   const [selStyle,  setSelStyle]  = useState(null);
   const [selSize,   setSelSize]   = useState(0);
@@ -469,8 +487,8 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
     setErr(""); setLoading(true); setSlides([]); setRendered([]); setSaveMsg("");
     // 전체 포인트 즉시 선차감 (슬라이드 수 × 30P)
     if (user?.uid) {
-      const totalCost = (planSlides?.length || pageCount || 1) * 30;
-      changePoints(user.uid, -totalCost, `상세페이지 생성 (${planSlides?.length || pageCount}장)`).then(newPts => {
+      const totalCost = (slideContents?.length || pageCount || 1) * 30;
+      changePoints(user.uid, -totalCost, `상세페이지 생성 (${slideContents?.length || pageCount}장)`).then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       });
     }
@@ -572,7 +590,7 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
 
   // ── 위저드 진행 바 ──────────────────────────────────────────
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
+    <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
         {[["1","상품 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","AI 생성"]].map(([n, label], i) => {
           const step = parseInt(n);
@@ -611,6 +629,22 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>상품 정보를 입력하세요</div>
             <div style={{ fontSize:13, color:muted }}>입력한 내용을 바탕으로 AI가 상세페이지 슬라이드를 구성해요</div>
+          </div>
+
+          {/* URL 불러오기 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6, letterSpacing:0.5 }}>🔗 URL로 내용 불러오기</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:8 }}>뉴스·유튜브·블로그·인스타 URL을 붙여넣으면 내용을 자동으로 채워줘요</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}
+                placeholder="https://... URL 붙여넣기"
+                style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
+              <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                {urlLoading?"불러오는 중...":"불러오기"}
+              </button>
+            </div>
           </div>
 
           {/* 카테고리 선택 */}
@@ -719,14 +753,26 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
 
           {/* 다음 버튼 */}
           <div style={{ display:"flex", justifyContent:"flex-end" }}>
-            <button onClick={() => {
+            <button onClick={async () => {
               if (!canNext) return;
-              // slideContents 초기화 (슬라이드 수 변경 반영)
-              setSlideContents(SLIDE_TYPES.slice(0, pageCount).map(t => ({
+              // slideContents 초기화 + 자동 AI 추천
+              const initialSlides = SLIDE_TYPES.slice(0, pageCount).map(t => ({
                 id: t.id, label: t.label, headline:"", subheadline:"", body:"", keyword:"", aiLoading:false
-              })));
+              }));
+              setSlideContents(initialSlides);
               setWizStep(2);
-            }} disabled={!canNext}
+              // 자동 AI 기획 시작
+              setPlanGenLoading(true);
+              try {
+                const textData = await generateSlideTexts({ topic, content, pageCount, slideTypes: SLIDE_TYPES, mode:"detail" });
+                const filled = textData.slides || [];
+                setSlideContents(initialSlides.map(s => {
+                  const found = filled.find(f => f.id === s.id);
+                  return found ? { ...s, ...found } : s;
+                }));
+              } catch {}
+              setPlanGenLoading(false);
+            }} disabled={!canNext || planGenLoading}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?accentColor:`${accentColor}40`, color:"#fff", fontSize:15, fontWeight:900, transition:"all 0.15s", display:"flex",alignItems:"center",gap:8 }}>
               다음 → <span style={{ fontSize:12,opacity:0.8 }}>슬라이드 기획</span>
             </button>
@@ -877,7 +923,7 @@ ${kw}
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader />
-        <div style={{ maxWidth:900, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
 
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
@@ -1009,7 +1055,7 @@ ${kw}
               </div>
               <button onClick={()=>{ setWizStep(4); generate(); }}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
-                {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
+                {user ? `이미지 ${pageCount}장 생성하기 → ${pageCount*30}P` : "✦ 1회 생성하기"}
               </button>
             </div>
           </div>
@@ -1027,48 +1073,85 @@ ${kw}
 
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}`}</style>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
         <WizHeader />
         <div style={{ maxWidth:1080, margin:"0 auto", padding:"0 20px 60px" }}>
 
-          {/* 생성 중 오버레이 */}
-          {loading && (
-            <div style={{ borderRadius:16,overflow:"hidden",border:`1px solid ${accentColor}40`,background:isDark?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)",marginBottom:20 }}>
-              <div style={{ background:`linear-gradient(135deg,${accentColor}22,${accentColor}08)`,padding:"24px 24px 20px",textAlign:"center",borderBottom:`1px solid ${accentColor}20` }}>
-                <div style={{ position:"relative",width:72,height:72,margin:"0 auto 16px" }}>
-                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${accentColor}20` }}/>
-                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid transparent`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
-                  <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
-                  <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
-                </div>
-                <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>
-                  {progress.total === 0 ? "준비 중..." : "상세페이지 이미지 생성 중"}
-                </div>
-                <div style={{ fontSize:12,color:muted,animation:progress.total===0?"pulse 1.5s ease-in-out infinite":undefined }}>
-                  {progress.msg || "AI가 슬라이드를 준비하고 있어요..."}
-                </div>
+          {/* 생성 중 — 단계별 체크 + 실시간 이미지 표시 */}
+          {loading && (() => {
+            const step1Done = progress.total > 0;
+            const step2Done = progress.total > 0 && slides.length > 0;
+            const step3Active = progress.cur > 0;
+            const step3Done = progress.cur >= progress.total && progress.total > 0 && rendered.some(Boolean);
+            const doneCount = rendered.filter(Boolean).length;
+            const steps = [
+              { label:"슬라이드 기획", done: step1Done, active: !step1Done },
+              { label:"텍스트 구성", done: step2Done, active: step1Done && !step2Done },
+              { label:`이미지 생성 ${step3Active?`(${progress.cur}/${progress.total})`:""}`, done: step3Done, active: step3Active && !step3Done },
+              { label:"마무리 작업", done: false, active: step3Done },
+            ];
+            return (
+            <div style={{ padding:"40px 24px",textAlign:"center" }}>
+              <div style={{ fontSize:20,fontWeight:900,color:text,marginBottom:6 }}>
+                {step3Active ? `이미지 생성 중 (${progress.cur}/${progress.total})` : step2Done ? "이미지 생성 시작..." : step1Done ? "텍스트 구성 중..." : "AI가 준비하고 있어요..."}
+              </div>
+              <div style={{ fontSize:13,color:muted,marginBottom:24 }}>
+                {step3Active ? (slides[progress.cur-1]?.label||"") : topic}
+              </div>
+              <div style={{ display:"flex",flexDirection:"column",gap:12,textAlign:"left",maxWidth:280,margin:"0 auto 24px" }}>
+                {steps.map((s,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.done||s.active?1:0.3,transition:"opacity 0.3s"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
+                      background:s.done?"#4ade80":s.active?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                      border:s.done?"2px solid #4ade80":s.active?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)",transition:"all 0.3s"}}>
+                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
+                    </div>
+                    <span style={{fontSize:13,color:s.done?"#4ade80":s.active?text:muted,fontWeight:s.active?700:400}}>{s.label}</span>
+                    {s.done && <span style={{fontSize:10,color:"#4ade80",marginLeft:"auto"}}>완료</span>}
+                  </div>
+                ))}
               </div>
               {progress.total > 0 && (
-                <div style={{ padding:"16px 24px" }}>
-                  <div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8 }}>
-                    <span style={{ color:muted }}>{progress.cur} / {progress.total} 완료</span>
-                    <span style={{ fontWeight:800,color:accentColor }}>{Math.round((progress.cur/progress.total)*100)}%</span>
+                <div style={{ maxWidth:280,width:"100%",margin:"0 auto 20px" }}>
+                  <div style={{ height:6,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:6 }}>
+                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},#8b5cf6,#ec4899)`,width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
                   </div>
-                  <div style={{ height:8,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8",overflow:"hidden" }}>
-                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},${accentColor}bb)`,width:`${(progress.cur/progress.total)*100}%`,transition:"width 0.5s ease",position:"relative",overflow:"hidden" }}>
-                      <div style={{ position:"absolute",inset:0,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)",animation:"shimmer 1.5s ease-in-out infinite" }}/>
-                    </div>
-                  </div>
-                  <div style={{ display:"flex",gap:5,marginTop:12,justifyContent:"center",flexWrap:"wrap" }}>
-                    {Array.from({length:progress.total}).map((_,i)=>(
-                      <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s",boxShadow:i<progress.cur?`0 0 5px ${accentColor}80`:"none" }}/>
-                    ))}
-                  </div>
-                  <div style={{ fontSize:11,color:isDark?"rgba(255,255,255,0.35)":"#bbb",marginTop:10,textAlign:"center" }}>페이지를 벗어나면 생성이 중단됩니다</div>
+                  <div style={{ fontSize:12,color:muted,fontWeight:600 }}>{doneCount > 0 ? `${doneCount}장 생성 완료` : `${progress.cur}/${progress.total}`}</div>
                 </div>
               )}
+              {rendered.length > 0 && (
+                <div style={{ maxWidth:480,margin:"0 auto",marginTop:20 }}>
+                  <div style={{ fontSize:12,fontWeight:700,color:muted,marginBottom:10 }}>실시간 생성 현황</div>
+                  <div style={{ display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center" }}>
+                    {rendered.map((img,i) => (
+                      <div key={i} style={{ width:100,height:100,borderRadius:12,overflow:"hidden",
+                        border:`2px solid ${img?"#4ade80":i===(progress.cur-1)?accentColor:bdr}`,
+                        background:isDark?"rgba(255,255,255,0.03)":"#f0f0f6",position:"relative",
+                        boxShadow:img?"0 4px 12px rgba(74,222,128,0.2)":"none",transition:"border 0.3s" }}>
+                        {img ? (
+                          <img src={img} alt="" className="pixel-reveal" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>
+                        ) : (
+                          <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:4 }}>
+                            {i === (progress.cur-1) ? (
+                              <><div style={{ width:20,height:20,border:`2px solid ${accentColor}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/><span style={{ fontSize:10,color:accentColor,fontWeight:600 }}>생성중</span></>
+                            ) : i < progress.cur ? (
+                              <span style={{ fontSize:11,color:"#ef4444",fontWeight:600 }}>실패</span>
+                            ) : (
+                              <span style={{ fontSize:12,color:muted,fontWeight:600 }}>{i+1}</span>
+                            )}
+                          </div>
+                        )}
+                        <div style={{ position:"absolute",top:4,left:4,fontSize:9,background:img?"rgba(74,222,128,0.9)":"rgba(0,0,0,0.5)",color:"#fff",padding:"1px 5px",borderRadius:4,fontWeight:700 }}>{img?"✓":""}{i+1}장</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {err && <div style={{ marginTop:16,padding:"12px 18px",borderRadius:10,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",color:"#f87171",fontSize:13,fontWeight:700 }}>{err}</div>}
+              <div style={{ fontSize:11,color:isDark?"rgba(255,255,255,0.35)":"#bbb",marginTop:16 }}>페이지를 벗어나면 생성이 중단됩니다</div>
             </div>
-          )}
+            );
+          })()}
 
           {/* 상단 바 */}
           {!loading && (
@@ -1093,7 +1176,7 @@ ${kw}
                 <div style={{ fontSize:10,fontWeight:800,color:accentColor,letterSpacing:2,marginBottom:8 }}>{slideTypes[curIdx]?.label?.toUpperCase()}</div>
                 <div style={{ width:"100%",aspectRatio:`${imgW}/${imgH}`,borderRadius:16,overflow:"hidden",boxShadow:"0 16px 56px rgba(0,0,0,0.28)",background:isDark?"#111":"#eee",display:"flex",alignItems:"center",justifyContent:"center" }}>
                   {currentPng
-                    ? <img src={currentPng} alt="slide" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                    ? <img key={curIdx+"-"+currentPng.slice(-20)} src={currentPng} alt="slide" className="pixel-reveal" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
                     : <div style={{ textAlign:"center" }}>
                         {!loading && <><div style={{ fontSize:13,color:muted,marginBottom:8 }}>이미지 생성 실패</div>
                         <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:8,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}

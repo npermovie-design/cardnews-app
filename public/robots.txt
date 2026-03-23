@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /xk9m2p4q7
 
-# 사이트맵
+# Sitemaps
 Sitemap: https://www.snsmakeit.com/sitemap.xml
+
+# Host
+Host: https://www.snsmakeit.com

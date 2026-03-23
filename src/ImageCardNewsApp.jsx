@@ -117,44 +117,47 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
   const h = slide.headline || "";
   const b = slide.body || "";
   const styleTemplate = styleTemplateId ? STYLE_TEMPLATES.find(t=>t.id===styleTemplateId) : null;
-  const ratio = imgW > imgH ? "가로형" : imgW < imgH ? "세로형" : "정사각형";
+  const ratio = imgW > imgH ? "landscape" : imgW < imgH ? "portrait" : "square";
 
   if (mode === "card") {
-    // 한국형 카드뉴스 특화 프롬프트
     const styleDesc = styleTemplate
       ? styleTemplate.prompt
-      : "깔끔하고 임팩트 있는 한국 SNS 인포그래픽 스타일. 강렬한 배경색 또는 그라데이션, 굵은 한글 타이포그래피.";
+      : "Clean, modern, professional graphic design background. Bold color gradients or solid colors.";
 
     const slideRole = slide.id === "cover"
-      ? `첫 장(표지): 시선을 사로잡는 커버 디자인. 주제 "${h||topic}"를 큰 타이틀로 강조. 배경은 풀컬러 혹은 그라데이션.`
+      ? `Cover slide background: Eye-catching visual for topic "${topic}". Use dramatic colors, gradients, or abstract patterns.`
       : slide.id === "ending" || slide.id === "cta"
-      ? `마지막 장(엔딩/CTA): 행동 유도 문구 "${h||"지금 바로 확인하세요"}" 중심. 브랜드 감성 마무리.`
-      : `정보 슬라이드: 핵심 내용 "${h}"를 중앙에 크게. ${b ? `설명: "${b}".` : ""} 숫자·아이콘·포인트 컬러로 정보를 시각화.`;
+      ? `Ending/CTA slide background: Clean, minimal design with brand colors. Elegant finish.`
+      : `Content slide background: Visual related to "${h || topic}". ${b ? `Context: "${b}".` : ""} Use icons, diagrams, or relevant imagery.`;
 
     return [
-      "Korean SNS card news infographic image.",
+      "Create a BACKGROUND IMAGE for a Korean SNS card news slide.",
       `Design style: ${styleDesc}`,
       `Topic: ${topic}.`,
       slideRole,
       `Aspect ratio: ${imgW}x${imgH} (${ratio}).`,
-      "Layout: Bold Korean typography centered. Strong color contrast. Clean information hierarchy. Professional graphic design.",
-      "Required: High resolution, no watermarks, commercial quality, Instagram/카카오스토리 card news style.",
-      "Forbidden: No clipart, no emoji icons, no cartoon illustrations, no stock photo people.",
+      "CRITICAL: DO NOT include ANY text, letters, words, numbers, or typography in the image.",
+      "DO NOT write any Korean, English, or any language text on the image.",
+      "The image should be a pure visual/graphic background - text will be overlaid separately.",
+      "Required: High resolution, no watermarks, commercial quality, clean composition.",
+      "Forbidden: No text, no letters, no words, no clipart, no emoji, no cartoon illustrations.",
     ].join(" ");
   }
 
-  // 상세페이지 모드 (기존 유지)
+  // 상세페이지 모드
   const base = [
-    "한국 프리미엄 온라인 쇼핑몰 상세페이지 이미지를 생성해주세요.",
-    styleTemplate ? `디자인 스타일: ${styleTemplate.prompt}` : "세련되고 현대적인 디자인 스타일.",
-    `주제: ${topic}.`,
-    `출력 비율: ${imgW}x${imgH} (${ratio}).`,
-    "[필수 품질] 실제 상업 그래픽 디자인 스타일. 고해상도. 워터마크 없음.",
-    "[절대 금지] 클립아트, 이모지 아이콘, 벡터 일러스트, 만화.",
+    "Create a BACKGROUND IMAGE for a Korean e-commerce product detail page.",
+    styleTemplate ? `Design style: ${styleTemplate.prompt}` : "Sleek, modern, premium commercial design.",
+    `Product/Topic: ${topic}.`,
+    `Aspect ratio: ${imgW}x${imgH} (${ratio}).`,
+    "CRITICAL: DO NOT include ANY text, letters, words, or typography in the image.",
+    "The image must be a pure visual background - text will be overlaid separately by the app.",
+    "Required: High resolution, no watermarks, commercial quality photography or graphic design.",
+    "Forbidden: No text, no letters, no clipart, no emoji, no cartoon, no vector illustrations.",
   ].filter(Boolean).join(" ");
   const layout = h
-    ? `레이아웃: ${slide.label}. 중앙 굵은 한국어 제목 "${h}". ${b?`본문 "${b}".`:""}`
-    : `레이아웃: ${slide.label}. 주제 "${topic}" 관련 전문적 이미지.`;
+    ? `Visual context: ${slide.label}. Related to "${h}". ${b?`Additional context: "${b}".`:""}`
+    : `Visual context: ${slide.label}. Related to "${topic}".`;
   return `${base} ${layout}`;
 }
 
@@ -193,6 +196,20 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
   const [refStyle, setRefStyle] = useState("");
   const [analyzing,setAnalyzing]= useState(false);
   const refFileRef = useRef(null);
+  const [urlInput,  setUrlInput]  = useState("");
+  const [urlLoading,setUrlLoading]= useState(false);
+  const fetchFromUrl = async () => {
+    if (!urlInput.trim()) return;
+    setUrlLoading(true);
+    try {
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const data = await r.json();
+      if (data.title) setTopic(data.title.slice(0, 80));
+      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 500);
+      if (desc) setContent(prev => prev ? prev + "\n" + desc : desc);
+    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    setUrlLoading(false);
+  };
 
   // ── Step 4: 생성 결과 ───────────────────────────────────────
   const [slides,   setSlides]  = useState([]);
@@ -306,8 +323,8 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
     setErr(""); setLoading(true); setSlides([]); setRendered([]); setSaveMsg("");
     // 전체 포인트 즉시 선차감 (슬라이드 수 × 30P)
     if (user?.uid) {
-      const totalCost = (planSlides?.length || pageCount || 1) * 30;
-      changePoints(user.uid, -totalCost, `이미지 카드뉴스 생성 (${planSlides?.length || pageCount}장)`).then(newPts => {
+      const totalCost = (slideContents?.length || pageCount || 1) * 30;
+      changePoints(user.uid, -totalCost, `이미지 카드뉴스 생성 (${slideContents?.length || pageCount}장)`).then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       });
     }
@@ -416,7 +433,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
 
   // ── 위저드 진행 바 ──────────────────────────────────────────
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
+    <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
         {[["1","주제 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","AI 생성"]].map(([n, label], i) => {
           const step = parseInt(n);
@@ -456,6 +473,22 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
             </div>
             <div style={{ fontSize:13, color:muted }}>
               주제와 들어갈 내용을 간단히 입력하면 AI가 이미지 슬라이드를 구성해요
+            </div>
+          </div>
+
+          {/* URL 불러오기 */}
+          <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:6, letterSpacing:0.5 }}>🔗 URL로 내용 불러오기</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:8 }}>뉴스·유튜브·블로그·인스타 URL을 붙여넣으면 내용을 자동으로 채워줘요</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}
+                placeholder="https://... URL 붙여넣기"
+                style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
+              <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                {urlLoading?"불러오는 중...":"불러오기"}
+              </button>
             </div>
           </div>
 
@@ -659,7 +692,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <WizHeader />
-        <div style={{ maxWidth:900, margin:"0 auto", padding:"0 28px 80px" }}>
+        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
 
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
@@ -786,7 +819,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
               ) : (
                 <button onClick={()=>{ setWizStep(4); generate(); }}
                   style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:"pointer",background:accentColor,color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto" }}>
-                  {user ? `이미지 ${pageCount}장 생성하기 → 💎 ${pageCount*30}P` : "✦ 1회 생성하기"}
+                  {user ? `이미지 ${pageCount}장 생성하기 → ${pageCount*30}P` : "✦ 1회 생성하기"}
                 </button>
               )}
             </div>
@@ -803,75 +836,108 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
     const currentPng = rendered[curIdx];
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+        <style>{`
+          @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+          @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+          @keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}
+          .pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}
+        `}</style>
         <WizHeader />
         <div style={{ maxWidth:1080, margin:"0 auto", padding:"0 20px 60px" }}>
 
-          {/* 생성 중 */}
-          {loading && (
-            <div style={{ borderRadius:16,overflow:"hidden",border:`1px solid ${accentColor}40`,background:isDark?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)",marginBottom:20 }}>
-              <div style={{ background:`linear-gradient(135deg,${accentColor}22,${accentColor}08)`,padding:"24px 24px 20px",textAlign:"center",borderBottom:`1px solid ${accentColor}20` }}>
-                <div style={{ position:"relative",width:72,height:72,margin:"0 auto 16px" }}>
-                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${accentColor}20` }}/>
-                  <div style={{ position:"absolute",inset:0,borderRadius:"50%",border:`3px solid transparent`,borderTopColor:accentColor,animation:"spin 1s linear infinite" }}/>
-                  <div style={{ position:"absolute",inset:8,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:`${accentColor}60`,animation:"spin 1.5s linear infinite reverse" }}/>
-                  <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>🎨</div>
-                </div>
-                {progress.cur > 0 ? (
-                  /* 이미지 생성 단계 */
-                  <>
-                    <div style={{ fontSize:38,fontWeight:900,color:accentColor,lineHeight:1,marginBottom:6 }}>
-                      {progress.cur} <span style={{ fontSize:20,color:muted,fontWeight:700 }}>/ {progress.total}</span>
-                    </div>
-                    <div style={{ fontSize:15,fontWeight:800,color:text,marginBottom:4 }}>🎨 이미지 생성 중</div>
-                    <div style={{ fontSize:11,color:muted }}>{slides[progress.cur - 1]?.label || ""}</div>
-                  </>
-                ) : progress.total > 0 ? (
-                  /* 텍스트 구성 단계 */
-                  <>
-                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>📝 텍스트 구성 중...</div>
-                    <div style={{ fontSize:12,color:muted,animation:"pulse 1.5s ease-in-out infinite" }}>
-                      {progress.msg || "AI가 슬라이드 내용을 작성하고 있어요..."}
-                    </div>
-                  </>
-                ) : (
-                  /* 초기 준비 단계 */
-                  <>
-                    <div style={{ fontSize:16,fontWeight:800,color:text,marginBottom:6 }}>준비 중...</div>
-                    <div style={{ fontSize:12,color:muted,animation:"pulse 1.5s ease-in-out infinite" }}>
-                      AI가 슬라이드를 준비하고 있어요...
-                    </div>
-                  </>
-                )}
+          {/* 생성 중 — 단계별 체크 + 실시간 이미지 표시 */}
+          {loading && (() => {
+            const step1Done = progress.total > 0;
+            const step2Done = progress.total > 0 && slides.length > 0;
+            const step3Active = progress.cur > 0;
+            const step3Done = progress.cur >= progress.total && progress.total > 0 && rendered.some(Boolean);
+            const doneCount = rendered.filter(Boolean).length;
+            const steps = [
+              { label:"슬라이드 기획", done: step1Done, active: !step1Done },
+              { label:"텍스트 구성", done: step2Done, active: step1Done && !step2Done },
+              { label:`이미지 생성 ${step3Active?`(${progress.cur}/${progress.total})`:""}`, done: step3Done, active: step3Active && !step3Done },
+              { label:"마무리 작업", done: false, active: step3Done },
+            ];
+            return (
+            <div style={{ padding:"40px 24px",textAlign:"center" }}>
+              <style>{`@keyframes ic-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes ic-progress{from{width:0%}to{width:100%}}`}</style>
+              <div style={{ fontSize:20,fontWeight:900,color:text,marginBottom:6 }}>
+                {step3Active ? `이미지 생성 중 (${progress.cur}/${progress.total})` : step2Done ? "텍스트 완성! 이미지 생성 시작..." : step1Done ? "텍스트 구성 중..." : "AI가 준비하고 있어요..."}
               </div>
-              {progress.total > 0 && (
-                <div style={{ padding:"16px 24px" }}>
-                  <div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8 }}>
-                    <span style={{ color:muted }}>{progress.cur} / {progress.total} 완료</span>
-                    <span style={{ fontWeight:800,color:accentColor }}>{Math.round((progress.cur/progress.total)*100)}%</span>
-                  </div>
-                  <div style={{ height:8,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8",overflow:"hidden" }}>
-                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},${accentColor}bb)`,width:`${(progress.cur/progress.total)*100}%`,transition:"width 0.5s ease" }}/>
-                  </div>
-                  <div style={{ display:"flex",gap:5,marginTop:12,justifyContent:"center",flexWrap:"wrap" }}>
-                    {Array.from({length:progress.total}).map((_,i)=>(
-                      <div key={i} style={{ width:9,height:9,borderRadius:"50%",background:i<progress.cur?accentColor:i===progress.cur?`${accentColor}50`:isDark?"rgba(255,255,255,0.1)":"#ddd",transition:"all 0.3s" }}/>
-                    ))}
-                  </div>
-                  {rendered.some(Boolean) && (
-                    <div style={{ display:"flex",gap:6,marginTop:14,flexWrap:"wrap",justifyContent:"center" }}>
-                      {rendered.map((img,i)=>img?(
-                        <div key={i} style={{ position:"relative" }}>
-                          <img src={img} alt={slides[i]?.label} style={{ width:58,height:58,objectFit:"cover",borderRadius:8,border:`2px solid ${accentColor}`,boxShadow:"0 2px 8px rgba(0,0,0,0.25)",display:"block" }}/>
-                          <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:accentColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:900,color:"#fff" }}>{i+1}</div>
-                        </div>
-                      ):null)}
+              <div style={{ fontSize:13,color:muted,marginBottom:24 }}>
+                {step3Active ? (slides[progress.cur-1]?.label||"") : topic}
+              </div>
+
+              {/* 단계별 체크리스트 */}
+              <div style={{ display:"flex",flexDirection:"column",gap:12,textAlign:"left",maxWidth:280,margin:"0 auto 24px" }}>
+                {steps.map((s,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.done||s.active?1:0.3,transition:"opacity 0.3s"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
+                      background:s.done?"#4ade80":s.active?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                      border:s.done?"2px solid #4ade80":s.active?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)",
+                      transition:"all 0.3s"}}>
+                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
                     </div>
-                  )}
+                    <span style={{fontSize:13,color:s.done?"#4ade80":s.active?text:muted,fontWeight:s.active?700:400}}>{s.label}</span>
+                    {s.done && <span style={{fontSize:10,color:"#4ade80",marginLeft:"auto"}}>완료</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* 프로그레스 바 */}
+              {progress.total > 0 && (
+                <div style={{ maxWidth:280,width:"100%",margin:"0 auto 20px" }}>
+                  <div style={{ height:6,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:6 }}>
+                    <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
+                  </div>
+                  <div style={{ fontSize:12,color:muted,fontWeight:600 }}>{doneCount > 0 ? `${doneCount}장 생성 완료` : `${progress.cur}/${progress.total}`}</div>
                 </div>
               )}
+              {progress.total === 0 && (
+                <div style={{ height:4,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",maxWidth:280,margin:"0 auto 10px",width:"100%" }}>
+                  <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",animation:"ic-progress 15s ease-out forwards" }}/>
+                </div>
+              )}
+
+              {/* 실시간 이미지 생성 미리보기 */}
+              {(rendered.length > 0) && (
+                <div style={{ maxWidth:480,margin:"0 auto",marginTop:20 }}>
+                  <div style={{ fontSize:12,fontWeight:700,color:muted,marginBottom:10 }}>실시간 생성 현황</div>
+                  <div style={{ display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center" }}>
+                    {rendered.map((img,i) => (
+                      <div key={i} style={{ width:100,height:100,borderRadius:12,overflow:"hidden",
+                        border:`2px solid ${img?"#4ade80":i===(progress.cur-1)?"#6366f1":bdr}`,
+                        background:isDark?"rgba(255,255,255,0.03)":"#f0f0f6",position:"relative",
+                        boxShadow:img?"0 4px 12px rgba(74,222,128,0.2)":"none",transition:"border 0.3s, box-shadow 0.3s" }}>
+                        {img ? (
+                          <img src={img} alt="" className="pixel-reveal" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>
+                        ) : (
+                          <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:4 }}>
+                            {i === (progress.cur-1) ? (
+                              <>
+                                <div style={{ width:20,height:20,border:"2px solid #6366f1",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
+                                <span style={{ fontSize:10,color:"#6366f1",fontWeight:600 }}>생성중</span>
+                              </>
+                            ) : i < progress.cur ? (
+                              <span style={{ fontSize:11,color:"#ef4444",fontWeight:600 }}>실패</span>
+                            ) : (
+                              <span style={{ fontSize:12,color:muted,fontWeight:600 }}>{i+1}</span>
+                            )}
+                          </div>
+                        )}
+                        <div style={{ position:"absolute",top:4,left:4,fontSize:9,background:img?"rgba(74,222,128,0.9)":"rgba(0,0,0,0.5)",color:"#fff",padding:"1px 5px",borderRadius:4,fontWeight:700 }}>
+                          {img?"✓":""}{i+1}장
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {err && <div style={{ marginTop:16, padding:"12px 18px", borderRadius:10, background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", color:"#f87171", fontSize:13, fontWeight:700 }}>{err}</div>}
             </div>
-          )}
+            );
+          })()}
 
           {/* 결과 */}
           {(rendered.some(Boolean) || (!loading && slides.length > 0)) && (
@@ -882,7 +948,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                 <div style={{ position:"relative",width:"100%",paddingTop:`${100/imgRatio}%`,background:"#000",borderRadius:14,overflow:"hidden",border:`1px solid ${bdr}` }}>
                   <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center" }}>
                     {currentPng
-                      ? <img src={currentPng} alt="slide" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
+                      ? <img key={curIdx+"-"+currentPng.slice(-20)} src={currentPng} alt="slide" className="pixel-reveal" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
                       : <div style={{ textAlign:"center" }}>
                           {!loading && <><div style={{ fontSize:13,color:muted,marginBottom:8 }}>이미지 생성 실패</div>
                           <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:8,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}
