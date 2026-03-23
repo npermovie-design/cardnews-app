@@ -19,10 +19,10 @@ const MENU_ITEMS = [
 ];
 
 const RANK_ITEMS = [
-  { id:"rank_youtube", label:"유튜버 TOP100",    icon:"▶️", platform:"유튜브" },
-  { id:"rank_insta",   label:"인스타 TOP100",    icon:"📸", platform:"인스타그램" },
-  { id:"rank_blog",    label:"블로거 TOP100",    icon:"📝", platform:"네이버 블로그" },
-  { id:"rank_tiktok",  label:"틱톡 TOP100",     icon:"🎵", platform:"틱톡" },
+  { id:"rank_youtube", label:"유튜버 TOP10",    icon:"▶️", platform:"유튜브" },
+  { id:"rank_insta",   label:"인스타 TOP10",    icon:"📸", platform:"인스타그램" },
+  { id:"rank_blog",    label:"블로거 TOP10",    icon:"📝", platform:"네이버 블로그" },
+  { id:"rank_tiktok",  label:"틱톡 TOP10",     icon:"🎵", platform:"틱톡" },
 ];
 
 const BRAND_CATEGORIES = ["전체","뷰티/화장품","패션/의류","식품/음료","IT/전자","자동차","금융","교육","여행","엔터테인먼트","헬스/피트니스","인테리어/리빙"];
@@ -55,8 +55,8 @@ const HOME_FEATURES = [
   { id:"seo_tistory", icon:"📖", label:"티스토리분석",   desc:"구글 SEO + 애드센스", color:"#f59e0b" },
   { id:"seo_insta",  icon:"📸", label:"인스타분석",     desc:"해시태그·참여율 분석", color:"#e1306c" },
   { id:"seo_home",   icon:"🔥", label:"실시간 검색어",  desc:"네이버·구글 트렌드", color:"#7c6aff" },
-  { id:"rank_youtube",icon:"🏆", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP100", color:"#8b5cf6" },
-  { id:"rank_brand", icon:"🏢", label:"브랜드 TOP100", desc:"SNS 마케팅 브랜드", color:"#06b6d4" },
+  { id:"rank_youtube",icon:"🏆", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP10", color:"#8b5cf6" },
+  { id:"rank_brand", icon:"🏢", label:"브랜드 TOP10", desc:"SNS 마케팅 브랜드", color:"#06b6d4" },
   { id:"library",    icon:"📂", label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
 ];
 
@@ -89,7 +89,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
 
-  const menuLabel = menu === "home" ? "AI 분석기획기" : menu === "library" ? "내 보관함" : MENU_ITEMS.find(m => m.id === menu)?.label || RANK_ITEMS.find(m => m.id === menu)?.label || "브랜드 TOP100";
+  const menuLabel = menu === "home" ? "AI 분석기획기" : menu === "library" ? "내 보관함" : MENU_ITEMS.find(m => m.id === menu)?.label || RANK_ITEMS.find(m => m.id === menu)?.label || "브랜드 TOP10";
 
   // 분석 결과 저장 콜백 (전체 결과 포함)
   const onAnalysisDone = (data) => {
@@ -145,7 +145,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                     {[
                       { icon:"🔍", title:"13개 플랫폼 SEO 분석", desc:"블로그, 유튜브, 인스타, X, 틱톡, 링크드인 등 URL만 입력하면 AI가 100점 만점으로 진단" },
                       { icon:"📊", title:"실시간 인기 검색어", desc:"네이버·구글·다음 실시간 트렌드를 카테고리별로 확인하고 콘텐츠 주제 선정" },
-                      { icon:"🏆", title:"인플루언서·브랜드 랭킹", desc:"유튜버, 인스타그래머, 블로거, 틱토커 TOP100과 브랜드 SNS 영향력 순위" },
+                      { icon:"🏆", title:"인플루언서·브랜드 랭킹", desc:"유튜버, 인스타그래머, 블로거, 틱토커 TOP10과 브랜드 SNS 영향력 순위" },
                       { icon:"📂", title:"내 보관함", desc:"분석 결과를 자동 저장하고, 언제든 다시 확인하며 성장 추이를 비교" },
                     ].map((g,i) => (
                       <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -317,7 +317,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
             <RankingView isDark={isDark} menu={menu} text={text} muted={muted} bdr={bdr} cardBg={cardBg} />
           )}
 
-          {/* 브랜드 TOP100 */}
+          {/* 브랜드 TOP10 */}
           {menu === "rank_brand" && (
             <BrandRankingView isDark={isDark} text={text} muted={muted} bdr={bdr} cardBg={cardBg} />
           )}
@@ -579,7 +579,7 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate
       {RANK_ITEMS.map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
-      <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP100</button>
+      <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP10</button>
 
       <div style={divider} />
       <div style={{ ...sectionStyle, marginBottom:8 }}>SNS 분석기</div>
@@ -596,11 +596,11 @@ const RANK_CATEGORIES = ["전체","뷰티","먹방/요리","IT/테크","패션",
 function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
   const [cat, setCat] = useState("전체");
-  const [country, setCountry] = useState("한국");
+  const [country, setCountry] = useState("전체");
   const [ageGroup, setAgeGroup] = useState("전체");
   const [keyword, setKeyword] = useState("");
   // 초기 state에서 캐시 즉시 로드
-  const initCache = () => getCached(`rank_${menu}_전체_한국_전체_`) || [];
+  const initCache = () => getCached(`rank_${menu}_전체_전체_전체_`) || [];
   const [ranking, setRanking] = useState(initCache);
   const [loading, setLoading] = useState(false);
   const [prevMenu, setPrevMenu] = useState(menu);
@@ -608,9 +608,9 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
 
   if (menu !== prevMenu) {
     setPrevMenu(menu);
-    const c = getCached(`rank_${menu}_전체_한국_전체_`);
+    const c = getCached(`rank_${menu}_전체_전체_전체_`);
     setRanking(c || []);
-    setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(true);
+    setCat("전체"); setCountry("전체"); setAgeGroup("전체"); setKeyword(""); setShowFilter(true);
     if (!c) { /* 캐시 없으면 아래 effect에서 fetch */ }
   }
 
@@ -626,10 +626,10 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
     if (cached) { setRanking(cached); return; }
     setLoading(true); setRanking([]);
     try {
-      const urlBase = config.platform==="유튜브"?"https://www.youtube.com/@":config.platform==="인스타그램"?"https://www.instagram.com/":config.platform==="틱톡"?"https://www.tiktok.com/@":config.platform==="네이버 블로그"?"https://blog.naver.com/":"";
+      const countryStr = country!=="전체" ? `${country} ` : "";
       const ageStr = ageGroup!=="전체" ? ` 주요 시청자층:${ageGroup}` : "";
       const kwStr = keyword.trim() ? ` 키워드:"${keyword.trim()}" 관련` : "";
-      const prompt = `${country} ${config.platform} ${category==="전체"?"전체":category}${kwStr}${ageStr} 인기 TOP 10. 각: rank,name,category,followers(숫자+만/억),desc(한줄),url(${urlBase}계정ID). JSON만:{"ranking":[...]}`;
+      const prompt = `${countryStr}${config.platform} ${category==="전체"?"전체":category}${kwStr}${ageStr} 인기 TOP 10. 각: rank,name,category,followers(숫자+만/억),desc(한줄). URL은 포함하지 마세요. JSON만:{"ranking":[...]}`;
       const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 1500);
       const m = raw.match(/\{[\s\S]*\}/);
       if (m) {
@@ -682,7 +682,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
                 <div style={{ fontSize:10, color:muted, marginBottom:4, fontWeight:600 }}>국가</div>
                 <select value={country} onChange={e=>setCountry(e.target.value)}
                   style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:12, outline:"none" }}>
-                  {["한국","미국","일본","중국","영국","글로벌"].map(c => <option key={c} value={c}>{c}</option>)}
+                  {["전체","한국","미국","일본","중국","영국"].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div style={{ minWidth:100 }}>
@@ -761,14 +761,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
                         <div style={{ fontSize:15, fontWeight:800, color:"#8b5cf6" }}>{r.age}</div>
                       </div>}
                     </div>
-                    <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.feature}</div>
-                    {r.url && (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer"
-                        style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:10, padding:"8px 16px", borderRadius:8,
-                          background:platformColor, color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none" }}>
-                        {config.icon} 채널 바로가기 →
-                      </a>
-                    )}
+                    {r.feature && <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.feature}</div>}
                   </div>
                 )}
               </div>
@@ -789,7 +782,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   );
 }
 
-/* ── 브랜드 TOP100 ── */
+/* ── 브랜드 TOP10 ── */
 function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
   const [cat, setCat] = useState("전체");
@@ -833,7 +826,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
       <div style={{ maxWidth:900, margin:"0 auto" }}>
         <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:22, fontWeight:900, color:text }}>🏢 실시간 브랜드 TOP100</div>
+          <div style={{ fontSize:22, fontWeight:900, color:text }}>🏢 실시간 브랜드 TOP10</div>
           <div style={{ fontSize:13, color:muted, marginTop:4 }}>SNS 마케팅을 잘하는 브랜드를 업종별로 분석합니다</div>
         </div>
 
@@ -907,14 +900,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
                         <div style={{ fontSize:14, fontWeight:800, color:"#ec4899" }}>{r.mainSns}</div>
                       </div>}
                     </div>
-                    <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.strategy}</div>
-                    {r.website && (
-                      <a href={r.website.startsWith("http")?r.website:`https://${r.website}`} target="_blank" rel="noopener noreferrer"
-                        style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:10, padding:"8px 16px", borderRadius:8,
-                          background:accent, color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none" }}>
-                        🌐 공식 사이트 →
-                      </a>
-                    )}
+                    {r.strategy && <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.strategy}</div>}
                   </div>
                 )}
               </div>
