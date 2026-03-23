@@ -1669,29 +1669,52 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "outpaint",     icon: "↔",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: _s("숏폼편집 👑","Short-form Edit 👑"), desc: _s("유튜브→숏폼 AI 기획 (관리자)","YouTube to Short-form AI (Admin)"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
+    // 카테고리별 그룹
+    const GROUPS = [
+      { label: _s("SNS 글쓰기","SNS Writing"), icon: "✍️", color: "#6366f1",
+        items: MENUS.filter(m => m.id.startsWith("blog_")) },
+      { label: _s("SNS 이미지","SNS Image"), icon: "🖼", color: "#ec4899",
+        items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
+      { label: _s("이미지 생성","Image Generation"), icon: "🎨", color: "#f59e0b",
+        items: MENUS.filter(m => ["image_gen","product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint","shorts"].includes(m.id)) },
+    ];
+
     return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, marginBottom: 5, color: homeText }}>{tt("aiWelcome")}</div>
-          <div style={{ fontSize: 13, color: homeMuted }}>{tt("aiWelcomeSub")}</div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-          {MENUS.map(m => (
-            <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
-              background: isDark ? m.darkColor : m.lightColor,
-              border: `1px solid ${cardBdr}`,
-              borderRadius: 12, padding: "16px 14px", cursor: "pointer",
-              transition: "opacity 0.15s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom: 6 }}>
-                <div style={{ fontSize: 24 }}>{m.icon}</div>
-                {m.cr > 0 && <span style={{ fontSize: 9, fontWeight: 800, color: isDark ? "rgba(255,255,255,0.5)" : "#888", background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", borderRadius: 5, padding: "2px 6px" }}>{m.cr}P</span>}
+      <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          {/* 헤더 */}
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: homeText, marginBottom: 6 }}>{tt("aiWelcome")}</div>
+            <div style={{ fontSize: 14, color: homeMuted }}>{tt("aiWelcomeSub")}</div>
+          </div>
+
+          {/* 카테고리별 그리드 */}
+          {GROUPS.map(group => (
+            <div key={group.label} style={{ marginBottom: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: group.color + "15", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{group.icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: homeText }}>{group.label}</div>
+                <div style={{ fontSize: 11, color: homeMuted, marginLeft: 4 }}>{group.items.length}개</div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 3, color: homeText }}>{m.title}</div>
-              <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.5 }}>{m.desc}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
+                {group.items.map(m => (
+                  <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
+                    padding: "20px 14px", borderRadius: 16, border: `1px solid ${cardBdr}`,
+                    background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+                    cursor: "pointer", textAlign: "center", transition: "all 0.2s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isDark ? "0 8px 24px rgba(0,0,0,0.3)" : "0 8px 24px rgba(0,0,0,0.06)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 14, background: isDark ? m.darkColor : m.lightColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 10px" }}>
+                      {m.icon}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 4 }}>{m.title}</div>
+                    <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.4 }}>{m.desc}</div>
+                    {m.cr > 0 && <div style={{ marginTop: 6, fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.4)" : "#aaa" }}>{m.cr}P</div>}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
