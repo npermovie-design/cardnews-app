@@ -19,10 +19,10 @@ const MOCKUP_CATEGORIES = [
   {
     label:"기업·브랜딩",
     items:[
-      { id:"business_card",   label:"명함",          icon:"🪪", desc:"가로형 명함 디자인",        color:"#3F72AF" },
+      { id:"business_card",   label:"명함",          icon:"🪪", desc:"가로형 명함 디자인",        color:"#7c6aff" },
       { id:"letterhead",      label:"레터헤드",       icon:"📄", desc:"회사 공문서 레터헤드",      color:"#4f46e5" },
-      { id:"envelope",        label:"봉투",           icon:"✉️", desc:"기업 봉투 CI 적용",         color:"#3F72AF" },
-      { id:"id_badge",        label:"사원증/배지",    icon:"🪪", desc:"명찰·사원증 목업",          color:"#3F72AF" },
+      { id:"envelope",        label:"봉투",           icon:"✉️", desc:"기업 봉투 CI 적용",         color:"#7c6aff" },
+      { id:"id_badge",        label:"사원증/배지",    icon:"🪪", desc:"명찰·사원증 목업",          color:"#7c6aff" },
       { id:"stamp",           label:"도장/스탬프",    icon:"📮", desc:"회사 도장 목업",            color:"#dc2626" },
     ]
   },
@@ -30,7 +30,7 @@ const MOCKUP_CATEGORIES = [
     label:"디지털·화면",
     items:[
       { id:"phone",           label:"스마트폰",       icon:"📱", desc:"폰 화면 로고 노출",         color:"#06b6d4" },
-      { id:"monitor",         label:"모니터",         icon:"🖥",  desc:"모니터 화면 목업",          color:"#2B4F7E" },
+      { id:"monitor",         label:"모니터",         icon:"🖥",  desc:"모니터 화면 목업",          color:"#8b5cf6" },
       { id:"notebook",        label:"노트북 화면",    icon:"💻", desc:"노트북 화면에 적용",        color:"#0891b2" },
       { id:"tablet",          label:"태블릿",         icon:"📱", desc:"태블릿 화면 목업",          color:"#0ea5e9" },
     ]
@@ -58,7 +58,7 @@ const MOCKUP_CATEGORIES = [
   {
     label:"굿즈·용품",
     items:[
-      { id:"tshirt",          label:"티셔츠",         icon:"👕", desc:"가슴 로고 프린팅",          color:"#112D4E" },
+      { id:"tshirt",          label:"티셔츠",         icon:"👕", desc:"가슴 로고 프린팅",          color:"#1a1730" },
       { id:"tumbler",         label:"텀블러",         icon:"🥤", desc:"측면 로고 인쇄",            color:"#10b981" },
       { id:"mug",             label:"머그컵",         icon:"☕", desc:"머그컵 로고",               color:"#f59e0b" },
       { id:"cap",             label:"모자",           icon:"🧢", desc:"야구모자 앞면 로고",        color:"#b45309" },

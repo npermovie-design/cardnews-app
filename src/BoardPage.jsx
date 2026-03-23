@@ -4,10 +4,10 @@ import { useI18n } from "./i18n.jsx";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
-  { id: "info",    label: "정보공유",   icon: "📌", color: "#3F72AF" },
+  { id: "info",    label: "정보공유",   icon: "📌", color: "#7c6aff" },
   { id: "qna",     label: "질문답변",   icon: "❓", color: "#f59e0b" },
   { id: "free",    label: "자유게시판", icon: "🗣", color: "#10b981" },
-  { id: "review",  label: "사용후기",   icon: "⭐", color: "#112D4E" },
+  { id: "review",  label: "사용후기",   icon: "⭐", color: "#1a1730" },
   { id: "archive", label: "자료실",     icon: "📁", color: "#3b82f6" },
 ];
 
@@ -431,8 +431,8 @@ function FreeMediaSearch({ C, isDark, bdr }) {
           <button key={t.id} onClick={()=>setTab(t.id)}
             style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontSize:14,fontWeight:tab===t.id?800:500,
               background:"transparent",
-              color:tab===t.id?(isDark?"#7AB8E0":"#3F72AF"):C.muted,
-              borderBottom:tab===t.id?"3px solid #3F72AF":"3px solid transparent",
+              color:tab===t.id?(isDark?"#a5b4fc":"#7c6aff"):C.muted,
+              borderBottom:tab===t.id?"3px solid #7c6aff":"3px solid transparent",
               transition:"all 0.15s"}}>
             {t.label}
           </button>
@@ -447,7 +447,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
             background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
         <button onClick={doSearch} disabled={loading}
           style={{padding:"10px 20px",borderRadius:10,border:"none",
-            background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,
+            background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
             cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1,whiteSpace:"nowrap",flexShrink:0}}>
           {loading?"검색중...":"🔍 검색"}
         </button>
@@ -494,7 +494,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,
         background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.04)",
         border:"1px solid "+(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)")}}>
-        <div style={{fontSize:13,fontWeight:800,color:isDark?"#7AB8E0":"#3F72AF",marginBottom:8}}>💡 이용 가이드</div>
+        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>💡 이용 가이드</div>
         <div style={{fontSize:12,color:C.muted,lineHeight:2}}>
           <b style={{color:C.text}}>⬇ 저장</b> — 이미지/GIF를 PC에 바로 다운로드<br/>
           <b style={{color:C.text}}>🖱 클릭</b> — 원본 사이트에서 고해상도로 보기<br/>
@@ -568,7 +568,7 @@ function RichEditor({ value, onChange, isDark }) {
   const insertLink = () => {
     const url = prompt("링크 URL:");
     const text = prompt("링크 텍스트:", url);
-    if (url) exec("insertHTML", `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#3F72AF">${text||url}</a>`);
+    if (url) exec("insertHTML", `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#7c6aff">${text||url}</a>`);
   };
 
   const EMOJIS = ["😀","😂","🥰","😎","🤔","😅","🔥","✅","❌","💡","📌","🎉","👍","👏","💯","🙏","⭐","💎","🚀","💬"];
@@ -663,7 +663,7 @@ function RichEditor({ value, onChange, isDark }) {
       <style>{`
         [contenteditable]:empty:before { content: attr(data-placeholder); color: ${isDark?"rgba(255,255,255,0.25)":"rgba(0,0,0,0.3)"}; pointer-events:none; }
         [contenteditable] table td { border: 1px solid ${isDark?"#555":"#ccc"}; padding: 8px 12px; }
-        [contenteditable] a { color: #3F72AF; }
+        [contenteditable] a { color: #7c6aff; }
         [contenteditable] img { max-width: 100%; border-radius: 8px; }
         [contenteditable] ul { padding-left: 20px; }
         [contenteditable] ol { padding-left: 20px; }
@@ -772,16 +772,16 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               <button type="button" onClick={()=>setPickedTag("")} style={{
                 padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
-                border:"1px solid "+(pickedTag==="" ? (sub?.color||"#3F72AF") : bdr),
-                background: pickedTag==="" ? (sub?.color||"#3F72AF")+"18" : "transparent",
-                color: pickedTag==="" ? (sub?.color||"#3F72AF") : C.muted, fontWeight: pickedTag===""?700:400,
+                border:"1px solid "+(pickedTag==="" ? (sub?.color||"#7c6aff") : bdr),
+                background: pickedTag==="" ? (sub?.color||"#7c6aff")+"18" : "transparent",
+                color: pickedTag==="" ? (sub?.color||"#7c6aff") : C.muted, fontWeight: pickedTag===""?700:400,
               }}>전체</button>
               {tags.map(t=>(
                 <button key={t.id} type="button" onClick={()=>setPickedTag(t.label)} style={{
                   padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
-                  border:"1px solid "+(pickedTag===t.label ? (t.color||sub?.color||"#3F72AF") : bdr),
-                  background: pickedTag===t.label ? (t.color||sub?.color||"#3F72AF")+"18" : "transparent",
-                  color: pickedTag===t.label ? (t.color||sub?.color||"#3F72AF") : C.muted,
+                  border:"1px solid "+(pickedTag===t.label ? (t.color||sub?.color||"#7c6aff") : bdr),
+                  background: pickedTag===t.label ? (t.color||sub?.color||"#7c6aff")+"18" : "transparent",
+                  color: pickedTag===t.label ? (t.color||sub?.color||"#7c6aff") : C.muted,
                   fontWeight: pickedTag===t.label ? 700 : 400,
                 }}>{t.label}</button>
               ))}
@@ -798,7 +798,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
             <span style={{fontSize:13,fontWeight:700,color:C.muted}}>📎 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상, 최대 50MB)</span></span>
             <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
-              style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#3F72AF",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
+              style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#7c6aff",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
               {uploading?"업로드 중...":"+ 파일 추가"}
             </button>
             <input ref={fileInputRef} type="file" multiple accept="image/*,video/*"
@@ -850,7 +850,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
             if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url),
               ...(pickedCat==="archive"?{priceType,price:priceType==="paid"?price:""}:{})});
             else alert("제목과 내용을 입력해주세요.");
-          }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
+          }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
             {initial?"수정 완료":"등록하기"}
           </button>
         </div>
@@ -1229,7 +1229,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   if(view) return (
     <div style={{background:isDark?"transparent":"#f7f8fa",minHeight:"calc(100vh - 64px)"}}>
       {/* 토스트 */}
-      {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#3F72AF",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
+      {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#7c6aff",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
       <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
         <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);document.title="SNS메이킷 - 커뮤니티";}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
@@ -1239,7 +1239,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:14,fontSize:13,color:C.muted}}>
                 <div style={{display:"flex",alignItems:"center",gap:7}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff"}}>{(view.nick||"?")[0].toUpperCase()}</div>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff"}}>{(view.nick||"?")[0].toUpperCase()}</div>
                   <span style={{fontWeight:700,color:C.text}}>{view.nick}</span>
                 </div>
                 <span>{view.date}</span><span>👁 {view.views||0}</span><span>💬 {(view.comments||[]).length}</span>
@@ -1247,7 +1247,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🔗 공유</button>
                 <button onClick={()=>printPost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🖨 인쇄</button>
-                <button onClick={translatePost} disabled={translating} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:translatedBody?"rgba(99,102,241,0.1)":"transparent",color:translatedBody?"#3F72AF":C.muted,fontSize:12,cursor:translating?"wait":"pointer"}}>
+                <button onClick={translatePost} disabled={translating} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:translatedBody?"rgba(99,102,241,0.1)":"transparent",color:translatedBody?"#7c6aff":C.muted,fontSize:12,cursor:translating?"wait":"pointer"}}>
                   {translating?"번역중...":translatedBody?"✓ 번역됨":"🌐 번역"}
                 </button>
                 {own(view)&&<>
@@ -1262,8 +1262,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {translatedBody && (
               <div style={{marginTop:16,padding:"16px 20px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)",border:"1px solid rgba(99,102,241,0.2)"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                  <span style={{fontSize:12,fontWeight:700,color:"#3F72AF"}}>🌐 번역 결과</span>
-                  <button onClick={()=>setTranslatedBody(null)} style={{fontSize:11,padding:"2px 8px",borderRadius:6,border:"1px solid rgba(99,102,241,0.3)",background:"transparent",color:"#3F72AF",cursor:"pointer"}}>닫기</button>
+                  <span style={{fontSize:12,fontWeight:700,color:"#7c6aff"}}>🌐 번역 결과</span>
+                  <button onClick={()=>setTranslatedBody(null)} style={{fontSize:11,padding:"2px 8px",borderRadius:6,border:"1px solid rgba(99,102,241,0.3)",background:"transparent",color:"#7c6aff",cursor:"pointer"}}>닫기</button>
                 </div>
                 <div style={{fontSize:14,color:C.text,lineHeight:1.9,whiteSpace:"pre-wrap"}}>{translatedBody}</div>
               </div>
@@ -1277,7 +1277,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     isVideoUrl(url) ? (
                       <div key={i}>
                         <video src={url} controls style={{width:"100%",maxWidth:640,borderRadius:10,border:"1px solid "+bdr,display:"block"}}/>
-                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#3F72AF",textDecoration:"none"}}>⬇ 다운로드</a>
+                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>⬇ 다운로드</a>
                       </div>
                     ) : isImageUrl(url) ? (
                       <img key={i} src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
@@ -1350,7 +1350,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {(view.comments||[]).map((cm,i)=>(
               <div key={cm.id||i} style={{padding:"14px 0",borderBottom:"1px solid "+bdr}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                  <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0}}>{(cm.nick||"?")[0].toUpperCase()}</div>
+                  <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0}}>{(cm.nick||"?")[0].toUpperCase()}</div>
                   <div style={{flex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
                       <span style={{fontSize:13,fontWeight:700,color:C.purpleL}}>{cm.nick}</span>
@@ -1369,11 +1369,11 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           <div style={{padding:"16px 24px",borderTop:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
             {user?(
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0}}>{(user.nick||"?")[0].toUpperCase()}</div>
+                <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0}}>{(user.nick||"?")[0].toUpperCase()}</div>
                 <input value={comment} onChange={e=>setComment(e.target.value)} placeholder="댓글을 입력하세요..."
                   onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(view.id);}}}
                   style={{flex:1,padding:"11px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:14,outline:"none"}}/>
-                <button onClick={()=>addComment(view.id)} style={{padding:"11px 22px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>등록</button>
+                <button onClick={()=>addComment(view.id)} style={{padding:"11px 22px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>등록</button>
               </div>
             ):(
               <div onClick={onLoginRequest} style={{padding:"14px",textAlign:"center",borderRadius:10,border:"1px solid rgba(99,102,241,0.2)",background:"rgba(99,102,241,0.04)",color:C.muted,fontSize:14,cursor:"pointer"}}>
@@ -1391,13 +1391,13 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const [cats,      setCats]     = useState(subCats);
     const [newIcon,   setNewIcon]  = useState("💬");
     const [newLabel,  setNewLabel] = useState("");
-    const [newColor,  setNewColor] = useState("#3F72AF");
+    const [newColor,  setNewColor] = useState("#7c6aff");
     const [saving,    setSaving]   = useState(false);
     const [tab,       setTab]      = useState("cat"); // "cat" | "tag"
     const [selCat,    setSelCat]   = useState(subCats[0]?.id||"info");
     const [localTags, setLocalTags]= useState(allTags);
     const [tagLabel,  setTagLabel] = useState("");
-    const [tagColor,  setTagColor] = useState("#3F72AF");
+    const [tagColor,  setTagColor] = useState("#7c6aff");
     const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
     const inp = {padding:"9px 12px",borderRadius:8,border:"1px solid "+bdr,background:inputBg,color:C.text,fontSize:13,outline:"none"};
 
@@ -1463,8 +1463,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <button key={t} onClick={()=>setTab(t)} style={{
                 padding:"9px 18px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:tab===t?800:500,
                 background:tab===t?(isDark?"rgba(99,102,241,0.18)":"rgba(99,102,241,0.1)"):"transparent",
-                color:tab===t?"#7AB8E0":C.muted,
-                borderBottom:tab===t?"2px solid #3F72AF":"2px solid transparent",
+                color:tab===t?"#a5b4fc":C.muted,
+                borderBottom:tab===t?"2px solid #7c6aff":"2px solid transparent",
               }}>{l}</button>
             ))}
           </div>
@@ -1498,7 +1498,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <input type="color" value={newColor} onChange={e=>setNewColor(e.target.value)}
                   style={{width:38,height:38,borderRadius:8,border:"1px solid "+bdr,cursor:"pointer",padding:2}} />
                 <button onClick={addCat} disabled={saving||!newLabel.trim()}
-                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
+                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
                   {saving?"저장중...":"+ 추가"}
                 </button>
               </div>
@@ -1535,8 +1535,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               ) : (
                 <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                   {(localTags[selCat]||[]).map(t=>(
-                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 12px",borderRadius:20,border:"1px solid "+(t.color||"#3F72AF"),background:(t.color||"#3F72AF")+"18"}}>
-                      <span style={{fontSize:13,fontWeight:700,color:t.color||"#3F72AF"}}>{t.label}</span>
+                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 12px",borderRadius:20,border:"1px solid "+(t.color||"#7c6aff"),background:(t.color||"#7c6aff")+"18"}}>
+                      <span style={{fontSize:13,fontWeight:700,color:t.color||"#7c6aff"}}>{t.label}</span>
                       <span style={{fontSize:11,color:C.muted}}>({posts.filter(p=>(p.cat===selCat||p.subCat===selCat)&&p.tag===t.label).length}개)</span>
                       <button onClick={()=>removeTag(selCat,t.id)}
                         style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:"0 2px",lineHeight:1}}>✕</button>
@@ -1555,7 +1555,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <input type="color" value={tagColor} onChange={e=>setTagColor(e.target.value)}
                   style={{width:38,height:38,borderRadius:8,border:"1px solid "+bdr,cursor:"pointer",padding:2}} />
                 <button onClick={addTag} disabled={saving||!tagLabel.trim()}
-                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
+                  style={{padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,whiteSpace:"nowrap"}}>
                   {saving?"저장중...":"+ 추가"}
                 </button>
               </div>
@@ -1574,7 +1574,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     <div style={{background:isDark?"transparent":"#f7f8fa",minHeight:"calc(100vh - 64px)"}}>
       {showCatMgr && <CatManager />}
       {/* 토스트 */}
-      {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#3F72AF",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
+      {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#7c6aff",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
 
       {/* 로딩 */}
       {loading && (
@@ -1629,8 +1629,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <button key={v} onClick={()=>setArchiveView(v)} style={{
                     padding:"9px 18px",border:"none",cursor:"pointer",fontSize:13,fontWeight:archiveView===v?700:500,
                     background:"transparent",borderRadius:"8px 8px 0 0",
-                    color:archiveView===v?"#7AB8E0":C.muted,
-                    borderBottom:archiveView===v?"2px solid #3F72AF":"2px solid transparent",
+                    color:archiveView===v?"#a5b4fc":C.muted,
+                    borderBottom:archiveView===v?"2px solid #7c6aff":"2px solid transparent",
                   }}>{l}</button>
                 ))}
               </div>
@@ -1684,7 +1684,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div style={{display:"flex",gap:8,marginBottom:16}}>
                     {[["all","전체 공개"],["member","회원 전용"],["nonmember","비회원 포함"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setArchiveForm(p=>({...p,visibility:v}))}
-                        style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${archiveForm.visibility===v?"#3F72AF":bdr}`,background:archiveForm.visibility===v?"rgba(99,102,241,0.12)":"transparent",color:archiveForm.visibility===v?"#7AB8E0":C.muted,fontSize:11,fontWeight:archiveForm.visibility===v?700:500,cursor:"pointer"}}>{l}</button>
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${archiveForm.visibility===v?"#7c6aff":bdr}`,background:archiveForm.visibility===v?"rgba(99,102,241,0.12)":"transparent",color:archiveForm.visibility===v?"#a5b4fc":C.muted,fontSize:11,fontWeight:archiveForm.visibility===v?700:500,cursor:"pointer"}}>{l}</button>
                     ))}
                   </div>
                   <div style={{display:"flex",gap:10}}>
@@ -1706,7 +1706,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       } catch(e){ alert("업로드 실패: "+e.message); }
                       setShowArchiveModal(false); setArchiveUploadFile(null);
                       setArchiveForm({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
-                    }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>등록하기</button>
+                    }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>등록하기</button>
                   </div>
                 </div>
               </div>
@@ -1722,8 +1722,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     return (
                       <button key={t.id} onClick={()=>{setFilterTag(t.id);setPage(1);}}
                         style={{flex:1,padding:"12px 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:active?700:500,
-                          background:"transparent",color:active?"#7AB8E0":C.muted,
-                          borderBottom:active?"2px solid #3F72AF":"2px solid transparent",marginBottom:-2,transition:"all 0.15s"}}>
+                          background:"transparent",color:active?"#a5b4fc":C.muted,
+                          borderBottom:active?"2px solid #7c6aff":"2px solid transparent",marginBottom:-2,transition:"all 0.15s"}}>
                         {t.label}
                       </button>
                     );
@@ -1736,7 +1736,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
                   {user?.role==="admin"&&(
                     <button onClick={()=>archiveFileRef.current?.click()}
-                      style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
                       📁 자료 등록
                     </button>
                   )}
@@ -1795,8 +1795,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:20}}>
                     {Array.from({length:totalPages},(_,i)=>i+1).map(n=>(
                       <button key={n} onClick={()=>setPage(n)}
-                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${page===n?"#3F72AF":bdr}`,
-                          background:page===n?"rgba(99,102,241,0.15)":"transparent",color:page===n?"#7AB8E0":C.muted,
+                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${page===n?"#7c6aff":bdr}`,
+                          background:page===n?"rgba(99,102,241,0.15)":"transparent",color:page===n?"#a5b4fc":C.muted,
                           fontSize:12,fontWeight:page===n?700:400,cursor:"pointer"}}>{n}</button>
                     ))}
                   </div>
@@ -1831,7 +1831,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     <button key={vm} onClick={()=>setViewMode(vm)} title={label}
                       style={{padding:"7px 9px",border:"none",cursor:"pointer",fontSize:14,lineHeight:1,
                         background:viewMode===vm?(isDark?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)"):(isDark?"rgba(255,255,255,0.04)":"#fff"),
-                        color:viewMode===vm?"#3F72AF":C.muted}}>
+                        color:viewMode===vm?"#7c6aff":C.muted}}>
                       {icon}
                     </button>
                   ))}
@@ -1839,7 +1839,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 {/* 자료실은 관리자만 글쓰기 가능 */}
                 {(subCat!=="archive" || user?.role==="admin") && (
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                    style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
+                    style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
                     ✏️ {subCat==="archive"?"자료 등록":t("writePost")}
                   </button>
                 )}
@@ -1860,9 +1860,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   return (
                     <button key={t.id} onClick={()=>{setFilterTag(t.id==="all"?"":t.id);setPage(1);}}
                       style={{padding:"6px 14px",borderRadius:10,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,
-                        border:`1px solid ${active?"#3F72AF":bdr}`,
+                        border:`1px solid ${active?"#7c6aff":bdr}`,
                         background:active?"rgba(99,102,241,0.15)":"transparent",
-                        color:active?"#7AB8E0":C.muted,fontWeight:active?700:400}}>
+                        color:active?"#a5b4fc":C.muted,fontWeight:active?700:400}}>
                       {t.icon} {t.label} <span style={{fontSize:10,opacity:0.6}}>({cnt})</span>
                     </button>
                   );
@@ -1874,17 +1874,17 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
                 <button onClick={()=>setFilterTag("")} style={{
                   padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
-                  border:"1px solid "+(filterTag===""?(subInfo?.color||"#3F72AF"):bdr),
-                  background:filterTag===""?(subInfo?.color||"#3F72AF")+"18":"transparent",
-                  color:filterTag===""?(subInfo?.color||"#3F72AF"):C.muted,
+                  border:"1px solid "+(filterTag===""?(subInfo?.color||"#7c6aff"):bdr),
+                  background:filterTag===""?(subInfo?.color||"#7c6aff")+"18":"transparent",
+                  color:filterTag===""?(subInfo?.color||"#7c6aff"):C.muted,
                   fontWeight:filterTag===""?700:400,
                 }}>전체</button>
                 {currentTags.map(t=>(
                   <button key={t.id} onClick={()=>{setFilterTag(filterTag===t.label?"":t.label);setPage(1);}} style={{
                     padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
-                    border:"1px solid "+(filterTag===t.label?(t.color||subInfo?.color||"#3F72AF"):bdr),
-                    background:filterTag===t.label?(t.color||subInfo?.color||"#3F72AF")+"18":"transparent",
-                    color:filterTag===t.label?(t.color||subInfo?.color||"#3F72AF"):C.muted,
+                    border:"1px solid "+(filterTag===t.label?(t.color||subInfo?.color||"#7c6aff"):bdr),
+                    background:filterTag===t.label?(t.color||subInfo?.color||"#7c6aff")+"18":"transparent",
+                    color:filterTag===t.label?(t.color||subInfo?.color||"#7c6aff"):C.muted,
                     fontWeight:filterTag===t.label?700:400,
                   }}>{t.label} <span style={{opacity:0.6,fontSize:10}}>({posts.filter(p=>(p.cat===subCat||p.subCat===subCat)&&p.tag===t.label).length})</span></button>
                 ))}
@@ -1903,7 +1903,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 ) : (
                   <>
                     <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
-                    {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
+                    {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
                   </>
                 )}
               </div>
@@ -1915,7 +1915,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 position:"fixed", zIndex:9999, pointerEvents:"none",
                 left: hoverPreview.x, top: hoverPreview.y,
                 width: 280, background: isDark?"rgba(18,16,48,0.97)":"#fff",
-                border:"1px solid "+(isDark?"rgba(63,114,175,0.25)":"rgba(0,0,0,0.1)"),
+                border:"1px solid "+(isDark?"rgba(124,106,255,0.25)":"rgba(0,0,0,0.1)"),
                 borderRadius:14, boxShadow:"0 12px 40px rgba(0,0,0,0.22)", overflow:"hidden",
               }}>
                 {hoverPreview.thumb && (
@@ -1974,7 +1974,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         }
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
-                            {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#3F72AF")+"22",color:subInfo?.color||"#3F72AF",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
+                            {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
                             <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
                             {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>📎</span>}
                             {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
@@ -2022,7 +2022,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         }
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
-                        {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#3F72AF")+"22",color:subInfo?.color||"#3F72AF",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
+                        {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
                         <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
                         {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>📎</span>}
                         {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
@@ -2076,7 +2076,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       </div>
                       <div style={{padding:"10px 12px"}}>
                         <div style={{fontSize:13,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.4,marginBottom:6}}>
-                          {p.tag&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:(subInfo?.color||"#3F72AF")+"22",color:subInfo?.color||"#3F72AF",fontWeight:700,marginRight:5}}>{p.tag}</span>}
+                          {p.tag&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,marginRight:5}}>{p.tag}</span>}
                           {p.title}
                         </div>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,color:C.muted}}>
@@ -2114,7 +2114,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         : <div style={{width:34,height:26,borderRadius:4,flexShrink:0,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{subInfo?.icon||"📋"}</div>
                       }
                       <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5}}>
-                        {p.tag&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:(subInfo?.color||"#3F72AF")+"22",color:subInfo?.color||"#3F72AF",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
+                        {p.tag&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
                         <span style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
                         {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                         {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 4px",borderRadius:3,fontWeight:700,flexShrink:0}}>N</span>}
@@ -2150,7 +2150,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:14,padding:"16px",textAlign:"center",width:"100%"}}>
               <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>✍️ 커뮤니티 참여하기</div>
               <div style={{fontSize:12,color:C.muted,marginBottom:10,lineHeight:1.5}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
-              <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
+              <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
             </div>
           )}
 
@@ -2167,7 +2167,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div key={p.id} onClick={()=>openPost(p)} style={{padding:"10px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
                     onMouseEnter={e=>e.currentTarget.style.background=hover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                      <span style={{fontSize:14,fontWeight:900,color:i===0?"#ef4444":i===1?"#f59e0b":i===2?"#3F72AF":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
+                      <span style={{fontSize:14,fontWeight:900,color:i===0?"#ef4444":i===1?"#f59e0b":i===2?"#7c6aff":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4,marginBottom:2}}>{p.title}</div>
                         <div style={{fontSize:10,color:C.muted}}>👁 {p.views||0}</div>
@@ -2212,7 +2212,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <div style={{fontSize:24,marginBottom:8}}>✍️</div>
                 <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>커뮤니티 참여하기</div>
                 <div style={{fontSize:12,color:C.muted,marginBottom:12,lineHeight:1.6}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
-                <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
+                <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
               </div>
             )}
           </aside>

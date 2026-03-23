@@ -76,7 +76,7 @@ export function PaymentSuccessPage({ C, navigate }) {
           <>
             <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 8 }}>결제 완료!</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#3F72AF", marginBottom: 12 }}>+{points.toLocaleString()} 크레딧</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", marginBottom: 12 }}>+{points.toLocaleString()} 크레딧</div>
             <div style={{ fontSize: 14, color: C.muted }}>3초 후 홈으로 이동해요</div>
           </>
         )}
@@ -85,7 +85,7 @@ export function PaymentSuccessPage({ C, navigate }) {
             <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>결제 실패</div>
             <div style={{ fontSize: 14, color: C.muted, marginBottom: 24 }}>{errorMsg}</div>
-            <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
               다시 시도하기
             </button>
           </>
@@ -106,7 +106,7 @@ export function PaymentFailPage({ C, navigate }) {
         <div style={{ fontSize: 48, marginBottom: 16 }}>😅</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>결제가 완료되지 않았어요</div>
         <div style={{ fontSize: 14, color: C.muted, marginBottom: 24 }}>{message}</div>
-        <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
           다시 시도하기
         </button>
       </div>

@@ -108,7 +108,7 @@ export function PricingPage({ C, navigate, user, onLogin }) {
         {user && (
           <div style={{ display:"inline-flex", alignItems:"center", gap:8, marginTop:16, padding:"8px 20px", borderRadius:20, background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)" }}>
             <span style={{ fontSize:13, color:"#818cf8" }}>내 크레딧</span>
-            <span style={{ fontSize:18, fontWeight:900, color:"#3F72AF" }}>{userCredits.toLocaleString()} cr</span>
+            <span style={{ fontSize:18, fontWeight:900, color:"#7c6aff" }}>{userCredits.toLocaleString()} cr</span>
           </div>
         )}
       </div>

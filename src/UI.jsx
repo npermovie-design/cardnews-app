@@ -3,9 +3,9 @@
 export const Badge = ({ children, C }) => (
   <div style={{
     display: "inline-flex", alignItems: "center", gap: 6,
-    background: "rgba(63,114,175,0.08)", border: "1px solid rgba(63,114,175,0.18)",
+    background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)",
     borderRadius: 20, padding: "5px 14px", fontSize: 12, fontWeight: 700,
-    color: C.purpleL, marginBottom: 20, letterSpacing: 0.3,
+    color: C.purpleL, marginBottom: 20,
   }}>
     {children}
   </div>
@@ -49,9 +49,9 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
       padding: small ? "5px 14px" : "11px 26px",
       fontSize: small ? 12 : 14,
       background: C?.card || "transparent",
-      border: "1px solid rgba(63,114,175,0.3)",
+      border: "1px solid rgba(124,106,255,0.35)",
       color: C.purpleL,
-      boxShadow: "0 1px 4px rgba(63,114,175,0.08)",
+      boxShadow: "0 1px 4px rgba(124,106,255,0.1)",
       width: full ? "100%" : "auto",
     }}>
       {children}
@@ -62,9 +62,9 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
       ...base,
       padding: small ? "5px 14px" : "12px 28px",
       fontSize: small ? 12 : 14,
-      background: "linear-gradient(135deg,#3F72AF,#112D4E)",
+      background: "linear-gradient(135deg,#7c6aff,#ec4899)",
       color: "#fff",
-      boxShadow: "0 4px 16px rgba(63,114,175,0.25)",
+      boxShadow: "0 4px 16px rgba(124,106,255,0.3)",
       width: full ? "100%" : "auto",
     }}>
       {children}

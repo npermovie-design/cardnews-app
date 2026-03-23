@@ -25,16 +25,16 @@ export default function LoadingAnimation({ icon = "✍️✨", title = "AI가 �
             <div style={{
               width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10,
               background: s.d ? "rgba(74,222,128,0.15)" : s.a ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)",
-              border: s.d ? "2px solid #4ade80" : s.a ? "2px solid #3F72AF" : "2px solid rgba(255,255,255,0.1)",
+              border: s.d ? "2px solid #4ade80" : s.a ? "2px solid #7c6aff" : "2px solid rgba(255,255,255,0.1)",
             }}>
-              {s.d ? <span style={{ color: "#4ade80" }}>✓</span> : s.a ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "2px solid #3F72AF", borderTopColor: "transparent", animation: "ld-spin 0.8s linear infinite" }} /> : null}
+              {s.d ? <span style={{ color: "#4ade80" }}>✓</span> : s.a ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "2px solid #7c6aff", borderTopColor: "transparent", animation: "ld-spin 0.8s linear infinite" }} /> : null}
             </div>
             <span style={{ fontSize: 13, color: s.d ? "#4ade80" : s.a ? text : muted, fontWeight: s.a ? 700 : 400 }}>{s.l}</span>
           </div>
         ))}
       </div>
       <div style={{ height: 4, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", overflow: "hidden", maxWidth: 260, margin: "0 auto 10px", width: "100%" }}>
-        <div style={{ height: "100%", borderRadius: 4, background: "linear-gradient(90deg,#3F72AF,#2B4F7E,#112D4E)", animation: "ld-progress 15s ease-out forwards" }} />
+        <div style={{ height: "100%", borderRadius: 4, background: "linear-gradient(90deg,#7c6aff,#8b5cf6,#1a1730)", animation: "ld-progress 15s ease-out forwards" }} />
       </div>
       <div style={{ fontSize: 12, color: muted }}>보통 20~60초 소요</div>
     </div>
