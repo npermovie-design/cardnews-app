@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import SeoAnalyzer from "./SeoAnalyzer";
+import { callAI } from "./aiClient";
 
 const MENU_ITEMS = [
   { id:"seo_home",    label:"실시간 검색어",       icon:"📊" },
@@ -543,10 +544,10 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(false);
   const [prevMenu, setPrevMenu] = useState(menu);
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(true);
   const autoFetched = useRef(false);
 
-  if (menu !== prevMenu) { setPrevMenu(menu); setRanking([]); setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(false); autoFetched.current = false; }
+  if (menu !== prevMenu) { setPrevMenu(menu); setRanking([]); setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(true); autoFetched.current = false; }
 
   const config = RANK_ITEMS.find(r => r.id === menu);
   if (!config) return null;
@@ -556,7 +557,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const fetchRanking = async (category) => {
     setLoading(true); setRanking([]); setDetail(null);
     try {
-      const { callAI } = await import("./aiClient");
+
       const urlBase = config.platform==="유튜브"?"https://www.youtube.com/@":config.platform==="인스타그램"?"https://www.instagram.com/":config.platform==="틱톡"?"https://www.tiktok.com/@":config.platform==="네이버 블로그"?"https://blog.naver.com/":"";
       const countryStr = country!=="한국" ? ` 국가:${country}` : "";
       const ageStr = ageGroup!=="전체" ? ` 주요 시청자층:${ageGroup}` : "";
@@ -730,7 +731,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const fetchBrands = async (category) => {
     setLoading(true); setRanking([]); setDetail(null);
     try {
-      const { callAI } = await import("./aiClient");
+
       const kwStr = keyword.trim() ? ` "${keyword.trim()}" 관련` : "";
       const prompt = `한국에서 SNS 마케팅을 잘하는 ${category==="전체"?"전체 업종":category}${kwStr} 브랜드 TOP 20.
 각: rank,name(브랜드명),industry(업종),snsScore(SNS 영향력 점수 1~100),revenue(연매출 추정),engagement(SNS 참여율),mainSns(주력 SNS),followers(총 팔로워),strategy(SNS 전략 한줄),website(공식 사이트URL).
