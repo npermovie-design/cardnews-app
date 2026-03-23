@@ -1,0 +1,663 @@
+import { useState } from "react";
+import { callAI } from "./aiClient";
+
+const CATEGORIES = ["전체","IT/테크","경제/금융","엔터테인먼트","스포츠","건강/의학","교육","여행","음식","패션/뷰티"];
+
+/* ── 플랫폼별 분석 기준 ── */
+const PLATFORM_CONFIG = {
+  blog: {
+    label: "네이버 블로그 분석", icon: "📝", color: "#22c55e",
+    placeholder: "https://blog.naver.com/...",
+    criteria: [
+      { key:"title", label:"제목 최적화", icon:"📌", weight:20, guide:"네이버 검색에서 노출되려면 핵심 키워드가 제목 앞부분에 위치해야 합니다. 25~35자가 이상적입니다." },
+      { key:"content", label:"본문 구성", icon:"📝", weight:25, guide:"소제목(H2/H3)을 3~5개 사용하고, 핵심 키워드를 본문에 자연스럽게 5~8회 반복해야 합니다." },
+      { key:"keyword", label:"키워드 전략", icon:"🔑", weight:20, guide:"메인 키워드 1개 + 연관 키워드 3~5개를 본문 전체에 분산 배치해야 합니다." },
+      { key:"media", label:"이미지/영상 활용", icon:"🖼", weight:15, guide:"이미지 최소 5장 이상, alt 태그에 키워드 포함. 영상 1개 이상 삽입이 C-Rank에 유리합니다." },
+      { key:"engagement", label:"체류시간/가독성", icon:"⏱", weight:10, guide:"1,500자 이상 작성, 짧은 문단(3~4줄), 목록/표 활용으로 스크롤을 유도해야 합니다." },
+      { key:"structure", label:"글 구조/형식", icon:"📋", weight:10, guide:"서론-본론-결론 구조, CTA(행동 유도) 포함, 관련 글 내부 링크 2~3개가 이상적입니다." },
+    ],
+    systemPrompt: `당신은 네이버 블로그 SEO 전문가입니다. C-Rank, D.I.A 알고리즘, 네이버 검색 최적화에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 네이버 검색 노출을 위한 구체적인 키워드 배치 전략
+- C-Rank 점수를 높이기 위한 전문성/신뢰도 개선 방법
+- 네이버 스마트블록 노출 가능성
+- 모바일 가독성 최적화 방법
+- 이웃/공감 유도 전략`,
+  },
+  youtube: {
+    label: "유튜브 분석", icon: "▶️", color: "#ef4444",
+    placeholder: "https://youtube.com/watch?v=...",
+    criteria: [
+      { key:"title", label:"제목 최적화", icon:"📌", weight:20, guide:"클릭률(CTR)을 높이는 제목: 호기심 유발 + 핵심 키워드 포함. 50자 이내가 이상적입니다." },
+      { key:"thumbnail", label:"썸네일 분석", icon:"🖼", weight:20, guide:"대비가 강한 색상, 큰 텍스트(3~5단어), 얼굴 표정, 깔끔한 구도가 CTR을 높입니다." },
+      { key:"description", label:"설명란 최적화", icon:"📝", weight:15, guide:"첫 2줄에 핵심 내용 요약, 타임스탬프, 관련 링크, 해시태그 포함이 필수입니다." },
+      { key:"tags", label:"태그/해시태그", icon:"🏷", weight:15, guide:"메인 키워드 + 연관 키워드 + 브랜드명으로 15~30개 태그를 설정해야 합니다." },
+      { key:"engagement", label:"시청자 참여 유도", icon:"💬", weight:15, guide:"댓글 유도 질문, 좋아요/구독 CTA, 다음 영상 예고가 알고리즘에 유리합니다." },
+      { key:"structure", label:"영상 구조", icon:"🎬", weight:15, guide:"처음 30초 훅(Hook), 중간 하이라이트, 엔딩 CTA. 8~15분이 광고 수익에 최적입니다." },
+    ],
+    systemPrompt: `당신은 유튜브 SEO 및 성장 전문가입니다. 유튜브 알고리즘, CTR 최적화, 시청 지속시간에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 유튜브 검색/추천 알고리즘에 맞는 제목 전략
+- 썸네일 CTR을 높이는 구체적 디자인 가이드
+- 시청 지속시간을 늘리는 영상 구조 제안
+- 유튜브 SEO 태그 전략
+- 구독자 전환율을 높이는 CTA 배치`,
+  },
+  tistory: {
+    label: "티스토리 분석", icon: "📖", color: "#f59e0b",
+    placeholder: "https://xxx.tistory.com/123",
+    criteria: [
+      { key:"title", label:"제목 최적화", icon:"📌", weight:20, guide:"구글 검색 노출을 위해 핵심 키워드가 제목 앞에 위치해야 합니다. 30~50자가 이상적입니다." },
+      { key:"content", label:"본문 품질", icon:"📝", weight:25, guide:"2,000자 이상, H2/H3 소제목 활용, 핵심 키워드 밀도 1~2%가 구글 SEO에 최적입니다." },
+      { key:"meta", label:"메타 태그/OG", icon:"🔍", weight:15, guide:"meta description 150자, OG 이미지 설정, canonical URL 설정이 필수입니다." },
+      { key:"media", label:"멀티미디어 활용", icon:"🖼", weight:15, guide:"이미지 alt 태그, 캡션 활용, 표/목록 구조화가 구글 검색에 유리합니다." },
+      { key:"internal", label:"내부/외부 링크", icon:"🔗", weight:15, guide:"관련 글 내부 링크 3~5개, 권위 있는 외부 링크 1~2개가 SEO에 도움됩니다." },
+      { key:"adsense", label:"애드센스 최적화", icon:"💰", weight:10, guide:"광고 배치 위치, 콘텐츠 대비 광고 비율, 사용자 경험 저해 여부를 확인합니다." },
+    ],
+    systemPrompt: `당신은 티스토리 블로그 및 구글 SEO 전문가입니다. 구글 검색 알고리즘, 애드센스 최적화에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 구글 검색 1페이지 노출을 위한 키워드 전략
+- 티스토리 스킨/플러그인 SEO 설정 가이드
+- 구글 서치콘솔 최적화 방법
+- 애드센스 수익 최적화 팁
+- 구글 E-E-A-T 기준 충족 방법`,
+  },
+  insta: {
+    label: "인스타그램 분석", icon: "📸", color: "#e1306c",
+    placeholder: "https://www.instagram.com/p/... 또는 @계정명",
+    criteria: [
+      { key:"visual", label:"비주얼 퀄리티", icon:"🖼", weight:25, guide:"고해상도, 일관된 색감 톤, 브랜드 아이덴티티. 피드 전체의 통일성이 중요합니다." },
+      { key:"caption", label:"캡션 최적화", icon:"📝", weight:20, guide:"첫 줄 훅(Hook), 스토리텔링, CTA 포함. 2,200자 이내, 줄바꿈으로 가독성 확보." },
+      { key:"hashtag", label:"해시태그 전략", icon:"#️⃣", weight:20, guide:"대형(100만+) 3개 + 중형(1만~100만) 10개 + 소형(1만 이하) 10개 조합. 총 20~25개." },
+      { key:"engagement", label:"참여 유도", icon:"💬", weight:15, guide:"질문형 CTA, 저장 유도, DM 유도. 댓글 답변 속도가 알고리즘에 영향." },
+      { key:"timing", label:"게시 전략", icon:"⏰", weight:10, guide:"타겟 오디언스 활동 시간대, 일관된 게시 빈도(주 3~5회), 릴스 활용." },
+      { key:"profile", label:"프로필 최적화", icon:"👤", weight:10, guide:"키워드 포함 바이오, 링크트리/링크 활용, 하이라이트 구성." },
+    ],
+    systemPrompt: `당신은 인스타그램 마케팅 및 성장 전문가입니다. 인스타그램 알고리즘, 릴스 전략, 해시태그 최적화에 정통합니다.
+분석 시 다음을 반드시 포함하세요:
+- 인스타그램 탐색 탭 노출을 위한 전략
+- 릴스 vs 피드 포스트 최적 비율
+- 해시태그 리서치 및 최적 조합 방법
+- 팔로워 증가를 위한 참여율 개선 전략
+- 인스타그램 쇼핑/비즈니스 기능 활용법`,
+  },
+};
+
+export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingChange }) {
+  const D = isDark;
+  const text = D ? "#e8eaed" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.45)" : "#888";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
+  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+
+  const [trendCat, setTrendCat] = useState("전체");
+  const [trends, setTrends] = useState([]);
+  const [trendLoading, setTrendLoading] = useState(false);
+
+  const [url, setUrl] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [result, setResult] = useState(null);
+  const [expandedCriteria, setExpandedCriteria] = useState(null);
+  const [fetchedPreview, setFetchedPreview] = useState(null); // {title, desc, thumb, type, tags, transcript}
+  const [prevMenu, setPrevMenu] = useState(menu);
+
+  // 메뉴 변경 시 결과 초기화
+  if (menu !== prevMenu) {
+    setPrevMenu(menu);
+    setResult(null);
+    setUrl("");
+    setAnalyzing(false);
+    setProgress("");
+    setExpandedCriteria(null);
+    setFetchedPreview(null);
+  }
+
+  const [trendEngine, setTrendEngine] = useState("전체");
+
+  // 실시간 검색어
+  const fetchTrends = async (cat) => {
+    setTrendLoading(true); setTrends([]);
+    try {
+      const prompt = `현재 한국에서 ${cat==="전체"?"모든 분야":cat+" 분야"}의 실시간 인기 검색어를 검색엔진별로 알려주세요.
+
+네이버, 구글, 다음, 빙 각각 TOP 10씩 총 40개를 알려주세요.
+각 검색어에 대해 검색엔진, 순위, 카테고리, 간단한 이유, 검색량 추정치를 포함해주세요.
+
+JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","category":"분류","reason":"이유","volume":"약 50,000"},...]}`;
+      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) setTrends(JSON.parse(m[0]).trends || []);
+    } catch {}
+    setTrendLoading(false);
+  };
+
+  // URL 콘텐츠 가져오기 (자체 API 프록시)
+  const fetchUrlContent = async (targetUrl) => {
+    try {
+      const res = await fetch("/api/fetch-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: targetUrl }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) return null;
+      const { html } = await res.json();
+      if (!html || html.length < 100) return null;
+
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const title = doc.querySelector("title")?.textContent?.trim() || "";
+      const metaDesc = doc.querySelector('meta[name="description"]')?.content || doc.querySelector('meta[property="og:description"]')?.content || "";
+      const ogImage = doc.querySelector('meta[property="og:image"]')?.content || "";
+      const headings = Array.from(doc.querySelectorAll("h1,h2,h3,h4,.se-text-paragraph-align")).map(h => h.textContent?.trim()).filter(Boolean).join(" | ");
+      let body = "";
+      const selectors = [".se-main-container",".post_ct",".tt_article_useless_p_margin","article",".entry-content",".post-content","#content",".content","#postViewArea"];
+      for (const sel of selectors) {
+        const el = doc.querySelector(sel);
+        if (el && el.textContent?.trim().length > 50) { body = el.textContent.replace(/\s+/g," ").trim(); break; }
+      }
+      if (!body) body = doc.body?.textContent?.replace(/\s+/g," ").trim() || "";
+      body = body.slice(0, 4000);
+      const imgCount = doc.querySelectorAll("img").length;
+      const linkCount = doc.querySelectorAll("a[href]").length;
+      const wordCount = body.length;
+      if (body.length > 50) return { title, metaDesc, ogImage, headings, body, imgCount, linkCount, wordCount };
+    } catch {}
+    return null;
+  };
+
+  // SEO 분석
+  const analyzeUrl = async (type) => {
+    if (!url.trim()) return;
+    const config = PLATFORM_CONFIG[type];
+    if (!config) return;
+    setAnalyzing(true); setResult(null); setExpandedCriteria(null);
+    if (onAnalyzingChange) onAnalyzingChange(true);
+
+    setProgress("URL 콘텐츠를 가져오는 중...");
+
+    // 플랫폼별 전용 API 사용
+    let content = null;
+    let ytData = null;
+    let instaData = null;
+    if (type === "youtube" && url.match(/youtu\.?be/)) {
+      try {
+        const ytRes = await fetch("/api/fetch-youtube", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }), signal: AbortSignal.timeout(15000),
+        });
+        if (ytRes.ok) ytData = await ytRes.json();
+      } catch {}
+    } else if (type === "insta" && url.match(/instagram\.com/)) {
+      try {
+        const igRes = await fetch("/api/fetch-insta", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }), signal: AbortSignal.timeout(15000),
+        });
+        if (igRes.ok) instaData = await igRes.json();
+      } catch {}
+    } else {
+      content = await fetchUrlContent(url);
+    }
+
+    // 미리보기 설정
+    if (instaData && instaData.hasData) {
+      setFetchedPreview({
+        type:"insta", title: instaData.title?.slice(0,80), desc: instaData.description?.slice(0,200),
+        thumb: instaData.thumbnail, channel: instaData.author,
+        tags: instaData.hashtags || [],
+      });
+    } else if (ytData) {
+      setFetchedPreview({
+        type:"youtube", title: ytData.title, desc: ytData.description?.slice(0,200),
+        thumb: ytData.thumbnail, channel: ytData.channelName,
+        views: ytData.viewCount ? Number(ytData.viewCount).toLocaleString()+"회" : "",
+        tags: ytData.tags || [], hasTranscript: !!ytData.transcript,
+        transcriptPreview: ytData.transcript?.slice(0,300),
+      });
+    } else if (content) {
+      setFetchedPreview({
+        type:"page", title: content.title, desc: content.metaDesc || content.body?.slice(0,200),
+        thumb: content.ogImage, imgCount: content.imgCount, wordCount: content.wordCount,
+        headings: content.headings,
+      });
+    } else {
+      setFetchedPreview({ type:"none", title: url });
+    }
+
+    setProgress("AI가 콘텐츠를 분석하고 있어요...");
+    try {
+      let contentInfo;
+      if (instaData && instaData.hasData) {
+        contentInfo = `\n\n[인스타그램 게시물 실제 데이터]
+작성자: ${instaData.author || "확인 불가"}
+캡션: ${instaData.description || instaData.title || "없음"}
+썸네일: ${instaData.thumbnail || "없음"}
+해시태그: ${(instaData.hashtags||[]).map(t=>"#"+t).join(" ") || "없음"}
+
+위 데이터를 기반으로 인스타그램 알고리즘 관점에서 상세히 분석해주세요.
+캡션의 훅(첫줄), 스토리텔링, CTA, 해시태그 전략, 비주얼 구성을 모두 평가해주세요.`;
+      } else if (ytData) {
+        contentInfo = `\n\n[유튜브 영상 실제 데이터 — 이 데이터를 기반으로 정확하게 분석하세요]
+영상 제목: ${ytData.title}
+채널명: ${ytData.channelName}
+조회수: ${ytData.viewCount ? Number(ytData.viewCount).toLocaleString()+"회" : "확인 불가"}
+썸네일: ${ytData.thumbnail}
+태그: ${(ytData.tags||[]).join(", ") || "없음"}
+
+[설명란 전체]
+${ytData.description || "없음"}
+
+[영상 자막/스크립트]
+${ytData.transcript || "(자막을 가져올 수 없습니다. 설명란과 제목 기반으로 분석하세요)"}`;
+      } else if (content) {
+        contentInfo = `\n\n[실제 페이지 데이터 — 이 내용을 기반으로 분석하세요]
+페이지 제목: ${content.title}
+메타 설명: ${content.metaDesc}
+OG 이미지: ${content.ogImage || "없음"}
+소제목(H태그): ${content.headings || "없음"}
+이미지 수: ${content.imgCount}개
+내부/외부 링크 수: ${content.linkCount}개
+본문 글자 수: 약 ${content.wordCount}자
+
+[본문 전체 내용]
+${content.body.slice(0,3000)}`;
+      } else {
+        contentInfo = `\n\n[주의] 페이지 콘텐츠를 직접 가져올 수 없습니다.
+URL: ${url}
+URL에서 유추할 수 있는 정보만으로 분석해주세요. "콘텐츠를 확인할 수 없다"는 식으로 모호하게 답하지 말고, URL 구조와 플랫폼 특성을 기반으로 최선의 분석을 해주세요.`;
+      }
+
+      const criteriaList = config.criteria.map((c,i) => `${i+1}. ${c.label} (${c.weight}점 배점)`).join("\n");
+
+      const prompt = `${config.systemPrompt}
+
+다음 URL을 분석해주세요: ${url}
+${contentInfo}
+
+## 분석 항목 (총 100점)
+${criteriaList}
+
+## 응답 형식 (JSON)
+각 항목별로 반드시 다음을 포함해주세요:
+- score: 점수 (0~항목 배점)
+- grade: 등급 (A+/A/B+/B/C/D)
+- summary: 현재 상태 요약 (1~2줄)
+- good: 잘하고 있는 점 (배열, 2~3개)
+- bad: 개선이 필요한 점 (배열, 2~3개)
+- howToFix: 구체적 수정 가이드 (배열, 각 항목은 "무엇을 → 어떻게" 형식, 3~5개)
+- example: 수정 예시 (개선된 제목, 태그, 구조 등 실제 적용 가능한 예시)
+
+또한 다음도 포함:
+- totalScore: 종합 점수
+- totalGrade: 종합 등급
+- overallSummary: 전체 분석 요약 (3~4줄)
+- topPriority: 가장 먼저 수정해야 할 것 (1가지, 구체적으로)
+- recommendedTitles: 추천 제목 5개 (SEO 최적화된)
+- recommendedKeywords: 추천 키워드 10개
+- competitorTip: 경쟁 콘텐츠 대비 차별화 전략 1가지
+
+JSON만 응답:
+{"criteria":{${config.criteria.map(c => `"${c.key}":{"score":0,"grade":"","summary":"","good":[],"bad":[],"howToFix":[],"example":""}`).join(",")}},
+"totalScore":0,"totalGrade":"","overallSummary":"","topPriority":"",
+"recommendedTitles":[],"recommendedKeywords":[],"competitorTip":""}`;
+
+      const raw = await callAI("claude-sonnet-4-5", [{role:"user",content:prompt}], 6000);
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setResult({ ...parsed, config });
+        // 보관함에 저장 (전체 결과 포함)
+        if (onSave) onSave({
+          type: type, url, platform: config.label, score: parsed.totalScore || 0,
+          result: parsed,
+          resultConfig: { criteria: config.criteria },
+        });
+      }
+    } catch(e) { alert("분석 실패: " + e.message); }
+    setAnalyzing(false); setProgress("");
+    if (onAnalyzingChange) onAnalyzingChange(false);
+  };
+
+  const scoreColor = (s, max=100) => {
+    const pct = (s/max)*100;
+    return pct >= 80 ? "#22c55e" : pct >= 60 ? "#f59e0b" : "#ef4444";
+  };
+
+  // ═══ 실시간 검색어 화면 ═══
+  if (menu === "seo_home") {
+    return (
+      <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
+        <div style={{ maxWidth:900, margin:"0 auto" }}>
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:22, fontWeight:900, color:text }}>실시간 인기 검색어</div>
+            <div style={{ fontSize:13, color:muted, marginTop:4 }}>네이버·구글·다음 검색 트렌드를 카테고리별로 확인하세요</div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:20 }}>
+            {CATEGORIES.map(c => (
+              <button key={c} onClick={()=>{setTrendCat(c);fetchTrends(c);}}
+                style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${trendCat===c?"#6366f1":bdr}`,
+                  background:trendCat===c?"rgba(99,102,241,0.15)":"transparent",
+                  color:trendCat===c?"#a5b4fc":muted, fontSize:12, fontWeight:trendCat===c?700:400, cursor:"pointer" }}>
+                {c}
+              </button>
+            ))}
+          </div>
+          {/* 검색엔진 필터 */}
+          {trends.length > 0 && (
+            <div style={{ display:"flex", gap:4, marginBottom:14, borderBottom:"1px solid "+bdr, paddingBottom:0 }}>
+              {["전체","네이버","구글","다음","빙"].map(eng => (
+                <button key={eng} onClick={()=>setTrendEngine(eng)}
+                  style={{ padding:"8px 16px", border:"none", cursor:"pointer", fontSize:12, fontWeight:trendEngine===eng?700:400,
+                    background:"transparent", borderBottom:trendEngine===eng?"2px solid #6366f1":"2px solid transparent",
+                    color:trendEngine===eng?"#a5b4fc":muted, marginBottom:-1 }}>
+                  {eng} <span style={{fontSize:10,opacity:0.6}}>({trends.filter(t=>eng==="전체"||t.engine===eng).length})</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {trendLoading ? (
+            <div style={{ textAlign:"center", padding:"60px 0" }}>
+              <div style={{ width:32,height:32,border:"3px solid #6366f1",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
+              <div style={{ fontSize:14, color:muted }}>AI가 실시간 트렌드를 분석하고 있어요...</div>
+            </div>
+          ) : trends.length > 0 ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {trends.filter(t=>trendEngine==="전체"||t.engine===trendEngine).map((t, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 18px", borderRadius:12,
+                  border:`1px solid ${bdr}`, background:cardBg, cursor:"pointer" }}
+                  onClick={()=>{
+                    const searchUrl = t.engine==="구글"?`https://www.google.com/search?q=${encodeURIComponent(t.keyword)}`
+                      :t.engine==="다음"?`https://search.daum.net/search?q=${encodeURIComponent(t.keyword)}`
+                      :t.engine==="빙"?`https://www.bing.com/search?q=${encodeURIComponent(t.keyword)}`
+                      :`https://search.naver.com/search.naver?query=${encodeURIComponent(t.keyword)}`;
+                    window.open(searchUrl,"_blank");
+                  }}>
+                  <span style={{ fontSize:20, fontWeight:900, color:i<3?"#ef4444":i<6?"#f59e0b":"#6b7280", minWidth:32, textAlign:"center" }}>{t.rank||i+1}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:3 }}>{t.keyword}</div>
+                    <div style={{ fontSize:11, color:muted }}>{t.reason}</div>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"flex-end", flexShrink:0 }}>
+                    <span style={{ padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600,
+                      background:t.engine==="네이버"?"rgba(34,197,94,0.12)":t.engine==="구글"?"rgba(66,133,244,0.12)":t.engine==="빙"?"rgba(0,120,212,0.12)":"rgba(245,158,11,0.12)",
+                      color:t.engine==="네이버"?"#22c55e":t.engine==="구글"?"#4285f4":t.engine==="빙"?"#0078d4":"#f59e0b" }}>{t.engine}</span>
+                    {t.volume && <span style={{ fontSize:9, color:muted }}>{t.volume}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
+              <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>카테고리를 선택하면 트렌드를 분석해요</div>
+            </div>
+          )}
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  // ═══ 분석기 화면 ═══
+  const analyzerType = menu.replace("seo_","");
+  const config = PLATFORM_CONFIG[analyzerType];
+  if (!config) return null;
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
+      <div style={{ maxWidth:860, margin:"0 auto" }}>
+        <div style={{ marginBottom:24 }}>
+          <div style={{ fontSize:22, fontWeight:900, color:text }}>{config.icon} {config.label}</div>
+          <div style={{ fontSize:13, color:muted, marginTop:4 }}>URL을 입력하면 AI가 {config.criteria.length}가지 항목을 세부 분석합니다</div>
+        </div>
+
+        {/* URL 입력 */}
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          <input value={url} onChange={e=>setUrl(e.target.value)} onKeyDown={e=>e.key==="Enter"&&analyzeUrl(analyzerType)}
+            placeholder={config.placeholder}
+            style={{ flex:1, padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:14, outline:"none" }}/>
+          <button onClick={()=>analyzeUrl(analyzerType)} disabled={analyzing || !url.trim()}
+            style={{ padding:"14px 28px", borderRadius:12, border:"none", background:config.color, color:"#fff", fontSize:14, fontWeight:800,
+              cursor:analyzing?"wait":"pointer", opacity:analyzing?0.6:1, whiteSpace:"nowrap" }}>
+            {analyzing ? "분석중..." : "🔍 분석"}
+          </button>
+        </div>
+
+        {/* 분석 기준 안내 */}
+        {!result && !analyzing && (
+          <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>📋 분석 항목 ({config.criteria.length}가지)</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              {config.criteria.map(c => (
+                <div key={c.key} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}` }}>
+                  <span style={{ fontSize:16 }}>{c.icon}</span>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:text }}>{c.label}</div>
+                    <div style={{ fontSize:10, color:muted }}>{c.weight}점 배점</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 콘텐츠 미리보기 */}
+        {fetchedPreview && fetchedPreview.type !== "none" && (
+          <div style={{ padding:"16px 18px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16, display:"flex", gap:14, alignItems:"flex-start" }}>
+            {fetchedPreview.thumb && (
+              <img src={fetchedPreview.thumb} alt="" style={{ width:120, height:68, borderRadius:8, objectFit:"cover", flexShrink:0 }} onError={e=>e.target.style.display="none"}/>
+            )}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{fetchedPreview.title}</div>
+              <div style={{ fontSize:12, color:muted, lineHeight:1.5, marginBottom:6,
+                overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+                {fetchedPreview.desc}
+              </div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {fetchedPreview.channel && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:5, background:"rgba(239,68,68,0.1)", color:"#ef4444", fontWeight:600 }}>{fetchedPreview.channel}</span>}
+                {fetchedPreview.views && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:5, background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted }}>👁 {fetchedPreview.views}</span>}
+                {fetchedPreview.imgCount > 0 && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:5, background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted }}>🖼 {fetchedPreview.imgCount}장</span>}
+                {fetchedPreview.wordCount > 0 && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:5, background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted }}>📝 {fetchedPreview.wordCount}자</span>}
+                {fetchedPreview.hasTranscript && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:5, background:"rgba(34,197,94,0.1)", color:"#22c55e", fontWeight:600 }}>자막 감지됨</span>}
+              </div>
+              {fetchedPreview.tags?.length > 0 && (
+                <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
+                  {fetchedPreview.tags.slice(0,8).map((tag,i) => (
+                    <span key={i} style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted }}>#{tag}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 분석 중 — 체크리스트 */}
+        {analyzing && (
+          <div style={{ padding:"32px 24px", textAlign:"center" }}>
+            <div style={{ width:48,height:48,border:`3px solid ${config.color}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
+            <div style={{ fontSize:18, fontWeight:700, color:text, marginBottom:6 }}>{progress}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>{config.criteria.length}가지 항목을 세부 분석합니다</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, maxWidth:300, margin:"0 auto", textAlign:"left" }}>
+              {[
+                { label:"URL 콘텐츠 수집", done: progress.includes("AI가") },
+                { label:"제목/키워드 분석", done: false },
+                { label:"본문 구조 분석", done: false },
+                { label:"SEO 점수 산출", done: false },
+                { label:"개선 가이드 생성", done: false },
+              ].map((step,i) => {
+                const isDone = step.done;
+                const isActive = !isDone && (i === 0 ? !progress.includes("AI가") : progress.includes("AI가"));
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, opacity:isDone||isActive?1:0.3 }}>
+                    <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                      background:isDone?"#4ade80":isActive?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
+                      border:isDone?"2px solid #4ade80":isActive?`2px solid ${config.color}`:"2px solid rgba(255,255,255,0.1)" }}>
+                      {isDone ? <span style={{color:"#fff",fontSize:11,fontWeight:900}}>✓</span>
+                        : isActive ? <div style={{width:8,height:8,borderRadius:"50%",border:`2px solid ${config.color}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>
+                        : null}
+                    </div>
+                    <span style={{ fontSize:13, color:isDone?"#4ade80":isActive?text:muted, fontWeight:isActive?700:400 }}>{step.label}</span>
+                    {isDone && <span style={{fontSize:10,color:"#4ade80",marginLeft:"auto"}}>완료</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 분석 결과 */}
+        {result && (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            {/* 종합 점수 카드 */}
+            <div style={{ padding:"28px", borderRadius:16, background:`linear-gradient(135deg,${config.color}15,${config.color}05)`, border:`1px solid ${config.color}30` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:56, fontWeight:900, color:scoreColor(result.totalScore) }}>{result.totalScore}</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:scoreColor(result.totalScore) }}>{result.totalGrade}</div>
+                </div>
+                <div style={{ flex:1, minWidth:200 }}>
+                  <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>종합 분석 결과</div>
+                  <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>{result.overallSummary}</div>
+                </div>
+              </div>
+              {result.topPriority && (
+                <div style={{ marginTop:16, padding:"12px 16px", borderRadius:10, background:D?"rgba(239,68,68,0.1)":"rgba(239,68,68,0.05)", border:"1px solid rgba(239,68,68,0.2)" }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:"#ef4444", marginBottom:4 }}>🚨 최우선 수정 사항</div>
+                  <div style={{ fontSize:13, color:text, lineHeight:1.6 }}>{result.topPriority}</div>
+                </div>
+              )}
+            </div>
+
+            {/* 항목별 상세 분석 */}
+            {config.criteria.map(criterion => {
+              const data = result.criteria?.[criterion.key];
+              if (!data) return null;
+              const isExpanded = expandedCriteria === criterion.key;
+              return (
+                <div key={criterion.key} style={{ borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
+                  {/* 헤더 (클릭하면 펼침) */}
+                  <div onClick={()=>setExpandedCriteria(isExpanded?null:criterion.key)}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"16px 20px", cursor:"pointer", transition:"background 0.1s" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=D?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.01)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <span style={{ fontSize:20 }}>{criterion.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:text }}>{criterion.label}</div>
+                      <div style={{ fontSize:11, color:muted, marginTop:2 }}>{data.summary}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:24, fontWeight:900, color:scoreColor(data.score, criterion.weight) }}>{data.score}<span style={{fontSize:12,color:muted}}>/{criterion.weight}</span></div>
+                      <div style={{ fontSize:11, fontWeight:700, color:scoreColor(data.score, criterion.weight) }}>{data.grade}</div>
+                    </div>
+                    <span style={{ fontSize:14, color:muted, marginLeft:4 }}>{isExpanded?"▲":"▼"}</span>
+                  </div>
+
+                  {/* 상세 내용 */}
+                  {isExpanded && (
+                    <div style={{ padding:"0 20px 20px", borderTop:`1px solid ${bdr}` }}>
+                      {/* 기준 안내 */}
+                      <div style={{ padding:"12px 14px", margin:"12px 0", borderRadius:8, background:D?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", marginBottom:4 }}>📖 평가 기준</div>
+                        <div style={{ fontSize:12, color:muted, lineHeight:1.6 }}>{criterion.guide}</div>
+                      </div>
+
+                      {/* 잘하고 있는 점 */}
+                      {data.good?.length > 0 && (
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#22c55e", marginBottom:6 }}>✅ 잘하고 있는 점</div>
+                          {data.good.map((g,i) => (
+                            <div key={i} style={{ display:"flex", gap:8, marginBottom:4, alignItems:"flex-start" }}>
+                              <span style={{ color:"#22c55e", flexShrink:0 }}>•</span>
+                              <span style={{ fontSize:12, color:text, lineHeight:1.6 }}>{g}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 개선 필요 */}
+                      {data.bad?.length > 0 && (
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#ef4444", marginBottom:6 }}>❌ 개선이 필요한 점</div>
+                          {data.bad.map((b,i) => (
+                            <div key={i} style={{ display:"flex", gap:8, marginBottom:4, alignItems:"flex-start" }}>
+                              <span style={{ color:"#ef4444", flexShrink:0 }}>•</span>
+                              <span style={{ fontSize:12, color:text, lineHeight:1.6 }}>{b}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 구체적 수정 가이드 */}
+                      {data.howToFix?.length > 0 && (
+                        <div style={{ marginBottom:12, padding:"14px", borderRadius:10, background:D?"rgba(245,158,11,0.06)":"rgba(245,158,11,0.03)", border:"1px solid rgba(245,158,11,0.15)" }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#f59e0b", marginBottom:8 }}>🔧 수정 가이드 (이렇게 바꾸세요)</div>
+                          {data.howToFix.map((fix,i) => (
+                            <div key={i} style={{ display:"flex", gap:8, marginBottom:6, alignItems:"flex-start" }}>
+                              <span style={{ fontSize:12, fontWeight:900, color:"#f59e0b", flexShrink:0, minWidth:16 }}>{i+1}.</span>
+                              <span style={{ fontSize:12, color:text, lineHeight:1.7 }}>{fix}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 수정 예시 */}
+                      {data.example && (
+                        <div style={{ padding:"12px 14px", borderRadius:8, background:D?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.03)", border:"1px solid rgba(34,197,94,0.15)" }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>💡 수정 예시</div>
+                          <div style={{ fontSize:12, color:text, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{data.example}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* 추천 제목 */}
+            {result.recommendedTitles?.length > 0 && (
+              <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
+                <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>✨ SEO 최적화 추천 제목 ({result.recommendedTitles.length}개)</div>
+                {result.recommendedTitles.map((t,i) => (
+                  <div key={i} onClick={()=>navigator.clipboard.writeText(t)}
+                    style={{ padding:"10px 14px", marginBottom:6, borderRadius:8, border:`1px solid ${bdr}`, cursor:"pointer",
+                      background:D?"rgba(255,255,255,0.03)":"#fafafa", fontSize:13, color:text, fontWeight:600, display:"flex", alignItems:"center", gap:8 }}
+                    title="클릭하면 복사">
+                    <span style={{ color:config.color, fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                    <span style={{ flex:1 }}>{t}</span>
+                    <span style={{ fontSize:10, color:muted, flexShrink:0 }}>📋 복사</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 추천 키워드 */}
+            {result.recommendedKeywords?.length > 0 && (
+              <div style={{ padding:"18px 20px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
+                <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>🏷 추천 키워드 ({result.recommendedKeywords.length}개)</div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {result.recommendedKeywords.map((k,i) => (
+                    <span key={i} onClick={()=>navigator.clipboard.writeText(k)}
+                      style={{ padding:"6px 14px", borderRadius:20, background:`${config.color}12`, border:`1px solid ${config.color}25`,
+                        color:config.color, fontSize:12, fontWeight:600, cursor:"pointer" }}>{k}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 경쟁 차별화 전략 */}
+            {result.competitorTip && (
+              <div style={{ padding:"18px 20px", borderRadius:14, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)" }}>
+                <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:8 }}>🎯 경쟁 차별화 전략</div>
+                <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}

@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/((?!robots\\.txt|sitemap\\.xml|og-image\\.png|favicon\\.svg).*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/rss.xml", "destination": "/api/rss" },
+    { "source": "/feed", "destination": "/api/rss" },
+    { "source": "/((?!robots\\.txt|og-image\\.png|favicon\\.svg|20260323).*)", "destination": "/index.html" }
   ]
 }

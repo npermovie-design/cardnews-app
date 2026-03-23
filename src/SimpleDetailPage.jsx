@@ -499,10 +499,22 @@ export default function SimpleDetailPage({ isDark, user }) {
 
           {/* 다음 버튼 */}
           <div style={{ display:"flex", justifyContent:"flex-end" }}>
-            <button onClick={()=>{
+            <button onClick={async ()=>{
               if(!canNext) return;
-              setSlideContents(SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",body:"",badge:"",aiLoading:false})));
+              const initialSlides = SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",body:"",badge:"",aiLoading:false}));
+              setSlideContents(initialSlides);
               setWizStep(2);
+              // 자동 AI 기획
+              setPlanGenLoading(true);
+              try {
+                const textData = await generateSlideTexts({topic,content,pageCount,slideTypes:SLIDE_TYPES,mode});
+                const filled = textData.slides || [];
+                setSlideContents(initialSlides.map(s => {
+                  const found = filled.find(f => f.id === s.id);
+                  return found ? { ...s, ...found } : s;
+                }));
+              } catch {}
+              setPlanGenLoading(false);
             }} disabled={!canNext}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?accentColor:`${accentColor}40`, color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>

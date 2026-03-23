@@ -16,6 +16,8 @@ import MyPage from "./MyPage";
 import AttendanceModal from "./AttendanceModal";
 import Footer from "./Footer.jsx";
 import EventPage from "./EventPage.jsx";
+import CasePage from "./CasePage.jsx";
+import AnalyzerPage from "./AnalyzerPage.jsx";
 
 // 접속자 카운트 훅 (Supabase online_users 테이블 + localStorage 폴백)
 function useOnlineCount() {
@@ -384,11 +386,13 @@ export default function App() {
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
+    if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
+    if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
     if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;
@@ -533,11 +537,46 @@ export default function App() {
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
           <NavBtn id="about" label={t("about")} />
-          <NavBtn id="howto" label={t("howto")} />
+          <NavBtn id="cases" label="고객사례" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 4px" }} />
+          {/* AI 분석기획기 드롭다운 */}
+          <div style={{ position: "relative" }}>
+            <DropBtn label="AI 분석기획기" open={openMenu==="aiAnalysis"} active={page==="ai"&&aiMenu?.startsWith("seo_")} onClick={() => setOpenMenu(m => m==="aiAnalysis"?null:"aiAnalysis")} />
+            {openMenu==="aiAnalysis" && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
+                background: C.modalBg, border: "1px solid " + C.border,
+                borderRadius: 13, padding: 8, minWidth: 260,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)", animation: "fadeIn 0.15s ease",
+              }}>
+                {[
+                  { key:"seo_home",    label:"📊 실시간 검색어",      desc:"네이버·구글·다음 트렌드" },
+                  { key:"seo_blog",    label:"📝 네이버 블로그 분석",  desc:"SEO 점수 및 개선 제안" },
+                  { key:"seo_youtube", label:"▶️ 유튜브 분석",        desc:"영상 SEO 최적화 분석" },
+                  { key:"seo_tistory", label:"📖 티스토리 분석",      desc:"블로그 SEO 종합 평가" },
+                  { key:"seo_insta",   label:"📸 인스타그램 분석",    desc:"피드·릴스·해시태그 최적화" },
+                ].map(item => (
+                  <button key={item.key} onClick={() => { navigate("analyzer"); setOpenMenu(null); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%",
+                      padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+                      background: page==="analyzer" ? "rgba(99,102,241,0.08)" : "transparent",
+                      textAlign: "left", transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background = page==="analyzer" ? "rgba(99,102,241,0.08)" : "transparent"}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{item.label}</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {/* AI 생성기 통합 드롭다운 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label={t("aiGen")} open={openMenu==="aiGen"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
+            <DropBtn label={t("aiGen")} open={openMenu==="aiGen"} active={page==="ai"&&!aiMenu?.startsWith("seo_")} onClick={() => setOpenMenu(m => m==="aiGen"?null:"aiGen")} />
             {openMenu==="aiGen" && (
               <div style={{
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 100,
@@ -822,7 +861,7 @@ export default function App() {
           {[
             { id: "home",  label: t("home") },
             { id: "about", label: t("about") },
-            { id: "howto", label: t("howto") },
+            { id: "cases", label: "고객사례" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",

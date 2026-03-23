@@ -377,7 +377,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
 
         {/* 프로 디자인 문의 배너 */}
         <div style={{ display:'flex', justifyContent:'center', marginTop:20, marginBottom:32 }}>
-          <div style={{ width:'100%', borderRadius:20,
+          <div style={{ width:'100%', maxWidth:640, borderRadius:20,
             border:'1px solid rgba(6,182,212,0.3)',
             background: D ? 'rgba(6,182,212,0.06)' : 'rgba(6,182,212,0.04)',
             padding:'20px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:12, textAlign:'center' }}>

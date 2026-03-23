@@ -888,10 +888,13 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [toast,   setToast]   = useState("");
   const [filterTag,   setFilterTag]   = useState(""); // 세부 태그 필터
   const [archiveView, setArchiveView] = useState("posts"); // "posts" | "search"
-  const [viewMode,    setViewMode]    = useState("list"); // "list" | "gallery" | "compact"
+  const [viewMode,    setViewMode]    = useState(() => initialCat==="archive" ? "gallery" : "list"); // "list" | "gallery" | "compact"
   const [showCatMgr, setShowCatMgr] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
   const archiveFileRef = useRef(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [archiveUploadFile, setArchiveUploadFile] = useState(null);
+  const [archiveForm, setArchiveForm] = useState({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
 
   const handleArchiveUpload = async (files) => {
     if (!files || files.length === 0 || !user || user.role !== "admin") return;
@@ -1014,7 +1017,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   const filtered = useMemo(()=>{
     let list = posts.filter(p=>p.cat===subCat||p.subCat===subCat);
-    if(filterTag) list = list.filter(p=>p.tag===filterTag);
+    if(filterTag) {
+      if(subCat==="archive" && ["video","photo","gif","music"].includes(filterTag)) {
+        list = list.filter(p => {
+          const imgs = p.images || [];
+          if(filterTag==="video") return imgs.some(u=>/\.(mp4|mov|avi|webm|mkv)/i.test(u));
+          if(filterTag==="photo") return imgs.some(u=>/\.(jpg|jpeg|png|webp|avif|bmp)/i.test(u)) && !imgs.some(u=>/\.gif$/i.test(u));
+          if(filterTag==="gif") return imgs.some(u=>/\.gif$/i.test(u));
+          if(filterTag==="music") return imgs.some(u=>/\.(mp3|wav|ogg|flac|m4a|aac)/i.test(u));
+          return true;
+        });
+      } else {
+        list = list.filter(p=>p.tag===filterTag);
+      }
+    }
     if(search.trim()){ const q=search.toLowerCase(); list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q)); }
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
@@ -1024,6 +1040,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const hotPosts = useMemo(()=>
     [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts,subCat]);
+  const hotPostsAll = useMemo(()=>
+    [...posts].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
+  [posts]);
 
   // 자료실 탭: 첨부파일 있는 전체 게시물
   const archiveFiltered = useMemo(()=>{
@@ -1100,6 +1119,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     syncLocal(next); setView(updated);
     const cat = p.subCat||p.cat||subCat;
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
+    // SEO: 동적 title + meta description
+    document.title = `${p.title} - SNS메이킷 커뮤니티`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.content = (p.body||"").replace(/<[^>]*>/g,"").slice(0,155);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = `${p.title} - SNS메이킷`;
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.content = (p.body||"").replace(/<[^>]*>/g,"").slice(0,155);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.content = `https://www.snsmakeit.com/community/${cat}/post-${p.id}`;
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
     // body가 없으면 Supabase에서 full post 로드
     if (!p.body) {
@@ -1202,7 +1231,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#6366f1",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
       <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
-        <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
+        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);document.title="SNS메이킷 - 커뮤니티";}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
           <div style={{padding:"24px 28px 20px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
@@ -1593,10 +1622,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 메인 */}
           <div style={{flex:1,minWidth:0,overflow:"hidden",width:"100%"}}>
 
-            {/* 자료실 전용 탭 토글 */}
+            {/* 자료실 전용 탭 (영상/사진/GIF/무료이미지) */}
             {subCat==="archive" && (
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid "+bdr,paddingBottom:0}}>
-                {[["posts",t("archivePosts")],["search",t("freeMediaSearch")]].map(([v,l])=>(
+                {[["posts","📁 자료실"],["search","🔍 무료 이미지·GIF"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setArchiveView(v)} style={{
                     padding:"9px 18px",border:"none",cursor:"pointer",fontSize:13,fontWeight:archiveView===v?700:500,
                     background:"transparent",borderRadius:"8px 8px 0 0",
@@ -1612,20 +1641,171 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <FreeMediaSearch C={C} isDark={isDark} bdr={bdr}/>
             )}
 
-            {/* 자료실 다이렉트 업로드 (관리자) */}
-            {subCat==="archive" && archiveView==="posts" && user?.role==="admin" && (
-              <div style={{marginBottom:16,padding:"16px 20px",borderRadius:14,border:`2px dashed ${bdr}`,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)",textAlign:"center",cursor:"pointer",position:"relative"}}
-                onClick={()=>archiveFileRef.current?.click()}
-                onDrop={async e=>{e.preventDefault();await handleArchiveUpload(e.dataTransfer.files);}}
-                onDragOver={e=>e.preventDefault()}>
-                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>파일을 드래그하거나 클릭해서 업로드</div>
-                <div style={{fontSize:11,color:C.muted}}>이미지, 영상, 문서 등 모든 파일 가능 (최대 50MB)</div>
-                <input ref={archiveFileRef} type="file" multiple style={{display:"none"}} onChange={e=>handleArchiveUpload(e.target.files)}/>
+            {/* 자료실 파일 input (숨김) */}
+            {subCat==="archive" && (
+              <input ref={archiveFileRef} type="file" multiple style={{display:"none"}} onChange={e=>{
+                if(e.target.files.length===1){ setArchiveUploadFile(e.target.files[0]); setShowArchiveModal(true); }
+                else { handleArchiveUpload(e.target.files); }
+                e.target.value="";
+              }}/>
+            )}
+
+            {/* 자료 업로드 상세 설정 모달 */}
+            {showArchiveModal && archiveUploadFile && (
+              <div onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);}} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+                <div onClick={e=>e.stopPropagation()} style={{width:"min(480px,95vw)",background:isDark?"#1a1730":"#fff",borderRadius:20,padding:"28px 24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`}}>
+                  <div style={{fontSize:18,fontWeight:900,color:C.text,marginBottom:16}}>자료 등록</div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>파일</div>
+                    <div style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",fontSize:13,color:C.text}}>{archiveUploadFile.name}</div>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>제목</div>
+                    <input value={archiveForm.title} onChange={e=>setArchiveForm(p=>({...p,title:e.target.value}))} placeholder="자료 제목"
+                      style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>설명</div>
+                    <textarea value={archiveForm.desc} onChange={e=>setArchiveForm(p=>({...p,desc:e.target.value}))} placeholder="자료 설명 (선택)" rows={2}
+                      style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",resize:"vertical"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:8,marginBottom:12}}>
+                    {[["free","🆓 무료","#22c55e"],["paid","💰 유료","#f59e0b"]].map(([v,l,c])=>(
+                      <button key={v} onClick={()=>setArchiveForm(p=>({...p,priceType:v}))}
+                        style={{flex:1,padding:"10px",borderRadius:10,border:`2px solid ${archiveForm.priceType===v?c:bdr}`,background:archiveForm.priceType===v?c+"15":"transparent",color:archiveForm.priceType===v?c:C.muted,fontSize:13,fontWeight:archiveForm.priceType===v?800:500,cursor:"pointer"}}>{l}</button>
+                    ))}
+                  </div>
+                  {archiveForm.priceType==="paid" && (
+                    <div style={{marginBottom:12}}>
+                      <input value={archiveForm.price} onChange={e=>setArchiveForm(p=>({...p,price:e.target.value}))} placeholder="가격 (예: 5,000원)"
+                        style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:8,marginBottom:16}}>
+                    {[["all","전체 공개"],["member","회원 전용"],["nonmember","비회원 포함"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setArchiveForm(p=>({...p,visibility:v}))}
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${archiveForm.visibility===v?"#6366f1":bdr}`,background:archiveForm.visibility===v?"rgba(99,102,241,0.12)":"transparent",color:archiveForm.visibility===v?"#a5b4fc":C.muted,fontSize:11,fontWeight:archiveForm.visibility===v?700:500,cursor:"pointer"}}>{l}</button>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);}} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer"}}>취소</button>
+                    <button onClick={async()=>{
+                      const file = archiveUploadFile;
+                      try {
+                        const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+                        const url = await uploadFileToStorage(file, path);
+                        const type = file.type.startsWith("video")?"video":file.type.startsWith("image")?"image":"file";
+                        await submitPost({
+                          title: archiveForm.title || file.name.replace(/\.[^.]+$/,""),
+                          body: `<p>${archiveForm.desc || type+" 자료"}</p>`,
+                          subCat:"archive", tag:"", images:[url],
+                          priceType: archiveForm.priceType, price: archiveForm.price,
+                        });
+                        showToast("✅ 자료가 등록됐어요!","success");
+                        try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
+                      } catch(e){ alert("업로드 실패: "+e.message); }
+                      setShowArchiveModal(false); setArchiveUploadFile(null);
+                      setArchiveForm({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
+                    }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>등록하기</button>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* 업로드 자료 뷰 (자료실이 아니거나 posts 탭일 때) */}
-            {(subCat!=="archive" || archiveView==="posts") && <>
+            {/* 자료실 미디어 그리드 뷰 */}
+            {subCat==="archive" && archiveView==="posts" && (
+              <>
+                {/* 서브탭 (무료이미지 스타일) */}
+                <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:"2px solid "+bdr}}>
+                  {[{id:"",label:"전체"},{id:"video",label:"🎬 영상"},{id:"photo",label:"📷 사진"},{id:"gif",label:"🎞 GIF · 짤"},{id:"music",label:"🎵 음악"}].map(t=>{
+                    const active = filterTag===t.id;
+                    return (
+                      <button key={t.id} onClick={()=>{setFilterTag(t.id);setPage(1);}}
+                        style={{flex:1,padding:"12px 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:active?700:500,
+                          background:"transparent",color:active?"#a5b4fc":C.muted,
+                          borderBottom:active?"2px solid #6366f1":"2px solid transparent",marginBottom:-2,transition:"all 0.15s"}}>
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 검색바 */}
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="자료 검색..."
+                    style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
+                  {user?.role==="admin"&&(
+                    <button onClick={()=>archiveFileRef.current?.click()}
+                      style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      📁 자료 등록
+                    </button>
+                  )}
+                </div>
+
+                {/* 미디어 카드 그리드 */}
+                {pageItems.length > 0 ? (
+                  <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+                    {pageItems.map(p => {
+                      const thumb = (p.images||[])[0];
+                      const isVid = thumb && /\.(mp4|mov|avi|webm|mkv)/i.test(thumb);
+                      const isGif = thumb && /\.gif$/i.test(thumb);
+                      return (
+                        <div key={p.id} onClick={()=>openPost(p)}
+                          style={{borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,background:cardBg,cursor:"pointer",position:"relative",transition:"transform 0.15s"}}
+                          onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+                          onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                          <div style={{width:"100%",aspectRatio:"1",background:isDark?"rgba(255,255,255,0.03)":"#f0f0f6",overflow:"hidden",position:"relative"}}>
+                            {isVid ? (
+                              <video src={thumb} muted loop playsInline preload="metadata"
+                                style={{width:"100%",height:"100%",objectFit:"cover"}}
+                                onMouseEnter={e=>e.target.play().catch(()=>{})}
+                                onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
+                            ) : thumb ? (
+                              <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                            ) : (
+                              <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>📁</div>
+                            )}
+                            {/* 유형 배지 */}
+                            {isVid && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(0,0,0,0.7)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>🎬 영상</span>}
+                            {isGif && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(139,92,246,0.8)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>GIF</span>}
+                            {/* 유료/무료 배지 */}
+                            {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>유료{p.price?` ${p.price}`:""}</span>}
+                            {p.priceType==="free"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>무료</span>}
+                            {/* 다운로드 */}
+                            {thumb&&<button onClick={e=>{e.stopPropagation();downloadFile(thumb);}}
+                              style={{position:"absolute",bottom:6,right:6,padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
+                          </div>
+                          <div style={{padding:"8px 10px"}}>
+                            <div style={{fontSize:12,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
+                    <div style={{fontSize:36,marginBottom:8}}>📁</div>
+                    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>아직 등록된 자료가 없어요</div>
+                    <div style={{fontSize:12}}>관리자가 자료를 등록하면 여기에 표시됩니다</div>
+                  </div>
+                )}
+
+                {/* 페이지네이션 */}
+                {totalPages > 1 && (
+                  <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:20}}>
+                    {Array.from({length:totalPages},(_,i)=>i+1).map(n=>(
+                      <button key={n} onClick={()=>setPage(n)}
+                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${page===n?"#6366f1":bdr}`,
+                          background:page===n?"rgba(99,102,241,0.15)":"transparent",color:page===n?"#a5b4fc":C.muted,
+                          fontSize:12,fontWeight:page===n?700:400,cursor:"pointer"}}>{n}</button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 일반 게시판 뷰 (자료실 외) */}
+            {subCat!=="archive" && <>
 
             {/* 액션바 */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
@@ -1666,8 +1846,31 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             </div>
 
-            {/* 세부 태그 필터 바 */}
-            {currentTags.length > 0 && (
+            {/* 자료실 전용 유형 필터 */}
+            {subCat==="archive" && (
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                {[{id:"all",label:"전체",icon:"📁"},{id:"video",label:"영상",icon:"🎬"},{id:"photo",label:"사진",icon:"📷"},{id:"gif",label:"GIF·짤",icon:"🎞"},{id:"music",label:"음악",icon:"🎵"}].map(t=>{
+                  const active = filterTag===(t.id==="all"?"":t.id);
+                  const cnt = t.id==="all" ? activeFiltered.length : posts.filter(p=>(p.subCat==="archive")&&(
+                    t.id==="video" ? (p.images||[]).some(u=>/\.(mp4|mov|avi|webm)/i.test(u)) :
+                    t.id==="photo" ? (p.images||[]).some(u=>/\.(jpg|jpeg|png|webp|avif)/i.test(u)) && !(p.images||[]).some(u=>/\.(gif)/i.test(u)) :
+                    t.id==="gif" ? (p.images||[]).some(u=>/\.(gif)/i.test(u)) :
+                    t.id==="music" ? (p.images||[]).some(u=>/\.(mp3|wav|ogg|flac|m4a)/i.test(u)) : false
+                  )).length;
+                  return (
+                    <button key={t.id} onClick={()=>{setFilterTag(t.id==="all"?"":t.id);setPage(1);}}
+                      style={{padding:"6px 14px",borderRadius:10,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,
+                        border:`1px solid ${active?"#6366f1":bdr}`,
+                        background:active?"rgba(99,102,241,0.15)":"transparent",
+                        color:active?"#a5b4fc":C.muted,fontWeight:active?700:400}}>
+                      {t.icon} {t.label} <span style={{fontSize:10,opacity:0.6}}>({cnt})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {/* 세부 태그 필터 바 (자료실 외) */}
+            {subCat!=="archive" && currentTags.length > 0 && (
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
                 <button onClick={()=>setFilterTag("")} style={{
                   padding:"4px 12px",borderRadius:14,fontSize:12,cursor:"pointer",
@@ -1693,10 +1896,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{background:cardBg,border:"1px solid "+bdr,borderRadius:10,padding:"70px 0",textAlign:"center",color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:12}}>{subInfo?.icon||"📋"}</div>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>
-                  {search?`"${search}" ${t("noSearchResult")}`:t("noPosts")}
+                  {search?`"${search}" ${t("noSearchResult")}`:subCat==="archive"?"아직 등록된 자료가 없어요":t("noPosts")}
                 </div>
-                <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
-                {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
+                {subCat==="archive" ? (
+                  <div style={{fontSize:13,marginBottom:20,color:C.muted}}>관리자가 자료를 등록하면 여기에 표시됩니다</div>
+                ) : (
+                  <>
+                    <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
+                    {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
+                  </>
+                )}
               </div>
             )}
 
@@ -1948,19 +2157,39 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 우측 사이드바 - 데스크톱만 */}
           {!isMobile && (
           <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
-            {hotPosts.length>0&&(
+            {/* 전체 인기글 TOP10 */}
+            {hotPostsAll.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
-                <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>
-                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>🔥 인기글 TOP10</span>
+                <div style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(239,68,68,0.06)":"rgba(239,68,68,0.03)"}}>
+                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>🔥 전체 인기글 TOP10</span>
                 </div>
-                {hotPosts.map((p,i)=>(
-                  <div key={p.id} onClick={()=>openPost(p)} style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
+                {hotPostsAll.map((p,i)=>(
+                  <div key={p.id} onClick={()=>openPost(p)} style={{padding:"10px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
                     onMouseEnter={e=>e.currentTarget.style.background=hover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                      <span style={{fontSize:16,fontWeight:900,color:i===0?"#ef4444":i===1?"#f59e0b":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
+                      <span style={{fontSize:14,fontWeight:900,color:i===0?"#ef4444":i===1?"#f59e0b":i===2?"#6366f1":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4,marginBottom:3}}>{p.title}</div>
-                        <div style={{fontSize:11,color:C.muted}}>👁 {p.views||0} · 👍 {p.likes||0}</div>
+                        <div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4,marginBottom:2}}>{p.title}</div>
+                        <div style={{fontSize:10,color:C.muted}}>👁 {p.views||0}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* 게시판별 인기글 TOP10 */}
+            {hotPosts.length>0&&subCat!=="archive"&&(
+              <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>
+                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>⭐ {subInfo?.label||""} 인기글</span>
+                </div>
+                {hotPosts.slice(0,5).map((p,i)=>(
+                  <div key={p.id} onClick={()=>openPost(p)} style={{padding:"10px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background=hover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                      <span style={{fontSize:14,fontWeight:900,color:i===0?"#f59e0b":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4}}>{p.title}</div>
                       </div>
                     </div>
                   </div>

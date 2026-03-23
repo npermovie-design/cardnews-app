@@ -5,5 +5,8 @@ Disallow: /xk9m2p4q7
 # Sitemaps
 Sitemap: https://www.snsmakeit.com/sitemap.xml
 
+# RSS Feed
+# https://www.snsmakeit.com/rss.xml
+
 # Host
 Host: https://www.snsmakeit.com

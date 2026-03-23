@@ -84,6 +84,8 @@ export default function AdminPage({ C, user: adminUser }) {
   const [search, setSearch]   = useState("");
   const [toast, setToast]     = useState("");
   const [ptInputs, setPtInputs] = useState({});
+  const [aiLogs, setAiLogs] = useState([]);
+  const [aiLogsLoading, setAiLogsLoading] = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
 
   // Supabase에서 회원 목록 로드
@@ -107,9 +109,18 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingPosts(false);
   };
 
+  const loadAiLogs = async () => {
+    setAiLogsLoading(true);
+    try {
+      const { data } = await supabase.from("point_history").select("*").order("created_at",{ascending:false}).limit(200);
+      setAiLogs(data || []);
+    } catch {}
+    setAiLogsLoading(false);
+  };
+
   useEffect(() => {
     if (auth) {
-      loadMembers(); loadVideos(); loadPosts(); loadBoardCats();
+      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs();
       supabase.from("online_users").select("*",{count:"exact",head:true}).then(({count})=>setOnlineCount(count||0)).catch(()=>{});
     }
   }, [auth]);
@@ -456,6 +467,91 @@ export default function AdminPage({ C, user: adminUser }) {
               <span style={{color:"#f59e0b",fontWeight:700}}>💡 추천:</span> Google Analytics를 연동하면 실시간 방문자, 페이지뷰, 유입 검색어, 검색엔진별 트래픽을 모두 확인할 수 있습니다.
               GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
             </div>
+          </div>
+          {/* AI 사용 로그 */}
+          <div style={{ marginTop:24, ...cardStyle }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text }}>🤖 AI 사용 로그 (최근 200건)</div>
+              <button onClick={loadAiLogs} disabled={aiLogsLoading}
+                style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.muted, fontSize:11, cursor:"pointer" }}>
+                {aiLogsLoading?"로딩중...":"🔄 새로고침"}
+              </button>
+            </div>
+            {aiLogs.length === 0 ? (
+              <div style={{ textAlign:"center", padding:20, color:C.muted, fontSize:13 }}>
+                {aiLogsLoading ? "로딩중..." : "아직 사용 기록이 없습니다. (point_history 테이블 필요)"}
+              </div>
+            ) : (
+              <>
+                {/* AI 기능별 사용 통계 */}
+                {(() => {
+                  const aiOnly = aiLogs.filter(l => l.delta < 0);
+                  const byReason = {};
+                  aiOnly.forEach(l => {
+                    const r = l.reason || "기타";
+                    byReason[r] = (byReason[r]||0) + 1;
+                  });
+                  const byUser = {};
+                  aiOnly.forEach(l => {
+                    const u = l.uid || "unknown";
+                    byUser[u] = (byUser[u]||0) + 1;
+                  });
+                  const topUsers = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5);
+                  const nick = uid => members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
+                  return (
+                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:16 }}>
+                      <div style={{ flex:1, minWidth:200 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>기능별 사용 횟수</div>
+                        {Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([r,c]) => (
+                          <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                            <span style={{ fontSize:11, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#6366f1" }}>{c}회</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ flex:1, minWidth:200 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>사용자별 TOP5</div>
+                        {topUsers.map(([uid,c],i) => (
+                          <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                            <span style={{ fontSize:12, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:16 }}>{i+1}</span>
+                            <span style={{ fontSize:11, color:C.text, flex:1 }}>{nick(uid)}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#6366f1" }}>{c}회</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* 최근 로그 테이블 */}
+                <div style={{ overflowX:"auto", maxHeight:300, overflowY:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                    <thead>
+                      <tr style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, position:"sticky", top:0, background:isDark?"#1a1730":"#fff" }}>
+                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>사용자</th>
+                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>기능</th>
+                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>포인트</th>
+                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>잔여</th>
+                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>일시</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aiLogs.slice(0,50).map((l,i) => {
+                        const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,8) || "?";
+                        return (
+                          <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
+                            <td style={{ padding:"6px 8px", fontWeight:600, color:C.text }}>{nick}</td>
+                            <td style={{ padding:"6px 8px", color:C.muted }}>{l.reason||"-"}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{l.delta}P</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{l.balance?.toLocaleString()||"-"}P</td>
+                            <td style={{ padding:"6px 8px", color:C.muted, fontSize:10 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
         );

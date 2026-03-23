@@ -115,12 +115,27 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
     ctx.globalAlpha = slide.bgOpacity ?? 1;
     ctx.drawImage(bgImageEl, sx, sy, sw, sh);
     ctx.restore();
-    // 오버레이
+    // 오버레이 (단색 또는 그라데이션)
     const oc = slide.overlayColor || "#000000";
     const oo = slide.overlayOpacity ?? 0.48;
-    const r = parseInt(oc.slice(1,3),16), g = parseInt(oc.slice(3,5),16), b = parseInt(oc.slice(5,7),16);
-    ctx.fillStyle = `rgba(${r},${g},${b},${oo})`;
-    ctx.fillRect(0, 0, CW, CH);
+    const r = parseInt(oc.slice(1,3),16)||0, g = parseInt(oc.slice(3,5),16)||0, b = parseInt(oc.slice(5,7),16)||0;
+    const ovType = slide.overlayType || "solid";
+    if (ovType === "solid") {
+      ctx.fillStyle = `rgba(${r},${g},${b},${oo})`;
+      ctx.fillRect(0, 0, CW, CH);
+    } else {
+      let grd;
+      if (ovType === "bottom") grd = ctx.createLinearGradient(0, 0, 0, CH);
+      else if (ovType === "top") grd = ctx.createLinearGradient(0, CH, 0, 0);
+      else if (ovType === "left") grd = ctx.createLinearGradient(CW, 0, 0, 0);
+      else if (ovType === "right") grd = ctx.createLinearGradient(0, 0, CW, 0);
+      else if (ovType === "center") { grd = ctx.createRadialGradient(CW/2,CH/2,0,CW/2,CH/2,Math.max(CW,CH)*0.7); }
+      else grd = ctx.createLinearGradient(0, 0, 0, CH);
+      grd.addColorStop(0, `rgba(${r},${g},${b},0)`);
+      grd.addColorStop(1, `rgba(${r},${g},${b},${oo})`);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, CW, CH);
+    }
   } else {
     ctx.fillStyle = style.bgColor || "#1c1c1e";
     ctx.fillRect(0, 0, CW, CH);
@@ -148,9 +163,9 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   const tw = style.titleWeight || "800";
 
   ctx.font = getCanvasFont(tw, tSz, ff);
-  const titLines = wrapText(ctx, slide.title || slide.headline || "", maxW);
+  const titLines = wrapText(ctx, slide.title !== undefined ? slide.title : (slide.headline || ""), maxW);
   ctx.font = getCanvasFont("600", sSz, ff);
-  const _sub = slide.subtitle !== undefined ? slide.subtitle : slide.subheadline;
+  const _sub = slide.subtitle !== undefined ? slide.subtitle : (slide.subheadline || "");
   const subLines = _sub ? wrapText(ctx, _sub, maxW) : [];
   ctx.font = getCanvasFont("400", bSz, ff);
   const bodLines = slide.body ? wrapText(ctx, slide.body, maxW) : [];
@@ -327,9 +342,55 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
-  const [customFonts, setCustomFonts] = useState([]);
+  const [showMediaSearch, setShowMediaSearch] = useState(false);
+  const [mediaQuery, setMediaQuery] = useState("");
+  const [mediaResults, setMediaResults] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
+  const searchMedia = async (q) => {
+    if (!q.trim()) return;
+    setMediaLoading(true);
+    const results = [];
+    // Pixabay
+    const pbKey = import.meta.env.VITE_PIXABAY_KEY;
+    if (pbKey) {
+      try {
+        const r = await fetch(`https://pixabay.com/api/?key=${pbKey}&q=${encodeURIComponent(q)}&per_page=12&image_type=photo`);
+        const d = await r.json();
+        (d.hits||[]).forEach(h => results.push({ url: h.largeImageURL, thumb: h.previewURL, src: "Pixabay", w: h.imageWidth, h: h.imageHeight }));
+      } catch {}
+    }
+    // Pexels
+    const pxKey = import.meta.env.VITE_PEXELS_KEY;
+    if (pxKey) {
+      try {
+        const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=12`, { headers: { Authorization: pxKey } });
+        const d = await r.json();
+        (d.photos||[]).forEach(p => results.push({ url: p.src.large, thumb: p.src.small, src: "Pexels", w: p.width, h: p.height }));
+      } catch {}
+    }
+    setMediaResults(results);
+    setMediaLoading(false);
+  };
+
+  const [customFonts, setCustomFonts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("nper_custom_fonts")||"[]"); } catch { return []; }
+  });
   const fontFileRef = useRef(null);
   useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
+
+  // 커스텀 폰트 복원 (페이지 로드 시)
+  useEffect(() => {
+    customFonts.forEach(cf => {
+      if (cf.data && !document.fonts.check(`12px "${cf.name}"`)) {
+        try {
+          const buf = Uint8Array.from(atob(cf.data), c=>c.charCodeAt(0)).buffer;
+          const ff = new FontFace(cf.name, buf);
+          ff.load().then(f => document.fonts.add(f)).catch(()=>{});
+        } catch {}
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (autoSuggest && wizStep === 2 && slideContents.length > 0) {
@@ -861,7 +922,31 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
           </div>
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes sc-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}@keyframes sc-progress{from{width:5%}to{width:92%}}`}</style>
+
+        {/* 생성 중 전체화면 오버레이 */}
+        {loading && (
+          <div style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+            <div style={{ textAlign:"center",maxWidth:400,padding:40 }}>
+              <div style={{ fontSize:64,marginBottom:20,animation:"sc-float 2.5s ease-in-out infinite" }}>✨🎨</div>
+              <div style={{ fontSize:22,fontWeight:900,color:"#fff",marginBottom:8 }}>카드뉴스 생성 중...</div>
+              <div style={{ fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:28,lineHeight:1.6 }}>
+                AI가 {slides.length || pageCount}장의 슬라이드를 제작하고 있어요<br/>잠시만 기다려주세요
+              </div>
+              <div style={{ display:"flex",flexDirection:"column",gap:10,maxWidth:260,margin:"0 auto 24px",textAlign:"left" }}>
+                {["텍스트 구성 중...","디자인 적용 중...","이미지 렌더링 중...","마무리 작업..."].map((l,i)=>(
+                  <div key={i} style={{ display:"flex",alignItems:"center",gap:10,opacity:0.8 }}>
+                    <div style={{ width:18,height:18,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0 }}/>
+                    <span style={{ fontSize:13,color:"rgba(255,255,255,0.7)" }}>{l}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height:6,borderRadius:4,background:"rgba(255,255,255,0.1)",overflow:"hidden",maxWidth:260,margin:"0 auto" }}>
+                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",animation:"sc-progress 8s ease-out forwards" }}/>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -927,7 +1012,18 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   );
                 })}
               </div>
-              <button onClick={resetAll} style={{ marginTop:6,width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
+              <div style={{ display:"flex",gap:4,marginTop:6 }}>
+                <button onClick={()=>{
+                  const newSlide = { id:"slide_"+Date.now(), label:`추가 ${slides.length+1}`, title:"", subtitle:"", body:"", highlight:"" };
+                  setSlides(prev=>[...prev,newSlide]);
+                }} style={{ flex:1,padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:"#6366f1",fontSize:10,cursor:"pointer",fontWeight:700 }}>+ 페이지 추가</button>
+                {slides.length>2 && <button onClick={()=>{
+                  if(!window.confirm("마지막 페이지를 삭제할까요?")) return;
+                  setSlides(prev=>prev.slice(0,-1));
+                  if(selIdx>=slides.length-1) setSelIdx(Math.max(0,slides.length-2));
+                }} style={{ padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:10,cursor:"pointer",fontWeight:700 }}>삭제</button>}
+              </div>
+              <button onClick={resetAll} style={{ marginTop:4,width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
             </div>
 
             {/* 편집 패널 */}
@@ -1047,7 +1143,11 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                         const ff = new FontFace(fontName, buf);
                         await ff.load();
                         document.fonts.add(ff);
-                        setCustomFonts(prev=>[...prev.filter(f=>f.name!==fontName),{name:fontName}]);
+                        // base64로 저장하여 세션 간 유지
+                        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+                        const updated = [...customFonts.filter(f=>f.name!==fontName),{name:fontName,data:b64}];
+                        setCustomFonts(updated);
+                        try { localStorage.setItem("nper_custom_fonts", JSON.stringify(updated)); } catch {}
                         updSted(selIdx,"fontFamily",fontName);
                       } catch(err){ alert("폰트 로드 실패: "+err.message); }
                       e.target.value="";
@@ -1128,9 +1228,26 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                           style={{ width:"100%",accentColor:"#6366f1" }}/>
                       </div>
                     </div>
+                    {/* 오버레이 타입 (그라데이션 방향) */}
+                    <div style={{ marginTop:8 }}>
+                      <div style={{ fontSize:10,color:muted,marginBottom:4 }}>오버레이 스타일</div>
+                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                        {[["solid","단색 전체"],["bottom","↓ 하단 그라데이션"],["top","↑ 상단 그라데이션"],["left","← 좌측 그라데이션"],["right","→ 우측 그라데이션"],["center","◎ 중앙 비네팅"]].map(([v,l])=>(
+                          <button key={v} onClick={()=>updSted(selIdx,"overlayType",v)}
+                            style={{ padding:"4px 8px",borderRadius:6,border:`1px solid ${(so.overlayType||"solid")===v?"#6366f1":bdr}`,
+                              background:(so.overlayType||"solid")===v?"rgba(99,102,241,0.15)":"transparent",
+                              color:(so.overlayType||"solid")===v?"#a5b4fc":muted,fontSize:10,fontWeight:(so.overlayType||"solid")===v?700:400,cursor:"pointer" }}>
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <button onClick={()=>bgFileRef.current?.click()} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 배경 이미지 업로드</button>
+                  <div style={{ display:"flex",gap:6 }}>
+                    <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 이미지 업로드</button>
+                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>🔍 이미지 검색</button>
+                  </div>
                 )}
               </div>
 
@@ -1164,6 +1281,64 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           </div>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+        {/* 이미지 검색 모달 */}
+        {showMediaSearch && (
+          <div onClick={()=>setShowMediaSearch(false)} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"min(700px,95vw)",maxHeight:"80vh",background:D?"#1a1730":"#fff",borderRadius:20,padding:"24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`,display:"flex",flexDirection:"column"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div style={{fontSize:16,fontWeight:900,color:text}}>🔍 이미지 검색 (Pixabay · Pexels)</div>
+                <button onClick={()=>setShowMediaSearch(false)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:16}}>✕</button>
+              </div>
+              <div style={{display:"flex",gap:8,marginBottom:16}}>
+                <input value={mediaQuery} onChange={e=>setMediaQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchMedia(mediaQuery)}
+                  placeholder="검색어 입력 (예: nature, food, office)"
+                  style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:inputBg,color:text,fontSize:13,outline:"none"}}/>
+                <button onClick={()=>searchMedia(mediaQuery)} disabled={mediaLoading}
+                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#6366f1",color:"#fff",fontSize:13,fontWeight:700,cursor:mediaLoading?"wait":"pointer",opacity:mediaLoading?0.6:1}}>
+                  {mediaLoading?"검색중...":"검색"}
+                </button>
+              </div>
+              <div style={{flex:1,overflowY:"auto"}}>
+                {mediaResults.length > 0 ? (
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
+                    {mediaResults.map((img,i) => (
+                      <div key={i} onClick={()=>{
+                        // 이미지를 배경으로 적용
+                        const imgEl = new Image();
+                        imgEl.crossOrigin = "anonymous";
+                        imgEl.onload = () => {
+                          const canvas = document.createElement("canvas");
+                          canvas.width = imgEl.width; canvas.height = imgEl.height;
+                          canvas.getContext("2d").drawImage(imgEl, 0, 0);
+                          updSted(selIdx, "bgImage", canvas.toDataURL("image/jpeg", 0.85));
+                          setShowMediaSearch(false);
+                        };
+                        imgEl.onerror = () => { updSted(selIdx, "bgImage", img.url); setShowMediaSearch(false); };
+                        imgEl.src = img.url;
+                      }}
+                        style={{borderRadius:10,overflow:"hidden",border:`1px solid ${bdr}`,cursor:"pointer",position:"relative",aspectRatio:"4/3"}}
+                        onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"}
+                        onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                        <img src={img.thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                        <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 6px",background:"rgba(0,0,0,0.6)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <span style={{fontSize:9,color:"#fff",fontWeight:600}}>{img.src}</span>
+                          <span style={{fontSize:8,color:"rgba(255,255,255,0.6)"}}>{img.w}x{img.h}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{textAlign:"center",padding:"40px 0",color:muted}}>
+                    <div style={{fontSize:36,marginBottom:12}}>🖼</div>
+                    <div style={{fontSize:13}}>키워드를 입력하고 검색하세요</div>
+                    <div style={{fontSize:11,marginTop:6,opacity:0.6}}>클릭하면 배경 이미지로 바로 적용됩니다</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
