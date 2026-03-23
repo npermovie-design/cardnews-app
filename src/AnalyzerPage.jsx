@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import SeoAnalyzer from "./SeoAnalyzer";
 
 const MENU_ITEMS = [
@@ -517,13 +517,14 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate
       <div style={{ marginBottom:8, fontSize:10, fontWeight:700, color:muted, letterSpacing:1, padding:"0 8px" }}>MENU</div>
       <button onClick={() => setMenu("home")} style={{ ...item("home",menu==="home"), paddingLeft:14 }}>홈</button>
       <button onClick={() => setMenu("library")} style={{ ...item("library",menu==="library"), paddingLeft:14 }}>내 보관함</button>
+      <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>📊 실시간 검색어</button>
       <div style={{ margin:"12px 0 8px", fontSize:11, fontWeight:800, color:text, padding:"0 8px", display:"flex", alignItems:"center", gap:6 }}>🏆 실시간 분석기</div>
       {RANK_ITEMS.map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.icon} {m.label}</button>
       ))}
       <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>🏢 브랜드 TOP100</button>
       <div style={{ margin:"12px 0 8px", fontSize:11, fontWeight:800, color:text, padding:"0 8px", display:"flex", alignItems:"center", gap:6 }}>🔍 SNS 분석기</div>
-      {MENU_ITEMS.map(m => (
+      {MENU_ITEMS.filter(m => m.id !== "seo_home").map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.icon} {m.label}</button>
       ))}
     </div>
@@ -543,8 +544,9 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const [loading, setLoading] = useState(false);
   const [prevMenu, setPrevMenu] = useState(menu);
   const [showFilter, setShowFilter] = useState(false);
+  const autoFetched = useRef(false);
 
-  if (menu !== prevMenu) { setPrevMenu(menu); setRanking([]); setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(false); }
+  if (menu !== prevMenu) { setPrevMenu(menu); setRanking([]); setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(false); autoFetched.current = false; }
 
   const config = RANK_ITEMS.find(r => r.id === menu);
   if (!config) return null;
@@ -566,6 +568,14 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
     } catch {}
     setLoading(false);
   };
+
+  // 진입 시 자동 로드
+  useEffect(() => {
+    if (!autoFetched.current && ranking.length === 0 && !loading) {
+      autoFetched.current = true;
+      fetchRanking("전체");
+    }
+  });
 
   const platformColor = config.id==="rank_youtube"?"#ef4444":config.id==="rank_insta"?"#e1306c":config.id==="rank_blog"?"#22c55e":config.id==="rank_tiktok"?"#69c9d0":"#6366f1";
 
@@ -715,6 +725,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const [detail, setDetail] = useState(null);
   const [keyword, setKeyword] = useState("");
   const accent = "#6366f1";
+  const autoFetched = useRef(false);
 
   const fetchBrands = async (category) => {
     setLoading(true); setRanking([]); setDetail(null);
@@ -730,6 +741,14 @@ JSON만:{"ranking":[...]}`;
     } catch {}
     setLoading(false);
   };
+
+  // 진입 시 자동 로드
+  useEffect(() => {
+    if (!autoFetched.current && ranking.length === 0 && !loading) {
+      autoFetched.current = true;
+      fetchBrands("전체");
+    }
+  });
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { callAI } from "./aiClient";
 
 const CATEGORIES = ["전체","IT/테크","경제/금융","엔터테인먼트","스포츠","건강/의학","교육","여행","음식","패션/뷰티"];
@@ -94,6 +94,7 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
   const [trendCat, setTrendCat] = useState("전체");
   const [trends, setTrends] = useState([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const trendAutoFetched = useRef(false);
 
   const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -131,6 +132,14 @@ JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","catego
     } catch {}
     setTrendLoading(false);
   };
+
+  // 실시간 검색어 진입 시 자동 로드
+  useEffect(() => {
+    if (menu === "seo_home" && !trendAutoFetched.current && trends.length === 0 && !trendLoading) {
+      trendAutoFetched.current = true;
+      fetchTrends("전체");
+    }
+  });
 
   // URL 콘텐츠 가져오기
   const fetchUrlContent = async (targetUrl) => {
