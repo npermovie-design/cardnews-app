@@ -551,33 +551,40 @@ function DetailCriterionCard({ criterion, data, isDark, text, muted, bdr, cardBg
   );
 }
 
-/* ── 사이드바 (기존 유지) ── */
+/* ── 사이드바 ── */
 function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate }) {
   const item = (id, active) => ({
-    display:"block", width:"100%", textAlign:"left", padding:"10px 14px 10px 36px",
+    display:"block", width:"100%", textAlign:"left", padding:"9px 14px 9px 16px",
     border:"none", cursor:"pointer", fontSize:13, borderRadius:8, marginBottom:2,
-    background: active ? (isDark?"rgba(99,102,241,0.18)":"rgba(99,102,241,0.08)") : "transparent",
-    color: active ? "#a5b4fc" : muted, fontWeight: active ? 700 : 400,
+    background: active ? (isDark?"rgba(124,106,255,0.18)":"rgba(124,106,255,0.08)") : "transparent",
+    color: active ? (isDark?"#a5b4fc":"#7c6aff") : muted, fontWeight: active ? 700 : 400,
     borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
   });
+  const sectionStyle = {
+    fontSize:13, fontWeight:800, color:text, padding:"0 8px", letterSpacing:-0.3,
+  };
+  const divider = { height:1, background:sideBdr, margin:"12px 4px" };
   return (
     <div style={{ width:200, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, height:"100%", overflowY:"auto", padding:"16px 10px" }}>
       <div style={{ padding:"0 8px 16px", borderBottom:"1px solid "+sideBdr, marginBottom:12 }}>
         <div style={{ fontSize:14, fontWeight:900, color:text }}>SNS메이킷</div>
         <div style={{ fontSize:11, color:muted }}>AI 분석기획기</div>
       </div>
-      <div style={{ marginBottom:8, fontSize:10, fontWeight:700, color:muted, letterSpacing:1, padding:"0 8px" }}>MENU</div>
       <button onClick={() => setMenu("home")} style={{ ...item("home",menu==="home"), paddingLeft:14 }}>홈</button>
       <button onClick={() => setMenu("library")} style={{ ...item("library",menu==="library"), paddingLeft:14 }}>내 보관함</button>
-      <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>📊 실시간 검색어</button>
-      <div style={{ margin:"12px 0 8px", fontSize:11, fontWeight:800, color:text, padding:"0 8px", display:"flex", alignItems:"center", gap:6 }}>🏆 실시간 분석기</div>
+      <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>실시간 검색어</button>
+
+      <div style={divider} />
+      <div style={{ ...sectionStyle, marginBottom:8 }}>실시간 분석기</div>
       {RANK_ITEMS.map(m => (
-        <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.icon} {m.label}</button>
+        <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
-      <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>🏢 브랜드 TOP100</button>
-      <div style={{ margin:"12px 0 8px", fontSize:11, fontWeight:800, color:text, padding:"0 8px", display:"flex", alignItems:"center", gap:6 }}>🔍 SNS 분석기</div>
+      <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP100</button>
+
+      <div style={divider} />
+      <div style={{ ...sectionStyle, marginBottom:8 }}>SNS 분석기</div>
       {MENU_ITEMS.filter(m => m.id !== "seo_home").map(m => (
-        <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.icon} {m.label}</button>
+        <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
     </div>
   );

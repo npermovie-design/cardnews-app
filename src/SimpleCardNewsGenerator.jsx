@@ -984,7 +984,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         <input ref={bgFileRef} type="file" accept="image/*" style={{ display:"none" }}
           onChange={e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>updSted(selIdx,"bgImage",ev.target.result); r.readAsDataURL(f); e.target.value=""; }}/>
 
-        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 16px 60px" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", padding:"0 16px 60px", animation:"fadeIn 0.3s ease" }}>
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:20,fontWeight:900,color:text,letterSpacing:-0.5,marginBottom:3 }}>슬라이드 편집</div>
             <div style={{ fontSize:12,color:muted }}>텍스트·배경·색상 변경 후 PNG/ZIP으로 저장하세요</div>
