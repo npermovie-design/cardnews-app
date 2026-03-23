@@ -64,6 +64,55 @@ const DESIGN_PRESETS = [
   { id:"d10", label:"요리/푸드", bgColor:"#2d1f0e", overlay:"rgba(0,0,0,0.2)", border:{color:"",width:0}, gradient:"radial-gradient(circle at 50% 50%,rgba(255,165,0,0.08),transparent 70%)",
     texts:[{text:"집밥 레시피",size:56,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"3px 3px 12px rgba(0,0,0,0.6)",font:"Jua",x:50,y:45,align:"center",bg:"",bgPad:0},
            {text:"초간단 10분 완성",size:22,bold:true,color:"#ffa502",stroke:"",strokeW:0,shadow:"",font:"Do Hyeon",x:50,y:68,align:"center",bg:"rgba(0,0,0,0.5)",bgPad:10}]},
+  // ── 좌측 정렬 ──
+  { id:"d11", label:"좌측 볼드", bgColor:"#111827", overlay:"", border:{color:"",width:0}, gradient:"linear-gradient(90deg,rgba(99,102,241,0.15),transparent 60%)",
+    texts:[{text:"당신이 몰랐던",size:26,bold:false,color:"rgba(255,255,255,0.6)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:8,y:35,align:"left",bg:"",bgPad:0},
+           {text:"마케팅의 비밀",size:58,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"3px 3px 15px rgba(0,0,0,0.5)",font:"Black Han Sans",x:8,y:55,align:"left",bg:"",bgPad:0},
+           {text:"TOP 5 전략 공개",size:20,bold:true,color:"#818cf8",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:8,y:75,align:"left",bg:"",bgPad:0}]},
+  { id:"d12", label:"좌측 감성", bgColor:"#fefce8", overlay:"", border:{color:"",width:0}, gradient:"",
+    texts:[{text:"오늘 하루도",size:20,bold:false,color:"#92400e",stroke:"",strokeW:0,shadow:"",font:"Gowun Batang",x:10,y:30,align:"left",bg:"",bgPad:0},
+           {text:"수고했어",size:52,bold:true,color:"#78350f",stroke:"",strokeW:0,shadow:"",font:"Nanum Myeongjo",x:10,y:50,align:"left",bg:"",bgPad:0},
+           {text:"내일은 더 좋은 날이 될 거야",size:16,bold:false,color:"#a16207",stroke:"",strokeW:0,shadow:"",font:"Gowun Batang",x:10,y:70,align:"left",bg:"",bgPad:0}]},
+  // ── 우측 정렬 ──
+  { id:"d13", label:"우측 임팩트", bgColor:"#18181b", overlay:"", border:{color:"#ef4444",width:0}, gradient:"linear-gradient(270deg,rgba(239,68,68,0.2),transparent 50%)",
+    texts:[{text:"절대 놓치지 마세요",size:22,bold:false,color:"rgba(255,255,255,0.5)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:92,y:35,align:"right",bg:"",bgPad:0},
+           {text:"역대급 할인",size:56,bold:true,color:"#ef4444",stroke:"",strokeW:0,shadow:"3px 3px 12px rgba(239,68,68,0.4)",font:"Black Han Sans",x:92,y:55,align:"right",bg:"",bgPad:0},
+           {text:"최대 80% OFF",size:28,bold:true,color:"#ffffff",stroke:"#ef4444",strokeW:3,shadow:"",font:"Bebas Neue",x:92,y:75,align:"right",bg:"",bgPad:0}]},
+  // ── 상단 배치 ──
+  { id:"d14", label:"상단 강조", bgColor:"#0f172a", overlay:"", border:{color:"",width:0}, gradient:"linear-gradient(180deg,rgba(59,130,246,0.2),transparent 40%)",
+    texts:[{text:"NEW",size:18,bold:true,color:"#3b82f6",stroke:"",strokeW:0,shadow:"",font:"Bebas Neue",x:50,y:15,align:"center",bg:"rgba(59,130,246,0.15)",bgPad:10},
+           {text:"완전 정복 가이드",size:54,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"3px 3px 15px rgba(0,0,0,0.5)",font:"Black Han Sans",x:50,y:38,align:"center",bg:"",bgPad:0},
+           {text:"초보부터 고급까지 A to Z",size:20,bold:false,color:"rgba(255,255,255,0.6)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:58,align:"center",bg:"",bgPad:0}]},
+  // ── 하단 배치 ──
+  { id:"d15", label:"하단 자막형", bgColor:"#000000", overlay:"linear-gradient(0deg,rgba(0,0,0,0.9) 30%,transparent 70%)", border:{color:"",width:0}, gradient:"",
+    texts:[{text:"여행 브이로그",size:48,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"2px 2px 8px rgba(0,0,0,0.8)",font:"Jua",x:50,y:75,align:"center",bg:"",bgPad:0},
+           {text:"제주도 3박 4일",size:22,bold:false,color:"rgba(255,255,255,0.7)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:90,align:"center",bg:"",bgPad:0}]},
+  // ── 대각선/비대칭 ──
+  { id:"d16", label:"대각선 분할", bgColor:"#1e293b", overlay:"", border:{color:"",width:0}, gradient:"linear-gradient(135deg,#6366f1 0%,#6366f1 48%,#ec4899 52%,#ec4899 100%)",
+    texts:[{text:"VS",size:72,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"0 0 20px rgba(255,255,255,0.3)",font:"Bebas Neue",x:50,y:50,align:"center",bg:"",bgPad:0},
+           {text:"A안",size:28,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:25,y:30,align:"center",bg:"",bgPad:0},
+           {text:"B안",size:28,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:75,y:70,align:"center",bg:"",bgPad:0}]},
+  // ── 매거진 스타일 ──
+  { id:"d17", label:"매거진", bgColor:"#faf5f0", overlay:"", border:{color:"#1a1a2e",width:8}, gradient:"",
+    texts:[{text:"ISSUE",size:14,bold:true,color:"#1a1a2e",stroke:"",strokeW:0,shadow:"",font:"Montserrat",x:50,y:12,align:"center",bg:"",bgPad:0},
+           {text:"트렌드 리포트",size:46,bold:true,color:"#1a1a2e",stroke:"",strokeW:0,shadow:"",font:"Playfair Display",x:50,y:45,align:"center",bg:"",bgPad:0},
+           {text:"2026 SPRING",size:16,bold:true,color:"#8b5cf6",stroke:"",strokeW:0,shadow:"",font:"Montserrat",x:50,y:65,align:"center",bg:"",bgPad:0}]},
+  // ── 숫자 강조 ──
+  { id:"d18", label:"숫자 강조", bgColor:"#0c0a09", overlay:"", border:{color:"",width:0}, gradient:"radial-gradient(circle at 50% 40%,rgba(234,179,8,0.08),transparent 50%)",
+    texts:[{text:"TOP",size:20,bold:true,color:"#eab308",stroke:"",strokeW:0,shadow:"",font:"Bebas Neue",x:50,y:25,align:"center",bg:"",bgPad:0},
+           {text:"10",size:120,bold:true,color:"#eab308",stroke:"",strokeW:0,shadow:"0 0 30px rgba(234,179,8,0.3)",font:"Bebas Neue",x:50,y:52,align:"center",bg:"",bgPad:0},
+           {text:"꼭 알아야 할 것들",size:22,bold:false,color:"rgba(255,255,255,0.6)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:80,align:"center",bg:"",bgPad:0}]},
+  // ── 교육/강의 ──
+  { id:"d19", label:"강의/교육", bgColor:"#1e3a5f", overlay:"", border:{color:"",width:0}, gradient:"linear-gradient(135deg,#1e3a5f,#2d5a87)",
+    texts:[{text:"무료 특강",size:20,bold:true,color:"#fbbf24",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:20,align:"center",bg:"rgba(251,191,36,0.15)",bgPad:10},
+           {text:"파이썬 입문",size:52,bold:true,color:"#ffffff",stroke:"",strokeW:0,shadow:"2px 2px 10px rgba(0,0,0,0.4)",font:"Gothic A1",x:50,y:45,align:"center",bg:"",bgPad:0},
+           {text:"비전공자도 쉽게 따라하는",size:18,bold:false,color:"rgba(255,255,255,0.7)",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:65,align:"center",bg:"",bgPad:0},
+           {text:"지금 바로 시작하기 →",size:16,bold:true,color:"#fbbf24",stroke:"",strokeW:0,shadow:"",font:"Noto Sans KR",x:50,y:85,align:"center",bg:"rgba(251,191,36,0.2)",bgPad:10}]},
+  // ── 패션/뷰티 ──
+  { id:"d20", label:"패션/뷰티", bgColor:"#fdf2f8", overlay:"", border:{color:"",width:0}, gradient:"linear-gradient(180deg,#fdf2f8,#fce7f3)",
+    texts:[{text:"BEAUTY",size:14,bold:true,color:"#be185d",stroke:"",strokeW:0,shadow:"",font:"Montserrat",x:50,y:18,align:"center",bg:"",bgPad:0},
+           {text:"봄 메이크업",size:48,bold:true,color:"#831843",stroke:"",strokeW:0,shadow:"",font:"Nanum Myeongjo",x:50,y:42,align:"center",bg:"",bgPad:0},
+           {text:"트렌드 컬러 5가지",size:20,bold:false,color:"#9d174d",stroke:"",strokeW:0,shadow:"",font:"Gowun Batang",x:50,y:62,align:"center",bg:"",bgPad:0}]},
 ];
 
 /* ── 사이즈 프리셋 ── */

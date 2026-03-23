@@ -23,31 +23,47 @@ function loadGFont(family) {
   document.head.appendChild(link);
 }
 
-// ── 예시 주제 ────────────────────────────────────────────────
+// ── 예시 주제 (주제 + 상세내용) ────────────────────────────────
 const TOPIC_EXAMPLES = [
-  { label:"직장인 번아웃", text:"직장인 번아웃 극복법 5가지" },
-  { label:"주식 입문",     text:"주식 투자 완전 초보 가이드" },
-  { label:"다이어트",      text:"다이어트 식단 추천" },
-  { label:"마음 챙김",     text:"하루 10분 마음 챙김 루틴" },
-  { label:"재테크",        text:"2030 재테크 필수 습관" },
-  { label:"홈트",          text:"집에서 할 수 있는 홈트 루틴" },
-  { label:"SNS 성장",      text:"인스타그램 팔로워 늘리는 방법" },
-  { label:"독서법",        text:"성인 자기계발 독서법" },
+  { label:"직장인 번아웃", text:"직장인 번아웃 극복법 5가지",
+    detail:"1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법 (퇴근 후 메일 차단)\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)\n4. 주말 디지털 디톡스 루틴\n5. 번아웃 예방을 위한 취미 활동 추천" },
+  { label:"주식 입문", text:"주식 투자 완전 초보 가이드",
+    detail:"1. 증권계좌 개설 방법 (MTS 추천)\n2. 주식 용어 정리 (PER, PBR, 시가총액)\n3. ETF vs 개별주 차이점\n4. 초보자 추천 투자 전략 (적립식)\n5. 절대 하면 안 되는 투자 실수 3가지" },
+  { label:"다이어트", text:"다이어트 식단 추천",
+    detail:"1. 칼로리 계산 없이 하는 간헐적 단식\n2. 아침/점심/저녁 식단 예시\n3. 다이어트 중 먹어도 되는 간식 5가지\n4. 운동 없이 체중 감량하는 생활습관\n5. 요요 없이 유지하는 방법" },
+  { label:"마음 챙김", text:"하루 10분 마음 챙김 루틴",
+    detail:"1. 아침 5분 감사일기 쓰기\n2. 호흡 명상 기초 (4-7-8 호흡법)\n3. 걷기 명상으로 스트레스 해소\n4. 자기 전 바디스캔 명상\n5. 일주일 마음 챙김 플래너 예시" },
+  { label:"재테크", text:"2030 재테크 필수 습관",
+    detail:"1. 월급 관리 50-30-20 법칙\n2. 비상금 통장 만들기 (6개월치)\n3. 청약통장 가입 꿀팁\n4. 소액으로 시작하는 투자 (로보어드바이저)\n5. 연말정산 절세 체크리스트" },
+  { label:"홈트", text:"집에서 할 수 있는 홈트 루틴",
+    detail:"1. 장비 없이 하는 전신 운동 5가지\n2. 초보자 주 3회 홈트 스케줄\n3. 코어 강화 플랭크 챌린지 (30일)\n4. 스트레칭으로 거북목 교정\n5. 홈트 효과를 높이는 식단 팁" },
+  { label:"SNS 성장", text:"인스타그램 팔로워 늘리는 방법",
+    detail:"1. 프로필 최적화 (바이오, 하이라이트)\n2. 릴스 알고리즘 공략법\n3. 해시태그 전략 (대형+중형+소형 조합)\n4. 게시 최적 시간대와 빈도\n5. 참여율을 높이는 캡션 작성법" },
+  { label:"독서법", text:"성인 자기계발 독서법",
+    detail:"1. 한 달에 책 4권 읽는 시간 관리법\n2. 밑줄 치기 vs 메모 독서법 비교\n3. 읽은 책 정리하는 노션 템플릿\n4. 분야별 입문서 추천 5권\n5. 독서 모임 참여로 꾸준히 읽기" },
+  { label:"카페 창업", text:"소자본 카페 창업 가이드",
+    detail:"1. 창업 비용 항목별 정리 (3천만원~1억)\n2. 상권 분석 체크리스트\n3. 메뉴 구성 전략 (시그니처 메뉴 만들기)\n4. SNS 마케팅으로 단골 만들기\n5. 실패하는 카페의 공통점 3가지" },
+  { label:"여행 팁", text:"해외여행 준비 완벽 가이드",
+    detail:"1. 항공권 최저가 예약 시기와 방법\n2. 여행자 보험 가입 꿀팁\n3. 짐 싸기 체크리스트 (캐리어 정리법)\n4. 현지에서 쓸 유용한 앱 5개\n5. 환전 vs 카드 결제 비교" },
 ];
 
 // ── 슬라이드 타입 ────────────────────────────────────────────
 const SLIDE_TYPES = [
-  { id:"cover",   label:"표지"          },
-  { id:"intro",   label:"소개"          },
-  { id:"point1",  label:"핵심 포인트 1" },
-  { id:"point2",  label:"핵심 포인트 2" },
-  { id:"point3",  label:"핵심 포인트 3" },
-  { id:"point4",  label:"핵심 포인트 4" },
-  { id:"detail",  label:"상세 설명"     },
-  { id:"tip",     label:"꿀팁"          },
-  { id:"summary", label:"요약 정리"     },
-  { id:"quote",   label:"명언/인용구"   },
-  { id:"cta",     label:"마무리/CTA"    },
+  { id:"cover",     label:"표지"          },
+  { id:"intro",     label:"소개"          },
+  { id:"point1",    label:"핵심 포인트 1" },
+  { id:"point2",    label:"핵심 포인트 2" },
+  { id:"point3",    label:"핵심 포인트 3" },
+  { id:"point4",    label:"핵심 포인트 4" },
+  { id:"point5",    label:"핵심 포인트 5" },
+  { id:"detail",    label:"상세 설명"     },
+  { id:"compare",   label:"비교표"        },
+  { id:"stats",     label:"수치/지표"     },
+  { id:"checklist", label:"체크리스트"    },
+  { id:"tip",       label:"꿀팁"          },
+  { id:"summary",   label:"요약 정리"     },
+  { id:"quote",     label:"명언/인용구"   },
+  { id:"cta",       label:"마무리/CTA"    },
 ];
 
 // ── 사이즈 프리셋 ────────────────────────────────────────────
@@ -266,13 +282,15 @@ function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
 }
 
 // ── API 호출 ─────────────────────────────────────────────────
-async function generateSlideTexts({ topic, pageCount, sourceContent }) {
+async function generateSlideTexts({ topic, pageCount, sourceContent, topicDetail }) {
   const types = SLIDE_TYPES.slice(0, pageCount);
-  const srcCtx = sourceContent ? `\n\n[참고할 원본 내용 - 이 내용을 기반으로 슬라이드를 구성하세요]\n${sourceContent.slice(0, 700)}` : "";
+  const srcCtx = sourceContent ? `\n\n[참고할 원본 내용]\n${sourceContent.slice(0, 700)}` : "";
+  const detailCtx = topicDetail ? `\n\n[상세 내용 — 각 슬라이드에 반드시 이 내용을 반영하세요]\n${topicDetail}` : "";
   const prompt = `한국 SNS 카드뉴스 카피라이터입니다.
-주제: ${topic}${srcCtx}
+주제: ${topic}${srcCtx}${detailCtx}
 
 카드뉴스 슬라이드 ${pageCount}장의 텍스트를 작성해주세요.
+${topicDetail ? "상세 내용의 각 항목을 순서대로 슬라이드에 배치하고, 핵심만 짧고 임팩트있게 작성하세요." : ""}
 각 슬라이드: headline(제목, 14자 이내), subheadline(부제목, 22자 이내, 선택), body(본문, 50자 이내, 선택), badge(강조문구, 8자 이내, 선택)
 
 JSON만 응답:
@@ -323,6 +341,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // Step1 - 카드뉴스용
   const [topic,     setTopic]     = useState(libItem?.topic || "");
+  const [topicDetail, setTopicDetail] = useState("");
   const [pageCount, setPageCount] = useState(libItem?.count || 6);
   const [aiSugg,    setAiSugg]    = useState(null);
   const [suggesting,setSuggesting]= useState(false);
@@ -511,7 +530,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
         const empty = slidesData.filter(s=>!s.title);
         if (empty.length>0) {
-          const fill = await generateSlideTexts({topic, pageCount, sourceContent: srcContent});
+          const fill = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail});
           fill.slides?.forEach(fs=>{
             const idx=slidesData.findIndex(s=>s.id===fs.id&&!s.title);
             if(idx>=0) slidesData[idx]={...slidesData[idx],title:fs.headline,subtitle:fs.subheadline,body:fs.body,highlight:fs.badge,headline:fs.headline};
@@ -519,7 +538,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         }
       } else {
         const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
-        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent});
+        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail});
         slidesData = (textData.slides||[]).map(s=>({
           ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge
         }));
@@ -614,7 +633,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   };
 
   const resetAll = () => {
-    setWizStep(1); setTopic(""); setPageCount(6); setAiSugg(null);
+    setWizStep(1); setTopic(""); setTopicDetail(""); setPageCount(6); setAiSugg(null);
     setSlideContents([]); setSelPreset(null); setSelSize(0);
     setCustomW(1080); setCustomH(1080);
     setSlides([]); setSted({});
@@ -659,21 +678,32 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
           {/* 예시 주제 */}
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>💡 예시 주제</div>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>예시 주제</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
               {TOPIC_EXAMPLES.map(ex=>{
                 const isC = topic === ex.text;
                 return (
-                  <button key={ex.label} onClick={()=>setTopic(ex.text)}
-                    style={{ padding:"5px 12px", borderRadius:16, border:`1px solid ${isC?"#7c6aff":bdr}`, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#a5b4fc":(D?"rgba(255,255,255,0.55)":"#555"), fontSize:12, cursor:"pointer", fontWeight:isC?700:400, transition:"all 0.12s" }}>
+                  <button key={ex.label} onClick={()=>{ setTopic(ex.text); setTopicDetail(ex.detail||""); }}
+                    style={{ padding:"5px 12px", borderRadius:16, border:`1px solid ${isC?"#7c6aff":bdr}`, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?(D?"#a5b4fc":"#7c6aff"):(D?"rgba(255,255,255,0.55)":"#555"), fontSize:12, cursor:"pointer", fontWeight:isC?700:400, transition:"all 0.12s" }}>
                     {ex.label}
                   </button>
                 );
               })}
             </div>
-            <textarea value={topic} onChange={e=>setTopic(e.target.value)}
-              placeholder="주제를 직접 입력하세요... 예) 직장인 번아웃 극복법 5가지" rows={3}
-              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:9, padding:"10px 14px", color:text, fontSize:13, fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box", lineHeight:1.7 }}/>
+
+            {/* 주제 입력 */}
+            <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:5 }}>주제</div>
+            <input value={topic} onChange={e=>setTopic(e.target.value)}
+              placeholder="주제를 직접 입력하세요... 예) 직장인 번아웃 극복법 5가지"
+              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:9, padding:"10px 14px", color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+
+            {/* 상세 내용 */}
+            <div style={{ fontSize:11, fontWeight:700, color:text, marginTop:12, marginBottom:5 }}>
+              상세 내용 <span style={{ fontWeight:400, color:muted }}>(선택) — 각 슬라이드에 들어갈 핵심 내용</span>
+            </div>
+            <textarea value={topicDetail} onChange={e=>setTopicDetail(e.target.value)}
+              placeholder={"각 슬라이드에 넣고 싶은 내용을 줄바꿈으로 구분해 입력하세요\n예)\n1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)"} rows={5}
+              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:9, padding:"10px 14px", color:text, fontSize:12, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.8 }}/>
           </div>
 
           {/* 슬라이드 수 */}
