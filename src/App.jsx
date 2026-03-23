@@ -5,7 +5,7 @@ import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 페이지 컴포넌트
 import HomePage from "./HomePage";
-import { AboutPage, HowToPage, AiPage, ContactPage } from "./OtherPages";
+import { AboutPage, HowToPage, FaqPage, AiPage, ContactPage } from "./OtherPages";
 import { PricingPage } from "./PricingPage";
 import { PaymentSuccessPage, PaymentFailPage } from "./PaymentPage";
 import { LegalPage } from "./LegalPage";
@@ -385,6 +385,7 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
+    if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
@@ -608,10 +609,11 @@ export default function App() {
           <NavBtn id="event" label="이벤트" />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label={t("support")} open={openMenu==="support"} active={["about","contact","howto"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
+            <DropBtn label={t("support")} open={openMenu==="support"} active={["about","contact","howto","faq"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
             {openMenu==="support" && (
               <DropMenu right>
                 <DropItem id="about" label={t("about")} onClick={() => { navigate("about"); setOpenMenu(null); }} />
+                <DropItem id="faq" label="자주 묻는 질문" onClick={() => { navigate("faq"); setOpenMenu(null); }} />
                 <DropItem id="contact" label={t("contact")} onClick={() => { navigate("contact"); setOpenMenu(null); }} />
                 <DropItem id="howto" label={t("howto")} onClick={() => { navigate("howto"); setOpenMenu(null); }} />
               </DropMenu>
@@ -955,12 +957,13 @@ export default function App() {
           {/* 기타 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
           {[
-            { id: "archive", label: "📂 "+t("archive"), onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
-            { id: "pricing", label: "💎 "+t("pricing"), onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
-            { id: "event",   label: "🎉 이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
-            { id: "about",   label: "ℹ️ "+t("about"),    onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
-            { id: "contact", label: "📞 "+t("contact"),  onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
-            { id: "howto",   label: "📖 "+t("howto"),    onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
+            { id: "archive", label: t("archive"), onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
+            { id: "pricing", label: t("pricing"), onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
+            { id: "event",   label: "이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
+            { id: "about",   label: t("about"),    onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
+            { id: "contact", label: t("contact"),  onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
+            { id: "faq",     label: "자주 묻는 질문",      onClick: () => { navigate("faq"); setMobileOpen(false); },     active: page==="faq" },
+            { id: "howto",   label: t("howto"),           onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",

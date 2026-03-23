@@ -65,17 +65,17 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
               <a href="https://blog.naver.com/npermovie" target="_blank" rel="noopener noreferrer" title="네이버 블로그"
                 style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                📝
+                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>B</span>
               </a>
               <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" title="인스타그램"
                 style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                📷
+                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>IG</span>
               </a>
               <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" title="유튜브"
                 style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                ▶️
+                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>YT</span>
               </a>
             </div>
           </div>

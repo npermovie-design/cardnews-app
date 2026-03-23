@@ -111,48 +111,48 @@ export default function HomePage({ navigate, C }) {
     {
       cat: p("catWrite"), catColor: "#7c6aff",
       items: [
-        { icon: "📝", title: p("tNaver"), desc: p("tNaverD"), tag: p("tagPopular"), color: "#22c55e" },
-        { icon: "☕", title: p("tCafe"), desc: p("tCafeD"), tag: "", color: "#06b6d4" },
-        { icon: "🟠", title: p("tTistory"), desc: p("tTistoryD"), tag: "", color: "#f59e0b" },
-        { icon: "📱", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#ec4899" },
-        { icon: "▶️", title: p("tYoutube"), desc: p("tYoutubeD"), tag: "", color: "#ef4444" },
-        { icon: "🧵", title: p("tThread"), desc: p("tThreadD"), tag: "", color: "#a855f7" },
+        { icon: "N", title: p("tNaver"), desc: p("tNaverD"), tag: p("tagPopular"), color: "#22c55e" },
+        { icon: "C", title: p("tCafe"), desc: p("tCafeD"), tag: "", color: "#06b6d4" },
+        { icon: "T", title: p("tTistory"), desc: p("tTistoryD"), tag: "", color: "#f59e0b" },
+        { icon: "IG", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#ec4899" },
+        { icon: "YT", title: p("tYoutube"), desc: p("tYoutubeD"), tag: "", color: "#ef4444" },
+        { icon: "Th", title: p("tThread"), desc: p("tThreadD"), tag: "", color: "#a855f7" },
       ],
     },
     {
       cat: p("catImage"), catColor: "#8b5cf6",
       items: [
-        { icon: "📰", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#8b5cf6" },
-        { icon: "🗂", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#7c6aff" },
-        { icon: "📄", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#ec4899" },
-        { icon: "📋", title: p("tSimpleDetail"), desc: p("tSimpleDetailD"), tag: p("tagNew"), color: "#10b981" },
+        { icon: "CN", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#8b5cf6" },
+        { icon: "SC", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#7c6aff" },
+        { icon: "DP", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#ec4899" },
+        { icon: "SD", title: p("tSimpleDetail"), desc: p("tSimpleDetailD"), tag: p("tagNew"), color: "#10b981" },
       ],
     },
     {
       cat: p("catAiImg"), catColor: "#ec4899",
       items: [
-        { icon: "📸", title: p("tProduct"), desc: p("tProductD"), tag: p("tagPopular"), color: "#f59e0b" },
-        { icon: "🏷", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#7c6aff" },
-        { icon: "🖼", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#8b5cf6" },
-        { icon: "🧍", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#ec4899" },
-        { icon: "😊", title: p("tFace"), desc: p("tFaceD"), tag: "", color: "#10b981" },
-        { icon: "👗", title: p("tOutfit"), desc: p("tOutfitD"), tag: "", color: "#f59e0b" },
-        { icon: "🖌", title: p("tOutpaint"), desc: p("tOutpaintD"), tag: p("tagNew"), color: "#06b6d4" },
+        { icon: "PS", title: p("tProduct"), desc: p("tProductD"), tag: p("tagPopular"), color: "#f59e0b" },
+        { icon: "LG", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#7c6aff" },
+        { icon: "MK", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#8b5cf6" },
+        { icon: "MD", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#ec4899" },
+        { icon: "FS", title: p("tFace"), desc: p("tFaceD"), tag: "", color: "#10b981" },
+        { icon: "OS", title: p("tOutfit"), desc: p("tOutfitD"), tag: "", color: "#f59e0b" },
+        { icon: "OP", title: p("tOutpaint"), desc: p("tOutpaintD"), tag: p("tagNew"), color: "#06b6d4" },
       ],
     },
     {
       cat: p("catVideo"), catColor: "#ef4444",
       items: [
-        { icon: "📲", title: p("tShorts"), desc: p("tShortsD"), tag: p("tagNew"), color: "#ef4444" },
+        { icon: "SF", title: p("tShorts"), desc: p("tShortsD"), tag: p("tagNew"), color: "#ef4444" },
       ],
     },
     {
       cat: p("catAnalyzer"), catColor: "#22c55e", navTarget: "analyzer",
       items: [
-        { icon: "🔍", title: p("tAnalyze"), desc: p("tAnalyzeD"), tag: p("tagNew"), color: "#22c55e" },
-        { icon: "📊", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#7c6aff" },
-        { icon: "🏆", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#8b5cf6" },
-        { icon: "🏢", title: p("tBrandRank"), desc: p("tBrandRankD"), tag: "", color: "#06b6d4" },
+        { icon: "SEO", title: p("tAnalyze"), desc: p("tAnalyzeD"), tag: p("tagNew"), color: "#22c55e" },
+        { icon: "TR", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#7c6aff" },
+        { icon: "RK", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#8b5cf6" },
+        { icon: "BR", title: p("tBrandRank"), desc: p("tBrandRankD"), tag: "", color: "#06b6d4" },
       ],
     },
   ];
@@ -209,7 +209,7 @@ export default function HomePage({ navigate, C }) {
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
             <Btn C={C} onClick={() => navigate("ai")}>{p("heroCta1")}</Btn>
-            <Btn C={C} onClick={() => navigate("analyzer")} ghost>📊 AI 분석기획기</Btn>
+            <Btn C={C} onClick={() => navigate("analyzer")} ghost>AI 분석기획기</Btn>
           </div>
 
           {/* 실시간 통계 */}
@@ -252,7 +252,7 @@ export default function HomePage({ navigate, C }) {
                     {tool.tag && (
                       <div style={{ position: "absolute", top: 10, right: 10, fontSize: 9, fontWeight: 800, background: tool.color, color: "#fff", padding: "2px 7px", borderRadius: 7 }}>{tool.tag}</div>
                     )}
-                    <div style={{ fontSize: 28, marginBottom: 10 }}>{tool.icon}</div>
+                    <div style={{ width:36, height:36, borderRadius:10, background:`${tool.color}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:900, color:tool.color, marginBottom:10, letterSpacing:-0.5 }}>{tool.icon}</div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 6 }}>{tool.title}</div>
                     <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.7 }}>{tool.desc}</div>
                     <div style={{ marginTop: 12, fontSize: 11, color: tool.color, fontWeight: 700 }}>{p("toolUse")}</div>
@@ -269,14 +269,14 @@ export default function HomePage({ navigate, C }) {
         <SecTitle C={C} badge={p("howBadge")} title={p("howTitle")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 20 }}>
           {[
-            { step: "01", icon: "🎯", title: p("how1"), desc: p("how1d"), color: "#7c6aff" },
-            { step: "02", icon: "🤖", title: p("how2"), desc: p("how2d"), color: "#8b5cf6" },
-            { step: "03", icon: "📋", title: p("how3"), desc: p("how3d"), color: "#ec4899" },
+            { step: "01", title: p("how1"), desc: p("how1d"), color: "#7c6aff" },
+            { step: "02", title: p("how2"), desc: p("how2d"), color: "#8b5cf6" },
+            { step: "03", title: p("how3"), desc: p("how3d"), color: "#ec4899" },
           ].map((s, i) => (
             <FadeIn key={s.step} delay={i * 0.15}>
               <div style={{ position: "relative", background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", boxShadow: C.shadow, overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: -10, right: -10, fontSize: 72, fontWeight: 900, color: s.color, opacity: 0.06, fontFamily: "monospace", lineHeight: 1 }}>{s.step}</div>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: `${s.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, marginBottom: 18 }}>{s.icon}</div>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: `${s.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 900, color: s.color, marginBottom: 18 }}>{s.step}</div>
                 <div style={{ fontSize: 11, fontWeight: 800, color: s.color, letterSpacing: 1.5, marginBottom: 8 }}>STEP {s.step}</div>
                 <div style={{ fontSize: 17, fontWeight: 800, color: C.text, marginBottom: 10 }}>{s.title}</div>
                 <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{s.desc}</div>
@@ -291,18 +291,18 @@ export default function HomePage({ navigate, C }) {
         <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 16 }}>
           {[
-            { name: p("r1name"), job: p("r1job"), avatar: "🙋‍♀️", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
-            { name: p("r2name"), job: p("r2job"), avatar: "💁‍♂️", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },
-            { name: p("r3name"), job: p("r3job"), avatar: "🎬", rating: 5, platform: p("r3plat"), text: p("r3text"), result: p("r3result") },
-            { name: p("r4name"), job: p("r4job"), avatar: "☕", rating: 5, platform: p("r4plat"), text: p("r4text"), result: p("r4result") },
-            { name: p("r5name"), job: p("r5job"), avatar: "👩‍🏫", rating: 5, platform: p("r5plat"), text: p("r5text"), result: p("r5result") },
-            { name: p("r6name"), job: p("r6job"), avatar: "👗", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
+            { name: p("r1name"), job: p("r1job"), avatar: "K", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
+            { name: p("r2name"), job: p("r2job"), avatar: "L", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },
+            { name: p("r3name"), job: p("r3job"), avatar: "P", rating: 5, platform: p("r3plat"), text: p("r3text"), result: p("r3result") },
+            { name: p("r4name"), job: p("r4job"), avatar: "C", rating: 5, platform: p("r4plat"), text: p("r4text"), result: p("r4result") },
+            { name: p("r5name"), job: p("r5job"), avatar: "J", rating: 5, platform: p("r5plat"), text: p("r5text"), result: p("r5result") },
+            { name: p("r6name"), job: p("r6job"), avatar: "H", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
           ].map((r, i) => (
             <FadeIn key={r.name} delay={i * 0.08}>
               <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
                 <div style={{ display: "flex", gap: 2 }}>
-                  {"⭐".repeat(r.rating).split("").map((s, j) => (
-                    <span key={j} style={{ fontSize: 14 }}>⭐</span>
+                  {Array(r.rating).fill(0).map((_, j) => (
+                    <span key={j} style={{ fontSize: 12, color: "#f59e0b" }}>★</span>
                   ))}
                 </div>
                 <p style={{ fontSize: 13, color: C.text, lineHeight: 1.8, margin: 0, flex: 1 }}>
@@ -330,10 +330,10 @@ export default function HomePage({ navigate, C }) {
         <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
-            { icon: "🎁", title: p("p1title"), point: p("p1point"), desc: p("p1desc"), color: "#888", btnText: p("p1btn"), onClick: () => navigate("ai") },
-            { icon: "👤", title: p("p2title"), point: p("p2point"), desc: p("p2desc"), color: "#22c55e", btnText: p("p2btn"), onClick: () => navigate("ai") },
-            { icon: "⚡", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#7c6aff", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
-            { icon: "🔥", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#8b5cf6", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
+            { icon: "FREE", title: p("p1title"), point: p("p1point"), desc: p("p1desc"), color: "#888", btnText: p("p1btn"), onClick: () => navigate("ai") },
+            { icon: "+200P", title: p("p2title"), point: p("p2point"), desc: p("p2desc"), color: "#22c55e", btnText: p("p2btn"), onClick: () => navigate("ai") },
+            { icon: "5,900", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#7c6aff", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
+            { icon: "PRO", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#8b5cf6", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -345,7 +345,7 @@ export default function HomePage({ navigate, C }) {
                 position: "relative", overflow: "hidden",
               }}>
                 {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>{getPageText(lang,"recommend")}</div>}
-                <div style={{ fontSize: 32, marginBottom: 10 }}>{p.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: p.color, marginBottom: 10, letterSpacing: -0.5 }}>{p.icon}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 6 }}>{p.title}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: p.color, marginBottom: 8 }}>{p.point}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{p.desc}</div>
@@ -363,16 +363,16 @@ export default function HomePage({ navigate, C }) {
         <SecTitle C={C} badge={p("whyBadge")} title={p("whyTitle")} sub={p("whySub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 12 }}>
           {[
-            { icon: "⚡", title: p("w1"), desc: p("w1d") },
-            { icon: "🎯", title: p("w2"), desc: p("w2d") },
-            { icon: "🌏", title: p("w3"), desc: p("w3d") },
-            { icon: "💰", title: p("w4"), desc: p("w4d") },
+            { icon: "01", title: p("w1"), desc: p("w1d") },
+            { icon: "02", title: p("w2"), desc: p("w2d") },
+            { icon: "03", title: p("w3"), desc: p("w3d") },
+            { icon: "04", title: p("w4"), desc: p("w4d") },
           ].map((d, i) => (
             <FadeIn key={d.title} delay={i * 0.1}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = ""}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.08))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{d.icon}</div>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.08))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: C.purpleL, flexShrink: 0 }}>{d.icon}</div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{d.title}</div>
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.75 }}>{d.desc}</div>
