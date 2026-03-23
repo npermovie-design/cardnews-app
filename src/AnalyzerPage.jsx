@@ -554,13 +554,20 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
   const [country, setCountry] = useState("한국");
   const [ageGroup, setAgeGroup] = useState("전체");
   const [keyword, setKeyword] = useState("");
-  const [ranking, setRanking] = useState([]);
+  // 초기 state에서 캐시 즉시 로드
+  const initCache = () => getCached(`rank_${menu}_전체_한국_전체_`) || [];
+  const [ranking, setRanking] = useState(initCache);
   const [loading, setLoading] = useState(false);
   const [prevMenu, setPrevMenu] = useState(menu);
   const [showFilter, setShowFilter] = useState(true);
-  const autoFetched = useRef(false);
 
-  if (menu !== prevMenu) { setPrevMenu(menu); setRanking([]); setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(true); autoFetched.current = false; }
+  if (menu !== prevMenu) {
+    setPrevMenu(menu);
+    const c = getCached(`rank_${menu}_전체_한국_전체_`);
+    setRanking(c || []);
+    setCat("전체"); setCountry("한국"); setAgeGroup("전체"); setKeyword(""); setShowFilter(true);
+    if (!c) { /* 캐시 없으면 아래 effect에서 fetch */ }
+  }
 
   const config = RANK_ITEMS.find(r => r.id === menu);
   if (!config) return null;
@@ -571,7 +578,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
     setDetail(null);
     const cacheKey = `rank_${menu}_${category}_${country}_${ageGroup}_${keyword}`;
     const cached = getCached(cacheKey);
-    if (cached) { setRanking(cached); setLoading(false); return; }
+    if (cached) { setRanking(cached); return; }
     setLoading(true); setRanking([]);
     try {
       const urlBase = config.platform==="유튜브"?"https://www.youtube.com/@":config.platform==="인스타그램"?"https://www.instagram.com/":config.platform==="틱톡"?"https://www.tiktok.com/@":config.platform==="네이버 블로그"?"https://blog.naver.com/":"";
@@ -589,13 +596,14 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
     setLoading(false);
   };
 
-  // 진입 시 자동 로드
+  // 진입 시 캐시 없으면 자동 fetch
+  const didFetch = useRef(false);
   useEffect(() => {
-    if (!autoFetched.current && ranking.length === 0 && !loading) {
-      autoFetched.current = true;
+    if (!didFetch.current && ranking.length === 0 && !loading) {
+      didFetch.current = true;
       fetchRanking("전체");
     }
-  });
+  }, [menu]);
 
   const platformColor = config.id==="rank_youtube"?"#ef4444":config.id==="rank_insta"?"#e1306c":config.id==="rank_blog"?"#22c55e":config.id==="rank_tiktok"?"#69c9d0":"#6366f1";
 
@@ -740,18 +748,17 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
 function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
   const [cat, setCat] = useState("전체");
-  const [ranking, setRanking] = useState([]);
+  const [ranking, setRanking] = useState(() => getCached("brand_전체_") || []);
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState(null);
   const [keyword, setKeyword] = useState("");
   const accent = "#6366f1";
-  const autoFetched = useRef(false);
 
   const fetchBrands = async (category) => {
     setDetail(null);
     const cacheKey = `brand_${category}_${keyword}`;
     const cached = getCached(cacheKey);
-    if (cached) { setRanking(cached); setLoading(false); return; }
+    if (cached) { setRanking(cached); return; }
     setLoading(true); setRanking([]);
     try {
       const kwStr = keyword.trim() ? ` "${keyword.trim()}" 관련` : "";
@@ -769,13 +776,14 @@ JSON만:{"ranking":[...]}`;
     setLoading(false);
   };
 
-  // 진입 시 자동 로드
+  // 진입 시 캐시 없으면 자동 fetch
+  const didFetchBrand = useRef(false);
   useEffect(() => {
-    if (!autoFetched.current && ranking.length === 0 && !loading) {
-      autoFetched.current = true;
+    if (!didFetchBrand.current && ranking.length === 0 && !loading) {
+      didFetchBrand.current = true;
       fetchBrands("전체");
     }
-  });
+  }, []);
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>

@@ -92,7 +92,10 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
 
   const [trendCat, setTrendCat] = useState("전체");
-  const [trends, setTrends] = useState([]);
+  const trendInitCache = () => {
+    try { const r = JSON.parse(localStorage.getItem("az_trend_전체")); if (r && Date.now() - r.ts < 30*60*1000) return r.data; } catch {} return [];
+  };
+  const [trends, setTrends] = useState(trendInitCache);
   const [trendLoading, setTrendLoading] = useState(false);
   const trendAutoFetched = useRef(false);
 
@@ -128,7 +131,7 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
   const fetchTrends = async (cat) => {
     const cacheKey = cat;
     const cached = getTrendCache(cacheKey);
-    if (cached) { setTrends(cached); setTrendLoading(false); return; }
+    if (cached) { setTrends(cached); return; }
     setTrendLoading(true); setTrends([]);
     try {
       const prompt = `현재 한국에서 ${cat==="전체"?"모든 분야":cat+" 분야"}의 실시간 인기 검색어를 검색엔진별로 알려주세요.
@@ -148,13 +151,13 @@ JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","catego
     setTrendLoading(false);
   };
 
-  // 실시간 검색어 진입 시 자동 로드
+  // 실시간 검색어 진입 시 캐시 없으면 자동 fetch
   useEffect(() => {
     if (menu === "seo_home" && !trendAutoFetched.current && trends.length === 0 && !trendLoading) {
       trendAutoFetched.current = true;
       fetchTrends("전체");
     }
-  });
+  }, [menu]);
 
   // URL 콘텐츠 가져오기
   const fetchUrlContent = async (targetUrl) => {
