@@ -256,7 +256,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
       ? transcriptToText(transcript).slice(0, 6000)
       : "";
 
-    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"영상 요약",sns:"SNS 콘텐츠"}[blogType];
+    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"영상 요약",sns:"SNS 콘텐츠",column:"칼럼",article:"기사 방식"}[blogType];
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
 
@@ -312,6 +312,53 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 ① 인스타그램 캡션 (해시태그 포함)
 ② 스레드 연속 포스팅 3~4개
 ③ X(트위터) 스타일 핵심 인사이트 3개`,
+
+      column: `유튜브 영상을 바탕으로 전문 칼럼을 작성해주세요.
+
+영상 제목: ${videoInfo.title}
+채널: ${videoInfo.author}
+영상 URL: https://youtube.com/watch?v=${vtId}
+스타일: 전문적이고 논리적인 / 분량: ${lenLabel}
+${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
+
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호 일절 사용 금지
+- 마크다운 기호(##, **, -, *) 사용 금지
+- 순수 한국어 문장으로만 작성
+
+[필수] 글 맨 처음에 제목과 부제목을 추천:
+제목: (SEO 키워드 포함 전문 칼럼 제목)
+부제목: (핵심 한 줄 요약)
+
+작성 구조:
+- 주장 제시 (영상의 핵심 논점)
+- 근거 제시 (데이터, 사례, 통계 인용)
+- 반론 검토 (다른 시각 언급)
+- 결론 (독자에게 시사점)
+- 출처: ${videoInfo.author} 유튜브 채널`,
+
+      article: `유튜브 영상을 바탕으로 기사 방식의 글을 작성해주세요.
+
+영상 제목: ${videoInfo.title}
+채널: ${videoInfo.author}
+영상 URL: https://youtube.com/watch?v=${vtId}
+스타일: 객관적 보도체 / 분량: ${lenLabel}
+${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
+
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호 일절 사용 금지
+- 마크다운 기호(##, **, -, *) 사용 금지
+- 순수 한국어 문장으로만 작성
+
+[필수] 글 맨 처음에 제목과 부제목을 추천:
+제목: (뉴스 스타일 제목)
+부제목: (핵심 한 줄)
+
+작성 구조:
+- 역피라미드 구조 (가장 중요한 정보 먼저)
+- 5W1H 원칙, 객관적 사실 기반
+- 인용문/수치 적극 활용
+- 출처: ${videoInfo.author} 유튜브 채널`,
     };
 
     try {
@@ -355,10 +402,12 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
   };
 
   const BLOG_TYPES = [
-    {id:"naver",   icon:"📝", label:"네이버 블로그",   desc:"SEO 최적화 정보성 글"},
-    {id:"tistory", icon:"🟠", label:"티스토리",        desc:"HTML 구조 블로그"},
-    {id:"summary", icon:"📋", label:"핵심 요약",       desc:"핵심 내용 정리"},
-    {id:"sns",     icon:"📱", label:"SNS 3종",         desc:"인스타·스레드·X"},
+    {id:"naver",   icon:"", label:"네이버 블로그",   desc:"SEO 최적화 정보성 글"},
+    {id:"tistory", icon:"", label:"티스토리",        desc:"HTML 구조 블로그"},
+    {id:"column",  icon:"", label:"칼럼",           desc:"전문 분석·인사이트 글", autoTitle:true},
+    {id:"article", icon:"", label:"기사 방식",       desc:"뉴스 리뷰 스타일 글", autoTitle:true},
+    {id:"summary", icon:"", label:"핵심 요약",       desc:"핵심 내용 정리"},
+    {id:"sns",     icon:"", label:"SNS 3종",         desc:"인스타·스레드·X"},
   ];
 
   return (

@@ -267,7 +267,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
 
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
-    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"핵심 요약",sns:"SNS 콘텐츠",cafe:"네이버 카페"}[blogType];
+    const typeLabel = {naver:"네이버 블로그",tistory:"티스토리",summary:"핵심 요약",sns:"SNS 콘텐츠",cafe:"네이버 카페",column:"칼럼",article:"기사 방식"}[blogType];
 
     const articleSection = `
 [뉴스 기사 정보]
@@ -359,6 +359,47 @@ ${articleSection}
 - 본론 (3~5개 포인트, 번호 목록 허용)
 - 마무리 한 문장 (의견 또는 시사점)
 - 출처: ${newsInfo?.siteName || ""} ${url}`,
+
+      column: `다음 뉴스 기사를 바탕으로 전문 칼럼을 작성해주세요.
+스타일: 전문적이고 논리적인 / 분량: ${lenLabel}
+${extra ? `추가 요청: ${extra}` : ""}
+${articleSection}
+
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호 일절 사용 금지
+- 마크다운 기호(##, **, -, *) 사용 금지
+- 순수 한국어 문장으로만 작성
+
+[필수] 글 맨 처음에 제목과 부제목을 추천:
+제목: (SEO 키워드 포함 전문 칼럼 제목)
+부제목: (핵심 한 줄 요약)
+
+작성 구조:
+- 주장 제시 (핵심 논점 명확히)
+- 근거 제시 (데이터, 사례, 통계 인용)
+- 반론 검토 (다른 시각 언급)
+- 결론 (독자에게 시사점)
+- 출처: ${newsInfo?.siteName || ""} ${url}`,
+
+      article: `다음 뉴스 기사를 바탕으로 기사 방식의 글을 작성해주세요.
+스타일: 객관적 보도체 / 분량: ${lenLabel}
+${extra ? `추가 요청: ${extra}` : ""}
+${articleSection}
+
+[필수 작성 규칙]
+- 이모티콘, 이모지, 특수 기호 일절 사용 금지
+- 마크다운 기호(##, **, -, *) 사용 금지
+- 순수 한국어 문장으로만 작성
+
+[필수] 글 맨 처음에 제목과 부제목을 추천:
+제목: (뉴스 스타일 제목)
+부제목: (핵심 한 줄)
+
+작성 구조:
+- 역피라미드 구조 (가장 중요한 정보 먼저)
+- 5W1H 원칙, 객관적 사실 기반
+- 인용문/수치 적극 활용
+- 출처: ${newsInfo?.siteName || ""} ${url}`,
     };
 
     await new Promise(r=>setTimeout(r,600)); setLoadStep(2);
@@ -393,11 +434,13 @@ ${articleSection}
   };
 
   const BLOG_TYPES = [
-    {id:"naver",   icon:"📝", label:"네이버 블로그",  desc:"SEO 최적화 정보성 글"},
-    {id:"cafe",    icon:"☕", label:"네이버 카페",    desc:"짧고 핵심적인 카페 글"},
-    {id:"tistory", icon:"🟠", label:"티스토리",       desc:"HTML 구조 블로그"},
-    {id:"summary", icon:"📋", label:"핵심 요약",      desc:"핵심 내용 정리"},
-    {id:"sns",     icon:"📱", label:"SNS 3종",        desc:"인스타·스레드·X"},
+    {id:"naver",   icon:"", label:"네이버 블로그",  desc:"SEO 최적화 정보성 글"},
+    {id:"cafe",    icon:"", label:"네이버 카페",    desc:"짧고 핵심적인 카페 글"},
+    {id:"tistory", icon:"", label:"티스토리",       desc:"HTML 구조 블로그"},
+    {id:"column",  icon:"", label:"칼럼",          desc:"전문 의견·분석 글", autoTitle:true},
+    {id:"article", icon:"", label:"기사 방식",      desc:"뉴스 기사 스타일 글", autoTitle:true},
+    {id:"summary", icon:"", label:"핵심 요약",      desc:"핵심 내용 정리"},
+    {id:"sns",     icon:"", label:"SNS 3종",        desc:"인스타·스레드·X"},
   ];
 
   return (

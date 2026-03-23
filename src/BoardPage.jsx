@@ -27,7 +27,7 @@ function toThumb(url, w=400, h=300) {
 }
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
-const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "📁", color: "#3b82f6" };
+const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "", color: "#3b82f6" };
 
 async function fetchBoardCats() {
   try {
@@ -240,15 +240,15 @@ async function fetchWikimedia(q="nature", page=1) {
 /* ── 소스 목록 (키가 설정된 것만 활성화) ─── */
 function buildSources() {
   const s = [];
-  s.push({ id:"giphy",     label:"🎞 Giphy GIF",      group:"gif"   });
+  s.push({ id:"giphy",     label:"Giphy GIF",      group:"gif"   });
   if (TENOR_KEY)    s.push({ id:"tenor",   label:"😂 Tenor GIF",      group:"gif"   });
-  if (PIXABAY_KEY2) s.push({ id:"pixphoto",label:"🖼 Pixabay 사진",   group:"photo" });
-  if (PEXELS_KEY)   s.push({ id:"pexphoto",label:"📷 Pexels 사진",    group:"photo" });
+  if (PIXABAY_KEY2) s.push({ id:"pixphoto",label:"Pixabay 사진",   group:"photo" });
+  if (PEXELS_KEY)   s.push({ id:"pexphoto",label:"Pexels 사진",    group:"photo" });
   if (UNSPLASH_KEY) s.push({ id:"unsplash",label:"🏔 Unsplash",        group:"photo" });
   s.push({ id:"openverse", label:"🌍 Openverse",       group:"photo" });
   s.push({ id:"wikimedia", label:"📚 Wikimedia",        group:"photo" });
-  if (PIXABAY_KEY2) s.push({ id:"pixvid",  label:"🎬 Pixabay 영상",   group:"video" });
-  if (PEXELS_KEY)   s.push({ id:"pexvid",  label:"🎬 Pexels 영상",    group:"video" });
+  if (PIXABAY_KEY2) s.push({ id:"pixvid",  label:"Pixabay 영상",   group:"video" });
+  if (PEXELS_KEY)   s.push({ id:"pexvid",  label:"Pexels 영상",    group:"video" });
   s.push({ id:"nasa",      label:"🚀 NASA 우주",        group:"art"   });
   s.push({ id:"aic",       label:"🎨 시카고미술관",    group:"art"   });
   s.push({ id:"picsum",    label:"🎲 랜덤 사진",        group:"random" });
@@ -276,7 +276,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
             style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
             onError={e=>{ e.target.style.display="none"; }}/>
         : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>
-            {isVid?"🎬":"🖼"}
+            {isVid?"영상":"이미지"}
           </div>
       }
       {badge && <div style={{position:"absolute",top:4,left:4,fontSize:9,padding:"2px 6px",
@@ -464,7 +464,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
       {!loading && totalItems===0 && (
         <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
-          <div style={{fontSize:40,marginBottom:8}}>{tab==="gif"?"🎞":"📷"}</div>
+          <div style={{fontSize:14,color:"#94a3b8",marginBottom:8,fontWeight:600}}>{tab==="gif"?"GIF":"사진"}</div>
           <div style={{fontSize:14,fontWeight:700}}>결과가 없어요</div>
           <div style={{fontSize:12,marginTop:4}}>다른 키워드로 검색해보세요</div>
         </div>
@@ -502,10 +502,10 @@ function FreeMediaSearch({ C, isDark, bdr }) {
           <b style={{color:C.text}}>마우스 올리기</b> — 이미지 확대 프리뷰 + 상세 정보 확인
         </div>
         <div style={{fontSize:10,color:C.muted,marginTop:8,opacity:0.6,lineHeight:1.8}}>
-          📌 Pixabay · Pexels: 무료 상업적 이용 가능 (별도 출처 표기 불요)<br/>
-          📌 Giphy · Tenor: GIF 공유 목적, 상업적 이용 시 출처 표기 권장<br/>
-          📌 Openverse · Wikimedia: CC 라이선스, 출처 표기 필수<br/>
-          📌 NASA · 미술관: 퍼블릭 도메인, 자유롭게 사용 가능
+          Pixabay / Pexels: 무료 상업적 이용 가능 (별도 출처 표기 불요)<br/>
+          Giphy / Tenor: GIF 공유 목적, 상업적 이용 시 출처 표기 권장<br/>
+          Openverse / Wikimedia: CC 라이선스, 출처 표기 필수<br/>
+          NASA / 미술관: 퍼블릭 도메인, 자유롭게 사용 가능
         </div>
       </div>
     </div>
@@ -623,7 +623,7 @@ function RichEditor({ value, onChange, isDark }) {
         <ToolBtn onClick={()=>exec("insertOrderedList")} title="번호 목록">1. 목록</ToolBtn>
         <Divider/>
         {/* 삽입 */}
-        <ToolBtn onClick={insertImage} title="이미지 삽입">🖼</ToolBtn>
+        <ToolBtn onClick={insertImage} title="이미지 삽입">IMG</ToolBtn>
         <ToolBtn onClick={insertVideo} title="유튜브 동영상">▶</ToolBtn>
         <ToolBtn onClick={insertLink} title="링크 삽입">🔗</ToolBtn>
         <ToolBtn onClick={insertTable} title="표 삽입">⊞</ToolBtn>
@@ -796,7 +796,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
         {/* 파일 첨부 */}
         <div style={{border:"1px solid "+bdr,borderRadius:12,padding:"14px 16px",background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
-            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>📎 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상, 최대 50MB)</span></span>
+            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상, 최대 50MB)</span></span>
             <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
               style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#7c6aff",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
               {uploading?"업로드 중...":"+ 파일 추가"}
@@ -810,7 +810,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
                 <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",border:"1px solid "+bdr}}>
                   {f.type==="video"
                     ? <div style={{width:90,height:68,background:isDark?"#1a1a2e":"#e5e7eb",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
-                        <span style={{fontSize:20}}>🎬</span>
+                        <span style={{fontSize:11,fontWeight:700,color:"#3b82f6"}}>영상</span>
                         <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"video").slice(0,12)}</span>
                       </div>
                     : <img src={f.url} alt="" style={{width:90,height:68,objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
@@ -1242,7 +1242,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff"}}>{(view.nick||"?")[0].toUpperCase()}</div>
                   <span style={{fontWeight:700,color:C.text}}>{view.nick}</span>
                 </div>
-                <span>{view.date}</span><span>👁 {view.views||0}</span><span>💬 {(view.comments||[]).length}</span>
+                <span>{view.date}</span><span>{view.views||0}</span><span>💬 {(view.comments||[]).length}</span>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🔗 공유</button>
@@ -1271,7 +1271,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 첨부 이미지/영상 */}
             {(view.images||[]).length > 0 && (
               <div style={{marginTop:24,borderTop:"1px solid "+bdr,paddingTop:20}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>📎 첨부 파일 {view.images.length}개</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>+ 첨부 파일 {view.images.length}개</div>
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {view.images.map((url,i)=>
                     isVideoUrl(url) ? (
@@ -1304,7 +1304,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     color:liked?"#f59e0b":C.purpleL,fontSize:15,fontWeight:800,cursor:"pointer",transition:"all 0.15s"}}
                   onMouseEnter={e=>{e.currentTarget.style.background=liked?"rgba(245,158,11,0.3)":C.purpleL;if(!liked)e.currentTarget.style.color="#fff";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=liked?(isDark?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.08)"):(isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)");e.currentTarget.style.color=liked?"#f59e0b":C.purpleL;}}>
-                  {liked?"✅ 추천함":"👍 추천"} {view.likes||0}
+                  {liked?"✅ 추천함":"추천"} {view.likes||0}
                 </button>
               );
             })()}
@@ -1459,7 +1459,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
           {/* 탭 */}
           <div style={{display:"flex",gap:6,marginBottom:20,borderBottom:"1px solid "+bdr,paddingBottom:0}}>
-            {[["cat","📌 카테고리"],["tag","🏷 세부 태그"]].map(([t,l])=>(
+            {[["cat","카테고리"],["tag","세부 태그"]].map(([t,l])=>(
               <button key={t} onClick={()=>setTab(t)} style={{
                 padding:"9px 18px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",fontSize:13,fontWeight:tab===t?800:500,
                 background:tab===t?(isDark?"rgba(99,102,241,0.18)":"rgba(99,102,241,0.1)"):"transparent",
@@ -1717,7 +1717,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <>
                 {/* 서브탭 (무료이미지 스타일) */}
                 <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:"2px solid "+bdr}}>
-                  {[{id:"",label:"전체"},{id:"video",label:"🎬 영상"},{id:"photo",label:"📷 사진"},{id:"gif",label:"🎞 GIF · 짤"},{id:"music",label:"🎵 음악"}].map(t=>{
+                  {[{id:"",label:"전체"},{id:"video",label:"영상"},{id:"photo",label:"사진"},{id:"gif",label:"GIF · 짤"},{id:"music",label:"음악"}].map(t=>{
                     const active = filterTag===t.id;
                     return (
                       <button key={t.id} onClick={()=>{setFilterTag(t.id);setPage(1);}}
@@ -1737,7 +1737,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   {user?.role==="admin"&&(
                     <button onClick={()=>archiveFileRef.current?.click()}
                       style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      📁 자료 등록
+                      자료 등록
                     </button>
                   )}
                 </div>
@@ -1763,10 +1763,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             ) : thumb ? (
                               <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
                             ) : (
-                              <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>📁</div>
+                              <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#94a3b8",fontWeight:600}}>파일</div>
                             )}
                             {/* 유형 배지 */}
-                            {isVid && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(0,0,0,0.7)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>🎬 영상</span>}
+                            {isVid && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(0,0,0,0.7)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>영상</span>}
                             {isGif && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(139,92,246,0.8)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>GIF</span>}
                             {/* 유료/무료 배지 */}
                             {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>유료{p.price?` ${p.price}`:""}</span>}
@@ -1784,7 +1784,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   </div>
                 ) : (
                   <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
-                    <div style={{fontSize:36,marginBottom:8}}>📁</div>
+                    <div style={{fontSize:14,color:"#94a3b8",marginBottom:8,fontWeight:600}}>자료 없음</div>
                     <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>아직 등록된 자료가 없어요</div>
                     <div style={{fontSize:12}}>관리자가 자료를 등록하면 여기에 표시됩니다</div>
                   </div>
@@ -1894,7 +1894,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 빈 목록 */}
             {pageItems.length===0&&(
               <div style={{background:cardBg,border:"1px solid "+bdr,borderRadius:10,padding:"70px 0",textAlign:"center",color:C.muted}}>
-                <div style={{fontSize:36,marginBottom:12}}>{subInfo?.icon||"📋"}</div>
+                <div style={{fontSize:36,marginBottom:12}}>{""}</div>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>
                   {search?`"${search}" ${t("noSearchResult")}`:subCat==="archive"?"아직 등록된 자료가 없어요":t("noPosts")}
                 </div>
@@ -1973,14 +1973,14 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
                             {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
                             <span style={{fontSize:14,fontWeight:600,color:C.text,lineHeight:1.4}}>{p.title}</span>
-                            {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>📎</span>}
+                            {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}}>+</span>}
                             {(p.comments||[]).length>0&&<span style={{fontSize:11,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                             {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:C.muted}}>
                             <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
-                            <span>{p.date}</span><span>👁 {p.views||0}</span>
-                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍 {p.likes}</span>}
+                            <span>{p.date}</span><span>{p.views||0}</span>
+                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>{p.likes}</span>}
                             {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"2px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:10,cursor:"pointer",fontWeight:700}}>⬇ 다운</button>}
                           </div>
                         </div>
@@ -2013,15 +2013,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseLeave={e=>{e.currentTarget.style.background="transparent";setHoverPreview(null);}}>
                       <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {thumb
-                          ? <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>e.target.style.display="none"}/>
-                          : <div style={{width:36,height:28}} />
-                        }
+                        {thumb && <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>e.target.style.display="none"}/>}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
                         {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
                         <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
-                        {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>📎</span>}
+                        {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>+</span>}
                         {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
                         {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
                       </div>
@@ -2062,7 +2059,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                               onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
                           : thumb
                           ? <img src={toThumb(thumb,480,270)} alt="" loading="eager" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
-                          : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{subInfo?.icon||"📋"}</div>
+                          : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{""}</div>
                         }
                         {today&&<span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(239,68,68,0.9)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>NEW</span>}
                         {/* 유료/무료 배지 */}
@@ -2108,7 +2105,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       <span style={{fontSize:11,color:C.muted,flexShrink:0,width:28,textAlign:"right"}}>#{num}</span>
                       {thumb
                         ? <img src={toThumb(thumb,68,52)} alt="" loading="eager" style={{width:34,height:26,objectFit:"cover",borderRadius:4,display:"block",flexShrink:0}} onError={e=>e.target.style.display="none"}/>
-                        : <div style={{width:34,height:26,borderRadius:4,flexShrink:0,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{subInfo?.icon||"📋"}</div>
+                        : <div style={{width:34,height:26,borderRadius:4,flexShrink:0,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{""}</div>
                       }
                       <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5}}>
                         {p.tag&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
@@ -2167,7 +2164,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       <span style={{fontSize:14,fontWeight:900,color:i===0?"#ef4444":i===1?"#f59e0b":i===2?"#7c6aff":"#6b7280",flexShrink:0,lineHeight:1.2}}>{i+1}</span>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4,marginBottom:2}}>{p.title}</div>
-                        <div style={{fontSize:10,color:C.muted}}>👁 {p.views||0}</div>
+                        <div style={{fontSize:10,color:C.muted}}>{p.views||0}</div>
                       </div>
                     </div>
                   </div>

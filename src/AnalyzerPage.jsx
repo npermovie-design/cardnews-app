@@ -3,26 +3,26 @@ import SeoAnalyzer from "./SeoAnalyzer";
 import { callAI } from "./aiClient";
 
 const MENU_ITEMS = [
-  { id:"seo_home",    label:"실시간 검색어",       icon:"📊" },
-  { id:"seo_blog",    label:"네이버 블로그 분석",   icon:"📝" },
-  { id:"seo_youtube", label:"유튜브 분석",         icon:"▶️" },
-  { id:"seo_tistory", label:"티스토리 분석",       icon:"📖" },
-  { id:"seo_insta",   label:"인스타그램 분석",     icon:"📸" },
-  { id:"seo_website", label:"홈페이지 분석",       icon:"🌐" },
-  { id:"seo_twitter", label:"X(트위터) 분석",      icon:"𝕏" },
-  { id:"seo_threads", label:"스레드 분석",         icon:"🧵" },
-  { id:"seo_cafe",    label:"네이버 카페 분석",     icon:"☕" },
-  { id:"seo_facebook",label:"페이스북 분석",       icon:"📘" },
-  { id:"seo_linkedin",label:"링크드인 분석",       icon:"💼" },
-  { id:"seo_tiktok",  label:"틱톡 분석",          icon:"🎵" },
-  { id:"seo_pinterest",label:"핀터레스트 분석",    icon:"📌" },
+  { id:"seo_home",    label:"실시간 검색어" },
+  { id:"seo_blog",    label:"네이버 블로그 분석" },
+  { id:"seo_youtube", label:"유튜브 분석" },
+  { id:"seo_tistory", label:"티스토리 분석" },
+  { id:"seo_insta",   label:"인스타그램 분석" },
+  { id:"seo_website", label:"홈페이지 분석" },
+  { id:"seo_twitter", label:"X(트위터) 분석" },
+  { id:"seo_threads", label:"스레드 분석" },
+  { id:"seo_cafe",    label:"네이버 카페 분석" },
+  { id:"seo_facebook",label:"페이스북 분석" },
+  { id:"seo_linkedin",label:"링크드인 분석" },
+  { id:"seo_tiktok",  label:"틱톡 분석" },
+  { id:"seo_pinterest",label:"핀터레스트 분석" },
 ];
 
 const RANK_ITEMS = [
-  { id:"rank_youtube", label:"유튜버 TOP10",    icon:"▶️", platform:"유튜브" },
-  { id:"rank_insta",   label:"인스타 TOP10",    icon:"📸", platform:"인스타그램" },
-  { id:"rank_blog",    label:"블로거 TOP10",    icon:"📝", platform:"네이버 블로그" },
-  { id:"rank_tiktok",  label:"틱톡 TOP10",     icon:"🎵", platform:"틱톡" },
+  { id:"rank_youtube", label:"유튜버 TOP10",    platform:"유튜브" },
+  { id:"rank_insta",   label:"인스타 TOP10",    platform:"인스타그램" },
+  { id:"rank_blog",    label:"블로거 TOP10",    platform:"네이버 블로그" },
+  { id:"rank_tiktok",  label:"틱톡 TOP10",     platform:"틱톡" },
 ];
 
 const BRAND_CATEGORIES = ["전체","뷰티/화장품","패션/의류","식품/음료","IT/전자","자동차","금융","교육","여행","엔터테인먼트","헬스/피트니스","인테리어/리빙"];
@@ -50,14 +50,14 @@ function addHistory(item) {
 
 /* ── 홈 히어로 섹션 (판다랭크 스타일) ── */
 const HOME_FEATURES = [
-  { id:"seo_blog",   icon:"📝", label:"블로그분석",    desc:"네이버 블로그 SEO 진단", color:"#22c55e" },
-  { id:"seo_youtube", icon:"▶️", label:"유튜브분석",    desc:"유튜브 영상 최적화 분석", color:"#ef4444" },
-  { id:"seo_tistory", icon:"📖", label:"티스토리분석",   desc:"구글 SEO + 애드센스", color:"#f59e0b" },
-  { id:"seo_insta",  icon:"📸", label:"인스타분석",     desc:"해시태그·참여율 분석", color:"#e1306c" },
-  { id:"seo_home",   icon:"🔥", label:"실시간 검색어",  desc:"네이버·구글 트렌드", color:"#7c6aff" },
-  { id:"rank_youtube",icon:"🏆", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP10", color:"#8b5cf6" },
-  { id:"rank_brand", icon:"🏢", label:"브랜드 TOP10", desc:"SNS 마케팅 브랜드", color:"#06b6d4" },
-  { id:"library",    icon:"📂", label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
+  { id:"seo_blog",   label:"블로그분석",    desc:"네이버 블로그 SEO 진단", color:"#22c55e" },
+  { id:"seo_youtube", label:"유튜브분석",    desc:"유튜브 영상 최적화 분석", color:"#ef4444" },
+  { id:"seo_tistory", label:"티스토리분석",   desc:"구글 SEO + 애드센스", color:"#f59e0b" },
+  { id:"seo_insta",  label:"인스타분석",     desc:"해시태그·참여율 분석", color:"#e1306c" },
+  { id:"seo_home",   label:"실시간 검색어",  desc:"네이버·구글 트렌드", color:"#7c6aff" },
+  { id:"rank_youtube", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP10", color:"#8b5cf6" },
+  { id:"rank_brand", label:"브랜드 TOP10", desc:"SNS 마케팅 브랜드", color:"#06b6d4" },
+  { id:"library",    label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
 ];
 
 export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate }) {
@@ -124,7 +124,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
         <div style={{ height:44, flexShrink:0, display:"flex", alignItems:"center", padding:"0 12px", borderBottom:"1px solid "+topBdr, background:topBg }}>
           <button className="az-side-m" onClick={() => setSideOpen(true)}
             style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:isDark?"#fff":"#333", padding:"4px 6px", marginRight:8, display:"none" }}>☰</button>
-          <span style={{ fontSize:12, color:topClr, fontWeight:600 }}>📊 {menuLabel}</span>
+          <span style={{ fontSize:12, color:topClr, fontWeight:600 }}>{menuLabel}</span>
         </div>
 
         <div style={{ flex:1, overflow:"hidden", display:"flex" }}>
@@ -133,23 +133,21 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
             <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 60px" }}>
               <div style={{ maxWidth: 800, margin: "0 auto" }}>
                 <div style={{ textAlign:"center", marginBottom:28 }}>
-                  <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
                   <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기획기</div>
                   <div style={{ fontSize:14, color:muted, lineHeight:1.7 }}>SNS 콘텐츠를 AI가 분석하고 SEO 점수를 매겨드려요</div>
                 </div>
 
                 {/* 가이드라인 */}
                 <div style={{ marginBottom:28, padding:"22px 24px", borderRadius:16, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>
-                  <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>🚀 이런 기능을 제공해요</div>
+                  <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>이런 기능을 제공해요</div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
                     {[
-                      { icon:"🔍", title:"13개 플랫폼 SEO 분석", desc:"블로그, 유튜브, 인스타, X, 틱톡, 링크드인 등 URL만 입력하면 AI가 100점 만점으로 진단" },
-                      { icon:"📊", title:"실시간 인기 검색어", desc:"네이버·구글·다음 실시간 트렌드를 카테고리별로 확인하고 콘텐츠 주제 선정" },
-                      { icon:"🏆", title:"인플루언서·브랜드 랭킹", desc:"유튜버, 인스타그래머, 블로거, 틱토커 TOP10과 브랜드 SNS 영향력 순위" },
-                      { icon:"📂", title:"내 보관함", desc:"분석 결과를 자동 저장하고, 언제든 다시 확인하며 성장 추이를 비교" },
+                      { title:"13개 플랫폼 SEO 분석", desc:"블로그, 유튜브, 인스타, X, 틱톡, 링크드인 등 URL만 입력하면 AI가 100점 만점으로 진단" },
+                      { title:"실시간 인기 검색어", desc:"네이버·구글·다음 실시간 트렌드를 카테고리별로 확인하고 콘텐츠 주제 선정" },
+                      { title:"인플루언서·브랜드 랭킹", desc:"유튜버, 인스타그래머, 블로거, 틱토커 TOP10과 브랜드 SNS 영향력 순위" },
+                      { title:"내 보관함", desc:"분석 결과를 자동 저장하고, 언제든 다시 확인하며 성장 추이를 비교" },
                     ].map((g,i) => (
                       <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                        <div style={{ fontSize:22, flexShrink:0, marginTop:2 }}>{g.icon}</div>
                         <div>
                           <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:3 }}>{g.title}</div>
                           <div style={{ fontSize:11, color:muted, lineHeight:1.6 }}>{g.desc}</div>
@@ -158,7 +156,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                     ))}
                   </div>
                   <div style={{ borderTop:`1px solid ${isDark?"rgba(99,102,241,0.1)":"rgba(99,102,241,0.08)"}`, paddingTop:14 }}>
-                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>💡 이렇게 활용하세요</div>
+                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>이렇게 활용하세요</div>
                     <div style={{ fontSize:12, color:muted, lineHeight:2 }}>
                       <b style={{color:text}}>Step 1.</b> 실시간 검색어에서 트렌드 키워드를 파악하세요<br/>
                       <b style={{color:text}}>Step 2.</b> 키워드로 콘텐츠를 작성한 후, SNS 분석기에 URL을 입력하세요<br/>
@@ -179,8 +177,8 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                       }}
                       onMouseEnter={e => { e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow=isDark?"0 8px 24px rgba(0,0,0,0.3)":"0 8px 24px rgba(0,0,0,0.06)"; }}
                       onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
-                      <div style={{ width:48, height:48, borderRadius:14, background:f.color+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto 10px" }}>
-                        {f.icon}
+                      <div style={{ width:48, height:48, borderRadius:14, background:f.color+"15", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 10px" }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:f.color }} />
                       </div>
                       <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4 }}>{f.label}</div>
                       <div style={{ fontSize:11, color:muted, lineHeight:1.4 }}>{f.desc}</div>
@@ -204,7 +202,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                           style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, cursor:"pointer", transition:"all 0.15s" }}
                           onMouseEnter={e => e.currentTarget.style.borderColor=accent}
                           onMouseLeave={e => e.currentTarget.style.borderColor=bdr}>
-                          <div style={{ fontSize:20 }}>{MENU_ITEMS.find(m=>m.id==="seo_"+h.type)?.icon||"📊"}</div>
+                          <div style={{ width:8, height:8, borderRadius:"50%", background:h.score>=80?"#22c55e":h.score>=60?"#f59e0b":"#ef4444" }} />
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:13, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.url}</div>
                             <div style={{ fontSize:11, color:muted }}>{h.platform} · {h.date}</div>
@@ -241,7 +239,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                     </div>
                     {history.length === 0 ? (
                       <div style={{ textAlign:"center", padding:"80px 0", color:muted }}>
-                        <div style={{ fontSize:56, marginBottom:16 }}>📂</div>
+                        <div style={{ width:56, height:56, borderRadius:16, background:isDark?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.06)", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{width:12,height:12,borderRadius:"50%",background:"#7c6aff"}}/></div>
                         <div style={{ fontSize:17, fontWeight:700, color:text, marginBottom:8 }}>아직 분석 기록이 없어요</div>
                         <div style={{ fontSize:13, marginBottom:24 }}>SNS 분석기를 사용하면 자동으로 저장됩니다</div>
                         <button onClick={() => safeSetMenu("home")}
@@ -260,7 +258,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                             onClick={() => setLibraryDetail(h)}>
                             <div style={{ width:44, height:44, borderRadius:12, background:(h.score>=80?"rgba(34,197,94,0.1)":h.score>=60?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)"),
                               display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
-                              {MENU_ITEMS.find(m=>m.id==="seo_"+h.type)?.icon||"📊"}
+                              <div style={{ width:8, height:8, borderRadius:"50%", background:h.score>=80?"#22c55e":h.score>=60?"#f59e0b":"#ef4444" }} />
                             </div>
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
@@ -327,7 +325,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
             <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <div style={{ width:"min(400px,90vw)", background:isDark?"#1a1730":"#fff", borderRadius:20, padding:"28px 24px", textAlign:"center",
                 boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
-                <div style={{ fontSize:40, marginBottom:16 }}>⚠️</div>
+                <div style={{ width:40, height:40, borderRadius:12, background:"rgba(239,68,68,0.1)", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{color:"#ef4444",fontSize:20,fontWeight:900}}>!</span></div>
                 <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:8 }}>분석 중입니다!</div>
                 <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:24 }}>
                   다른 메뉴로 이동하면<br/>
@@ -375,7 +373,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
       {/* 헤더 */}
       <div style={{ padding:"24px", borderRadius:16, background:cardBg, border:`1px solid ${bdr}`, marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:12 }}>
-          <div style={{ fontSize:28 }}>{MENU_ITEMS.find(m=>m.id==="seo_"+item.type)?.icon||"📊"}</div>
+          <div style={{ width:28, height:28, borderRadius:8, background:isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{width:8,height:8,borderRadius:"50%",background:"#7c6aff"}}/></div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:16, fontWeight:800, color:text, marginBottom:4, wordBreak:"break-all" }}>{item.url}</div>
             <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
@@ -397,7 +395,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {/* 종합 분석 */}
           <div style={{ padding:"24px", borderRadius:16, background:D?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.15)" }}>
-            <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:10 }}>📋 종합 분석 결과</div>
+            <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:10 }}>종합 분석 결과</div>
             <div style={{ fontSize:13, color:text, lineHeight:1.8, marginBottom:12 }}>{result.overallSummary}</div>
             {result.totalGrade && (
               <span style={{ padding:"4px 14px", borderRadius:8, fontSize:13, fontWeight:800,
@@ -410,7 +408,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 최우선 수정사항 */}
           {result.topPriority && (
             <div style={{ padding:"18px 20px", borderRadius:14, background:D?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.2)" }}>
-              <div style={{ fontSize:13, fontWeight:800, color:"#ef4444", marginBottom:6 }}>🚨 최우선 수정 사항</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#ef4444", marginBottom:6 }}>최우선 수정 사항</div>
               <div style={{ fontSize:13, color:text, lineHeight:1.7 }}>{result.topPriority}</div>
             </div>
           )}
@@ -418,7 +416,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 항목별 점수 */}
           {result.criteria && config?.criteria && (
             <div style={{ padding:"20px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
-              <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>📊 항목별 점수</div>
+              <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>항목별 점수</div>
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 {config.criteria.map(criterion => {
                   const data = result.criteria[criterion.key];
@@ -435,7 +433,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 추천 제목 */}
           {result.recommendedTitles?.length > 0 && (
             <div style={{ padding:"20px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
-              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>✨ SEO 추천 제목</div>
+              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>SEO 추천 제목</div>
               {result.recommendedTitles.map((t,i) => (
                 <div key={i} onClick={() => navigator.clipboard?.writeText(t)}
                   style={{ padding:"10px 14px", marginBottom:6, borderRadius:8, border:`1px solid ${bdr}`, cursor:"pointer",
@@ -443,7 +441,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
                   title="클릭하면 복사">
                   <span style={{ color:"#7c6aff", fontWeight:900, flexShrink:0 }}>{i+1}</span>
                   <span style={{ flex:1 }}>{t}</span>
-                  <span style={{ fontSize:10, color:muted, flexShrink:0 }}>📋</span>
+                  <span style={{ fontSize:10, color:muted, flexShrink:0 }}>복사</span>
                 </div>
               ))}
             </div>
@@ -452,7 +450,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 추천 키워드 */}
           {result.recommendedKeywords?.length > 0 && (
             <div style={{ padding:"20px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
-              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>🏷 추천 키워드</div>
+              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>추천 키워드</div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {result.recommendedKeywords.map((k,i) => (
                   <span key={i} onClick={() => navigator.clipboard?.writeText(k)}
@@ -466,7 +464,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 경쟁 차별화 */}
           {result.competitorTip && (
             <div style={{ padding:"18px 20px", borderRadius:14, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)" }}>
-              <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:8 }}>🎯 경쟁 차별화 전략</div>
+              <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:8 }}>경쟁 차별화 전략</div>
               <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
             </div>
           )}
@@ -474,7 +472,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
       ) : (
         /* 상세 결과가 없는 경우 */
         <div style={{ textAlign:"center", padding:"60px 20px", borderRadius:16, border:`1px solid ${bdr}`, background:cardBg }}>
-          <div style={{ fontSize:48, marginBottom:14 }}>📄</div>
+          <div style={{ width:48, height:48, borderRadius:14, background:isDark?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.06)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{width:10,height:10,borderRadius:"50%",background:"#94a3b8"}}/></div>
           <div style={{ fontSize:16, fontWeight:700, color:text, marginBottom:8 }}>상세 분석 결과가 저장되지 않았어요</div>
           <div style={{ fontSize:13, color:muted, lineHeight:1.7, marginBottom:20 }}>
             이전 버전에서 분석한 기록은 점수만 저장됩니다.<br/>
@@ -521,19 +519,19 @@ function DetailCriterionCard({ criterion, data, isDark, text, muted, bdr, cardBg
         <div style={{ padding:"0 16px 16px", borderTop:`1px solid ${bdr}` }}>
           {data.good?.length > 0 && (
             <div style={{ marginTop:12, marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>✅ 잘하고 있는 점</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>잘하고 있는 점</div>
               {data.good.map((g,i) => <div key={i} style={{ fontSize:12, color:text, lineHeight:1.7, paddingLeft:10 }}>• {g}</div>)}
             </div>
           )}
           {data.bad?.length > 0 && (
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#ef4444", marginBottom:4 }}>❌ 개선이 필요한 점</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#ef4444", marginBottom:4 }}>개선이 필요한 점</div>
               {data.bad.map((b,i) => <div key={i} style={{ fontSize:12, color:text, lineHeight:1.7, paddingLeft:10 }}>• {b}</div>)}
             </div>
           )}
           {data.howToFix?.length > 0 && (
             <div style={{ padding:"12px", borderRadius:8, background:D?"rgba(245,158,11,0.06)":"rgba(245,158,11,0.03)", border:"1px solid rgba(245,158,11,0.15)" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#f59e0b", marginBottom:6 }}>🔧 수정 가이드</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#f59e0b", marginBottom:6 }}>수정 가이드</div>
               {data.howToFix.map((fix,i) => (
                 <div key={i} style={{ fontSize:12, color:text, lineHeight:1.7, paddingLeft:10 }}>{i+1}. {fix}</div>
               ))}
@@ -541,7 +539,7 @@ function DetailCriterionCard({ criterion, data, isDark, text, muted, bdr, cardBg
           )}
           {data.example && (
             <div style={{ marginTop:8, padding:"10px 12px", borderRadius:8, background:D?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.03)", border:"1px solid rgba(34,197,94,0.15)" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>💡 수정 예시</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:4 }}>수정 예시</div>
               <div style={{ fontSize:12, color:text, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{data.example}</div>
             </div>
           )}
@@ -552,7 +550,7 @@ function DetailCriterionCard({ criterion, data, isDark, text, muted, bdr, cardBg
 }
 
 /* ── 사이드바 ── */
-function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate }) {
+function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr }) {
   const item = (id, active) => ({
     display:"block", width:"100%", textAlign:"left", padding:"9px 14px 9px 16px",
     border:"none", cursor:"pointer", fontSize:13, borderRadius:8, marginBottom:2,
@@ -561,9 +559,9 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate
     borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
   });
   const sectionStyle = {
-    fontSize:13, fontWeight:800, color:text, padding:"0 8px", letterSpacing:-0.3,
+    fontSize:15, fontWeight:900, color:text, padding:"4px 8px", letterSpacing:-0.3,
   };
-  const divider = { height:1, background:sideBdr, margin:"12px 4px" };
+  const divider = { height:2, background: isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.12)", margin:"14px 4px", borderRadius:1 };
   return (
     <div style={{ width:200, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, height:"100%", overflowY:"auto", padding:"16px 10px" }}>
       <div style={{ padding:"0 8px 16px", borderBottom:"1px solid "+sideBdr, marginBottom:12 }}>
@@ -575,14 +573,14 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate
       <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>실시간 검색어</button>
 
       <div style={divider} />
-      <div style={{ ...sectionStyle, marginBottom:8 }}>실시간 분석기</div>
+      <div style={{ ...sectionStyle, marginBottom:10 }}>실시간 분석기</div>
       {RANK_ITEMS.map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
       <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP10</button>
 
       <div style={divider} />
-      <div style={{ ...sectionStyle, marginBottom:8 }}>SNS 분석기</div>
+      <div style={{ ...sectionStyle, marginBottom:10 }}>SNS 분석기</div>
       {MENU_ITEMS.filter(m => m.id !== "seo_home").map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
@@ -674,7 +672,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
         <div style={{ marginBottom:16 }}>
           <button onClick={()=>setShowFilter(!showFilter)}
             style={{ fontSize:12, color:platformColor, background:"transparent", border:"none", cursor:"pointer", fontWeight:600, marginBottom:8 }}>
-            🔧 상세 필터 {showFilter?"▲":"▼"}
+            상세 필터 {showFilter?"▲":"▼"}
           </button>
           {showFilter && (
             <div style={{ display:"flex", gap:10, flexWrap:"wrap", padding:"12px 16px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
@@ -826,7 +824,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
       <div style={{ maxWidth:900, margin:"0 auto" }}>
         <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:22, fontWeight:900, color:text }}>🏢 실시간 브랜드 TOP10</div>
+          <div style={{ fontSize:22, fontWeight:900, color:text }}>실시간 브랜드 TOP10</div>
           <div style={{ fontSize:13, color:muted, marginTop:4 }}>SNS 마케팅을 잘하는 브랜드를 업종별로 분석합니다</div>
         </div>
 
@@ -910,7 +908,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
 
         {!loading && ranking.length === 0 && (
           <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🏢</div>
+            <div style={{ width:48, height:48, borderRadius:14, background:"rgba(6,182,212,0.1)", margin:"0 auto 12px", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{width:10,height:10,borderRadius:"50%",background:"#06b6d4"}}/></div>
             <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>업종을 선택하면 브랜드를 분석해요</div>
             <div style={{ fontSize:13 }}>위 카테고리 탭을 클릭해주세요</div>
           </div>

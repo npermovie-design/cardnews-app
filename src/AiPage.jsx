@@ -143,7 +143,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="cardnews_simple" label={t("cardNews")||"카드뉴스"}    indent />
           <Item id="detail_simple"   label={t("detailPage")||"상세페이지"}  indent />
           <Item id="thumbnail_gen"   label="썸네일 생성"  indent />
-          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")+" 👑"} indent />}
+          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")} indent />}
         </>}
 
         {/* 이미지 생성 그룹 */}
