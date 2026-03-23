@@ -14,7 +14,7 @@ const ATMOSPHERES = [
   { id:"city",     label:"도시·스트리트",  icon:"🏙", desc:"도시적·트렌디",             color:"#64748b" },
   { id:"minimal",  label:"미니멀",         icon:"⬜", desc:"화이트·심플 배경",          color:"#94a3b8" },
   { id:"luxury",   label:"럭셔리",         icon:"✨", desc:"다크·고급스러운 분위기",     color:"#7c3aed" },
-  { id:"outdoor",  label:"야외·공원",      icon:"🌸", desc:"밝고 화사한 야외",          color:"#1a1730" },
+  { id:"outdoor",  label:"야외·공원",      icon:"🌸", desc:"밝고 화사한 야외",          color:"#ec4899" },
   { id:"abstract", label:"추상·컬러풀",    icon:"🎨", desc:"감각적인 컬러 배경",        color:"#ef4444" },
 ];
 

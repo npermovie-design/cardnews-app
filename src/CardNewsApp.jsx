@@ -1227,7 +1227,7 @@ function PageMake(props) {
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
               <button onClick={function(){ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#1a1730)", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:800}}>
                 🚀 회원가입 / 로그인하기
               </button>
             ) : (
@@ -1427,7 +1427,7 @@ function PageMake(props) {
               <div style={{padding:"16px 24px"}}>
                 <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
                   <div style={{height:"100%", borderRadius:4,
-                    background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#1a1730)",
+                    background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",
                     animation:"cn-progress 8s ease-out forwards"}}/>
                 </div>
                 <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>

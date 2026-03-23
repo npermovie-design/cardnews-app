@@ -7,7 +7,7 @@ const DEFAULT_BOARD_CATS = [
   { id:"info",label:"정보공유",icon:"📌",color:"#7c6aff" },
   { id:"qna", label:"질문답변",icon:"❓",color:"#f59e0b" },
   { id:"free",label:"자유게시판",icon:"🗣",color:"#10b981" },
-  { id:"review",label:"사용후기",icon:"⭐",color:"#1a1730" },
+  { id:"review",label:"사용후기",icon:"⭐",color:"#ec4899" },
 ];
 async function fetchBoardCatsAdmin() {
   try {
@@ -383,7 +383,7 @@ export default function AdminPage({ C, user: adminUser }) {
               { n: recentMembers, l: "이번주 신규", icon: "🆕", color: "#22c55e" },
               { n: onlineCount||0, l: "실시간 접속", icon: "🟢", color: "#f59e0b" },
               { n: totalPosts, l: "전체 게시글", icon: "📋", color: "#8b5cf6" },
-              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#1a1730" },
+              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#ec4899" },
               { n: totalViews.toLocaleString(), l: "총 조회수", icon: "👁", color: "#06b6d4" },
               { n: totalLikes, l: "총 좋아요", icon: "👍", color: "#f59e0b" },
               { n: totalComments, l: "총 댓글", icon: "💬", color: "#10b981" },
@@ -581,7 +581,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#1a1730)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                       {(m.nick||"?")[0].toUpperCase()}
                     </div>
                     <div>
@@ -969,7 +969,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       <span style={{ fontSize: 13, color: v >= lim ? "#ef4444" : C.purpleL, fontWeight: 700 }}>{v}/{lim}회</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "#e9ecef", overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 4, width: pct + "%", background: v >= lim ? "linear-gradient(90deg,#ef4444,#dc2626)" : "linear-gradient(90deg,#7c6aff,#1a1730)" }} />
+                      <div style={{ height: "100%", borderRadius: 4, width: pct + "%", background: v >= lim ? "linear-gradient(90deg,#ef4444,#dc2626)" : "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
                     </div>
                   </div>
                 );

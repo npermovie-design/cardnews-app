@@ -66,7 +66,7 @@ export function ContactPage({ C }) {
               <textarea placeholder={p("contactMsgPh")} rows={5} value={form.msg} style={{ ...fs, resize: "vertical" }} onChange={f("msg")} />
             </div>
             <button onClick={submit} disabled={submitting}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1 }}>
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1 }}>
               {submitting ? "전송 중..." : p("contactSubmit")}
             </button>
           </div>

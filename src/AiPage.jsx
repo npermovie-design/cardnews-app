@@ -203,7 +203,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.06)":"rgba(124,106,255,0.1)"}` }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <div style={{ width:38, height:38, borderRadius:"50%", flexShrink:0,
-                background:"linear-gradient(135deg,#7c6aff,#1a1730)",
+                background:"linear-gradient(135deg,#7c6aff,#ec4899)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:16, fontWeight:900, color:"#fff",
                 boxShadow:"0 2px 8px rgba(124,106,255,0.4)" }}>
@@ -301,7 +301,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
         onMouseEnter={e=>{ if(!open) e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"rgba(124,106,255,0.04)"; }}
         onMouseLeave={e=>{ if(!open) e.currentTarget.style.background="transparent"; }}>
         <div style={{ width:34, height:34, borderRadius:"50%", flexShrink:0, position:"relative",
-          background:"linear-gradient(135deg,#7c6aff,#1a1730)",
+          background:"linear-gradient(135deg,#7c6aff,#ec4899)",
           display:"flex", alignItems:"center", justifyContent:"center",
           fontSize:14, fontWeight:900, color:"#fff",
           boxShadow:"0 2px 8px rgba(124,106,255,0.3)" }}>
@@ -404,7 +404,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
     blog_yt_blog:"유튜브블로그"
   };
   const typeColor = {
-    blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#1a1730",
+    blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#ec4899",
     blog_youtube:"#ef4444", blog_thread:"#7c6aff", blog_news:"#06b6d4",
     blog_yt_blog:"#ef4444"
   };
@@ -1165,7 +1165,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
-  const OUTFIT_ACC = "#1a1730";
+  const OUTFIT_ACC = "#ec4899";
   const [srcImg, setSrcImg] = useState(null);
   const [refImg, setRefImg] = useState(null);
   const [outfitMode, setOutfitMode] = useState("ref"); // "ref" | "preset"
@@ -1505,7 +1505,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
                 {[
                   { label:"← 왼쪽 확장", val:expLeft,   set:setExpLeft,   color:"#7c6aff" },
                   { label:"오른쪽 확장 →", val:expRight, set:setExpRight, color:"#8b5cf6" },
-                  { label:"↑ 위쪽 확장",  val:expTop,   set:setExpTop,    color:"#1a1730" },
+                  { label:"↑ 위쪽 확장",  val:expTop,   set:setExpTop,    color:"#ec4899" },
                   { label:"아래쪽 확장 ↓", val:expBottom,set:setExpBottom, color:"#f59e0b" },
                 ].map(({label,val,set,color}) => (
                   <div key={label} style={{ marginBottom:16 }}>
@@ -1673,7 +1673,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     const GROUPS = [
       { label: _s("SNS 글쓰기","SNS Writing"), icon: "✍️", color: "#7c6aff",
         items: MENUS.filter(m => m.id.startsWith("blog_")) },
-      { label: _s("SNS 이미지","SNS Image"), icon: "🖼", color: "#1a1730",
+      { label: _s("SNS 이미지","SNS Image"), icon: "🖼", color: "#ec4899",
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
       { label: _s("이미지 생성","Image Generation"), icon: "🎨", color: "#f59e0b",
         items: MENUS.filter(m => ["image_gen","product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint","shorts"].includes(m.id)) },
@@ -1837,7 +1837,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       cta:_s("티스토리 글 작성하기","Write Tistory Post"),
     },
     blog_insta: {
-      icon:"📱", title:_s("인스타그램 캡션","Instagram Caption"), badge:_s("짧고 임팩트있는 · 해시태그 포함","Short & Impactful · Hashtags"), color:"#1a1730",
+      icon:"📱", title:_s("인스타그램 캡션","Instagram Caption"), badge:_s("짧고 임팩트있는 · 해시태그 포함","Short & Impactful · Hashtags"), color:"#ec4899",
       subtitle:_s("인스타그램 게시물에 딱 맞는 캡션과 해시태그를 AI가 생성해줘요.","AI generates perfect captions and hashtags for Instagram posts."),
       steps:[
         { title:_s("주제 입력","Enter Topic"), desc:_s("게시할 사진이나 영상의 주제를 설명해요.","Describe the photo/video topic to post.") },
@@ -2223,7 +2223,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 의상 교체 인트로
   if (aiMenu === "outfit_swap") {
     return (
-      <IntroScreen icon="👗" title={_s("의상 교체","Outfit Swap")} badge={_s("참고 이미지 · 스타일 선택","Reference Image · Style Selection")} color="#1a1730"
+      <IntroScreen icon="👗" title={_s("의상 교체","Outfit Swap")} badge={_s("참고 이미지 · 스타일 선택","Reference Image · Style Selection")} color="#ec4899"
         subtitle={_s("원본 이미지에서 의상만 바꿔드려요. 참고 이미지를 올리거나 원하는 스타일을 선택하면 AI가 자연스럽게 옷을 교체해줘요.","Swap only the outfit in the original image. Upload a reference or select a style and AI naturally changes the clothing.")}
         steps={[
           { title:_s("원본 이미지 업로드","Upload Original Image"), desc:_s("의상을 교체할 인물 이미지를 업로드해요.","Upload the person image to change outfit.") },
@@ -2283,7 +2283,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         <div style={{ maxWidth:520, margin:"0 auto", padding:"32px 20px 60px" }}>
           {/* 프로필 카드 */}
           <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"24px", marginBottom:16, textAlign:"center" }}>
-            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#7c6aff,#1a1730)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>
               {initial}
             </div>
             <div style={{ fontSize:20, fontWeight:900, color:isDark?"#fff":"#1a1a2e", marginBottom:4 }}>{nick}</div>
@@ -2431,7 +2431,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
     <div style={{ position:"fixed", inset:0, zIndex:99999,
       display:"flex", alignItems:"center", justifyContent:"center",
       background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }}>
-      <div style={{ background:"#1a1730", border:"1px solid rgba(255,255,255,0.12)",
+      <div style={{ background:"#13102a", border:"1px solid rgba(255,255,255,0.12)",
         borderRadius:20, padding:"32px 28px", maxWidth:360, width:"90%",
         boxShadow:"0 24px 64px rgba(0,0,0,0.5)", textAlign:"center" }}>
         <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>

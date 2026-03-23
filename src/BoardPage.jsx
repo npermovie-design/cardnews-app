@@ -7,7 +7,7 @@ const DEFAULT_CATS = [
   { id: "info",    label: "정보공유",   icon: "📌", color: "#7c6aff" },
   { id: "qna",     label: "질문답변",   icon: "❓", color: "#f59e0b" },
   { id: "free",    label: "자유게시판", icon: "🗣", color: "#10b981" },
-  { id: "review",  label: "사용후기",   icon: "⭐", color: "#1a1730" },
+  { id: "review",  label: "사용후기",   icon: "⭐", color: "#ec4899" },
   { id: "archive", label: "자료실",     icon: "📁", color: "#3b82f6" },
 ];
 
@@ -288,7 +288,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
           display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
           <button onClick={e=>onDl(item,e)}
             style={{padding:"7px 14px",borderRadius:8,border:"none",
-              background:"rgba(255,255,255,0.92)",color:"#1a1730",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              background:"rgba(255,255,255,0.92)",color:"#ec4899",fontSize:12,fontWeight:700,cursor:"pointer"}}>
             {dlId===item.id?"저장중...":"⬇ 저장"}
           </button>
         </div>

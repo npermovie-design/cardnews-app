@@ -942,7 +942,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 ))}
               </div>
               <div style={{ height:6,borderRadius:4,background:"rgba(255,255,255,0.1)",overflow:"hidden",maxWidth:260,margin:"0 auto" }}>
-                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#1a1730)",animation:"sc-progress 8s ease-out forwards" }}/>
+                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",animation:"sc-progress 8s ease-out forwards" }}/>
               </div>
             </div>
           </div>
@@ -968,7 +968,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* 크레딧 소진 팝업 */}
         {showCreditPopup && (
           <div onClick={()=>setShowCreditPopup(false)} style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-            <div onClick={e=>e.stopPropagation()} style={{ width:"min(400px,92vw)",background:D?"#1a1730":"#fff",borderRadius:20,padding:"32px 28px",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}` }}>
+            <div onClick={e=>e.stopPropagation()} style={{ width:"min(400px,92vw)",background:D?"#13102a":"#fff",borderRadius:20,padding:"32px 28px",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}` }}>
               <div style={{ fontSize:48,marginBottom:16 }}>💎</div>
               <div style={{ fontSize:18,fontWeight:900,color:text,marginBottom:10 }}>포인트가 모두 소진되었습니다</div>
               <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 포인트를 충전하거나<br/>관리자에게 문의해주세요.</div>
@@ -1285,7 +1285,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* 이미지 검색 모달 */}
         {showMediaSearch && (
           <div onClick={()=>setShowMediaSearch(false)} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-            <div onClick={e=>e.stopPropagation()} style={{width:"min(700px,95vw)",maxHeight:"80vh",background:D?"#1a1730":"#fff",borderRadius:20,padding:"24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`,display:"flex",flexDirection:"column"}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"min(700px,95vw)",maxHeight:"80vh",background:D?"#13102a":"#fff",borderRadius:20,padding:"24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`,display:"flex",flexDirection:"column"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
                 <div style={{fontSize:16,fontWeight:900,color:text}}>🔍 이미지 검색 (Pixabay · Pexels)</div>
                 <button onClick={()=>setShowMediaSearch(false)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:16}}>✕</button>

@@ -442,7 +442,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
           {isGuest ? (
             <button onClick={() => { if(onLogin) onLogin(); }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#1a1730)", color:"#fff", fontSize:15, fontWeight:800,
+                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(124,106,255,0.35)" }}>
               🚀 회원가입 / 로그인하기
             </button>
@@ -735,7 +735,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             })}
           </div>
           <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",maxWidth:260,margin:"0 auto 10px"}}>
-            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#1a1730)",animation:"bl-progress 12s ease-out forwards"}}/>
+            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",animation:"bl-progress 12s ease-out forwards"}}/>
           </div>
           <div style={{fontSize:12,color:muted}}>보통 20~60초 소요</div>
         </div>

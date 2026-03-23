@@ -68,7 +68,7 @@ function GuardModal({ cost, onConfirm, onCancel }) {
       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
     }}>
       <div style={{
-        background: "#1a1730", border: "1px solid rgba(255,255,255,0.12)",
+        background: "#13102a", border: "1px solid rgba(255,255,255,0.12)",
         borderRadius: 20, padding: "32px 28px", maxWidth: 360, width: "90%",
         boxShadow: "0 24px 64px rgba(0,0,0,0.5)", textAlign: "center",
         animation: "fadeIn 0.15s ease",
@@ -840,6 +840,7 @@ export default function App() {
               {/* 기본 메뉴 */}
           {[
             { id: "home",  label: t("home") },
+            { id: "cases", label: "고객사례" },
           ].map(m => (
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
@@ -958,7 +959,6 @@ export default function App() {
             { id: "pricing", label: "💎 "+t("pricing"), onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
             { id: "event",   label: "🎉 이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
             { id: "about",   label: "ℹ️ "+t("about"),    onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
-            { id: "cases",   label: "📁 고객사례",        onClick: () => { navigate("cases"); setMobileOpen(false); },   active: page==="cases" },
             { id: "contact", label: "📞 "+t("contact"),  onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
             { id: "howto",   label: "📖 "+t("howto"),    onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
           ].map(m => (
@@ -1009,7 +1009,7 @@ export default function App() {
                       </div>
                       {left > 0 && (
                         <div style={{ marginTop: 6, height: 4, borderRadius: 4, background: "rgba(99,102,241,0.15)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#7c6aff,#1a1730)" }} />
+                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
                         </div>
                       )}
                     </div>

@@ -68,7 +68,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
           {isGuest ? (
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#1a1730)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
               🚀 회원가입 / 로그인하기
             </button>
           ) : (

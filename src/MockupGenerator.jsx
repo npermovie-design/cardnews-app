@@ -58,7 +58,7 @@ const MOCKUP_CATEGORIES = [
   {
     label:"굿즈·용품",
     items:[
-      { id:"tshirt",          label:"티셔츠",         icon:"👕", desc:"가슴 로고 프린팅",          color:"#1a1730" },
+      { id:"tshirt",          label:"티셔츠",         icon:"👕", desc:"가슴 로고 프린팅",          color:"#ec4899" },
       { id:"tumbler",         label:"텀블러",         icon:"🥤", desc:"측면 로고 인쇄",            color:"#10b981" },
       { id:"mug",             label:"머그컵",         icon:"☕", desc:"머그컵 로고",               color:"#f59e0b" },
       { id:"cap",             label:"모자",           icon:"🧢", desc:"야구모자 앞면 로고",        color:"#b45309" },

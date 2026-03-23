@@ -130,7 +130,7 @@ const CAP_PRESETS = [
   {id:"classic",  label:"클래식",  topColor:"#ffffff", botColor:"#ffff00", bgOp:0.55, font:"Noto Sans KR"},
   {id:"redhot",   label:"레드핫",  topColor:"#ff4444", botColor:"#ffffff", bgOp:0.65, font:"Noto Sans KR"},
   {id:"blue",     label:"블루",    topColor:"#60a5fa", botColor:"#ffffff", bgOp:0.60, font:"Noto Sans KR"},
-  {id:"neon",     label:"네온",    topColor:"#7c6aff", botColor:"#1a1730", bgOp:0.45, font:"Noto Sans KR"},
+  {id:"neon",     label:"네온",    topColor:"#7c6aff", botColor:"#ec4899", bgOp:0.45, font:"Noto Sans KR"},
   {id:"minimal",  label:"미니멀",  topColor:"#ffffff", botColor:"#ffffff", bgOp:0.00, font:"Noto Sans KR"},
   {id:"dark",     label:"다크",    topColor:"#4ade80", botColor:"#facc15", bgOp:0.80, font:"Noto Sans KR"},
 ];
@@ -561,7 +561,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         </div>
         <div style={{fontSize:26,fontWeight:900,color:text,lineHeight:1.35,marginBottom:12}}>
           긴 영상 한 편으로<br/>
-          <span style={{background:"linear-gradient(135deg,#7c6aff,#1a1730)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>재생 가능한 세로 숏폼을</span>
+          <span style={{background:"linear-gradient(135deg,#7c6aff,#ec4899)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>재생 가능한 세로 숏폼을</span>
         </div>
         <div style={{fontSize:13,color:muted,lineHeight:1.9,marginBottom:20}}>
           영상 파일 업로드 → AI가 핵심 구간 자동 선정<br/>
@@ -577,7 +577,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             </div>
           ))}
         </div>
-        <button onClick={()=>setStep(1)} style={{width:"100%",padding:"15px",borderRadius:14,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#1a1730)",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 8px 28px rgba(168,85,247,0.3)"}}>
+        <button onClick={()=>setStep(1)} style={{width:"100%",padding:"15px",borderRadius:14,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:15,fontWeight:900,boxShadow:"0 8px 28px rgba(168,85,247,0.3)"}}>
           ✂️ 숏폼 만들기 →
         </button>
       </div>
@@ -598,7 +598,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           {[["file","📁 파일 업로드 (권장)"],["youtube","🔗 유튜브 분석"]].map(([v,l])=>(
             <button key={v} onClick={()=>setInputMode(v)}
               style={{flex:1,padding:"12px",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,
-                background:inputMode===v?`linear-gradient(135deg,${ACC},#1a1730)`:"transparent",color:inputMode===v?"#fff":muted}}>
+                background:inputMode===v?`linear-gradient(135deg,${ACC},#ec4899)`:"transparent",color:inputMode===v?"#fff":muted}}>
               {l}
             </button>
           ))}
@@ -660,7 +660,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         <div style={{display:"flex",gap:10,marginTop:18}}>
           <button onClick={()=>setStep(0)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 처음으로</button>
           <button onClick={()=>setStep(2)} disabled={inputMode==="youtube"?!ytInfo||ytInfo.error:!file}
-            style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#1a1730)",color:"#fff",fontSize:14,fontWeight:900,
+            style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:14,fontWeight:900,
               opacity:(inputMode==="youtube"?!ytInfo||ytInfo.error:!file)?0.4:1}}>
             다음 → 기본 설정
           </button>
@@ -719,7 +719,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
         <div style={{display:"flex",gap:10,marginTop:16}}>
           <button onClick={()=>setStep(1)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 이전</button>
           <button onClick={()=>setStep(3)}
-            style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#1a1730)",color:"#fff",fontSize:14,fontWeight:900}}>
+            style={{flex:1,padding:"13px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:14,fontWeight:900}}>
             다음 → 레이아웃 선택
           </button>
         </div>
@@ -840,7 +840,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(2)} style={{padding:"12px 20px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer"}}>← 이전</button>
             <button onClick={generate}
-              style={{flex:1,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#1a1730)",color:"#fff",fontSize:14,fontWeight:900}}>
+              style={{flex:1,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:14,fontWeight:900}}>
               🤖 AI 분석 시작 → 숏폼 {count}개 생성
             </button>
           </div>
@@ -861,7 +861,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
           </div>
           <div style={{fontSize:16,fontWeight:900,color:text,marginBottom:4}}>{progMsg||"AI가 분석하고 있어요"}</div>
           <div style={{height:6,borderRadius:3,background:D?"rgba(255,255,255,0.08)":"#e5e7eb",overflow:"hidden",margin:"10px 0 5px"}}>
-            <div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#7c6aff,#1a1730)",width:`${prog}%`,transition:"width 0.5s"}}/>
+            <div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#7c6aff,#ec4899)",width:`${prog}%`,transition:"width 0.5s"}}/>
           </div>
           <div style={{fontSize:10,color:muted}}>{prog}% · {clips.length}개 완료</div>
         </div>
@@ -1039,7 +1039,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   {!ex?(
                     <button onClick={()=>extract(cur)} disabled={rec}
                       style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:rec?"not-allowed":"pointer",
-                        background:rec?"rgba(168,85,247,0.2)":`linear-gradient(135deg,${ACC},#1a1730)`,
+                        background:rec?"rgba(168,85,247,0.2)":`linear-gradient(135deg,${ACC},#ec4899)`,
                         color:"#fff",fontSize:12,fontWeight:800,opacity:rec?0.6:1}}>
                       {rec?`✂️ ${recPct}%`:"✂️ 세로영상 추출 & 재생"}
                     </button>
@@ -1071,7 +1071,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   <input value={botText} onChange={e=>setBotText(e.target.value)} style={{...inp,fontSize:12,padding:"8px 11px"}} placeholder="하단 자막 텍스트"/>
                 </div>
                 <button onClick={()=>extract({...cur,title_a:topText,hook:botText},false,null,topText,botText)} disabled={rec}
-                  style={{width:"100%",padding:"8px",borderRadius:8,border:"none",cursor:rec?"not-allowed":"pointer",background:`linear-gradient(135deg,${ACC},#1a1730)`,color:"#fff",fontSize:11,fontWeight:800,opacity:rec?0.5:1}}>
+                  style={{width:"100%",padding:"8px",borderRadius:8,border:"none",cursor:rec?"not-allowed":"pointer",background:`linear-gradient(135deg,${ACC},#ec4899)`,color:"#fff",fontSize:11,fontWeight:800,opacity:rec?0.5:1}}>
                   ✂️ 커스텀 자막으로 재추출
                 </button>
               </div>

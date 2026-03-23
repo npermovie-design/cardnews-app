@@ -47,7 +47,7 @@ export function AboutPage({ navigate, C }) {
         <Badge C={C}>{p("aboutBadge")}</Badge>
         <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 900, color: C.text, letterSpacing: -1.5, margin: "0 0 12px", lineHeight: 1.15 }}>
           {p("aboutTitle1")}<br/>
-          <span style={{ background: "linear-gradient(135deg,#7c6aff,#1a1730)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{p("aboutTitle2")}</span>
+          <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{p("aboutTitle2")}</span>
         </h2>
         <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.9, marginBottom: 48, maxWidth: 620 }}>
           {p("aboutIntro")}
@@ -82,7 +82,7 @@ export function AboutPage({ navigate, C }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 24 }}>
             {[
               { word: "SNS", sub: "Social Network Service", desc: "인스타그램, 유튜브, 블로그 등 소셜 콘텐츠 플랫폼 전체", color: "#7c6aff" },
-              { word: "Make it", sub: "만들다 · 해내다 · 실행하다", desc: "Make it happen — 현실로 만들어내다. SNS 콘텐츠를 실제로 완성시킨다는 의미", color: "#1a1730" },
+              { word: "Make it", sub: "만들다 · 해내다 · 실행하다", desc: "Make it happen — 현실로 만들어내다. SNS 콘텐츠를 실제로 완성시킨다는 의미", color: "#ec4899" },
             ].map((item, i) => (
               <div key={i} style={{ background: C.card, borderRadius: 16, padding: "24px 22px", border: "1px solid " + C.border }}>
                 <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 6, background: `linear-gradient(135deg,${item.color},#8b5cf6)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.word}</div>
@@ -193,7 +193,7 @@ export function HowToPage({ navigate, C }) {
       tips: ["SNS 글쓰기: 블로그·인스타·유튜브·스레드 등", "SNS 이미지: 카드뉴스·상세페이지", "이미지 생성: 제품컷·로고·목업·모델"],
     },
     {
-      step: "03", icon: "📝", color: "#1a1730",
+      step: "03", icon: "📝", color: "#ec4899",
       title: p("howtoS3"),
       desc: p("howtoS3d"),
       tips: ["URL 입력 시 뉴스·유튜브 내용 자동 요약", "SEO 키워드 자동 추천 기능 활용", "글 톤(정보성·감성·전문적 등) 선택 가능"],

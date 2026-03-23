@@ -1114,7 +1114,7 @@ ${kw}
               {progress.total > 0 && (
                 <div style={{ maxWidth:280,width:"100%",margin:"0 auto 20px" }}>
                   <div style={{ height:6,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:6 }}>
-                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},#8b5cf6,#1a1730)`,width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
+                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},#8b5cf6,#ec4899)`,width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
                   </div>
                   <div style={{ fontSize:12,color:muted,fontWeight:600 }}>{doneCount > 0 ? `${doneCount}장 생성 완료` : `${progress.cur}/${progress.total}`}</div>
                 </div>

@@ -136,7 +136,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: C.toggleBg, border: "none", color: C.muted, cursor: "pointer", fontSize: 16, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#1a1730)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
+          <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 200P 지급 · AI 생성 비회원 10회 무료</div>
         </div>
@@ -168,7 +168,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 </div>
               </div>
             )}
-            <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
+            <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "로그인 중..." : "로그인하기"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -212,7 +212,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
               </div>
             )}
 
-            <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
+            <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "가입 중..." : "회원가입하기"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -262,7 +262,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
             {/* 인증 완료 확인 버튼 */}
             <button onClick={checkVerification} disabled={verifyLoading}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#1a1730)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
               {verifyLoading ? "확인 중..." : "✅ 인증 완료 확인"}
             </button>
 

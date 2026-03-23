@@ -4,7 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 
 const LOGO_STYLES = [
-  { id:"free",       label:"자유로운 로고",      desc:"창의적·독창적",       color:"#1a1730", bg:"rgba(236,72,153,0.15)" },
+  { id:"free",       label:"자유로운 로고",      desc:"창의적·독창적",       color:"#ec4899", bg:"rgba(236,72,153,0.15)" },
   { id:"symbol_kr",  label:"한글 심볼 로고",     desc:"한글 타이포 중심",    color:"#7c6aff", bg:"rgba(99,102,241,0.15)" },
   { id:"letter_en",  label:"영문 레터링·캐릭터", desc:"영문 + 캐릭터 혼합",  color:"#8b5cf6", bg:"rgba(139,92,246,0.15)" },
   { id:"calli_en",   label:"영문 캘리그라피",    desc:"손글씨 스타일",       color:"#a78bfa", bg:"rgba(167,139,250,0.15)" },

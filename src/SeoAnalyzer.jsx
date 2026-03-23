@@ -141,7 +141,7 @@ const PLATFORM_CONFIG = {
 - 경쟁 사이트 대비 차별화 전략`,
   },
   twitter: {
-    label: "X(트위터) 분석", icon: "𝕏", color: "#000000",
+    label: "X(트위터) 분석", icon: "𝕏", color: "#6b7280",
     placeholder: "https://x.com/username/status/... 또는 @계정명",
     criteria: [
       { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"280자 제한 내 임팩트 있는 메시지, 첫 줄 훅(Hook)이 핵심. 스레드 활용으로 심층 콘텐츠 전달." },
@@ -160,7 +160,7 @@ const PLATFORM_CONFIG = {
 - 바이럴을 위한 콘텐츠 타이밍과 주제 선정`,
   },
   threads: {
-    label: "스레드 분석", icon: "🧵", color: "#000000",
+    label: "스레드 분석", icon: "🧵", color: "#6b7280",
     placeholder: "https://www.threads.net/@username/post/... 또는 @계정명",
     criteria: [
       { key:"content", label:"콘텐츠 전략", icon:"📝", weight:25, guide:"500자 제한 내 임팩트 있는 메시지. 대화형 콘텐츠, 의견 제시, 스토리텔링이 핵심." },
@@ -1033,7 +1033,7 @@ JSON만 응답:
                   ✍️ AI 블로그 글쓰기
                 </button>
                 <button onClick={() => navigate?.("ai")}
-                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#1a1730,#f43f5e)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#ec4899,#f43f5e)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                   🖼 카드뉴스 만들기
                 </button>
                 <button onClick={() => navigate?.("ai")}
@@ -1050,7 +1050,7 @@ JSON만 응답:
           <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" }}
             onClick={() => setShowLoginPrompt(false)}>
             <div onClick={e => e.stopPropagation()}
-              style={{ width:"min(400px,90vw)", background:D?"#1a1730":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
+              style={{ width:"min(400px,90vw)", background:D?"#13102a":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
                 boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
               <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
               <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>무료 분석 횟수를 다 사용했어요</div>
@@ -1078,7 +1078,7 @@ JSON만 응답:
           <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" }}
             onClick={() => setShowPointPrompt(false)}>
             <div onClick={e => e.stopPropagation()}
-              style={{ width:"min(400px,90vw)", background:D?"#1a1730":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
+              style={{ width:"min(400px,90vw)", background:D?"#13102a":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
                 boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
               <div style={{ fontSize:48, marginBottom:16 }}>💎</div>
               <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>포인트가 부족해요</div>

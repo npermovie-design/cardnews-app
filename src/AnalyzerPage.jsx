@@ -897,7 +897,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
                       </div>}
                       {r.mainSns && <div style={{ padding:"8px 14px", borderRadius:8, background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb", border:`1px solid ${bdr}`, flex:1, minWidth:100 }}>
                         <div style={{ fontSize:10, color:muted, marginBottom:2 }}>주력 SNS</div>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#1a1730" }}>{r.mainSns}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#ec4899" }}>{r.mainSns}</div>
                       </div>}
                     </div>
                     <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.strategy}</div>
