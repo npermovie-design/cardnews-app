@@ -1683,10 +1683,40 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           {/* 헤더 */}
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
             <div style={{ fontSize: 24, fontWeight: 900, color: homeText, marginBottom: 6 }}>{tt("aiWelcome")}</div>
             <div style={{ fontSize: 14, color: homeMuted }}>{tt("aiWelcomeSub")}</div>
+          </div>
+
+          {/* 가이드라인 */}
+          <div style={{ marginBottom: 28, padding: "22px 24px", borderRadius: 16, background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.03)", border: `1px solid ${isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.1)"}` }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: homeText, marginBottom: 14 }}>🚀 {_s("이런 기능을 제공해요","Features we offer")}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              {[
+                { icon: "✍️", title: _s("SNS 글쓰기 (8종)","SNS Writing (8 types)"), desc: _s("네이버 블로그, 티스토리, 인스타, 유튜브 대본, 스레드, 뉴스·유튜브 변환까지 AI가 자동 작성","Naver Blog, Tistory, Instagram, YouTube script, Threads, news/YouTube conversion — AI auto-writes") },
+                { icon: "🖼", title: _s("SNS 이미지 (3종)","SNS Image (3 types)"), desc: _s("카드뉴스, 상세페이지, 썸네일을 텍스트만 입력하면 AI가 디자인까지 완성","Card news, detail pages, thumbnails — enter text and AI completes the design") },
+                { icon: "🎨", title: _s("AI 이미지 생성 (7종)","AI Image Gen (7 types)"), desc: _s("제품컷, 로고, 목업, AI 모델, 얼굴/의상 교체, 여백 늘리기까지 원스톱","Product shots, logos, mockups, AI models, face/outfit swap, outpaint — all in one") },
+                { icon: "💎", title: _s("포인트 시스템","Point System"), desc: _s("무료 포인트로 시작! 생성당 10P 소모, 매일 무료 충전으로 부담 없이 사용","Start free! 10P per generation, daily free points for worry-free usage") },
+              ].map((g, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{g.icon}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 3 }}>{g.title}</div>
+                    <div style={{ fontSize: 11, color: homeMuted, lineHeight: 1.6 }}>{g.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: `1px solid ${isDark ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.08)"}`, paddingTop: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: homeText, marginBottom: 10 }}>💡 {_s("이렇게 활용하세요","How to use")}</div>
+              <div style={{ fontSize: 12, color: homeMuted, lineHeight: 2 }}>
+                <b style={{ color: homeText }}>Step 1.</b> {_s("왼쪽 메뉴에서 원하는 기능을 선택하세요 (글쓰기 / 이미지 / 생성)","Select a feature from the left menu (Writing / Image / Generation)")}<br />
+                <b style={{ color: homeText }}>Step 2.</b> {_s("주제, 키워드, 톤 등 기본 정보를 입력하세요","Enter basic info like topic, keywords, and tone")}<br />
+                <b style={{ color: homeText }}>Step 3.</b> {_s("AI가 콘텐츠를 생성하면 미리보기로 확인하세요","Preview the AI-generated content")}<br />
+                <b style={{ color: homeText }}>Step 4.</b> {_s("복사하여 SNS에 바로 업로드하거나, 수정 후 활용하세요","Copy to upload directly to SNS, or edit and use")}
+              </div>
+            </div>
           </div>
 
           {/* 카테고리별 그리드 */}

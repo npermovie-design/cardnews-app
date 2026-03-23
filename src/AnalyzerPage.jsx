@@ -132,10 +132,40 @@ export default function AnalyzerPage({ C, theme, user, navigate }) {
           {menu === "home" && (
             <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 60px" }}>
               <div style={{ maxWidth: 800, margin: "0 auto" }}>
-                <div style={{ textAlign:"center", marginBottom:32 }}>
+                <div style={{ textAlign:"center", marginBottom:28 }}>
                   <div style={{ fontSize:48, marginBottom:12 }}>📊</div>
                   <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기획기</div>
-                  <div style={{ fontSize:14, color:muted }}>SNS 콘텐츠를 AI가 분석하고 SEO 점수를 매겨드려요</div>
+                  <div style={{ fontSize:14, color:muted, lineHeight:1.7 }}>SNS 콘텐츠를 AI가 분석하고 SEO 점수를 매겨드려요</div>
+                </div>
+
+                {/* 가이드라인 */}
+                <div style={{ marginBottom:28, padding:"22px 24px", borderRadius:16, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>
+                  <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>🚀 이런 기능을 제공해요</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                    {[
+                      { icon:"🔍", title:"13개 플랫폼 SEO 분석", desc:"블로그, 유튜브, 인스타, X, 틱톡, 링크드인 등 URL만 입력하면 AI가 100점 만점으로 진단" },
+                      { icon:"📊", title:"실시간 인기 검색어", desc:"네이버·구글·다음 실시간 트렌드를 카테고리별로 확인하고 콘텐츠 주제 선정" },
+                      { icon:"🏆", title:"인플루언서·브랜드 랭킹", desc:"유튜버, 인스타그래머, 블로거, 틱토커 TOP100과 브랜드 SNS 영향력 순위" },
+                      { icon:"📂", title:"내 보관함", desc:"분석 결과를 자동 저장하고, 언제든 다시 확인하며 성장 추이를 비교" },
+                    ].map((g,i) => (
+                      <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                        <div style={{ fontSize:22, flexShrink:0, marginTop:2 }}>{g.icon}</div>
+                        <div>
+                          <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:3 }}>{g.title}</div>
+                          <div style={{ fontSize:11, color:muted, lineHeight:1.6 }}>{g.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ borderTop:`1px solid ${isDark?"rgba(99,102,241,0.1)":"rgba(99,102,241,0.08)"}`, paddingTop:14 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>💡 이렇게 활용하세요</div>
+                    <div style={{ fontSize:12, color:muted, lineHeight:2 }}>
+                      <b style={{color:text}}>Step 1.</b> 실시간 검색어에서 트렌드 키워드를 파악하세요<br/>
+                      <b style={{color:text}}>Step 2.</b> 키워드로 콘텐츠를 작성한 후, SNS 분석기에 URL을 입력하세요<br/>
+                      <b style={{color:text}}>Step 3.</b> AI가 제시하는 점수와 수정 가이드를 참고해 제목·키워드·구조를 개선하세요<br/>
+                      <b style={{color:text}}>Step 4.</b> 내 보관함에서 이전 분석과 비교하며 꾸준히 성장을 확인하세요
+                    </div>
+                  </div>
                 </div>
 
                 {/* 기능 그리드 */}
@@ -592,8 +622,8 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
       const urlBase = config.platform==="유튜브"?"https://www.youtube.com/@":config.platform==="인스타그램"?"https://www.instagram.com/":config.platform==="틱톡"?"https://www.tiktok.com/@":config.platform==="네이버 블로그"?"https://blog.naver.com/":"";
       const ageStr = ageGroup!=="전체" ? ` 주요 시청자층:${ageGroup}` : "";
       const kwStr = keyword.trim() ? ` 키워드:"${keyword.trim()}" 관련` : "";
-      const prompt = `${country} ${config.platform} ${category==="전체"?"전체":category}${kwStr}${ageStr} 인기 TOP 20. 각: rank,name,category,followers(숫자+만/억),desc(한줄),feature(한줄),url(${urlBase}계정ID),revenue(월 추정 수익),views(월 평균 조회수),age(주요 팬층 연령대). JSON만:{"ranking":[...]}`;
-      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
+      const prompt = `${country} ${config.platform} ${category==="전체"?"전체":category}${kwStr}${ageStr} 인기 TOP 10. 각: rank,name,category,followers(숫자+만/억),desc(한줄),url(${urlBase}계정ID). JSON만:{"ranking":[...]}`;
+      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 1500);
       const m = raw.match(/\{[\s\S]*\}/);
       if (m) {
         const data = JSON.parse(m[0]).ranking || [];
@@ -770,10 +800,9 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
     setLoading(true); setRanking([]);
     try {
       const kwStr = keyword.trim() ? ` "${keyword.trim()}" 관련` : "";
-      const prompt = `한국에서 SNS 마케팅을 잘하는 ${category==="전체"?"전체 업종":category}${kwStr} 브랜드 TOP 20.
-각: rank,name(브랜드명),industry(업종),snsScore(SNS 영향력 점수 1~100),revenue(연매출 추정),engagement(SNS 참여율),mainSns(주력 SNS),followers(총 팔로워),strategy(SNS 전략 한줄),website(공식 사이트URL).
-JSON만:{"ranking":[...]}`;
-      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
+      const prompt = `한국에서 SNS 마케팅을 잘하는 ${category==="전체"?"전체 업종":category}${kwStr} 브랜드 TOP 10.
+각: rank,name(브랜드명),industry(업종),snsScore(1~100),followers(총 팔로워),strategy(한줄). JSON만:{"ranking":[...]}`;
+      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 1500);
       const m = raw.match(/\{[\s\S]*\}/);
       if (m) {
         const data = JSON.parse(m[0]).ranking || [];

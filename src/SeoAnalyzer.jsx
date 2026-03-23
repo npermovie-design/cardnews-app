@@ -286,13 +286,8 @@ export default function SeoAnalyzer({ isDark, menu, user, onSave, onAnalyzingCha
     if (cached) { setTrends(cached); return; }
     setTrendLoading(true); setTrends([]);
     try {
-      const prompt = `현재 한국에서 ${cat==="전체"?"모든 분야":cat+" 분야"}의 실시간 인기 검색어를 검색엔진별로 알려주세요.
-
-네이버, 구글, 다음, 빙 각각 TOP 10씩 총 40개를 알려주세요.
-각 검색어에 대해 검색엔진, 순위, 카테고리, 간단한 이유, 검색량 추정치, 변동(up/down/new/stable)을 포함해주세요.
-
-JSON만: {"trends":[{"rank":1,"keyword":"검색어","engine":"네이버","category":"분류","reason":"이유","volume":"약 50,000","change":"new"},...]}`;
-      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 3000);
+      const prompt = `한국 ${cat==="전체"?"전체":cat} 실시간 인기 검색어. 네이버,구글 각 TOP 10 (총20개). 각: rank,keyword,engine,change(up/down/new/stable). JSON만:{"trends":[...]}`;
+      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 1200);
       const m = raw.match(/\{[\s\S]*\}/);
       if (m) {
         const data = JSON.parse(m[0]).trends || [];
