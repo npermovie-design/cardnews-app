@@ -54,8 +54,8 @@ const HOME_FEATURES = [
   { id:"seo_youtube", icon:"▶️", label:"유튜브분석",    desc:"유튜브 영상 최적화 분석", color:"#ef4444" },
   { id:"seo_tistory", icon:"📖", label:"티스토리분석",   desc:"구글 SEO + 애드센스", color:"#f59e0b" },
   { id:"seo_insta",  icon:"📸", label:"인스타분석",     desc:"해시태그·참여율 분석", color:"#e1306c" },
-  { id:"seo_home",   icon:"🔥", label:"실시간 검색어",  desc:"네이버·구글 트렌드", color:"#6366f1" },
-  { id:"rank_youtube",icon:"🏆", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP100", color:"#8b5cf6" },
+  { id:"seo_home",   icon:"🔥", label:"실시간 검색어",  desc:"네이버·구글 트렌드", color:"#3F72AF" },
+  { id:"rank_youtube",icon:"🏆", label:"인플루언서 랭킹", desc:"유튜버·인스타 TOP100", color:"#2B4F7E" },
   { id:"rank_brand", icon:"🏢", label:"브랜드 TOP100", desc:"SNS 마케팅 브랜드", color:"#06b6d4" },
   { id:"library",    icon:"📂", label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
 ];
@@ -87,7 +87,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
   const topClr = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#6366f1";
+  const accent = "#3F72AF";
 
   const menuLabel = menu === "home" ? "AI 분석기획기" : menu === "library" ? "내 보관함" : MENU_ITEMS.find(m => m.id === menu)?.label || RANK_ITEMS.find(m => m.id === menu)?.label || "브랜드 TOP100";
 
@@ -441,7 +441,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
                   style={{ padding:"10px 14px", marginBottom:6, borderRadius:8, border:`1px solid ${bdr}`, cursor:"pointer",
                     background:D?"rgba(255,255,255,0.03)":"#fafafa", fontSize:13, color:text, fontWeight:600, display:"flex", alignItems:"center", gap:8 }}
                   title="클릭하면 복사">
-                  <span style={{ color:"#6366f1", fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                  <span style={{ color:"#3F72AF", fontWeight:900, flexShrink:0 }}>{i+1}</span>
                   <span style={{ flex:1 }}>{t}</span>
                   <span style={{ fontSize:10, color:muted, flexShrink:0 }}>📋</span>
                 </div>
@@ -457,7 +457,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
                 {result.recommendedKeywords.map((k,i) => (
                   <span key={i} onClick={() => navigator.clipboard?.writeText(k)}
                     style={{ padding:"6px 14px", borderRadius:20, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)",
-                      color:"#6366f1", fontSize:12, fontWeight:600, cursor:"pointer" }}>{k}</span>
+                      color:"#3F72AF", fontSize:12, fontWeight:600, cursor:"pointer" }}>{k}</span>
                 ))}
               </div>
             </div>
@@ -466,7 +466,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
           {/* 경쟁 차별화 */}
           {result.competitorTip && (
             <div style={{ padding:"18px 20px", borderRadius:14, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)" }}>
-              <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:8 }}>🎯 경쟁 차별화 전략</div>
+              <div style={{ fontSize:14, fontWeight:800, color:"#2B4F7E", marginBottom:8 }}>🎯 경쟁 차별화 전략</div>
               <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
             </div>
           )}
@@ -486,7 +486,7 @@ function LibraryDetailView({ item, isDark, text, muted, bdr, cardBg, onBack }) {
             onBack();
             // 부모에서 menu 변경은 할 수 없으므로 안내만
           }}
-            style={{ padding:"12px 28px", borderRadius:10, border:"none", background:"#6366f1", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            style={{ padding:"12px 28px", borderRadius:10, border:"none", background:"#3F72AF", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
             다시 분석하기
           </button>
         </div>
@@ -557,8 +557,8 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr, navigate
     display:"block", width:"100%", textAlign:"left", padding:"10px 14px 10px 36px",
     border:"none", cursor:"pointer", fontSize:13, borderRadius:8, marginBottom:2,
     background: active ? (isDark?"rgba(99,102,241,0.18)":"rgba(99,102,241,0.08)") : "transparent",
-    color: active ? "#a5b4fc" : muted, fontWeight: active ? 700 : 400,
-    borderLeft: active ? "3px solid #6366f1" : "3px solid transparent",
+    color: active ? "#7AB8E0" : muted, fontWeight: active ? 700 : 400,
+    borderLeft: active ? "3px solid #3F72AF" : "3px solid transparent",
   });
   return (
     <div style={{ width:200, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, height:"100%", overflowY:"auto", padding:"16px 10px" }}>
@@ -643,7 +643,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
     }
   }, [menu]);
 
-  const platformColor = config.id==="rank_youtube"?"#ef4444":config.id==="rank_insta"?"#e1306c":config.id==="rank_blog"?"#22c55e":config.id==="rank_tiktok"?"#69c9d0":"#6366f1";
+  const platformColor = config.id==="rank_youtube"?"#ef4444":config.id==="rank_insta"?"#e1306c":config.id==="rank_blog"?"#22c55e":config.id==="rank_tiktok"?"#69c9d0":"#3F72AF";
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
@@ -751,7 +751,7 @@ function RankingView({ isDark, menu, text, muted, bdr, cardBg }) {
                       </div>}
                       {r.age && <div style={{ padding:"8px 14px", borderRadius:8, background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb", border:`1px solid ${bdr}`, flex:1, minWidth:100 }}>
                         <div style={{ fontSize:10, color:muted, marginBottom:2 }}>주요 팬층</div>
-                        <div style={{ fontSize:15, fontWeight:800, color:"#8b5cf6" }}>{r.age}</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:"#2B4F7E" }}>{r.age}</div>
                       </div>}
                     </div>
                     <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.feature}</div>
@@ -790,7 +790,7 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState(null);
   const [keyword, setKeyword] = useState("");
-  const accent = "#6366f1";
+  const accent = "#3F72AF";
 
   const fetchBrands = async (category) => {
     setDetail(null);
@@ -893,11 +893,11 @@ function BrandRankingView({ isDark, text, muted, bdr, cardBg }) {
                       </div>}
                       {r.engagement && <div style={{ padding:"8px 14px", borderRadius:8, background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb", border:`1px solid ${bdr}`, flex:1, minWidth:100 }}>
                         <div style={{ fontSize:10, color:muted, marginBottom:2 }}>참여율</div>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6" }}>{r.engagement}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#2B4F7E" }}>{r.engagement}</div>
                       </div>}
                       {r.mainSns && <div style={{ padding:"8px 14px", borderRadius:8, background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb", border:`1px solid ${bdr}`, flex:1, minWidth:100 }}>
                         <div style={{ fontSize:10, color:muted, marginBottom:2 }}>주력 SNS</div>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#ec4899" }}>{r.mainSns}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#112D4E" }}>{r.mainSns}</div>
                       </div>}
                     </div>
                     <div style={{ fontSize:12, color:muted, marginTop:10, lineHeight:1.6 }}>{r.strategy}</div>

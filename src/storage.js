@@ -65,7 +65,7 @@ export const PLANS = [
     price: 19900,
     points: 1200,
     label: "19,900원",
-    color: "#6366f1",
+    color: "#3F72AF",
     features: ["1,200P 충전", "AI 생성 120회 분량", "게시글 적립 포함", "우선 지원"],
     btnLabel: "충전하기",
     highlight: true,

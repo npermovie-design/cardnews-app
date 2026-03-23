@@ -146,7 +146,7 @@ export default function SimpleDetailPage({ isDark, user }) {
   const mode = "detail"; // 심플 상세페이지 전용
   const defaultSizeIdx = 1; // 세로형 860×1100
   const SLIDE_TYPES = SLIDE_TYPES_DETAIL;
-  const accentBase = "#6366f1";
+  const accentBase = "#3F72AF";
 
   // ── 위저드 단계 ─────────────────────────────────────────────
   const [wizStep, setWizStep] = useState(1);
@@ -422,7 +422,7 @@ export default function SimpleDetailPage({ isDark, user }) {
                 placeholder="https://... URL 붙여넣기"
                 style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#7AB8E0", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>

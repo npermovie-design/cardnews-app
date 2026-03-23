@@ -8,13 +8,13 @@ import StepBar from "./StepBar.jsx";
 ═══════════════════════════════════════════════════════════ */
 
 const ATMOSPHERES = [
-  { id:"studio",   label:"스튜디오",       icon:"🎬", desc:"깔끔한 배경·전문 조명",    color:"#6366f1" },
+  { id:"studio",   label:"스튜디오",       icon:"🎬", desc:"깔끔한 배경·전문 조명",    color:"#3F72AF" },
   { id:"nature",   label:"자연·아웃도어",  icon:"🌿", desc:"자연광·그린 배경",          color:"#10b981" },
   { id:"cafe",     label:"카페·라이프스타일",icon:"☕",desc:"따뜻한 인테리어 공간",      color:"#f59e0b" },
   { id:"city",     label:"도시·스트리트",  icon:"🏙", desc:"도시적·트렌디",             color:"#64748b" },
   { id:"minimal",  label:"미니멀",         icon:"⬜", desc:"화이트·심플 배경",          color:"#94a3b8" },
   { id:"luxury",   label:"럭셔리",         icon:"✨", desc:"다크·고급스러운 분위기",     color:"#7c3aed" },
-  { id:"outdoor",  label:"야외·공원",      icon:"🌸", desc:"밝고 화사한 야외",          color:"#ec4899" },
+  { id:"outdoor",  label:"야외·공원",      icon:"🌸", desc:"밝고 화사한 야외",          color:"#112D4E" },
   { id:"abstract", label:"추상·컬러풀",    icon:"🎨", desc:"감각적인 컬러 배경",        color:"#ef4444" },
 ];
 

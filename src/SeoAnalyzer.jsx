@@ -617,7 +617,7 @@ JSON만 응답:
             <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${bdr}`, marginBottom:16 }}>
               {["전체","네이버","구글","다음","빙"].map(eng => {
                 const active = trendEngine===eng;
-                const engColor = eng==="네이버"?"#22c55e":eng==="구글"?"#4285f4":eng==="다음"?"#f59e0b":eng==="빙"?"#0078d4":"#6366f1";
+                const engColor = eng==="네이버"?"#22c55e":eng==="구글"?"#4285f4":eng==="다음"?"#f59e0b":eng==="빙"?"#0078d4":"#3F72AF";
                 return (
                   <button key={eng} onClick={()=>setTrendEngine(eng)}
                     style={{ padding:"10px 20px", border:"none", cursor:"pointer", fontSize:13, fontWeight:active?700:400,
@@ -920,7 +920,7 @@ JSON만 응답:
                   {isExpanded && (
                     <div style={{ padding:"0 22px 22px", borderTop:`1px solid ${bdr}` }}>
                       <div style={{ padding:"12px 14px", margin:"14px 0", borderRadius:10, background:D?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:"1px solid rgba(99,102,241,0.1)" }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", marginBottom:4 }}>📖 평가 기준</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#3F72AF", marginBottom:4 }}>📖 평가 기준</div>
                         <div style={{ fontSize:12, color:muted, lineHeight:1.6 }}>{criterion.guide}</div>
                       </div>
 
@@ -1014,14 +1014,14 @@ JSON만 응답:
               <div style={{ padding:"22px 24px", borderRadius:16, background:D?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.03)", border:"1px solid rgba(139,92,246,0.15)", display:"flex", gap:14, alignItems:"flex-start" }}>
                 <div style={{ fontSize:28, flexShrink:0 }}>🎯</div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:800, color:"#8b5cf6", marginBottom:6 }}>경쟁 차별화 전략</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:"#2B4F7E", marginBottom:6 }}>경쟁 차별화 전략</div>
                   <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>{result.competitorTip}</div>
                 </div>
               </div>
             )}
 
             {/* AI 생성기 유도 CTA */}
-            <div style={{ padding:"24px", borderRadius:16, background:"linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.06))",
+            <div style={{ padding:"24px", borderRadius:16, background:"linear-gradient(135deg, rgba(99,102,241,0.08), rgba(17,45,78,0.06))",
               border:`1px solid ${D?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.12)"}` }}>
               <div style={{ fontSize:16, fontWeight:900, color:text, marginBottom:8 }}>✨ 분석 결과를 바탕으로 콘텐츠를 만들어보세요!</div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.7, marginBottom:16 }}>
@@ -1029,11 +1029,11 @@ JSON만 응답:
               </div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <button onClick={() => navigate?.("ai")}
-                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                   ✍️ AI 블로그 글쓰기
                 </button>
                 <button onClick={() => navigate?.("ai")}
-                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#ec4899,#f43f5e)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#112D4E,#f43f5e)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                   🖼 카드뉴스 만들기
                 </button>
                 <button onClick={() => navigate?.("ai")}
@@ -1055,7 +1055,7 @@ JSON만 응답:
               <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
               <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>무료 분석 횟수를 다 사용했어요</div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:20 }}>
-                비회원은 하루 <b style={{color:"#6366f1"}}>{AZ_FREE_GUEST}회</b> 무료 분석 가능합니다.<br/>
+                비회원은 하루 <b style={{color:"#3F72AF"}}>{AZ_FREE_GUEST}회</b> 무료 분석 가능합니다.<br/>
                 로그인하면 <b style={{color:"#22c55e"}}>{AZ_FREE_MEMBER}회</b>로 늘어나고,<br/>
                 이후에는 <b style={{color:"#f59e0b"}}>10P</b>로 추가 분석할 수 있어요!
               </div>
@@ -1065,7 +1065,7 @@ JSON만 응답:
                   닫기
                 </button>
                 <button onClick={() => { setShowLoginPrompt(false); navigate?.("login"); }}
-                  style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                  style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
                   로그인하기
                 </button>
               </div>

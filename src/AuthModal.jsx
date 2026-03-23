@@ -131,12 +131,12 @@ export default function AuthModal({ onClose, onAuth, C }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
       <style>{".nper-auth-input::placeholder{color:rgba(255,255,255,0.35)!important}"}</style>
-      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(63,114,175,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: C.toggleBg, border: "none", color: C.muted, cursor: "pointer", fontSize: 16, width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
+          <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#3F72AF,#112D4E)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 200P 지급 · AI 생성 비회원 10회 무료</div>
         </div>
@@ -168,7 +168,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 </div>
               </div>
             )}
-            <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
+            <button onClick={login} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(63,114,175,0.3)" : "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "로그인 중..." : "로그인하기"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -183,7 +183,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             </button>
 
             <button onClick={() => { setTab("register"); setErr(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 12, textAlign: "center", padding: "4px" }}>
-              아직 계정이 없으신가요? <span style={{ color: "#a5b4fc", fontWeight: 700 }}>회원가입</span>
+              아직 계정이 없으신가요? <span style={{ color: "#7AB8E0", fontWeight: 700 }}>회원가입</span>
             </button>
           </div>
         )}
@@ -212,7 +212,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
               </div>
             )}
 
-            <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
+            <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(63,114,175,0.3)" : "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
               {loading ? "가입 중..." : "회원가입하기"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -245,7 +245,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ fontSize: 56, margin: "8px 0 4px" }}>📧</div>
             <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>이메일 인증을 완료해주세요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9 }}>
-              <b style={{ color: "#a5b4fc" }}>{form.email}</b>으로<br/>
+              <b style={{ color: "#7AB8E0" }}>{form.email}</b>으로<br/>
               인증 메일을 발송했어요.<br/>
               메일함을 확인하고 링크를 클릭한 뒤<br/>아래 버튼을 눌러주세요.
             </div>
@@ -262,7 +262,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
 
             {/* 인증 완료 확인 버튼 */}
             <button onClick={checkVerification} disabled={verifyLoading}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(63,114,175,0.3)" : "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
               {verifyLoading ? "확인 중..." : "✅ 인증 완료 확인"}
             </button>
 

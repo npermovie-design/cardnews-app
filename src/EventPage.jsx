@@ -7,7 +7,7 @@ const EVENTS = [
     badge: "진행중",
     title: "메이킷 인플루언서 모집!",
     icon: "🎉",
-    color: "#6366f1",
+    color: "#3F72AF",
     period: "2025.01.01 ~ 상시 모집",
     desc: "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\n4,500 포인트(약 만원 상당)를 지급해드립니다!",
     details: [
@@ -52,9 +52,9 @@ export default function EventPage({ C, navigate }) {
           ← 이벤트 목록
         </button>
         <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 20, overflow: "hidden" }}>
-          <div style={{ padding: "36px 32px", background: ev.status === "active" ? "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(236,72,153,0.05))" : "transparent" }}>
+          <div style={{ padding: "36px 32px", background: ev.status === "active" ? "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(17,45,78,0.05))" : "transparent" }}>
             <div style={{ display: "inline-block", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
-              background: ev.status === "active" ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "#666", color: "#fff", marginBottom: 14 }}>
+              background: ev.status === "active" ? "linear-gradient(135deg,#3F72AF,#2B4F7E)" : "#666", color: "#fff", marginBottom: 14 }}>
               {ev.badge}
             </div>
             <div style={{ fontSize: 28, marginBottom: 10 }}>{ev.icon}</div>
@@ -79,7 +79,7 @@ export default function EventPage({ C, navigate }) {
             {ev.status === "active" && (
               <button onClick={() => navigate?.("contact")}
                 style={{ marginTop: 24, padding: "14px 32px", borderRadius: 12, border: "none",
-                  background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+                  background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 ✉️ 후기 제출하기 (문의하기)
               </button>
             )}
@@ -92,7 +92,7 @@ export default function EventPage({ C, navigate }) {
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>🎉 이벤트</div>
+        <div style={{ display: "inline-block", background: "rgba(63,114,175,0.1)", border: "1px solid rgba(63,114,175,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>🎉 이벤트</div>
         <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>진행중인 이벤트</h2>
         <p style={{ fontSize: 14, color: muted }}>SNS메이킷의 다양한 이벤트에 참여하세요!</p>
       </div>
@@ -104,7 +104,7 @@ export default function EventPage({ C, navigate }) {
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: "8px 24px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
                 background: tab === id ? (isDark ? "rgba(99,102,241,0.5)" : "#fff") : "transparent",
-                color: tab === id ? (isDark ? "#fff" : "#6366f1") : muted }}>
+                color: tab === id ? (isDark ? "#fff" : "#3F72AF") : muted }}>
               {label}
             </button>
           ))}
@@ -128,7 +128,7 @@ export default function EventPage({ C, navigate }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 10,
-                    background: ev.status === "active" ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "#555", color: "#fff" }}>
+                    background: ev.status === "active" ? "linear-gradient(135deg,#3F72AF,#2B4F7E)" : "#555", color: "#fff" }}>
                     {ev.badge}
                   </span>
                   <span style={{ fontSize: 11, color: muted }}>{ev.period}</span>

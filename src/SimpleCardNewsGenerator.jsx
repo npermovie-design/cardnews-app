@@ -63,7 +63,7 @@ const SIZE_PRESETS = [
 const DESIGN_PRESETS = [
   { key:"bold_dark",  label:"볼드 다크",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:34, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3,  lineHeightBody:1.7 },
   { key:"minimal",    label:"미니멀",     bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35, lineHeightBody:1.7 },
-  { key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  { key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#7AB8E0", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3,  lineHeightBody:1.7 },
   { key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:30, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4,  lineHeightBody:1.8 },
   { key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3,  lineHeightBody:1.7 },
   { key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:32, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3,  lineHeightBody:1.7 },
@@ -409,7 +409,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const cardBg  = D ? "rgba(255,255,255,0.04)" : "#fff";
   const bdr     = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
-  const accentColor = "#6366f1";
+  const accentColor = "#3F72AF";
 
   const preset = SIZE_PRESETS[selSize] || SIZE_PRESETS[0];
   const imgW = preset.w != null ? preset.w : (parseInt(customW)||860);
@@ -431,13 +431,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 onClick={()=>{ if(done&&step<wizStep) setWizStep(step); }}>
                 <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
-                  background:done||active?"#6366f1":(D?"rgba(255,255,255,0.1)":"#e5e5e5"),
+                  background:done||active?"#3F72AF":(D?"rgba(255,255,255,0.1)":"#e5e5e5"),
                   color:done||active?"#fff":(D?"rgba(255,255,255,0.3)":"#bbb") }}>
                   {done?"✓":n}
                 </div>
                 <span style={{ fontSize:13, fontWeight:active?800:500, color:active?text:muted, whiteSpace:"nowrap" }}>{label}</span>
               </div>
-              {i<3&&<div style={{ flex:1, height:2, background:done?"#6366f1":(D?"rgba(255,255,255,0.1)":"#e5e5e5"), margin:"0 12px", minWidth:16 }}/>}
+              {i<3&&<div style={{ flex:1, height:2, background:done?"#3F72AF":(D?"rgba(255,255,255,0.1)":"#e5e5e5"), margin:"0 12px", minWidth:16 }}/>}
             </div>
           );
         })}
@@ -642,7 +642,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 placeholder="https://... 뉴스/유튜브/블로그 URL 붙여넣기"
                 style={{ flex:1, padding:"9px 13px", borderRadius:9, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
+                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#7AB8E0", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>
@@ -665,7 +665,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 const isC = topic === ex.text;
                 return (
                   <button key={ex.label} onClick={()=>setTopic(ex.text)}
-                    style={{ padding:"5px 12px", borderRadius:16, border:`1px solid ${isC?"#6366f1":bdr}`, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#a5b4fc":(D?"rgba(255,255,255,0.55)":"#555"), fontSize:12, cursor:"pointer", fontWeight:isC?700:400, transition:"all 0.12s" }}>
+                    style={{ padding:"5px 12px", borderRadius:16, border:`1px solid ${isC?"#3F72AF":bdr}`, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#7AB8E0":(D?"rgba(255,255,255,0.55)":"#555"), fontSize:12, cursor:"pointer", fontWeight:isC?700:400, transition:"all 0.12s" }}>
                     {ex.label}
                   </button>
                 );
@@ -687,7 +687,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 const isC = pageCount===n;
                 return (
                   <button key={n} onClick={()=>setPageCount(n)}
-                    style={{ width:38, height:38, borderRadius:9, border:`1.5px solid ${isC?"#6366f1":bdr}`, cursor:"pointer", fontSize:13, fontWeight:700, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#a5b4fc":(D?"rgba(255,255,255,0.5)":"#666") }}>
+                    style={{ width:38, height:38, borderRadius:9, border:`1.5px solid ${isC?"#3F72AF":bdr}`, cursor:"pointer", fontSize:13, fontWeight:700, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#7AB8E0":(D?"rgba(255,255,255,0.5)":"#666") }}>
                     {n}
                   </button>
                 );
@@ -706,7 +706,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <div style={{ fontSize:11, color:muted, marginTop:2 }}>주제를 입력하면 더 구체적인 방향을 추천해줘요</div>
               </div>
               <button onClick={getSugg} disabled={suggesting||!topic.trim()}
-                style={{ padding:"8px 16px", borderRadius:8, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
+                style={{ padding:"8px 16px", borderRadius:8, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#7AB8E0", fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
                 {suggesting?"추천 중...":"✨ AI 추천"}
               </button>
             </div>
@@ -733,7 +733,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               setWizStep(2);
               if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
-              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#6366f1":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#3F72AF":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>
             </button>
           </div>
@@ -756,11 +756,11 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", display:"flex", alignItems:"center", gap:12 }}>
               {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:44, height:32, objectFit:"cover", borderRadius:6, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#7AB8E0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
                 <div style={{ fontSize:11, color:muted, marginTop:2 }}>불러온 내용을 기반으로 슬라이드가 자동 구성돼요</div>
               </div>
               <button onClick={suggestAll} disabled={planLoading}
-                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#6366f1", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
+                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#3F72AF", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
                 {planLoading?"구성 중...":"재구성"}
               </button>
             </div>
@@ -771,7 +771,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:11, color:muted, marginTop:2 }}>모든 슬라이드 내용을 AI가 한 번에 추천</div>
             </div>
             <button onClick={suggestAll} disabled={planLoading}
-              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planLoading?"wait":"pointer", background:"#6366f1", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
+              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planLoading?"wait":"pointer", background:"#3F72AF", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
               {planLoading?"추천 중...":"✨ 전체 자동 추천"}
             </button>
           </div>
@@ -780,13 +780,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div key={i} style={{ borderRadius:14, border:`1.5px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)", borderBottom:`1px solid ${bdr}` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:24, height:24, borderRadius:7, background:"rgba(99,102,241,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:"#6366f1" }}>{i+1}</div>
+                    <div style={{ width:24, height:24, borderRadius:7, background:"rgba(99,102,241,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:"#3F72AF" }}>{i+1}</div>
                     <span style={{ fontSize:13, fontWeight:800, color:text }}>{sc.label}</span>
-                    {sc.headline&&<span style={{ fontSize:11, color:"#6366f1", fontWeight:600 }}>✓ 입력됨</span>}
+                    {sc.headline&&<span style={{ fontSize:11, color:"#3F72AF", fontWeight:600 }}>✓ 입력됨</span>}
                   </div>
                   <button onClick={()=>suggestOne(i)} disabled={sc.aiLoading||planLoading}
-                    style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#6366f1", fontSize:11, fontWeight:700, cursor:sc.aiLoading||planLoading?"wait":"pointer", opacity:sc.aiLoading||planLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
-                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#6366f1",animation:"spin 0.8s linear infinite" }}/>추천 중</>:"✦ AI 추천"}
+                    style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#3F72AF", fontSize:11, fontWeight:700, cursor:sc.aiLoading||planLoading?"wait":"pointer", opacity:sc.aiLoading||planLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
+                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#3F72AF",animation:"spin 0.8s linear infinite" }}/>추천 중</>:"✦ AI 추천"}
                   </button>
                 </div>
                 <div style={{ padding:"14px 16px", display:"grid", gap:10 }}>
@@ -806,7 +806,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
             <button onClick={()=>setWizStep(1)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
-            <button onClick={()=>setWizStep(3)} style={{ padding:"14px 40px",borderRadius:12,border:"none",cursor:"pointer",background:"#6366f1",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
+            <button onClick={()=>setWizStep(3)} style={{ padding:"14px 40px",borderRadius:12,border:"none",cursor:"pointer",background:"#3F72AF",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
               다음 → <span style={{ fontSize:12,opacity:0.8 }}>디자인 선택</span>
             </button>
           </div>
@@ -838,7 +838,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 const isSel=selPreset?.key===dp.key;
                 return (
                   <button key={dp.key} onClick={()=>setSelPreset(isSel?null:dp)}
-                    style={{ border:`2px solid ${isSel?"#6366f1":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(99,102,241,0.3)":"0 2px 8px rgba(0,0,0,0.15)" }}>
+                    style={{ border:`2px solid ${isSel?"#3F72AF":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(99,102,241,0.3)":"0 2px 8px rgba(0,0,0,0.15)" }}>
                     {/* 시각화된 미리보기 */}
                     <div style={{ width:"100%", paddingBottom:"130%", position:"relative", background:dp.bgColor }}>
                       <div style={{ position:"absolute",inset:0,padding:"10px 8px",display:"flex",flexDirection:"column",justifyContent:dp.textValign==="top"?"flex-start":dp.textValign==="bottom"?"flex-end":"center",textAlign:dp.textAlign||"left" }}>
@@ -858,10 +858,10 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                           </div>
                         )}
                       </div>
-                      {isSel&&<div style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900 }}>✓</div>}
+                      {isSel&&<div style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:"#3F72AF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900 }}>✓</div>}
                     </div>
                     <div style={{ padding:"6px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)" }}>
-                      <div style={{ fontSize:10,fontWeight:isSel?800:600,color:isSel?"#a5b4fc":text }}>{dp.label}</div>
+                      <div style={{ fontSize:10,fontWeight:isSel?800:600,color:isSel?"#7AB8E0":text }}>{dp.label}</div>
                     </div>
                   </button>
                 );
@@ -869,7 +869,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
             {selPreset&&(
               <div style={{ marginTop:10,padding:"9px 14px",borderRadius:9,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)" }}>
-                <div style={{ fontSize:12,fontWeight:700,color:"#a5b4fc" }}>✓ {selPreset.label} 선택됨</div>
+                <div style={{ fontSize:12,fontWeight:700,color:"#7AB8E0" }}>✓ {selPreset.label} 선택됨</div>
               </div>
             )}
           </div>
@@ -878,12 +878,12 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <div style={{ fontSize:13, fontWeight:700, color:text }}>이미지 크기</div>
-              <div style={{ fontSize:14, fontWeight:900, color:"#6366f1" }}>{imgW} × {imgH} px</div>
+              <div style={{ fontSize:14, fontWeight:900, color:"#3F72AF" }}>{imgW} × {imgH} px</div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
-                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?"#6366f1":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?"#3F72AF":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#7AB8E0":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
                   <span style={{ fontSize:16 }}>{p.icon}</span>
                   <span>{p.label}</span>
                   {p.w&&<span style={{ fontSize:9,opacity:0.7 }}>{p.w}×{p.h}</span>}
@@ -914,9 +914,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#6366f1" }}>10P</b></div>
+              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#3F72AF" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
-                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#6366f1",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
+                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#3F72AF",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
                 {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:user?"카드뉴스 만들기 →":"✦ 1회 생성하기"}
               </button>
             </div>
@@ -936,13 +936,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ display:"flex",flexDirection:"column",gap:10,maxWidth:260,margin:"0 auto 24px",textAlign:"left" }}>
                 {["텍스트 구성 중...","디자인 적용 중...","이미지 렌더링 중...","마무리 작업..."].map((l,i)=>(
                   <div key={i} style={{ display:"flex",alignItems:"center",gap:10,opacity:0.8 }}>
-                    <div style={{ width:18,height:18,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0 }}/>
+                    <div style={{ width:18,height:18,borderRadius:"50%",border:"2px solid #3F72AF",borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0 }}/>
                     <span style={{ fontSize:13,color:"rgba(255,255,255,0.7)" }}>{l}</span>
                   </div>
                 ))}
               </div>
               <div style={{ height:6,borderRadius:4,background:"rgba(255,255,255,0.1)",overflow:"hidden",maxWidth:260,margin:"0 auto" }}>
-                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",animation:"sc-progress 8s ease-out forwards" }}/>
+                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#3F72AF,#2B4F7E,#112D4E)",animation:"sc-progress 8s ease-out forwards" }}/>
               </div>
             </div>
           </div>
@@ -974,9 +974,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 포인트를 충전하거나<br/>관리자에게 문의해주세요.</div>
               <div style={{ display:"flex",gap:10 }}>
                 <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
-                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 포인트 충전</button>
+                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 포인트 충전</button>
               </div>
-              <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#6366f1" }}>관리자 문의하기 →</a></div>
+              <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#3F72AF" }}>관리자 문의하기 →</a></div>
             </div>
           </div>
         )}
@@ -999,13 +999,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   const sl=getCurSlide(i); const ss=getSlideStyle(i); const sBg=(sted[i]||{}).bgImage; const isActive=selIdx===i;
                   return (
                     <div key={i} onClick={()=>setSelIdx(i)}
-                      style={{ borderRadius:8,overflow:"hidden",border:`2px solid ${isActive?"#6366f1":"transparent"}`,cursor:"pointer",transition:"border 0.12s",background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                      style={{ borderRadius:8,overflow:"hidden",border:`2px solid ${isActive?"#3F72AF":"transparent"}`,cursor:"pointer",transition:"border 0.12s",background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
                       <div style={{ position:"relative" }}>
                         <SlideCanvas slide={sl} style={ss} CW={imgW} CH={imgH} displayW={106} bgImageSrc={sBg||undefined}/>
-                        <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:isActive?"#6366f1":"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:"#fff" }}>{i+1}</div>
+                        <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:isActive?"#3F72AF":"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:"#fff" }}>{i+1}</div>
                       </div>
                       <div style={{ padding:"3px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                        <span style={{ fontSize:8,color:isActive?"#a5b4fc":muted,fontWeight:isActive?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1 }}>{s.label}</span>
+                        <span style={{ fontSize:8,color:isActive?"#7AB8E0":muted,fontWeight:isActive?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1 }}>{s.label}</span>
                         <button onClick={e=>{e.stopPropagation();saveOne(i);}} style={{ fontSize:8,padding:"1px 4px",borderRadius:3,border:"none",background:"transparent",color:muted,cursor:"pointer",flexShrink:0 }}>↓</button>
                       </div>
                     </div>
@@ -1016,7 +1016,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <button onClick={()=>{
                   const newSlide = { id:"slide_"+Date.now(), label:`추가 ${slides.length+1}`, title:"", subtitle:"", body:"", highlight:"" };
                   setSlides(prev=>[...prev,newSlide]);
-                }} style={{ flex:1,padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:"#6366f1",fontSize:10,cursor:"pointer",fontWeight:700 }}>+ 페이지 추가</button>
+                }} style={{ flex:1,padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:"#3F72AF",fontSize:10,cursor:"pointer",fontWeight:700 }}>+ 페이지 추가</button>
                 {slides.length>2 && <button onClick={()=>{
                   if(!window.confirm("마지막 페이지를 삭제할까요?")) return;
                   setSlides(prev=>prev.slice(0,-1));
@@ -1029,7 +1029,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             {/* 편집 패널 */}
             <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:8 }}>
               <div style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:9,background:cardBg,border:`1px solid ${bdr}` }}>
-                <div style={{ width:22,height:22,borderRadius:6,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#6366f1",flexShrink:0 }}>{selIdx+1}</div>
+                <div style={{ width:22,height:22,borderRadius:6,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#3F72AF",flexShrink:0 }}>{selIdx+1}</div>
                 <span style={{ fontSize:13,fontWeight:800,color:text,flex:1 }}>{slides[selIdx]?.label}</span>
                 <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ ...btnSm,opacity:selIdx===0?0.3:1 }}>‹</button>
                 <span style={{ fontSize:11,color:muted }}>{selIdx+1}/{slides.length}</span>
@@ -1063,7 +1063,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                       전체 적용
                     </button>
                     <button onClick={()=>{ if(selPreset){ const so2={...(sted[selIdx]||{})}; Object.assign(so2,{bgColor:selPreset.bgColor,textColor:selPreset.textColor,titleSize:selPreset.titleSize,bodySize:selPreset.bodySize,textAlign:selPreset.textAlign,textValign:selPreset.textValign}); setSted(prev=>({...prev,[selIdx]:so2})); } }}
-                      style={{ fontSize:9,padding:"2px 8px",borderRadius:5,border:`1px solid #6366f1`,background:"rgba(99,102,241,0.15)",color:"#a5b4fc",cursor:"pointer",fontWeight:700 }}>
+                      style={{ fontSize:9,padding:"2px 8px",borderRadius:5,border:`1px solid #3F72AF`,background:"rgba(99,102,241,0.15)",color:"#7AB8E0",cursor:"pointer",fontWeight:700 }}>
                       이 슬라이드만
                     </button>
                   </div>
@@ -1072,7 +1072,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   {DESIGN_PRESETS.map(dp=>{
                     const isSel=selPreset?.key===dp.key;
                     return <button key={dp.key} onClick={()=>setSelPreset(dp)}
-                      style={{ flexShrink:0,padding:"6px 10px",borderRadius:6,border:`1.5px solid ${isSel?"#6366f1":"transparent"}`,
+                      style={{ flexShrink:0,padding:"6px 10px",borderRadius:6,border:`1.5px solid ${isSel?"#3F72AF":"transparent"}`,
                         background:dp.bgColor,color:dp.textColor,fontSize:10,fontWeight:isSel?800:500,cursor:"pointer",whiteSpace:"nowrap",
                         boxShadow:isSel?"0 0 0 2px rgba(99,102,241,0.4)":"0 1px 4px rgba(0,0,0,0.2)" }}>
                       {dp.label}
@@ -1159,7 +1159,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                     <button onClick={()=>updSted(selIdx,"titleSize",Math.max(16,(so.titleSize||curStyle.titleSize||32)-2))} style={{ ...btnSm }}>−</button>
                     <div style={{ flex:1,height:5,borderRadius:3,background:D?"rgba(255,255,255,0.1)":"#e8e8e8",overflow:"hidden" }}>
-                      <div style={{ height:"100%",borderRadius:3,background:"#6366f1",width:`${((so.titleSize||curStyle.titleSize||32)-16)/(72-16)*100}%`,transition:"width 0.15s" }}/>
+                      <div style={{ height:"100%",borderRadius:3,background:"#3F72AF",width:`${((so.titleSize||curStyle.titleSize||32)-16)/(72-16)*100}%`,transition:"width 0.15s" }}/>
                     </div>
                     <button onClick={()=>updSted(selIdx,"titleSize",Math.min(72,(so.titleSize||curStyle.titleSize||32)+2))} style={{ ...btnSm }}>+</button>
                     {so.titleSize&&<button onClick={()=>updSted(selIdx,"titleSize",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
@@ -1171,7 +1171,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                     <button onClick={()=>updSted(selIdx,"bodySize",Math.max(8,(so.bodySize||curStyle.bodySize||15)-1))} style={{ ...btnSm }}>−</button>
                     <div style={{ flex:1,height:5,borderRadius:3,background:D?"rgba(255,255,255,0.1)":"#e8e8e8",overflow:"hidden" }}>
-                      <div style={{ height:"100%",borderRadius:3,background:"#6366f1",width:`${((so.bodySize||curStyle.bodySize||15)-8)/(36-8)*100}%`,transition:"width 0.15s" }}/>
+                      <div style={{ height:"100%",borderRadius:3,background:"#3F72AF",width:`${((so.bodySize||curStyle.bodySize||15)-8)/(36-8)*100}%`,transition:"width 0.15s" }}/>
                     </div>
                     <button onClick={()=>updSted(selIdx,"bodySize",Math.min(36,(so.bodySize||curStyle.bodySize||15)+1))} style={{ ...btnSm }}>+</button>
                     {so.bodySize&&<button onClick={()=>updSted(selIdx,"bodySize",undefined)} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>↩</button>}
@@ -1183,7 +1183,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     <div style={{ display:"flex",gap:3 }}>
                       {[["left","⬅"],["center","↔"],["right","➡"]].map(([v,icon])=>{
                         const cur=so.textAlign||curStyle.textAlign||"left";
-                        return <button key={v} onClick={()=>updSted(selIdx,"textAlign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#6366f1":bdr}`,background:cur===v?"rgba(99,102,241,0.2)":"transparent",color:cur===v?"#a5b4fc":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
+                        return <button key={v} onClick={()=>updSted(selIdx,"textAlign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#3F72AF":bdr}`,background:cur===v?"rgba(99,102,241,0.2)":"transparent",color:cur===v?"#7AB8E0":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
                       })}
                     </div>
                   </div>
@@ -1192,7 +1192,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     <div style={{ display:"flex",gap:3 }}>
                       {[["top","⬆"],["middle","↕"],["bottom","⬇"]].map(([v,icon])=>{
                         const cur=so.textValign||curStyle.textValign||"middle";
-                        return <button key={v} onClick={()=>updSted(selIdx,"textValign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#6366f1":bdr}`,background:cur===v?"rgba(99,102,241,0.2)":"transparent",color:cur===v?"#a5b4fc":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
+                        return <button key={v} onClick={()=>updSted(selIdx,"textValign",v)} style={{ flex:1,padding:"6px",borderRadius:6,border:`1px solid ${cur===v?"#3F72AF":bdr}`,background:cur===v?"rgba(99,102,241,0.2)":"transparent",color:cur===v?"#7AB8E0":muted,cursor:"pointer",fontSize:13 }}>{icon}</button>;
                       })}
                     </div>
                   </div>
@@ -1209,7 +1209,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                       <div style={{ fontSize:10,color:muted,marginBottom:4 }}>배경 투명도 ({Math.round((so.bgOpacity??1)*100)}%)</div>
                       <input type="range" min="0" max="100" value={Math.round((so.bgOpacity??1)*100)}
                         onChange={e=>updSted(selIdx,"bgOpacity",parseInt(e.target.value)/100)}
-                        style={{ width:"100%",accentColor:"#6366f1" }}/>
+                        style={{ width:"100%",accentColor:"#3F72AF" }}/>
                     </div>
                     {/* 이미지 위 오버레이 색상 */}
                     <div style={{ display:"flex",gap:8,alignItems:"center" }}>
@@ -1225,7 +1225,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                         <div style={{ fontSize:10,color:muted,marginBottom:4 }}>오버레이 투명도 ({Math.round((so.overlayOpacity??0.3)*100)}%)</div>
                         <input type="range" min="0" max="100" value={Math.round((so.overlayOpacity??0.3)*100)}
                           onChange={e=>updSted(selIdx,"overlayOpacity",parseInt(e.target.value)/100)}
-                          style={{ width:"100%",accentColor:"#6366f1" }}/>
+                          style={{ width:"100%",accentColor:"#3F72AF" }}/>
                       </div>
                     </div>
                     {/* 오버레이 타입 (그라데이션 방향) */}
@@ -1234,9 +1234,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                       <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
                         {[["solid","단색 전체"],["bottom","↓ 하단 그라데이션"],["top","↑ 상단 그라데이션"],["left","← 좌측 그라데이션"],["right","→ 우측 그라데이션"],["center","◎ 중앙 비네팅"]].map(([v,l])=>(
                           <button key={v} onClick={()=>updSted(selIdx,"overlayType",v)}
-                            style={{ padding:"4px 8px",borderRadius:6,border:`1px solid ${(so.overlayType||"solid")===v?"#6366f1":bdr}`,
+                            style={{ padding:"4px 8px",borderRadius:6,border:`1px solid ${(so.overlayType||"solid")===v?"#3F72AF":bdr}`,
                               background:(so.overlayType||"solid")===v?"rgba(99,102,241,0.15)":"transparent",
-                              color:(so.overlayType||"solid")===v?"#a5b4fc":muted,fontSize:10,fontWeight:(so.overlayType||"solid")===v?700:400,cursor:"pointer" }}>
+                              color:(so.overlayType||"solid")===v?"#7AB8E0":muted,fontSize:10,fontWeight:(so.overlayType||"solid")===v?700:400,cursor:"pointer" }}>
                             {l}
                           </button>
                         ))}
@@ -1246,13 +1246,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 ) : (
                   <div style={{ display:"flex",gap:6 }}>
                     <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 이미지 업로드</button>
-                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>🔍 이미지 검색</button>
+                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#7AB8E0",fontSize:11,cursor:"pointer",fontWeight:700 }}>🔍 이미지 검색</button>
                   </div>
                 )}
               </div>
 
               <div style={{ display:"flex",gap:8 }}>
-                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#6366f1",color:"#fff",fontSize:13,fontWeight:800 }}>📥 PNG</button>
+                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#3F72AF",color:"#fff",fontSize:13,fontWeight:800 }}>📥 PNG</button>
                 <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"📦 ZIP"}</button>
               </div>
             </div>
@@ -1295,7 +1295,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   placeholder="검색어 입력 (예: nature, food, office)"
                   style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:inputBg,color:text,fontSize:13,outline:"none"}}/>
                 <button onClick={()=>searchMedia(mediaQuery)} disabled={mediaLoading}
-                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#6366f1",color:"#fff",fontSize:13,fontWeight:700,cursor:mediaLoading?"wait":"pointer",opacity:mediaLoading?0.6:1}}>
+                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#3F72AF",color:"#fff",fontSize:13,fontWeight:700,cursor:mediaLoading?"wait":"pointer",opacity:mediaLoading?0.6:1}}>
                   {mediaLoading?"검색중...":"검색"}
                 </button>
               </div>

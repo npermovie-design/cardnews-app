@@ -28,12 +28,12 @@ var BG_COLORS = [
   {key:"white",     color:"#f8fafc"}, {key:"cream", color:"#fefce8"},
 ];
 
-var TEXT_COLORS = ["#ffffff","#000000","#fef3c7","#dcfce7","#dbeafe","#fce7f3","#a5b4fc","#f0abfc"];
+var TEXT_COLORS = ["#ffffff","#000000","#fef3c7","#dcfce7","#dbeafe","#fce7f3","#7AB8E0","#f0abfc"];
 
 var DESIGN_PRESETS = [
   {key:"bold_dark",  label:"볼드 다크",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
   {key:"minimal",    label:"미니멀",     bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
-  {key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#7AB8E0", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
   {key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
   {key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
   {key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
@@ -362,11 +362,11 @@ function PresetCanvas(props) {
   }, [dp.key]);
   return (
     <div onClick={props.onClick}
-      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #6366f1" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
+      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #3F72AF" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
       <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
         {dp.label}
-        {isC && <span style={{marginLeft:4, color:"#a5b4fc"}}>✓</span>}
+        {isC && <span style={{marginLeft:4, color:"#7AB8E0"}}>✓</span>}
       </div>
     </div>
   );
@@ -389,7 +389,7 @@ function SliderRow(props) {
     <div style={{marginBottom:9}}>
       <div style={{display:"flex", justifyContent:"space-between", marginBottom:3}}>
         <span style={{color:"rgba(255,255,255,0.5)", fontSize:11}}>{props.label}</span>
-        <span style={{color:"#a5b4fc", fontSize:11, fontWeight:700}}>{props.value}{props.unit || "px"}</span>
+        <span style={{color:"#7AB8E0", fontSize:11, fontWeight:700}}>{props.value}{props.unit || "px"}</span>
       </div>
       <input type="range" min={props.minV} max={props.maxV} value={props.value}
         onChange={function(e) { props.onChange(Number(e.target.value)); }} style={{width:"100%"}}/>
@@ -409,7 +409,7 @@ function StyleTab(props) {
       <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:10}}>
         {BG_COLORS.map(function(bc) {
           var isC = gs.bgColor === bc.color;
-          return <div key={bc.key} onClick={function() { updGs("bgColor", bc.color); }} title={bc.key} style={{width:24, height:24, borderRadius:5, background:bc.color, cursor:"pointer", border: isC ? "2.5px solid #a5b4fc" : "2px solid rgba(255,255,255,0.15)"}}/>;
+          return <div key={bc.key} onClick={function() { updGs("bgColor", bc.color); }} title={bc.key} style={{width:24, height:24, borderRadius:5, background:bc.color, cursor:"pointer", border: isC ? "2.5px solid #7AB8E0" : "2px solid rgba(255,255,255,0.15)"}}/>;
         })}
         <input type="color" value={gs.bgColor || "#1c1c1e"} onChange={function(e) { updGs("bgColor", e.target.value); }} style={{width:24, height:24, border:"none", background:"none", cursor:"pointer", padding:0}}/>
       </div>
@@ -621,11 +621,11 @@ function PreviewPanel(props) {
 
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             현재 저장
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#7AB8E0", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             ZIP 전체
           </button>
           <button onClick={onSave}
@@ -648,7 +648,7 @@ function PreviewPanel(props) {
             var isC = i === idx;
             return (
               <div key={i} onClick={function() { setIdx(i); }}
-                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #6366f1" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative"}}>
+                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #3F72AF" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative"}}>
                 <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={70} thumb={true}/>
                 <div style={{position:"absolute", bottom:2, right:3, fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.85)", textShadow:"0 1px 3px rgba(0,0,0,0.9)"}}>
                   {i < 9 ? "0" + (i + 1) : "" + (i + 1)}
@@ -681,7 +681,7 @@ export function PlannerPanel(props) {
   var accentBg  = isDark ? "rgba(99,102,241,0.25)"    : "rgba(99,102,241,0.08)";
   var accentBdr = isDark ? "rgba(99,102,241,0.5)"     : "rgba(99,102,241,0.3)";
   var tabBg     = isDark ? "rgba(255,255,255,0.07)"   : "#ede9fc";
-  var tabActive = isDark ? "rgba(99,102,241,0.5)"     : "#6366f1";
+  var tabActive = isDark ? "rgba(99,102,241,0.5)"     : "#3F72AF";
   var tabText   = isDark ? "rgba(255,255,255,0.45)"   : "#6c757d";
   var btnBg     = isDark ? "rgba(255,255,255,0.06)" : "#f0f0f8";
   var btnBdr    = isDark ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
@@ -693,7 +693,7 @@ export function PlannerPanel(props) {
   var slideBdr  = isDark ? "rgba(99,102,241,0.2)"     : "#c7c4f0";
   var hlBg      = isDark ? "rgba(255,255,255,0.04)"   : "#fafafa";
   var errColor  = isDark ? "#ff9090"                  : "#e03e3e";
-  var accentClr = isDark ? "#a5b4fc"                  : "#4f46e5";
+  var accentClr = isDark ? "#7AB8E0"                  : "#4f46e5";
   // ──────────────────────────────────────────────────────────────────────
   var p;
   p = useState(""); var planTopic = p[0]; var setPlanTopic = p[1];
@@ -804,12 +804,12 @@ export function PlannerPanel(props) {
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       var isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#6366f1":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#3F72AF":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
                     })}
                   </div>
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#3F72AF,#2B4F7E)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
                   {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
@@ -865,7 +865,7 @@ export function PlannerPanel(props) {
                   </div>
                 </div>
                 <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
-                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
+                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#3F72AF,#2B4F7E)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
                   {planLoading ? "기획 중..." : "✨ 기획 시작"}
                 </button>
                 {planErr && <div style={{fontSize:11, color:errColor, marginTop:8, textAlign:"center"}}>{planErr}</div>}
@@ -894,7 +894,7 @@ export function PlannerPanel(props) {
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
                   <div style={{fontSize:13, fontWeight:800, color:accentClr}}>"{parsedPlan.topic}" · {(parsedPlan.slides || []).length}장</div>
                   <button onClick={function() { if (parsedPlan) { onApplySlides(parsedPlan); onClose(); } }}
-                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:800}}>
+                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:12, fontWeight:800}}>
                     이 기획으로 편집 시작 →
                   </button>
                 </div>
@@ -989,14 +989,14 @@ function Sidebar(props) {
   var menuLabel   = isDark ? "rgba(255,255,255,0.2)"   : "rgba(99,102,241,0.45)";
   var itemText    = isDark ? "rgba(255,255,255,0.5)"   : "#6c757d";
   var itemHover   = isDark ? "rgba(99,102,241,0.1)"    : "rgba(99,102,241,0.08)";
-  var itemActive  = isDark ? "#a5b4fc"                 : "#4f46e5";
+  var itemActive  = isDark ? "#7AB8E0"                 : "#4f46e5";
   var itemActiveBg= isDark ? "rgba(99,102,241,0.2)"   : "rgba(99,102,241,0.1)";
   var brandText   = isDark ? "#fff"                    : "#1a1a2e";
   var brandSub    = isDark ? "rgba(255,255,255,0.3)"   : "rgba(99,102,241,0.5)";
   var comText     = isDark ? "rgba(255,255,255,0.45)"  : "#888";
   var usageText   = isDark ? "rgba(255,255,255,0.3)"   : "#aaa";
   var usageBar    = isDark ? "rgba(255,255,255,0.08)"  : "rgba(99,102,241,0.12)";
-  var planLabel   = isDark ? "#a5b4fc"                 : "#4f46e5";
+  var planLabel   = isDark ? "#7AB8E0"                 : "#4f46e5";
   return (
     <div style={{width:185, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0}}>
       <div style={{padding:"18px 14px 10px", borderBottom:"1px solid "+sideBdr}}>
@@ -1013,7 +1013,7 @@ function Sidebar(props) {
           var isA = page === item.id;
           return (
             <button key={item.id} onClick={function() { setPage(item.id); }}
-              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #6366f1" : "3px solid transparent"}}>
+              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #3F72AF" : "3px solid transparent"}}>
               {item.label}
             </button>
           );
@@ -1035,7 +1035,7 @@ function Sidebar(props) {
             🔗 링크로 기획 AI
           </button>
           <button onClick={function() { setPage("make"); }}
-            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #6366f1" : "3px solid transparent"}}>
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #3F72AF" : "3px solid transparent"}}>
             🃏 카드뉴스 바로 만들기
           </button>
         </div>
@@ -1072,7 +1072,7 @@ function Sidebar(props) {
           </div>
         </div>
         <div style={{height:3, background:usageBar, borderRadius:2, overflow:"hidden"}}>
-          <div style={{height:"100%", width:pct, background:"linear-gradient(90deg,#6366f1,#8b5cf6)"}}/>
+          <div style={{height:"100%", width:pct, background:"linear-gradient(90deg,#3F72AF,#2B4F7E)"}}/>
         </div>
       </div>
     </div>
@@ -1093,7 +1093,7 @@ function PageHome(props) {
   var cardA = D ? "rgba(99,102,241,0.25)"    : "rgba(99,102,241,0.08)";
   var cardABdr = D ? "rgba(99,102,241,0.3)"  : "rgba(99,102,241,0.25)";
   var stepBg= D ? "rgba(255,255,255,0.02)"   : "#fff";
-  var accentTxt = D ? "#a5b4fc"              : "#4f46e5";
+  var accentTxt = D ? "#7AB8E0"              : "#4f46e5";
   return (
     <div style={{flex:1, overflowY:"auto", padding:"26px 26px 60px", color:text}}>
       <div style={{marginBottom:22}}>
@@ -1186,16 +1186,16 @@ function PageMake(props) {
   var inputBdr= D ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
   var sectionBg=D ? "rgba(255,255,255,0.03)"   : "#fff";
   var tagBg   = D ? "rgba(255,255,255,0.06)"   : "#ede9fc";
-  var tagClr  = D ? "rgba(255,255,255,0.6)"    : "#6366f1";
-  var tagAbg  = D ? "rgba(99,102,241,0.4)"     : "#6366f1";
+  var tagClr  = D ? "rgba(255,255,255,0.6)"    : "#3F72AF";
+  var tagAbg  = D ? "rgba(99,102,241,0.4)"     : "#3F72AF";
   var tagAClr = "#fff";
-  var stepDone= D ? "#6366f1"                  : "#6366f1";
+  var stepDone= D ? "#3F72AF"                  : "#3F72AF";
   var stepAct = D ? "rgba(99,102,241,0.5)"     : "rgba(99,102,241,0.15)";
   var stepInact= D ? "rgba(255,255,255,0.1)"   : "#e5e3f5";
-  var stepActTxt= D ? "#fff"                   : "#6366f1";
+  var stepActTxt= D ? "#fff"                   : "#3F72AF";
   var stepInTxt = D ? "rgba(255,255,255,0.25)" : "#bbb";
   var stepLbl = D ? "rgba(255,255,255,0.5)"    : "#888";
-  var accentTxt = D ? "#a5b4fc"               : "#4f46e5";
+  var accentTxt = D ? "#7AB8E0"               : "#4f46e5";
   var errBg   = D ? "rgba(255,80,80,0.1)"      : "#fff0f0";
   var errClr  = D ? "#ff9090"                  : "#e03e3e";
   var prevBg  = D ? "transparent"              : "#f4f4f8";
@@ -1227,12 +1227,12 @@ function PageMake(props) {
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
               <button onClick={function(){ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#3F72AF,#112D4E)", color:"#fff", fontSize:14, fontWeight:800}}>
                 🚀 회원가입 / 로그인하기
               </button>
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:14, fontWeight:800}}>
                 💎 포인트 충전하기
               </button>
             )}
@@ -1257,7 +1257,7 @@ function PageMake(props) {
               <div style={{display:"flex", alignItems:"center", gap:8, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
                 <div style={{width:28, height:28, borderRadius:"50%",
-                  background: done ? "#6366f1" : (active ? "#6366f1" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
+                  background: done ? "#3F72AF" : (active ? "#3F72AF" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
                   color: (done || active) ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb")}}>
@@ -1266,7 +1266,7 @@ function PageMake(props) {
                 <span style={{fontSize:13, fontWeight: active ? 800 : 500,
                   color: active ? text : (D ? "rgba(255,255,255,0.4)" : "#888"), whiteSpace:"nowrap"}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{flex:1, height:2, background: done ? "#6366f1" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
+              {si < 2 && <div style={{flex:1, height:2, background: done ? "#3F72AF" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
             </div>
           );
         })}
@@ -1287,9 +1287,9 @@ function PageMake(props) {
                 var isC = topic === ex.text;
                 return (
                   <button key={ex.label} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#6366f1":bdr),
+                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#3F72AF":bdr),
                       background: isC ? "rgba(99,102,241,0.15)" : tagBg,
-                      color: isC ? "#a5b4fc" : tagClr,
+                      color: isC ? "#7AB8E0" : tagClr,
                       fontSize:12, cursor:"pointer", fontWeight: isC ? 700 : 400, transition:"all 0.12s"}}>
                     {ex.label}
                   </button>
@@ -1307,7 +1307,7 @@ function PageMake(props) {
           <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
               <div style={{fontSize:13, fontWeight:700, color:text}}>슬라이드 수</div>
-              <div style={{fontSize:20, fontWeight:900, color:"#6366f1"}}>{cnt}장</div>
+              <div style={{fontSize:20, fontWeight:900, color:"#3F72AF"}}>{cnt}장</div>
             </div>
             <div style={{display:"flex", gap:5, flexWrap:"wrap"}}>
               {[3,4,5,6,7,8,10,12].map(function(n) {
@@ -1315,10 +1315,10 @@ function PageMake(props) {
                 return (
                   <button key={n} onClick={function() { setCnt(n); }}
                     style={{width:36, height:36, borderRadius:9,
-                      border:"1.5px solid "+(isC?"#6366f1":bdr),
+                      border:"1.5px solid "+(isC?"#3F72AF":bdr),
                       cursor:"pointer", fontSize:13, fontWeight:700,
                       background: isC ? "rgba(99,102,241,0.15)" : "transparent",
-                      color: isC ? "#a5b4fc" : (D ? "rgba(255,255,255,0.5)" : "#666")}}>
+                      color: isC ? "#7AB8E0" : (D ? "rgba(255,255,255,0.5)" : "#666")}}>
                     {n}
                   </button>
                 );
@@ -1330,7 +1330,7 @@ function PageMake(props) {
             <button onClick={function() { if (canGo) { setMakeStep(2); } }} disabled={!canGo}
               style={{padding:"14px 40px", borderRadius:12, border:"none",
                 cursor: canGo ? "pointer" : "not-allowed",
-                background: canGo ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
+                background: canGo ? "linear-gradient(135deg,#3F72AF,#2B4F7E)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
                 fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8}}>
               다음 → <span style={{fontSize:12, opacity:0.8}}>디자인 선택</span>
@@ -1353,7 +1353,7 @@ function PageMake(props) {
                   return (
                     <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
                       style={{borderRadius:12, overflow:"hidden", cursor:"pointer",
-                        border: isC ? "2px solid #6366f1" : "2px solid transparent",
+                        border: isC ? "2px solid #3F72AF" : "2px solid transparent",
                         boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "0 2px 8px rgba(0,0,0,0.15)",
                         transition:"all 0.15s"}}>
                       <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
@@ -1363,7 +1363,7 @@ function PageMake(props) {
               </div>
               {selPreset && (
                 <div style={{padding:"9px 14px", borderRadius:9, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", marginBottom:14}}>
-                  <div style={{fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:2}}>✓ {selPreset.label} 선택됨</div>
+                  <div style={{fontSize:12, fontWeight:700, color:"#7AB8E0", marginBottom:2}}>✓ {selPreset.label} 선택됨</div>
                   <button onClick={function(){setSelPreset(null);}} style={{fontSize:11,color:muted,background:"transparent",border:"none",cursor:"pointer",padding:0}}>선택 해제</button>
                 </div>
               )}
@@ -1376,10 +1376,10 @@ function PageMake(props) {
                     ← 이전
                   </button>
                   <div style={{textAlign:"right"}}>
-                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#6366f1"}}>10P</b></div>}
+                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#3F72AF"}}>10P</b></div>}
                     <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                       style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
-                        background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900,
+                        background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:15, fontWeight:900,
                         display:"flex", alignItems:"center", gap:8}}>
                       {loading ? "생성 중..." : user ? <>카드뉴스 생성하기 → 💎 10P</> : "✦ 1회 생성하기"}
                     </button>
@@ -1415,7 +1415,7 @@ function PageMake(props) {
                 <div style={{position:"relative", width:72, height:72, margin:"0 auto 16px"}}>
                   <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(99,102,241,0.2)"}}/>
                   <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent",
-                    borderTopColor:"#6366f1", animation:"cn-spin 1s linear infinite"}}/>
+                    borderTopColor:"#3F72AF", animation:"cn-spin 1s linear infinite"}}/>
                   <div style={{position:"absolute", inset:8, borderRadius:"50%", border:"2px solid transparent",
                     borderTopColor:"rgba(99,102,241,0.6)", animation:"cn-spin 1.5s linear infinite reverse"}}/>
                   <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center",
@@ -1427,7 +1427,7 @@ function PageMake(props) {
               <div style={{padding:"16px 24px"}}>
                 <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
                   <div style={{height:"100%", borderRadius:4,
-                    background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",
+                    background:"linear-gradient(90deg,#3F72AF,#2B4F7E,#112D4E)",
                     animation:"cn-progress 8s ease-out forwards"}}/>
                 </div>
                 <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>
@@ -1454,7 +1454,7 @@ function PageMake(props) {
               <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}장</div>
               <button onClick={function() { setPage("edit"); }}
                 style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                  background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff",
                   fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
                 ✏️ 편집하러 가기 →
               </button>
@@ -1668,7 +1668,7 @@ export function CardNewsApp(props) {
     "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
     "@keyframes cn-popin{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
-    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer}" +
+    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#3F72AF;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
     "::-webkit-scrollbar-thumb{background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.12)") + ";border-radius:4px}" +
     "a{text-decoration:none}button{font-family:inherit}";
@@ -1694,7 +1694,7 @@ export function CardNewsApp(props) {
             <span style={{fontSize:13, fontWeight:900, color:topText}}>SNS메이킷 카드뉴스</span>
             <div style={{display:"flex", gap:5}}>
               <button onClick={function() { setShowPlanner(true); }}
-                style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.25)", color:"#a5b4fc", fontSize:10, fontWeight:700}}>
+                style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.25)", color:"#7AB8E0", fontSize:10, fontWeight:700}}>
                 ✨기획AI
               </button>
               {[{id:"home",l:"홈"},{id:"make",l:"만들기"},{id:"edit",l:"편집"}].map(function(it) {
@@ -1743,7 +1743,7 @@ export function CardNewsApp(props) {
               <div style={{fontSize:28}}>🎨</div>
               <div style={{fontSize:13, color:"rgba(255,255,255,0.4)"}}>아직 생성된 카드뉴스가 없어요</div>
               <button onClick={function() { setPage("make"); setMakeStep(1); }}
-                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700}}>
+                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:13, fontWeight:700}}>
                 카드뉴스 만들기 →
               </button>
             </div>

@@ -424,7 +424,7 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
   const imgW    = preset.w != null ? preset.w : (parseInt(customW) || 860);
   const imgH    = preset.h != null ? preset.h : (parseInt(customH) || 1100);
   const imgRatio = imgW / imgH;
-  const accentColor = selCat ? cat.accent : "#6366f1";
+  const accentColor = selCat ? cat.accent : "#3F72AF";
 
   const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color: isDark?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
@@ -641,7 +641,7 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
                 placeholder="https://... URL 붙여넣기"
                 style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#7AB8E0", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>
@@ -1103,8 +1103,8 @@ ${kw}
                   <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.done||s.active?1:0.3,transition:"opacity 0.3s"}}>
                     <div style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
                       background:s.done?"#4ade80":s.active?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
-                      border:s.done?"2px solid #4ade80":s.active?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)",transition:"all 0.3s"}}>
-                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
+                      border:s.done?"2px solid #4ade80":s.active?"2px solid #3F72AF":"2px solid rgba(255,255,255,0.1)",transition:"all 0.3s"}}>
+                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #3F72AF",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
                     </div>
                     <span style={{fontSize:13,color:s.done?"#4ade80":s.active?text:muted,fontWeight:s.active?700:400}}>{s.label}</span>
                     {s.done && <span style={{fontSize:10,color:"#4ade80",marginLeft:"auto"}}>완료</span>}
@@ -1114,7 +1114,7 @@ ${kw}
               {progress.total > 0 && (
                 <div style={{ maxWidth:280,width:"100%",margin:"0 auto 20px" }}>
                   <div style={{ height:6,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:6 }}>
-                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},#8b5cf6,#ec4899)`,width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
+                    <div style={{ height:"100%",borderRadius:4,background:`linear-gradient(90deg,${accentColor},#2B4F7E,#112D4E)`,width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
                   </div>
                   <div style={{ fontSize:12,color:muted,fontWeight:600 }}>{doneCount > 0 ? `${doneCount}장 생성 완료` : `${progress.cur}/${progress.total}`}</div>
                 </div>

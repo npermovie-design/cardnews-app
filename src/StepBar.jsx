@@ -20,7 +20,7 @@ export default function StepBar({ steps, current, isDark }) {
                 <div className="step-circle" style={{
                   width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
-                  background: done || active ? "#6366f1" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"),
+                  background: done || active ? "#3F72AF" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"),
                   color: done || active ? "#fff" : (isDark ? "rgba(255,255,255,0.3)" : "#bbb"),
                 }}>
                   {done ? "✓" : s.n}
@@ -30,7 +30,7 @@ export default function StepBar({ steps, current, isDark }) {
                 </span>
               </div>
               {i < steps.length - 1 && (
-                <div className="step-line" style={{ flex:1, height:2, background: done ? "#6366f1" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16 }} />
+                <div className="step-line" style={{ flex:1, height:2, background: done ? "#3F72AF" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16 }} />
               )}
             </div>
           );

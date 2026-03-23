@@ -20,7 +20,7 @@ export default function CasePage({ C, isDark }) {
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#6366f1";
+  const accent = "#3F72AF";
 
   return (
     <div style={{ maxWidth:1100, margin:"0 auto", padding:"60px 20px 80px" }}>

@@ -335,7 +335,7 @@ export default function App() {
   /* ── 네비 버튼 컴포넌트 ── */
   const NavBtn = ({ id, label, active, onClick }) => (
     <button onClick={onClick || (() => navigate(id))} style={{
-      background: (active || page === id) ? "rgba(124,106,255,0.08)" : "transparent",
+      background: (active || page === id) ? "rgba(63,114,175,0.08)" : "transparent",
       border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || page === id) ? 700 : 500,
       color: (active || page === id) ? C.purpleL : C.muted,
@@ -345,7 +345,7 @@ export default function App() {
 
   const DropBtn = ({ label, open, onClick, active }) => (
     <button onClick={onClick} style={{
-      background: (active || open) ? "rgba(124,106,255,0.08)" : "transparent",
+      background: (active || open) ? "rgba(63,114,175,0.08)" : "transparent",
       border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || open) ? 700 : 500,
       color: (active || open) ? C.purpleL : C.muted,
@@ -370,12 +370,12 @@ export default function App() {
     <button onClick={onClick || (() => navigate(id))} style={{
       display: "flex", alignItems: "center", gap: icon ? 10 : 0, width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
-      background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
+      background: page === id ? "rgba(63,114,175,0.08)" : "transparent",
       color: page === id ? C.purpleL : C.muted,
       fontSize: 13, fontWeight: 600, textAlign: "left", transition: "background 0.15s",
     }}
-      onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
-      onMouseLeave={e => e.currentTarget.style.background = page === id ? "rgba(124,106,255,0.08)" : "transparent"}>
+      onMouseEnter={e => e.currentTarget.style.background = "rgba(63,114,175,0.06)"}
+      onMouseLeave={e => e.currentTarget.style.background = page === id ? "rgba(63,114,175,0.08)" : "transparent"}>
       {icon && <span>{icon}</span>}{label}
     </button>
   );
@@ -409,7 +409,7 @@ export default function App() {
         <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>페이지를 찾을 수 없습니다</div>
         <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>요청하신 페이지가 존재하지 않거나 이동되었어요.</div>
         <button onClick={() => navigate("home")}
-          style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+          style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
           홈으로 돌아가기
         </button>
       </div>
@@ -428,14 +428,14 @@ export default function App() {
         html,body,#root{width:100%;min-height:100vh}
         ::-webkit-scrollbar{width:5px}
         ::-webkit-scrollbar-track{background:#f5f4ff}
-        ::-webkit-scrollbar-thumb{background:rgba(124,106,255,0.25);border-radius:4px}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(124,106,255,0.4)}
+        ::-webkit-scrollbar-thumb{background:rgba(63,114,175,0.25);border-radius:4px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(63,114,175,0.4)}
         input::placeholder,textarea::placeholder{color:rgba(26,23,48,0.3)}
         input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;
           outline:none;background:rgba(0,0,0,0.1);width:100%}
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;
-          height:14px;border-radius:50%;background:#7c6aff;cursor:pointer}
-        input:focus,textarea:focus{border-color:#7c6aff!important;box-shadow:0 0 0 3px rgba(124,106,255,0.12)}
+          height:14px;border-radius:50%;background:#3F72AF;cursor:pointer}
+        input:focus,textarea:focus{border-color:#3F72AF!important;box-shadow:0 0 0 3px rgba(63,114,175,0.12)}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
@@ -488,20 +488,20 @@ export default function App() {
       {showAttendance && <AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} />}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "36px 28px", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(63,114,175,0.3)", borderRadius: 22, padding: "36px 28px", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
             <div style={{ fontSize: 52, marginBottom: 14 }}>⚡</div>
             <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
-              비회원은 AI 기능을 <b style={{ color: "#a5b4fc" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#a5b4fc" }}>20회 추가</b> + 포인트로 무제한 이용 가능해요!
+              비회원은 AI 기능을 <b style={{ color: "#7AB8E0" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
+              로그인하면 <b style={{ color: "#7AB8E0" }}>20회 추가</b> + 포인트로 무제한 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}
-                style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+                style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
                 🔐 로그인 / 회원가입
               </button>
               <button onClick={() => { setShowPointsModal(false); navigate("pricing"); }}
-                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.3)", cursor: "pointer", background: "rgba(124,106,255,0.1)", color: "#a5b4fc", fontSize: 13, fontWeight: 700 }}>
+                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(63,114,175,0.3)", cursor: "pointer", background: "rgba(63,114,175,0.1)", color: "#7AB8E0", fontSize: 13, fontWeight: 700 }}>
                 💎 포인트 충전하기
               </button>
               <button onClick={() => setShowPointsModal(false)}
@@ -525,7 +525,7 @@ export default function App() {
 
         {/* 로고 */}
         <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, marginRight: 16, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(124,106,255,0.3)", flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#3F72AF,#112D4E)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(63,114,175,0.3)", flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
           </div>
           <div>
@@ -557,7 +557,7 @@ export default function App() {
                       padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
                       background: "transparent", textAlign: "left", transition: "background 0.12s",
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(63,114,175,0.06)"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     <div style={{ fontSize: 22 }}>{item.label.split(" ")[0]}</div>
                     <div>
@@ -619,7 +619,7 @@ export default function App() {
           </div>
           <NavBtn id="archive" label={t("archive")} active={page==="community"&&boardCat==="archive"} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
-          <NavBtn id="event" label="이벤트" />
+          <NavBtn id="event" label={t("event")||"이벤트"} />
           {/* 더보기 (소개/사례/고객센터) */}
           <div style={{ position: "relative" }}>
             <DropBtn label="더보기" open={openMenu==="more"} active={["about","cases","contact","howto"].includes(page)} onClick={() => setOpenMenu(m => m==="more"?null:"more")} />
@@ -665,7 +665,7 @@ export default function App() {
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         borderRadius: 8, border: "none", cursor: "pointer",
                         background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
-                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, textAlign: "left",
+                        fontSize: 13, color: lang===l.code ? "#7AB8E0" : C.text, textAlign: "left",
                         fontWeight: lang===l.code ? 700 : 400 }}
                       onMouseEnter={e => { if(lang!==l.code) e.currentTarget.style.background = "rgba(99,102,241,0.06)"; }}
                       onMouseLeave={e => { if(lang!==l.code) e.currentTarget.style.background = "transparent"; }}>
@@ -686,7 +686,7 @@ export default function App() {
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 6px", borderRadius: 24,
                   border: "1px solid " + C.border, background: profileOpen ? (theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.04)") : "transparent",
                   cursor: "pointer", transition: "all 0.15s" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#3F72AF,#112D4E)",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
@@ -703,9 +703,9 @@ export default function App() {
                   boxShadow: "0 16px 48px rgba(0,0,0,0.2)", overflow: "hidden" }}>
                   {/* 헤더 */}
                   <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid " + C.border,
-                    background: theme==="dark" ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+                    background: theme==="dark" ? "rgba(63,114,175,0.06)" : "rgba(63,114,175,0.03)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#3F72AF,#112D4E)",
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                         {(user.nick||"U")[0].toUpperCase()}
                       </div>
@@ -725,7 +725,7 @@ export default function App() {
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
-                          background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
+                          background: "linear-gradient(90deg,#3F72AF,#2B4F7E)" }} />
                       </div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 1회=10P · {Math.floor((user.points||0)/10)}회 생성 가능</div>
                     </div>
@@ -775,13 +775,13 @@ export default function App() {
                     style={{ padding: "4px 10px", borderRadius: 16, cursor: left === 0 ? "pointer" : "default",
                       background: left > 0 ? "rgba(99,102,241,0.1)" : "rgba(239,68,68,0.1)",
                       border: `1px solid ${left > 0 ? "rgba(99,102,241,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: left > 0 ? "#7AB8E0" : "#f87171" }}>
                       {left > 0 ? `AI 무료 ${left}회 남음` : "무료 소진 ⚡"}
                     </span>
                   </div>
                 );
               })()}
-              <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>로그인</button>
+              <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", boxShadow: "0 4px 16px rgba(63,114,175,0.3)" }}>로그인</button>
             </div>
           )}
         </div>
@@ -812,7 +812,7 @@ export default function App() {
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         borderRadius: 8, border: "none", cursor: "pointer",
                         background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
-                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, fontWeight: lang===l.code ? 700 : 400 }}>
+                        fontSize: 13, color: lang===l.code ? "#7AB8E0" : C.text, fontWeight: lang===l.code ? 700 : 400 }}>
                       <span style={{ fontSize: 15 }}>{l.flag}</span>{l.label}
                       {lang===l.code && <span style={{ marginLeft: "auto", fontSize: 11 }}>✓</span>}
                     </button>
@@ -824,7 +824,7 @@ export default function App() {
           {/* 유저 상태 */}
           {user ? (
             <button onClick={() => setMobileOpen(s => !s)} style={{ width: 30, height: 30, borderRadius: "50%",
-              background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex",
+              background: "linear-gradient(135deg,#3F72AF,#112D4E)", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
               color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
               {(user.nick||"U")[0].toUpperCase()}
@@ -832,7 +832,7 @@ export default function App() {
           ) : (
             <button onClick={() => setShowAuth(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
               cursor: "pointer", fontWeight: 700, fontSize: 12,
-              background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
+              background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
               로그인
             </button>
           )}
@@ -859,10 +859,10 @@ export default function App() {
             <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
+              background: page === m.id ? "rgba(63,114,175,0.08)" : "transparent",
               color: page === m.id ? C.purpleL : C.text,
               fontSize: 15, fontWeight: page === m.id ? 700 : 500,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: page === m.id ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -883,10 +883,10 @@ export default function App() {
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "rgba(124,106,255,0.08)" : "transparent",
+              background: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "rgba(63,114,175,0.08)" : "transparent",
               color: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? C.purpleL : C.muted,
               fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -904,10 +904,10 @@ export default function App() {
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "rgba(124,106,255,0.08)" : "transparent",
+              background: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "rgba(63,114,175,0.08)" : "transparent",
               color: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? C.purpleL : C.muted,
               fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -926,10 +926,10 @@ export default function App() {
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
+              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(63,114,175,0.08)" : "transparent",
               color: (page==="ai"&&aiMenu===m.ai) ? C.purpleL : C.muted,
               fontSize: 14, fontWeight: (page==="ai"&&aiMenu===m.ai) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -940,10 +940,10 @@ export default function App() {
           <button onClick={() => { navigate("analyzer"); setMobileOpen(false); }} style={{
             display: "block", width: "100%", textAlign: "left",
             padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-            background: page==="analyzer" ? "rgba(124,106,255,0.08)" : "transparent",
+            background: page==="analyzer" ? "rgba(63,114,175,0.08)" : "transparent",
             color: page==="analyzer" ? C.purpleL : C.muted,
             fontSize: 14, fontWeight: page==="analyzer" ? 700 : 400,
-            borderLeft: page==="analyzer" ? "3px solid #7c6aff" : "3px solid transparent",
+            borderLeft: page==="analyzer" ? "3px solid #3F72AF" : "3px solid transparent",
           }}>SNS 분석기 · 검색어 · 랭킹</button>
 
           {/* 커뮤니티 */}
@@ -959,10 +959,10 @@ export default function App() {
             <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="community"&&boardCat===m.board) ? "rgba(124,106,255,0.08)" : "transparent",
+              background: (page==="community"&&boardCat===m.board) ? "rgba(63,114,175,0.08)" : "transparent",
               color: (page==="community"&&boardCat===m.board) ? C.purpleL : C.muted,
               fontSize: 14, fontWeight: (page==="community"&&boardCat===m.board) ? 700 : 400,
-              borderLeft: (page==="community"&&boardCat===m.board) ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: (page==="community"&&boardCat===m.board) ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -980,10 +980,10 @@ export default function App() {
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "12px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
+              background: m.active ? "rgba(63,114,175,0.08)" : "transparent",
               color: m.active ? C.purpleL : C.text,
               fontSize: 14, fontWeight: m.active ? 700 : 500,
-              borderLeft: m.active ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: m.active ? "3px solid #3F72AF" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -992,7 +992,7 @@ export default function App() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3F72AF,#112D4E)",
                       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, color: "#fff" }}>
                       {(user.nick||"U")[0].toUpperCase()}
                     </div>
@@ -1005,7 +1005,7 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 {t("attendance")}</button>
-                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 {t("pointCharge")}</button>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 {t("pointCharge")}</button>
                 </div>
               </div>
             ) : (
@@ -1018,19 +1018,19 @@ export default function App() {
                       border: `1px solid ${left > 0 ? "rgba(99,102,241,0.25)" : "rgba(239,68,68,0.25)"}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 12, color: C.muted }}>{t("guestFree")}</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#7AB8E0" : "#f87171" }}>
                           {left > 0 ? `${left}회 남음` : "소진 ⚡"}
                         </span>
                       </div>
                       {left > 0 && (
                         <div style={{ marginTop: 6, height: 4, borderRadius: 4, background: "rgba(99,102,241,0.15)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
+                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#3F72AF,#112D4E)" }} />
                         </div>
                       )}
                     </div>
                   );
                 })()}
-                <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+                <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", boxShadow: "0 4px 16px rgba(63,114,175,0.3)" }}>
                   {t("login")}
                 </button>
               </div>

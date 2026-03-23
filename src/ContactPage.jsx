@@ -29,7 +29,7 @@ export function ContactPage({ C }) {
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px 80px" }}>
 
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("contactBadge")}</div>
+        <div style={{ display: "inline-block", background: "rgba(63,114,175,0.1)", border: "1px solid rgba(63,114,175,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("contactBadge")}</div>
         <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>{p("contactTitle")}</h2>
         <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7 }}>{p("contactSub")}</p>
       </div>
@@ -66,7 +66,7 @@ export function ContactPage({ C }) {
               <textarea placeholder={p("contactMsgPh")} rows={5} value={form.msg} style={{ ...fs, resize: "vertical" }} onChange={f("msg")} />
             </div>
             <button onClick={submit} disabled={submitting}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1 }}>
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#3F72AF,#112D4E)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(63,114,175,0.3)", opacity: submitting?0.7:1 }}>
               {submitting ? "전송 중..." : p("contactSubmit")}
             </button>
           </div>

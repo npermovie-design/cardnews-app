@@ -78,7 +78,7 @@ const SIZE_PRESETS = [
   { id:"custom", label:"커스텀", w:1280, h:720 },
 ];
 
-const COLORS = ["#ffffff","#000000","#ff0000","#ffdd00","#00ff00","#00bfff","#ff69b4","#ff6600","#8b5cf6","#10b981","#1a1a2e","#c8a84e","#dc2626","#059669"];
+const COLORS = ["#ffffff","#000000","#ff0000","#ffdd00","#00ff00","#00bfff","#ff69b4","#ff6600","#2B4F7E","#10b981","#1a1a2e","#c8a84e","#dc2626","#059669"];
 
 const defaultText = () => ({
   id:"t"+Date.now(), x:50, y:50, w:60, h:15,
@@ -309,7 +309,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
     <button onClick={()=>setActiveTab(id)}
       style={{ flex:1, padding:"8px", borderRadius:8, border:"none", fontSize:12, fontWeight:activeTab===id?700:500,
         background:activeTab===id?(D?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)"):"transparent",
-        color:activeTab===id?"#a5b4fc":muted, cursor:"pointer" }}>
+        color:activeTab===id?"#7AB8E0":muted, cursor:"pointer" }}>
       {label}
     </button>
   );
@@ -337,7 +337,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
               <canvas ref={canvasRef} style={{ width:"100%", height:"auto", display:"block" }}/>
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-              <button onClick={download} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>PNG 다운로드</button>
+              <button onClick={download} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>PNG 다운로드</button>
               <button onClick={()=>{try{const d=canvasRef.current?.toDataURL("image/png");if(d){navigator.clipboard.write([new ClipboardItem({"image/png":fetch(d).then(r=>r.blob())})]);}}catch{}alert("복사됨!");}}
                 style={{ padding:"12px 16px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>복사</button>
             </div>
@@ -346,9 +346,9 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
             <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:12 }}>
               {SIZE_PRESETS.map(s => (
                 <button key={s.id} onClick={()=>changeSize(s.id)}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1px solid ${sizePreset===s.id?"#6366f1":bdr}`,
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1px solid ${sizePreset===s.id?"#3F72AF":bdr}`,
                     background:sizePreset===s.id?"rgba(99,102,241,0.12)":"transparent",
-                    color:sizePreset===s.id?"#a5b4fc":muted, fontSize:10, fontWeight:sizePreset===s.id?700:500, cursor:"pointer" }}>
+                    color:sizePreset===s.id?"#7AB8E0":muted, fontSize:10, fontWeight:sizePreset===s.id?700:500, cursor:"pointer" }}>
                   {s.label}<span style={{fontSize:9,opacity:0.6,marginLeft:3}}>{s.w}x{s.h}</span>
                 </button>
               ))}
@@ -411,7 +411,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                   <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>배경색</div>
                   <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
                     {["#1a1a2e","#0a0a1a","#0d1117","#1c2333","#2d1f0e","#ffffff","#fdf6e3","#667eea","#ff6b6b","#1a1a1a"].map(c => (
-                      <div key={c} onClick={()=>setBgColor(c)} style={{ width:24, height:24, borderRadius:6, background:c, cursor:"pointer", border:bgColor===c?"2px solid #6366f1":`1px solid ${bdr}` }}/>
+                      <div key={c} onClick={()=>setBgColor(c)} style={{ width:24, height:24, borderRadius:6, background:c, cursor:"pointer", border:bgColor===c?"2px solid #3F72AF":`1px solid ${bdr}` }}/>
                     ))}
                     <input type="color" value={bgColor} onChange={e=>setBgColor(e.target.value)} style={{ width:24, height:24, border:"none", cursor:"pointer" }}/>
                   </div>
@@ -439,7 +439,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                   {borderWidth > 0 && (
                     <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
                       {COLORS.slice(0,10).map(c => (
-                        <div key={c} onClick={()=>setBorderColor(c)} style={{ width:22, height:22, borderRadius:5, background:c, cursor:"pointer", border:borderColor===c?"2px solid #6366f1":`1px solid ${bdr}` }}/>
+                        <div key={c} onClick={()=>setBorderColor(c)} style={{ width:22, height:22, borderRadius:5, background:c, cursor:"pointer", border:borderColor===c?"2px solid #3F72AF":`1px solid ${bdr}` }}/>
                       ))}
                       <input type="color" value={borderColor||"#ffffff"} onChange={e=>setBorderColor(e.target.value)} style={{ width:22, height:22, border:"none", cursor:"pointer" }}/>
                     </div>
@@ -473,18 +473,18 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                 {/* 레이어 목록 */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                   <span style={{ fontSize:12, fontWeight:700, color:muted }}>텍스트 레이어</span>
-                  <button onClick={addText} style={{ fontSize:11, padding:"3px 10px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:"#6366f1", cursor:"pointer", fontWeight:700 }}>+ 추가</button>
+                  <button onClick={addText} style={{ fontSize:11, padding:"3px 10px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:"#3F72AF", cursor:"pointer", fontWeight:700 }}>+ 추가</button>
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:3, marginBottom:12 }}>
                   {texts.map((t, i) => (
                     <div key={i} onClick={()=>setSelText(i)}
                       style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 10px", borderRadius:8,
-                        border:`1px solid ${selText===i?"#6366f1":bdr}`,
+                        border:`1px solid ${selText===i?"#3F72AF":bdr}`,
                         background:selText===i?"rgba(99,102,241,0.1)":"transparent", cursor:"pointer" }}>
-                      <span style={{ fontSize:11, fontWeight:700, color:selText===i?"#a5b4fc":muted, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:selText===i?"#7AB8E0":muted, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         {t.text.slice(0,20)||"텍스트"}
                       </span>
-                      <button onClick={e=>{e.stopPropagation();dupText(i);}} style={{ fontSize:10, color:"#6366f1", background:"transparent", border:"none", cursor:"pointer" }}>복제</button>
+                      <button onClick={e=>{e.stopPropagation();dupText(i);}} style={{ fontSize:10, color:"#3F72AF", background:"transparent", border:"none", cursor:"pointer" }}>복제</button>
                       {texts.length>1 && <button onClick={e=>{e.stopPropagation();delText(i);}} style={{ fontSize:10, color:"#f87171", background:"transparent", border:"none", cursor:"pointer" }}>✕</button>}
                     </div>
                   ))}
@@ -531,12 +531,12 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                     {/* 스타일 버튼 */}
                     <div style={{ display:"flex", gap:4, marginTop:10, flexWrap:"wrap" }}>
                       <button onClick={()=>updText(selText,"bold",!cur.bold)}
-                        style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${cur.bold?"#6366f1":bdr}`, background:cur.bold?"rgba(99,102,241,0.15)":"transparent", color:cur.bold?"#a5b4fc":muted, fontSize:12, fontWeight:900, cursor:"pointer" }}>B 굵게</button>
+                        style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${cur.bold?"#3F72AF":bdr}`, background:cur.bold?"rgba(99,102,241,0.15)":"transparent", color:cur.bold?"#7AB8E0":muted, fontSize:12, fontWeight:900, cursor:"pointer" }}>B 굵게</button>
                       <button onClick={()=>updText(selText,"italic",!cur.italic)}
-                        style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${cur.italic?"#6366f1":bdr}`, background:cur.italic?"rgba(99,102,241,0.15)":"transparent", color:cur.italic?"#a5b4fc":muted, fontSize:12, fontStyle:"italic", cursor:"pointer" }}>I 기울임</button>
+                        style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${cur.italic?"#3F72AF":bdr}`, background:cur.italic?"rgba(99,102,241,0.15)":"transparent", color:cur.italic?"#7AB8E0":muted, fontSize:12, fontStyle:"italic", cursor:"pointer" }}>I 기울임</button>
                       {[["left","← 좌측"],["center","가운데"],["right","우측 →"]].map(([a,label]) => (
                         <button key={a} onClick={()=>updText(selText,"align",a)}
-                          style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${cur.align===a?"#6366f1":bdr}`, background:cur.align===a?"rgba(99,102,241,0.15)":"transparent", color:cur.align===a?"#a5b4fc":muted, fontSize:11, cursor:"pointer" }}>
+                          style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${cur.align===a?"#3F72AF":bdr}`, background:cur.align===a?"rgba(99,102,241,0.15)":"transparent", color:cur.align===a?"#7AB8E0":muted, fontSize:11, cursor:"pointer" }}>
                           {label}
                         </button>
                       ))}
@@ -546,7 +546,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                     <div style={{ marginTop:10 }}>
                       <div style={{ fontSize:10, color:muted, marginBottom:3 }}>글자색</div>
                       <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                        {COLORS.map(c => <div key={c} onClick={()=>updText(selText,"color",c)} style={{ width:20, height:20, borderRadius:5, background:c, cursor:"pointer", border:cur.color===c?"2px solid #6366f1":`1px solid ${bdr}` }}/>)}
+                        {COLORS.map(c => <div key={c} onClick={()=>updText(selText,"color",c)} style={{ width:20, height:20, borderRadius:5, background:c, cursor:"pointer", border:cur.color===c?"2px solid #3F72AF":`1px solid ${bdr}` }}/>)}
                         <input type="color" value={cur.color} onChange={e=>updText(selText,"color",e.target.value)} style={{ width:20, height:20, border:"none", cursor:"pointer" }}/>
                       </div>
                     </div>
@@ -557,7 +557,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
                       {sliderRow("두께", cur.strokeW||0, 0, 12, 1, v=>updText(selText,"strokeW",v), "px")}
                       {(cur.strokeW||0)>0 && (
                         <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
-                          {COLORS.slice(0,8).map(c => <div key={c} onClick={()=>updText(selText,"stroke",c)} style={{ width:18, height:18, borderRadius:4, background:c, cursor:"pointer", border:cur.stroke===c?"2px solid #6366f1":`1px solid ${bdr}` }}/>)}
+                          {COLORS.slice(0,8).map(c => <div key={c} onClick={()=>updText(selText,"stroke",c)} style={{ width:18, height:18, borderRadius:4, background:c, cursor:"pointer", border:cur.stroke===c?"2px solid #3F72AF":`1px solid ${bdr}` }}/>)}
                         </div>
                       )}
                     </div>

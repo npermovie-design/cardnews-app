@@ -89,10 +89,10 @@ const FILE_TYPE_INFO = {
   video:   { icon: "🎬", label: "영상",    color: "#ef4444" },
   graphic: { icon: "🎬", label: "그래픽영상", color: "#ef4444" },
   filmed:  { icon: "📹", label: "촬영영상", color: "#f97316" },
-  music:   { icon: "🎵", label: "음악",    color: "#8b5cf6" },
+  music:   { icon: "🎵", label: "음악",    color: "#2B4F7E" },
   image:   { icon: "🖼",  label: "이미지",  color: "#10b981" },
   pdf:     { icon: "📄", label: "PDF",    color: "#f59e0b" },
-  other:   { icon: "📦", label: "파일",   color: "#6366f1" },
+  other:   { icon: "📦", label: "파일",   color: "#3F72AF" },
 };
 
 /* ─── 카테고리 ─────────────────────────────────────────── */
@@ -179,7 +179,7 @@ function FileViewer({ item, onClose }) {
             <div style={{ fontSize: 64, marginBottom: 16 }}>📦</div>
             <div style={{ color: "#fff", fontSize: 16, marginBottom: 20 }}>{title}</div>
             <a href={fileUrl} download target="_blank" rel="noopener noreferrer"
-              style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+              style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
               ⬇️ 다운로드
             </a>
           </div>
@@ -323,7 +323,7 @@ function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
           {/* 관리자 버튼 */}
           {isAdmin && hovered && !playing && (
             <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", gap: 5, zIndex: 5 }}>
-              <button onClick={e => { e.stopPropagation(); onEdit(item); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.92)", color: "#6366f1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>
+              <button onClick={e => { e.stopPropagation(); onEdit(item); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.92)", color: "#3F72AF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>
               <button onClick={e => { e.stopPropagation(); onDelete(item.key, item.storagePath); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(239,68,68,0.92)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑</button>
             </div>
           )}
@@ -350,7 +350,7 @@ function FileCard({ item, isDark, bdr, onDelete, isAdmin, onEdit }) {
             cursor: downloading ? "wait" : "pointer",
             padding: "8px 0", borderRadius: 8, marginTop: 2,
             border: "1px solid " + bdr, background: "transparent",
-            color: isDark ? "#a5b4fc" : "#6366f1",
+            color: isDark ? "#7AB8E0" : "#3F72AF",
             fontSize: 12, fontWeight: 700, textDecoration: "none",
             transition: "background 0.15s",
           }}
@@ -408,7 +408,7 @@ function FileListRow({ item, isDark, bdr, text, muted, onDelete, isAdmin, onEdit
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 3 }}>
-          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (typeInfo.color || "#6366f1") + "22", color: typeInfo.color || "#6366f1", fontWeight: 700 }}>{typeInfo.label}</span>
+          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (typeInfo.color || "#3F72AF") + "22", color: typeInfo.color || "#3F72AF", fontWeight: 700 }}>{typeInfo.label}</span>
           {item.fileSize > 0 && <span style={{ fontSize: 11, color: muted }}>{formatBytes(item.fileSize)}</span>}
           {item.description && <span style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{item.description}</span>}
         </div>
@@ -417,7 +417,7 @@ function FileListRow({ item, isDark, bdr, text, muted, onDelete, isAdmin, onEdit
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
         <button onClick={handleDownload} disabled={downloading} style={{
           padding: "6px 14px", borderRadius: 7, border: `1px solid ${bdr}`,
-          background: "transparent", color: isDark ? "#a5b4fc" : "#6366f1",
+          background: "transparent", color: isDark ? "#7AB8E0" : "#3F72AF",
           fontSize: 12, fontWeight: 700, cursor: downloading ? "wait" : "pointer",
         }}>{downloading ? "⏳" : "⬇️ 다운로드"}</button>
         {isAdmin && <>
@@ -524,9 +524,9 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
           {[["file","📁 파일 직접 업로드"],["url","🔗 URL로 등록"]].map(([m, l]) => (
             <button key={m} onClick={() => setMode(m)} style={{
               flex: 1, padding: "12px", borderRadius: 10,
-              border: `2px solid ${mode === m ? "#6366f1" : bdr}`,
+              border: `2px solid ${mode === m ? "#3F72AF" : bdr}`,
               background: mode === m ? "rgba(99,102,241,0.1)" : "transparent",
-              color: mode === m ? "#a5b4fc" : muted,
+              color: mode === m ? "#7AB8E0" : muted,
               fontSize: 13, fontWeight: mode === m ? 800 : 500, cursor: "pointer",
             }}>{l}</button>
           ))}
@@ -542,7 +542,7 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: `2px dashed ${dragOver ? "#6366f1" : bdr}`,
+              border: `2px dashed ${dragOver ? "#3F72AF" : bdr}`,
               borderRadius: 14, padding: "32px 20px", textAlign: "center",
               background: dragOver ? "rgba(99,102,241,0.08)" : cardBg,
               cursor: "pointer", transition: "all 0.15s",
@@ -577,10 +577,10 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
           <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: text, marginBottom: 8, fontWeight: 700 }}>
               <span>⬆️ 업로드 중...</span>
-              <span style={{ color: "#a5b4fc" }}>{progress}%</span>
+              <span style={{ color: "#7AB8E0" }}>{progress}%</span>
             </div>
             <div style={{ height: 6, borderRadius: 6, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 6, width: progress + "%", background: "linear-gradient(90deg,#6366f1,#8b5cf6)", transition: "width 0.3s" }} />
+              <div style={{ height: "100%", borderRadius: 6, width: progress + "%", background: "linear-gradient(90deg,#3F72AF,#2B4F7E)", transition: "width 0.3s" }} />
             </div>
           </div>
         )}
@@ -633,9 +633,9 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
             {/* 업로드 버튼 */}
             <button type="button" onClick={() => thumbRef.current?.click()} style={{
               padding: "10px 18px", borderRadius: 10,
-              border: `1px dashed ${thumbPreview ? "#6366f1" : bdr}`,
+              border: `1px dashed ${thumbPreview ? "#3F72AF" : bdr}`,
               background: thumbPreview ? "rgba(99,102,241,0.08)" : inputBg,
-              color: thumbPreview ? "#a5b4fc" : muted,
+              color: thumbPreview ? "#7AB8E0" : muted,
               fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
             }}>
               {thumbPreview ? "🔄 변경" : "📁 이미지 선택"}
@@ -667,7 +667,7 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
 
         {/* 공개 설정 */}
         <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "12px 14px", borderRadius: 10, background: cardBg, border: `1px solid ${bdr}` }}>
-          <input type="checkbox" checked={form.isFree} onChange={e => setForm(p => ({ ...p, isFree: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "#6366f1" }} />
+          <input type="checkbox" checked={form.isFree} onChange={e => setForm(p => ({ ...p, isFree: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "#3F72AF" }} />
           <div>
             <div style={{ fontSize: 13, color: text, fontWeight: 700 }}>무료 공개</div>
             <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>체크 해제 시 👑 멤버 전용으로 표시됩니다</div>
@@ -679,7 +679,7 @@ function UploadForm({ isDark, bdr, onSaved, editItem, onCancel }) {
           {editItem && <button onClick={onCancel} style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>취소</button>}
           <button onClick={save} disabled={saving || uploading} style={{
             padding: "11px 28px", borderRadius: 10, border: "none",
-            background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+            background: "linear-gradient(135deg,#3F72AF,#2B4F7E)",
             color: "#fff", fontSize: 14, fontWeight: 800, minWidth: 120,
             cursor: (saving || uploading) ? "not-allowed" : "pointer",
             opacity: (saving || uploading) ? 0.7 : 1,
@@ -701,7 +701,7 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme }) {
   const sideBdr     = isDark ? "rgba(255,255,255,0.07)"  : "#e5e3f5";
   const menuLabel   = isDark ? "rgba(255,255,255,0.2)"   : "rgba(99,102,241,0.4)";
   const itemText    = isDark ? "rgba(255,255,255,0.5)"   : "#6c757d";
-  const itemActive  = isDark ? "#a5b4fc"                 : "#4f46e5";
+  const itemActive  = isDark ? "#7AB8E0"                 : "#4f46e5";
   const itemActiveBg= isDark ? "rgba(99,102,241,0.22)"  : "rgba(99,102,241,0.1)";
   const brandText   = isDark ? "#fff"                    : "#1a1a2e";
   const [open, setOpen] = useState(true);
@@ -715,7 +715,7 @@ function ArchiveSidebar({ menu, setMenu, cat, setCat, theme }) {
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
         fontSize: isCat ? 13 : 14, fontWeight: active ? 700 : 400,
-        borderLeft: active ? "3px solid #6366f1" : "3px solid transparent",
+        borderLeft: active ? "3px solid #3F72AF" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: 7, marginBottom: 2,
       }}>
         <span>{icon}</span>{label}
@@ -887,12 +887,12 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
                 <button key={m.id} onClick={() => setViewMode(m.id)} title={m.id} style={{
                   padding: "7px 10px", border: "none", cursor: "pointer", fontSize: 14,
                   background: viewMode === m.id ? (isDark?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)") : "transparent",
-                  color: viewMode === m.id ? "#a5b4fc" : muted,
+                  color: viewMode === m.id ? "#7AB8E0" : muted,
                 }}>{m.icon}</button>
               ))}
             </div>
             {isAdmin && (
-              <button onClick={() => setMenu("upload")} style={{ padding: "7px 14px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 업로드</button>
+              <button onClick={() => setMenu("upload")} style={{ padding: "7px 14px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 업로드</button>
             )}
           </div>
         </div>
@@ -913,7 +913,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
               {search ? `"${search}" 검색 결과가 없어요` : "아직 파일이 없어요"}
             </div>
             {isAdmin && !search && (
-              <button onClick={() => setMenu("upload")} style={{ marginTop: 12, padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 첫 파일 업로드하기</button>
+              <button onClick={() => setMenu("upload")} style={{ marginTop: 12, padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⬆️ 첫 파일 업로드하기</button>
             )}
           </div>
         )}
@@ -947,7 +947,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
                     <div style={{ fontSize: 14, fontWeight: 600, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</div>
                     {v.description && <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description}</div>}
                   </div>
-                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (ti.color||"#6366f1")+"22", color: ti.color||"#6366f1", fontWeight: 700, whiteSpace: "nowrap" }}>{ti.label}</span>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: (ti.color||"#3F72AF")+"22", color: ti.color||"#3F72AF", fontWeight: 700, whiteSpace: "nowrap" }}>{ti.label}</span>
                   <span style={{ fontSize: 11, color: muted }}>{v.fileSize ? formatBytes(v.fileSize) : "-"}</span>
                   <div style={{ display: "flex", gap: 4 }}>
                     <DownloadBtn item={v} isDark={isDark} bdr={bdr} muted={muted} compact />
@@ -1002,8 +1002,8 @@ export default function ArchivePage({ user, C, theme }) {
             <button key={c.id} onClick={() => { setCat(c.id); setMenu("files"); }}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "13px 18px", border: "none", cursor: "pointer",
                 fontSize: 14, fontWeight: cat === c.id ? 700 : 500, whiteSpace: "nowrap", background: "transparent",
-                color: cat === c.id ? (c.color || "#6366f1") : (isDark ? "rgba(255,255,255,0.45)" : "#888"),
-                borderBottom: cat === c.id ? `2px solid ${c.color || "#6366f1"}` : "2px solid transparent",
+                color: cat === c.id ? (c.color || "#3F72AF") : (isDark ? "rgba(255,255,255,0.45)" : "#888"),
+                borderBottom: cat === c.id ? `2px solid ${c.color || "#3F72AF"}` : "2px solid transparent",
               }}>
               {c.icon} {c.label}
               <span style={{ fontSize: 11, opacity: 0.65 }}>({0})</span>

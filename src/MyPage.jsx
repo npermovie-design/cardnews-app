@@ -33,7 +33,7 @@ function getHistIcon(reason) {
   for (const [key, val] of Object.entries(HISTORY_ICON)) {
     if (reason?.includes(key)) return val;
   }
-  return { icon:"💎", color:"#a5b4fc" };
+  return { icon:"💎", color:"#7AB8E0" };
 }
 
 export default function MyPage({ user, setUser, C, navigate, theme }) {
@@ -155,7 +155,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         <div style={{ fontSize:48, marginBottom:16 }}>🔐</div>
         <div style={{ fontSize:18, fontWeight:800, color:text, marginBottom:8 }}>로그인이 필요해요</div>
         <div style={{ fontSize:13, color:muted, marginBottom:24 }}>마이페이지는 로그인한 회원만 볼 수 있어요.</div>
-        <button onClick={()=>navigate("home")} style={{ padding:"11px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>홈으로</button>
+        <button onClick={()=>navigate("home")} style={{ padding:"11px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#3F72AF,#112D4E)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>홈으로</button>
       </div>
     );
   }
@@ -194,7 +194,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         <div className="myp-header" style={{ display:"flex", alignItems:"flex-start", gap:14 }}>
           {/* 왼쪽: 아바타 + 정보 */}
           <div style={{ display:"flex", gap:14, flex:1, minWidth:0 }}>
-            <div style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#3F72AF,#112D4E)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0 }}>
               {(userData?.nick||"U")[0].toUpperCase()}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
@@ -209,7 +209,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>💎 {(userData?.points||0).toLocaleString()}P</div>
+            <div style={{ fontSize:22, fontWeight:900, color:"#7AB8E0" }}>💎 {(userData?.points||0).toLocaleString()}P</div>
             <div style={{ fontSize:10, color:muted }}>보유 포인트</div>
           </div>
         </div>
@@ -234,7 +234,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               <input value={newNick} onChange={e=>setNewNick(e.target.value)} placeholder="새 닉네임 입력" maxLength={16}
                 style={{ flex:1, padding:"9px 12px", borderRadius:9, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}/>
               <button onClick={handleNickChange} disabled={nickLoading||!canChangeNick()}
-                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:nickLoading?"wait":canChangeNick()?"pointer":"not-allowed", background:canChangeNick()?"linear-gradient(135deg,#7c6aff,#ec4899)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:12, fontWeight:700, flexShrink:0, whiteSpace:"nowrap" }}>
+                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:nickLoading?"wait":canChangeNick()?"pointer":"not-allowed", background:canChangeNick()?"linear-gradient(135deg,#3F72AF,#112D4E)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:12, fontWeight:700, flexShrink:0, whiteSpace:"nowrap" }}>
                 {nickLoading?"변경 중...":"변경하기"}
               </button>
             </div>
@@ -250,7 +250,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
         {[["history","💳 포인트 내역"],["info","👤 계정 정보"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
-            background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
+            background:tab===t?cardBg:"transparent", color:tab===t?"#7AB8E0":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
             {l}
           </button>
@@ -318,7 +318,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[
-              { icon:"💎", label:"포인트 충전", sub:"AI 생성 포인트 충전", action:()=>navigate("pricing"), color:"#a5b4fc" },
+              { icon:"💎", label:"포인트 충전", sub:"AI 생성 포인트 충전", action:()=>navigate("pricing"), color:"#7AB8E0" },
               { icon:"📁", label:"내 보관함",   sub:"카드뉴스·상세페이지", action:()=>navigate("ai"), color:"#4ade80" },
               { icon:"📬", label:"문의하기",    sub:"1:1 문의", action:()=>navigate("contact"), color:"#f59e0b" },
             ].map(({icon,label,sub,action,color})=>(

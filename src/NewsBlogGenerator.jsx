@@ -149,7 +149,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 10회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>20회 추가 무료</b>를 받으세요!</>
+            ? <><b style={{color:text}}>비회원 무료 10회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#7AB8E0"}}>20회 추가 무료</b>를 받으세요!</>
             : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
@@ -157,13 +157,13 @@ function PointsExhausted({ isDark, isGuest, title }) {
           {isGuest ? (
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"linear-gradient(135deg,#3F72AF,#112D4E)", color:"#fff", fontSize:15, fontWeight:800 }}>
               🚀 회원가입 / 로그인하기
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:15, fontWeight:800 }}>
               💎 포인트 충전하기
             </button>
           )}
@@ -188,8 +188,8 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const inputBdr= isDark ? "rgba(255,255,255,0.15)" : "#e9ecef";
   const cardBg  = isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa";
   const resultBg= isDark ? "rgba(0,0,0,0.15)"       : "#f8f9fa";
-  const accent  = isDark ? "#a5b4fc"                : "#4f46e5";
-  const accentRaw="#6366f1";
+  const accent  = isDark ? "#7AB8E0"                : "#4f46e5";
+  const accentRaw="#3F72AF";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"       : "#fff";
 
   const [url,        setUrl]        = useState("");
@@ -577,7 +577,7 @@ ${articleSection}
             <button onClick={generate} disabled={generating}
               style={{width:"100%",padding:"15px",borderRadius:12,border:"none",marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                background:"linear-gradient(135deg,#3F72AF,#2B4F7E)",
                 color:"#fff",fontSize:15,fontWeight:800,
                 display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               {generating

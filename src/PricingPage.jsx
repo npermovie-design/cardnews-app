@@ -177,7 +177,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("pricingBadge")}</div>
+        <div style={{ display: "inline-block", background: "rgba(63,114,175,0.1)", border: "1px solid rgba(63,114,175,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("pricingBadge")}</div>
         <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>{p("pricingTitle")}</h2>
         <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
           {p("pricingSub")}
@@ -185,7 +185,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         {user && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, padding: "8px 20px", borderRadius: 20, background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
             <span style={{ fontSize: 13, color: "#818cf8" }}>{p("pricingMyPoints")}</span>
-            <span style={{ fontSize: 20, fontWeight: 900, color: "#6366f1" }}>{userPoints.toLocaleString()} P</span>
+            <span style={{ fontSize: 20, fontWeight: 900, color: "#3F72AF" }}>{userPoints.toLocaleString()} P</span>
           </div>
         )}
       </div>
@@ -219,12 +219,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 32 }}>
             <span style={{ fontSize: 14, fontWeight: billing==="monthly"?700:400, color: billing==="monthly"?C.text:C.muted }}>{p("pricingMonthly")}</span>
             <div onClick={() => setBilling(b => b==="monthly"?"yearly":"monthly")}
-              style={{ width: 52, height: 28, borderRadius: 14, background: billing==="yearly" ? "#6366f1" : (isDark?"rgba(255,255,255,0.15)":"#ddd"), cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
+              style={{ width: 52, height: 28, borderRadius: 14, background: billing==="yearly" ? "#3F72AF" : (isDark?"rgba(255,255,255,0.15)":"#ddd"), cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
               <div style={{ position: "absolute", top: 4, left: billing==="yearly"?26:4, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
             </div>
             <span style={{ fontSize: 14, fontWeight: billing==="yearly"?700:400, color: billing==="yearly"?C.text:C.muted }}>{p("pricingYearly")}</span>
             {billing === "yearly" && (
-              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff" }}>{p("pricingYearlyDiscount")}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff" }}>{p("pricingYearlyDiscount")}</span>
             )}
           </div>
 
@@ -306,18 +306,18 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,45%),1fr))", gap: 14, maxWidth: 760, margin: "0 auto" }}>
             {ONE_OFF_PLANS.map(plan => (
-              <div key={plan.id} style={{ borderRadius: 18, border: plan.highlight ? "2px solid #6366f1" : "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: plan.highlight ? "0 0 24px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.15s" }}
+              <div key={plan.id} style={{ borderRadius: 18, border: plan.highlight ? "2px solid #3F72AF" : "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: plan.highlight ? "0 0 24px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#6366f1" }}>₩{plan.amount.toLocaleString()}</div>
+                {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#3F72AF" }}>₩{plan.amount.toLocaleString()}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
                 <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
                 <div style={{ marginTop: 6, width: "100%", position: "relative" }}>
                   <button
                     onClick={() => handleOneOff(plan)}
                     disabled={loading === plan.id}
-                    style={{ width: "100%", padding: "11px", borderRadius: 9, border: "none", cursor: loading === plan.id ? "not-allowed" : "pointer", background: loading === plan.id ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 800,
+                    style={{ width: "100%", padding: "11px", borderRadius: 9, border: "none", cursor: loading === plan.id ? "not-allowed" : "pointer", background: loading === plan.id ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 13, fontWeight: 800,
                       filter: PAYMENT_ENABLED === false ? "blur(1.5px)" : "none",
                       opacity: PAYMENT_ENABLED === false ? 0.55 : 1,
                     }}>
@@ -347,7 +347,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 3 }}>{item.action}</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#6366f1" }}>{item.pt}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: "#3F72AF" }}>{item.pt}</div>
               <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{item.desc}</div>
             </div>
           ))}

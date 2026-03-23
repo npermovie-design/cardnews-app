@@ -102,39 +102,39 @@ export default function HomePage({ navigate, C }) {
 
   /* 떠다니는 배경 파티클 */
   const particles = [
-    { top: "12%", left: "8%",  size: 320, color: "rgba(124,106,255,0.07)", blur: 70 },
-    { top: "60%", right: "6%", size: 260, color: "rgba(236,72,153,0.06)",  blur: 60 },
+    { top: "12%", left: "8%",  size: 320, color: "rgba(63,114,175,0.07)", blur: 70 },
+    { top: "60%", right: "6%", size: 260, color: "rgba(17,45,78,0.06)",  blur: 60 },
     { top: "30%", left: "55%", size: 200, color: "rgba(99,102,241,0.05)",  blur: 50 },
   ];
 
   const ALL_TOOLS = [
     {
-      cat: p("catWrite"), catColor: "#6366f1",
+      cat: p("catWrite"), catColor: "#3F72AF",
       items: [
         { icon: "📝", title: p("tNaver"), desc: p("tNaverD"), tag: p("tagPopular"), color: "#22c55e" },
         { icon: "☕", title: p("tCafe"), desc: p("tCafeD"), tag: "", color: "#06b6d4" },
         { icon: "🟠", title: p("tTistory"), desc: p("tTistoryD"), tag: "", color: "#f59e0b" },
-        { icon: "📱", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#ec4899" },
+        { icon: "📱", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#112D4E" },
         { icon: "▶️", title: p("tYoutube"), desc: p("tYoutubeD"), tag: "", color: "#ef4444" },
         { icon: "🧵", title: p("tThread"), desc: p("tThreadD"), tag: "", color: "#a855f7" },
       ],
     },
     {
-      cat: p("catImage"), catColor: "#8b5cf6",
+      cat: p("catImage"), catColor: "#2B4F7E",
       items: [
-        { icon: "📰", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#8b5cf6" },
-        { icon: "🗂", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#6366f1" },
-        { icon: "📄", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#ec4899" },
+        { icon: "📰", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#2B4F7E" },
+        { icon: "🗂", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#3F72AF" },
+        { icon: "📄", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#112D4E" },
         { icon: "📋", title: p("tSimpleDetail"), desc: p("tSimpleDetailD"), tag: p("tagNew"), color: "#10b981" },
       ],
     },
     {
-      cat: p("catAiImg"), catColor: "#ec4899",
+      cat: p("catAiImg"), catColor: "#112D4E",
       items: [
         { icon: "📸", title: p("tProduct"), desc: p("tProductD"), tag: p("tagPopular"), color: "#f59e0b" },
-        { icon: "🏷", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#6366f1" },
-        { icon: "🖼", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#8b5cf6" },
-        { icon: "🧍", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#ec4899" },
+        { icon: "🏷", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#3F72AF" },
+        { icon: "🖼", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#2B4F7E" },
+        { icon: "🧍", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#112D4E" },
         { icon: "😊", title: p("tFace"), desc: p("tFaceD"), tag: "", color: "#10b981" },
         { icon: "👗", title: p("tOutfit"), desc: p("tOutfitD"), tag: "", color: "#f59e0b" },
         { icon: "🖌", title: p("tOutpaint"), desc: p("tOutpaintD"), tag: p("tagNew"), color: "#06b6d4" },
@@ -150,8 +150,8 @@ export default function HomePage({ navigate, C }) {
       cat: p("catAnalyzer"), catColor: "#22c55e", navTarget: "analyzer",
       items: [
         { icon: "🔍", title: p("tAnalyze"), desc: p("tAnalyzeD"), tag: p("tagNew"), color: "#22c55e" },
-        { icon: "📊", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#6366f1" },
-        { icon: "🏆", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#8b5cf6" },
+        { icon: "📊", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#3F72AF" },
+        { icon: "🏆", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#2B4F7E" },
         { icon: "🏢", title: p("tBrandRank"), desc: p("tBrandRankD"), tag: "", color: "#06b6d4" },
       ],
     },
@@ -165,7 +165,7 @@ export default function HomePage({ navigate, C }) {
         @keyframes slideRight { from{transform:translateX(-100%)} to{transform:translateX(0)} }
         @keyframes pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
+        .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(63,114,175,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
         .stat-card:hover { transform: scale(1.04) !important; }
       `}</style>
@@ -197,7 +197,7 @@ export default function HomePage({ navigate, C }) {
           </h1>
           <h2 style={{ fontSize: "clamp(22px,4vw,52px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -1.5, color: C.text, margin: "0 0 28px" }}>
             {p("heroSub1")}
-            <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{ background: "linear-gradient(135deg,#3F72AF,#112D4E)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {p("heroHighlight")}
             </span>
           </h2>
@@ -220,7 +220,7 @@ export default function HomePage({ navigate, C }) {
               { val: 3,    suffix: p("statTimeSuffix"),  label: p("statTime") },
             ].map(({ val, suffix, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 900, background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 900, background: "linear-gradient(135deg,#3F72AF,#112D4E)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   <CountUp to={val} suffix={suffix} />
                 </div>
                 <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{label}</div>
@@ -230,7 +230,7 @@ export default function HomePage({ navigate, C }) {
         </div>
 
         <div style={{ position: "absolute", bottom: 36, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: C.muted, fontSize: 10, opacity: 0.4 }}>
-          <div style={{ width: 1, height: 36, background: "linear-gradient(to bottom,transparent,rgba(124,106,255,0.5))" }} />
+          <div style={{ width: 1, height: 36, background: "linear-gradient(to bottom,transparent,rgba(63,114,175,0.5))" }} />
           SCROLL
         </div>
       </section>
@@ -269,9 +269,9 @@ export default function HomePage({ navigate, C }) {
         <SecTitle C={C} badge={p("howBadge")} title={p("howTitle")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 20 }}>
           {[
-            { step: "01", icon: "🎯", title: p("how1"), desc: p("how1d"), color: "#6366f1" },
-            { step: "02", icon: "🤖", title: p("how2"), desc: p("how2d"), color: "#8b5cf6" },
-            { step: "03", icon: "📋", title: p("how3"), desc: p("how3d"), color: "#ec4899" },
+            { step: "01", icon: "🎯", title: p("how1"), desc: p("how1d"), color: "#3F72AF" },
+            { step: "02", icon: "🤖", title: p("how2"), desc: p("how2d"), color: "#2B4F7E" },
+            { step: "03", icon: "📋", title: p("how3"), desc: p("how3d"), color: "#112D4E" },
           ].map((s, i) => (
             <FadeIn key={s.step} delay={i * 0.15}>
               <div style={{ position: "relative", background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", boxShadow: C.shadow, overflow: "hidden" }}>
@@ -312,12 +312,12 @@ export default function HomePage({ navigate, C }) {
                   ✓ {r.result}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8, borderTop: "1px solid " + C.border }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,rgba(124,106,255,0.2),rgba(236,72,153,0.15))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{r.avatar}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,rgba(63,114,175,0.2),rgba(17,45,78,0.15))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{r.avatar}</div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{r.name}</div>
                     <div style={{ fontSize: 11, color: C.muted }}>{r.job}</div>
                   </div>
-                  <div style={{ marginLeft: "auto", fontSize: 10, color: C.purpleL, fontWeight: 600, background: "rgba(124,106,255,0.08)", padding: "3px 8px", borderRadius: 6 }}>{r.platform}</div>
+                  <div style={{ marginLeft: "auto", fontSize: 10, color: C.purpleL, fontWeight: 600, background: "rgba(63,114,175,0.08)", padding: "3px 8px", borderRadius: 6 }}>{r.platform}</div>
                 </div>
               </div>
             </FadeIn>
@@ -332,8 +332,8 @@ export default function HomePage({ navigate, C }) {
           {[
             { icon: "🎁", title: p("p1title"), point: p("p1point"), desc: p("p1desc"), color: "#888", btnText: p("p1btn"), onClick: () => navigate("ai") },
             { icon: "👤", title: p("p2title"), point: p("p2point"), desc: p("p2desc"), color: "#22c55e", btnText: p("p2btn"), onClick: () => navigate("ai") },
-            { icon: "⚡", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#6366f1", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
-            { icon: "🔥", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#8b5cf6", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
+            { icon: "⚡", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#3F72AF", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
+            { icon: "🔥", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#2B4F7E", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -344,12 +344,12 @@ export default function HomePage({ navigate, C }) {
                 transition: "all 0.2s", cursor: "default",
                 position: "relative", overflow: "hidden",
               }}>
-                {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>{getPageText(lang,"recommend")}</div>}
+                {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>{getPageText(lang,"recommend")}</div>}
                 <div style={{ fontSize: 32, marginBottom: 10 }}>{p.icon}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 6 }}>{p.title}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: p.color, marginBottom: 8 }}>{p.point}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{p.desc}</div>
-                <button onClick={p.onClick} style={{ width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "rgba(124,106,255,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={p.onClick} style={{ width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#3F72AF,#2B4F7E)" : "rgba(63,114,175,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   {p.btnText}
                 </button>
               </div>
@@ -372,7 +372,7 @@ export default function HomePage({ navigate, C }) {
               <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = ""}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.08))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{d.icon}</div>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,rgba(63,114,175,0.15),rgba(17,45,78,0.08))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{d.icon}</div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{d.title}</div>
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.75 }}>{d.desc}</div>
@@ -385,12 +385,12 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ CTA ══ */}
       <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, borderRadius: "50%", background: "rgba(124,106,255,0.07)", filter: "blur(80px)", pointerEvents: "none", animation: "pulse 4s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, borderRadius: "50%", background: "rgba(63,114,175,0.07)", filter: "blur(80px)", pointerEvents: "none", animation: "pulse 4s ease-in-out infinite" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
           <Badge C={C}>{p("ctaBadge")}</Badge>
           <h2 style={{ fontSize: "clamp(26px,5vw,54px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.15, margin: "0 0 20px" }}>
             {p("ctaTitle1")}<br/>
-            <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{ background: "linear-gradient(135deg,#3F72AF,#112D4E)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {p("ctaHighlight")}
             </span>
           </h2>

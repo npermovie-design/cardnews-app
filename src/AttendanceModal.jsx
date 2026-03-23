@@ -48,7 +48,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
   const muted  = D ? "rgba(255,255,255,0.5)" : "#888";
   const bdr    = D ? "rgba(255,255,255,0.1)" : "#e9ecef";
   const card   = D ? "rgba(255,255,255,0.05)" : "#f8f8f8";
-  const ACC    = "#6366f1";
+  const ACC    = "#3F72AF";
 
   const [data, setData] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -220,7 +220,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
                     <span style={{ fontSize: 11, fontWeight: 800, color: ACC }}>+{pts}P 보너스</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: D ? "rgba(255,255,255,0.08)" : "#e5e5f0", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${ACC},#8b5cf6)`, width: `${pct}%`, transition: "width 0.5s" }} />
+                    <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${ACC},#2B4F7E)`, width: `${pct}%`, transition: "width 0.5s" }} />
                   </div>
                   {!reached && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{streak}/{days}일 ({days-streak}일 남음)</div>}
                 </div>
@@ -238,7 +238,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
               border: `1px solid ${ACC}40`, textAlign: "center" }}>
               <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{result.pts}P 지급!</div>
               {result.bonuses.map((b, i) => (
-                <div key={i} style={{ fontSize: 12, color: "#a5b4fc", fontWeight: 700 }}>🎉 {b}</div>
+                <div key={i} style={{ fontSize: 12, color: "#7AB8E0", fontWeight: 700 }}>🎉 {b}</div>
               ))}
             </div>
           )}
@@ -253,7 +253,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
             <button onClick={doCheckIn} disabled={checking}
               style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none",
                 cursor: checking ? "wait" : "pointer",
-                background: `linear-gradient(135deg,${ACC},#8b5cf6)`,
+                background: `linear-gradient(135deg,${ACC},#2B4F7E)`,
                 color: "#fff", fontSize: 15, fontWeight: 900,
                 boxShadow: `0 6px 20px ${ACC}40`,
                 opacity: checking ? 0.7 : 1 }}>

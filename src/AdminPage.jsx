@@ -4,10 +4,10 @@ import { Btn, Inp } from "./UI";
 
 /* ── 게시판 카테고리/태그 CRUD ── */
 const DEFAULT_BOARD_CATS = [
-  { id:"info",label:"정보공유",icon:"📌",color:"#6366f1" },
+  { id:"info",label:"정보공유",icon:"📌",color:"#3F72AF" },
   { id:"qna", label:"질문답변",icon:"❓",color:"#f59e0b" },
   { id:"free",label:"자유게시판",icon:"🗣",color:"#10b981" },
-  { id:"review",label:"사용후기",icon:"⭐",color:"#ec4899" },
+  { id:"review",label:"사용후기",icon:"⭐",color:"#112D4E" },
 ];
 async function fetchBoardCatsAdmin() {
   try {
@@ -73,9 +73,9 @@ export default function AdminPage({ C, user: adminUser }) {
   const [boardCats, setBoardCats] = useState(DEFAULT_BOARD_CATS);
   const [selBoardCat, setSelBoardCat] = useState(null);
   const [boardTags, setBoardTags] = useState([]);
-  const [newCatForm, setNewCatForm] = useState({ id:"", label:"", icon:"📌", color:"#6366f1" });
+  const [newCatForm, setNewCatForm] = useState({ id:"", label:"", icon:"📌", color:"#3F72AF" });
   const [newTagLabel, setNewTagLabel] = useState("");
-  const [newTagColor, setNewTagColor] = useState("#6366f1");
+  const [newTagColor, setNewTagColor] = useState("#3F72AF");
   const [boardLoading, setBoardLoading] = useState(false);
   const [posts, setPosts2] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -134,7 +134,7 @@ export default function AdminPage({ C, user: adminUser }) {
     try { setBoardTags(await fetchTagsByCatAdmin(catId)); } catch(e) { setBoardTags([]); }
   };
   const handleSelectBoardCat = async (cat) => {
-    setSelBoardCat(cat); setNewTagLabel(""); setNewTagColor("#6366f1");
+    setSelBoardCat(cat); setNewTagLabel(""); setNewTagColor("#3F72AF");
     await loadTagsForCat(cat.id);
   };
   const handleAddTag = async () => {
@@ -371,7 +371,7 @@ export default function AdminPage({ C, user: adminUser }) {
         const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
 
         const cardStyle = { padding:"20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}`, flex:1, minWidth:140 };
-        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#6366f1", marginBottom:4 };
+        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#3F72AF", marginBottom:4 };
         const labelStyle = { fontSize:12, color:C.muted, fontWeight:600 };
 
         return (
@@ -379,11 +379,11 @@ export default function AdminPage({ C, user: adminUser }) {
           {/* 요약 카드 */}
           <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:24 }}>
             {[
-              { n: totalMembers, l: "전체 회원", icon: "👥", color: "#6366f1" },
+              { n: totalMembers, l: "전체 회원", icon: "👥", color: "#3F72AF" },
               { n: recentMembers, l: "이번주 신규", icon: "🆕", color: "#22c55e" },
               { n: onlineCount||0, l: "실시간 접속", icon: "🟢", color: "#f59e0b" },
-              { n: totalPosts, l: "전체 게시글", icon: "📋", color: "#8b5cf6" },
-              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#ec4899" },
+              { n: totalPosts, l: "전체 게시글", icon: "📋", color: "#2B4F7E" },
+              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#112D4E" },
               { n: totalViews.toLocaleString(), l: "총 조회수", icon: "👁", color: "#06b6d4" },
               { n: totalLikes, l: "총 좋아요", icon: "👍", color: "#f59e0b" },
               { n: totalComments, l: "총 댓글", icon: "💬", color: "#10b981" },
@@ -404,9 +404,9 @@ export default function AdminPage({ C, user: adminUser }) {
                 <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                   <span style={{ fontSize:13, fontWeight:700, color:C.text, minWidth:80 }}>{cat}</span>
                   <div style={{ flex:1, height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0", overflow:"hidden" }}>
-                    <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#6366f1,#8b5cf6)", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
+                    <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#3F72AF,#2B4F7E)", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
                   </div>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#6366f1", minWidth:30, textAlign:"right" }}>{cnt}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3F72AF", minWidth:30, textAlign:"right" }}>{cnt}</span>
                 </div>
               ))}
             </div>
@@ -418,7 +418,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 <div key={nick} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                   <span style={{ fontSize:13, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:20 }}>{i+1}</span>
                   <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{nick}</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#6366f1" }}>{cnt}건</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3F72AF" }}>{cnt}건</span>
                 </div>
               ))}
             </div>
@@ -446,7 +446,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       <td style={{ padding:"8px 10px", fontWeight:600, color:C.text, maxWidth:300, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</td>
                       <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#06b6d4" }}>{(p.views||0).toLocaleString()}</td>
                       <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{p.likes||0}</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#8b5cf6" }}>{(p.comments||[]).length}</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#2B4F7E" }}>{(p.comments||[]).length}</td>
                       <td style={{ padding:"8px 10px", color:C.muted }}>{p.nick}</td>
                     </tr>
                   ))}
@@ -459,10 +459,10 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ marginTop:24, padding:"18px 22px", borderRadius:14, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>
             <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:10 }}>🔍 검색엔진 노출 현황</div>
             <div style={{ fontSize:12, color:C.muted, lineHeight:1.8 }}>
-              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
-              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (네이버 검색 노출)<br/>
-              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (해외 Bing 검색)<br/>
-              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#6366f1"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
+              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#3F72AF"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
+              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#3F72AF"}}>바로가기</a> (네이버 검색 노출)<br/>
+              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#3F72AF"}}>바로가기</a> (해외 Bing 검색)<br/>
+              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#3F72AF"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
               <br/>
               <span style={{color:"#f59e0b",fontWeight:700}}>💡 추천:</span> Google Analytics를 연동하면 실시간 방문자, 페이지뷰, 유입 검색어, 검색엔진별 트래픽을 모두 확인할 수 있습니다.
               GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
@@ -505,7 +505,7 @@ export default function AdminPage({ C, user: adminUser }) {
                         {Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([r,c]) => (
                           <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                             <span style={{ fontSize:11, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#6366f1" }}>{c}회</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#3F72AF" }}>{c}회</span>
                           </div>
                         ))}
                       </div>
@@ -515,7 +515,7 @@ export default function AdminPage({ C, user: adminUser }) {
                           <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                             <span style={{ fontSize:12, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:16 }}>{i+1}</span>
                             <span style={{ fontSize:11, color:C.text, flex:1 }}>{nick(uid)}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#6366f1" }}>{c}회</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#3F72AF" }}>{c}회</span>
                           </div>
                         ))}
                       </div>
@@ -581,7 +581,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#3F72AF,#112D4E)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                       {(m.nick||"?")[0].toUpperCase()}
                     </div>
                     <div>
@@ -821,7 +821,7 @@ export default function AdminPage({ C, user: adminUser }) {
                     </div>
                   )}
                   <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
-                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
+                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"linear-gradient(135deg,#3F72AF,#2B4F7E)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
                     + 서브 카테고리 추가
                   </button>
                 </div>
@@ -838,7 +838,7 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
             <div style={{ fontSize:14, color:C.muted }}>총 <b style={{ color:C.text }}>{videos.length}개</b>의 영상</div>
             <button onClick={() => { resetVidForm(); setVidEdit(null); setVidFormOpen(p=>!p); }}
-              style={{ padding:"9px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              style={{ padding:"9px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
               {vidFormOpen && !vidEdit ? "✕ 닫기" : "+ 영상 추가"}
             </button>
           </div>
@@ -871,14 +871,14 @@ export default function AdminPage({ C, user: adminUser }) {
               <div style={{ display:"flex", alignItems:"center", gap:16, marginTop:14 }}>
                 <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13, color:C.text }}>
                   <input type="checkbox" checked={vidForm.isFree} onChange={e=>setVidForm(p=>({...p,isFree:e.target.checked}))}
-                    style={{ accentColor:"#6366f1" }} />
+                    style={{ accentColor:"#3F72AF" }} />
                   무료 공개
                 </label>
                 <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
                   <button onClick={() => { setVidFormOpen(false); setVidEdit(null); resetVidForm(); }}
                     style={{ padding:"9px 20px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>취소</button>
                   <button onClick={submitVideo}
-                    style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#3F72AF,#2B4F7E)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                     {vidEdit ? "✅ 수정 완료" : "✅ 등록하기"}
                   </button>
                 </div>
@@ -937,7 +937,7 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14, marginBottom: 24 }}>
             {[
               { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
-              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
+              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#7AB8E0" },
               { label: "AI 1회 비용",      value: "10P", color: "#f59e0b" },
               { label: "글쓰기 적립",      value: "1P", color: "#34d399" },
             ].map(r => (
@@ -969,7 +969,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       <span style={{ fontSize: 13, color: v >= lim ? "#ef4444" : C.purpleL, fontWeight: 700 }}>{v}/{lim}회</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "#e9ecef", overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 4, width: pct + "%", background: v >= lim ? "linear-gradient(90deg,#ef4444,#dc2626)" : "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
+                      <div style={{ height: "100%", borderRadius: 4, width: pct + "%", background: v >= lim ? "linear-gradient(90deg,#ef4444,#dc2626)" : "linear-gradient(90deg,#3F72AF,#112D4E)" }} />
                     </div>
                   </div>
                 );
@@ -1057,7 +1057,7 @@ function InquiryManager({ C, isDark }) {
           <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} placeholder="답변 내용을 입력하세요..."
             style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", resize: "vertical" }} />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
+            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#3F72AF,#2B4F7E)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
             {s.status !== "closed" && <button onClick={() => updateStatus(s.id, "closed")} style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>종료 처리</button>}
           </div>
         </div>

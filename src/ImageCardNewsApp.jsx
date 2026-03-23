@@ -169,7 +169,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
   const mode = "card"; // 이미지 카드뉴스 전용
   const defaultSizeIdx = 0; // 정사각형
   const SLIDE_TYPES = SLIDE_TYPES_CARD;
-  const accentBase = "#6366f1";
+  const accentBase = "#3F72AF";
 
   // ── 위저드 단계 ─────────────────────────────────────────────
   const [wizStep, setWizStep] = useState(1);
@@ -486,7 +486,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                 placeholder="https://... URL 붙여넣기"
                 style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#7AB8E0", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>
@@ -874,9 +874,9 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                   <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.done||s.active?1:0.3,transition:"opacity 0.3s"}}>
                     <div style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,
                       background:s.done?"#4ade80":s.active?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
-                      border:s.done?"2px solid #4ade80":s.active?"2px solid #6366f1":"2px solid rgba(255,255,255,0.1)",
+                      border:s.done?"2px solid #4ade80":s.active?"2px solid #3F72AF":"2px solid rgba(255,255,255,0.1)",
                       transition:"all 0.3s"}}>
-                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #6366f1",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
+                      {s.done?<span style={{color:"#fff",fontWeight:900}}>✓</span>:s.active?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #3F72AF",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
                     </div>
                     <span style={{fontSize:13,color:s.done?"#4ade80":s.active?text:muted,fontWeight:s.active?700:400}}>{s.label}</span>
                     {s.done && <span style={{fontSize:10,color:"#4ade80",marginLeft:"auto"}}>완료</span>}
@@ -888,14 +888,14 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
               {progress.total > 0 && (
                 <div style={{ maxWidth:280,width:"100%",margin:"0 auto 20px" }}>
                   <div style={{ height:6,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:6 }}>
-                    <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
+                    <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#3F72AF,#2B4F7E,#112D4E)",width:`${Math.max(5,(progress.cur/progress.total)*100)}%`,transition:"width 0.5s ease" }}/>
                   </div>
                   <div style={{ fontSize:12,color:muted,fontWeight:600 }}>{doneCount > 0 ? `${doneCount}장 생성 완료` : `${progress.cur}/${progress.total}`}</div>
                 </div>
               )}
               {progress.total === 0 && (
                 <div style={{ height:4,borderRadius:4,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",maxWidth:280,margin:"0 auto 10px",width:"100%" }}>
-                  <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899)",animation:"ic-progress 15s ease-out forwards" }}/>
+                  <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#3F72AF,#2B4F7E,#112D4E)",animation:"ic-progress 15s ease-out forwards" }}/>
                 </div>
               )}
 
@@ -906,7 +906,7 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                   <div style={{ display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center" }}>
                     {rendered.map((img,i) => (
                       <div key={i} style={{ width:100,height:100,borderRadius:12,overflow:"hidden",
-                        border:`2px solid ${img?"#4ade80":i===(progress.cur-1)?"#6366f1":bdr}`,
+                        border:`2px solid ${img?"#4ade80":i===(progress.cur-1)?"#3F72AF":bdr}`,
                         background:isDark?"rgba(255,255,255,0.03)":"#f0f0f6",position:"relative",
                         boxShadow:img?"0 4px 12px rgba(74,222,128,0.2)":"none",transition:"border 0.3s, box-shadow 0.3s" }}>
                         {img ? (
@@ -915,8 +915,8 @@ export default function ImageCardNewsApp({ isDark, user , onUserUpdate}) {
                           <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:4 }}>
                             {i === (progress.cur-1) ? (
                               <>
-                                <div style={{ width:20,height:20,border:"2px solid #6366f1",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
-                                <span style={{ fontSize:10,color:"#6366f1",fontWeight:600 }}>생성중</span>
+                                <div style={{ width:20,height:20,border:"2px solid #3F72AF",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/>
+                                <span style={{ fontSize:10,color:"#3F72AF",fontWeight:600 }}>생성중</span>
                               </>
                             ) : i < progress.cur ? (
                               <span style={{ fontSize:11,color:"#ef4444",fontWeight:600 }}>실패</span>
