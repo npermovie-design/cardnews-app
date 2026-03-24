@@ -109,6 +109,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="hot_keyword" label="핫 키워드" icon="🔥" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Item id="prompt_studio" label="기획 스튜디오" icon="🧠" />
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
         <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
@@ -717,6 +718,369 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         </>
       )}
       </div>{/* maxWidth:800 */}
+    </div>
+  );
+}
+
+// ── 기획 스튜디오 ──────────────────────────────────────────────────────
+const PROMPT_SAVES_KEY = "nper_prompt_studio_v1";
+function getPromptSaves() { try { return JSON.parse(localStorage.getItem(PROMPT_SAVES_KEY)||"[]"); } catch { return []; } }
+function savePromptPreset(item) {
+  const list = getPromptSaves().filter(x=>x.id!==item.id);
+  list.unshift(item);
+  try { localStorage.setItem(PROMPT_SAVES_KEY, JSON.stringify(list.slice(0,50))); } catch {}
+}
+function deletePromptPreset(id) {
+  try { localStorage.setItem(PROMPT_SAVES_KEY, JSON.stringify(getPromptSaves().filter(x=>x.id!==id))); } catch {}
+}
+
+const PRESET_TEMPLATES = [
+  { name:"네이버 블로그 SEO", icon:"N", color:"#03C75A", outputType:"blog_naver",
+    prompt:"네이버 블로그 SEO 최적화 글을 작성해주세요.\n\n주제: {{topic}}\n키워드: {{keywords}}\n톤: {{tone}}\n분량: {{length}}\n\n요구사항:\n- 제목에 핵심 키워드 포함\n- 소제목 3~5개로 구조화\n- 자연스러운 키워드 배치\n- 독자 공감형 도입부\n- CTA(행동유도) 마무리",
+    fields:{ topic:"",keywords:"",tone:"친근하고 전문적인",length:"2000자 이상" } },
+  { name:"인스타 캡션 시리즈", icon:"📷", color:"#E4405F", outputType:"blog_insta",
+    prompt:"인스타그램 캡션을 작성해주세요.\n\n주제: {{topic}}\n톤: {{tone}}\n해시태그 수: {{hashCount}}개\n\n요구사항:\n- 첫 줄에 후킹 문구\n- 이모지 적절히 활용\n- 마지막에 CTA\n- 관련 해시태그 자동 생성",
+    fields:{ topic:"",tone:"감성적이고 트렌디한",hashCount:"15" } },
+  { name:"유튜브 대본 기획", icon:"▶", color:"#FF0000", outputType:"blog_youtube",
+    prompt:"유튜브 영상 대본을 작성해주세요.\n\n주제: {{topic}}\n영상 길이: {{duration}}\n채널 분위기: {{tone}}\n\n구조:\n- 오프닝 후킹 (첫 5초)\n- 인트로 (30초)\n- 본론 (핵심 내용 3~5개)\n- 아웃트로 + 구독 유도\n- 설명란 텍스트\n- 추천 태그",
+    fields:{ topic:"",duration:"10분",tone:"에너지 넘치는" } },
+  { name:"제품 상세페이지", icon:"🛍", color:"#10b981", outputType:"detail_simple",
+    prompt:"제품 상세페이지 콘텐츠를 작성해주세요.\n\n제품명: {{product}}\n카테고리: {{category}}\n타겟: {{target}}\n핵심 특장점: {{features}}\n\n요구사항:\n- 헤드라인 카피 3종\n- 서브카피\n- 특장점별 설명\n- 사용 후기 예시\n- FAQ 3~5개",
+    fields:{ product:"",category:"",target:"",features:"" } },
+  { name:"카드뉴스 기획안", icon:"📰", color:"#7c6aff", outputType:"cardnews_simple",
+    prompt:"카드뉴스 기획안을 작성해주세요.\n\n주제: {{topic}}\n슬라이드 수: {{slideCount}}장\n톤: {{tone}}\n\n각 슬라이드별:\n- 제목 (짧고 임팩트)\n- 본문 (2~3줄)\n- 이미지 키워드 제안",
+    fields:{ topic:"",slideCount:"8",tone:"깔끔하고 전문적인" } },
+  { name:"자유 프롬프트", icon:"✨", color:"#f59e0b", outputType:"blog_naver",
+    prompt:"{{freePrompt}}",
+    fields:{ freePrompt:"" } },
+];
+
+function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, theme }) {
+  const text = homeText, muted = homeMuted, bdr = cardBdr;
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const ibg = isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc";
+  const accent = "#7c6aff";
+  const D = isDark;
+
+  const [view, setView] = useState("list"); // "list" | "edit" | "result"
+  const [presets, setPresets] = useState(getPromptSaves);
+  const [editing, setEditing] = useState(null); // 현재 편집 중인 프리셋
+  const [result, setResult] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const inp = { width:"100%", padding:"11px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:ibg, color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+
+  const openTemplate = (tpl) => {
+    setEditing({
+      id: "new_" + Date.now(),
+      name: tpl.name,
+      icon: tpl.icon,
+      color: tpl.color,
+      outputType: tpl.outputType,
+      prompt: tpl.prompt,
+      fields: { ...tpl.fields },
+      createdAt: new Date().toLocaleDateString("ko-KR"),
+      isNew: true,
+    });
+    setView("edit");
+    setResult("");
+  };
+
+  const openSaved = (preset) => {
+    setEditing({ ...preset, isNew: false });
+    setView("edit");
+    setResult("");
+  };
+
+  const savePreset = () => {
+    if (!editing) return;
+    const item = { ...editing, isNew: false, updatedAt: new Date().toLocaleDateString("ko-KR") };
+    if (item.id.startsWith("new_")) item.id = "ps_" + Date.now();
+    delete item.isNew;
+    savePromptPreset(item);
+    setPresets(getPromptSaves());
+    setEditing(item);
+  };
+
+  const deletePreset = (id) => {
+    if (!window.confirm("이 기획안을 삭제할까요?")) return;
+    deletePromptPreset(id);
+    setPresets(getPromptSaves());
+    if (editing?.id === id) { setView("list"); setEditing(null); }
+  };
+
+  const buildFinalPrompt = () => {
+    if (!editing) return "";
+    let p = editing.prompt;
+    Object.entries(editing.fields || {}).forEach(([k, v]) => {
+      p = p.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), v || `[${k}]`);
+    });
+    return p;
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    const finalPrompt = buildFinalPrompt();
+    if (!finalPrompt.trim()) return;
+    setGenerating(true); setResult(""); setView("result");
+    window.__isGenerating = true; window.__generatingCost = 10;
+    try {
+      const { callAI } = await import("./aiClient");
+      const r = await callAI(finalPrompt, 4000);
+      setResult(r || "결과를 생성하지 못했습니다.");
+      // 포인트 차감
+      if (user && onUserUpdate) {
+        try {
+          const { changePoints } = await import("./storage");
+          const newPts = await changePoints(user.uid, -10, "기획 스튜디오 생성");
+          if (newPts !== null) onUserUpdate({ ...user, points: newPts });
+        } catch {}
+      }
+    } catch (e) { setResult("생성 실패: " + (e.message || "다시 시도해주세요.")); }
+    finally { setGenerating(false); window.__isGenerating = false; }
+  };
+
+  const copyResult = () => {
+    navigator.clipboard.writeText(result);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sendToTool = (outputType) => {
+    // 결과를 해당 도구로 전달
+    try { localStorage.setItem("nper_studio_result", JSON.stringify({ text: result, prompt: buildFinalPrompt(), outputType })); } catch {}
+    setAiMenu(outputType);
+  };
+
+  // ══ 리스트 뷰 ══
+  if (view === "list") return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
+      <div style={{ maxWidth:800, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🧠 기획 스튜디오</div>
+          <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>프롬프트를 자유롭게 설계하고, 저장된 기획안으로 빠르게 콘텐츠를 생성하세요</div>
+        </div>
+
+        {/* 저장된 기획안 */}
+        {presets.length > 0 && (
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+              📂 내 기획안
+              <span style={{ fontSize:11, color:muted, fontWeight:500 }}>{presets.length}개</span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
+              {presets.map(p => (
+                <div key={p.id} style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"16px", cursor:"pointer", transition:"all 0.15s" }}
+                  onClick={() => openSaved(p)}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = p.color || accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.transform = "none"; }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:`${p.color||accent}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{p.icon||"📄"}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</div>
+                      <div style={{ fontSize:10, color:muted }}>{p.updatedAt || p.createdAt}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:11, color:muted, lineHeight:1.6, maxHeight:40, overflow:"hidden" }}>{p.prompt?.slice(0, 60)}...</div>
+                  <div style={{ display:"flex", gap:6, marginTop:10 }}>
+                    <button onClick={e => { e.stopPropagation(); openSaved(p); }} style={{ flex:1, padding:"6px", borderRadius:7, border:`1px solid ${(p.color||accent)}30`, background:`${p.color||accent}08`, color:p.color||accent, fontSize:10, fontWeight:700, cursor:"pointer" }}>열기</button>
+                    <button onClick={e => { e.stopPropagation(); deletePreset(p.id); }} style={{ padding:"6px 10px", borderRadius:7, border:"1px solid rgba(248,113,113,0.2)", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>삭제</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 템플릿 */}
+        <div>
+          <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+            ✨ 템플릿으로 시작하기
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+            {PRESET_TEMPLATES.map((tpl, i) => (
+              <div key={i} onClick={() => openTemplate(tpl)}
+                style={{ padding:"18px 16px", borderRadius:14, border:`1px solid ${bdr}`, background:bg, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = D ? "0 8px 24px rgba(0,0,0,0.3)" : "0 8px 24px rgba(0,0,0,0.06)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                <div style={{ width:44, height:44, borderRadius:12, background:`${tpl.color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, margin:"0 auto 10px" }}>{tpl.icon}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4 }}>{tpl.name}</div>
+                <div style={{ fontSize:11, color:muted }}>탭해서 커스텀</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ══ 편집 뷰 ══
+  if (view === "edit" && editing) {
+    const fieldEntries = Object.entries(editing.fields || {});
+    return (
+      <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
+        <div style={{ maxWidth:700, margin:"0 auto" }}>
+          {/* 상단 */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+            <button onClick={() => setView("list")} style={{ background:"none", border:"none", cursor:"pointer", color:muted, fontSize:18 }}>←</button>
+            <div style={{ width:36, height:36, borderRadius:10, background:`${editing.color||accent}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{editing.icon||"📄"}</div>
+            <div style={{ flex:1 }}>
+              <input value={editing.name} onChange={e => setEditing(p=>({...p, name:e.target.value}))}
+                style={{ ...inp, fontSize:17, fontWeight:800, border:"none", background:"transparent", padding:"4px 0" }} placeholder="기획안 이름" />
+            </div>
+            <button onClick={savePreset} style={{ padding:"8px 18px", borderRadius:10, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${accent},#8b5cf6)`, color:"#fff", fontSize:13, fontWeight:700 }}>💾 저장</button>
+          </div>
+
+          {/* 프롬프트 편집 */}
+          <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"18px", marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>📝 프롬프트 설계</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:12, lineHeight:1.6, padding:"8px 12px", borderRadius:8, background:ibg, border:`1px solid ${bdr}` }}>
+              <b>변수 사용법:</b> {"{{변수명}}"} 형태로 입력하면 아래 필드로 대체됩니다.<br/>
+              예: {"{{topic}}"} → 아래 topic 필드에 입력한 값으로 치환
+            </div>
+            <textarea value={editing.prompt} onChange={e => setEditing(p=>({...p, prompt:e.target.value}))}
+              style={{ ...inp, minHeight:180, resize:"vertical", lineHeight:1.8, fontFamily:"'Noto Sans KR',monospace", fontSize:13 }}
+              placeholder="프롬프트를 자유롭게 작성하세요... {{topic}} {{keywords}} 등의 변수를 사용할 수 있어요" />
+          </div>
+
+          {/* 변수 필드 */}
+          <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"18px", marginBottom:16 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:text }}>🔧 변수 설정</div>
+              <button onClick={() => {
+                const name = prompt("새 변수 이름 (영문):");
+                if (name && name.trim()) setEditing(p => ({ ...p, fields: { ...p.fields, [name.trim()]: "" } }));
+              }} style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${accent}30`, background:`${accent}08`, color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                + 변수 추가
+              </button>
+            </div>
+            {fieldEntries.length === 0 ? (
+              <div style={{ textAlign:"center", padding:"20px", color:muted, fontSize:12 }}>변수가 없습니다. 프롬프트에 {"{{변수명}}"} 형태로 추가하세요.</div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {fieldEntries.map(([key, val]) => (
+                  <div key={key}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:accent, background:`${accent}12`, padding:"2px 8px", borderRadius:5 }}>{`{{${key}}}`}</span>
+                      <button onClick={() => { const f = { ...editing.fields }; delete f[key]; setEditing(p => ({ ...p, fields: f })); }}
+                        style={{ fontSize:10, color:"#f87171", background:"transparent", border:"none", cursor:"pointer" }}>삭제</button>
+                    </div>
+                    {val !== undefined && val.length > 60 || key === "freePrompt" ? (
+                      <textarea value={val} onChange={e => setEditing(p => ({ ...p, fields: { ...p.fields, [key]: e.target.value } }))}
+                        style={{ ...inp, minHeight:80, resize:"vertical" }} placeholder={`${key} 값을 입력하세요`} />
+                    ) : (
+                      <input value={val} onChange={e => setEditing(p => ({ ...p, fields: { ...p.fields, [key]: e.target.value } }))}
+                        style={inp} placeholder={`${key} 값을 입력하세요`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 출력 타입 설정 */}
+          <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"18px", marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>🎯 결과 활용 도구</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {[
+                { id:"blog_naver", label:"블로그 글쓰기", color:"#03C75A" },
+                { id:"blog_insta", label:"인스타 캡션", color:"#E4405F" },
+                { id:"blog_youtube", label:"유튜브 대본", color:"#FF0000" },
+                { id:"cardnews_simple", label:"카드뉴스", color:"#7c6aff" },
+                { id:"detail_simple", label:"상세페이지", color:"#10b981" },
+              ].map(o => (
+                <button key={o.id} onClick={() => setEditing(p => ({ ...p, outputType: o.id }))}
+                  style={{ padding:"7px 14px", borderRadius:8, border:`1.5px solid ${editing.outputType === o.id ? o.color : bdr}`,
+                    background:editing.outputType === o.id ? `${o.color}15` : "transparent",
+                    color:editing.outputType === o.id ? o.color : muted, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 최종 프롬프트 미리보기 */}
+          <div style={{ borderRadius:14, border:`1px solid ${accent}30`, background:D?"rgba(124,106,255,0.05)":"rgba(124,106,255,0.03)", padding:"18px", marginBottom:20 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:accent, marginBottom:10 }}>👁 최종 프롬프트 미리보기</div>
+            <div style={{ fontSize:12, color:text, lineHeight:1.8, whiteSpace:"pre-wrap", maxHeight:200, overflowY:"auto",
+              padding:"12px 14px", borderRadius:10, background:ibg, border:`1px solid ${bdr}` }}>
+              {buildFinalPrompt() || "(변수를 채워주세요)"}
+            </div>
+          </div>
+
+          {/* 버튼 */}
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={savePreset} style={{ flex:1, padding:"14px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>💾 저장만 하기</button>
+            <button onClick={generate} style={{ flex:2, padding:"14px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${accent},#ec4899)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${accent}40` }}>
+              🧠 AI 생성 시작 (10P)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ══ 결과 뷰 ══
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
+      <div style={{ maxWidth:700, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+          <button onClick={() => setView("edit")} style={{ background:"none", border:"none", cursor:"pointer", color:muted, fontSize:18 }}>←</button>
+          <div style={{ fontSize:18, fontWeight:900, color:text }}>
+            {generating ? "🧠 생성 중..." : "✅ 생성 완료"}
+          </div>
+          <div style={{ flex:1 }} />
+          {!generating && result && <>
+            <button onClick={copyResult} style={{ padding:"7px 16px", borderRadius:8, border:`1px solid ${copied?"rgba(74,222,128,0.4)":bdr}`, background:copied?"rgba(74,222,128,0.08)":"transparent", color:copied?"#4ade80":accent, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              {copied ? "✅ 복사됨" : "📋 복사"}
+            </button>
+          </>}
+        </div>
+
+        {generating && (
+          <div style={{ textAlign:"center", padding:"60px 0" }}>
+            <div style={{ fontSize:60, marginBottom:16, animation:"ai-float 2s ease-in-out infinite" }}>🧠</div>
+            <div style={{ fontSize:16, fontWeight:800, color:accent, marginBottom:8 }}>AI가 콘텐츠를 생성하고 있어요</div>
+            <div style={{ width:240, height:6, borderRadius:3, background:"rgba(128,128,128,0.15)", overflow:"hidden", margin:"0 auto 16px" }}>
+              <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ec4899)`, animation:"ai-progress 8s ease-out forwards" }} />
+            </div>
+            <div style={{ fontSize:12, color:muted }}>프롬프트 기반 최적화 생성 중...</div>
+          </div>
+        )}
+
+        {!generating && result && (
+          <>
+            {/* 결과 본문 */}
+            <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"22px 24px", marginBottom:16 }}>
+              <div style={{ fontSize:14, color:text, lineHeight:2, whiteSpace:"pre-wrap" }}>{result}</div>
+            </div>
+
+            {/* 도구로 보내기 */}
+            <div style={{ borderRadius:14, border:`1px solid ${accent}30`, background:`${accent}06`, padding:"18px", marginBottom:16 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:12 }}>🚀 결과물 활용하기</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                {[
+                  { id:"blog_naver", label:"블로그에 활용", icon:"N", color:"#03C75A" },
+                  { id:"blog_insta", label:"인스타에 활용", icon:"📷", color:"#E4405F" },
+                  { id:"cardnews_simple", label:"카드뉴스로", icon:"📰", color:"#7c6aff" },
+                  { id:"detail_simple", label:"상세페이지로", icon:"🛍", color:"#10b981" },
+                ].map(o => (
+                  <button key={o.id} onClick={() => sendToTool(o.id)}
+                    style={{ padding:"10px 16px", borderRadius:10, border:`1px solid ${o.color}30`, background:`${o.color}08`, color:o.color, fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+                    <span>{o.icon}</span> {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 다시 생성 / 수정 */}
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setView("edit")} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>✏️ 프롬프트 수정</button>
+              <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${accent},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800 }}>🔄 다시 생성 (10P)</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -1826,6 +2190,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} />;
   }
 
+  // 기획 스튜디오
+  if (aiMenu === "prompt_studio") {
+    return <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} />;
+  }
+
   // 핫 키워드
   if (aiMenu === "hot_keyword") {
     return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} />;
@@ -2415,6 +2784,7 @@ const MENU_LABELS = {
   image_create: "이미지 생성",
   image_edit: "이미지 수정",
   hot_keyword: "핫 키워드",
+  prompt_studio: "기획 스튜디오",
 };
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
