@@ -765,6 +765,10 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
     { id:"manual",     label:"매뉴얼·가이드", desc:"운영·사용 설명서" },
     { id:"brief",      label:"브리프",       desc:"프로젝트·디자인 브리프" },
     { id:"resume",     label:"이력서·자소서", desc:"채용·지원서" },
+    { id:"congrats",   label:"축하 메시지",   desc:"결혼·승진·생일·개업" },
+    { id:"condolence", label:"위로·감사 메시지",desc:"조의·병문안·감사" },
+    { id:"speech",     label:"인사말·축사",   desc:"행사·연설·건배사" },
+    { id:"invite",     label:"초대장·안내문",  desc:"행사·모임·공지" },
     { id:"free",       label:"자유 문서",     desc:"형식 없이 자유롭게" },
   ];
 
@@ -816,6 +820,10 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
 - ${docType==="manual"?"목차, 개요, 단계별 설명, 주의사항, FAQ 포함":""}
 - ${docType==="brief"?"프로젝트 배경, 목표, 범위, 일정, 예산, 참고자료 구조":""}
 - ${docType==="resume"?"인적사항, 학력, 경력, 역량, 자기소개서(지원동기/성장과정/입사후포부) 포함":""}
+- ${docType==="congrats"?"관계(직장동료/친구/지인/가족)와 상황(결혼/승진/생일/개업/출산/졸업)에 맞는 축하 메시지 3~5가지 버전 작성. 짧은 버전(카톡용), 중간 버전(축의금봉투), 긴 버전(편지/카드) 각각 포함. 격식체와 친근체 모두 제공":""}
+- ${docType==="condolence"?"상황(조의/병문안/퇴직/감사)에 맞는 메시지 3~5가지 버전 작성. 짧은 버전(문자용), 긴 버전(편지/카드) 포함. 적절한 위로와 공감 표현":""}
+- ${docType==="speech"?"행사 종류(결혼/송년회/환영회/기념식/퇴임식)에 맞는 인사말/축사. 도입-본론-마무리 구조. 1~3분 분량 기준. 건배사 포함":""}
+- ${docType==="invite"?"행사명, 일시, 장소, 대상, 참석 안내, 회신 방법 포함. 공식/비공식 버전 모두 제공":""}
 - ${format==="outline"?"상세 목차와 각 항목의 핵심 키워드만 정리":""}
 - ${format==="bullet"?"불릿 포인트 형태로 핵심만 간결하게":""}
 - ${format==="full"?"완성된 문서 형태로 바로 사용 가능하게":""}
@@ -872,8 +880,10 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
     "신규 서비스 런칭 제안서 (B2B)",
     "2026년 마케팅 전략 PPT 구성안",
     "앱 개발 프로젝트 3개월 플래너",
-    "월간 실적 보고서 양식",
-    "디자인 외주 프로젝트 브리프",
+    "직장 동료 결혼 축하 메시지",
+    "회사 송년회 건배사",
+    "거래처 감사 메일",
+    "팀원 승진 축하 카드",
   ];
 
   // ── 입력 ──
