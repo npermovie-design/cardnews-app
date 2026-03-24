@@ -573,7 +573,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
               ))}
             </div>
           </div>
-        ) : (
+        ) : ["table","chart_bar","chart_bar_h","chart_pie","chart_donut","progress","numbered","icon_grid","icon_grid_6","checklist","card_grid","horizontal_list","definition","big_number","kpi_card","timeline","timeline_v","steps","steps_v","pyramid","funnel","cycle","flowchart","roadmap","swot","org_chart","team","pricing","faq","contact","thankyou","qna","references","three_column","pros_cons","before_after","matrix","ranking","stats_4","quote_card","highlight_box","callout","key_message","banner","cta","image_top","gallery","mockup","title_sub","section_num","agenda"].includes(lay) ? null : (
           <div style={{ flex:1, padding:"4% 5%", display:"flex", flexDirection:lay==="image_left"?"row-reverse":"row", gap:"3%" }}>
             <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
               <div style={{ fontSize:mini?Math.max(7,tSz*0.38):tSz*0.72, fontWeight:800, color:sText, marginBottom:4 }}>{s.title||""}</div>
@@ -645,15 +645,18 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
         )}
         {/* 막대 차트 */}
         {lay==="chart_bar" && (s.bars||[]).length>0 && (
-          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+          <div style={{ position:"absolute", inset:0, padding:"4% 5% 10%", display:"flex", flexDirection:"column" }}>
             <div style={{ fontSize:mini?Math.max(7,tSz*0.38):tSz*0.72, fontWeight:800, color:sText, marginBottom:mini?4:10 }}>{s.title||""}</div>
-            <div style={{ flex:1, display:"flex", alignItems:"flex-end", gap:mini?3:12, padding:"0 5% 8%" }}>
+            <div style={{ width:30, height:2, background:sAccent, borderRadius:1, marginBottom:mini?4:12 }} />
+            <div style={{ flex:1, display:"flex", alignItems:"flex-end", gap:mini?4:16 }}>
               {s.bars.map((b,j)=>{
                 const max = Math.max(...s.bars.map(x=>x.value||0),1);
-                return <div key={j} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:mini?2:6 }}>
-                  <div style={{ fontSize:mini?5:11, fontWeight:700, color:theme.accent }}>{b.value||0}%</div>
-                  <div style={{ width:"70%", height:`${Math.max((b.value||0)/max*100,5)}%`, background:theme.accent, borderRadius:mini?2:4, minHeight:mini?4:10 }} />
-                  <div style={{ fontSize:mini?4:10, color:theme.body, textAlign:"center" }}>{b.label||""}</div>
+                const pct = Math.max((b.value||0)/max*100, 8);
+                return <div key={j} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:mini?2:6, height:"100%" }}>
+                  <div style={{ flex:1 }} />
+                  <div style={{ fontSize:mini?5:13, fontWeight:800, color:sAccent }}>{b.value||0}%</div>
+                  <div style={{ width:"65%", height:`${pct}%`, background:sAccent, borderRadius:mini?2:6, minHeight:mini?6:20, transition:"height 0.3s" }} />
+                  <div style={{ fontSize:mini?4:11, color:sBody, textAlign:"center", marginTop:mini?1:4 }}>{b.label||""}</div>
                 </div>;
               })}
             </div>
@@ -999,12 +1002,12 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
                 const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
                 if(!hl) return null;
                 return <div style={{ position:"absolute", zIndex:99999, pointerEvents:"none",
-                  right:"calc(100% + 12px)", top:0,
-                  width:340, background:D?"rgba(10,8,30,0.97)":"rgba(255,255,255,0.97)",
-                  borderRadius:12, border:`1px solid ${accent}40`, padding:12,
-                  boxShadow:D?"0 12px 40px rgba(0,0,0,0.6)":"0 12px 40px rgba(0,0,0,0.15)", backdropFilter:"blur(12px)" }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:6 }}>{hl.label} <span style={{ fontSize:10, color:muted, fontWeight:400 }}>{hl.cat}</span></div>
-                  <MiniSlidePreview layoutId={hoveredLayout} W={316} H={178} theme={theme} />
+                  right:"calc(100% + 16px)", top:0,
+                  width:520, background:D?"rgba(10,8,30,0.98)":"rgba(255,255,255,0.98)",
+                  borderRadius:14, border:`1px solid ${accent}40`, padding:16,
+                  boxShadow:D?"0 16px 60px rgba(0,0,0,0.7)":"0 16px 60px rgba(0,0,0,0.18)", backdropFilter:"blur(16px)" }}>
+                  <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>{hl.label} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>/ {hl.cat}</span></div>
+                  <MiniSlidePreview layoutId={hoveredLayout} W={488} H={275} theme={theme} />
                 </div>;
               })()}
               {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
