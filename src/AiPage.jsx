@@ -1644,29 +1644,28 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_write",         icon: "", title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_link",          icon: "", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
-      { id: "cardnews_simple",  icon: "✨", title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "detail_simple",    icon: "📋", title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "thumbnail_gen",    icon: "🎬", title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
-      { id: "image_gen",        icon: "🎨", title: _s("이미지 생성","Image Generation"),      desc: _s("AI 이미지 자유 생성","AI free image generation"),      cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "product_shot", icon: "🛍", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
-      { id: "logo_gen",     icon: "🏷", title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "mockup_gen",   icon: "🎨", title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
-      { id: "model_gen",    icon: "🧍", title: _s("모델 생성","Model Generator"),         desc: _s("여자/남자 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "face_swap",    icon: "🔄", title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "outfit_swap",  icon: "👗", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "outpaint",     icon: "↔",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      ...(user?.role === "admin" ? [{ id: "shorts", icon: "✂️", title: _s("숏폼편집 👑","Short-form Edit 👑"), desc: _s("유튜브→숏폼 AI 기획 (관리자)","YouTube to Short-form AI (Admin)"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
+      { id: "blog_write",       icon: "", title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_link",        icon: "", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
+      { id: "cardnews_simple",  icon: "", title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "detail_simple",    icon: "", title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "thumbnail_gen",    icon: "", title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
+      { id: "product_shot", icon: "", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
+      { id: "logo_gen",     icon: "", title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "mockup_gen",   icon: "", title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
+      { id: "model_gen",    icon: "", title: _s("모델 생성","Model Generator"),         desc: _s("AI 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "face_swap",    icon: "", title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "outfit_swap",  icon: "", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "outpaint",     icon: "",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      ...(user?.role === "admin" ? [{ id: "shorts", icon: "", title: _s("숏폼편집","Short-form Edit"), desc: _s("유튜브 숏폼 AI 기획 (관리자)","YouTube Short-form AI (Admin)"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
     ];
     // 카테고리별 그룹
     const GROUPS = [
-      { label: _s("SNS 글쓰기","SNS Writing"), icon: "✍️", color: "#7c6aff",
+      { label: _s("SNS 글쓰기","SNS Writing"), icon: "", color: "#7c6aff",
         items: MENUS.filter(m => m.id.startsWith("blog_")) },
-      { label: _s("SNS 이미지","SNS Image"), icon: "🖼", color: "#ec4899",
+      { label: _s("SNS 이미지","SNS Image"), icon: "", color: "#ec4899",
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
-      { label: _s("이미지 생성","Image Generation"), icon: "🎨", color: "#f59e0b",
-        items: MENUS.filter(m => ["image_gen","product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint","shorts"].includes(m.id)) },
+      { label: _s("이미지 생성","Image Generation"), icon: "", color: "#f59e0b",
+        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint","shorts"].includes(m.id)) },
     ];
 
     return (
@@ -2199,44 +2198,49 @@ const WRITE_PLATFORMS = [
   { id: "blog_thread",  label: "스레드",       type: "blog_thread" },
 ];
 
-function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, defaultPlatform }) {
-  const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
+/* ── 통합 탭 헤더 (글쓰기 / 링크 글쓰기 공용) ── */
+function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
   const text = isDark ? "#e8eaed" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const accent = "#7c6aff";
+  return (
+    <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
+        <div style={{ textAlign:"center", marginBottom:12 }}>
+          <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{title}</div>
+          <div style={{ fontSize:12, color:muted }}>{subtitle}</div>
+        </div>
+        <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+          {tabs.map(t => {
+            const active = activeTab === t.id;
+            return (
+              <button key={t.id} onClick={() => onTabChange(t.id)}
+                style={{
+                  padding:"9px 20px", border:"none", cursor:"pointer",
+                  background:"transparent",
+                  color: active ? accent : muted, fontSize:13, fontWeight: active ? 700 : 400,
+                  borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
+                  transition: "all 0.15s", marginBottom:-1,
+                }}>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, defaultPlatform }) {
+  const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
   const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      {/* 플랫폼 선택 탭 */}
-      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
-          <div style={{ textAlign:"center", marginBottom:12 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:2 }}>글쓰기</div>
-            <div style={{ fontSize:12, color:muted }}>플랫폼을 선택하고 주제를 입력하면 AI가 글을 작성해요</div>
-          </div>
-          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
-            {WRITE_PLATFORMS.map(p => {
-              const active = platform === p.id;
-              return (
-                <button key={p.id} onClick={() => setPlatform(p.id)}
-                  style={{
-                    padding:"9px 18px", border:"none", cursor:"pointer",
-                    background:"transparent",
-                    color: active ? accent : muted, fontSize:13, fontWeight: active ? 800 : 500,
-                    borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
-                    transition: "all 0.15s", marginBottom:-1,
-                  }}>
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* BlogGenerator */}
+      <TabHeader title="글쓰기" subtitle="플랫폼을 선택하고 주제를 입력하면 AI가 글을 작성해요"
+        tabs={WRITE_PLATFORMS} activeTab={platform} onTabChange={setPlatform} isDark={isDark} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
       </div>
@@ -2248,10 +2252,6 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
 function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTab }) {
   const [tab, setTab] = useState(defaultTab || "youtube");
   const isDark = theme === "dark";
-  const text = isDark ? "#e8eaed" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const accent = "#6366f1";
   const tabs = [
     { id: "youtube", label: "유튜브" },
     { id: "news",    label: "뉴스 기사" },
@@ -2261,34 +2261,8 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      {/* 상단 헤더 + 탭 */}
-      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"20px 24px 0" }}>
-          <div style={{ textAlign:"center", marginBottom:16 }}>
-            <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>링크 글쓰기</div>
-            <div style={{ fontSize:13, color:muted }}>URL을 입력하면 AI가 블로그 글로 변환해줘요</div>
-          </div>
-          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
-            {tabs.map(t => {
-              const active = tab === t.id;
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  style={{
-                    padding:"10px 24px", border:"none", cursor:"pointer",
-                    background: "transparent",
-                    color: active ? accent : muted, fontSize:14, fontWeight: active ? 800 : 500,
-                    borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
-                    transition: "all 0.15s", marginBottom:-1,
-                  }}>
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* 컨텐츠 */}
+      <TabHeader title="링크 글쓰기" subtitle="URL을 입력하면 AI가 블로그 글로 변환해줘요"
+        tabs={tabs} activeTab={tab} onTabChange={setTab} isDark={isDark} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         {tab === "youtube" ? (
           <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
