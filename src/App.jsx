@@ -779,14 +779,18 @@ export default function App() {
           <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", justifyContent: "center",
             width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
             background: C.toggleBg, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>
-            {theme === "light" ? "🌙" : "☀️"}
+            {theme === "light" ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            )}
           </button>
           {/* 모바일 언어 선택 */}
           <div style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "center",
               width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
               background: C.toggleBg, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
-              🌐
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             </button>
             {langOpen && (
               <>
@@ -839,100 +843,43 @@ export default function App() {
           backdropFilter: "blur(20px)", padding: "20px 20px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
-              {/* 기본 메뉴 */}
+              {/* PC 상단 메뉴와 동일한 큰 메뉴만 */}
           {[
-            { id: "home",  label: t("home") },
-            { id: "cases", label: "고객사례" },
-          ].map(m => (
-            <button key={m.id} onClick={() => { navigate(m.id); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "13px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: page === m.id ? "rgba(124,106,255,0.08)" : "transparent",
-              color: page === m.id ? C.purpleL : C.text,
-              fontSize: 15, fontWeight: page === m.id ? 700 : 500,
-              borderLeft: page === m.id ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* AI 생성기 */}
-          <div style={{ margin: "8px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>AI 생성기</div>
-          </div>
-          {[
-            { ai: "blog_write",       label: "글쓰기" },
-            { ai: "blog_link",        label: "링크 글쓰기" },
-            { ai: "cardnews_simple",  label: "카드뉴스" },
-            { ai: "detail_simple",    label: "상세페이지" },
-            { ai: "thumbnail_gen",    label: "썸네일 생성" },
-            { ai: "product_shot",     label: t("productShot") },
-            { ai: "logo_gen",         label: t("logoGen") },
-            { ai: "mockup_gen",       label: t("mockupGen") },
-            { ai: "model_gen",        label: t("modelGen") },
-            { ai: "face_swap",        label: t("faceSwap") },
-            { ai: "outfit_swap",      label: t("outfitSwap") },
-            { ai: "outpaint",         label: t("outpaint") },
-          ].map(m => (
-            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? 700 : 400,
-              borderLeft: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* AI 분석기 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>AI 분석기</div>
-          </div>
-          <button onClick={() => { navigate("analyzer"); setMobileOpen(false); }} style={{
-            display: "block", width: "100%", textAlign: "left",
-            padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-            background: page==="analyzer" ? "rgba(124,106,255,0.08)" : "transparent",
-            color: page==="analyzer" ? C.purpleL : C.muted,
-            fontSize: 14, fontWeight: page==="analyzer" ? 700 : 400,
-            borderLeft: page==="analyzer" ? "3px solid #7c6aff" : "3px solid transparent",
-          }}>실시간 검색어 · 랭킹</button>
-
-          {/* 커뮤니티 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>{t("community")}</div>
-          </div>
-          {[
-            { board: "info",    label: t("info") },
-            { board: "qna",     label: t("qna") },
-            { board: "free",    label: t("free") },
-            { board: "review",  label: t("review") },
-          ].map(m => (
-            <button key={m.board} onClick={() => { navigateBoard(m.board); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="community"&&boardCat===m.board) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="community"&&boardCat===m.board) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="community"&&boardCat===m.board) ? 700 : 400,
-              borderLeft: (page==="community"&&boardCat===m.board) ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* 기타 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }} />
-          {[
-            { id: "archive", label: t("archive"), onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
-            { id: "pricing", label: t("pricing"), onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
-            { id: "event",   label: "이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
-            { id: "about",   label: t("about"),    onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
-            { id: "contact", label: t("contact"),  onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
-            { id: "faq",     label: "자주 묻는 질문",      onClick: () => { navigate("faq"); setMobileOpen(false); },     active: page==="faq" },
-            { id: "howto",   label: t("howto"),           onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
+            { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
+            { id: "cases",    label: "고객사례",       onClick: () => { navigate("cases"); setMobileOpen(false); },    active: page==="cases" },
+            { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai" },
+            { id: "analyzer", label: "AI 분석기",     onClick: () => { navigate("analyzer"); setMobileOpen(false); }, active: page==="analyzer" },
+            { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
+            { id: "archive",  label: t("archive"),    onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
+            { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
+            { id: "event",    label: "이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
-              padding: "12px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              padding: "14px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
               background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
               color: m.active ? C.purpleL : C.text,
-              fontSize: 14, fontWeight: m.active ? 700 : 500,
+              fontSize: 16, fontWeight: m.active ? 700 : 500,
               borderLeft: m.active ? "3px solid #7c6aff" : "3px solid transparent",
+            }}>{m.label}</button>
+          ))}
+
+          {/* 고객센터 */}
+          <div style={{ margin: "12px 0 6px", paddingTop: 8, borderTop: "1px solid " + C.border }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 0.5, padding: "0 4px", marginBottom: 6 }}>고객센터</div>
+          </div>
+          {[
+            { id: "faq",     label: "자주 묻는 질문",  onClick: () => { navigate("faq"); setMobileOpen(false); },     active: page==="faq" },
+            { id: "about",   label: t("about"),       onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
+            { id: "contact", label: t("contact"),     onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
+            { id: "howto",   label: t("howto"),        onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
+          ].map(m => (
+            <button key={m.id} onClick={m.onClick} style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "11px 16px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
+              background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
+              color: m.active ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: m.active ? 700 : 400,
             }}>{m.label}</button>
           ))}
 
@@ -947,14 +894,14 @@ export default function App() {
                     </div>
                     <div>
                       <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>💎 {(user.points||0).toLocaleString()}P · {Math.floor((user.points||0)/10)}회 가능</div>
+                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>{(user.points||0).toLocaleString()}P · {Math.floor((user.points||0)/10)}회 가능</div>
                     </div>
                   </div>
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔴 {t("attendance")}</button>
-                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💎 {t("pointCharge")}</button>
+                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("attendance")}</button>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("pointCharge")}</button>
                 </div>
               </div>
             ) : (
