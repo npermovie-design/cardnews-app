@@ -20,7 +20,7 @@ const COMMON_FEATURES = [
 
 const SUB_PLANS = [
   {
-    id: "free", name: "Free", icon: "🎁",
+    id: "free", name: "Free", icon: "F",
     monthlyPrice: 0, yearlyPrice: 0,
     points: 200, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
@@ -30,7 +30,7 @@ const SUB_PLANS = [
     free: true,
   },
   {
-    id: "basic", name: "Basic", icon: "🎯",
+    id: "basic", name: "Basic", icon: "B",
     monthlyPrice: 9900, yearlyPrice: 95040,
     points: 4500, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
@@ -39,7 +39,7 @@ const SUB_PLANS = [
     btnLabel: "시작하기",
   },
   {
-    id: "deluxe", name: "Deluxe", icon: "🚀",
+    id: "deluxe", name: "Deluxe", icon: "D",
     monthlyPrice: 19900, yearlyPrice: 191040,
     points: 9500, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
@@ -48,7 +48,7 @@ const SUB_PLANS = [
     btnLabel: "시작하기",
   },
   {
-    id: "premium", name: "Premium", icon: "⚡",
+    id: "premium", name: "Premium", icon: "P",
     monthlyPrice: 29900, yearlyPrice: 287040,
     points: 14500, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
@@ -192,7 +192,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {!PAYMENT_ENABLED && (
         <div style={{ textAlign:"center", marginBottom:20, padding:"12px 20px", borderRadius:12, background:"rgba(249,115,22,0.1)", border:"1px solid rgba(249,115,22,0.25)", maxWidth:500, margin:"0 auto 20px" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b" }}>🔧 결제 서비스 준비 중입니다</div>
+          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b" }}>결제 서비스 준비 중입니다</div>
           <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>현재 포인트 충전은 관리자에게 문의해주세요.</div>
         </div>
       )}
@@ -340,9 +340,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20 }}>{p("pricingFreeMethod")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(130px,45%),1fr))", gap: 12 }}>
           {[
-            { icon:"🎁", action:p("pricingSignup"), pt:p("pricingSignupPts"), desc:p("pricingSignupDesc") },
-            { icon:"📝", action:p("pricingPost"), pt:p("pricingPostPts"), desc:p("pricingPostDesc") },
-            { icon:"☀️", action:p("pricingDaily"), pt:p("pricingDailyPts"), desc:p("pricingDailyDesc") },
+            { icon:"+", action:p("pricingSignup"), pt:p("pricingSignupPts"), desc:p("pricingSignupDesc") },
+            { icon:"+", action:p("pricingPost"), pt:p("pricingPostPts"), desc:p("pricingPostDesc") },
+            { icon:"+", action:p("pricingDaily"), pt:p("pricingDailyPts"), desc:p("pricingDailyDesc") },
           ].map((item, i) => (
             <div key={i} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 22, marginBottom: 6 }}>{item.icon}</div>

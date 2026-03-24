@@ -161,7 +161,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 </div>
                 <button onClick={openInExternalBrowser}
                   style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
-                  🌐 Chrome으로 열기
+                  Chrome으로 열기
                 </button>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center", marginTop: 8 }}>
                   또는 주소창에 <b style={{ color: "rgba(255,255,255,0.6)" }}>snsmakeit.com</b> 직접 입력
@@ -204,7 +204,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
                 </div>
                 <button onClick={openInExternalBrowser}
                   style={{ width: "100%", padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
-                  🌐 Chrome으로 열기
+                  Chrome으로 열기
                 </button>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center", marginTop: 8 }}>
                   또는 주소창에 <b style={{ color: "rgba(255,255,255,0.6)" }}>snsmakeit.com</b> 직접 입력
@@ -229,10 +229,10 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>🎁 가입 혜택</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
-                ✅ 가입 즉시 <b style={{ color: C.text }}>200P</b> 지급 (AI 20회 분량)<br/>
-                ✅ 게시글 작성 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
-                ✅ 일일 로그인 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
-                ✅ 포인트 충전으로 AI 무제한 이용
+                ·가입 즉시 <b style={{ color: C.text }}>200P</b> 지급 (AI 20회 분량)<br/>
+                ·게시글 작성 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
+                ·일일 로그인 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
+                ·포인트 충전으로 AI 무제한 이용
               </div>
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
         {tab === "register" && regStep === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, textAlign: "center" }}>
             {/* 아이콘 */}
-            <div style={{ fontSize: 56, margin: "8px 0 4px" }}>📧</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#7c6aff", margin: "8px 0 4px" }}>이메일 인증</div>
             <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>이메일 인증을 완료해주세요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9 }}>
               <b style={{ color: "#a5b4fc" }}>{form.email}</b>으로<br/>
@@ -263,7 +263,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             {/* 인증 완료 확인 버튼 */}
             <button onClick={checkVerification} disabled={verifyLoading}
               style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
-              {verifyLoading ? "확인 중..." : "✅ 인증 완료 확인"}
+              {verifyLoading ? "확인 중..." : "인증 완료 확인"}
             </button>
 
             {/* 재발송 + 다시가입 */}

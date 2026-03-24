@@ -12,7 +12,7 @@ export function AboutPage({ navigate, C }) {
 
   const ALL_TOOLS = [
     { cat: "SNS 글쓰기", items: [
-      { icon: "📝", title: "네이버 블로그", desc: "SEO 최적화 블로그 글 자동 생성" },
+      { icon: "NB", title: "네이버 블로그", desc: "SEO 최적화 블로그 글 자동 생성" },
       { icon: "C", title: "네이버 카페", desc: "카페 커뮤니티 최적화 글 작성" },
       { icon: "T", title: "티스토리", desc: "HTML 형식 블로그 포스트 자동 작성" },
       { icon: "IG", title: "인스타그램 캡션", desc: "해시태그 포함 캡션 자동 생성" },
@@ -58,11 +58,11 @@ export function AboutPage({ navigate, C }) {
           <h3 style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 20, letterSpacing: -0.5 }}>{p("aboutPain")}</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[
-              { icon: "😓", text: p("aboutPain1") },
+              { icon: "", text: p("aboutPain1") },
               { icon: "⏰", text: p("aboutPain2") },
               { icon: "IG", text: p("aboutPain3") },
-              { icon: "🔄", text: p("aboutPain4") },
-              { icon: "💸", text: p("aboutPain5") },
+              { icon: "", text: p("aboutPain4") },
+              { icon: "", text: p("aboutPain5") },
             ].map((item, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 18px", borderRadius: 12, background: bg2 }}>
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
@@ -116,12 +116,12 @@ export function AboutPage({ navigate, C }) {
           <h3 style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 20, letterSpacing: -0.5 }}>{p("aboutRecTitle")}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 12 }}>
             {[
-              { icon: "🏪", title: p("aboutRec1"), desc: p("aboutRec1d") },
-              { icon: "💼", title: p("aboutRec2"), desc: p("aboutRec2d") },
-              { icon: "🎓", title: p("aboutRec3"), desc: p("aboutRec3d") },
-              { icon: "📊", title: p("aboutRec4"), desc: p("aboutRec4d") },
-              { icon: "🛒", title: p("aboutRec5"), desc: p("aboutRec5d") },
-              { icon: "🌱", title: p("aboutRec6"), desc: p("aboutRec6d") },
+              { icon: "", title: p("aboutRec1"), desc: p("aboutRec1d") },
+              { icon: "", title: p("aboutRec2"), desc: p("aboutRec2d") },
+              { icon: "", title: p("aboutRec3"), desc: p("aboutRec3d") },
+              { icon: "", title: p("aboutRec4"), desc: p("aboutRec4d") },
+              { icon: "", title: p("aboutRec5"), desc: p("aboutRec5d") },
+              { icon: "", title: p("aboutRec6"), desc: p("aboutRec6d") },
             ].map((item, i) => (
               <div key={i} style={{ display: "flex", gap: 14, padding: "16px", borderRadius: 12, background: bg2, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{item.icon}</span>
@@ -156,7 +156,7 @@ export function AboutPage({ navigate, C }) {
 
         {/* CTA */}
         <div style={{ background: "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.06))", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "40px 32px", textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🚀</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#7c6aff", marginBottom: 12 }}>START</div>
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>{p("aboutCtaTitle")}</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             {p("aboutCtaDesc")}
@@ -181,25 +181,25 @@ export function HowToPage({ navigate, C }) {
 
   const HOW_TO = [
     {
-      step: "01", icon: "🔐", color: "#7c6aff",
+      step: "01", icon: "", color: "#7c6aff",
       title: p("howtoS1"),
       desc: p("howtoS1d"),
       tips: ["구글·카카오 소셜 로그인 지원", "비회원 10회 → 회원 20회 무료", "가입 즉시 200P 지급"],
     },
     {
-      step: "02", icon: "🎯", color: "#8b5cf6",
+      step: "02", icon: "", color: "#8b5cf6",
       title: p("howtoS2"),
       desc: p("howtoS2d"),
       tips: ["SNS 글쓰기: 블로그·인스타·유튜브·스레드 등", "SNS 이미지: 카드뉴스·상세페이지", "이미지 생성: 제품컷·로고·목업·모델"],
     },
     {
-      step: "03", icon: "📝", color: "#ec4899",
+      step: "03", icon: "", color: "#ec4899",
       title: p("howtoS3"),
       desc: p("howtoS3d"),
       tips: ["URL 입력 시 뉴스·유튜브 내용 자동 요약", "SEO 키워드 자동 추천 기능 활용", "글 톤(정보성·감성·전문적 등) 선택 가능"],
     },
     {
-      step: "04", icon: "🤖", color: "#f59e0b",
+      step: "04", icon: "", color: "#f59e0b",
       title: p("howtoS4"),
       desc: p("howtoS4d"),
       tips: ["생성 중 페이지를 떠나면 결과가 사라질 수 있어요", "이미지 생성은 평균 15~30초 소요", "글 생성은 분량에 따라 30초~3분"],
@@ -211,7 +211,7 @@ export function HowToPage({ navigate, C }) {
       tips: ["블로그 글은 HTML 형식으로도 복사 가능", "이미지는 PNG 형식으로 다운로드", "마음에 안 들면 재생성 버튼으로 다시 생성"],
     },
     {
-      step: "06", icon: "💎", color: "#7c6aff",
+      step: "06", icon: "", color: "#7c6aff",
       title: p("howtoS6"),
       desc: p("howtoS6d"),
       tips: ["출석체크: 매일 +3P (연속 보너스)", "게시글 작성: +1P", "AI 생성 1회: -10P"],
@@ -310,7 +310,7 @@ export function HowToPage({ navigate, C }) {
 
         {/* CTA */}
         <div style={{ background: "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.06))", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "40px 32px", textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🚀</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#7c6aff", marginBottom: 12 }}>START</div>
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>{p("howtoCtaTitle")}</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             {p("howtoCtaDesc")}

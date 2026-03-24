@@ -241,17 +241,17 @@ async function fetchWikimedia(q="nature", page=1) {
 function buildSources() {
   const s = [];
   s.push({ id:"giphy",     label:"Giphy GIF",      group:"gif"   });
-  if (TENOR_KEY)    s.push({ id:"tenor",   label:"😂 Tenor GIF",      group:"gif"   });
+  if (TENOR_KEY)    s.push({ id:"tenor",   label:"Tenor GIF",      group:"gif"   });
   if (PIXABAY_KEY2) s.push({ id:"pixphoto",label:"Pixabay 사진",   group:"photo" });
   if (PEXELS_KEY)   s.push({ id:"pexphoto",label:"Pexels 사진",    group:"photo" });
-  if (UNSPLASH_KEY) s.push({ id:"unsplash",label:"🏔 Unsplash",        group:"photo" });
-  s.push({ id:"openverse", label:"🌍 Openverse",       group:"photo" });
-  s.push({ id:"wikimedia", label:"📚 Wikimedia",        group:"photo" });
+  if (UNSPLASH_KEY) s.push({ id:"unsplash",label:"Unsplash",        group:"photo" });
+  s.push({ id:"openverse", label:"Openverse",       group:"photo" });
+  s.push({ id:"wikimedia", label:"Wikimedia",        group:"photo" });
   if (PIXABAY_KEY2) s.push({ id:"pixvid",  label:"Pixabay 영상",   group:"video" });
   if (PEXELS_KEY)   s.push({ id:"pexvid",  label:"Pexels 영상",    group:"video" });
-  s.push({ id:"nasa",      label:"🚀 NASA 우주",        group:"art"   });
-  s.push({ id:"aic",       label:"🎨 시카고미술관",    group:"art"   });
-  s.push({ id:"picsum",    label:"🎲 랜덤 사진",        group:"random" });
+  s.push({ id:"nasa",      label:"NASA 우주",        group:"art"   });
+  s.push({ id:"aic",       label:"시카고미술관",    group:"art"   });
+  s.push({ id:"picsum",    label:"랜덤 사진",        group:"random" });
   return s;
 }
 

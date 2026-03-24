@@ -235,7 +235,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             </div>
             {(isEmpty||isLow) && (
               <div style={{ fontSize:10, color:isEmpty?"#f87171":"#f59e0b", fontWeight:700 }}>
-                {isEmpty?"⚠️ 포인트 소진 · 충전이 필요해요":"⚡ 1~2회 생성 가능 · 충전을 권장해요"}
+                {isEmpty?"포인트 소진 · 충전이 필요해요":"1~2회 생성 가능 · 충전을 권장해요"}
               </div>
             )}
           </div>
@@ -256,7 +256,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                 <div style={{ width:28, height:28, borderRadius:8, flexShrink:0,
                   background: item.accent?"linear-gradient(135deg,#7c6aff,#7c6aff)":isDark?"rgba(255,255,255,0.06)":"rgba(99,102,241,0.08)",
                   display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>
-                  {item.accent?"💎":"📁"}
+                  {item.accent?"P":"L"}
                 </div>
                 <div>
                   <div style={{ fontSize:13, fontWeight:600, color:item.accent?"#a5b4fc":text }}>{item.label}</div>
@@ -277,7 +277,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               <div style={{ width:28, height:28, borderRadius:8, flexShrink:0,
                 background:"rgba(248,113,113,0.1)",
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>🚪</div>
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>X</div>
               로그아웃
             </button>
           </div>
@@ -309,7 +309,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
           <div style={{ fontSize:10, fontWeight: isLow||isEmpty?700:400,
             color: isEmpty?"#f87171":isLow?"#f59e0b":muted }}>
-            {isEmpty?"⚠️ 포인트 소진":isLow?`⚡ ${ptLeft}P 남음`:`${ptLeft.toLocaleString()}P 잔여`}
+            {isEmpty?"포인트 소진":isLow?`${ptLeft}P 남음`:`${ptLeft.toLocaleString()}P 잔여`}
           </div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
@@ -412,7 +412,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
       {/* 헤더 */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div>
-          <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>{"📁 " + t("library")}</div>
+          <div style={{ fontSize:20, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>{t("library")}</div>
           <div style={{ fontSize:13, color:muted }}>{t("totalN")} {total}{t("totalSaved")} · {t("autoSaved")}</div>
         </div>
         <input value={search} onChange={e=>setSearch(e.target.value)}
@@ -1526,7 +1526,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
                 {/* 프리셋 버튼 */}
                 <div style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>⚡ 빠른 프리셋</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>빠른 프리셋</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:6 }}>
                     {[
                       {l:"← 왼쪽만",   vals:[200,0,0,0]},
@@ -1686,7 +1686,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
                 { icon: "✍️", title: _s("SNS 글쓰기 (8종)","SNS Writing (8 types)"), desc: _s("네이버 블로그, 티스토리, 인스타, 유튜브 대본, 스레드, 뉴스·유튜브 변환까지 AI가 자동 작성","Naver Blog, Tistory, Instagram, YouTube script, Threads, news/YouTube conversion — AI auto-writes") },
                 { icon: "🖼", title: _s("SNS 이미지 (3종)","SNS Image (3 types)"), desc: _s("카드뉴스, 상세페이지, 썸네일을 텍스트만 입력하면 AI가 디자인까지 완성","Card news, detail pages, thumbnails — enter text and AI completes the design") },
                 { icon: "🎨", title: _s("AI 이미지 생성 (7종)","AI Image Gen (7 types)"), desc: _s("제품컷, 로고, 목업, AI 모델, 얼굴/의상 교체, 여백 늘리기까지 원스톱","Product shots, logos, mockups, AI models, face/outfit swap, outpaint — all in one") },
-                { icon: "💎", title: _s("포인트 시스템","Point System"), desc: _s("무료 포인트로 시작! 생성당 10P 소모, 매일 무료 충전으로 부담 없이 사용","Start free! 10P per generation, daily free points for worry-free usage") },
+                { icon: "", title: _s("포인트 시스템","Point System"), desc: _s("무료 포인트로 시작! 생성당 10P 소모, 매일 무료 충전으로 부담 없이 사용","Start free! 10P per generation, daily free points for worry-free usage") },
               ].map((g, i) => (
                 <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{g.icon}</div>
@@ -1806,7 +1806,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       features:[
         { icon:"🔍", label:_s("SEO 최적화","SEO Optimized") }, { icon:"📄", label:_s("장문 작성","Long-form") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("네이버 블로그 글 작성하기","Write Naver Blog Post"),
     },
@@ -1821,7 +1821,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       features:[
         { icon:"📑", label:_s("구조화 포스팅","Structured") }, { icon:"✍️", label:_s("자연스러운 문체","Natural Style") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("티스토리 글 작성하기","Write Tistory Post"),
     },
@@ -1836,7 +1836,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       features:[
         { icon:"#️⃣", label:_s("해시태그 자동","Auto Hashtags") }, { icon:"💬", label:_s("감성 문구","Catchy Copy") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("인스타그램 캡션 작성하기","Write Instagram Caption"),
     },
@@ -1851,7 +1851,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       features:[
         { icon:"🎬", label:_s("대본 + 설명란","Script + Desc") }, { icon:"🎤", label:_s("자연스러운 말투","Natural Tone") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("유튜브 대본 작성하기","Write YouTube Script"),
     },
@@ -1865,8 +1865,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 게시","Copy & Post"), desc:_s("완성된 게시물을 복사해 올려요.","Copy and post to Threads.") },
       ],
       features:[
-        { icon:"⚡", label:_s("짧고 강렬한","Short & Bold") }, { icon:"🔗", label:_s("연속 스레드","Thread Series") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:_s("짧고 강렬한","Short & Bold") }, { icon:"", label:_s("연속 스레드","Thread Series") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("스레드 게시물 작성하기","Write Thread Post"),
     },
@@ -1896,7 +1896,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       ],
       features:[
         { icon:"💬", label:_s("자연스러운 문체","Natural Style") }, { icon:"📋", label:_s("다양한 카테고리","Various Categories") },
-        { icon:"💎", label:"10P" }, { icon:"📋", label:_s("복사 저장","Copy & Save") },
+        { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("네이버 카페 글 작성하기","Write Naver Cafe Post"),
     },
@@ -2326,7 +2326,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
       <div style={{ background:"#13102a", border:"1px solid rgba(255,255,255,0.12)",
         borderRadius:20, padding:"32px 28px", maxWidth:360, width:"90%",
         boxShadow:"0 24px 64px rgba(0,0,0,0.5)", textAlign:"center" }}>
-        <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>
+        <div style={{ width:44, height:44, borderRadius:12, background:"rgba(239,68,68,0.1)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{color:"#ef4444",fontSize:20,fontWeight:900}}>!</span></div>
         <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:10 }}>생성 중입니다!</div>
         <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.8, marginBottom:24 }}>
           페이지를 나가면<br/>
