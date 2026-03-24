@@ -573,6 +573,34 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // bgFile ref
   const bgFileRef = useRef(null);
+  const splitFileRef = useRef(null);
+
+  // 사진 분할: 하나의 이미지를 슬라이드 개수만큼 분할하여 각 배경에 적용
+  const handlePhotoSplit = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const count = slides.length;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        // 세로 분할 (위에서 아래로)
+        const sliceH = img.naturalHeight / count;
+        canvas.width = img.naturalWidth;
+        canvas.height = Math.round(sliceH);
+        const newSted = { ...sted };
+        for (let i = 0; i < count; i++) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, Math.round(sliceH * i), img.naturalWidth, Math.round(sliceH), 0, 0, canvas.width, canvas.height);
+          newSted[i] = { ...(newSted[i] || {}), bgImage: canvas.toDataURL("image/jpeg", 0.85) };
+        }
+        setSted(newSted);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // PNG 저장 (단일)
   const saveOne = (idx) => {
@@ -1011,7 +1039,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 포인트를 충전하거나<br/>관리자에게 문의해주세요.</div>
               <div style={{ display:"flex",gap:10 }}>
                 <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
-                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>💎 포인트 충전</button>
+                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>포인트 충전</button>
               </div>
               <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#7c6aff" }}>관리자 문의하기 →</a></div>
             </div>
@@ -1020,6 +1048,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
         <input ref={bgFileRef} type="file" accept="image/*" style={{ display:"none" }}
           onChange={e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>updSted(selIdx,"bgImage",ev.target.result); r.readAsDataURL(f); e.target.value=""; }}/>
+        <input ref={splitFileRef} type="file" accept="image/*" style={{ display:"none" }}
+          onChange={e=>{ const f=e.target.files[0]; if(f) handlePhotoSplit(f); e.target.value=""; }}/>
 
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 16px 60px", animation:"fadeIn 0.3s ease" }}>
           <div style={{ marginBottom:12 }}>
@@ -1281,16 +1311,17 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display:"flex",gap:6 }}>
-                    <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>📸 이미지 업로드</button>
-                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>🔍 이미지 검색</button>
+                  <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                    <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>이미지 업로드</button>
+                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>이미지 검색</button>
+                    <button onClick={()=>splitFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }} title="하나의 이미지를 슬라이드 수만큼 분할하여 각 배경에 적용">사진 분할</button>
                   </div>
                 )}
               </div>
 
               <div style={{ display:"flex",gap:8 }}>
-                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:800 }}>📥 PNG</button>
-                <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"📦 ZIP"}</button>
+                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:800 }}>PNG 저장</button>
+                <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"ZIP 저장"}</button>
               </div>
             </div>
 

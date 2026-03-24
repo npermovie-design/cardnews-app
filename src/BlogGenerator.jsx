@@ -990,7 +990,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
             {/* URL 불러오기 */}
             <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>🔗 {t("urlImportLabel")}</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("urlImportLabel")}</div>
               <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>뉴스 기사, 유튜브 링크를 붙여넣으면 주제를 자동으로 채워줘요</div>
               <div style={{display:"flex",gap:8}}>
                 <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
@@ -1015,7 +1015,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
             {/* 파일 업로드 분석 */}
             <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>📎 {t("fileImport")}</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("fileImport")}</div>
               <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <input type="file" accept="image/*,.pdf,.txt,.doc,.docx" style={{display:"none"}} id="blog-file-input"
@@ -1024,7 +1024,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     if (!file) return;
                     e.target.value = "";
                     if (file.size > 10 * 1024 * 1024) { alert("파일은 10MB 이하만 가능합니다."); return; }
-                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + "📎 파일 분석 중...");
+                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + "파일 분석 중...");
                     try {
                       if (file.type.startsWith("image/")) {
                         // 이미지: base64로 변환 후 AI 분석
@@ -1033,7 +1033,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                           const base64 = reader.result;
                           const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
                           setField("keyword", txt.split("\n")[0]?.slice(0,80) || file.name);
-                          setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 이미지 분석 결과: " + txt.slice(0, 200));
+                          setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "이미지 분석 결과:" + txt.slice(0, 200));
                         };
                         reader.readAsDataURL(file);
                       } else {
@@ -1041,15 +1041,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                         const text2 = await file.text();
                         const summary = text2.slice(0, 2000);
                         setField("keyword", summary.split("\n").find(l => l.trim().length > 5)?.trim()?.slice(0,80) || file.name);
-                        setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 파일 내용: " + summary.slice(0, 300));
+                        setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "파일 내용:" + summary.slice(0, 300));
                       }
                     } catch(err) {
-                      setField("extra", (fields.extra?.replace("📎 파일 분석 중...", "") || "") + "📎 파일 분석 실패: " + err.message);
+                      setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "파일 분석 실패:" + err.message);
                     }
                   }}/>
                 <button onClick={() => document.getElementById("blog-file-input")?.click()}
                   style={{padding:"8px 16px",borderRadius:9,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
-                  📎 {t("fileSelect")}
+                  {t("fileSelect")}
                 </button>
                 <span style={{fontSize:11,color:muted}}>{t("fileLimit")}</span>
               </div>
