@@ -210,6 +210,7 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [aiOutline, setAiOutline] = useState(null);
   const [outlineLoading, setOutlineLoading] = useState(false);
   const [hoveredLayout, setHoveredLayout] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x:0, y:0 });
   const [layoutCatOpen, setLayoutCatOpen] = useState(null);
   const imgRef = useRef(null);
 
@@ -1001,13 +1002,16 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
               {hoveredLayout && (()=>{
                 const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
                 if(!hl) return null;
-                return <div style={{ position:"absolute", zIndex:99999, pointerEvents:"none",
-                  right:"calc(100% + 16px)", top:0,
-                  width:520, background:D?"rgba(10,8,30,0.98)":"rgba(255,255,255,0.98)",
-                  borderRadius:14, border:`1px solid ${accent}40`, padding:16,
+                const pw=480, ph=300;
+                const left = Math.max(8, hoverPos.x - pw - 30);
+                const top = Math.min(Math.max(8, hoverPos.y - ph/2), window.innerHeight - ph - 8);
+                return <div style={{ position:"fixed", zIndex:99999, pointerEvents:"none",
+                  left, top, width:pw,
+                  background:D?"rgba(10,8,30,0.98)":"rgba(255,255,255,0.98)",
+                  borderRadius:14, border:`1px solid ${accent}40`, padding:14,
                   boxShadow:D?"0 16px 60px rgba(0,0,0,0.7)":"0 16px 60px rgba(0,0,0,0.18)", backdropFilter:"blur(16px)" }}>
-                  <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>{hl.label} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>/ {hl.cat}</span></div>
-                  <MiniSlidePreview layoutId={hoveredLayout} W={488} H={275} theme={theme} />
+                  <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>{hl.label} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>/ {hl.cat}</span></div>
+                  <MiniSlidePreview layoutId={hoveredLayout} W={pw-28} H={Math.round((pw-28)*9/16)} theme={theme} />
                 </div>;
               })()}
               {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
@@ -1026,7 +1030,8 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
                           const sel = cur.layout===l.id;
                           return (
                             <button key={l.id} onClick={()=>upd("layout",l.id)}
-                              onMouseEnter={()=>setHoveredLayout(l.id)}
+                              onMouseEnter={(e)=>{setHoveredLayout(l.id);setHoverPos({x:e.clientX,y:e.clientY});}}
+                              onMouseMove={(e)=>setHoverPos({x:e.clientX,y:e.clientY})}
                               onMouseLeave={()=>setHoveredLayout(null)}
                               style={{ padding:"3px", borderRadius:5, border:`1.5px solid ${sel?accent:"transparent"}`,
                                 background:sel?`${accent}12`:"transparent", cursor:"pointer", textAlign:"center",
