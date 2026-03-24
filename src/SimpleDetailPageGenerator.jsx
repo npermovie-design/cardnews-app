@@ -110,7 +110,11 @@ function drawDetailSlide(canvas, slide, style, CW, CH) {
   const al = style.textAlign || "left";
   const va = style.textValign || "middle";
   const ff = style.fontFamily || "sans-serif";
+  const oxRaw = style.textOffsetX || 0;
+  const oyRaw = style.textOffsetY || 0;
   const SC = CW / 420;
+  const ox = Math.round(oxRaw * SC);
+  const oy = Math.round(oyRaw * SC);
   const PAD = Math.round(CW * 0.09);
   const maxW = CW - PAD * 2;
 
@@ -143,12 +147,12 @@ function drawDetailSlide(canvas, slide, style, CW, CH) {
 
   const minY = PAD + Math.round(sSz * 1.5);
   let startY = va === "top" ? minY : va === "bottom" ? CH - PAD - totalH : Math.round((CH - totalH) / 2);
-  let y = Math.max(minY, startY);
+  let y = Math.max(minY, startY) + oy;
 
   function getX(lineW) {
-    if (al === "center") return Math.round((CW - lineW) / 2);
-    if (al === "right")  return CW - PAD - lineW;
-    return PAD;
+    if (al === "center") return Math.round((CW - lineW) / 2) + ox;
+    if (al === "right")  return CW - PAD - lineW + ox;
+    return PAD + ox;
   }
   function drawLines(ls, fnt, color, alpha, lineH) {
     ctx.font = fnt; ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.textBaseline = "top";
@@ -408,13 +412,18 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
     const ed = sted[idx]||{};
     return { ...base, ...ed };
   };
+  const getSlideStyle = (idx) => {
+    const so = sted[idx]||{};
+    return { ...activeStyle, ...(so.bgColor?{bgColor:so.bgColor}:{}), ...(so.textColor?{textColor:so.textColor}:{}), ...(so.titleSize?{titleSize:so.titleSize}:{}), ...(so.bodySize?{bodySize:so.bodySize}:{}), ...(so.textAlign?{textAlign:so.textAlign}:{}), ...(so.textValign?{textValign:so.textValign}:{}), ...(so.fontFamily?{fontFamily:so.fontFamily}:{}), ...(so.textOffsetX!==undefined?{textOffsetX:so.textOffsetX}:{}), ...(so.textOffsetY!==undefined?{textOffsetY:so.textOffsetY}:{}) };
+  };
   const updSted = (idx, key, val) => setSted(prev=>({...prev,[idx]:{...(prev[idx]||{}), [key]:val}}));
 
   // PNG 저장 (단일)
   const saveOne = (idx) => {
     const slide = getCurSlide(idx);
+    const slideStyle = getSlideStyle(idx);
     const canvas = document.createElement("canvas");
-    drawDetailSlide(canvas, slide, activeStyle, imgW, imgH);
+    drawDetailSlide(canvas, slide, slideStyle, imgW, imgH);
     const a=document.createElement("a");
     a.href=canvas.toDataURL("image/png");
     a.download=`${form.productName||"slide"}_${String(idx+1).padStart(2,"0")}_${slide.label||"slide"}.png`;
@@ -429,8 +438,9 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
     const zip=new window.JSZip();
     for(let i=0;i<slides.length;i++){
       const slide=getCurSlide(i);
+      const slideStyle=getSlideStyle(i);
       const canvas=document.createElement("canvas");
-      drawDetailSlide(canvas,slide,activeStyle,imgW,imgH);
+      drawDetailSlide(canvas,slide,slideStyle,imgW,imgH);
       const b64=canvas.toDataURL("image/png").split(",")[1];
       const arr=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
       zip.file(`${String(i+1).padStart(2,"0")}_${slide.label||"slide"}.png`,arr);
@@ -770,7 +780,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                   <div key={i} onClick={()=>setSelIdx(i)}
                     style={{ borderRadius:10, overflow:"hidden", border:`2px solid ${isActive?"#7c6aff":"transparent"}`, cursor:"pointer", transition:"all 0.12s", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
                     <div style={{ position:"relative" }}>
-                      <SlideCanvas slide={sl} style={activeStyle} CW={imgW} CH={imgH} displayW={136}/>
+                      <SlideCanvas slide={sl} style={getSlideStyle(i)} CW={imgW} CH={imgH} displayW={136}/>
                       <div style={{ position:"absolute",top:4,left:4,width:18,height:18,borderRadius:5,background:isActive?"#7c6aff":"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff" }}>{i+1}</div>
                     </div>
                     <div style={{ padding:"4px 6px", background:D?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.95)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -822,6 +832,37 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                   </div>
                 </div>
 
+                {/* 텍스트 위치 미세조정 */}
+                {(() => { const so = sted[selIdx]||{}; return (
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:10,color:muted,marginBottom:6,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <span>텍스트 위치 미세조정</span>
+                    {(so.textOffsetX||so.textOffsetY)?<button onClick={()=>{updSted(selIdx,"textOffsetX",0);updSted(selIdx,"textOffsetY",0);}} style={{ fontSize:9,padding:"1px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>초기화</button>:null}
+                  </div>
+                  <div style={{ display:"flex",gap:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9,color:muted,marginBottom:3 }}>좌우 ({so.textOffsetX||0}px)</div>
+                      <input type="range" min="-200" max="200" value={so.textOffsetX||0} onChange={e=>updSted(selIdx,"textOffsetX",parseInt(e.target.value))} style={{ width:"100%",accentColor:"#7c6aff" }}/>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9,color:muted,marginBottom:3 }}>상하 ({so.textOffsetY||0}px)</div>
+                      <input type="range" min="-200" max="200" value={so.textOffsetY||0} onChange={e=>updSted(selIdx,"textOffsetY",parseInt(e.target.value))} style={{ width:"100%",accentColor:"#7c6aff" }}/>
+                    </div>
+                  </div>
+                </div>
+                ); })()}
+                {/* 현재 스타일 전체 적용 */}
+                <button onClick={()=>{
+                  const cur = sted[selIdx]||{};
+                  const keys = ["bgColor","textColor","titleSize","bodySize","textAlign","textValign","fontFamily","textOffsetX","textOffsetY"];
+                  setSted(prev => {
+                    const next = {...prev};
+                    slides.forEach((_,i)=>{ if(i!==selIdx){ const p={...(next[i]||{})}; keys.forEach(k=>{ if(cur[k]!==undefined) p[k]=cur[k]; }); next[i]=p; } });
+                    return next;
+                  });
+                }} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.06)",color:"#4ade80",fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:10 }}>
+                  현재 스타일 전체 슬라이드에 적용
+                </button>
                 {/* 전/다음 슬라이드 이동 */}
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
                   <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
@@ -855,7 +896,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
             <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
               <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:2 }}>미리보기</div>
               <div style={{ borderRadius:12, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,0.3)", border:`1px solid ${bdr}` }}>
-                <SlideCanvas slide={curSlide} style={activeStyle} CW={imgW} CH={imgH} displayW={previewW}/>
+                <SlideCanvas slide={curSlide} style={getSlideStyle(selIdx)} CW={imgW} CH={imgH} displayW={previewW}/>
               </div>
               <div style={{ fontSize:10,color:muted }}>{imgW}×{imgH}px · {activeStyle.label}</div>
             </div>
