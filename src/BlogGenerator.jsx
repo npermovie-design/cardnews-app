@@ -4,6 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n.jsx";
 
 import { callAI, callAIStream } from "./aiClient";
+import ShareButton from "./ShareButton";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -834,6 +835,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {copied?("✓ "+t("copyDone")):("📋 "+t("copyBtn"))}
               </button>
             )}
+            {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>

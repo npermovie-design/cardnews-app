@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
+import ShareButton from "./ShareButton";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -1328,6 +1329,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:800 }}>PNG 저장</button>
                 <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"ZIP 저장"}</button>
               </div>
+              <ShareButton title={topic||"카드뉴스"} text={topic||""} isDark={D} compact />
             </div>
 
             {/* 미리보기 */}

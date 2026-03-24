@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import { Player } from "@remotion/player";
 import ShortformComposition from "./remotion/ShortformComposition";
 import { KlipyButton } from "./KlipyPicker";
+import ShareButton from "./ShareButton";
 import { callClaude } from "./aiClient";
 
 const ACC = "#7c6aff";
@@ -1079,6 +1080,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   )}
                   <div style={{fontSize:9,color:muted,textAlign:"center"}}>{cur.startTime}~{cur.endTime} · {cur.duration}초 · 1080×1920{ex&&<span style={{color:"#4ade80",marginLeft:4}}>✓ 완료</span>}</div>
                   <button onClick={()=>saveOne(cur)} style={{width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${ACC}30`,background:`rgba(168,85,247,0.08)`,color:ACC,fontSize:10,cursor:"pointer",fontWeight:700}}>🗂 보관함 저장</button>
+                  <ShareButton title={cur.title_a||"숏폼"} text={cur.script||cur.hook||""} hashtags={cur.hashtags} videoUrl={extracted[cur.index??selIdx]?.url} isDark={D} compact />
                 </>;
               })()}
             </div>

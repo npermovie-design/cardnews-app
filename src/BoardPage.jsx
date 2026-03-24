@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
+import ShareButton, { ShareRow } from "./ShareButton";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
@@ -1304,6 +1305,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 </div>
               </div>
             )}
+          </div>
+          <div style={{padding:"12px 28px",borderTop:"1px solid "+bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span style={{fontSize:11,color:C.muted}}>SNS 공유</span>
+            <ShareRow title={view.title} text={view.body?.replace(/<[^>]*>/g,"")?.slice(0,200)} isDark={isDark} compact />
           </div>
           <div style={{padding:"16px 28px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
             {(() => {

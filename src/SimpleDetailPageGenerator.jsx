@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { KlipyButton } from "./KlipyPicker";
+import ShareButton from "./ShareButton";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleDetailPageGenerator.jsx
@@ -847,6 +848,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                   {dlSt.msg||"📦 전체 ZIP"}
                 </button>
               </div>
+              <ShareButton title={productName||"상세페이지"} text={productName||""} isDark={D} compact />
             </div>
 
             {/* 미리보기 (오른쪽) */}
