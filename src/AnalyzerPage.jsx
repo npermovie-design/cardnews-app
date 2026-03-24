@@ -69,6 +69,62 @@ const HOME_FEATURES = [
   { id:"library",      label:"내 보관함",     desc:"이전 분석 결과 확인", color:"#64748b" },
 ];
 
+/* ── 오늘의 핫키워드 추천 컴포넌트 ── */
+function HotKeywordBox({ isDark, text, muted, bdr, cardBg, accent, onGoTrend }) {
+  const [keywords, setKeywords] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const cached = getCached("hot_keywords");
+    if (cached) { setKeywords(cached); return; }
+    setLoading(true);
+    callAI(`오늘 SNS 콘텐츠 제작에 쓰기 좋은 핫한 키워드 8개를 추천해줘.
+시즌, 트렌드, 음식, 뷰티, 라이프스타일 등 다양한 카테고리에서 선정해줘.
+각 키워드마다 왜 핫한지 한 줄 이유도 달아줘.
+JSON 배열로만 응답해줘: [{"keyword":"봄동","reason":"봄 제철 식재료로 레시피 콘텐츠 수요 급증","category":"음식"},...]`)
+    .then(r => {
+      try {
+        const match = r.match(/\[[\s\S]*\]/);
+        if (match) { const data = JSON.parse(match[0]); setKeywords(data); setCache("hot_keywords", data); }
+      } catch {}
+    })
+    .finally(() => setLoading(false));
+  }, []);
+
+  const catColor = { "음식":"#f59e0b", "뷰티":"#ec4899", "라이프스타일":"#7c6aff", "여행":"#06b6d4", "패션":"#f97316", "IT":"#3b82f6", "트렌드":"#22c55e", "건강":"#10b981", "엔터":"#ef4444" };
+
+  return (
+    <div style={{ marginBottom:24, padding:"20px 22px", borderRadius:16, background: isDark?"rgba(124,106,255,0.06)":"linear-gradient(135deg,rgba(99,102,241,0.04),rgba(236,72,153,0.03))", border:`1px solid ${isDark?"rgba(124,106,255,0.15)":"rgba(99,102,241,0.08)"}` }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <div>
+          <div style={{ fontSize:16, fontWeight:800, color:text }}>오늘의 핫키워드</div>
+          <div style={{ fontSize:11, color:muted, marginTop:2 }}>SNS 콘텐츠 제작에 활용하세요</div>
+        </div>
+        <button onClick={onGoTrend} style={{ fontSize:11, color:accent, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>
+          실시간 검색어 보기 →
+        </button>
+      </div>
+      {loading ? (
+        <div style={{ textAlign:"center", padding:"20px 0", color:muted, fontSize:13 }}>키워드 분석 중...</div>
+      ) : keywords ? (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(170px,100%),1fr))", gap:8 }}>
+          {keywords.map((k,i) => (
+            <div key={i} style={{ padding:"12px 14px", borderRadius:12, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${bdr}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                <span style={{ fontSize:14, fontWeight:800, color:text }}>{k.keyword}</span>
+                {k.category && <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4, background:(catColor[k.category]||accent)+"18", color:catColor[k.category]||accent }}>{k.category}</span>}
+              </div>
+              <div style={{ fontSize:11, color:muted, lineHeight:1.5 }}>{k.reason}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ textAlign:"center", padding:"16px 0", color:muted, fontSize:12 }}>키워드를 불러올 수 없습니다</div>
+      )}
+    </div>
+  );
+}
+
 export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate }) {
   const isDark = theme === "dark";
   const [menu, setMenu] = useState("home");
@@ -145,6 +201,9 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                   <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기</div>
                   <div style={{ fontSize:14, color:muted, lineHeight:1.7 }}>실시간 트렌드와 인플루언서 랭킹을 AI로 분석해드려요</div>
                 </div>
+
+                {/* 오늘의 핫키워드 추천 */}
+                <HotKeywordBox isDark={isDark} text={text} muted={muted} bdr={bdr} cardBg={cardBg} accent={accent} onGoTrend={() => safeSetMenu("seo_home")} />
 
                 {/* 가이드라인 */}
                 <div style={{ marginBottom:28, padding:"22px 24px", borderRadius:16, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>

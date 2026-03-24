@@ -124,25 +124,19 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="home" label={t("home")} icon="" />
         <Item id="library" label={t("library")} icon="" />
 
-        {/* SNS 글쓰기 그룹 */}
-        <Group label={t("snsWrite")} icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
+        {/* 글 생성 그룹 */}
+        <Group label="글 생성" icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
           <Item id="blog_write"   label="글쓰기"               indent />
           <Item id="blog_link"    label="링크 글쓰기"           indent />
         </>}
 
-        {/* SNS 이미지 그룹 */}
-        <Group label={t("snsImage")} icon="" active={!!(aiMenu && ["cardnews_simple","detail_simple","thumbnail_gen"].some(x=>aiMenu.startsWith(x)))} />
-        {cardOpen && <>
+        {/* 이미지 생성 그룹 */}
+        <Group label="이미지 생성" icon="" active={!!(aiMenu && ["cardnews_simple","detail_simple","thumbnail_gen","product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
+        {imageOpen && <>
           <Item id="cardnews_simple" label={t("cardNews")||"카드뉴스"}    indent />
           <Item id="detail_simple"   label={t("detailPage")||"상세페이지"}  indent />
           <Item id="thumbnail_gen"   label="썸네일 생성"  indent />
-          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")} indent />}
-        </>}
-
-        {/* 이미지 생성 그룹 */}
-        <Group label={t("imageGen")} icon="" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
-        {imageOpen && <>
           <Item id="product_shot" label={t("productShot")}  indent />
           <Item id="logo_gen"     label={t("logoGen")}      indent />
           <Item id="mockup_gen"   label={t("mockupGen")}    indent />
@@ -150,6 +144,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <Item id="face_swap"    label={t("faceSwap")}     indent />
           <Item id="outfit_swap"  label={t("outfitSwap")}   indent />
           <Item id="outpaint"     label={t("outpaint")}     indent />
+          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")} indent />}
         </>}
 
 
@@ -424,8 +419,8 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
       {/* 탭 — 3개 폴더 */}
       <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
         {[
-          ["blog","✍️ SNS 글쓰기", blogList.length],
-          ["snsimg","🖼 SNS 이미지", snsImageCount],
+          ["blog","글 생성", blogList.length],
+          ["snsimg","이미지 생성", snsImageCount],
         ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
@@ -443,7 +438,9 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         <>
           {filteredBlog.length === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>✍️</div>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 글이 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>글 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("blog_naver")}
@@ -478,12 +475,12 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                   <button onClick={()=>{ navigator.clipboard.writeText(selectedBlog.content); }}
                     style={{ padding:"9px 18px", borderRadius:9, border:`1px solid ${bdr}`,
                       background:"transparent", color:accent, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    📋 복사
+                    복사
                   </button>
                   <button onClick={()=>{ deleteBlogWork(selectedBlog.id); setBlogList(getBlogSaves()); setSelectedBlog(null); }}
                     style={{ padding:"9px 18px", borderRadius:9, border:"1px solid rgba(248,113,113,0.3)",
                       background:"transparent", color:"#f87171", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    🗑 삭제
+                    삭제
                   </button>
                 </div>
               </div>
@@ -532,7 +529,9 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         <>
           {filteredCard.length === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🖼</div>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 카드뉴스가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스 편집 화면에서 저장하면 여기 표시됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
@@ -552,7 +551,9 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                       style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
                   ) : (
                     <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)",
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🃏</div>
+                      display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"rgba(0,0,0,0.2)"} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                    </div>
                   )}
                   <div style={{ padding:"12px 12px 10px" }}>
                     <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4,
@@ -1796,7 +1797,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // ── 블로그 인트로 데이터 (다국어) ─────────────────────────
   const BLOG_INTRO = {
     blog_naver: {
-      icon:"📝", title:_s("네이버 블로그","Naver Blog"), badge:_s("SEO 최적화 · 장문 콘텐츠","SEO Optimized · Long-form"), color:"#4ade80",
+      icon:"N", title:_s("네이버 블로그","Naver Blog"), badge:_s("SEO 최적화 · 장문 콘텐츠","SEO Optimized · Long-form"), color:"#4ade80",
       subtitle:_s("키워드 기반 SEO 최적화 네이버 블로그 포스트를 AI가 자동 작성해줘요.","AI auto-writes SEO-optimized Naver blog posts based on keywords."),
       steps:[
         { title:_s("주제 입력","Enter Topic"), desc:_s("블로그 주제나 키워드를 입력하거나 예시에서 선택해요.","Enter a blog topic/keyword or choose from examples.") },
@@ -1805,13 +1806,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 활용","Copy & Use"), desc:_s("생성된 글을 복사해 바로 붙여넣기해요.","Copy and paste the generated text directly.") },
       ],
       features:[
-        { icon:"🔍", label:_s("SEO 최적화","SEO Optimized") }, { icon:"📄", label:_s("장문 작성","Long-form") },
+        { icon:"", label:_s("SEO 최적화","SEO Optimized") }, { icon:"", label:_s("장문 작성","Long-form") },
         { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("네이버 블로그 글 작성하기","Write Naver Blog Post"),
     },
     blog_tistory: {
-      icon:"🟠", title:_s("티스토리 블로그","Tistory Blog"), badge:_s("구조화된 포스팅 · HTML 지원","Structured Post · HTML"), color:"#f97316",
+      icon:"T", title:_s("티스토리 블로그","Tistory Blog"), badge:_s("구조화된 포스팅 · HTML 지원","Structured Post · HTML"), color:"#f97316",
       subtitle:_s("티스토리에 최적화된 구조로 블로그 포스트를 생성해줘요.","AI generates blog posts optimized for Tistory format."),
       steps:[
         { title:_s("주제 입력","Enter Topic"), desc:_s("포스팅할 주제나 키워드를 입력해요.","Enter topic or keyword to post about.") },
@@ -1820,13 +1821,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 활용","Copy & Use"), desc:_s("생성된 글을 복사해 바로 붙여넣기해요.","Copy and paste directly to Tistory.") },
       ],
       features:[
-        { icon:"📑", label:_s("구조화 포스팅","Structured") }, { icon:"✍️", label:_s("자연스러운 문체","Natural Style") },
+        { icon:"", label:_s("구조화 포스팅","Structured") }, { icon:"", label:_s("자연스러운 문체","Natural Style") },
         { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("티스토리 글 작성하기","Write Tistory Post"),
     },
     blog_insta: {
-      icon:"📱", title:_s("인스타그램 캡션","Instagram Caption"), badge:_s("짧고 임팩트있는 · 해시태그 포함","Short & Impactful · Hashtags"), color:"#ec4899",
+      icon:"IG", title:_s("인스타그램 캡션","Instagram Caption"), badge:_s("짧고 임팩트있는 · 해시태그 포함","Short & Impactful · Hashtags"), color:"#ec4899",
       subtitle:_s("인스타그램 게시물에 딱 맞는 캡션과 해시태그를 AI가 생성해줘요.","AI generates perfect captions and hashtags for Instagram posts."),
       steps:[
         { title:_s("주제 입력","Enter Topic"), desc:_s("게시할 사진이나 영상의 주제를 설명해요.","Describe the photo/video topic to post.") },
@@ -1835,13 +1836,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 게시","Copy & Post"), desc:_s("캡션을 복사해 인스타그램에 붙여넣기해요.","Copy and paste to Instagram.") },
       ],
       features:[
-        { icon:"#️⃣", label:_s("해시태그 자동","Auto Hashtags") }, { icon:"💬", label:_s("감성 문구","Catchy Copy") },
+        { icon:"", label:_s("해시태그 자동","Auto Hashtags") }, { icon:"", label:_s("감성 문구","Catchy Copy") },
         { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("인스타그램 캡션 작성하기","Write Instagram Caption"),
     },
     blog_youtube: {
-      icon:"▶️", title:_s("유튜브 대본","YouTube Script"), badge:_s("영상 대본 · 설명란 포함","Script · Description"), color:"#ef4444",
+      icon:"YT", title:_s("유튜브 대본","YouTube Script"), badge:_s("영상 대본 · 설명란 포함","Script · Description"), color:"#ef4444",
       subtitle:_s("유튜브 영상 대본과 설명란 텍스트를 AI가 작성해줘요.","AI writes YouTube video scripts and description text."),
       steps:[
         { title:_s("영상 주제 입력","Enter Video Topic"), desc:_s("만들 영상의 주제와 핵심 내용을 입력해요.","Enter the video topic and key points.") },
@@ -1850,13 +1851,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 활용","Copy & Use"), desc:_s("대본과 설명란을 복사해 바로 사용해요.","Copy script and description to use directly.") },
       ],
       features:[
-        { icon:"🎬", label:_s("대본 + 설명란","Script + Desc") }, { icon:"🎤", label:_s("자연스러운 말투","Natural Tone") },
+        { icon:"", label:_s("대본 + 설명란","Script + Desc") }, { icon:"", label:_s("자연스러운 말투","Natural Tone") },
         { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("유튜브 대본 작성하기","Write YouTube Script"),
     },
     blog_thread: {
-      icon:"🧵", title:_s("스레드","Threads"), badge:_s("짧고 임팩트있는 · 연속 게시","Short & Bold · Thread Series"), color:"#7c6aff",
+      icon:"TH", title:_s("스레드","Threads"), badge:_s("짧고 임팩트있는 · 연속 게시","Short & Bold · Thread Series"), color:"#7c6aff",
       subtitle:_s("스레드에 올릴 짧고 임팩트 있는 게시물을 AI가 작성해줘요.","AI writes short, impactful posts for Threads."),
       steps:[
         { title:_s("주제 입력","Enter Topic"), desc:_s("스레드에 올릴 주제를 입력해요.","Enter the topic for your thread post.") },
@@ -1886,7 +1887,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       cta:_s("링크로 글쓰기 시작","Start Writing from Link"),
     },
     blog_cafe: {
-      icon:"☕", title:_s("네이버 카페 글쓰기","Naver Cafe Post"), badge:_s("짧고 친근한 · 커뮤니티형","Short & Friendly · Community"), color:"#03C75A",
+      icon:"CF", title:_s("네이버 카페 글쓰기","Naver Cafe Post"), badge:_s("짧고 친근한 · 커뮤니티형","Short & Friendly · Community"), color:"#03C75A",
       subtitle:_s("네이버 카페에 어울리는 친근한 게시글을 AI가 작성해줘요.","AI writes friendly community posts for Naver Cafe."),
       steps:[
         { title:_s("카테고리 선택","Select Category"), desc:_s("정보, 후기, 질문, 자유 게시글 중 선택해요.","Choose from info, review, Q&A, or free post.") },
@@ -1895,7 +1896,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         { title:_s("복사 & 게시","Copy & Post"), desc:_s("완성된 글을 복사해 카페에 붙여넣기해요.","Copy and paste to Naver Cafe.") },
       ],
       features:[
-        { icon:"💬", label:_s("자연스러운 문체","Natural Style") }, { icon:"📋", label:_s("다양한 카테고리","Various Categories") },
+        { icon:"", label:_s("자연스러운 문체","Natural Style") }, { icon:"", label:_s("다양한 카테고리","Various Categories") },
         { icon:"", label:"10P" }, { icon:"", label:_s("복사 저장","Copy & Save") },
       ],
       cta:_s("네이버 카페 글 작성하기","Write Naver Cafe Post"),
@@ -2017,9 +2018,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   if (aiMenu === "image_gen") {
     return (
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:18, padding:40, textAlign:"center", background: isDark?"transparent":"#f4f4f8" }}>
-        <div style={{ fontSize:72 }}>🎨</div>
+        <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        </div>
         <div style={{ fontSize:22, fontWeight:900, color: isDark?"#fff":"#1a1a2e" }}>이미지 생성</div>
-        <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>AI 이미지 자유 생성 기능 🔧<br/>곧 업데이트될 예정이에요.</div>
+        <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>AI 이미지 자유 생성 기능<br/>곧 업데이트될 예정이에요.</div>
       </div>
     );
   }
@@ -2139,7 +2142,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     if (user?.role !== "admin") {
       return (
         <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, padding:40, textAlign:"center", background: isDark?"transparent":"#f4f4f8" }}>
-          <div style={{ fontSize:64 }}>🔒</div>
+          <div style={{ width:64, height:64, borderRadius:16, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"#a5b4fc":"#7c6aff"} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
           <div style={{ fontSize:20, fontWeight:900, color: isDark?"#fff":"#1a1a2e" }}>관리자 전용 기능</div>
           <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>
             숏폼편집 기능은 현재 관리자만 이용 가능해요.<br/>
