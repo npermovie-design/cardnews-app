@@ -212,6 +212,8 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [hoveredLayout, setHoveredLayout] = useState(null);
   const [hoverPos, setHoverPos] = useState({ x:0, y:0 });
   const [layoutCatOpen, setLayoutCatOpen] = useState(null);
+  const [mobilePanel, setMobilePanel] = useState("preview"); // "list" | "preview" | "edit"
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const imgRef = useRef(null);
 
   const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
@@ -1394,6 +1396,10 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
           <div style={{ height:"100%", borderRadius:3, background:accent, animation:"ai-progress 15s ease-out forwards" }} />
         </div>
         <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>슬라이드별 내용을 상세 기획하고 있습니다...</div>
+        <button onClick={()=>{setStep("input");window.__isGenerating=false;}}
+          style={{ marginTop:24, padding:"10px 24px", borderRadius:10, border:"1px solid rgba(255,255,255,0.15)", background:"transparent", color:"rgba(255,255,255,0.5)", fontSize:13, cursor:"pointer" }}>
+          취소하고 돌아가기
+        </button>
       </div>
     </div>
   );
@@ -1402,7 +1408,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
   return (
     <div style={{ flex:1, display:"flex", overflow:"hidden", background:D?"transparent":"#f4f4f8" }}>
       {/* 왼쪽: 슬라이드 목록 */}
-      <div style={{ width:140, flexShrink:0, borderRight:`1px solid ${bdr}`, overflowY:"auto", padding:"10px 6px", background:D?"rgba(0,0,0,0.2)":"rgba(0,0,0,0.02)" }}>
+      <div style={{ width:isMobile?"100%":140, flexShrink:0, borderRight:isMobile?"none":`1px solid ${bdr}`, overflowY:"auto", padding:"10px 6px", background:D?"rgba(0,0,0,0.2)":"rgba(0,0,0,0.02)", display:isMobile && mobilePanel!=="list"?"none":"flex", flexDirection:"column" }}>
         {slides.map((s,i) => (
           <div key={i} onClick={()=>setSelIdx(i)}
             style={{ marginBottom:6, cursor:"pointer", borderRadius:6, border:selIdx===i?`2px solid ${accent}`:`2px solid transparent`,
@@ -1423,7 +1429,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
       </div>
 
       {/* 가운데 */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{ flex:1, display:isMobile && mobilePanel!=="preview"?"none":"flex", flexDirection:"column", overflow:"hidden" }}>
         <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:8, flexShrink:0, background:D?"rgba(0,0,0,0.15)":"rgba(249,250,251,0.8)" }}>
           <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:10, cursor:"pointer" }}>← 처음</button>
           <div style={{ flex:1, fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic}</div>
@@ -1450,7 +1456,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
       </div>
 
       {/* 오른쪽: 편집 */}
-      <div style={{ width:270, flexShrink:0, borderLeft:`1px solid ${bdr}`, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.01)" }}>
+      <div style={{ width:isMobile?"100%":270, flexShrink:0, borderLeft:isMobile?"none":`1px solid ${bdr}`, display:isMobile && mobilePanel!=="edit"?"none":"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.01)" }}>
         {/* 탭 */}
         <div style={{ display:"flex", borderBottom:`1px solid ${bdr}`, flexShrink:0 }}>
           {[["content","내용"],["style","스타일"],["media","미디어"]].map(([id,label])=>(
@@ -1802,6 +1808,13 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
       </div>
 
       {err && <div style={{ position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", padding:"10px 20px", borderRadius:10, background:"rgba(239,68,68,0.9)", color:"#fff", fontSize:13, zIndex:9999 }}>{err}</div>}
+      {isMobile && (
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)", background:"rgba(15,12,41,0.98)", zIndex:100 }}>
+          {[["list","목록"],["preview","미리보기"],["edit","편집"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setMobilePanel(id)} style={{ flex:1, padding:"12px 0", border:"none", background:mobilePanel===id?"rgba(124,106,255,0.15)":"transparent", color:mobilePanel===id?"#7c6aff":"rgba(255,255,255,0.45)", fontSize:12, fontWeight:mobilePanel===id?700:400, cursor:"pointer" }}>{label}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

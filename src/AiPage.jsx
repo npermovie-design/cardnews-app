@@ -2931,6 +2931,20 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
     return function() { delete window.__onLoginRequest; };
   }, [onLoginRequest]);
 
+  useEffect(() => {
+    const handlePop = () => {
+      const path = window.location.pathname.replace(/^\//, "");
+      const segs = path.split("/");
+      if (segs[0] === "ai") {
+        const menu = segs[1] || "home";
+        if (setAiMenuProp) setAiMenuProp(menu);
+        setLocalMenu(menu);
+      }
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
   // 생성 중 상태 감지 (useGeneratingGuard 이벤트)
   useEffect(() => {
     const handler = (e) => setIsGenerating(e.detail?.generating || false);

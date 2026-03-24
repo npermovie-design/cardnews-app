@@ -131,8 +131,8 @@ export default function ShareButton({ title, text, url, imageUrl, imageBlob, vid
 
       {open && (
         <div style={{
-          position: "absolute", bottom: "100%", right: 0, zIndex: 9999, marginBottom: 8,
-          width: 240, background: bg, borderRadius: 16, border: `1px solid ${bdr}`,
+          position: "fixed", bottom: 60, right: 10, zIndex: 9999,
+          width: Math.min(240, typeof window!=="undefined" ? window.innerWidth - 20 : 240), background: bg, borderRadius: 16, border: `1px solid ${bdr}`,
           boxShadow: D ? "0 12px 40px rgba(0,0,0,0.5)" : "0 8px 32px rgba(0,0,0,0.12)",
           backdropFilter: "blur(20px)", overflow: "hidden",
         }}>

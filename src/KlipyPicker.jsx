@@ -247,7 +247,7 @@ export function KlipyButton({ onSelect, isDark, compact, style, buttonStyle }) {
         🎬 GIF
       </button>
       {open && (
-        <div style={{ position: "absolute", bottom: "100%", left: 0, zIndex: 9999, marginBottom: 8, width: compact ? 300 : 400 }}>
+        <div style={{ position: "fixed", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 9999, width: Math.min(compact ? 300 : 400, typeof window!=="undefined" ? window.innerWidth - 20 : 380) }}>
           <KlipyPicker isDark={isDark} compact={compact}
             onSelect={(item) => { onSelect(item); setOpen(false); }}
             onClose={() => setOpen(false)} />
