@@ -115,14 +115,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
 
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="seo_home" label="실시간 검색어" />
-        <Item id="rank_youtube" label="유튜버 TOP10" />
-        <Item id="rank_insta" label="인스타 TOP10" />
-        <Item id="rank_blog" label="블로거 TOP10" />
-        <Item id="rank_tiktok" label="틱톡 TOP10" />
-        <Item id="rank_brand" label="브랜드 TOP10" />
-
         {user?.role === "admin" && <>
           <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
           <Item id="shorts" label={t("shortsGen")} />
@@ -736,11 +728,22 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
   const accent = "#7c6aff";
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("naver");
+  const [tab, setTab] = useState("all");
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState(null);
+
+  const PLATFORMS = [
+    { id:"all",      label:"전체",     icon:"🔥", color:"#7c6aff" },
+    { id:"naver",    label:"네이버",   icon:"N",  color:"#03C75A" },
+    { id:"google",   label:"구글",     icon:"G",  color:"#4285F4" },
+    { id:"youtube",  label:"유튜브",   icon:"▶",  color:"#FF0000" },
+    { id:"insta",    label:"인스타",   icon:"📷", color:"#E4405F" },
+    { id:"tiktok",   label:"틱톡",     icon:"♪",  color:"#000000" },
+    { id:"x",        label:"X",        icon:"𝕏",  color:isDark?"#fff":"#000" },
+  ];
 
   useEffect(() => {
     setLoading(true);
-    // 네이버 실시간 검색어 API (로컬 프록시) 또는 폴백 데이터
     const fetchKeywords = async () => {
       try {
         const res = await fetch(`/api/hot-keywords?source=${tab}`);
@@ -749,63 +752,161 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
           if (data.keywords?.length) { setKeywords(data.keywords); setLoading(false); return; }
         }
       } catch {}
-      // 폴백: 트렌드 샘플 데이터
-      const samples = {
-        naver: ["AI 이미지 생성","챗GPT 활용법","인스타 릴스","네이버 블로그 수익화","숏폼 마케팅","브랜드 디자인","SEO 최적화","카드뉴스 만들기","유튜브 쇼츠","디지털 마케팅 트렌드"],
-        google: ["AI marketing tools","Short form video","Brand identity design","Content automation","Social media trends","Logo design AI","Product photography","Influencer marketing","SEO strategy 2026","Digital advertising"],
-        youtube: ["숏폼 편집법","AI 썸네일 만들기","블로그 자동화","인스타 성장 전략","유튜브 알고리즘","카드뉴스 디자인","제품 사진 촬영","브랜딩 전략","마케팅 자동화","콘텐츠 크리에이터"],
-      };
-      setKeywords((samples[tab] || samples.naver).map((k, i) => ({ rank: i + 1, keyword: k, change: i < 3 ? "up" : i < 6 ? "same" : "new" })));
+      // 폴백: 플랫폼별 트렌드 샘플 (각 키워드에 플랫폼별 검색량 포함)
+      const mkVol = () => ({
+        naver:  Math.floor(Math.random()*90000+10000),
+        google: Math.floor(Math.random()*500000+50000),
+        youtube:Math.floor(Math.random()*200000+20000),
+        insta:  Math.floor(Math.random()*150000+10000),
+        tiktok: Math.floor(Math.random()*300000+30000),
+        x:      Math.floor(Math.random()*80000+5000),
+      });
+      const allKw = [
+        { keyword:"AI 이미지 생성",    change:"up" },
+        { keyword:"숏폼 마케팅",       change:"up" },
+        { keyword:"챗GPT 활용법",      change:"up" },
+        { keyword:"인스타 릴스 편집",   change:"new" },
+        { keyword:"네이버 블로그 수익화", change:"same" },
+        { keyword:"틱톡 알고리즘",     change:"new" },
+        { keyword:"브랜드 디자인 트렌드", change:"same" },
+        { keyword:"카드뉴스 만들기",   change:"same" },
+        { keyword:"유튜브 쇼츠 전략",  change:"up" },
+        { keyword:"SEO 최적화 2026",   change:"new" },
+        { keyword:"인플루언서 마케팅",  change:"same" },
+        { keyword:"AI 로고 디자인",    change:"new" },
+        { keyword:"콘텐츠 자동화",     change:"up" },
+        { keyword:"디지털 마케팅",     change:"same" },
+        { keyword:"제품 사진 촬영",    change:"same" },
+      ].map((k,i)=>({ ...k, rank:i+1, volume:mkVol(), totalVolume:0 }));
+      allKw.forEach(k=>{ k.totalVolume=Object.values(k.volume).reduce((a,b)=>a+b,0); });
+      // 탭별 정렬
+      if (tab==="all") {
+        allKw.sort((a,b)=>b.totalVolume-a.totalVolume);
+      } else {
+        allKw.sort((a,b)=>(b.volume[tab]||0)-(a.volume[tab]||0));
+      }
+      allKw.forEach((k,i)=>k.rank=i+1);
+      setKeywords(allKw);
       setLoading(false);
     };
     fetchKeywords();
   }, [tab]);
 
+  const fmtVol = v => v>=1000000?(v/1000000).toFixed(1)+"M":v>=1000?(v/1000).toFixed(0)+"K":String(v);
+  const maxVol = keywords.length>0?Math.max(...keywords.map(k=>tab==="all"?k.totalVolume:(k.volume?.[tab]||0)),1):1;
+
+  const filtered = search.trim()
+    ? keywords.filter(k=>k.keyword.toLowerCase().includes(search.toLowerCase()))
+    : keywords;
+
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
-      <div style={{ maxWidth:700, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
+      <div style={{ maxWidth:800, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:20 }}>
           <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔥 핫 키워드</div>
-          <div style={{ fontSize:13, color:muted }}>지금 뜨고 있는 인기 키워드를 확인하세요</div>
+          <div style={{ fontSize:13, color:muted }}>플랫폼별 실시간 인기 키워드와 검색량을 확인하세요</div>
         </div>
 
-        <div style={{ display:"flex", gap:4, marginBottom:20, background:isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content", margin:"0 auto 20px" }}>
-          {[["naver","네이버"],["google","구글"],["youtube","유튜브"]].map(([id,label])=>(
-            <button key={id} onClick={()=>setTab(id)}
-              style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
-                background:tab===id?(isDark?"rgba(99,102,241,0.5)":"#fff"):"transparent",
-                color:tab===id?(isDark?"#fff":accent):muted,
-                boxShadow:tab===id?"0 1px 4px rgba(0,0,0,0.1)":"none" }}>
-              {label}
+        {/* 플랫폼 탭 */}
+        <div style={{ display:"flex", gap:3, marginBottom:16, overflowX:"auto", padding:"4px 0" }}>
+          {PLATFORMS.map(p=>(
+            <button key={p.id} onClick={()=>setTab(p.id)}
+              style={{ padding:"8px 14px", borderRadius:10, border:tab===p.id?`2px solid ${p.color}`:`2px solid transparent`, cursor:"pointer",
+                background:tab===p.id?(isDark?`${p.color}25`:`${p.color}12`):"transparent",
+                color:tab===p.id?p.color:muted, fontSize:12, fontWeight:tab===p.id?800:500,
+                display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0, transition:"all 0.15s" }}>
+              <span style={{ fontSize:13 }}>{p.icon}</span>{p.label}
             </button>
           ))}
         </div>
 
+        {/* 검색 */}
+        <div style={{ position:"relative", marginBottom:16 }}>
+          <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:14, color:muted }}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="키워드 검색..."
+            style={{ width:"100%", padding:"11px 14px 11px 38px", borderRadius:12, border:`1px solid ${bdr}`,
+              background:bg, color:text, fontSize:14, outline:"none", boxSizing:"border-box" }} />
+        </div>
+
         {loading ? (
           <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-            <div style={{ width:40, height:40, border:"3px solid rgba(124,106,255,0.2)", borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
+            <div style={{ width:40, height:40, border:`3px solid ${accent}30`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
             <div style={{ fontSize:13 }}>키워드 불러오는 중...</div>
           </div>
+        ) : filtered.length===0 ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:muted, fontSize:14 }}>검색 결과가 없어요</div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            {keywords.map((item, i) => {
-              const k = typeof item === "string" ? { rank:i+1, keyword:item, change:"same" } : item;
+            {filtered.map((k, i) => {
               const isTop3 = k.rank <= 3;
+              const vol = tab==="all"?k.totalVolume:(k.volume?.[tab]||0);
+              const pct = Math.max(Math.round((vol/maxVol)*100),3);
+              const isOpen = expanded===i;
+              const platColors = { naver:"#03C75A", google:"#4285F4", youtube:"#FF0000", insta:"#E4405F", tiktok:"#000", x:isDark?"#fff":"#000" };
+              const platIcons  = { naver:"N", google:"G", youtube:"▶", insta:"📷", tiktok:"♪", x:"𝕏" };
               return (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px", borderRadius:12,
-                  border:`1px solid ${bdr}`, background:bg, transition:"all 0.15s" }}
-                  onMouseEnter={e=>{e.currentTarget.style.transform="translateX(4px)";e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.06)";}}
-                  onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
-                  <div style={{ width:32, height:32, borderRadius:8, flexShrink:0,
-                    background:isTop3?"linear-gradient(135deg,#7c6aff,#ec4899)":isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:14, fontWeight:900, color:isTop3?"#fff":muted }}>
-                    {k.rank}
+                <div key={i} onClick={()=>setExpanded(isOpen?null:i)}
+                  style={{ borderRadius:14, border:`1px solid ${isOpen?accent+"50":bdr}`, background:bg, cursor:"pointer", transition:"all 0.15s",
+                    boxShadow:isOpen?`0 4px 20px ${accent}15`:"none" }}>
+                  {/* 메인 행 */}
+                  <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px" }}>
+                    <div style={{ width:32, height:32, borderRadius:8, flexShrink:0,
+                      background:isTop3?"linear-gradient(135deg,#7c6aff,#ec4899)":isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:14, fontWeight:900, color:isTop3?"#fff":muted }}>
+                      {k.rank}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:15, fontWeight:isTop3?800:600, color:text, marginBottom:4 }}>{k.keyword}</div>
+                      {/* 볼륨 바 */}
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ flex:1, height:6, borderRadius:3, background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)", overflow:"hidden" }}>
+                          <div style={{ height:"100%", borderRadius:3, width:`${pct}%`, transition:"width 0.5s",
+                            background:tab==="all"?"linear-gradient(90deg,#7c6aff,#ec4899)":(PLATFORMS.find(p=>p.id===tab)?.color||accent) }} />
+                        </div>
+                        <span style={{ fontSize:11, fontWeight:700, color:accent, minWidth:48, textAlign:"right" }}>{fmtVol(vol)}</span>
+                      </div>
+                    </div>
+                    {k.change === "up" && <span style={{ fontSize:11, color:"#ef4444", fontWeight:700 }}>▲</span>}
+                    {k.change === "new" && <span style={{ fontSize:9, padding:"2px 7px", borderRadius:5, background:`${accent}15`, color:accent, fontWeight:700 }}>NEW</span>}
+                    {k.change === "same" && <span style={{ fontSize:11, color:muted }}>-</span>}
+                    <span style={{ fontSize:12, color:muted, transform:isOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}>▼</span>
                   </div>
-                  <div style={{ flex:1, fontSize:15, fontWeight:isTop3?800:600, color:text }}>{k.keyword}</div>
-                  {k.change === "up" && <span style={{ fontSize:11, color:"#ef4444", fontWeight:700 }}>▲</span>}
-                  {k.change === "new" && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"rgba(124,106,255,0.12)", color:accent, fontWeight:700 }}>NEW</span>}
-                  {k.change === "same" && <span style={{ fontSize:11, color:muted }}>-</span>}
+
+                  {/* 펼침: 플랫폼별 상세 */}
+                  {isOpen && k.volume && (
+                    <div style={{ padding:"0 18px 16px", borderTop:`1px solid ${bdr}` }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:muted, padding:"12px 0 10px" }}>플랫폼별 검색량</div>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
+                        {Object.entries(k.volume).map(([pid,v])=>{
+                          const pc = platColors[pid]||accent;
+                          const pi = platIcons[pid]||pid;
+                          const pName = PLATFORMS.find(p=>p.id===pid)?.label||pid;
+                          const maxP = Math.max(...Object.values(k.volume),1);
+                          const barPct = Math.max(Math.round((v/maxP)*100),5);
+                          return (
+                            <div key={pid} style={{ padding:"10px 12px", borderRadius:10, border:`1px solid ${bdr}`,
+                              background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                                <span style={{ fontSize:12, width:20, textAlign:"center", color:pc, fontWeight:900 }}>{pi}</span>
+                                <span style={{ fontSize:11, fontWeight:700, color:text }}>{pName}</span>
+                              </div>
+                              <div style={{ fontSize:16, fontWeight:900, color:pc, marginBottom:6 }}>{fmtVol(v)}</div>
+                              <div style={{ height:4, borderRadius:2, background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)", overflow:"hidden" }}>
+                                <div style={{ height:"100%", borderRadius:2, background:pc, width:`${barPct}%`, transition:"width 0.3s" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* 총 검색량 */}
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10, padding:"10px 12px",
+                        borderRadius:10, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", border:`1px solid ${accent}20` }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:muted }}>총 검색량</span>
+                        <span style={{ fontSize:18, fontWeight:900, color:accent }}>{fmtVol(k.totalVolume)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -2302,8 +2403,7 @@ const MENU_LABELS = {
   cardnews_simple: "카드뉴스", cardnews_simple_make: "카드뉴스",
   detail_simple: "상세페이지", detail_simple_make: "상세페이지", detail_simple_open: "상세페이지",
   thumbnail_gen: "썸네일 생성", thumbnail_gen_make: "썸네일 생성",
-  seo_home: "실시간 검색어", seo_blog: "네이버 블로그 분석", seo_youtube: "유튜브 분석", seo_tistory: "티스토리 분석",
-  rank_youtube: "유튜버 TOP100", rank_insta: "인스타 TOP100", rank_blog: "블로거 TOP100", rank_tiktok: "틱톡 TOP100", rank_brand: "브랜드 TOP100",
+  seo_home: "실시간 분석", seo_blog: "블로그 분석", seo_youtube: "유튜브 분석", seo_tistory: "티스토리 분석",
   logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
   blog_cafe_make: "네이버 카페",
   model_gen: "모델 생성", model_gen_make: "모델 생성",
