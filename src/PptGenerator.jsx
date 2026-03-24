@@ -865,21 +865,63 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
         <div style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
           {/* ── 내용 탭 ── */}
           {editTab === "content" && <>
-            {/* 레이아웃 (카테고리별) */}
+            {/* 레이아웃 (시각 미니프리뷰) */}
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>레이아웃 템플릿</div>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>레이아웃 템플릿</div>
               {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>(
-                <div key={cat} style={{ marginBottom:4 }}>
-                  <div style={{ fontSize:8, color:muted, marginBottom:2, paddingLeft:2 }}>{cat}</div>
-                  <div style={{ display:"flex", gap:2, flexWrap:"wrap" }}>
-                    {LAYOUTS.filter(l=>l.cat===cat).map(l=>(
-                      <button key={l.id} onClick={()=>upd("layout",l.id)}
-                        style={{ padding:"4px 6px", borderRadius:4, border:`1px solid ${cur.layout===l.id?accent:bdr}`,
-                          background:cur.layout===l.id?`${accent}12`:"transparent", color:cur.layout===l.id?accent:muted,
-                          fontSize:9, fontWeight:cur.layout===l.id?700:400, cursor:"pointer", whiteSpace:"nowrap" }}>
-                        {l.label}
-                      </button>
-                    ))}
+                <div key={cat} style={{ marginBottom:6 }}>
+                  <div style={{ fontSize:8, color:muted, marginBottom:3, paddingLeft:2 }}>{cat}</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4 }}>
+                    {LAYOUTS.filter(l=>l.cat===cat).map(l=>{
+                      const sel = cur.layout===l.id;
+                      const a = theme.accent, b2 = theme.bg, t2 = theme.text;
+                      // 미니 프리뷰 도형
+                      const MiniSlide = () => {
+                        const W=60,H=34,p=4;
+                        const bar = <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:a}}/>;
+                        const title = <div style={{width:"55%",height:3,background:t2,borderRadius:1,opacity:0.7}}/>;
+                        const line = <div style={{width:"30%",height:1.5,background:a,borderRadius:1,marginTop:2}}/>;
+                        const bodyL = <>{[1,2,3].map(i=><div key={i} style={{width:`${70-i*8}%`,height:1.5,background:t2,borderRadius:1,opacity:0.2,marginTop:2}}/>)}</>;
+                        const dot = (n) => Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:2,alignItems:"center",marginTop:2}}><div style={{width:2.5,height:2.5,borderRadius:"50%",background:a,flexShrink:0}}/><div style={{width:`${50-i*5}%`,height:1.5,background:t2,opacity:0.2,borderRadius:1}}/></div>);
+                        const numDot = (n) => Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:2,alignItems:"center",marginTop:2}}><div style={{width:5,height:5,borderRadius:"50%",background:a,fontSize:3,color:b2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>{i+1}</div><div style={{width:`${45-i*4}%`,height:1.5,background:t2,opacity:0.2,borderRadius:1}}/></div>);
+
+                        if(l.id==="title_only") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>{bar}<div style={{width:"60%",height:3,background:t2,borderRadius:1,opacity:0.8}}/><div style={{width:"35%",height:1.5,background:a,borderRadius:1,marginTop:3,opacity:0.5}}/></div>;
+                        if(l.id==="section") return <div style={{width:W,height:H,background:a,borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"55%",height:3,background:b2,borderRadius:1}}/></div>;
+                        if(l.id==="bullets") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{dot(3)}</div>;
+                        if(l.id==="numbered") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{numDot(3)}</div>;
+                        if(l.id==="icon_grid") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginTop:3}}>{[0,1,2,3].map(i=><div key={i} style={{height:6,borderRadius:2,background:`${a}20`,border:`0.5px solid ${a}40`}}/>)}</div></div>;
+                        if(l.id==="two_column") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:2,marginTop:3,flex:1}}><div style={{flex:1}}>{bodyL}</div><div style={{width:0.5,background:`${a}40`}}/><div style={{flex:1}}>{bodyL}</div></div></div>;
+                        if(l.id==="comparison") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:2,marginTop:3,alignItems:"center"}}><div style={{flex:1}}>{bodyL}</div><div style={{width:8,height:8,borderRadius:4,background:a,fontSize:4,color:b2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>VS</div><div style={{flex:1}}>{bodyL}</div></div></div>;
+                        if(l.id==="table") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{marginTop:3}}>{[0,1,2].map(r=><div key={r} style={{display:"flex",gap:1,marginTop:1}}>{[0,1,2].map(c=><div key={c} style={{flex:1,height:4,background:r===0?`${a}30`:`${t2}08`,borderRadius:1}}/>)}</div>)}</div></div>;
+                        if(l.id==="stats") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:3,marginTop:4,justifyContent:"center"}}>{[0,1,2].map(i=><div key={i} style={{textAlign:"center"}}><div style={{fontSize:7,fontWeight:900,color:a}}>8{i}</div><div style={{width:12,height:1,background:`${t2}20`,borderRadius:1,marginTop:1}}/></div>)}</div></div>;
+                        if(l.id==="chart_bar") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",alignItems:"flex-end",gap:3,marginTop:3,height:14}}>{[70,45,90,55].map((v,i)=><div key={i} style={{flex:1,height:`${v}%`,background:a,borderRadius:1,opacity:0.5+i*0.15}}/>)}</div></div>;
+                        if(l.id==="chart_pie") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{width:16,height:16,borderRadius:"50%",background:`conic-gradient(${a} 0deg 130deg, #f59e0b 130deg 230deg, #ef4444 230deg 360deg)`}}/></div>;
+                        if(l.id==="progress") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{marginTop:3}}>{[75,50,90].map((v,i)=><div key={i} style={{height:3,borderRadius:2,background:`${a}20`,marginTop:2,overflow:"hidden"}}><div style={{height:"100%",width:`${v}%`,background:a,borderRadius:2}}/></div>)}</div></div>;
+                        if(l.id==="timeline") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",alignItems:"center",gap:2,marginTop:5}}>{[0,1,2,3].map(i=><><div key={i} style={{width:5,height:5,borderRadius:"50%",background:a,flexShrink:0}}/>{i<3&&<div style={{flex:1,height:1,background:`${a}40`}}/>}</>)}</div></div>;
+                        if(l.id==="steps") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:1,marginTop:4}}>{[0,1,2].map(i=><div key={i} style={{flex:1,display:"flex",alignItems:"center"}}><div style={{flex:1,height:8,borderRadius:2,background:`${a}${i===0?"30":"15"}`,border:i===0?`0.5px solid ${a}`:"none"}}/>{i<2&&<span style={{fontSize:5,color:a,flexShrink:0}}>→</span>}</div>)}</div></div>;
+                        if(l.id==="pyramid") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,padding:p}}>{bar}{[25,40,55].map((w,i)=><div key={i} style={{width:`${w}%`,height:4,background:`${a}${20+i*12}`,borderRadius:1}}/>)}</div>;
+                        if(l.id==="quote") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",padding:p,gap:3}}>{bar}<div style={{width:2,background:a,borderRadius:1,flexShrink:0}}/><div style={{display:"flex",flexDirection:"column",justifyContent:"center"}}><div style={{width:30,height:2,background:t2,opacity:0.5,borderRadius:1}}/><div style={{width:20,height:1.5,background:t2,opacity:0.2,borderRadius:1,marginTop:3}}/></div></div>;
+                        if(l.id==="big_number") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{fontSize:12,fontWeight:900,color:a}}>85%</div><div style={{width:20,height:1.5,background:`${t2}20`,borderRadius:1,marginTop:2}}/></div>;
+                        if(l.id==="swot") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:2}}>{bar}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gridTemplateRows:"1fr 1fr",gap:1,height:"100%"}}>{["#22c55e","#f59e0b","#3b82f6","#ef4444"].map((c,i)=><div key={i} style={{borderRadius:2,background:`${c}15`,border:`0.5px solid ${c}40`}}/>)}</div></div>;
+                        if(l.id==="org_chart") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>{bar}<div style={{width:14,height:5,borderRadius:2,background:a}}/><div style={{width:0.5,height:3,background:a}}/><div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:10,height:5,borderRadius:2,border:`0.5px solid ${a}60`}}/>)}</div></div>;
+                        // image layouts
+                        if(l.id==="image_right") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex"}}>{bar}<div style={{flex:1,padding:p}}>{title}{line}{bodyL}</div><div style={{width:"35%",background:`${a}15`}}/></div>;
+                        if(l.id==="image_left") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex"}}>{bar}<div style={{width:"35%",background:`${a}15`}}/><div style={{flex:1,padding:p}}>{title}{line}{bodyL}</div></div>;
+                        if(l.id==="image_full") return <div style={{width:W,height:H,background:`${a}20`,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"50%",height:3,background:"#fff",borderRadius:1,opacity:0.8}}/></div>;
+                        return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{bodyL}</div>;
+                      };
+                      return (
+                        <button key={l.id} onClick={()=>upd("layout",l.id)}
+                          style={{ padding:"4px", borderRadius:6, border:`2px solid ${sel?accent:"transparent"}`,
+                            background:sel?`${accent}12`:"transparent", cursor:"pointer", textAlign:"center",
+                            boxShadow:sel?`0 0 0 1px ${accent}40`:"none", transition:"all 0.12s" }}>
+                          <div style={{ display:"flex", justifyContent:"center", marginBottom:2 }}>
+                            <MiniSlide />
+                          </div>
+                          <div style={{ fontSize:8, fontWeight:sel?700:400, color:sel?accent:muted }}>{l.label}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
