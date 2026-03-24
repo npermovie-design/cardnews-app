@@ -924,9 +924,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // 현재 단계: 1=입력, 2=생성중, 3=결과
   const wizStep = loading ? 2 : result ? 3 : 1;
   const WSTEPS = [
-    {n:1, label:t("inputStep"), icon:"📝"},
-    {n:2, label:t("genStep"), icon:"🤖"},
-    {n:3, label:t("resultStep"), icon:"✅"},
+    {n:1, label:t("inputStep")},
+    {n:2, label:t("genStep")},
+    {n:3, label:t("resultStep")},
   ];
 
   const content = (
@@ -935,7 +935,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       {showRegenConfirm && (
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
           <div style={{background:isDark?"rgba(18,16,58,0.98)":"#fff",border:"1px solid rgba(124,106,255,0.25)",borderRadius:20,padding:"36px 32px",maxWidth:380,width:"90%",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}}>
-            <div style={{fontSize:44,marginBottom:14}}>🔄</div>
+            <div style={{width:44,height:44,borderRadius:12,background:"rgba(99,102,241,0.1)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            </div>
             <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:8}}>{t("regenTitle")}</div>
             <div style={{fontSize:13,color:muted,lineHeight:1.8,marginBottom:24,whiteSpace:"pre-line"}}>{t("regenDesc")}</div>
             <div style={{display:"flex",gap:10}}>
@@ -964,25 +966,21 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         .tistory-content ul{padding-left:20px;margin:8px 0}
         .tistory-content li{margin:4px 0}
       `}</style>
-      {/* 단계 표시 - 카드뉴스 스타일 */}
-      <div style={{flexShrink:0,padding:"16px 28px 0",maxWidth:900,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
-        <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:16}}>
-          {WSTEPS.map((s,i)=>{
-            const done=wizStep>s.n, active=wizStep===s.n;
-            return <div key={s.n} style={{display:"flex",alignItems:"center",flex:i<WSTEPS.length-1?1:"auto"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,cursor:done?"pointer":"default"}}
-                onClick={()=>{ if(done) { setResult(""); setHtmlResult(""); } }}>
-                <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:12,fontWeight:900,flexShrink:0,
-                  background:done||active?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e5e5"),
-                  color:done||active?"#fff":(isDark?"rgba(255,255,255,0.3)":"#bbb")}}>
-                  {done?"✓":s.n}
-                </div>
-                <span style={{fontSize:13,fontWeight:active?800:500,color:active?text:muted,whiteSpace:"nowrap"}}>{s.label}</span>
-              </div>
-              {i<WSTEPS.length-1&&<div style={{flex:1,height:2,background:done?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e5e5"),margin:"0 12px",minWidth:16}}/>}
-            </div>;
-          })}
+      {/* 단계 표시 - 미니멀 프로그레스 */}
+      <div style={{flexShrink:0,padding:"12px 28px 0",maxWidth:900,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
+        <div style={{height:3,borderRadius:2,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",overflow:"hidden",marginBottom:8}}>
+          <div style={{height:"100%",borderRadius:2,background:"#7c6aff",width:(wizStep/WSTEPS.length*100)+"%",transition:"width 0.4s ease"}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#7c6aff"}}>{wizStep}/{WSTEPS.length}</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#7c6aff"}}>{WSTEPS[wizStep-1]?.label}</span>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            {WSTEPS.map(s=>(
+              <div key={s.n} style={{width:6,height:6,borderRadius:"50%",background:s.n<=wizStep?"#7c6aff":(isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)"),transition:"background 0.3s"}}/>
+            ))}
+          </div>
         </div>
       </div>
       {/* 본문 */}

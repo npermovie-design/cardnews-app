@@ -1,40 +1,34 @@
-/* 공통 스텝 진행 바 — 이미지 생성기에서 사용 */
+/* 공통 스텝 진행 바 — 미니멀 프로그레스 스타일 */
 export default function StepBar({ steps, current, isDark }) {
+  const acc = "#7c6aff";
+  const currentStep = steps.find(s => s.n === current);
+  const label = currentStep?.label || "";
+
   return (
-    <div style={{ padding:"16px 16px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
-      <style>{`
-        @media(max-width:480px){
-          .step-bar-inner{gap:0!important}
-          .step-bar-inner .step-label{font-size:11px!important}
-          .step-bar-inner .step-circle{width:24px!important;height:24px!important;font-size:10px!important}
-          .step-bar-inner .step-line{margin:0 6px!important;min-width:8px!important}
-        }
-      `}</style>
-      <div className="step-bar-inner" style={{ display:"flex", alignItems:"center", gap:0, marginBottom:16 }}>
-        {steps.map((s, i) => {
-          const done = current > s.n;
-          const active = current === s.n;
-          return (
-            <div key={s.n} style={{ display:"flex", alignItems:"center", flex: i < steps.length - 1 ? 1 : "auto" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <div className="step-circle" style={{
-                  width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:12, fontWeight:900, flexShrink:0,
-                  background: done || active ? "#7c6aff" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"),
-                  color: done || active ? "#fff" : (isDark ? "rgba(255,255,255,0.3)" : "#bbb"),
-                }}>
-                  {done ? "✓" : s.n}
-                </div>
-                <span className="step-label" style={{ fontSize:13, fontWeight: active ? 800 : 500, color: active ? (isDark?"#fff":"#1a1a2e") : (isDark?"rgba(255,255,255,0.4)":"#999"), whiteSpace:"nowrap" }}>
-                  {s.label}
-                </span>
-              </div>
-              {i < steps.length - 1 && (
-                <div className="step-line" style={{ flex:1, height:2, background: done ? "#7c6aff" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16 }} />
-              )}
-            </div>
-          );
-        })}
+    <div style={{ padding:"12px 16px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
+      {/* 프로그레스 바 */}
+      <div style={{ height:3, borderRadius:2, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", overflow:"hidden", marginBottom:8 }}>
+        <div style={{
+          height:"100%", borderRadius:2, background: acc,
+          width: (current / steps.length * 100) + "%",
+          transition:"width 0.4s ease",
+        }} />
+      </div>
+      {/* 현재 단계 텍스트 + 도트 */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:800, color:acc }}>{current}/{steps.length}</span>
+          <span style={{ fontSize:12, fontWeight:700, color:acc }}>{label}</span>
+        </div>
+        <div style={{ display:"flex", gap:4 }}>
+          {steps.map(s => (
+            <div key={s.n} style={{
+              width:6, height:6, borderRadius:"50%",
+              background: s.n <= current ? acc : (isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)"),
+              transition:"background 0.3s",
+            }} />
+          ))}
+        </div>
       </div>
     </div>
   );

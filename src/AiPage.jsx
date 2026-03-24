@@ -788,25 +788,23 @@ function useGenColors(isDark) {
 
 function StepBar({ step, total, labels, ACC }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:24 }}>
-      {labels.map((l,i) => (
-        <div key={i} style={{ display:"flex", alignItems:"center", flex: i < labels.length-1 ? 1 : "none" }}>
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-            <div style={{
-              width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:12, fontWeight:900,
-              background: i+1 <= step ? ACC : "rgba(128,128,128,0.15)",
-              color: i+1 <= step ? "#fff" : "rgba(128,128,128,0.5)",
-              border: i+1 === step ? `2px solid ${ACC}` : "2px solid transparent",
-              transition:"all 0.3s",
-            }}>{i+1 < step ? "✓" : i+1}</div>
-            <div style={{ fontSize:10, color: i+1 <= step ? ACC : "rgba(128,128,128,0.5)", fontWeight: i+1===step?700:400, whiteSpace:"nowrap" }}>{l}</div>
-          </div>
-          {i < labels.length-1 && (
-            <div style={{ flex:1, height:2, background: i+1 < step ? ACC : "rgba(128,128,128,0.15)", margin:"0 4px", marginBottom:16, transition:"background 0.3s" }} />
-          )}
+    <div style={{ marginBottom:20 }}>
+      {/* 프로그레스 바 */}
+      <div style={{ height:3, borderRadius:2, background:"rgba(128,128,128,0.12)", overflow:"hidden", marginBottom:10 }}>
+        <div style={{ height:"100%", borderRadius:2, background:ACC, width: (step / labels.length * 100) + "%", transition:"width 0.4s ease" }} />
+      </div>
+      {/* 현재 단계 표시 */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:800, color:ACC }}>{step}/{labels.length}</span>
+          <span style={{ fontSize:12, fontWeight:700, color:ACC }}>{labels[step-1]}</span>
         </div>
-      ))}
+        <div style={{ display:"flex", gap:4 }}>
+          {labels.map((_,i) => (
+            <div key={i} style={{ width:6, height:6, borderRadius:"50%", background: i+1 <= step ? ACC : "rgba(128,128,128,0.2)", transition:"background 0.3s" }} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
