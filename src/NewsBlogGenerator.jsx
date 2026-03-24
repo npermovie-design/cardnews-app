@@ -178,7 +178,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
-export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate, initialType }) {
+export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate, initialType, linkMode }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
@@ -460,16 +460,17 @@ ${articleSection}
       <div style={{flex:1,overflowY:"auto"}}>
       {wizStep===1 && (
         <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
-        {/* 헤더 */}
-        <div style={{marginBottom:18}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#ef4444,#dc2626)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>📰</div>
-            <div>
-              <div style={{fontSize:19,fontWeight:900,color:text,letterSpacing:-0.5}}>뉴스로 블로그 글쓰기</div>
-              <div style={{fontSize:13,color:muted,marginTop:1}}>뉴스 기사 URL만 넣으면 AI가 블로그 글을 자동 작성해요</div>
+        {/* 헤더 - linkMode에 따라 동적 */}
+        {!linkMode && (
+          <div style={{marginBottom:18, textAlign:"center"}}>
+            <div style={{fontSize:19,fontWeight:900,color:text,letterSpacing:-0.5}}>
+              {linkMode === "blog" ? "블로그 글로 변환" : linkMode === "sns" ? "SNS 글로 변환" : "뉴스로 블로그 글쓰기"}
+            </div>
+            <div style={{fontSize:13,color:muted,marginTop:4}}>
+              {linkMode === "blog" ? "블로그 URL을 입력하면 AI가 새 글로 변환해요" : linkMode === "sns" ? "SNS 게시물 URL을 입력하면 블로그 글로 변환해요" : "뉴스 기사 URL만 넣으면 AI가 블로그 글을 자동 작성해요"}
             </div>
           </div>
-        </div>
+        )}
 
         {/* 스크롤 영역 */}
         <div style={{flex:1,overflowY:"auto",padding:"24px 28px"}}>
@@ -477,16 +478,15 @@ ${articleSection}
           {/* URL 입력 */}
           <div style={{marginBottom:20}}>
             <div style={{fontSize:14,fontWeight:700,color:muted,marginBottom:8}}>
-              뉴스 기사 URL <span style={{color:"#ef4444"}}>*</span>
+              {linkMode === "blog" ? "블로그 URL" : linkMode === "sns" ? "SNS URL" : "뉴스 기사 URL"} <span style={{color:"#ef4444"}}>*</span>
             </div>
             <div style={{display:"flex",gap:8}}>
               <div style={{position:"relative",flex:1}}>
-                <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none"}}>📰</span>
                 <input className="ns-input" value={url}
                   onChange={e=>{setUrl(e.target.value);setFetchErr("");}}
                   onKeyDown={e=>e.key==="Enter"&&url.trim()&&fetchNews()}
-                  placeholder="https://n.news.naver.com/article/..."
-                  style={{...IS,paddingLeft:42,transition:"border-color 0.2s,box-shadow 0.2s"}}/>
+                  placeholder={linkMode === "blog" ? "https://blog.naver.com/..." : linkMode === "sns" ? "https://www.instagram.com/p/..." : "https://n.news.naver.com/article/..."}
+                  style={{...IS,transition:"border-color 0.2s,box-shadow 0.2s"}}/>
               </div>
               <button onClick={fetchNews} disabled={!url.trim()||!!fetchStatus}
                 style={{padding:"0 20px",borderRadius:10,border:"none",flexShrink:0,
@@ -531,12 +531,17 @@ ${articleSection}
             </div>
           )}
 
-          {/* 지원 언론사 안내 */}
+          {/* 지원 소스 안내 */}
           {!newsInfo && (
             <div style={{marginBottom:20,padding:"14px 16px",background:cardBg,borderRadius:12,border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,marginBottom:8}}>📋 지원 언론사</div>
+              <div style={{fontSize:12,fontWeight:700,color:muted,marginBottom:8}}>지원 소스</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {["네이버뉴스","다음뉴스","조선일보","중앙일보","동아일보","한겨레","연합뉴스","KBS","MBC","SBS","매일경제","한국경제"].map(n=>(
+                {(linkMode === "blog"
+                  ? ["네이버 블로그","티스토리","브런치","벨로그","미디엄","워드프레스"]
+                  : linkMode === "sns"
+                  ? ["인스타그램","X(트위터)","스레드","페이스북","링크드인"]
+                  : ["네이버뉴스","다음뉴스","조선일보","중앙일보","동아일보","한겨레","연합뉴스","KBS","MBC","SBS","매일경제","한국경제"]
+                ).map(n=>(
                   <span key={n} style={{fontSize:11,padding:"3px 9px",borderRadius:12,background:isDark?"rgba(255,255,255,0.06)":"rgba(99,102,241,0.06)",color:muted}}>
                     {n}
                   </span>

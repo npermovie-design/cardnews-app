@@ -127,13 +127,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         {/* SNS 글쓰기 그룹 */}
         <Group label={t("snsWrite")} icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
-          <Item id="blog_naver_intro"   label={t("naverBlog")}      indent />
-          <Item id="blog_cafe"          label={t("naverCafe")}      indent />
-          <Item id="blog_tistory_intro" label={t("tistory")}        indent />
-          <Item id="blog_insta_intro"   label={t("instaCap")}       indent />
-          <Item id="blog_youtube_intro" label={t("youtubeScript")}  indent />
-          <Item id="blog_thread_intro"  label={t("thread")}         indent />
-          <Item id="blog_link_intro"    label="링크 글쓰기"           indent />
+          <Item id="blog_naver"   label={t("naverBlog")}      indent />
+          <Item id="blog_cafe"    label={t("naverCafe")}      indent />
+          <Item id="blog_tistory" label={t("tistory")}        indent />
+          <Item id="blog_insta"   label={t("instaCap")}       indent />
+          <Item id="blog_youtube" label={t("youtubeScript")}  indent />
+          <Item id="blog_thread"  label={t("thread")}         indent />
+          <Item id="blog_link"    label="링크 글쓰기"           indent />
         </>}
 
         {/* SNS 이미지 그룹 */}
@@ -1928,21 +1928,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultTab="youtube" />;
   }
 
-  // 블로그 계열 인트로
+  // 블로그 계열 인트로 → 인트로 없이 직접 도구로 이동
   if (aiMenu.endsWith("_intro") && aiMenu.startsWith("blog_")) {
     const baseId = aiMenu.replace("_intro", "");
-    const d = BLOG_INTRO[baseId];
-    if (d) return <IntroScreen {...d} onStart={()=>setAiMenu(baseId)} />;
+    const info = BLOG_MAP[baseId] || { type: "blog", label: "블로그 글쓰기" };
+    return (
+      <div key={baseId} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+      </div>
+    );
   }
 
-  // 네이버 카페 글쓰기
-  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe") {
-    if (aiMenu === "blog_cafe") {
-      const d = BLOG_INTRO.blog_cafe;
-      return <IntroScreen {...d} onStart={() => setAiMenu("blog_cafe_make")} />;
-    }
-  }
-  if (aiMenu === "blog_cafe_make") {
+  // 네이버 카페 글쓰기 (인트로 없이 직접 진입)
+  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
     return (
       <div key="blog_cafe_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <BlogGenerator initialType="blog_cafe" menuLabel="네이버 카페 글쓰기" embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
@@ -1978,105 +1976,26 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 심플 카드뉴스 인트로 or 생성기
-  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make") {
-    if (aiMenu === "cardnews_simple") {
-      return (
-        <IntroScreen menuId="cardnews_simple" icon="" title={_s("카드뉴스","Card News")} badge={_s("텍스트 편집 방식 · 빠른 제작","Text Edit · Fast Creation")}
-          subtitle={_s("주제만 입력하면 AI가 슬라이드 텍스트를 자동 생성해줘요.","Just enter a topic and AI auto-generates slide text.")}
-          color="#7c6aff"
-          steps={[
-            { title:_s("주제 입력","Enter Topic"), desc:_s("카드뉴스 주제를 입력해요.","Enter card news topic.") },
-            { title:_s("슬라이드 기획","Slide Planning"), desc:_s("각 슬라이드의 내용을 AI가 추천해요.","AI suggests content for each slide.") },
-            { title:_s("디자인 선택","Design Selection"), desc:_s("스타일 프리셋과 크기를 선택해요.","Choose style preset and size.") },
-            { title:_s("편집 + 저장","Edit & Save"), desc:_s("텍스트 수정, 색상 변경 후 PNG/ZIP 저장","Edit text, colors, then save as PNG/ZIP") },
-          ]}
-          features={[
-            { icon:"⚡", label:_s("빠른 제작","Fast") },
-            { icon:"💎", label:"10P" },
-            { icon:"🎨", label:_s("배경색 변경","BG Color") },
-            { icon:"📸", label:_s("배경 이미지","BG Image") },
-            { icon:"↔", label:_s("정렬 조절","Alignment") },
-            { icon:"📥", label:"PNG/ZIP" },
-          ]}
-          cta={_s("카드뉴스 만들기","Create Card News")}
-          onStart={()=>setAiMenu("cardnews_simple_make")}
-        />
-      );
-    }
+  // 심플 카드뉴스 (인트로 없이 직접 진입)
+  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return (
       <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme}  onUserUpdate={onUserUpdate} />
-      </div>
-    );
-  }
-  if (aiMenu === "cardnews_simple_make") {
-    return (
-      <div key="cn_simple_make" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme}  onUserUpdate={onUserUpdate} />
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />
       </div>
     );
   }
 
-  // 상세페이지 인트로 or 생성기
+  // 상세페이지 (인트로 없이 직접 진입)
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
-    if (aiMenu === "detail_simple") {
-      return (
-        <IntroScreen menuId="detail_simple" icon="" title={_s("상세페이지","Detail Page")} badge={_s("텍스트 편집 방식 · 빠른 제작","Text Editing · Quick Creation")}
-          subtitle={_s("상품 정보를 입력하면 AI가 상세페이지 슬라이드 텍스트를 자동 구성해줘요.","Enter product info and AI auto-generates detail page slide text.")}
-          color="#10b981"
-          steps={[
-            { title:_s("상품 정보 입력","Enter Product Info"), desc:_s("카테고리·상품명·핵심 특징 등 상품 정보를 입력해요. AI 문구 추천도 제공해요.","Enter category, product name, key features. AI also suggests copy.") },
-            { title:_s("슬라이드 기획","Plan Slides"), desc:_s("각 슬라이드의 헤드라인·본문을 AI가 자동 추천하거나 직접 입력해요.","AI auto-suggests headlines and body for each slide, or enter manually.") },
-            { title:_s("디자인 선택 + 사이즈","Design + Size"), desc:_s("스타일 프리셋과 이미지 크기를 선택해요. 세로형이 기본이에요.","Choose style presets and image size. Vertical is default.") },
-            { title:_s("텍스트 편집 + 저장","Edit Text + Save"), desc:_s("제목/본문 수정, 배경색·글자색 변경, 정렬 설정 후 PNG/ZIP 저장","Edit title/body, change background/text color, set alignment, save as PNG/ZIP.") },
-          ]}
-          features={[
-            { icon:"⚡", label:_s("빠른 제작","Quick Creation") },
-            { icon:"💎", label:"10P" },
-            { icon:"🎨", label:_s("배경색 자유 변경","Custom Background") },
-            { icon:"📸", label:_s("배경 이미지 업로드","Upload BG Image") },
-            { icon:"↕", label:_s("세로/가로 정렬","Vertical/Horizontal") },
-            { icon:"📥", label:_s("PNG/ZIP 저장","Save PNG/ZIP") },
-          ]}
-          cta={_s("상세페이지 만들기","Create Detail Page")}
-          onStart={()=>setAiMenu("detail_simple_make")}
-        />
-      );
-    }
     return (
       <div key="detail_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme}  onUserUpdate={onUserUpdate} />
+        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />
       </div>
     );
   }
 
-  // 썸네일 생성기
+  // 썸네일 생성기 (인트로 없이 직접 진입)
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
-    if (aiMenu === "thumbnail_gen") {
-      return (
-        <IntroScreen menuId="thumbnail_gen" icon="" title={_s("썸네일 생성기","Thumbnail Generator")} badge={_s("유튜브·인스타·블로그","YouTube · Instagram · Blog")}
-          subtitle={_s("배경 이미지와 텍스트를 조합하여 SNS 썸네일을 직접 디자인하세요. 위치, 크기, 색상을 자유롭게 조절할 수 있어요.","Combine background images with text to design SNS thumbnails. Freely adjust position, size, and color.")}
-          color="#ef4444"
-          steps={[
-            { title:_s("템플릿 선택","Choose Template"), desc:_s("유튜브(1280x720), 인스타(1080x1080), 블로그(1200x630) 등 용도별 템플릿을 선택해요.","Select templates for YouTube, Instagram, Blog, etc.") },
-            { title:_s("배경 설정","Set Background"), desc:_s("이미지를 업로드하거나 배경색을 선택하고, 오버레이로 분위기를 조절해요.","Upload an image or choose background color, adjust mood with overlay.") },
-            { title:_s("텍스트 편집","Edit Text"), desc:_s("제목, 부제목 등 텍스트의 내용·크기·위치·색상·외곽선을 자유롭게 편집해요.","Freely edit text content, size, position, color, and outline.") },
-            { title:_s("PNG 다운로드","Download PNG"), desc:_s("완성된 썸네일을 PNG로 다운로드하여 바로 사용하세요.","Download the completed thumbnail as PNG for immediate use.") },
-          ]}
-          features={[
-            { icon:"🎬", label:_s("유튜브 1280x720","YouTube 1280x720") },
-            { icon:"📱", label:_s("인스타 1080x1080","Instagram 1080x1080") },
-            { icon:"📝", label:_s("블로그 1200x630","Blog 1200x630") },
-            { icon:"🎨", label:_s("자유 텍스트 편집","Free Text Edit") },
-            { icon:"🖼", label:_s("배경 이미지 업로드","Background Upload") },
-            { icon:"💰", label:_s("무료 (0P)","Free (0P)") },
-          ]}
-          cta={_s("썸네일 만들기","Create Thumbnail")}
-          onStart={()=>setAiMenu("thumbnail_gen_make")}
-        />
-      );
-    }
     return (
       <div key="thumbnail" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />
@@ -2146,99 +2065,23 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 모델 생성 인트로
-  if (aiMenu === "model_gen") {
-    return (
-      <IntroScreen icon="🧍" title={_s("모델 생성","Model Generator")} badge={_s("AI 광고 모델 · 다양한 설정","AI Ad Model · Various Settings")} color="#7c6aff"
-        subtitle={_s("성별·나이대·국적·의상·배경·포즈를 설정하거나 직접 프롬프트를 입력해 AI 광고 모델 이미지를 생성해요.","Set gender, age, nationality, outfit, background, pose or enter a custom prompt to generate AI ad model images.")}
-        steps={[
-          { title:_s("기본 설정","Basic Settings"), desc:_s("성별, 나이대, 국적을 선택해요.","Select gender, age range, and nationality.") },
-          { title:_s("스타일 설정","Style Settings"), desc:_s("의상, 배경, 포즈를 선택해요. 직접 프롬프트 입력도 가능해요.","Choose outfit, background, pose. Custom prompt also available.") },
-          { title:_s("참고 이미지 & 생성","Reference Image & Generate"), desc:_s("참고 이미지를 추가하거나 바로 생성해요.","Add reference images or generate directly.") },
-          { title:_s("결과 확인","View Results"), desc:_s("생성된 모델 이미지를 확인하고 다운로드해요.","View and download the generated model images.") },
-        ]}
-        features={[
-          { icon:"👗", label:_s("8가지 의상","8 Outfits") }, { icon:"🌏", label:_s("6가지 국적","6 Nationalities") },
-          { icon:"✍️", label:_s("직접 프롬프트","Custom Prompt") }, { icon:"💎", label:"10P" },
-        ]}
-        cta={_s("모델 이미지 생성하기","Generate Model Image")}
-        onStart={() => setAiMenu("model_gen_make")}
-      />
-    );
-  }
-  if (aiMenu === "model_gen_make") {
+  // 모델 생성 (인트로 없이 직접 진입)
+  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") {
     return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 얼굴 교체 인트로
-  if (aiMenu === "face_swap") {
-    return (
-      <IntroScreen icon="🔄" title={_s("얼굴 교체","Face Swap")} badge={_s("비교 슬라이더 · 실시간 확인","Comparison Slider · Real-time Preview")} color="#10b981"
-        subtitle={_s("원본 이미지와 참고 얼굴 이미지를 업로드하면 AI가 얼굴만 자연스럽게 교체해줘요.","Upload an original and a reference face image, and AI naturally swaps just the face.")}
-        steps={[
-          { title:_s("원본 업로드","Upload Original"), desc:_s("교체 기반이 될 인물 사진을 업로드해요.","Upload the person photo to use as the base.") },
-          { title:_s("참고 업로드 & 설정","Upload Reference & Settings"), desc:_s("스타일을 가져올 이미지와 교체 범위(얼굴/의상/둘다)를 선택해요.","Select the style reference image and swap scope (face/outfit/both).") },
-          { title:_s("AI 교체 생성","AI Swap Generation"), desc:_s("AI가 자연스럽게 교체한 이미지를 생성해요.","AI generates a naturally swapped image.") },
-          { title:_s("슬라이더 비교","Slider Comparison"), desc:_s("드래그 슬라이더로 전후 결과를 비교하고 다운로드해요.","Compare before/after with a drag slider and download.") },
-        ]}
-        features={[
-          { icon:"😊", label:_s("얼굴만 교체","Face Only Swap") }, { icon:"🖼", label:_s("원본 보존","Preserve Original") },
-          { icon:"◀▶", label:_s("비교 슬라이더","Comparison Slider") }, { icon:"💎", label:"10P" },
-        ]}
-        cta={_s("얼굴 교체 시작하기","Start Face Swap")}
-        onStart={() => setAiMenu("face_swap_make")}
-      />
-    );
-  }
-  if (aiMenu === "face_swap_make") {
+  // 얼굴 교체 (인트로 없이 직접 진입)
+  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") {
     return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 의상 교체 인트로
-  if (aiMenu === "outfit_swap") {
-    return (
-      <IntroScreen icon="👗" title={_s("의상 교체","Outfit Swap")} badge={_s("참고 이미지 · 스타일 선택","Reference Image · Style Selection")} color="#ec4899"
-        subtitle={_s("원본 이미지에서 의상만 바꿔드려요. 참고 이미지를 올리거나 원하는 스타일을 선택하면 AI가 자연스럽게 옷을 교체해줘요.","Swap only the outfit in the original image. Upload a reference or select a style and AI naturally changes the clothing.")}
-        steps={[
-          { title:_s("원본 이미지 업로드","Upload Original Image"), desc:_s("의상을 교체할 인물 이미지를 업로드해요.","Upload the person image to change outfit.") },
-          { title:_s("스타일 선택","Select Style"), desc:_s("참고 이미지를 올리거나 원하는 의상 스타일을 선택해요.","Upload a reference image or choose a desired outfit style.") },
-          { title:_s("AI 의상 교체","AI Outfit Swap"), desc:_s("AI가 몸·자세·배경은 그대로 두고 의상만 자연스럽게 바꿔줘요.","AI keeps body, pose, and background intact while naturally swapping the outfit.") },
-          { title:_s("결과 비교","Compare Results"), desc:_s("슬라이더로 전후를 비교하고 PNG로 저장해요.","Compare before/after with slider and save as PNG.") },
-        ]}
-        features={[
-          { icon:"👗", label:_s("의상만 교체","Outfit Only Swap") }, { icon:"🎨", label:_s("8가지 스타일","8 Styles") },
-          { icon:"◀▶", label:_s("비교 슬라이더","Comparison Slider") }, { icon:"💎", label:"10P" },
-        ]}
-        cta={_s("의상 교체 시작하기","Start Outfit Swap")}
-        onStart={() => setAiMenu("outfit_swap_make")}
-      />
-    );
-  }
-  if (aiMenu === "outfit_swap_make") {
+  // 의상 교체 (인트로 없이 직접 진입)
+  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") {
     return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
-  // 여백 늘리기 인트로
-  if (aiMenu === "outpaint") {
-    return (
-      <IntroScreen icon="↔" title={_s("여백 늘리기","Outpaint")} badge={_s("AI Outpainting · 수동 크기 조절","AI Outpainting · Manual Resize")} color="#f59e0b"
-        subtitle={_s("이미지 주변의 빈 공간을 AI가 자연스럽게 채워 확장해줘요.","AI naturally fills and extends the empty space around your image.")}
-        steps={[
-          { title:_s("이미지 업로드","Upload Image"), desc:_s("여백을 늘릴 이미지를 업로드해요.","Upload the image to extend.") },
-          { title:_s("크기 설정","Set Size"), desc:_s("수동(방향별 px)으로 직접 조절하거나, 비율을 선택해서 자동으로 설정해요.","Manually adjust per direction (px) or select a ratio for auto settings.") },
-          { title:_s("AI 여백 늘리기","AI Outpaint"), desc:_s("AI가 기존 이미지와 자연스럽게 어울리도록 빈 공간을 채워요.","AI fills empty space to blend naturally with the original image.") },
-          { title:_s("결과 다운로드","Download Result"), desc:_s("확장된 이미지를 확인하고 PNG로 저장해요.","View the extended image and save as PNG.") },
-        ]}
-        features={[
-          { icon:"✏️", label:_s("수동 크기 조절","Manual Resize") }, { icon:"📐", label:_s("비율 자동 선택","Auto Ratio") },
-          { icon:"🌊", label:_s("자연스러운 연결","Seamless Blend") }, { icon:"💎", label:"10P" },
-        ]}
-        cta={_s("여백 늘리기 시작하기","Start Outpaint")}
-        onStart={() => setAiMenu("outpaint_make")}
-      />
-    );
-  }
-  if (aiMenu === "outpaint_make") {
+  // 여백 늘리기 (인트로 없이 직접 진입)
+  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") {
     return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
   }
 
@@ -2367,33 +2210,38 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const accent = "#6366f1";
   const tabs = [
-    { id: "youtube", label: "유튜브 영상", desc: "영상 URL을 블로그 글로 변환" },
-    { id: "news",    label: "뉴스 기사",   desc: "뉴스 URL을 블로그 글로 변환" },
+    { id: "youtube", label: "유튜브" },
+    { id: "news",    label: "뉴스 기사" },
+    { id: "blog",    label: "블로그" },
+    { id: "sns",     label: "SNS" },
   ];
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      {/* 탭 헤더 */}
-      <div style={{ flexShrink:0, padding:"16px 20px 0", borderBottom:`1px solid ${bdr}`,
-        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(249,250,251,0.8)" }}>
-        <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>링크 글쓰기</div>
-        <div style={{ fontSize:12, color:muted, marginBottom:14 }}>유튜브 영상이나 뉴스 기사 URL을 입력하면 AI가 블로그 글로 변환해줘요</div>
-        <div style={{ display:"flex", gap:4 }}>
-          {tabs.map(t => {
-            const active = tab === t.id;
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{
-                  padding:"10px 20px", borderRadius:"10px 10px 0 0", border:"none", cursor:"pointer",
-                  background: active ? (isDark?"rgba(99,102,241,0.15)":"#fff") : "transparent",
-                  color: active ? accent : muted, fontSize:14, fontWeight: active ? 800 : 500,
-                  borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
-                  transition: "all 0.15s",
-                }}>
-                {t.label}
-              </button>
-            );
-          })}
+      {/* 상단 헤더 + 탭 */}
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
+        <div style={{ maxWidth:720, margin:"0 auto", padding:"20px 24px 0" }}>
+          <div style={{ textAlign:"center", marginBottom:16 }}>
+            <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>링크 글쓰기</div>
+            <div style={{ fontSize:13, color:muted }}>URL을 입력하면 AI가 블로그 글로 변환해줘요</div>
+          </div>
+          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+            {tabs.map(t => {
+              const active = tab === t.id;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  style={{
+                    padding:"10px 24px", border:"none", cursor:"pointer",
+                    background: "transparent",
+                    color: active ? accent : muted, fontSize:14, fontWeight: active ? 800 : 500,
+                    borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
+                    transition: "all 0.15s", marginBottom:-1,
+                  }}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -2402,7 +2250,8 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
         {tab === "youtube" ? (
           <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
         ) : (
-          <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
+            linkMode={tab === "blog" ? "blog" : tab === "sns" ? "sns" : "news"} />
         )}
       </div>
     </div>
