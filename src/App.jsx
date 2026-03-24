@@ -228,8 +228,16 @@ export default function App() {
         });
         if (!ok) return;
       }
-      const hash = window.location.hash.replace("#", "") || "home";
-      setPage(hash); setOpenMenu(null); setMobileOpen(false);
+      const rawPath = window.location.pathname.replace(/^\//, "") || "home";
+      const segments = rawPath.split("/");
+      const mainSeg = segments[0] || "home";
+      if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
+        setBoardCat(segments[1]);
+      }
+      if (mainSeg === "ai" && segments[1]) {
+        setAiMenu(segments[1]);
+      }
+      setPage(mainSeg); setOpenMenu(null); setMobileOpen(false);
       window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", fn);

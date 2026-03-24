@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
+import { Player } from "@remotion/player";
+import ShortformComposition from "./remotion/ShortformComposition";
 import { callClaude } from "./aiClient";
 
 const ACC = "#7c6aff";
@@ -979,7 +981,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
             })}
           </div>
 
-          {/* 가운데: 9:16 플레이어 */}
+          {/* 가운데: Remotion 9:16 플레이어 */}
           <div style={{flexShrink:0,display:"flex",flexDirection:"column",background:"#060606",borderRight:`1px solid ${bdr}`,
             width:"calc((100vh - 130px) * 9 / 16 + 20px)",minWidth:240,maxWidth:360}}>
             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"10px"}}>
@@ -988,13 +990,38 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                 {(()=>{
                   const k=cur.index??selIdx;
                   const ex=extracted[k];
-                  if(ex)return<video key={ex.url} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls loop src={ex.url}/>;
-                  if(inputMode==="file"&&file)return(
-                    <video key={`f-${selIdx}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} controls
-                      onLoadedMetadata={e=>{e.target.currentTime=curStart;}}
-                      onTimeUpdate={e=>{if(e.target.currentTime>=curEnd&&curEnd>curStart)e.target.currentTime=curStart;}}
-                      src={fileObjUrl.current||""}/>
-                  );
+                  const videoSrc=ex?ex.url:(inputMode==="file"&&file?fileObjUrl.current:null);
+                  const clipDur=Math.max(cur.duration||30,1);
+
+                  // Remotion Player로 실시간 미리보기
+                  if(videoSrc){
+                    return(
+                      <Player
+                        component={ShortformComposition}
+                        inputProps={{
+                          videoSrc,
+                          startFrom: Math.round(curStart * 30),
+                          layoutType,
+                          topText: topText || cur.title_a || "",
+                          botText: botText || cur.hook || "",
+                          topColor: capStyle.topColor || "#fff",
+                          botColor: capStyle.botColor || "#ffff00",
+                          bgOp: capStyle.bgOp || 0.55,
+                          font: capStyle.font || "Noto Sans KR",
+                        }}
+                        durationInFrames={Math.round(clipDur * 30)}
+                        fps={30}
+                        compositionWidth={1080}
+                        compositionHeight={1920}
+                        style={{width:"100%",height:"100%",borderRadius:14}}
+                        controls
+                        loop
+                        autoPlay={!!ex}
+                      />
+                    );
+                  }
+
+                  // 유튜브 썸네일 미리보기 (영상 없음)
                   if(inputMode==="youtube"&&ytInfo)return(
                     <div style={{width:"100%",height:"100%",position:"relative"}}>
                       <img src={ytInfo.thumbnail} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -1017,7 +1044,7 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   </div>;
                 })()}
                 {rec&&(
-                  <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:"12px"}}>
+                  <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:"12px",zIndex:10}}>
                     <div style={{position:"relative",width:50,height:50}}>
                       <div style={{position:"absolute",inset:0,borderRadius:"50%",border:`3px solid ${ACC}25`}}/>
                       <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:ACC,animation:"spin 1s linear infinite"}}/>

@@ -66,45 +66,27 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const comText  = isDark ? "rgba(255,255,255,0.45)"     : "#888";
   const usageBar = isDark ? "rgba(255,255,255,0.08)"     : "rgba(99,102,241,0.12)";
   const usageText= isDark ? "rgba(255,255,255,0.3)"      : "#aaa";
-  const [blogOpen,  setBlogOpen]  = useState(true);
-  const [cardOpen,  setCardOpen]  = useState(true);
-  const [imageOpen, setImageOpen] = useState(true);
-  const [analysisOpen, setAnalysisOpen] = useState(true);
-
   const info = getAiLeft(user);
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
   const pct = Math.min(Math.round(info.used / freeLimit * 100), 100) + "%";
 
-  const Item = ({ id, label, icon, indent }) => {
+  const Item = ({ id, label, icon, ids }) => {
     const baseId = id.replace('_intro', '');
-    const active = aiMenu === id || aiMenu.startsWith(baseId);
+    const active = aiMenu === id || aiMenu.startsWith(baseId) || (ids && ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
     return (
       <button onClick={() => setAiMenu(id)} style={{
-        width: "100%", padding: indent ? "8px 12px 8px 28px" : "10px 12px",
+        width: "100%", padding: "10px 12px",
         borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
-        fontSize: indent ? 13 : 14, fontWeight: active ? 700 : 400,
+        fontSize: 14, fontWeight: active ? 700 : 400,
         borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: icon ? 7 : 0, marginBottom: 2,
       }}>
-        {icon && <span style={{ fontSize: indent ? 13 : 14 }}>{icon}</span>}{label}
+        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}{label}
       </button>
     );
   };
-
-  const Group = ({ label, icon, active }) => (
-    <div style={{
-      width: "100%", padding: "7px 10px", borderRadius: 8,
-      background: "transparent",
-      color: active ? itemActive : brandText,
-      fontSize: 14, fontWeight: 800, letterSpacing: 0.2, marginBottom: 2,
-      borderLeft: "3px solid transparent",
-      display: "flex", alignItems: "center", gap: 6,
-    }}>
-      <span>{icon}</span>{label}
-    </div>
-  );
 
   return (
     <div style={{
@@ -124,48 +106,22 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label={t("home")} />
         <Item id="library" label={t("library")} />
+        <Item id="hot_keyword" label="핫 키워드" icon="🔥" />
 
-        {/* 콘텐츠 제작 */}
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Group label="콘텐츠 제작" active={!!(aiMenu && (aiMenu.startsWith("blog")||["cardnews_simple","detail_simple","thumbnail_gen"].some(x=>aiMenu.startsWith(x))))} />
-        {blogOpen && <>
-          <Item id="blog_write"      label="글쓰기"        indent />
-          <Item id="blog_link"       label="링크 글쓰기"    indent />
-          <Item id="cardnews_simple" label="카드뉴스"       indent />
-          <Item id="detail_simple"   label="상세페이지"      indent />
-          <Item id="thumbnail_gen"   label="썸네일 생성"    indent />
-        </>}
+        <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
+        <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
+        <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
+        <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
+        <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
 
-        {/* 이미지 생성 */}
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Group label="이미지 생성" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen"].some(x=>aiMenu.startsWith(x)))} />
-        {imageOpen && <>
-          <Item id="product_shot" label={t("productShot")}  indent />
-          <Item id="logo_gen"     label={t("logoGen")}      indent />
-          <Item id="mockup_gen"   label={t("mockupGen")}    indent />
-          <Item id="model_gen"    label={t("modelGen")}     indent />
-        </>}
-
-        {/* 이미지 수정 */}
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Group label="이미지 수정" active={!!(aiMenu && ["face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
-        {imageOpen && <>
-          <Item id="face_swap"    label={t("faceSwap")}     indent />
-          <Item id="outfit_swap"  label={t("outfitSwap")}   indent />
-          <Item id="outpaint"     label={t("outpaint")}     indent />
-        </>}
-
-        {/* 실시간 분석 */}
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Group label="실시간 분석" active={!!(aiMenu && (aiMenu.startsWith("seo_")||aiMenu.startsWith("rank_")))} />
-        {analysisOpen && <>
-          <Item id="seo_home"      label="실시간 검색어"    indent />
-          <Item id="rank_youtube"  label="유튜버 TOP10"    indent />
-          <Item id="rank_insta"    label="인스타 TOP10"    indent />
-          <Item id="rank_blog"     label="블로거 TOP10"    indent />
-          <Item id="rank_tiktok"   label="틱톡 TOP10"     indent />
-          <Item id="rank_brand"    label="브랜드 TOP10"   indent />
-        </>}
+        <Item id="seo_home" label="실시간 검색어" />
+        <Item id="rank_youtube" label="유튜버 TOP10" />
+        <Item id="rank_insta" label="인스타 TOP10" />
+        <Item id="rank_blog" label="블로거 TOP10" />
+        <Item id="rank_tiktok" label="틱톡 TOP10" />
+        <Item id="rank_brand" label="브랜드 TOP10" />
 
         {user?.role === "admin" && <>
           <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
@@ -773,6 +729,93 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   );
 }
 
+// ── 핫키워드 페이지 ──────────────────────────────────────────────────────
+function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
+  const text = homeText, muted = homeMuted, bdr = cardBdr;
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const accent = "#7c6aff";
+  const [keywords, setKeywords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("naver");
+
+  useEffect(() => {
+    setLoading(true);
+    // 네이버 실시간 검색어 API (로컬 프록시) 또는 폴백 데이터
+    const fetchKeywords = async () => {
+      try {
+        const res = await fetch(`/api/hot-keywords?source=${tab}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.keywords?.length) { setKeywords(data.keywords); setLoading(false); return; }
+        }
+      } catch {}
+      // 폴백: 트렌드 샘플 데이터
+      const samples = {
+        naver: ["AI 이미지 생성","챗GPT 활용법","인스타 릴스","네이버 블로그 수익화","숏폼 마케팅","브랜드 디자인","SEO 최적화","카드뉴스 만들기","유튜브 쇼츠","디지털 마케팅 트렌드"],
+        google: ["AI marketing tools","Short form video","Brand identity design","Content automation","Social media trends","Logo design AI","Product photography","Influencer marketing","SEO strategy 2026","Digital advertising"],
+        youtube: ["숏폼 편집법","AI 썸네일 만들기","블로그 자동화","인스타 성장 전략","유튜브 알고리즘","카드뉴스 디자인","제품 사진 촬영","브랜딩 전략","마케팅 자동화","콘텐츠 크리에이터"],
+      };
+      setKeywords((samples[tab] || samples.naver).map((k, i) => ({ rank: i + 1, keyword: k, change: i < 3 ? "up" : i < 6 ? "same" : "new" })));
+      setLoading(false);
+    };
+    fetchKeywords();
+  }, [tab]);
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:700, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔥 핫 키워드</div>
+          <div style={{ fontSize:13, color:muted }}>지금 뜨고 있는 인기 키워드를 확인하세요</div>
+        </div>
+
+        <div style={{ display:"flex", gap:4, marginBottom:20, background:isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content", margin:"0 auto 20px" }}>
+          {[["naver","네이버"],["google","구글"],["youtube","유튜브"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                background:tab===id?(isDark?"rgba(99,102,241,0.5)":"#fff"):"transparent",
+                color:tab===id?(isDark?"#fff":accent):muted,
+                boxShadow:tab===id?"0 1px 4px rgba(0,0,0,0.1)":"none" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+            <div style={{ width:40, height:40, border:"3px solid rgba(124,106,255,0.2)", borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
+            <div style={{ fontSize:13 }}>키워드 불러오는 중...</div>
+          </div>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {keywords.map((item, i) => {
+              const k = typeof item === "string" ? { rank:i+1, keyword:item, change:"same" } : item;
+              const isTop3 = k.rank <= 3;
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px", borderRadius:12,
+                  border:`1px solid ${bdr}`, background:bg, transition:"all 0.15s" }}
+                  onMouseEnter={e=>{e.currentTarget.style.transform="translateX(4px)";e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.06)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                  <div style={{ width:32, height:32, borderRadius:8, flexShrink:0,
+                    background:isTop3?"linear-gradient(135deg,#7c6aff,#ec4899)":isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:14, fontWeight:900, color:isTop3?"#fff":muted }}>
+                    {k.rank}
+                  </div>
+                  <div style={{ flex:1, fontSize:15, fontWeight:isTop3?800:600, color:text }}>{k.keyword}</div>
+                  {k.change === "up" && <span style={{ fontSize:11, color:"#ef4444", fontWeight:700 }}>▲</span>}
+                  {k.change === "new" && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"rgba(124,106,255,0.12)", color:accent, fontWeight:700 }}>NEW</span>}
+                  {k.change === "same" && <span style={{ fontSize:11, color:muted }}>-</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── 공통 스타일 헬퍼 ─────────────────────────────────────────── */
 function useGenColors(isDark) {
   return {
@@ -791,29 +834,33 @@ function StepBar() { return null; }
 // ── 탭 그룹 (글쓰기처럼 상단 탭 + 콘텐츠) ──
 function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderTab }) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
-  const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const text = isDark ? "#e8eaed" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const accent = "#7c6aff";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       {/* 헤더 + 탭 */}
-      <div style={{ flexShrink:0, textAlign:"center", padding:"20px 16px 0", background:isDark?"transparent":"#f8f8fc" }}>
-        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>{title}</div>
-        <div style={{ fontSize:12, color:muted, marginBottom:16 }}>{subtitle}</div>
-        <div style={{ display:"flex", justifyContent:"center", gap:0, borderBottom:`1px solid ${bdr}` }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              style={{
-                padding:"10px 20px", border:"none", cursor:"pointer", fontSize:14, fontWeight:activeTab===t.id?700:500,
-                color:activeTab===t.id?accent:muted, background:"transparent",
-                borderBottom:activeTab===t.id?`2.5px solid ${accent}`:"2.5px solid transparent",
-                transition:"all 0.15s",
-              }}>
-              {t.label}
-            </button>
-          ))}
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
+        <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
+          <div style={{ textAlign:"center", marginBottom:12 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{title}</div>
+            <div style={{ fontSize:12, color:muted }}>{subtitle}</div>
+          </div>
+          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                style={{
+                  padding:"9px 20px", border:"none", cursor:"pointer", fontSize:13, fontWeight:activeTab===t.id?700:400,
+                  color:activeTab===t.id?accent:muted, background:"transparent",
+                  borderBottom:activeTab===t.id?`2px solid ${accent}`:"2px solid transparent",
+                  transition:"all 0.15s", marginBottom:-1,
+                }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {/* 콘텐츠 */}
@@ -1678,6 +1725,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} />;
   }
 
+  // 핫 키워드
+  if (aiMenu === "hot_keyword") {
+    return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} />;
+  }
+
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
@@ -2253,12 +2305,16 @@ const MENU_LABELS = {
   seo_home: "실시간 검색어", seo_blog: "네이버 블로그 분석", seo_youtube: "유튜브 분석", seo_tistory: "티스토리 분석",
   rank_youtube: "유튜버 TOP100", rank_insta: "인스타 TOP100", rank_blog: "블로거 TOP100", rank_tiktok: "틱톡 TOP100", rank_brand: "브랜드 TOP100",
   logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
-  blog_cafe: "네이버 카페", blog_cafe_intro: "네이버 카페", blog_cafe_make: "네이버 카페",
+  blog_cafe_make: "네이버 카페",
   model_gen: "모델 생성", model_gen_make: "모델 생성",
   face_swap: "얼굴 교체", face_swap_make: "얼굴 교체",
   outfit_swap: "의상 교체", outfit_swap_make: "의상 교체",
   outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
   shorts: "숏폼편집",
+  content_create: "콘텐츠 제작",
+  image_create: "이미지 생성",
+  image_edit: "이미지 수정",
+  hot_keyword: "핫 키워드",
 };
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
