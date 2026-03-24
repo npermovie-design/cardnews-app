@@ -1,15 +1,20 @@
 {
+  "id": "/",
   "name": "SNS메이킷 - AI 콘텐츠 생성기",
   "short_name": "SNS메이킷",
   "description": "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0f0c29",
   "theme_color": "#7c6aff",
   "orientation": "any",
   "scope": "/",
   "lang": "ko",
+  "dir": "ltr",
   "categories": ["productivity", "business"],
+  "iarc_rating_id": "",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -36,19 +41,29 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SNS메이킷 홈 화면"
+    }
+  ],
   "shortcuts": [
     {
       "name": "글쓰기",
       "short_name": "글쓰기",
       "url": "/#ai",
-      "description": "AI 글쓰기 시작"
+      "description": "AI 글쓰기 시작",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "카드뉴스",
       "short_name": "카드뉴스",
       "url": "/#ai",
-      "description": "AI 카드뉴스 생성"
+      "description": "AI 카드뉴스 생성",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
