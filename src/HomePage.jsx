@@ -165,6 +165,7 @@ export default function HomePage({ navigate, C }) {
         @keyframes slideRight { from{transform:translateX(-100%)} to{transform:translateX(0)} }
         @keyframes pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @media(max-width:640px){ .hero-particle{display:none!important} }
         .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
         .stat-card:hover { transform: scale(1.04) !important; }
@@ -179,7 +180,7 @@ export default function HomePage({ navigate, C }) {
         background: C.heroBg,
       }}>
         {particles.map((p, i) => (
-          <div key={i} style={{
+          <div key={i} className="hero-particle" style={{
             position: "absolute", width: `min(${p.size}px, 50vw)`, height: `min(${p.size}px, 50vw)`, borderRadius: "50%",
             background: p.color, filter: `blur(${p.blur}px)`, pointerEvents: "none",
             top: p.top, left: p.left, right: p.right,

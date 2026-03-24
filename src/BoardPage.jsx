@@ -289,7 +289,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
           <button onClick={e=>onDl(item,e)}
             style={{padding:"7px 14px",borderRadius:8,border:"none",
               background:"rgba(255,255,255,0.92)",color:"#ec4899",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-            {dlId===item.id?"저장중...":"⬇ 저장"}
+            {dlId===item.id?"저장중...":"저장"}
           </button>
         </div>
       )}
@@ -311,12 +311,12 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
             <div style={{fontSize:12,fontWeight:700,color:isDark?"#fff":"#1a1a2e",marginBottom:4,
               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.title}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",fontSize:10,color:isDark?"rgba(255,255,255,0.5)":"#888",lineHeight:1.8}}>
-              <span>📂 {item.src}</span>
-              <span>🏷 {item.type==="gif"?"GIF":item.type==="video"?"영상":"사진"}</span>
-              {item.credit && <span>👤 {item.credit}</span>}
+              <span>{item.src}</span>
+              <span>{item.type==="gif"?"GIF":item.type==="video"?"영상":"사진"}</span>
+              {item.credit && <span>{item.credit}</span>}
             </div>
             <div style={{fontSize:9,color:isDark?"rgba(255,255,255,0.3)":"#aaa",marginTop:4}}>
-              클릭하면 원본 열기 · ⬇ 저장 가능
+              클릭하면 원본 열기 · 저장 가능
             </div>
           </div>
         </div>
@@ -449,7 +449,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
           style={{padding:"10px 20px",borderRadius:10,border:"none",
             background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
             cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1,whiteSpace:"nowrap",flexShrink:0}}>
-          {loading?"검색중...":"🔍 검색"}
+          {loading?"검색중...":"검색"}
         </button>
       </div>
 
@@ -494,11 +494,11 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,
         background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.04)",
         border:"1px solid "+(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)")}}>
-        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>💡 이용 가이드</div>
+        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>이용 가이드</div>
         <div style={{fontSize:12,color:C.muted,lineHeight:2}}>
-          <b style={{color:C.text}}>⬇ 저장</b> — 이미지/GIF를 PC에 바로 다운로드<br/>
-          <b style={{color:C.text}}>🖱 클릭</b> — 원본 사이트에서 고해상도로 보기<br/>
-          <b style={{color:C.text}}>🔍 검색</b> — 키워드를 입력하면 모든 소스에서 동시 검색<br/>
+          <b style={{color:C.text}}>저장</b> — 이미지/GIF를 PC에 바로 다운로드<br/>
+          <b style={{color:C.text}}>클릭</b> — 원본 사이트에서 고해상도로 보기<br/>
+          <b style={{color:C.text}}>검색</b> — 키워드를 입력하면 모든 소스에서 동시 검색<br/>
           <b style={{color:C.text}}>마우스 올리기</b> — 이미지 확대 프리뷰 + 상세 정보 확인
         </div>
         <div style={{fontSize:10,color:C.muted,marginTop:8,opacity:0.6,lineHeight:1.8}}>
@@ -746,7 +746,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
         <button type="button" onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:18,padding:0}}>←</button>
         <h2 style={{fontSize:20,fontWeight:900,color:C.text,margin:0}}>{initial?"글 수정":"새 글 작성"}</h2>
-        {!initial&&<span style={{fontSize:12,color:"#4ade80",marginLeft:"auto"}}>✏️ 글 등록 시 1P 적립!</span>}
+        {!initial&&<span style={{fontSize:12,color:"#4ade80",marginLeft:"auto"}}>글 등록 시 1P 적립!</span>}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         {/* 카테고리 선택 */}
@@ -913,7 +913,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           views: 0, likes: 0, comments: [],
         };
         await submitPost(newPost);
-        showToast("✅ 자료가 등록됐어요!", "success");
+        showToast("자료가 등록됐어요!", "success");
       } catch (e) { alert(`${file.name} 업로드 실패: ${e.message}`); }
     }
     try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
@@ -1082,12 +1082,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       try {
         const newPts = await changePoints(user.uid, 1, "커뮤니티 글 작성");
         if(onUserUpdate) onUserUpdate({...user, points: newPts});
-        showToast("✅ 글이 등록됐어요! +1P 포인트가 지급됐습니다 🎉","success");
+        showToast("글이 등록됐어요! +1P 포인트가 지급됐습니다","success");
       } catch(e) {
-        showToast("✅ 글이 등록됐어요!","success");
+        showToast("글이 등록됐어요!","success");
       }
     } else {
-      showToast("✅ 글이 등록됐어요!","success");
+      showToast("글이 등록됐어요!","success");
     }
   };
 
@@ -1101,7 +1101,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     setSubCat(cat); // 수정 후 변경된 카테고리로 이동
     setMode("list");
     try { await updatePostInDB(view.id, {title, body, subCat: cat, cat, tag: tag||"", edited:true, images: updated.images}); } catch(e){}
-    showToast("✅ 글이 수정됐어요","success");
+    showToast("글이 수정됐어요","success");
   };
 
   const del = async id => {
@@ -1277,7 +1277,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     isVideoUrl(url) ? (
                       <div key={i}>
                         <video src={url} controls style={{width:"100%",maxWidth:640,borderRadius:10,border:"1px solid "+bdr,display:"block"}}/>
-                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>⬇ 다운로드</a>
+                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>다운로드</a>
                       </div>
                     ) : isImageUrl(url) ? (
                       <img key={i} src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
@@ -1304,7 +1304,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     color:liked?"#f59e0b":C.purpleL,fontSize:15,fontWeight:800,cursor:"pointer",transition:"all 0.15s"}}
                   onMouseEnter={e=>{e.currentTarget.style.background=liked?"rgba(245,158,11,0.3)":C.purpleL;if(!liked)e.currentTarget.style.color="#fff";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=liked?(isDark?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.08)"):(isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)");e.currentTarget.style.color=liked?"#f59e0b":C.purpleL;}}>
-                  {liked?"✅ 추천함":"추천"} {view.likes||0}
+                  {liked?"추천함":"추천"} {view.likes||0}
                 </button>
               );
             })()}
@@ -1453,7 +1453,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         }}>
           {/* 헤더 */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-            <div style={{fontSize:18,fontWeight:900,color:C.text}}>⚙️ 게시판 카테고리 관리</div>
+            <div style={{fontSize:18,fontWeight:900,color:C.text}}>게시판 카테고리 관리</div>
             <button onClick={()=>setShowCatMgr(false)} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:20}}>✕</button>
           </div>
 
@@ -1502,7 +1502,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   {saving?"저장중...":"+ 추가"}
                 </button>
               </div>
-              <div style={{fontSize:11,color:C.muted,marginTop:8}}>💡 이모지 + 이름 + 색상을 설정하고 추가하세요</div>
+              <div style={{fontSize:11,color:C.muted,marginTop:8}}>이모지 + 이름 + 색상을 설정하고 추가하세요</div>
             </div>
           </>)}
 
@@ -1560,7 +1560,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 </button>
               </div>
               <div style={{fontSize:11,color:C.muted,marginTop:8}}>
-                💡 예) 정보공유 → AI, 마케팅, 프로그램, 재테크 등 원하는 태그를 자유롭게 추가하세요
+                예) 정보공유 → AI, 마케팅, 프로그램, 재테크 등 원하는 태그를 자유롭게 추가하세요
               </div>
             </div>
           </>)}
@@ -1701,7 +1701,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           subCat:"archive", tag:"", images:[url],
                           priceType: archiveForm.priceType, price: archiveForm.price,
                         });
-                        showToast("✅ 자료가 등록됐어요!","success");
+                        showToast("자료가 등록됐어요!","success");
                         try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
                       } catch(e){ alert("업로드 실패: "+e.message); }
                       setShowArchiveModal(false); setArchiveUploadFile(null);
@@ -1840,7 +1840,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 {(subCat!=="archive" || user?.role==="admin") && (
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
                     style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
-                    ✏️ {subCat==="archive"?"자료 등록":t("writePost")}
+                    {subCat==="archive"?"자료 등록":t("writePost")}
                   </button>
                 )}
               </div>
@@ -1903,7 +1903,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 ) : (
                   <>
                     <div style={{fontSize:13,marginBottom:20}}>첫 번째 글을 작성하면 <b style={{color:"#4ade80"}}>1P</b>가 적립됩니다!</div>
-                    {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>✏️ 글쓰기</button>}
+                    {user&&<button onClick={()=>setMode("write")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>글쓰기</button>}
                   </>
                 )}
               </div>
@@ -2192,9 +2192,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             )}
             <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
-                <span style={{fontSize:13,fontWeight:800,color:C.text}}>💎 포인트 적립</span>
+                <span style={{fontSize:13,fontWeight:800,color:C.text}}>포인트 적립</span>
               </div>
-              {[["✏️ 글 작성","+1P"],["🤖 AI 생성","-10P"],["🎁 가입 즉시","+200P"],["📅 출석체크","+3P"]].map(([a,p])=>(
+              {[["글 작성","+1P"],["AI 생성","-10P"],["가입 즉시","+200P"],["출석체크","+3P"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

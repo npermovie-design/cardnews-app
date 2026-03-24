@@ -154,7 +154,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             {err && err !== "__inapp__" && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
             {err === "__inapp__" && (
               <div style={{ borderRadius: 12, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", padding: "14px 16px" }}>
-                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>⚠️ 카카오 앱에서는 구글 로그인이 불가해요</div>
+                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>카카오 앱에서는 구글 로그인이 불가해요</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: 12 }}>
                   Google 정책상 카카오·네이버 등 앱 내 브라우저에서는 구글 로그인이 차단됩니다.<br/>
                   <b style={{ color: "#fff" }}>Chrome 브라우저</b>에서 직접 접속해 로그인해주세요.
@@ -197,7 +197,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             {err && err !== "__inapp__" && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
             {err === "__inapp__" && (
               <div style={{ borderRadius: 12, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", padding: "14px 16px" }}>
-                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>⚠️ 카카오 앱에서는 구글 로그인이 불가해요</div>
+                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginBottom: 8 }}>카카오 앱에서는 구글 로그인이 불가해요</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: 12 }}>
                   Google 정책상 카카오·네이버 등 앱 내 브라우저에서는 구글 로그인이 차단됩니다.<br/>
                   <b style={{ color: "#fff" }}>Chrome 브라우저</b>에서 직접 접속해 로그인해주세요.
@@ -227,7 +227,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             </button>
 
             <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px" }}>
-              <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>🎁 가입 혜택</div>
+              <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>가입 혜택</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 ·가입 즉시 <b style={{ color: C.text }}>200P</b> 지급 (AI 20회 분량)<br/>
                 ·게시글 작성 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
@@ -253,8 +253,8 @@ export default function AuthModal({ onClose, onAuth, C }) {
             {/* 안내 박스 */}
             <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 12, padding: "12px 14px", textAlign: "left" }}>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.8 }}>
-                💡 메일이 보이지 않으면 <b style={{ color: "#fff" }}>스팸함</b>을 확인해주세요<br/>
-                💡 링크 클릭 후 이 창으로 돌아와서 아래 버튼을 눌러주세요
+                메일이 보이지 않으면 <b style={{ color: "#fff" }}>스팸함</b>을 확인해주세요<br/>
+                링크 클릭 후 이 창으로 돌아와서 아래 버튼을 눌러주세요
               </div>
             </div>
 
@@ -270,7 +270,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={resendEmail} disabled={resendCool}
                 style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: resendCool ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.6)", fontSize: 12, cursor: resendCool ? "not-allowed" : "pointer" }}>
-                {resendCool ? "30초 후 재발송 가능" : "📤 메일 재발송"}
+                {resendCool ? "30초 후 재발송 가능" : "메일 재발송"}
               </button>
               <button onClick={() => { setRegStep(1); setErr(""); setPendingUser(null); }}
                 style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.6)", fontSize: 12, cursor: "pointer" }}>

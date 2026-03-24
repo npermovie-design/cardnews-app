@@ -143,7 +143,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
       try { localStorage.setItem("nper_user", JSON.stringify(newUserObj)); } catch {}
       if (setUser) setUser(newUserObj);
       setNickEdit(false);
-      showToast("닉네임이 변경됐어요! ✅");
+      showToast("닉네임이 변경됐어요!");
     } catch(e) {
       setNickMsg("변경 중 오류: " + (e.message || "다시 시도해주세요."));
     } finally { setNickLoading(false); }
@@ -308,7 +308,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
             { label:"마지막 로그인",  value:userData?.lastLogin ? new Date(userData.lastLogin).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "-" },
             { label:"계정 유형",      value:userData?.provider==="google"?"구글":userData?.provider==="kakao"?"카카오":"이메일" },
             { label:"닉네임 변경일",  value:userData?.nickChangedAt ? new Date(userData.nickChangedAt).toLocaleDateString("ko-KR") : "변경 기록 없음" },
-            { label:"다음 변경 가능", value:canChangeNick() ? "✅ 지금 변경 가능" : nextChangeDate() },
+            { label:"다음 변경 가능", value:canChangeNick() ? "지금 변경 가능" : nextChangeDate() },
           ].map(({label,value})=>(
             <div key={label} className="myp-info-row" style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:11, padding:"13px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
               <div style={{ fontSize:12, fontWeight:700, color:muted, flexShrink:0 }}>{label}</div>
