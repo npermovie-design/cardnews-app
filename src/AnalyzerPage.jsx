@@ -573,17 +573,26 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr }) {
       <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>실시간 검색어</button>
 
       <div style={divider} />
-      <div style={{ ...sectionStyle, marginBottom:10 }}>실시간 분석기</div>
+      <div style={{ ...sectionStyle, marginBottom:10 }}>SNS 분석</div>
+      <button onClick={() => setMenu("seo_blog")} style={item("seo_blog", menu==="seo_blog")}>네이버 블로그</button>
+      <button onClick={() => setMenu("seo_youtube")} style={item("seo_youtube", menu==="seo_youtube")}>유튜브</button>
+      <button onClick={() => setMenu("seo_insta")} style={item("seo_insta", menu==="seo_insta")}>인스타그램</button>
+      <button onClick={() => setMenu("seo_tistory")} style={item("seo_tistory", menu==="seo_tistory")}>티스토리</button>
+      <button onClick={() => setMenu("seo_website")} style={item("seo_website", menu==="seo_website")}>홈페이지</button>
+      <button onClick={() => setMenu("seo_twitter")} style={item("seo_twitter", menu==="seo_twitter")}>X(트위터)</button>
+      <button onClick={() => setMenu("seo_tiktok")} style={item("seo_tiktok", menu==="seo_tiktok")}>틱톡</button>
+      <button onClick={() => setMenu("seo_cafe")} style={item("seo_cafe", menu==="seo_cafe")}>네이버 카페</button>
+      <button onClick={() => setMenu("seo_threads")} style={item("seo_threads", menu==="seo_threads")}>스레드</button>
+      <button onClick={() => setMenu("seo_facebook")} style={item("seo_facebook", menu==="seo_facebook")}>페이스북</button>
+      <button onClick={() => setMenu("seo_linkedin")} style={item("seo_linkedin", menu==="seo_linkedin")}>링크드인</button>
+      <button onClick={() => setMenu("seo_pinterest")} style={item("seo_pinterest", menu==="seo_pinterest")}>핀터레스트</button>
+
+      <div style={divider} />
+      <div style={{ ...sectionStyle, marginBottom:10 }}>랭킹</div>
       {RANK_ITEMS.map(m => (
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
       <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP10</button>
-
-      <div style={divider} />
-      <div style={{ ...sectionStyle, marginBottom:10 }}>SNS 분석기</div>
-      {MENU_ITEMS.filter(m => m.id !== "seo_home").map(m => (
-        <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
-      ))}
     </div>
   );
 }
