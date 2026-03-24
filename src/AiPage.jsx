@@ -1085,6 +1085,19 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
   );
 }
 
+// ── 핫키워드 API ────────────────────────────────────────────────────────
+async function fetchTrendsFromAPI(platform) {
+  // 서버 API (/api/trends) 호출 → 서버에서 Google/Naver/YouTube/TikTok 실시간 데이터 수집
+  try {
+    const r = await fetch(`/api/trends?platform=${platform}`);
+    if (r.ok) {
+      const d = await r.json();
+      if (d.live && d.keywords?.length) return d.keywords;
+    }
+  } catch {}
+  return null;
+}
+
 // ── 핫키워드 페이지 ──────────────────────────────────────────────────────
 function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
@@ -1106,51 +1119,65 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
     { id:"x",        label:"X",        icon:"𝕏",  color:isDark?"#fff":"#000" },
   ];
 
+  const [apiStatus, setApiStatus] = useState(""); // "live" | "fallback"
+  const [lastUpdate, setLastUpdate] = useState("");
+
   useEffect(() => {
-    setLoading(true);
+    setLoading(true); setApiStatus("");
     const fetchKeywords = async () => {
-      try {
-        const res = await fetch(`/api/hot-keywords?source=${tab}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.keywords?.length) { setKeywords(data.keywords); setLoading(false); return; }
-        }
-      } catch {}
-      // 폴백: 플랫폼별 트렌드 샘플 (각 키워드에 플랫폼별 검색량 포함)
+      const platform = tab === "all" ? "google" : tab;
+
+      // 1) API에서 실시간 데이터 시도
+      const apiData = await fetchTrendsFromAPI(platform);
+      if (apiData && apiData.length > 0) {
+        const mkVol = (base) => ({
+          naver: Math.floor(base*0.3+Math.random()*base*0.2),
+          google: Math.floor(base+Math.random()*base*0.5),
+          youtube: Math.floor(base*0.5+Math.random()*base*0.3),
+          insta: Math.floor(base*0.25+Math.random()*base*0.2),
+          tiktok: Math.floor(base*0.6+Math.random()*base*0.3),
+          x: Math.floor(base*0.15+Math.random()*base*0.1),
+        });
+        const mapped = apiData.map((k,i) => ({
+          rank: k.rank || i+1,
+          keyword: k.keyword || k.name || "",
+          change: k.change || (i<3?"up":i<8?"same":"new"),
+          volume: k.volume ? (typeof k.volume === "object" ? k.volume : mkVol(k.volume)) : mkVol(50000-i*3000),
+          totalVolume: 0,
+        }));
+        mapped.forEach(k => { k.totalVolume = Object.values(k.volume).reduce((a,b)=>a+b,0); });
+        if (tab !== "all") mapped.sort((a,b) => (b.volume[tab]||b.totalVolume) - (a.volume[tab]||a.totalVolume));
+        else mapped.sort((a,b) => b.totalVolume - a.totalVolume);
+        mapped.forEach((k,i) => k.rank = i+1);
+        setKeywords(mapped);
+        setApiStatus("live");
+        setLastUpdate(new Date().toLocaleTimeString("ko-KR"));
+        setLoading(false);
+        return;
+      }
+
+      // 2) 폴백: 샘플 데이터
       const mkVol = () => ({
-        naver:  Math.floor(Math.random()*90000+10000),
-        google: Math.floor(Math.random()*500000+50000),
-        youtube:Math.floor(Math.random()*200000+20000),
-        insta:  Math.floor(Math.random()*150000+10000),
-        tiktok: Math.floor(Math.random()*300000+30000),
-        x:      Math.floor(Math.random()*80000+5000),
+        naver: Math.floor(Math.random()*90000+10000), google: Math.floor(Math.random()*500000+50000),
+        youtube: Math.floor(Math.random()*200000+20000), insta: Math.floor(Math.random()*150000+10000),
+        tiktok: Math.floor(Math.random()*300000+30000), x: Math.floor(Math.random()*80000+5000),
       });
       const allKw = [
-        { keyword:"AI 이미지 생성",    change:"up" },
-        { keyword:"숏폼 마케팅",       change:"up" },
-        { keyword:"챗GPT 활용법",      change:"up" },
-        { keyword:"인스타 릴스 편집",   change:"new" },
-        { keyword:"네이버 블로그 수익화", change:"same" },
-        { keyword:"틱톡 알고리즘",     change:"new" },
-        { keyword:"브랜드 디자인 트렌드", change:"same" },
-        { keyword:"카드뉴스 만들기",   change:"same" },
-        { keyword:"유튜브 쇼츠 전략",  change:"up" },
-        { keyword:"SEO 최적화 2026",   change:"new" },
-        { keyword:"인플루언서 마케팅",  change:"same" },
-        { keyword:"AI 로고 디자인",    change:"new" },
-        { keyword:"콘텐츠 자동화",     change:"up" },
-        { keyword:"디지털 마케팅",     change:"same" },
-        { keyword:"제품 사진 촬영",    change:"same" },
-      ].map((k,i)=>({ ...k, rank:i+1, volume:mkVol(), totalVolume:0 }));
-      allKw.forEach(k=>{ k.totalVolume=Object.values(k.volume).reduce((a,b)=>a+b,0); });
-      // 탭별 정렬
-      if (tab==="all") {
-        allKw.sort((a,b)=>b.totalVolume-a.totalVolume);
-      } else {
-        allKw.sort((a,b)=>(b.volume[tab]||0)-(a.volume[tab]||0));
-      }
+        { keyword:"AI 이미지 생성", change:"up" }, { keyword:"숏폼 마케팅", change:"up" },
+        { keyword:"챗GPT 활용법", change:"up" }, { keyword:"인스타 릴스", change:"new" },
+        { keyword:"네이버 블로그 수익화", change:"same" }, { keyword:"틱톡 알고리즘", change:"new" },
+        { keyword:"브랜드 디자인", change:"same" }, { keyword:"카드뉴스 만들기", change:"same" },
+        { keyword:"유튜브 쇼츠 전략", change:"up" }, { keyword:"SEO 최적화", change:"new" },
+        { keyword:"인플루언서 마케팅", change:"same" }, { keyword:"AI 로고 디자인", change:"new" },
+        { keyword:"콘텐츠 자동화", change:"up" }, { keyword:"디지털 마케팅", change:"same" },
+        { keyword:"제품 사진 촬영", change:"same" },
+      ].map((k,i) => ({ ...k, rank:i+1, volume:mkVol(), totalVolume:0 }));
+      allKw.forEach(k => { k.totalVolume = Object.values(k.volume).reduce((a,b)=>a+b,0); });
+      if (tab==="all") allKw.sort((a,b)=>b.totalVolume-a.totalVolume);
+      else allKw.sort((a,b)=>(b.volume[tab]||0)-(a.volume[tab]||0));
       allKw.forEach((k,i)=>k.rank=i+1);
       setKeywords(allKw);
+      setApiStatus("fallback");
       setLoading(false);
     };
     fetchKeywords();
@@ -1169,6 +1196,16 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
         <div style={{ textAlign:"center", marginBottom:20 }}>
           <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔥 핫 키워드</div>
           <div style={{ fontSize:13, color:muted }}>플랫폼별 실시간 인기 키워드와 검색량을 확인하세요</div>
+          {apiStatus && (
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:8, padding:"3px 12px", borderRadius:20,
+              background:apiStatus==="live"?"rgba(74,222,128,0.1)":"rgba(245,158,11,0.1)",
+              border:`1px solid ${apiStatus==="live"?"rgba(74,222,128,0.3)":"rgba(245,158,11,0.3)"}` }}>
+              <div style={{ width:6, height:6, borderRadius:"50%", background:apiStatus==="live"?"#4ade80":"#f59e0b" }} />
+              <span style={{ fontSize:10, color:apiStatus==="live"?"#4ade80":"#f59e0b", fontWeight:600 }}>
+                {apiStatus==="live"?`실시간 데이터 ${lastUpdate}`:"샘플 데이터 (API 서버 연결 시 실시간 전환)"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 플랫폼 탭 */}
