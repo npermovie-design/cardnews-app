@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+anthropic
+httpx
+pysrt
+python-multipart
+python-dotenv
+faster-whisper
+Pillow
+yt-dlp

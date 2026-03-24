@@ -28,3 +28,8 @@ release/
 .vercel
 .env*.local
 .env.vercel
+shorts-factory/venv/
+shorts-factory/uploads/
+shorts-factory/outputs/
+shorts-factory/__pycache__/
+shorts-factory/*.pyc

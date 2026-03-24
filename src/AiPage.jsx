@@ -110,18 +110,14 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="hot_keyword" label="핫 키워드" icon="🔥" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="prompt_studio" label="기획" icon="🧠" />
+        <Item id="prompt_studio" label="기획" />
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
         <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
-
-        {user?.role === "admin" && <>
-          <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-          <Item id="shorts" label={t("shortsGen")} />
-        </>}
+        <Item id="video_create" label="영상 제작" ids={["shorts_make","shorts_make_run"]} />
       </div>
 
     </div>
@@ -2261,7 +2257,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "face_swap",    icon: "", title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "outfit_swap",  icon: "", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     icon: "",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      ...(user?.role === "admin" ? [{ id: "shorts", icon: "", title: _s("숏폼편집","Short-form Edit"), desc: _s("유튜브 숏폼 AI 기획 (관리자)","YouTube Short-form AI (Admin)"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" }] : []),
+      { id: "shorts_make", icon: "🎬", title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
     ];
     // 카테고리별 그룹
     const GROUPS = [
@@ -2270,7 +2266,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { label: _s("SNS 이미지","SNS Image"), icon: "", color: "#ec4899",
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
       { label: _s("이미지 생성","Image Generation"), icon: "", color: "#f59e0b",
-        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint","shorts"].includes(m.id)) },
+        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].includes(m.id)) },
+      { label: _s("영상 제작","Video Production"), icon: "🎬", color: "#ef4444",
+        items: MENUS.filter(m => ["shorts_make"].includes(m.id)) },
     ];
 
     return (
@@ -2772,30 +2770,32 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 숏폼편집 (관리자 전용)
-  if (aiMenu === "shorts") {
-    if (user?.role !== "admin") {
-      return (
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, padding:40, textAlign:"center", background: isDark?"transparent":"#f4f4f8" }}>
-          <div style={{ width:64, height:64, borderRadius:16, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"#a5b4fc":"#7c6aff"} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <div style={{ fontSize:20, fontWeight:900, color: isDark?"#fff":"#1a1a2e" }}>관리자 전용 기능</div>
-          <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>
-            숏폼편집 기능은 현재 관리자만 이용 가능해요.<br/>
-            준비가 완료되면 정식 오픈될 예정이에요.
-          </div>
-          <button onClick={() => setAiMenu("home")}
-            style={{ padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-              background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
-            홈으로 돌아가기
-          </button>
-        </div>
-      );
-    }
+  // 영상 제작 > 바로 에디터 진입
+  if (aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "shorts_make_run") {
+    const _t = isDark ? "#fff" : "#1a1a2e";
+    const _m = isDark ? "rgba(255,255,255,0.5)" : "#888";
+    const _bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+
+    // iframe 메시지 수신 (글쓰기 연계 + 포인트 차감)
+    useEffect(() => {
+      const handler = async (e) => {
+        if (e.data?.type !== 'shorts-factory') return;
+        if (e.data.action === 'navigate') setAiMenu(e.data.target);
+        if (e.data.action === 'deduct-points' && user) {
+          try {
+            const { changePoints, setLocalUser } = await import('./storage.js');
+            const newPts = await changePoints(user.uid, -e.data.cost, e.data.reason || "숏폼 영상 생성");
+            setLocalUser({ ...user, points: newPts });
+          } catch(err) { console.error(err); }
+        }
+      };
+      window.addEventListener('message', handler);
+      return () => window.removeEventListener('message', handler);
+    }, [user]);
+
     return (
-      <div key="shorts" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <ShortformEditor isDark={isDark} user={user} />
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <iframe src="http://localhost:8000" style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
       </div>
     );
   }

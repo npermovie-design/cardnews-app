@@ -27,7 +27,7 @@ const T = {
     // SNS 이미지 메뉴
     simpleCard: "심플 카드뉴스", imageCard: "이미지 카드뉴스",
     simpleDetail: "심플 상세페이지", imageDetail: "이미지 상세페이지",
-    shortsGen: "쇼츠영상 생성기",
+    shortsGen: "쇼츠영상 생성기", videoCreate: "영상 제작", shortsMake: "쇼츠 영상 만들기",
     // 이미지 생성 메뉴
     productShot: "제품컷 생성", logoGen: "로고 생성", mockupGen: "목업 생성",
     modelGen: "모델 생성", faceSwap: "얼굴 교체", outfitSwap: "의상 교체", outpaint: "여백 늘리기",

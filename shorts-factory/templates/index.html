@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영상 제작</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--acc:#7c6aff;--acc2:#8b5cf6;--ibg:#f9f9fc;--accbg:rgba(124,106,255,0.08)}
+@media(prefers-color-scheme:dark){:root{--bg:transparent;--card:rgba(255,255,255,0.05);--bdr:rgba(255,255,255,0.09);--text:#fff;--muted:rgba(255,255,255,0.45);--ibg:rgba(255,255,255,0.06);--accbg:rgba(124,106,255,0.15)}}
+body.dark{--bg:transparent;--card:rgba(255,255,255,0.05);--bdr:rgba(255,255,255,0.09);--text:#fff;--muted:rgba(255,255,255,0.45);--ibg:rgba(255,255,255,0.06);--accbg:rgba(124,106,255,0.15)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.step{display:none}.step.active{display:block}
+::placeholder{color:var(--muted);opacity:0.6}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px}
+
+.wrap{max-width:680px;margin:0 auto;padding:24px 20px 60px}
+.header{text-align:center;margin-bottom:20px}
+.header h1{font-size:18px;font-weight:900;margin-bottom:4px}
+.header p{font-size:12px;color:var(--muted)}
+.tabs{display:flex;justify-content:center;gap:2px;border-bottom:1px solid var(--bdr);margin-bottom:24px}
+.tab{padding:9px 20px;border:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--acc);background:transparent;border-bottom:2px solid var(--acc);margin-bottom:-1px}
+
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:20px;margin-bottom:14px}
+.card-title{font-size:14px;font-weight:800;margin-bottom:4px}
+.card-desc{font-size:12px;color:var(--muted);margin-bottom:14px}
+.label{font-size:12px;font-weight:700;margin-bottom:6px;display:block}
+.input{width:100%;background:var(--ibg);border:1.5px solid var(--bdr);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:border 0.15s}
+.input:focus{border-color:var(--acc)}
+.sel-grid{display:grid;gap:8px;margin-bottom:14px}
+.sel-btn{padding:12px 10px;border-radius:10px;border:1.5px solid var(--bdr);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s}
+.sel-btn.active{border-color:var(--acc);color:var(--acc);background:var(--accbg)}
+.sel-btn:hover{border-color:rgba(124,106,255,0.3)}
+
+.btn{width:100%;padding:15px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:900;transition:opacity 0.15s}
+.btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+.btn-primary:hover{opacity:0.9}.btn-primary:disabled{opacity:0.35;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--bdr);color:var(--muted);font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc)}
+
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.tag{display:inline-flex;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.row{display:flex;align-items:center;gap:8px}
+.muted{color:var(--muted);font-size:12px}
+.drop{border:2px dashed var(--bdr);border-radius:14px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s}
+.drop:hover,.drop.dragover{border-color:var(--acc);background:var(--accbg)}
+
+.seg-card{border:1px solid var(--bdr);border-radius:12px;padding:14px;background:var(--card);transition:all 0.15s;cursor:pointer}
+.seg-card:hover{border-color:rgba(124,106,255,0.3)}
+
+/* 로딩 */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.loading-emoji{font-size:64px;margin-bottom:16px;animation:float 2s ease-in-out infinite}
+.loading-bar{width:240px;height:5px;border-radius:3px;background:rgba(128,128,128,0.12);overflow:hidden;margin:12px 0}
+.loading-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--acc2));animation:progress 8s ease-out forwards}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes progress{0%{width:0}100%{width:95%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite}
+</style>
+</head>
+<body>
+<script>
+// 부모 테마 감지
+try{if(window.parent!==window){
+    const ps=window.parent.document.body.style;
+    if(ps.background?.includes('dark')||document.referrer.includes('dark')||window.matchMedia('(prefers-color-scheme:dark)').matches)document.body.classList.add('dark');
+}}catch(e){if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.body.classList.add('dark')}
+</script>
+
+<!-- ===== Step 1: 입력 ===== -->
+<div id="step-upload" class="step active">
+<div class="wrap">
+    <div class="header">
+        <h1>쇼츠 영상 만들기</h1>
+        <p>영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요</p>
+    </div>
+    <div class="tabs"><button class="tab">쇼츠 영상</button></div>
+
+    <!-- YouTube -->
+    <div class="card">
+        <div class="card-title">YouTube 링크로 시작</div>
+        <div class="card-desc">유튜브 영상 URL을 붙여넣으면 자동으로 다운로드해요</div>
+        <div style="display:flex;gap:8px">
+            <input id="ytUrl" type="text" class="input" placeholder="https://youtube.com/watch?v=..." style="flex:1">
+            <button id="btnYtDownload" style="padding:10px 20px;border-radius:10px;border:none;cursor:pointer;background:#ef4444;color:#fff;font-size:12px;font-weight:700;white-space:nowrap">불러오기</button>
+        </div>
+        <div id="ytProgress" style="display:none;margin-top:8px"><div class="row"><div class="spinner"></div><span class="muted" id="ytStatus"></span></div></div>
+    </div>
+
+    <!-- 파일 업로드 -->
+    <div class="card">
+        <div class="card-title">파일로 내용 불러오기</div>
+        <div class="card-desc">MP4 영상 파일을 올리면 AI가 분석해서 자동으로 채워줘요</div>
+        <div id="dropZone" class="drop">
+            <div style="font-size:28px;margin-bottom:6px;opacity:0.5">📁</div>
+            <div style="font-size:13px;font-weight:600;color:var(--muted)">영상 파일을 드래그하세요</div>
+            <div class="muted" style="margin-top:2px">MP4 영상 (+ SRT 자막 선택)</div>
+            <input type="file" id="fileInput" multiple accept=".mp4,.mkv,.avi,.mov,.srt,.txt" style="display:none">
+        </div>
+        <div id="selectedFiles" style="display:none;margin-top:10px">
+            <div class="row" style="flex-wrap:wrap;gap:6px">
+                <span id="videoName" class="badge" style="background:var(--accbg);color:var(--acc)"></span>
+                <span id="subName" class="badge" style="display:none;background:rgba(16,185,129,0.1);color:#10b981"></span>
+                <span id="noSubBadge" class="badge" style="display:none;background:var(--ibg);color:var(--muted)">자막 없음 · AI 음성인식</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 영상 설정 -->
+    <div class="card">
+        <div class="card-title">영상 설정</div>
+        <div class="card-desc">로고, 폰트, 자막 옵션을 설정해요</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div><label class="label">로고 이미지</label><input id="logoInput" type="file" accept="image/*" style="font-size:11px;color:var(--muted)"></div>
+            <div><label class="label">커스텀 폰트</label><input id="fontInput" type="file" accept=".ttf,.otf" style="font-size:11px;color:var(--muted)"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--bdr)">
+            <div><div style="font-size:13px;font-weight:600">침묵 제거</div><div class="muted">말 없는 구간 자동 제거</div></div>
+            <label style="cursor:pointer"><input id="optSilence" type="checkbox" style="display:none"><div id="silenceToggle" style="width:40px;height:22px;border-radius:11px;background:var(--bdr);transition:background 0.2s;position:relative"><div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div></div></label>
+        </div>
+
+        <div style="padding-top:12px;border-top:1px solid var(--bdr)">
+            <label class="label">자막 글자수</label>
+            <div class="sel-grid" style="grid-template-columns:repeat(4,1fr)">
+                <label><input type="radio" name="maxChars" value="0" checked style="display:none"><div class="sel-btn active">자동</div></label>
+                <label><input type="radio" name="maxChars" value="8" style="display:none"><div class="sel-btn">8자</div></label>
+                <label><input type="radio" name="maxChars" value="15" style="display:none"><div class="sel-btn">15자</div></label>
+                <label><input type="radio" name="maxChars" value="25" style="display:none"><div class="sel-btn">25자</div></label>
+            </div>
+        </div>
+    </div>
+
+    <button id="btnUpload" class="btn btn-primary" disabled>+ 1회 생성해보기</button>
+    <div id="uploadProgress" style="display:none;margin-top:12px"><div class="row"><div class="spinner"></div><span class="muted" id="uploadStatus"></span></div></div>
+</div>
+</div>
+
+<!-- ===== Step 1.5: 로딩 ===== -->
+<div id="step-loading" class="step">
+<div class="wrap">
+    <div class="header">
+        <h1>쇼츠 영상 만들기</h1>
+        <p>영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요</p>
+    </div>
+    <div class="tabs"><button class="tab">쇼츠 영상</button></div>
+    <div class="loading-wrap">
+        <div class="loading-emoji">🎬✨</div>
+        <div style="font-size:18px;font-weight:900;color:var(--acc);margin-bottom:4px">AI가 영상을 분석하고 있어요</div>
+        <div class="muted" id="loadingDetail">음성 인식 중...</div>
+        <div class="loading-bar"><div class="loading-fill"></div></div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center" id="loadingSteps">
+            <span class="badge" style="background:var(--accbg);color:var(--acc)">음성 인식 중...</span>
+            <span class="badge" style="background:var(--ibg);color:var(--muted)">구간 분석 대기</span>
+            <span class="badge" style="background:var(--ibg);color:var(--muted)">스크립트 추출 대기</span>
+        </div>
+        <div class="muted" style="margin-top:16px">보통 1~3분 소요</div>
+    </div>
+</div>
+</div>
+
+<!-- ===== Step 2: 분석 결과 ===== -->
+<div id="step-analysis" class="step">
+<div class="wrap">
+    <div class="header">
+        <h1>AI 추천 구간</h1>
+        <p>조회수가 높을 것으로 예상되는 구간을 선택하세요</p>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button id="btnBackToUpload" class="btn-ghost">처음으로</button></div>
+    <div id="segmentCards" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div style="margin-top:20px"><button id="btnToEdit" class="btn btn-primary" disabled>편집하기</button></div>
+</div>
+</div>
+
+<!-- ===== Step 3: 편집 ===== -->
+<div id="step-edit" class="step">
+<div class="wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:900">편집</div>
+        <button id="btnBackToAnalysis" class="btn-ghost">구간 선택으로</button>
+    </div>
+
+    <div id="editTabs" style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto"></div>
+
+    <div class="card">
+        <label class="label">제목</label>
+        <input id="edTitle" type="text" class="input" placeholder="쇼츠 제목" style="margin-bottom:10px">
+        <label class="label">서브제목</label>
+        <input id="edSubtitle" type="text" class="input" placeholder="부제목 (선택)">
+    </div>
+
+    <div class="card">
+        <label class="label" style="margin-bottom:10px">디자인 스타일</label>
+        <div class="sel-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
+            <div class="sel-btn tmpl-btn active" data-tmpl="minimal">미니멀</div>
+            <div class="sel-btn tmpl-btn" data-tmpl="bold">볼드</div>
+            <div class="sel-btn tmpl-btn" data-tmpl="neon">네온</div>
+            <div class="sel-btn tmpl-btn" data-tmpl="pastel">파스텔</div>
+            <div class="sel-btn tmpl-btn" data-tmpl="news">뉴스</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label class="label">제목 색상</label><input id="edTitleColor" type="color" value="#FFFFFF" style="width:100%;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--ibg)"></div>
+            <div><label class="label">자막 색상</label><input id="edCaptionColor" type="color" value="#FFFFFF" style="width:100%;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--ibg)"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <label class="label" style="margin:0">자막</label>
+            <button id="btnAddSub" class="btn-ghost" style="padding:4px 10px;font-size:11px">+ 추가</button>
+        </div>
+        <div id="subEditor" style="max-height:240px;overflow-y:auto"></div>
+    </div>
+
+    <div class="card">
+        <div id="edTimeline" class="muted"></div>
+    </div>
+
+    <button id="btnGenerate" class="btn btn-primary">영상 생성하기</button>
+</div>
+</div>
+
+<!-- ===== Step 4: 생성 ===== -->
+<div id="step-generate" class="step">
+<div class="wrap">
+    <div class="header">
+        <h1 id="genTitle">생성 중...</h1>
+        <p>영상 1개당 약 1~3분 소요</p>
+    </div>
+    <div id="genProgress" style="display:flex;flex-direction:column;gap:8px"></div>
+
+    <div id="resultSection" style="display:none;margin-top:24px">
+        <div style="font-size:15px;font-weight:800;margin-bottom:12px">미리보기</div>
+        <div id="previewTabs" style="display:flex;gap:6px;margin-bottom:12px"></div>
+        <div style="display:flex;justify-content:center;margin-bottom:16px">
+            <video id="previewPlayer" controls playsinline style="max-height:420px;border-radius:12px;border:1px solid var(--bdr)"></video>
+        </div>
+        <div id="downloadSection" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <button id="btnRestart" class="btn btn-primary" style="display:none;margin-top:16px;background:var(--ibg);color:var(--text)">새로운 영상 만들기</button>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let videoFile=null,subFile=null,logoFile=null,fontFile=null;
+let fileId=null,segments=[],allSubs=[];
+let editClips=[],currentEditIdx=0,selectedTemplate='minimal';
+let titleColor='#FFFFFF',captionColor='#FFFFFF';
+
+function showStep(n){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));$(`step-${n}`).classList.add('active');window.scrollTo(0,0)}
+
+// Radio & selection buttons
+document.querySelectorAll('input[name="maxChars"]').forEach(r=>r.addEventListener('change',()=>{
+    r.closest('.sel-grid').querySelectorAll('.sel-btn').forEach(b=>b.classList.remove('active'));
+    r.parentElement.querySelector('.sel-btn').classList.add('active');
+}));
+
+$('optSilence').addEventListener('change',()=>{
+    const on=$('optSilence').checked;
+    $('silenceToggle').style.background=on?'var(--acc)':'var(--bdr)';
+    $('silenceToggle').querySelector('div').style.transform=on?'translateX(18px)':'translateX(0)';
+});
+
+// Drop zone
+const dz=$('dropZone'),fi=$('fileInput');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
+fi.addEventListener('change',e=>handleFiles(e.target.files));
+$('logoInput').addEventListener('change',e=>{logoFile=e.target.files[0]||null});
+$('fontInput').addEventListener('change',e=>{fontFile=e.target.files[0]||null});
+
+function handleFiles(files){
+    for(const f of files){const ext=f.name.split('.').pop().toLowerCase();
+        if(['mp4','mkv','avi','mov'].includes(ext))videoFile=f;
+        else if(['srt','txt'].includes(ext))subFile=f}
+    if(videoFile){$('videoName').textContent=videoFile.name;
+        if(subFile){$('subName').textContent=subFile.name;$('subName').style.display='';$('noSubBadge').style.display='none'}
+        else{$('subName').style.display='none';$('noSubBadge').style.display=''}
+        $('selectedFiles').style.display='';$('btnUpload').disabled=false}
+}
+
+async function doAnalyze(){
+    showStep('loading');
+    $('loadingDetail').textContent='음성 인식 중...';
+    const mc=+document.querySelector('input[name="maxChars"]:checked').value;
+    const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc})});
+    if(!ar.ok){const e=await ar.json().catch(()=>({}));throw new Error(e.detail||'분석 실패')}
+    const ad=await ar.json();segments=ad.segments;allSubs=ad.all_subs||[];
+    renderSegments();showStep('analysis');
+}
+
+// YouTube
+$('btnYtDownload').addEventListener('click',async()=>{
+    const url=$('ytUrl').value.trim();if(!url)return;
+    $('btnYtDownload').disabled=true;$('ytProgress').style.display='';$('ytStatus').textContent='다운로드 중...';
+    try{const r=await fetch('/youtube-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'실패')}
+        const d=await r.json();fileId=d.file_id;$('ytStatus').textContent='분석 시작...';
+        await doAnalyze();
+    }catch(e){$('ytStatus').textContent=`오류: ${e.message}`}$('btnYtDownload').disabled=false;
+});
+
+// Upload
+$('btnUpload').addEventListener('click',async()=>{
+    $('btnUpload').disabled=true;$('uploadProgress').style.display='';$('uploadStatus').textContent='업로드 중...';
+    const form=new FormData();form.append('video',videoFile);
+    if(subFile)form.append('subtitle',subFile);if(logoFile)form.append('logo',logoFile);if(fontFile)form.append('custom_font',fontFile);
+    try{const ur=await fetch('/upload',{method:'POST',body:form});if(!ur.ok)throw new Error('업로드 실패');
+        const ud=await ur.json();fileId=ud.file_id;
+        await doAnalyze();
+    }catch(e){$('uploadStatus').textContent=`오류: ${e.message}`;$('btnUpload').disabled=false;showStep('upload')}
+});
+
+// Segments
+function renderSegments(){
+    const c=$('segmentCards');c.innerHTML='';
+    const tm={'15s_viral':{l:'15초 바이럴',cl:'#ec4899'},'30s_save':{l:'30초 저장형',cl:'#3b82f6'},'60s_follow':{l:'60초 팔로우',cl:'#10b981'}};
+    segments.forEach((s,i)=>{
+        const dur=Math.round(s.end_seconds-s.start_seconds);
+        const st=tm[s.structure_type]||{l:`${dur}초`,cl:'var(--acc)'};
+        const cost=dur<=15?5:dur<=30?10:dur<=60?20:30;
+        const vf=(s.viral_factors||[]).map(f=>`<span class="tag" style="background:${st.cl}15;color:${st.cl}">${esc(f)}</span>`).join('');
+        const d=document.createElement('div');d.className='seg-card';
+        d.innerHTML=`<label style="display:flex;gap:12px;cursor:pointer;align-items:flex-start">
+            <input type="checkbox" class="seg-check" data-idx="${i}" checked style="width:18px;height:18px;accent-color:var(--acc);margin-top:2px;flex-shrink:0">
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+                    <span class="badge" style="background:var(--accbg);color:var(--acc)">#${i+1}</span>
+                    <span class="badge" style="background:${st.cl}15;color:${st.cl}">${st.l}</span>
+                    <span class="muted">${fmt(s.start_seconds)}~${fmt(s.end_seconds)}</span>
+                    <span class="muted">${cost}P</span>
+                    <span style="margin-left:auto;font-size:14px;font-weight:800;color:#f59e0b">${s.score}점</span>
+                </div>
+                <div style="font-size:14px;font-weight:700;margin-bottom:4px">${esc(s.hook_text)}</div>
+                <div class="muted" style="line-height:1.6;margin-bottom:6px">${esc(s.reason)}</div>
+                ${vf?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">${vf}</div>`:''}
+                ${s.audience_hook?`<div class="muted" style="font-size:10px">🎯 ${esc(s.audience_hook)}</div>`:''}
+            </div></label>`;
+        c.appendChild(d)});
+    document.querySelectorAll('.seg-check').forEach(cb=>cb.addEventListener('change',updateEditBtn));updateEditBtn();
+}
+function updateEditBtn(){
+    const ck=[...document.querySelectorAll('.seg-check:checked')];const n=ck.length;
+    let cost=10;ck.forEach(cb=>{const s=segments[+cb.dataset.idx];const dur=s.end_seconds-s.start_seconds;cost+=dur<=15?5:dur<=30?10:dur<=60?20:30});
+    $('btnToEdit').disabled=n===0;$('btnToEdit').textContent=n>0?`${n}개 구간 편집 (${cost}P)`:'구간을 선택하세요';
+}
+
+// Edit
+$('btnToEdit').addEventListener('click',()=>{
+    const idx=[...document.querySelectorAll('.seg-check:checked')].map(c=>+c.dataset.idx);
+    editClips=idx.map(i=>{const s=segments[i];return{start_seconds:s.start_seconds,end_seconds:s.end_seconds,title:s.hook_text||'',subtitle_text:'',subtitles:s.subtitles?s.subtitles.map(x=>({...x})):[]}});
+    currentEditIdx=0;renderEditTabs();loadClipToEditor();showStep('edit');
+});
+
+function renderEditTabs(){
+    const c=$('editTabs');c.innerHTML='';
+    editClips.forEach((clip,i)=>{const dur=Math.round(clip.end_seconds-clip.start_seconds);
+        const btn=document.createElement('div');
+        btn.className=`sel-btn ${i===currentEditIdx?'active':''}`;
+        btn.style.cssText='padding:8px 16px;cursor:pointer;white-space:nowrap';
+        btn.textContent=`Short ${i+1} (${dur}초)`;
+        btn.addEventListener('click',()=>{saveCurrentEdit();currentEditIdx=i;renderEditTabs();loadClipToEditor()});
+        c.appendChild(btn)});
+}
+function loadClipToEditor(){
+    const clip=editClips[currentEditIdx];
+    $('edTitle').value=clip.title;$('edSubtitle').value=clip.subtitle_text;
+    $('edTimeline').textContent=`구간: ${fmt(clip.start_seconds)} ~ ${fmt(clip.end_seconds)} (${Math.round(clip.end_seconds-clip.start_seconds)}초)`;
+    renderSubEditor(clip.subtitles);
+}
+function renderSubEditor(subs){
+    const c=$('subEditor');c.innerHTML='';
+    if(!subs.length){c.innerHTML='<div class="muted" style="text-align:center;padding:16px">자막 없음</div>';return}
+    subs.forEach((s,i)=>{const r=document.createElement('div');
+        r.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bdr)';
+        r.innerHTML=`<span class="muted" style="width:70px;flex-shrink:0;font-size:10px">${fmt(s.start)}~${fmt(s.end)}</span>
+            <input type="text" value="${esc(s.text)}" data-sub-idx="${i}" class="sub-text input" style="padding:6px 10px;font-size:12px">
+            <button data-del-idx="${i}" class="sub-del" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px">✕</button>`;
+        c.appendChild(r)});
+    c.querySelectorAll('.sub-del').forEach(b=>b.addEventListener('click',e=>{editClips[currentEditIdx].subtitles.splice(+e.target.dataset.delIdx,1);renderSubEditor(editClips[currentEditIdx].subtitles)}));
+}
+$('btnAddSub').addEventListener('click',()=>{
+    const clip=editClips[currentEditIdx];const lastEnd=clip.subtitles.length?clip.subtitles[clip.subtitles.length-1].end:clip.start_seconds;
+    clip.subtitles.push({start:lastEnd,end:lastEnd+2,text:''});renderSubEditor(clip.subtitles);
+    const inputs=$('subEditor').querySelectorAll('.sub-text');if(inputs.length)inputs[inputs.length-1].focus();
+});
+function saveCurrentEdit(){
+    const clip=editClips[currentEditIdx];clip.title=$('edTitle').value;clip.subtitle_text=$('edSubtitle').value;
+    $('subEditor').querySelectorAll('.sub-text').forEach(input=>{const i=+input.dataset.subIdx;if(clip.subtitles[i])clip.subtitles[i].text=input.value});
+}
+
+document.querySelectorAll('.tmpl-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tmpl-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');selectedTemplate=btn.dataset.tmpl;
+}));
+$('edTitleColor').addEventListener('input',e=>{titleColor=e.target.value});
+$('edCaptionColor').addEventListener('input',e=>{captionColor=e.target.value});
+
+// Generate
+$('btnGenerate').addEventListener('click',async()=>{
+    saveCurrentEdit();
+    try{const pt=await(await fetch('/api/calculate-points',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clips:editClips,include_analysis:true})})).json();
+        if(!confirm(`총 ${pt.total_cost}P 차감\n(분석 ${pt.analysis_cost}P + 생성 ${pt.generation_cost}P)\n\n진행하시겠습니까?`))return;
+        requestPointDeduction(pt.total_cost,`숏폼 ${editClips.length}개 생성`);
+    }catch(e){}
+    showStep('generate');$('genTitle').textContent='생성 중...';
+    const c=$('genProgress');c.innerHTML='';
+    editClips.forEach((_,i)=>{const r=document.createElement('div');r.id=`gen-${i}`;r.className='card';r.style.padding='12px';
+        r.innerHTML=`<div class="row"><div class="spinner"></div><span class="muted">Short ${i+1} 대기 중...</span></div>`;c.appendChild(r)});
+    try{
+        const res=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({file_id:fileId,clips:editClips,remove_silence:$('optSilence').checked,template:selectedTemplate,title_color:titleColor,caption_color:captionColor})});
+        const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
+        while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});
+            const lines=buf.split('\n');buf=lines.pop()||'';
+            for(const line of lines){if(!line.startsWith('data: '))continue;const data=JSON.parse(line.slice(6));
+                if(data.type==='done'){const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#4ade80"></div><span style="font-size:13px;font-weight:600;color:#4ade80">Short ${data.index+1} 완료</span></div>`;
+                    const url=`/outputs/${fileId}/${data.filename}`;$('resultSection').style.display='';
+                    const tab=document.createElement('div');tab.className='sel-btn';tab.textContent=`Short ${data.index+1}`;tab.style.cssText='padding:7px 14px;cursor:pointer';
+                    tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.sel-btn').forEach(t=>t.classList.remove('active'));tab.classList.add('active');$('previewPlayer').src=url});
+                    $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.classList.add('active');$('previewPlayer').src=url}
+                    const g=document.createElement('div');g.className='card';g.style.padding='14px';
+                    g.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Short ${data.index+1}</div>
+                        <a href="${url}" download="${data.filename}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;padding:10px;font-size:13px">영상 다운로드</a>
+                        <div style="display:flex;gap:6px;margin-bottom:8px">
+                            <a href="/api/subtitles/${fileId}/${data.index}?format=srt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">SRT 자막</a>
+                            <a href="/api/subtitles/${fileId}/${data.index}?format=txt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">TXT 자막</a>
+                        </div>
+                        <div style="display:flex;gap:6px">
+                            <button onclick="sendToParent('blog_write',${data.index})" class="btn-ghost" style="flex:1;padding:7px">글쓰기 연계</button>
+                            <button onclick="sendToParent('content_create',${data.index})" class="btn-ghost" style="flex:1;padding:7px">콘텐츠 제작</button>
+                        </div>`;
+                    $('downloadSection').appendChild(g)}
+                if(data.type==='error'){const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#ef4444"></div><span style="font-size:13px;color:#f87171">Short ${data.index+1} 실패: ${esc(data.message)}</span></div>`}
+                if(data.type==='complete'){$('genTitle').textContent='생성 완료!';$('btnRestart').style.display=''}}}
+    }catch(e){$('genTitle').textContent=`오류: ${e.message}`;$('btnRestart').style.display=''}
+});
+
+// Nav
+$('btnBackToUpload').addEventListener('click',resetAll);
+$('btnBackToAnalysis').addEventListener('click',()=>showStep('analysis'));
+$('btnRestart').addEventListener('click',resetAll);
+function resetAll(){showStep('upload');videoFile=null;subFile=null;logoFile=null;fontFile=null;fileId=null;segments=[];editClips=[];
+    $('selectedFiles').style.display='none';$('btnUpload').disabled=true;$('uploadProgress').style.display='none';$('btnRestart').style.display='none';fi.value=''}
+
+function fmt(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec.toString().padStart(2,'0')}`}
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function sendToParent(target,idx){const clip=editClips[idx]||editClips[0];const text=(clip?.subtitles||[]).map(s=>s.text).join('\n');
+    window.parent.postMessage({type:'shorts-factory',action:'navigate',target,data:{title:clip?.title||'',content:text}},'*')}
+function requestPointDeduction(cost,reason){window.parent.postMessage({type:'shorts-factory',action:'deduct-points',cost,reason},'*')}
+</script>
+</body>
+</html>
