@@ -209,7 +209,7 @@ export default function HomePage({ navigate, C }) {
 
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
             <Btn C={C} onClick={() => navigate("ai")}>{p("heroCta1")}</Btn>
-            <Btn C={C} onClick={() => navigate("analyzer")} ghost>AI 분석기획기</Btn>
+            <Btn C={C} onClick={() => navigate("analyzer")} ghost>AI 분석기</Btn>
           </div>
 
           {/* 실시간 통계 */}

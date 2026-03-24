@@ -4,7 +4,7 @@
 export const PAGE_T = {
   ko: {
     // ── 히어로 ──
-    heroBadge: "🚀 SNS 콘텐츠 자동 생성 올인원 플랫폼",
+    heroBadge: "SNS 콘텐츠 자동 생성 올인원 플랫폼",
     heroTyping: ["블로그 글, 3분만에 AI가 완성", "카드뉴스·상세페이지 자동 생성", "AI 제품컷·로고·목업 한번에", "숏폼 영상도 자동 편집·자막", "SNS 콘텐츠, 이제 AI가 대신해요"],
     heroSub1: "글쓰기부터 이미지·영상까지, ",
     heroHighlight: "SNS메이킷 하나로 끝",
@@ -12,8 +12,8 @@ export const PAGE_T = {
     heroDesc2: "20가지 AI 도구",
     heroDesc2b: "가 한 곳에 모여 있어요.",
     heroDesc3: "비회원 10회 무료 · 가입 즉시 200P 지급!",
-    heroCta1: "✨ AI 생성기 무료 체험",
-    heroCta2: "💎 요금제 보기",
+    heroCta1: "AI 생성기 무료 체험",
+    heroCta2: "요금제 보기",
     statTools: "AI 도구", statContents: "생성된 콘텐츠", statTime: "평균 생성 시간",
     statToolsSuffix: "가지+", statContentsSuffix: "+", statTimeSuffix: "분",
 
@@ -22,8 +22,8 @@ export const PAGE_T = {
     toolsTitle: "20가지 AI 도구가 한 곳에",
     toolsSub: "SNS 글쓰기부터 이미지 생성, 숏폼 편집까지 — SNS 콘텐츠 제작에 필요한 모든 도구를 SNS메이킷에서 만나세요.",
     toolUse: "바로 사용하기 →",
-    catWrite: "✍️ SNS 글쓰기", catImage: "🖼 SNS 이미지", catAiImg: "🎨 이미지 생성 AI", catVideo: "🎬 영상 편집", catAnalyzer: "📊 AI 분석기획기",
-    tAnalyze: "SNS 분석기", tAnalyzeD: "13개 플랫폼 URL 분석 · SEO 점수 · 수정 가이드",
+    catWrite: "SNS 글쓰기", catImage: "SNS 이미지", catAiImg: "이미지 생성 AI", catVideo: "영상 편집", catAnalyzer: "AI 분석기",
+    tAnalyze: "AI 분석기", tAnalyzeD: "실시간 검색어 · 인플루언서 랭킹 · 브랜드 TOP10",
     tTrend: "실시간 검색어", tTrendD: "네이버·구글 실시간 인기 키워드 분석",
     tRanking: "인플루언서 랭킹", tRankingD: "유튜버·인스타·블로거·틱토커 TOP100",
     tBrandRank: "브랜드 TOP100", tBrandRankD: "SNS 마케팅 잘하는 브랜드 업종별 순위",
@@ -83,15 +83,15 @@ export const PAGE_T = {
     w4: "합리적인 비용", w4d: "월정액 없이 포인트 충전 방식. 비회원도 10회 무료로 바로 체험할 수 있어요.",
 
     // ── CTA ──
-    ctaBadge: "🚀 지금 무료로 시작하세요",
+    ctaBadge: "지금 무료로 시작하세요",
     ctaTitle1: "콘텐츠 제작,",
     ctaHighlight: "AI로 더 빠르고 쉽게",
     ctaDesc: "로그인 없이 지금 바로 10회 무료 체험!\n회원가입하면 200P 추가 지급 + 포인트 적립으로 더 오래 사용하세요.",
-    ctaBtn1: "✨ AI 생성기 무료 체험",
+    ctaBtn1: "AI 생성기 무료 체험",
     ctaBtn2: "서비스 소개 보기",
 
     // ── About ──
-    aboutBadge: "✦ About SNS메이킷",
+    aboutBadge: "About SNS메이킷",
     aboutTitle1: "SNS 콘텐츠 제작,",
     aboutTitle2: "이제 AI가 대신해드려요",
     aboutIntro: "SNS메이킷은 SNS 콘텐츠 제작에 어려움을 느끼는 모든 분들을 위해 만든 AI 기반 콘텐츠 생성 플랫폼입니다.",
@@ -101,7 +101,7 @@ export const PAGE_T = {
     aboutPain3: "인스타, 유튜브, 블로그... 여러 플랫폼에 올릴 콘텐츠가 너무 부담스럽다",
     aboutPain4: "매일 꾸준히 올리고 싶은데 아이디어가 금방 바닥난다",
     aboutPain5: "콘텐츠 외주를 맡기자니 비용이 부담되고, 직접 하자니 시간이 없다",
-    aboutSolution: "👆 이런 고민들, SNS메이킷이 해결해드립니다.",
+    aboutSolution: "이런 고민들, SNS메이킷이 해결해드립니다.",
     aboutBrandTitle: "SNS메이킷이란?",
     aboutBrandSub: "이름에 모든 것이 담겨 있어요.",
     aboutWhyTitle: "SNS메이킷이 만들어진 이유",
@@ -119,11 +119,11 @@ export const PAGE_T = {
     aboutToolsSub: "총 20가지+ AI 도구가 준비되어 있어요.",
     aboutCtaTitle: "지금 바로 시작해보세요",
     aboutCtaDesc: "회원가입 없이 10회 무료 체험 가능해요.\n가입하면 즉시 200P 지급 + AI 생성기 풀 이용 가능!",
-    aboutCtaBtn1: "✨ AI 생성기 무료 체험",
-    aboutCtaBtn2: "📖 이용방법 보기",
+    aboutCtaBtn1: "AI 생성기 무료 체험",
+    aboutCtaBtn2: "이용방법 보기",
 
     // ── HowTo ──
-    howtoBadge: "📖 How to Use",
+    howtoBadge: "How to Use",
     howtoTitle: "SNS메이킷 이용방법",
     howtoIntro: "처음이세요? 6단계를 따라하면 누구든 바로 시작할 수 있어요.",
     howtoS1: "회원가입 & 로그인", howtoS1d: "오른쪽 상단 [로그인] 버튼을 눌러 회원가입하세요. 가입 즉시 200P가 자동 지급됩니다.",
@@ -132,15 +132,15 @@ export const PAGE_T = {
     howtoS4: "AI 자동 생성 대기", howtoS4d: "생성 버튼을 누르면 AI가 자동으로 작업을 시작해요. 글쓰기는 30초~3분, 이미지는 10~30초면 완성됩니다.",
     howtoS5: "결과 복사·다운로드", howtoS5d: "생성된 글은 [복사] 버튼으로 바로 복사, 이미지는 [다운로드]로 저장 후 SNS에 업로드하면 끝!",
     howtoS6: "포인트 충전·관리", howtoS6d: "무료 횟수를 모두 사용했다면 [가격정책]에서 포인트를 충전하세요.",
-    howtoPointsTitle: "💎 포인트 적립·차감 안내",
-    howtoFaqTitle: "❓ 자주 묻는 질문",
+    howtoPointsTitle: "포인트 적립 / 차감 안내",
+    howtoFaqTitle: "자주 묻는 질문",
     howtoCtaTitle: "이제 직접 써보세요!",
     howtoCtaDesc: "이론보다 직접 해보는 게 훨씬 빨라요.\n비회원도 10회 무료, 가입하면 200P 즉시!",
-    howtoCtaBtn1: "✨ AI 생성기 바로 체험",
-    howtoCtaBtn2: "💎 요금제 보기",
+    howtoCtaBtn1: "AI 생성기 바로 체험",
+    howtoCtaBtn2: "요금제 보기",
 
     // ── Contact ──
-    contactBadge: "✦ 문의하기",
+    contactBadge: "문의하기",
     contactTitle: "무엇이든 물어보세요",
     contactSub: "이메일로 문의를 남겨주시면 빠르게 답변드려요",
     contactFormTitle: "📝 문의 내용 남기기",
@@ -289,10 +289,10 @@ export const PAGE_T = {
     aboutRec6: "SNS Beginners", aboutRec6d: "Starting SNS but don't know what to post",
     aboutToolsTitle: "All AI Tools Supported", aboutToolsSub: "20+ AI tools ready to use.",
     aboutCtaTitle: "Start Now!", aboutCtaDesc: "Try 10 times free without signup.\nSign up for 200P + full AI access!",
-    aboutCtaBtn1: "✨ Try AI Generator Free", aboutCtaBtn2: "📖 How to Use",
+    aboutCtaBtn1: "✨ Try AI Generator Free", aboutCtaBtn2: "How to Use",
 
     // HowTo
-    howtoBadge: "📖 How to Use", howtoTitle: "How to Use SNS Makeit",
+    howtoBadge: "How to Use", howtoTitle: "How to Use SNS Makeit",
     howtoIntro: "New here? Follow 6 steps and start right away.",
     howtoS1: "Sign Up & Login", howtoS1d: "Click [Login] at the top right. 200P is given immediately upon signup.",
     howtoS2: "Choose AI Generator", howtoS2d: "Click [AI Generator] to see SNS Writing / SNS Images / Image Generation categories.",
