@@ -70,7 +70,8 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [selIdx, setSelIdx]   = useState(0);
   const [err, setErr]         = useState("");
   const [exporting, setExporting] = useState(false);
-  const [editTab, setEditTab] = useState("content"); // content | style | media
+  const [editTab, setEditTab] = useState("content");
+  const [aiSlideLoading, setAiSlideLoading] = useState(false);
   const imgRef = useRef(null);
 
   const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
@@ -264,6 +265,59 @@ JSON만 응답: {"slides":[...]}`, Math.max(slideCount * 350, 4000));
 
   const cur = slides[selIdx] || {};
   const upd = (k, v) => setSlides(p => { const n=[...p]; n[selIdx]={...n[selIdx],[k]:v}; return n; });
+
+  // 개별 슬라이드 AI 자동기획
+  const aiSuggestSlide = async () => {
+    if (!cur.title?.trim()) return;
+    setAiSlideLoading(true);
+    try {
+      const lay = cur.layout || "title_body";
+      const context = slides.map((s,i) => `${i+1}. [${s.layout}] ${s.title||""}`).join("\n");
+      const r = await callClaude(
+`PPT 슬라이드 내용 작성. 이모지 금지. JSON만 응답.
+
+[전체 주제] ${topic}
+[현재 슬라이드] ${selIdx+1}번 / 전체 ${slides.length}장
+[슬라이드 제목] ${cur.title}
+[레이아웃] ${lay}
+[전체 슬라이드 구조]
+${context}
+
+이 슬라이드의 내용을 제목에 맞게 상세 기획하세요:
+${lay==="bullets"||lay==="timeline" ? '- bullets: 항목 배열 (4~6개), 구체적 내용' : ''}
+${lay==="stats" ? '- stats: [{value:"수치",label:"항목명"}] 3~4개, 실감나는 숫자' : ''}
+${lay==="two_column"||lay==="comparison" ? '- leftCol: 왼쪽 내용, rightCol: 오른쪽 내용' : ''}
+${lay==="quote" ? '- body: 인용문 출처나 부연 설명' : ''}
+- body: 본문 (구체적, 숫자/사례 포함, 줄바꿈은 \\n)
+- subtitle: 부제목 (선택)
+- note: 발표자 노트 (2~3문장)
+
+JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"...","rightCol":"...","note":"..."}`, 1000);
+
+      const cleaned = r.replace(/```json\n?/g,"").replace(/```/g,"").trim();
+      let data;
+      try { data = JSON.parse(cleaned); } catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) data = JSON.parse(m[0]);
+      }
+      if (data) {
+        setSlides(p => {
+          const n = [...p];
+          const s = { ...n[selIdx] };
+          if (data.body) s.body = data.body;
+          if (data.subtitle) s.subtitle = data.subtitle;
+          if (data.bullets?.length) s.bullets = data.bullets;
+          if (data.stats?.length) s.stats = data.stats;
+          if (data.leftCol) s.leftCol = data.leftCol;
+          if (data.rightCol) s.rightCol = data.rightCol;
+          if (data.note) s.note = data.note;
+          n[selIdx] = s;
+          return n;
+        });
+      }
+    } catch (e) { console.error("AI slide suggest error:", e); }
+    setAiSlideLoading(false);
+  };
 
   const handleImage = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -546,8 +600,19 @@ JSON만 응답: {"slides":[...]}`, Math.max(slideCount * 350, 4000));
               </div>
             </div>
             <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>제목</div>
-              <input value={cur.title||""} onChange={e=>upd("title",e.target.value)} style={{ ...inp, fontSize:12 }} />
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:muted }}>제목</div>
+                <button onClick={aiSuggestSlide} disabled={aiSlideLoading || !cur.title?.trim()}
+                  style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${accent}40`, background:`${accent}10`,
+                    color:accent, fontSize:9, fontWeight:700, cursor:aiSlideLoading||!cur.title?.trim()?"not-allowed":"pointer",
+                    opacity:aiSlideLoading||!cur.title?.trim()?0.5:1, display:"flex", alignItems:"center", gap:4 }}>
+                  {aiSlideLoading ? (
+                    <><div style={{ width:8, height:8, border:`1.5px solid ${accent}40`, borderTopColor:accent, borderRadius:"50%", animation:"spin 0.7s linear infinite" }} /> 기획 중...</>
+                  ) : "AI 자동기획"}
+                </button>
+              </div>
+              <input value={cur.title||""} onChange={e=>upd("title",e.target.value)} style={{ ...inp, fontSize:12 }}
+                placeholder="제목 입력 후 'AI 자동기획' 클릭" />
             </div>
             {cur.layout !== "stats" && <>
               <div style={{ marginBottom:8 }}>
