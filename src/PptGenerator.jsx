@@ -335,99 +335,331 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
       const pptx = new PptxGenJS();
       pptx.defineLayout({ name:"W", width:13.33, height:7.5 });
       pptx.layout = "W";
-      const c = k => (theme[k]||"#000").replace("#","");
+      const cc = k => (theme[k]||"#000").replace("#","");
+      const F = "Malgun Gothic";
+      const W = 13.33, H = 7.5;
+
+      // 공통 헬퍼
+      const addTitle = (slide, title, x=0.8, y=0.4, w=11.73) => {
+        slide.addText(title||"", { x, y, w, h:0.9, fontSize:26, fontFace:F, color:cc("text"), bold:true });
+        slide.addShape(pptx.ShapeType.rect, { x, y:y+0.9, w:1.8, h:0.05, fill:{ color:cc("accent") } });
+      };
+      const addBar = (slide) => slide.addShape(pptx.ShapeType.rect, { x:0, y:H-0.4, w:W, h:0.4, fill:{ color:cc("accent") } });
+      const addNum = (slide, i) => { if(i>0) slide.addText(String(i+1), { x:W-1, y:H-0.7, w:0.8, h:0.4, fontSize:10, fontFace:F, color:cc("sub"), align:"right" }); };
+      const bodyText = (t) => (t||"").replace(/\\n/g,"\n");
 
       slides.forEach((s, i) => {
         const slide = pptx.addSlide();
         const lay = s.layout||"title_body";
-        slide.background = { color:c("bg") };
+        slide.background = { color: cc("bg") };
 
-        // 악센트 바
-        if (lay === "section") {
-          slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:13.33, h:7.5, fill:{ color:c("accent") } });
-          slide.addText(s.title||"", { x:1.5, y:2.5, w:10, h:2.5, fontSize:38, fontFace:"Malgun Gothic", color:c("bg"), bold:true, align:"center", valign:"middle" });
-          if (s.subtitle) slide.addText(s.subtitle, { x:2, y:5, w:9, h:1, fontSize:18, fontFace:"Malgun Gothic", color:c("bg"), align:"center" });
-        } else {
-          slide.addShape(pptx.ShapeType.rect, { x:0, y:7.1, w:13.33, h:0.4, fill:{ color:c("accent") } });
-
-          if (lay === "title_only") {
-            slide.addText(s.title||"", { x:1, y:1.8, w:11.33, h:2.5, fontSize:40, fontFace:"Malgun Gothic", color:c("text"), bold:true, align:"center", valign:"middle" });
-            if (s.subtitle) slide.addText(s.subtitle, { x:2, y:4.3, w:9.33, h:1, fontSize:20, fontFace:"Malgun Gothic", color:c("sub"), align:"center" });
-            if (s.body) slide.addText(s.body.replace(/\\n/g,"\n"), { x:2, y:5.2, w:9.33, h:1.5, fontSize:16, fontFace:"Malgun Gothic", color:c("body"), align:"center" });
-          } else if (lay === "stats") {
-            slide.addText(s.title||"", { x:0.8, y:0.4, w:11.73, h:0.9, fontSize:26, fontFace:"Malgun Gothic", color:c("text"), bold:true });
-            slide.addShape(pptx.ShapeType.rect, { x:0.8, y:1.3, w:1.8, h:0.05, fill:{ color:c("accent") } });
-            const st = s.stats||[];
-            const cols = Math.min(st.length, 4);
-            const cw = 11 / Math.max(cols,1);
-            st.slice(0,4).forEach((item,j) => {
-              const x = 1 + j * cw;
-              slide.addText(item.value||"", { x, y:2.2, w:cw-0.5, h:1.5, fontSize:44, fontFace:"Malgun Gothic", color:c("accent"), bold:true, align:"center" });
-              slide.addText(item.label||"", { x, y:3.8, w:cw-0.5, h:0.8, fontSize:14, fontFace:"Malgun Gothic", color:c("body"), align:"center" });
+        if (lay === "section" || lay === "section_num") {
+          slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:W, h:H, fill:{ color:cc("accent") } });
+          if (lay==="section_num") slide.addText("0"+(i+1), { x:1, y:1.5, w:11, h:1.5, fontSize:60, fontFace:F, color:cc("bg"), bold:true, align:"center" });
+          slide.addText(s.title||"", { x:1.5, y:lay==="section_num"?3:2.5, w:10, h:2, fontSize:36, fontFace:F, color:cc("bg"), bold:true, align:"center", valign:"middle" });
+          if (s.subtitle) slide.addText(s.subtitle, { x:2, y:5, w:9, h:1, fontSize:16, fontFace:F, color:cc("bg"), align:"center" });
+        }
+        else if (lay === "title_only" || lay === "title_sub" || lay === "thankyou" || lay === "qna" || lay === "contact") {
+          addBar(slide);
+          const tSize = lay==="thankyou"||lay==="qna"?36:40;
+          slide.addText(s.title||"", { x:1, y:1.5, w:11.33, h:2.5, fontSize:tSize, fontFace:F, color:cc("text"), bold:true, align:"center", valign:"middle" });
+          if (s.subtitle) slide.addText(s.subtitle, { x:2, y:4, w:9.33, h:1, fontSize:18, fontFace:F, color:cc("sub"), align:"center" });
+          if (s.body) slide.addText(bodyText(s.body), { x:2, y:5, w:9.33, h:1.5, fontSize:15, fontFace:F, color:cc("body"), align:"center" });
+          addNum(slide, i);
+        }
+        else if (lay === "table") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const rows = s.rows||[];
+          if (rows.length > 0) {
+            const tableRows = rows.map((row, ri) =>
+              row.map(cell => ({
+                text: cell||"",
+                options: {
+                  fontSize: 13, fontFace: F, color: ri===0 ? cc("bg") : cc("body"),
+                  bold: ri===0, fill: { color: ri===0 ? cc("accent") : (ri%2===0 ? cc("bg") : cc("card")||"F5F5F5") },
+                  border: [{ pt:0.5, color:"D0D0D0" }], valign: "middle", align: "center",
+                },
+              }))
+            );
+            slide.addTable(tableRows, { x:0.8, y:1.6, w:11.73, colW: Array(rows[0]?.length||1).fill(11.73/(rows[0]?.length||1)),
+              border:{ pt:0.5, color:"D0D0D0" }, autoPage:false });
+          }
+        }
+        else if (lay === "chart_bar" || lay === "chart_bar_h") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const bars = s.bars||[];
+          if (bars.length > 0) {
+            const chartData = [{ name:"Data", labels:bars.map(b=>b.label||""), values:bars.map(b=>b.value||0) }];
+            slide.addChart(pptx.charts.BAR, chartData, {
+              x:0.8, y:1.8, w:11.5, h:4.8,
+              barDir: lay==="chart_bar_h" ? "bar" : "col",
+              showValue: true, valueFontSize: 11, catAxisLabelFontSize: 11, valAxisHidden: true,
+              chartColors: [cc("accent")], showLegend: false,
+              dataLabelPosition: "outEnd", dataLabelColor: cc("body"),
             });
-            if (s.body) slide.addText(s.body.replace(/\\n/g,"\n"), { x:0.8, y:5, w:11.73, h:1.8, fontSize:15, fontFace:"Malgun Gothic", color:c("body") });
+          }
+        }
+        else if (lay === "chart_pie" || lay === "chart_donut") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const segs = s.segments||[];
+          if (segs.length > 0) {
+            const chartData = [{ name:"Data", labels:segs.map(sg=>sg.label||""), values:segs.map(sg=>sg.value||0) }];
+            slide.addChart(lay==="chart_donut" ? pptx.charts.DOUGHNUT : pptx.charts.PIE, chartData, {
+              x:2, y:1.8, w:9, h:4.8,
+              showPercent: true, showLegend: true, legendPos: "r", legendFontSize: 12,
+              chartColors: [cc("accent"), "F59E0B", "EF4444", "22C55E", "3B82F6", "EC4899"],
+              dataLabelColor: cc("text"), dataLabelFontSize: 12,
+            });
+          }
+        }
+        else if (lay === "progress") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const bars = s.bars||[];
+          bars.slice(0,6).forEach((b, j) => {
+            const y = 1.8 + j * 0.85;
+            slide.addText(b.label||"", { x:0.8, y, w:3, h:0.4, fontSize:13, fontFace:F, color:cc("body"), valign:"middle" });
+            slide.addText(`${b.value||0}%`, { x:10.5, y, w:1.5, h:0.4, fontSize:13, fontFace:F, color:cc("accent"), bold:true, align:"right", valign:"middle" });
+            slide.addShape(pptx.ShapeType.rect, { x:4, y:y+0.1, w:6.3, h:0.25, fill:{ color:cc("card")||"E8E8E8" }, rectRadius:0.05 });
+            slide.addShape(pptx.ShapeType.rect, { x:4, y:y+0.1, w:6.3*Math.min((b.value||0)/100,1), h:0.25, fill:{ color:cc("accent") }, rectRadius:0.05 });
+          });
+        }
+        else if (lay === "stats" || lay === "stats_4" || lay === "big_number" || lay === "kpi_card") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const st = s.stats||[];
+          const cnt = lay==="big_number" ? 1 : Math.min(st.length, lay==="stats_4"||lay==="kpi_card" ? 4 : 3);
+          const cw = 11 / Math.max(cnt, 1);
+          st.slice(0, cnt).forEach((item, j) => {
+            const x = 1 + j * cw;
+            const fs = lay==="big_number" ? 72 : 44;
+            slide.addText(item.value||"", { x, y:2, w:cw-0.5, h:2, fontSize:fs, fontFace:F, color:cc("accent"), bold:true, align:"center", valign:"middle" });
+            slide.addText(item.label||"", { x, y:4, w:cw-0.5, h:0.8, fontSize:14, fontFace:F, color:cc("body"), align:"center" });
+            if (lay==="kpi_card" && j < cnt-1) {
+              slide.addShape(pptx.ShapeType.rect, { x:x+cw-0.3, y:2.2, w:0.04, h:2.2, fill:{ color:cc("accent")+"30" } });
+            }
+          });
+          if (s.body) slide.addText(bodyText(s.body), { x:0.8, y:5, w:11.73, h:1.5, fontSize:14, fontFace:F, color:cc("body") });
+        }
+        else if (lay === "numbered" || lay === "agenda" || lay === "checklist") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const items = s.bullets||[];
+          const bul = items.map((b, j) => ({
+            text: lay==="checklist" ? `  ${b}` : b,
+            options: {
+              fontSize: 16, color: cc("body"), fontFace: F, paraSpaceAfter: 10,
+              bullet: lay==="numbered"||lay==="agenda" ? { type:"number", numberStartAt:j===0?1:undefined } : lay==="checklist" ? { code:"2713" } : { code:"2022" },
+            },
+          }));
+          if (bul.length) slide.addText(bul, { x:1, y:1.8, w:11, h:4.8, valign:"top" });
+        }
+        else if (lay === "bullets" || lay === "references") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const bul = (s.bullets||[]).map(b => ({ text:b, options:{ fontSize:16, color:cc("body"), fontFace:F, bullet:{code:"2022"}, paraSpaceAfter:8 } }));
+          if (bul.length) slide.addText(bul, { x:1, y:1.8, w:11, h:4.8, valign:"top" });
+          else if (s.body) slide.addText(bodyText(s.body), { x:0.8, y:1.8, w:11.73, h:4.8, fontSize:16, fontFace:F, color:cc("body"), valign:"top" });
+        }
+        else if (lay === "two_column" || lay === "comparison" || lay === "three_column" || lay === "pros_cons" || lay === "before_after") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const lc = s.leftCol || (s.body||"").slice(0, Math.ceil((s.body||"").length/2));
+          const rc = s.rightCol || (s.body||"").slice(Math.ceil((s.body||"").length/2));
+          if (lay === "three_column") {
+            [0,1,2].forEach(j => {
+              const txt = j===0?lc:j===1?bodyText(s.body||"").slice(0,200):rc;
+              slide.addText(bodyText(txt), { x:0.5+j*4.2, y:1.8, w:3.9, h:4.8, fontSize:14, fontFace:F, color:cc("body"), valign:"top" });
+              if(j<2) slide.addShape(pptx.ShapeType.rect, { x:4.5+j*4.2, y:2, w:0.04, h:4, fill:{ color:cc("accent")+"30" } });
+            });
           } else {
-            // 공통 헤더
-            const hasImage = (lay==="image_right"||lay==="image_left"||lay==="image_full") && s.image;
-            const contentW = hasImage && lay!=="image_full" ? 6.5 : 11.73;
-            const contentX = lay==="image_left" && hasImage ? 6.5 : 0.8;
-
-            if (lay !== "image_full") {
-              slide.addText(s.title||"", { x:contentX, y:0.4, w:contentW, h:0.9, fontSize:26, fontFace:"Malgun Gothic", color:c("text"), bold:true });
-              slide.addShape(pptx.ShapeType.rect, { x:contentX, y:1.3, w:1.8, h:0.05, fill:{ color:c("accent") } });
-            }
-
-            if (lay === "bullets") {
-              const bul = (s.bullets||[]).map(b => ({ text:b, options:{ fontSize:17, color:c("body"), fontFace:"Malgun Gothic", bullet:{code:"2022"}, paraSpaceAfter:8 } }));
-              if (bul.length) slide.addText(bul, { x:contentX+0.2, y:1.8, w:contentW-0.4, h:4.8, valign:"top" });
-            } else if (lay === "two_column" || lay === "comparison") {
-              const lc = s.leftCol || (s.body||"").slice(0, Math.ceil((s.body||"").length/2));
-              const rc = s.rightCol || (s.body||"").slice(Math.ceil((s.body||"").length/2));
-              slide.addText((lc||"").replace(/\\n/g,"\n"), { x:0.8, y:1.8, w:5.8, h:4.8, fontSize:15, fontFace:"Malgun Gothic", color:c("body"), valign:"top" });
-              slide.addShape(pptx.ShapeType.rect, { x:6.6, y:2, w:0.06, h:4, fill:{ color:c("accent")+"40" } });
-              slide.addText((rc||"").replace(/\\n/g,"\n"), { x:6.9, y:1.8, w:5.8, h:4.8, fontSize:15, fontFace:"Malgun Gothic", color:c("body"), valign:"top" });
-              if (lay==="comparison") {
-                slide.addShape(pptx.ShapeType.rect, { x:5.9, y:1.3, w:1.5, h:0.6, fill:{ color:c("accent") }, rectRadius:0.15 });
-                slide.addText("VS", { x:5.9, y:1.3, w:1.5, h:0.6, fontSize:14, fontFace:"Malgun Gothic", color:c("bg"), bold:true, align:"center", valign:"middle" });
-              }
-            } else if (lay === "timeline") {
-              const items = s.bullets || [];
-              items.slice(0,5).forEach((item, j) => {
-                const x = 1 + j * 2.3;
-                slide.addShape(pptx.ShapeType.ellipse, { x:x+0.7, y:2.5, w:0.5, h:0.5, fill:{ color:c("accent") } });
-                slide.addText(String(j+1), { x:x+0.7, y:2.5, w:0.5, h:0.5, fontSize:12, fontFace:"Malgun Gothic", color:c("bg"), align:"center", valign:"middle", bold:true });
-                slide.addText(item, { x:x, y:3.3, w:1.9, h:2, fontSize:12, fontFace:"Malgun Gothic", color:c("body"), align:"center", valign:"top" });
-                if (j < items.length-1) slide.addShape(pptx.ShapeType.rect, { x:x+1.3, y:2.7, w:1.2, h:0.06, fill:{ color:c("accent")+"60" } });
-              });
-            } else if (lay === "quote") {
-              slide.addShape(pptx.ShapeType.rect, { x:1.5, y:2, w:0.15, h:3.5, fill:{ color:c("accent") } });
-              slide.addText(s.title||"", { x:2.3, y:2, w:9, h:2.5, fontSize:28, fontFace:"Malgun Gothic", color:c("text"), italic:true, valign:"middle" });
-              if (s.body) slide.addText(s.body.replace(/\\n/g,"\n"), { x:2.3, y:4.8, w:9, h:1.5, fontSize:15, fontFace:"Malgun Gothic", color:c("sub") });
+            if (lay==="pros_cons") {
+              slide.addShape(pptx.ShapeType.rect, { x:0.5, y:1.7, w:5.9, h:5, fill:{ color:"DCFCE7" }, rectRadius:0.15 });
+              slide.addShape(pptx.ShapeType.rect, { x:6.9, y:1.7, w:5.9, h:5, fill:{ color:"FEF2F2" }, rectRadius:0.15 });
+              slide.addText("Pros", { x:0.8, y:1.8, w:2, h:0.5, fontSize:14, fontFace:F, color:"22C55E", bold:true });
+              slide.addText("Cons", { x:7.2, y:1.8, w:2, h:0.5, fontSize:14, fontFace:F, color:"EF4444", bold:true });
+              slide.addText(bodyText(lc), { x:0.8, y:2.4, w:5.3, h:4, fontSize:14, fontFace:F, color:cc("body"), valign:"top" });
+              slide.addText(bodyText(rc), { x:7.2, y:2.4, w:5.3, h:4, fontSize:14, fontFace:F, color:cc("body"), valign:"top" });
+            } else if (lay==="before_after") {
+              slide.addText("Before", { x:0.8, y:1.8, w:5.5, h:0.5, fontSize:14, fontFace:F, color:cc("body"), bold:true, align:"center" });
+              slide.addText("After", { x:7, y:1.8, w:5.5, h:0.5, fontSize:14, fontFace:F, color:cc("accent"), bold:true, align:"center" });
+              slide.addText(bodyText(lc), { x:0.8, y:2.5, w:5.5, h:4, fontSize:14, fontFace:F, color:cc("body"), valign:"top", align:"center" });
+              slide.addShape(pptx.ShapeType.rect, { x:6.5, y:2, w:0.06, h:4.5, fill:{ color:cc("accent") } });
+              slide.addText(bodyText(rc), { x:7, y:2.5, w:5.5, h:4, fontSize:14, fontFace:F, color:cc("body"), valign:"top", align:"center" });
             } else {
-              // title_body, image_right, image_left, image_full
-              if (s.body && lay!=="image_full") {
-                slide.addText(s.body.replace(/\\n/g,"\n"), { x:contentX, y:1.8, w:contentW, h:4.8, fontSize:17, fontFace:"Malgun Gothic", color:c("body"), valign:"top", lineSpacing:26 });
+              slide.addText(bodyText(lc), { x:0.8, y:1.8, w:5.5, h:4.8, fontSize:15, fontFace:F, color:cc("body"), valign:"top" });
+              slide.addShape(pptx.ShapeType.rect, { x:6.5, y:2, w:0.04, h:4, fill:{ color:cc("accent")+"40" } });
+              slide.addText(bodyText(rc), { x:6.8, y:1.8, w:5.5, h:4.8, fontSize:15, fontFace:F, color:cc("body"), valign:"top" });
+              if (lay==="comparison") {
+                slide.addShape(pptx.ShapeType.ellipse, { x:5.9, y:1.2, w:1.5, h:0.7, fill:{ color:cc("accent") } });
+                slide.addText("VS", { x:5.9, y:1.2, w:1.5, h:0.7, fontSize:14, fontFace:F, color:cc("bg"), bold:true, align:"center", valign:"middle" });
               }
             }
-
-            // 이미지 삽입 (base64)
-            if (hasImage && s.image) {
-              const imgOpts = lay==="image_full"
-                ? { x:0, y:0, w:13.33, h:7.1, sizing:{ type:"cover", w:13.33, h:7.1 } }
-                : lay==="image_right"
-                  ? { x:7.5, y:1.5, w:5.3, h:5.2, sizing:{ type:"contain", w:5.3, h:5.2 } }
-                  : { x:0.5, y:1.5, w:5.3, h:5.2, sizing:{ type:"contain", w:5.3, h:5.2 } };
-              try { slide.addImage({ data:s.image, ...imgOpts }); } catch {}
+          }
+        }
+        else if (lay === "timeline" || lay === "timeline_v" || lay === "steps" || lay === "steps_v" || lay === "roadmap") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const items = s.bullets || [];
+          const isV = lay==="timeline_v" || lay==="steps_v";
+          items.slice(0, isV?6:5).forEach((item, j) => {
+            if (isV) {
+              const y = 1.8 + j * 0.85;
+              slide.addShape(pptx.ShapeType.ellipse, { x:1.2, y, w:0.45, h:0.45, fill:{ color:cc("accent") } });
+              slide.addText(String(j+1), { x:1.2, y, w:0.45, h:0.45, fontSize:11, fontFace:F, color:cc("bg"), align:"center", valign:"middle", bold:true });
+              if(j<items.length-1) slide.addShape(pptx.ShapeType.rect, { x:1.4, y:y+0.5, w:0.04, h:0.35, fill:{ color:cc("accent")+"50" } });
+              slide.addText(item, { x:2, y, w:10, h:0.45, fontSize:13, fontFace:F, color:cc("body"), valign:"middle" });
+            } else {
+              const x = 0.8 + j * 2.4;
+              slide.addShape(pptx.ShapeType.ellipse, { x:x+0.7, y:2.5, w:0.5, h:0.5, fill:{ color:cc("accent") } });
+              slide.addText(String(j+1), { x:x+0.7, y:2.5, w:0.5, h:0.5, fontSize:12, fontFace:F, color:cc("bg"), align:"center", valign:"middle", bold:true });
+              slide.addText(item, { x:x, y:3.3, w:2, h:2, fontSize:12, fontFace:F, color:cc("body"), align:"center", valign:"top" });
+              if (j<items.length-1) slide.addShape(pptx.ShapeType.rect, { x:x+1.3, y:2.7, w:1.2, h:0.05, fill:{ color:cc("accent")+"50" } });
+            }
+          });
+        }
+        else if (lay === "pyramid" || lay === "funnel") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const items = s.bullets || [];
+          const isFunnel = lay==="funnel";
+          items.slice(0,5).forEach((item, j) => {
+            const pct = isFunnel ? (90 - j*15) : (30 + j*15);
+            const w = W * pct / 100;
+            const x = (W - w) / 2;
+            const y = 2 + j * 0.95;
+            slide.addShape(pptx.ShapeType.rect, { x, y, w, h:0.7, fill:{ color:cc("accent") }, rectRadius:0.1 });
+            slide.addText(item, { x, y, w, h:0.7, fontSize:12, fontFace:F, color:cc("bg"), align:"center", valign:"middle" });
+          });
+        }
+        else if (lay === "swot" || lay === "matrix") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const sw = s.swot || {};
+          const items = [["S","강점",sw.s||"","22C55E"],["W","약점",sw.w||"","F59E0B"],["O","기회",sw.o||"","3B82F6"],["T","위협",sw.t||"","EF4444"]];
+          items.forEach(([k,label,val,color], j) => {
+            const x = j%2===0 ? 0.8 : 6.8;
+            const y = j<2 ? 1.8 : 4.2;
+            slide.addShape(pptx.ShapeType.rect, { x, y, w:5.7, h:2.2, fill:{ color:color+"15" }, line:{ color, width:1.5 }, rectRadius:0.15 });
+            slide.addText(`${k} - ${label}`, { x:x+0.2, y:y+0.1, w:3, h:0.5, fontSize:13, fontFace:F, color, bold:true });
+            slide.addText(val, { x:x+0.2, y:y+0.6, w:5.2, h:1.4, fontSize:12, fontFace:F, color:cc("body"), valign:"top" });
+          });
+        }
+        else if (lay === "org_chart" || lay === "team") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const items = s.orgItems || [];
+          if (items[0]) {
+            const isTeam = lay==="team";
+            if (!isTeam) {
+              slide.addShape(pptx.ShapeType.rect, { x:5.2, y:2, w:3, h:0.8, fill:{ color:cc("accent") }, rectRadius:0.15 });
+              slide.addText(`${items[0].role} ${items[0].name}`, { x:5.2, y:2, w:3, h:0.8, fontSize:13, fontFace:F, color:cc("bg"), align:"center", valign:"middle", bold:true });
+              if(items.length>1) slide.addShape(pptx.ShapeType.rect, { x:6.65, y:2.8, w:0.04, h:0.5, fill:{ color:cc("accent") } });
+            }
+            const subs = isTeam ? items : items.slice(1);
+            const cnt = Math.min(subs.length, 5);
+            const cw = 11 / Math.max(cnt, 1);
+            subs.slice(0, cnt).forEach((o, j) => {
+              const x = 1 + j * cw;
+              const y = isTeam ? 2.5 : 3.5;
+              if (isTeam) {
+                slide.addShape(pptx.ShapeType.ellipse, { x:x+cw/2-0.4, y, w:0.8, h:0.8, fill:{ color:cc("accent")+"30" } });
+                slide.addText(o.name?.[0]||"?", { x:x+cw/2-0.4, y, w:0.8, h:0.8, fontSize:16, fontFace:F, color:cc("accent"), align:"center", valign:"middle", bold:true });
+                slide.addText(o.name||"", { x:x, y:y+1, w:cw-0.3, h:0.5, fontSize:13, fontFace:F, color:cc("text"), align:"center", bold:true });
+                slide.addText(o.role||"", { x:x, y:y+1.5, w:cw-0.3, h:0.4, fontSize:11, fontFace:F, color:cc("body"), align:"center" });
+              } else {
+                slide.addShape(pptx.ShapeType.rect, { x:x+0.3, y, w:cw-0.8, h:0.7, line:{ color:cc("accent"), width:1 }, rectRadius:0.1 });
+                slide.addText(`${o.role}\n${o.name}`, { x:x+0.3, y, w:cw-0.8, h:0.7, fontSize:11, fontFace:F, color:cc("body"), align:"center", valign:"middle" });
+              }
+            });
+          }
+        }
+        else if (lay === "quote" || lay === "quote_card" || lay === "highlight_box" || lay === "callout" || lay === "key_message" || lay === "banner" || lay === "cta") {
+          addBar(slide); addNum(slide, i);
+          if (lay==="banner") {
+            slide.addShape(pptx.ShapeType.rect, { x:0, y:0.5, w:W, h:2.5, fill:{ color:cc("accent")+"20" } });
+            slide.addText(s.title||"", { x:1, y:0.8, w:11, h:1.8, fontSize:28, fontFace:F, color:cc("accent"), bold:true, align:"center", valign:"middle" });
+            if (s.body) slide.addText(bodyText(s.body), { x:1, y:3.5, w:11, h:3, fontSize:15, fontFace:F, color:cc("body"), valign:"top" });
+          } else if (lay==="cta") {
+            slide.addText(s.title||"", { x:1, y:1.5, w:11, h:1.5, fontSize:28, fontFace:F, color:cc("text"), bold:true, align:"center" });
+            if (s.body) slide.addText(bodyText(s.body), { x:2, y:3, w:9, h:1.5, fontSize:15, fontFace:F, color:cc("body"), align:"center" });
+            slide.addShape(pptx.ShapeType.rect, { x:4.5, y:4.8, w:4, h:0.8, fill:{ color:cc("accent") }, rectRadius:0.15 });
+            slide.addText(s.subtitle||"시작하기", { x:4.5, y:4.8, w:4, h:0.8, fontSize:16, fontFace:F, color:cc("bg"), bold:true, align:"center", valign:"middle" });
+          } else if (lay==="key_message") {
+            slide.addShape(pptx.ShapeType.rect, { x:2, y:2, w:9, h:1, fill:{ color:cc("accent") }, rectRadius:0.15 });
+            slide.addText(s.title||"", { x:2, y:2, w:9, h:1, fontSize:22, fontFace:F, color:cc("bg"), bold:true, align:"center", valign:"middle" });
+            if (s.body) slide.addText(bodyText(s.body), { x:2, y:3.5, w:9, h:2.5, fontSize:15, fontFace:F, color:cc("body"), align:"center" });
+          } else {
+            // quote, quote_card, highlight_box, callout
+            if (["quote","quote_card","callout"].includes(lay)) {
+              slide.addShape(pptx.ShapeType.rect, { x:1.5, y:1.8, w:0.15, h:4, fill:{ color:cc("accent") } });
+            }
+            if (lay==="highlight_box") {
+              slide.addShape(pptx.ShapeType.rect, { x:2, y:2, w:9, h:3.5, fill:{ color:cc("accent")+"12" }, line:{ color:cc("accent"), width:1.5 }, rectRadius:0.15 });
+            }
+            const tx = ["quote","quote_card","callout"].includes(lay) ? 2.2 : 2.5;
+            slide.addText(s.title||"", { x:tx, y:2, w:9, h:2, fontSize:24, fontFace:F, color:cc("text"), italic:["quote","quote_card"].includes(lay), valign:"middle" });
+            if (s.body) slide.addText(bodyText(s.body), { x:tx, y:4.2, w:9, h:2, fontSize:14, fontFace:F, color:cc("sub") });
+          }
+        }
+        else if (lay === "icon_grid" || lay === "icon_grid_6" || lay === "card_grid" || lay === "horizontal_list" || lay === "pricing") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          const items = s.bullets || [];
+          const cnt = lay==="icon_grid" ? 4 : lay==="icon_grid_6" ? 6 : lay==="pricing" ? 3 : Math.min(items.length, 4);
+          const cols = lay==="icon_grid" ? 2 : lay==="icon_grid_6" ? 3 : cnt;
+          const cw = 11 / Math.max(cols, 1);
+          items.slice(0, cnt).forEach((item, j) => {
+            const col = j % cols;
+            const row = Math.floor(j / cols);
+            const x = 1 + col * cw;
+            const y = 2 + row * 2.4;
+            slide.addShape(pptx.ShapeType.rect, { x:x+0.1, y, w:cw-0.4, h:2, fill:{ color:cc("accent")+"10" }, line:{ color:cc("accent")+"30", width:0.5 }, rectRadius:0.15 });
+            slide.addText(item, { x:x+0.2, y:y+0.3, w:cw-0.6, h:1.4, fontSize:13, fontFace:F, color:cc("body"), align:"center", valign:"middle" });
+          });
+        }
+        else if (lay === "ranking") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          (s.bullets||[]).slice(0,6).forEach((item, j) => {
+            const y = 1.8 + j * 0.8;
+            const barW = 8 * (1 - j * 0.12);
+            slide.addText(String(j+1), { x:0.8, y, w:0.6, h:0.5, fontSize:16, fontFace:F, color:cc("accent"), bold:true, align:"center", valign:"middle" });
+            slide.addShape(pptx.ShapeType.rect, { x:1.6, y:y+0.1, w:barW, h:0.35, fill:{ color:cc("accent") }, rectRadius:0.08 });
+            slide.addText(item, { x:1.8, y:y+0.05, w:barW-0.4, h:0.45, fontSize:12, fontFace:F, color:cc("bg"), valign:"middle" });
+          });
+        }
+        else if (lay === "faq") {
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          (s.bullets||[]).slice(0,5).forEach((item, j) => {
+            const y = 1.8 + j * 1;
+            slide.addShape(pptx.ShapeType.rect, { x:0.8, y, w:11.5, h:0.75, fill:{ color:j%2===0?cc("accent")+"10":cc("card")||"F8F8F8" }, rectRadius:0.1 });
+            slide.addText(`Q${j+1}. ${item}`, { x:1, y, w:11, h:0.75, fontSize:14, fontFace:F, color:cc("body"), valign:"middle" });
+          });
+        }
+        else if (["definition","image_top","image_left","image_right","image_full","gallery","mockup"].includes(lay)) {
+          addBar(slide); if(lay!=="image_full") addTitle(slide, s.title); addNum(slide, i);
+          if (s.image) {
+            const imgOpts = lay==="image_full" ? { x:0, y:0, w:W, h:H-0.4, sizing:{type:"cover",w:W,h:H-0.4} }
+              : lay==="image_right" ? { x:7.5, y:1.5, w:5.3, h:5.2, sizing:{type:"contain",w:5.3,h:5.2} }
+              : lay==="image_left" ? { x:0.5, y:1.5, w:5.3, h:5.2, sizing:{type:"contain",w:5.3,h:5.2} }
+              : lay==="image_top" ? { x:0.8, y:1.5, w:11.73, h:3, sizing:{type:"cover",w:11.73,h:3} }
+              : { x:0.8, y:1.5, w:5.5, h:4.5, sizing:{type:"contain",w:5.5,h:4.5} };
+            try { slide.addImage({ data:s.image, ...imgOpts }); } catch {}
+            if (lay==="image_full") {
+              slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:W, h:H, fill:{ color:"000000", transparency:50 } });
+              slide.addText(s.title||"", { x:1, y:2, w:11, h:2, fontSize:32, fontFace:F, color:"FFFFFF", bold:true, align:"center", valign:"middle" });
             }
           }
-
-          // 아이콘
-          if (s.icon && ICONS_MAP[s.icon] && !["section","image_full"].includes(lay)) {
-            slide.addText(ICONS_MAP[s.icon], { x:12, y:0.3, w:0.8, h:0.8, fontSize:22, align:"center", valign:"middle", color:c("accent") });
+          const cx = ["image_right","gallery","mockup"].includes(lay) ? 0.8 : ["image_left"].includes(lay) ? 6.5 : 0.8;
+          const cw = s.image && ["image_right","image_left"].includes(lay) ? 6 : 11.73;
+          if (s.body && lay!=="image_full") {
+            const by = lay==="image_top" ? 4.8 : 1.8;
+            slide.addText(bodyText(s.body), { x:cx, y:by, w:cw, h:lay==="image_top"?2:4.8, fontSize:15, fontFace:F, color:cc("body"), valign:"top" });
           }
+        }
+        else {
+          // 기타 모든 레이아웃 폴백
+          addBar(slide); addTitle(slide, s.title); addNum(slide, i);
+          if (s.body) slide.addText(bodyText(s.body), { x:0.8, y:1.8, w:11.73, h:4.8, fontSize:16, fontFace:F, color:cc("body"), valign:"top", lineSpacing:24 });
+          if ((s.bullets||[]).length > 0 && !s.body) {
+            const bul = s.bullets.map(b => ({ text:b, options:{ fontSize:15, color:cc("body"), fontFace:F, bullet:{code:"2022"}, paraSpaceAfter:8 } }));
+            slide.addText(bul, { x:1, y:1.8, w:11, h:4.8, valign:"top" });
+          }
+        }
 
-          // 슬라이드 번호
-          if (i > 0) slide.addText(String(i+1), { x:12.3, y:6.7, w:0.8, h:0.4, fontSize:10, fontFace:"Malgun Gothic", color:c("sub"), align:"right" });
+        // 로고 텍스트
+        if (s.logoText && !["section","section_num"].includes(lay)) {
+          slide.addText(s.logoText, { x:W-3, y:0.2, w:2.5, h:0.4, fontSize:10, fontFace:F, color:cc("accent"), align:"right" });
         }
 
         if (s.note) slide.addNotes(s.note);
