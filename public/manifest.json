@@ -13,8 +13,23 @@
   "lang": "ko",
   "dir": "ltr",
   "categories": ["productivity", "business"],
-  "iarc_rating_id": "",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.snsmakeit.app",
+      "id": "com.snsmakeit.app"
+    }
+  ],
+  "scope_extensions": [
+    { "origin": "https://www.snsmakeit.com" },
+    { "origin": "https://snsmakeit.com" }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -48,6 +63,13 @@
       "type": "image/png",
       "form_factor": "wide",
       "label": "SNS메이킷 홈 화면"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SNS메이킷 앱 아이콘"
     }
   ],
   "shortcuts": [
@@ -65,5 +87,17 @@
       "description": "AI 카드뉴스 생성",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
