@@ -127,12 +127,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         {/* SNS 글쓰기 그룹 */}
         <Group label={t("snsWrite")} icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
         {blogOpen && <>
-          <Item id="blog_naver"   label={t("naverBlog")}      indent />
-          <Item id="blog_cafe"    label={t("naverCafe")}      indent />
-          <Item id="blog_tistory" label={t("tistory")}        indent />
-          <Item id="blog_insta"   label={t("instaCap")}       indent />
-          <Item id="blog_youtube" label={t("youtubeScript")}  indent />
-          <Item id="blog_thread"  label={t("thread")}         indent />
+          <Item id="blog_write"   label="글쓰기"               indent />
           <Item id="blog_link"    label="링크 글쓰기"           indent />
         </>}
 
@@ -1649,12 +1644,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_naver_intro",    icon: "📝", title: _s("네이버 블로그","Naver Blog"),   desc: _s("SEO 최적화 블로그 포스트","SEO-optimized blog post"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_tistory_intro",  icon: "🟠", title: _s("티스토리","Tistory"),        desc: _s("티스토리용 블로그 글","Tistory blog post"),     cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(255,107,53,0.07)"  },
-      { id: "blog_insta_intro",    icon: "📱", title: _s("인스타그램 캡션","Instagram Caption"), desc: _s("인스타 게시물 캡션","Instagram post caption"),       cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "blog_youtube_intro",  icon: "▶️", title: _s("유튜브 대본","YouTube Script"),     desc: _s("영상 대본 & 설명란","Video script & description"),       cr: 10, darkColor: "rgba(239,68,68,0.18)",   lightColor: "rgba(239,68,68,0.07)"   },
-      { id: "blog_thread_intro",   icon: "🧵", title: _s("스레드","Threads"),          desc: _s("스레드 게시물 작성","Threads post writing"),       cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(0,0,0,0.04)"       },
-      { id: "blog_link_intro",     icon: "LK", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스 링크로 글 작성","Write from YouTube or News link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
+      { id: "blog_write",         icon: "", title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_link",          icon: "", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
       { id: "cardnews_simple",  icon: "✨", title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
       { id: "detail_simple",    icon: "📋", title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "thumbnail_gen",    icon: "🎬", title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
@@ -1939,23 +1930,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 네이버 카페 글쓰기 (인트로 없이 직접 진입)
-  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
-    return (
-      <div key="blog_cafe_make" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType="blog_cafe" menuLabel="네이버 카페 글쓰기" embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // 통합 글쓰기 (플랫폼 선택)
+  if (aiMenu === "blog_write") {
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
   }
 
-  // 블로그 계열 생성기
+  // 네이버 카페 글쓰기 (하위호환)
+  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform="blog_cafe" />;
+  }
+
+  // 블로그 계열 생성기 (하위호환)
   if (aiMenu.startsWith("blog_")) {
-    const info = BLOG_MAP[aiMenu] || { type: "blog", label: "블로그 글쓰기" };
-    return (
-      <div key={aiMenu} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform={aiMenu} />;
   }
 
   // 보관함에서 심플 카드뉴스 열기
@@ -2179,11 +2166,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
 
 const MENU_LABELS = {
   home: "AI 생성기", library: "내 보관함",
-  blog_naver_intro: "네이버 블로그", blog_naver: "네이버 블로그",
-  blog_tistory_intro: "티스토리", blog_tistory: "티스토리",
-  blog_insta_intro: "인스타그램 캡션", blog_insta: "인스타그램 캡션",
-  blog_youtube_intro: "유튜브 대본", blog_youtube: "유튜브 대본",
-  blog_thread_intro: "스레드", blog_thread: "스레드",
+  blog_write: "글쓰기",
+  blog_naver_intro: "글쓰기", blog_naver: "글쓰기",
+  blog_tistory_intro: "글쓰기", blog_tistory: "글쓰기",
+  blog_insta_intro: "글쓰기", blog_insta: "글쓰기",
+  blog_youtube_intro: "글쓰기", blog_youtube: "글쓰기",
+  blog_thread_intro: "글쓰기", blog_thread: "글쓰기",
+  blog_cafe_intro: "글쓰기", blog_cafe: "글쓰기",
   blog_yt_blog_intro: "링크 글쓰기", blog_yt_blog: "링크 글쓰기",
   blog_news_intro: "링크 글쓰기", blog_news: "링크 글쓰기",
   blog_link_intro: "링크 글쓰기", blog_link: "링크 글쓰기",
@@ -2200,6 +2189,60 @@ const MENU_LABELS = {
   outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
   shorts: "숏폼편집",
 };
+
+/* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
+const WRITE_PLATFORMS = [
+  { id: "blog_naver",   label: "네이버 블로그", type: "blog_naver" },
+  { id: "blog_cafe",    label: "네이버 카페",  type: "blog_cafe" },
+  { id: "blog_tistory", label: "티스토리",     type: "blog_tistory" },
+  { id: "blog_insta",   label: "인스타그램",   type: "blog_insta" },
+  { id: "blog_thread",  label: "스레드",       type: "blog_thread" },
+];
+
+function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, defaultPlatform }) {
+  const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
+  const text = isDark ? "#e8eaed" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const accent = "#7c6aff";
+  const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
+
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {/* 플랫폼 선택 탭 */}
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
+        <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
+          <div style={{ textAlign:"center", marginBottom:12 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:2 }}>글쓰기</div>
+            <div style={{ fontSize:12, color:muted }}>플랫폼을 선택하고 주제를 입력하면 AI가 글을 작성해요</div>
+          </div>
+          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+            {WRITE_PLATFORMS.map(p => {
+              const active = platform === p.id;
+              return (
+                <button key={p.id} onClick={() => setPlatform(p.id)}
+                  style={{
+                    padding:"9px 18px", border:"none", cursor:"pointer",
+                    background:"transparent",
+                    color: active ? accent : muted, fontSize:13, fontWeight: active ? 800 : 500,
+                    borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
+                    transition: "all 0.15s", marginBottom:-1,
+                  }}>
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* BlogGenerator */}
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+      </div>
+    </div>
+  );
+}
 
 /* ── 링크 글쓰기 통합 컴포넌트 ── */
 function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTab }) {

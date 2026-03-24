@@ -1,21 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import SeoAnalyzer from "./SeoAnalyzer";
 import { callAI } from "./aiClient";
 
 const MENU_ITEMS = [
   { id:"seo_home",    label:"실시간 검색어" },
-  { id:"seo_blog",    label:"네이버 블로그 분석" },
-  { id:"seo_youtube", label:"유튜브 분석" },
-  { id:"seo_tistory", label:"티스토리 분석" },
-  { id:"seo_insta",   label:"인스타그램 분석" },
-  { id:"seo_website", label:"홈페이지 분석" },
-  { id:"seo_twitter", label:"X(트위터) 분석" },
-  { id:"seo_threads", label:"스레드 분석" },
-  { id:"seo_cafe",    label:"네이버 카페 분석" },
-  { id:"seo_facebook",label:"페이스북 분석" },
-  { id:"seo_linkedin",label:"링크드인 분석" },
-  { id:"seo_tiktok",  label:"틱톡 분석" },
-  { id:"seo_pinterest",label:"핀터레스트 분석" },
 ];
 
 const RANK_ITEMS = [
@@ -89,7 +76,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
 
-  const menuLabel = menu === "home" ? "AI 분석기획기" : menu === "library" ? "내 보관함" : MENU_ITEMS.find(m => m.id === menu)?.label || RANK_ITEMS.find(m => m.id === menu)?.label || "브랜드 TOP10";
+  const menuLabel = menu === "home" ? "AI 분석기" : menu === "library" ? "내 보관함" : MENU_ITEMS.find(m => m.id === menu)?.label || RANK_ITEMS.find(m => m.id === menu)?.label || "브랜드 TOP10";
 
   // 분석 결과 저장 콜백 (전체 결과 포함)
   const onAnalysisDone = (data) => {
@@ -133,7 +120,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
             <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 60px" }}>
               <div style={{ maxWidth: 800, margin: "0 auto" }}>
                 <div style={{ textAlign:"center", marginBottom:28 }}>
-                  <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기획기</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기</div>
                   <div style={{ fontSize:14, color:muted, lineHeight:1.7 }}>SNS 콘텐츠를 AI가 분석하고 SEO 점수를 매겨드려요</div>
                 </div>
 
@@ -305,9 +292,9 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
             </div>
           )}
 
-          {/* 분석기 */}
-          {menu.startsWith("seo_") && (
-            <SeoAnalyzer isDark={isDark} menu={menu} user={user} onSave={onAnalysisDone} onAnalyzingChange={setIsAnalyzing} navigate={navigate} onUserUpdate={onUserUpdate} />
+          {/* 실시간 검색어 */}
+          {menu === "seo_home" && (
+            <TrendingKeywords isDark={isDark} text={text} muted={muted} bdr={bdr} cardBg={cardBg} />
           )}
 
           {/* 실시간 인플루언서 랭킹 */}
@@ -566,26 +553,14 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr }) {
     <div style={{ width:200, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, height:"100%", overflowY:"auto", padding:"16px 10px" }}>
       <div style={{ padding:"0 8px 16px", borderBottom:"1px solid "+sideBdr, marginBottom:12 }}>
         <div style={{ fontSize:14, fontWeight:900, color:text }}>SNS메이킷</div>
-        <div style={{ fontSize:11, color:muted }}>AI 분석기획기</div>
+        <div style={{ fontSize:11, color:muted }}>AI 분석기</div>
       </div>
       <button onClick={() => setMenu("home")} style={{ ...item("home",menu==="home"), paddingLeft:14 }}>홈</button>
       <button onClick={() => setMenu("library")} style={{ ...item("library",menu==="library"), paddingLeft:14 }}>내 보관함</button>
-      <button onClick={() => setMenu("seo_home")} style={{ ...item("seo_home",menu==="seo_home"), paddingLeft:14 }}>실시간 검색어</button>
 
       <div style={divider} />
-      <div style={{ ...sectionStyle, marginBottom:10 }}>SNS 분석</div>
-      <button onClick={() => setMenu("seo_blog")} style={item("seo_blog", menu==="seo_blog")}>네이버 블로그</button>
-      <button onClick={() => setMenu("seo_youtube")} style={item("seo_youtube", menu==="seo_youtube")}>유튜브</button>
-      <button onClick={() => setMenu("seo_insta")} style={item("seo_insta", menu==="seo_insta")}>인스타그램</button>
-      <button onClick={() => setMenu("seo_tistory")} style={item("seo_tistory", menu==="seo_tistory")}>티스토리</button>
-      <button onClick={() => setMenu("seo_website")} style={item("seo_website", menu==="seo_website")}>홈페이지</button>
-      <button onClick={() => setMenu("seo_twitter")} style={item("seo_twitter", menu==="seo_twitter")}>X(트위터)</button>
-      <button onClick={() => setMenu("seo_tiktok")} style={item("seo_tiktok", menu==="seo_tiktok")}>틱톡</button>
-      <button onClick={() => setMenu("seo_cafe")} style={item("seo_cafe", menu==="seo_cafe")}>네이버 카페</button>
-      <button onClick={() => setMenu("seo_threads")} style={item("seo_threads", menu==="seo_threads")}>스레드</button>
-      <button onClick={() => setMenu("seo_facebook")} style={item("seo_facebook", menu==="seo_facebook")}>페이스북</button>
-      <button onClick={() => setMenu("seo_linkedin")} style={item("seo_linkedin", menu==="seo_linkedin")}>링크드인</button>
-      <button onClick={() => setMenu("seo_pinterest")} style={item("seo_pinterest", menu==="seo_pinterest")}>핀터레스트</button>
+      <div style={{ ...sectionStyle, marginBottom:10 }}>실시간</div>
+      <button onClick={() => setMenu("seo_home")} style={item("seo_home", menu==="seo_home")}>실시간 검색어</button>
 
       <div style={divider} />
       <div style={{ ...sectionStyle, marginBottom:10 }}>랭킹</div>
@@ -593,6 +568,201 @@ function Sidebar({ menu, setMenu, isDark, text, muted, sideBg, sideBdr }) {
         <button key={m.id} onClick={() => setMenu(m.id)} style={item(m.id, menu===m.id)}>{m.label}</button>
       ))}
       <button onClick={() => setMenu("rank_brand")} style={item("rank_brand", menu==="rank_brand")}>브랜드 TOP10</button>
+    </div>
+  );
+}
+
+/* ── 실시간 검색어 (강화 버전) ── */
+const TREND_CATS = ["전체","IT/테크","엔터테인먼트","경제/금융","정치/사회","스포츠","건강/의학","교육","여행","먹방/요리","패션/뷰티"];
+const TREND_ENGINES = ["전체","네이버","구글","다음"];
+const TREND_CACHE_TTL = 30 * 60 * 1000;
+
+function TrendingKeywords({ isDark, text, muted, bdr, cardBg }) {
+  const D = isDark;
+  const [cat, setCat] = useState("전체");
+  const [engine, setEngine] = useState("전체");
+  const [trends, setTrends] = useState(() => {
+    try { const r = JSON.parse(localStorage.getItem("az_trend_enhanced_전체")); if (r && Date.now() - r.ts < TREND_CACHE_TTL) return r.data; } catch {} return [];
+  });
+  const [loading, setLoading] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const fetched = useRef(false);
+
+  const fetchTrends = async (c) => {
+    const cacheKey = "az_trend_enhanced_" + c;
+    try { const r = JSON.parse(localStorage.getItem(cacheKey)); if (r && Date.now() - r.ts < TREND_CACHE_TTL) { setTrends(r.data); return; } } catch {}
+    setLoading(true); setTrends([]);
+    try {
+      const prompt = `한국 ${c==="전체"?"전체 카테고리":c} 실시간 인기 검색어 TOP 20.
+네이버, 구글 검색 트렌드를 종합 분석해서 다음 정보를 포함해줘:
+- rank: 순위 (1~20)
+- keyword: 검색어
+- engine: 주요 검색엔진 (네이버/구글)
+- change: 변동 (up/down/new/stable)
+- volume: 예상 일일 검색량 (숫자, 예: 45000)
+- reason: 왜 이 검색어가 급상승했는지 한 줄 설명
+- category: 카테고리 (뉴스/연예/경제/스포츠/IT/생활/교육 등)
+- relatedKeywords: 연관 검색어 3개 (배열)
+
+JSON만 반환: {"trends":[...]}`;
+      const raw = await callAI("claude-haiku-4-5", [{role:"user",content:prompt}], 2000);
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) {
+        const data = JSON.parse(m[0]).trends || [];
+        setTrends(data);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data })); } catch {}
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!fetched.current && trends.length === 0) { fetched.current = true; fetchTrends("전체"); }
+  }, []);
+
+  const filtered = trends.filter(t => engine === "전체" || t.engine === engine);
+  const now = new Date();
+  const timeStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}시 기준`;
+  const changeColor = (c) => c==="up"?"#ef4444":c==="down"?"#3b82f6":c==="new"?"#22c55e":muted;
+  const fmtVol = (v) => { if (!v) return "-"; const n = Number(v); if (n >= 10000) return (n/10000).toFixed(1)+"만"; if (n >= 1000) return (n/1000).toFixed(1)+"천"; return String(n); };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ maxWidth:900, margin:"0 auto" }}>
+        <div style={{ marginBottom:24 }}>
+          <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:4 }}>실시간 인기 검색어</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ fontSize:13, color:muted }}>검색 트렌드를 분석하고 콘텐츠 주제를 선정하세요</div>
+            <div style={{ fontSize:11, color:muted }}>{timeStr}</div>
+          </div>
+        </div>
+
+        {/* 카테고리 필터 */}
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:16 }}>
+          {TREND_CATS.map(c => (
+            <button key={c} onClick={()=>{setCat(c);fetchTrends(c);}}
+              style={{ padding:"6px 14px", borderRadius:20, border:`1px solid ${cat===c?"#7c6aff":bdr}`,
+                background:cat===c?"rgba(124,106,255,0.12)":"transparent",
+                color:cat===c?"#7c6aff":muted, fontSize:12, fontWeight:cat===c?700:400, cursor:"pointer" }}>
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {/* 엔진 탭 */}
+        <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${bdr}`, marginBottom:20 }}>
+          {TREND_ENGINES.map(eng => {
+            const active = engine===eng;
+            return (
+              <button key={eng} onClick={()=>setEngine(eng)}
+                style={{ padding:"10px 20px", border:"none", cursor:"pointer", fontSize:13, fontWeight:active?700:400,
+                  background:"transparent", borderBottom:active?"2px solid #7c6aff":"2px solid transparent",
+                  color:active?"#7c6aff":muted, marginBottom:-1 }}>
+                {eng}
+              </button>
+            );
+          })}
+          <div style={{ flex:1 }} />
+          <button onClick={()=>fetchTrends(cat)}
+            style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", marginBottom:4 }}>
+            새로고침
+          </button>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign:"center", padding:"80px 0" }}>
+            <div style={{ width:32,height:32,border:"3px solid #7c6aff",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 16px" }}/>
+            <div style={{ fontSize:14, color:muted }}>AI가 실시간 트렌드를 분석하고 있어요...</div>
+          </div>
+        ) : filtered.length > 0 ? (
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+            {/* 테이블 헤더 */}
+            <div style={{ display:"grid", gridTemplateColumns:"40px 28px 1fr 80px 80px 200px", gap:8, padding:"10px 16px",
+              borderBottom:`2px solid ${bdr}`, fontSize:11, fontWeight:700, color:muted }}>
+              <span>순위</span><span></span><span>키워드</span><span style={{textAlign:"right"}}>검색량</span><span style={{textAlign:"center"}}>카테고리</span><span>급상승 이유</span>
+            </div>
+            {filtered.slice(0,20).map((t, i) => (
+              <div key={i}
+                style={{ display:"grid", gridTemplateColumns:"40px 28px 1fr 80px 80px 200px", gap:8, padding:"14px 16px",
+                  borderBottom:`1px solid ${D?"rgba(255,255,255,0.04)":"#f3f4f6"}`,
+                  cursor:"pointer", transition:"background 0.1s", alignItems:"center" }}
+                onMouseEnter={e => e.currentTarget.style.background=D?"rgba(255,255,255,0.03)":"#f9fafb"}
+                onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                onClick={()=>setDetail(detail?.keyword===t.keyword?null:t)}>
+                {/* 순위 */}
+                <span style={{ fontSize:15, fontWeight:900, color:i<3?"#ef4444":i<6?"#f59e0b":text, textAlign:"center" }}>
+                  {t.rank||i+1}
+                </span>
+                {/* 변동 */}
+                <span style={{ fontSize:10, color:changeColor(t.change), textAlign:"center", fontWeight:700 }}>
+                  {t.change==="new"?"N":t.change==="up"?"▲":t.change==="down"?"▼":"—"}
+                </span>
+                {/* 키워드 */}
+                <span style={{ fontSize:14, fontWeight:i<3?700:500, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {t.keyword}
+                </span>
+                {/* 검색량 */}
+                <span style={{ fontSize:13, fontWeight:700, color:"#7c6aff", textAlign:"right" }}>
+                  {fmtVol(t.volume)}
+                </span>
+                {/* 카테고리 */}
+                <span style={{ fontSize:10, textAlign:"center", padding:"2px 8px", borderRadius:10,
+                  background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted, fontWeight:600 }}>
+                  {t.category||"-"}
+                </span>
+                {/* 이유 */}
+                <span style={{ fontSize:11, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {t.reason||""}
+                </span>
+              </div>
+            ))}
+
+            {/* 상세 패널 */}
+            {detail && (
+              <div style={{ margin:"16px 0", padding:"20px", borderRadius:14, border:`1px solid ${bdr}`, background:D?"rgba(124,106,255,0.04)":"rgba(124,106,255,0.02)" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                  <div style={{ fontSize:18, fontWeight:900, color:text }}>{detail.keyword}</div>
+                  <button onClick={()=>setDetail(null)} style={{ background:"none", border:"none", color:muted, cursor:"pointer", fontSize:16 }}>X</button>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:16 }}>
+                  <div style={{ padding:"14px", borderRadius:10, background:cardBg, border:`1px solid ${bdr}`, textAlign:"center" }}>
+                    <div style={{ fontSize:11, color:muted, marginBottom:4 }}>일일 검색량</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#7c6aff" }}>{fmtVol(detail.volume)}</div>
+                  </div>
+                  <div style={{ padding:"14px", borderRadius:10, background:cardBg, border:`1px solid ${bdr}`, textAlign:"center" }}>
+                    <div style={{ fontSize:11, color:muted, marginBottom:4 }}>검색 엔진</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:text }}>{detail.engine}</div>
+                  </div>
+                  <div style={{ padding:"14px", borderRadius:10, background:cardBg, border:`1px solid ${bdr}`, textAlign:"center" }}>
+                    <div style={{ fontSize:11, color:muted, marginBottom:4 }}>카테고리</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:text }}>{detail.category||"-"}</div>
+                  </div>
+                </div>
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>급상승 이유</div>
+                  <div style={{ fontSize:13, color:D?"rgba(255,255,255,0.7)":"#555", lineHeight:1.7 }}>{detail.reason||"정보 없음"}</div>
+                </div>
+                {detail.relatedKeywords?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>연관 검색어</div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {detail.relatedKeywords.map((k,j) => (
+                        <span key={j} style={{ padding:"5px 12px", borderRadius:16, background:"rgba(124,106,255,0.08)", border:"1px solid rgba(124,106,255,0.15)", color:"#7c6aff", fontSize:12, fontWeight:600 }}>{k}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ textAlign:"center", padding:"80px 0", color:muted }}>
+            <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>카테고리를 선택하면 트렌드를 분석해요</div>
+            <div style={{ fontSize:13 }}>인기 검색어를 분석하고 콘텐츠 주제를 선정하세요</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
