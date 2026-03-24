@@ -175,7 +175,11 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   const al = style.textAlign || "left";
   const va = style.textValign || "middle";
   const ff = style.fontFamily || "sans-serif";
+  const oxRaw = style.textOffsetX || 0;
+  const oyRaw = style.textOffsetY || 0;
   const SC = CW / 420;
+  const ox = Math.round(oxRaw * SC);
+  const oy = Math.round(oyRaw * SC);
   const PAD = Math.round(CW * 0.09);
   const maxW = CW - PAD * 2;
 
@@ -210,12 +214,12 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
 
   const minY = PAD + Math.round(sSz * 1.5);
   let startY = va === "top" ? minY : va === "bottom" ? CH - PAD - totalH : Math.round((CH - totalH) / 2);
-  let y = Math.max(minY, startY);
+  let y = Math.max(minY, startY) + oy;
 
   function getX(lineW) {
-    if (al === "center") return Math.round((CW - lineW) / 2);
-    if (al === "right")  return CW - PAD - lineW;
-    return PAD;
+    if (al === "center") return Math.round((CW - lineW) / 2) + ox;
+    if (al === "right")  return CW - PAD - lineW + ox;
+    return PAD + ox;
   }
   function drawLines(ls, fnt, color, alpha, lineH) {
     ctx.font = fnt; ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.textBaseline = "top";
@@ -794,15 +798,32 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             )}
           </div>
 
-          <div style={{ display:"flex", justifyContent:"flex-end" }}>
+          <div style={{ display:"flex", justifyContent:"flex-end", gap:10 }}>
             <button onClick={()=>{
               if(!canNext) return;
               setSlideContents(SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",subheadline:"",body:"",badge:"",aiLoading:false})));
               setWizStep(2);
               if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
-              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
-              다음 → <span style={{ fontSize:12, opacity:0.8 }}>슬라이드 기획</span>
+              style={{ padding:"14px 28px", borderRadius:12, border:`1px solid ${canNext?"rgba(124,106,255,0.4)":"rgba(124,106,255,0.15)"}`, cursor:canNext?"pointer":"not-allowed", background:"transparent", color:canNext?"#7c6aff":"rgba(99,102,241,0.3)", fontSize:14, fontWeight:700 }}>
+              직접 기획
+            </button>
+            <button onClick={async()=>{
+              if(!canNext) return;
+              setPlanLoading(true);
+              const initSlides = SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",subheadline:"",body:"",badge:"",aiLoading:false}));
+              setSlideContents(initSlides);
+              try {
+                const result = await generateSlideTexts({ topic, pageCount, sourceContent:urlResult?.content, topicDetail });
+                if(result?.slides?.length) {
+                  setSlideContents(result.slides.map((s,i)=>({...initSlides[i],...s, aiLoading:false})));
+                }
+              } catch {}
+              setPlanLoading(false);
+              setWizStep(2);
+            }} disabled={!canNext||planLoading}
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext&&!planLoading?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8, opacity:planLoading?0.7:1 }}>
+              {planLoading?"AI 기획 중...":"AI 자동 기획 →"}
             </button>
           </div>
         </div>
@@ -1267,6 +1288,35 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                   </div>
                 </div>
+                {/* 텍스트 위치 미세조정 */}
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:10,color:muted,marginBottom:6,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <span>텍스트 위치 미세조정</span>
+                    {(so.textOffsetX||so.textOffsetY)?<button onClick={()=>{updSted(selIdx,"textOffsetX",0);updSted(selIdx,"textOffsetY",0);}} style={{ fontSize:9,padding:"1px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>초기화</button>:null}
+                  </div>
+                  <div style={{ display:"flex",gap:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9,color:muted,marginBottom:3 }}>좌우 ({so.textOffsetX||0}px)</div>
+                      <input type="range" min="-200" max="200" value={so.textOffsetX||0} onChange={e=>updSted(selIdx,"textOffsetX",parseInt(e.target.value))} style={{ width:"100%",accentColor:"#7c6aff" }}/>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9,color:muted,marginBottom:3 }}>상하 ({so.textOffsetY||0}px)</div>
+                      <input type="range" min="-200" max="200" value={so.textOffsetY||0} onChange={e=>updSted(selIdx,"textOffsetY",parseInt(e.target.value))} style={{ width:"100%",accentColor:"#7c6aff" }}/>
+                    </div>
+                  </div>
+                </div>
+                {/* 현재 스타일 전체 적용 */}
+                <button onClick={()=>{
+                  const cur = sted[selIdx]||{};
+                  const keys = ["bgColor","textColor","titleSize","bodySize","textAlign","textValign","fontFamily","textOffsetX","textOffsetY","bgOpacity","overlayColor","overlayOpacity","overlayType"];
+                  setSted(prev => {
+                    const next = {...prev};
+                    slides.forEach((_,i)=>{ if(i!==selIdx){ const p={...(next[i]||{})}; keys.forEach(k=>{ if(cur[k]!==undefined) p[k]=cur[k]; }); next[i]=p; } });
+                    return next;
+                  });
+                }} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.06)",color:"#4ade80",fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:10 }}>
+                  ✨ 현재 스타일 전체 슬라이드에 적용
+                </button>
                 {so.bgImage ? (
                   <div>
                     <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:inputBg,marginBottom:8 }}>
