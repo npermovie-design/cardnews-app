@@ -691,16 +691,21 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
 [전체 슬라이드 구조]
 ${context}
 
-이 슬라이드의 내용을 제목에 맞게 상세 기획하세요:
-${lay==="bullets"||lay==="timeline" ? '- bullets: 항목 배열 (4~6개), 구체적 내용' : ''}
-${lay==="stats" ? '- stats: [{value:"수치",label:"항목명"}] 3~4개, 실감나는 숫자' : ''}
-${lay==="two_column"||lay==="comparison" ? '- leftCol: 왼쪽 내용, rightCol: 오른쪽 내용' : ''}
-${lay==="quote" ? '- body: 인용문 출처나 부연 설명' : ''}
-- body: 본문 (구체적, 숫자/사례 포함, 줄바꿈은 \\n)
+이 슬라이드의 내용을 제목과 레이아웃에 맞게 상세 기획하세요.
+레이아웃별 필수 필드:
+${["bullets","numbered","checklist","agenda","timeline","timeline_v","steps","steps_v","pyramid","funnel","icon_grid","icon_grid_6","card_grid","horizontal_list","ranking","faq","references","roadmap","cycle","flowchart","pricing"].includes(lay) ? '- bullets: 항목 배열 4~6개 (구체적, 실무 수준)' : ''}
+${["stats","stats_4","big_number","kpi_card"].includes(lay) ? '- stats: [{value:"구체적 수치(85%/$1.2M/267개 등)",label:"항목명"}] 3~4개' : ''}
+${["chart_bar","chart_bar_h","progress"].includes(lay) ? '- bars: [{label:"항목명",value:75}] 4~5개 (value는 0~100 숫자)' : ''}
+${["chart_pie","chart_donut"].includes(lay) ? '- segments: [{label:"항목명",value:40}] 3~5개 (value는 비율%, 합계 100)' : ''}
+${["two_column","three_column","comparison","pros_cons","before_after"].includes(lay) ? '- leftCol: 왼쪽 내용, rightCol: 오른쪽 내용' : ''}
+${["swot","matrix"].includes(lay) ? '- swot: {s:"강점 내용",w:"약점 내용",o:"기회 내용",t:"위협 내용"}' : ''}
+${["org_chart","team"].includes(lay) ? '- orgItems: [{role:"직책",name:"이름"}] 4~6명' : ''}
+${["table"].includes(lay) ? '- rows: [["헤더1","헤더2","헤더3"],["데이터","데이터","데이터"]] 2차원 배열 4~6행' : ''}
+- body: 본문 (구체적, 줄바꿈은 \\n)
 - subtitle: 부제목 (선택)
 - note: 발표자 노트 (2~3문장)
 
-JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"...","rightCol":"...","note":"..."}`, 1000);
+JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments":[],"leftCol":"","rightCol":"","swot":null,"orgItems":[],"rows":[],"note":"..."}`, 1000);
 
       const cleaned = r.replace(/```json\n?/g,"").replace(/```/g,"").trim();
       let data;
@@ -716,8 +721,13 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
           if (data.subtitle) s.subtitle = data.subtitle;
           if (data.bullets?.length) s.bullets = data.bullets;
           if (data.stats?.length) s.stats = data.stats;
+          if (data.bars?.length) s.bars = data.bars;
+          if (data.segments?.length) s.segments = data.segments;
           if (data.leftCol) s.leftCol = data.leftCol;
           if (data.rightCol) s.rightCol = data.rightCol;
+          if (data.swot) s.swot = data.swot;
+          if (data.orgItems?.length) s.orgItems = data.orgItems;
+          if (data.rows?.length) s.rows = data.rows;
           if (data.note) s.note = data.note;
           n[selIdx] = s;
           return n;
@@ -725,6 +735,61 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
       }
     } catch (e) { console.error("AI slide suggest error:", e); }
     setAiSlideLoading(false);
+  };
+
+  // 레이아웃 변경 시 데이터 자동 생성
+  const changeLayout = (newLay) => {
+    setSlides(p => {
+      const n = [...p];
+      const s = { ...n[selIdx], layout: newLay };
+      const needStats = ["stats","stats_4","big_number","kpi_card"].includes(newLay);
+      const needBars = ["chart_bar","chart_bar_h","progress"].includes(newLay);
+      const needSegs = ["chart_pie","chart_donut"].includes(newLay);
+      const needBullets = ["bullets","numbered","checklist","agenda","timeline","timeline_v","steps","steps_v","pyramid","funnel","icon_grid","icon_grid_6","card_grid","horizontal_list","ranking","faq","references","roadmap","cycle","flowchart","pricing"].includes(newLay);
+      const needRows = ["table"].includes(newLay);
+      const needCols = ["two_column","three_column","comparison","pros_cons","before_after"].includes(newLay);
+      const needSwot = ["swot","matrix"].includes(newLay);
+      const needOrg = ["org_chart","team"].includes(newLay);
+      // 기존 body에서 줄 추출
+      const lines = (s.body||"").replace(/\\n/g,"\n").split("\n").map(l=>l.trim()).filter(Boolean);
+      // 자동 채움
+      if (needStats && (!s.stats || s.stats.length === 0)) {
+        s.stats = lines.length >= 2
+          ? lines.slice(0,4).map(l => ({ value: l.match(/\d+/)?.[0]+"%" || "0%", label: l.replace(/\d+%?/g,"").trim()||l }))
+          : [{ value:"85%", label:"항목 1" },{ value:"92%", label:"항목 2" },{ value:"67%", label:"항목 3" }];
+      }
+      if (needBars && (!s.bars || s.bars.length === 0)) {
+        s.bars = lines.length >= 2
+          ? lines.slice(0,5).map(l => ({ label: l.replace(/\d+%?/g,"").trim()||l, value: parseInt(l.match(/\d+/)?.[0])||50 }))
+          : [{ label:"항목 A", value:75 },{ label:"항목 B", value:50 },{ label:"항목 C", value:90 },{ label:"항목 D", value:60 }];
+      }
+      if (needSegs && (!s.segments || s.segments.length === 0)) {
+        s.segments = lines.length >= 2
+          ? lines.slice(0,5).map(l => ({ label: l.replace(/\d+%?/g,"").trim()||l, value: parseInt(l.match(/\d+/)?.[0])||25 }))
+          : [{ label:"A", value:40 },{ label:"B", value:30 },{ label:"C", value:20 },{ label:"D", value:10 }];
+      }
+      if (needBullets && (!s.bullets || s.bullets.length === 0)) {
+        s.bullets = lines.length >= 2 ? lines.slice(0,6) : ["항목 1","항목 2","항목 3","항목 4"];
+      }
+      if (needRows && (!s.rows || s.rows.length === 0)) {
+        s.rows = lines.length >= 2
+          ? [["항목","값","비고"]].concat(lines.slice(0,4).map(l => [l,"",""]))
+          : [["항목","2024","2025","2026"],["매출","100","200","350"],["성장률","","100%","75%"]];
+      }
+      if (needCols && !s.leftCol && !s.rightCol) {
+        const half = Math.ceil(lines.length / 2);
+        s.leftCol = lines.slice(0, half).join("\n") || (s.body||"").slice(0, Math.ceil((s.body||"").length/2));
+        s.rightCol = lines.slice(half).join("\n") || (s.body||"").slice(Math.ceil((s.body||"").length/2));
+      }
+      if (needSwot && !s.swot) {
+        s.swot = { s:"강점을 입력하세요", w:"약점을 입력하세요", o:"기회를 입력하세요", t:"위협을 입력하세요" };
+      }
+      if (needOrg && (!s.orgItems || s.orgItems.length === 0)) {
+        s.orgItems = [{ role:"CEO", name:"대표이사" },{ role:"CTO", name:"기술이사" },{ role:"CMO", name:"마케팅이사" }];
+      }
+      n[selIdx] = s;
+      return n;
+    });
   };
 
   const handleImage = (e) => {
@@ -1435,7 +1500,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
                         {items.map(l=>{
                           const sel = cur.layout===l.id;
                           return (
-                            <button key={l.id} onClick={()=>upd("layout",l.id)}
+                            <button key={l.id} onClick={()=>changeLayout(l.id)}
                               onMouseEnter={(e)=>{setHoveredLayout(l.id);setHoverPos({x:e.clientX,y:e.clientY});}}
                               onMouseMove={(e)=>setHoverPos({x:e.clientX,y:e.clientY})}
                               onMouseLeave={()=>setHoveredLayout(null)}
@@ -1723,7 +1788,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
               <div style={{ fontSize:10, fontWeight:700, color:text, marginBottom:6 }}>이미지 레이아웃 바로가기</div>
               <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                 {[["image_right","이미지 오른쪽"],["image_left","이미지 왼쪽"],["image_full","전체 이미지 배경"]].map(([id,label])=>(
-                  <button key={id} onClick={()=>{upd("layout",id);setEditTab("content");}}
+                  <button key={id} onClick={()=>{changeLayout(id);setEditTab("content");}}
                     style={{ padding:"7px 10px", borderRadius:6, border:`1px solid ${cur.layout===id?accent:bdr}`,
                       background:cur.layout===id?`${accent}12`:"transparent", color:cur.layout===id?accent:muted,
                       fontSize:11, fontWeight:cur.layout===id?700:400, cursor:"pointer", textAlign:"left" }}>
