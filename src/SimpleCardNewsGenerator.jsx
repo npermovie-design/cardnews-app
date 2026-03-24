@@ -92,6 +92,13 @@ const DESIGN_PRESETS = [
   { key:"retro",      label:"레트로",     bgColor:"#1a1a2e", textColor:"#e94560", titleSize:36, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"900", textAlign:"left",   textValign:"bottom", hlMode:"box",       lineHeightTitle:1.2,  lineHeightBody:1.6 },
   { key:"nature",     label:"네이처",     bgColor:"#064e3b", textColor:"#d1fae5", titleSize:30, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.35, lineHeightBody:1.8 },
   { key:"mono",       label:"모노톤",     bgColor:"#27272a", textColor:"#d4d4d8", titleSize:32, bodySize:14, subtitleSize:11, highlightSize:14, titleWeight:"700", textAlign:"left",   textValign:"middle", hlMode:"underline", lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  // 추가 프리셋
+  { key:"sunset",     label:"선셋",       bgColor:"#7c2d12", textColor:"#fed7aa", titleSize:34, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"900", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  { key:"midnight",   label:"미드나이트", bgColor:"#0f0d2e", textColor:"#c4b5fd", titleSize:34, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"800", textAlign:"left",   textValign:"bottom", hlMode:"box",       lineHeightTitle:1.25, lineHeightBody:1.7 },
+  { key:"coral",      label:"코랄",       bgColor:"#fff1f2", textColor:"#9f1239", titleSize:32, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.35, lineHeightBody:1.8 },
+  { key:"slate",      label:"슬레이트",   bgColor:"#1e293b", textColor:"#e2e8f0", titleSize:32, bodySize:14, subtitleSize:11, highlightSize:14, titleWeight:"700", textAlign:"left",   textValign:"middle", hlMode:"underline", lineHeightTitle:1.3,  lineHeightBody:1.7 },
+  { key:"lavender",   label:"라벤더",     bgColor:"#ede9fe", textColor:"#4c1d95", titleSize:30, bodySize:14, subtitleSize:12, highlightSize:14, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"pill",      lineHeightTitle:1.35, lineHeightBody:1.8 },
+  { key:"charcoal",   label:"차콜",       bgColor:"#18181b", textColor:"#fafafa", titleSize:36, bodySize:15, subtitleSize:12, highlightSize:15, titleWeight:"900", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.2,  lineHeightBody:1.6 },
 ];
 
 // ── Canvas 유틸 ──────────────────────────────────────────────
