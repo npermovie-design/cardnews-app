@@ -753,24 +753,33 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
 
   const inp = { width:"100%", padding:"12px 16px", borderRadius:12, border:`1px solid ${bdr}`, background:ibg, color:text, fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
-  const DOC_TYPES = [
-    { id:"proposal",   label:"사업 제안서",   desc:"투자·파트너 제안" },
-    { id:"bizplan",    label:"사업계획서",    desc:"창업·투자유치용" },
-    { id:"ppt_outline",label:"PPT 구성안",   desc:"발표 슬라이드 기획" },
-    { id:"planner",    label:"플래너·일정표", desc:"프로젝트·업무 계획" },
-    { id:"report",     label:"보고서",       desc:"업무·분석 보고서" },
-    { id:"contract",   label:"계약서 초안",   desc:"계약·합의서 템플릿" },
-    { id:"meeting",    label:"회의록",       desc:"회의 안건·결과 정리" },
-    { id:"email",      label:"비즈니스 메일", desc:"공식 이메일·레터" },
-    { id:"manual",     label:"매뉴얼·가이드", desc:"운영·사용 설명서" },
-    { id:"brief",      label:"브리프",       desc:"프로젝트·디자인 브리프" },
-    { id:"resume",     label:"이력서·자소서", desc:"채용·지원서" },
-    { id:"congrats",   label:"축하 메시지",   desc:"결혼·승진·생일·개업" },
-    { id:"condolence", label:"위로·감사 메시지",desc:"조의·병문안·감사" },
-    { id:"speech",     label:"인사말·축사",   desc:"행사·연설·건배사" },
-    { id:"invite",     label:"초대장·안내문",  desc:"행사·모임·공지" },
-    { id:"free",       label:"자유 문서",     desc:"형식 없이 자유롭게" },
+  const DOC_GROUPS = [
+    { label:"비즈니스", items:[
+      { id:"proposal",   label:"사업 제안서",   desc:"투자·파트너 제안" },
+      { id:"bizplan",    label:"사업계획서",    desc:"창업·투자유치용" },
+      { id:"ppt_outline",label:"PPT 구성안",   desc:"발표 슬라이드 기획" },
+      { id:"report",     label:"보고서",       desc:"업무·분석 보고서" },
+    ]},
+    { label:"업무", items:[
+      { id:"planner",    label:"플래너·일정표", desc:"프로젝트·업무 계획" },
+      { id:"meeting",    label:"회의록",       desc:"회의 안건·결과 정리" },
+      { id:"email",      label:"비즈니스 메일", desc:"공식 이메일·레터" },
+      { id:"contract",   label:"계약서 초안",   desc:"계약·합의서 템플릿" },
+    ]},
+    { label:"메시지·인사", items:[
+      { id:"congrats",   label:"축하 메시지",   desc:"결혼·승진·생일·개업" },
+      { id:"condolence", label:"위로·감사",     desc:"조의·병문안·감사" },
+      { id:"speech",     label:"인사말·축사",   desc:"행사·연설·건배사" },
+      { id:"invite",     label:"초대장·안내문",  desc:"행사·모임·공지" },
+    ]},
+    { label:"기타", items:[
+      { id:"manual",     label:"매뉴얼·가이드", desc:"운영·사용 설명서" },
+      { id:"brief",      label:"브리프",       desc:"프로젝트·디자인 브리프" },
+      { id:"resume",     label:"이력서·자소서", desc:"채용·지원서" },
+      { id:"free",       label:"자유 문서",     desc:"형식 없이 자유롭게" },
+    ]},
   ];
+  const DOC_TYPES = DOC_GROUPS.flatMap(g=>g.items);
 
   const TONES = [
     { id:"professional", label:"전문적/공식적" },
@@ -895,22 +904,26 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           <div style={{ fontSize:14, color:muted, lineHeight:1.8 }}>실무 문서를 AI가 작성해드립니다.</div>
         </div>
 
-        {/* 문서 유형 */}
+        {/* 문서 유형 (그룹별) */}
         <div style={{ marginBottom:18 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>문서 유형</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
-            {DOC_TYPES.map(d => {
-              const sel = docType===d.id;
-              return (
-                <button key={d.id} onClick={()=>setDocType(d.id)}
-                  style={{ padding:"10px 6px", borderRadius:10, border:`1.5px solid ${sel?accent:bdr}`,
-                    background:sel?`${accent}10`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}>
-                  <div style={{ fontSize:12, fontWeight:sel?800:500, color:sel?accent:text, marginBottom:2 }}>{d.label}</div>
-                  <div style={{ fontSize:9, color:muted }}>{d.desc}</div>
-                </button>
-              );
-            })}
-          </div>
+          {DOC_GROUPS.map(g => (
+            <div key={g.label} style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6, paddingLeft:2 }}>{g.label}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+                {g.items.map(d => {
+                  const sel = docType===d.id;
+                  return (
+                    <button key={d.id} onClick={()=>setDocType(d.id)}
+                      style={{ padding:"10px 6px", borderRadius:10, border:`1.5px solid ${sel?accent:bdr}`,
+                        background:sel?`${accent}10`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}>
+                      <div style={{ fontSize:12, fontWeight:sel?800:500, color:sel?accent:text, marginBottom:2 }}>{d.label}</div>
+                      <div style={{ fontSize:9, color:muted }}>{d.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 입력 */}
