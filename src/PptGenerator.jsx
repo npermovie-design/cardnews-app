@@ -812,6 +812,180 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
           </div>
         )}
 
+        {/* 범용 폴백: 특수 렌더러가 없는 레이아웃 */}
+        {["title_sub","section_num","agenda","checklist","card_grid","horizontal_list","definition","icon_grid_6",
+          "three_column","pros_cons","before_after","matrix","ranking","stats_4","chart_bar_h","chart_donut",
+          "kpi_card","timeline_v","steps_v","funnel","cycle","flowchart","roadmap",
+          "quote_card","highlight_box","callout","key_message","banner","cta",
+          "image_top","gallery","mockup","team","pricing","faq","contact","thankyou","qna","references"
+        ].includes(lay) && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?Math.max(7,tSz*0.38):tSz*0.72, fontWeight:800, color:sText, marginBottom:mini?3:8 }}>{s.title||""}</div>
+            <div style={{ width:30, height:2, background:sAccent, borderRadius:1, marginBottom:mini?4:10 }} />
+            {/* 불릿계열 */}
+            {["checklist","agenda","icon_grid_6","horizontal_list","definition","card_grid","ranking",
+              "timeline_v","steps_v","funnel","roadmap","cycle","flowchart","faq","references"
+            ].includes(lay) && (s.bullets||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", flexDirection:["horizontal_list","card_grid"].includes(lay)?"row":"column",
+                gap:mini?3:8, flexWrap:"wrap" }}>
+                {(s.bullets||[]).map((b,j)=>(
+                  <div key={j} style={{ display:"flex", gap:mini?3:8, alignItems:"flex-start",
+                    ...(["horizontal_list","card_grid"].includes(lay)?{flex:"1 0 40%",padding:mini?"2px":"8px 10px",borderRadius:mini?2:8,background:`${sAccent}08`,border:`1px solid ${sAccent}15`}:{}) }}>
+                    <div style={{ flexShrink:0, minWidth:mini?8:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {lay==="checklist"?<span style={{fontSize:mini?5:13,color:sAccent}}>✓</span>
+                       :lay==="ranking"?<span style={{fontSize:mini?5:13,fontWeight:900,color:sAccent}}>{j+1}</span>
+                       :<div style={{width:mini?4:8,height:mini?4:8,borderRadius:"50%",background:sAccent,marginTop:mini?1:4}}/>}
+                    </div>
+                    <div style={{ fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, color:sBody, lineHeight:1.6 }}>{b}</div>
+                  </div>
+                ))}
+              </div>
+            ) : ["stats_4","kpi_card"].includes(lay) && (s.stats||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", gap:mini?4:16, alignItems:"center", justifyContent:"center" }}>
+                {(s.stats||[]).slice(0,4).map((st,j)=>(
+                  <div key={j} style={{ textAlign:"center", flex:1, padding:mini?"2px":"12px",
+                    ...(lay==="kpi_card"?{borderRight:j<(s.stats||[]).length-1?`1px solid ${sAccent}20`:"none"}:{}) }}>
+                    <div style={{ fontSize:mini?10:32, fontWeight:900, color:sAccent }}>{st.value||""}</div>
+                    <div style={{ fontSize:mini?5:11, color:sBody, marginTop:mini?2:6 }}>{st.label||""}</div>
+                  </div>
+                ))}
+              </div>
+            ) : ["chart_bar_h"].includes(lay) && (s.bars||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", gap:mini?3:10 }}>
+                {s.bars.map((b,j)=>{
+                  const max=Math.max(...s.bars.map(x=>x.value||0),1);
+                  return <div key={j} style={{display:"flex",gap:mini?3:8,alignItems:"center"}}>
+                    <div style={{width:mini?20:60,fontSize:mini?4:11,color:sBody,textAlign:"right"}}>{b.label}</div>
+                    <div style={{flex:1,height:mini?4:14,borderRadius:4,background:`${sAccent}15`,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${Math.max((b.value||0)/max*100,5)}%`,background:sAccent,borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:mini?4:11,fontWeight:700,color:sAccent,minWidth:mini?12:30}}>{b.value}%</div>
+                  </div>;
+                })}
+              </div>
+            ) : ["chart_donut"].includes(lay) && (s.segments||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:mini?8:30 }}>
+                <div style={{ width:mini?35:110, height:mini?35:110, borderRadius:"50%", position:"relative",
+                  background:`conic-gradient(${s.segments.map((seg,j)=>{
+                    const colors=[sAccent,"#f59e0b","#ef4444","#22c55e","#3b82f6","#ec4899"];
+                    const total=s.segments.reduce((a,x)=>a+(x.value||0),0)||1;
+                    const start=s.segments.slice(0,j).reduce((a,x)=>a+(x.value||0),0)/total*360;
+                    const end=start+((seg.value||0)/total*360);
+                    return `${colors[j%6]} ${start}deg ${end}deg`;
+                  }).join(",")})` }}>
+                  <div style={{position:"absolute",inset:"25%",borderRadius:"50%",background:sBg}}/>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:mini?2:6}}>
+                  {s.segments.map((seg,j)=>{
+                    const colors=[sAccent,"#f59e0b","#ef4444","#22c55e","#3b82f6","#ec4899"];
+                    return <div key={j} style={{display:"flex",alignItems:"center",gap:mini?3:6}}>
+                      <div style={{width:mini?4:8,height:mini?4:8,borderRadius:2,background:colors[j%6]}}/>
+                      <span style={{fontSize:mini?4:11,color:sBody}}>{seg.label} {seg.value}%</span>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            ) : ["three_column"].includes(lay) ? (
+              <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:mini?3:12 }}>
+                {[s.leftCol||(s.body||"").slice(0,(s.body||"").length/3), s.body?.slice((s.body||"").length/3,(s.body||"").length*2/3)||"", s.rightCol||(s.body||"").slice((s.body||"").length*2/3)].map((col,j)=>(
+                  <div key={j} style={{ fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, color:sBody, lineHeight:1.6, whiteSpace:"pre-line",
+                    borderLeft:j>0?`1px solid ${sAccent}20`:"none", paddingLeft:j>0?(mini?3:10):0 }}>{(col||"").replace(/\\n/g,"\n")}</div>
+                ))}
+              </div>
+            ) : ["pros_cons"].includes(lay) ? (
+              <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:mini?4:12 }}>
+                <div style={{ borderRadius:mini?3:10, background:"rgba(74,222,128,0.06)", border:"1px solid rgba(74,222,128,0.2)", padding:mini?"3px":"12px" }}>
+                  <div style={{fontSize:mini?5:12,fontWeight:700,color:"#4ade80",marginBottom:mini?2:8}}>Pros</div>
+                  <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,lineHeight:1.6,whiteSpace:"pre-line"}}>{(s.leftCol||"").replace(/\\n/g,"\n")}</div>
+                </div>
+                <div style={{ borderRadius:mini?3:10, background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.2)", padding:mini?"3px":"12px" }}>
+                  <div style={{fontSize:mini?5:12,fontWeight:700,color:"#f87171",marginBottom:mini?2:8}}>Cons</div>
+                  <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,lineHeight:1.6,whiteSpace:"pre-line"}}>{(s.rightCol||"").replace(/\\n/g,"\n")}</div>
+                </div>
+              </div>
+            ) : ["before_after"].includes(lay) ? (
+              <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:mini?3:12, alignItems:"center" }}>
+                <div style={{ padding:mini?"3px":"14px", borderRadius:mini?3:10, background:`${sText}06`, textAlign:"center" }}>
+                  <div style={{fontSize:mini?5:12,fontWeight:700,color:sText,opacity:0.5,marginBottom:mini?2:8}}>Before</div>
+                  <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,lineHeight:1.6,whiteSpace:"pre-line"}}>{(s.leftCol||"").replace(/\\n/g,"\n")}</div>
+                </div>
+                <div style={{width:mini?2:4,height:"60%",background:sAccent,borderRadius:2}}/>
+                <div style={{ padding:mini?"3px":"14px", borderRadius:mini?3:10, background:`${sAccent}06`, textAlign:"center" }}>
+                  <div style={{fontSize:mini?5:12,fontWeight:700,color:sAccent,marginBottom:mini?2:8}}>After</div>
+                  <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,lineHeight:1.6,whiteSpace:"pre-line"}}>{(s.rightCol||"").replace(/\\n/g,"\n")}</div>
+                </div>
+              </div>
+            ) : ["matrix","swot"].includes(lay) && s.swot ? (
+              <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gridTemplateRows:"1fr 1fr", gap:mini?2:8 }}>
+                {[["S","강점",s.swot.s,"#22c55e"],["W","약점",s.swot.w,"#f59e0b"],["O","기회",s.swot.o,"#3b82f6"],["T","위협",s.swot.t,"#ef4444"]].map(([k,l,v,c])=>(
+                  <div key={k} style={{borderRadius:mini?3:10,border:`2px solid ${c}40`,background:`${c}08`,padding:mini?"3px":"10px"}}>
+                    <div style={{fontSize:mini?6:13,fontWeight:900,color:c,marginBottom:mini?2:6}}>{k} - {l}</div>
+                    <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.8,color:sBody,lineHeight:1.5}}>{v||""}</div>
+                  </div>
+                ))}
+              </div>
+            ) : ["highlight_box","callout","key_message","banner","cta","quote_card"].includes(lay) ? (
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:["cta","key_message"].includes(lay)?"center":"flex-start", justifyContent:"center" }}>
+                {["banner"].includes(lay) && <div style={{width:"100%",padding:mini?"4px":"16px 20px",background:`${sAccent}15`,borderRadius:mini?2:8,marginBottom:mini?4:14,textAlign:"center"}}>
+                  <div style={{fontSize:mini?Math.max(6,tSz*0.35):tSz*0.6,fontWeight:800,color:sAccent}}>{s.subtitle||s.title||""}</div>
+                </div>}
+                <div style={{ padding:mini?"4px":"18px 24px", borderRadius:mini?3:12,
+                  background:["highlight_box","cta"].includes(lay)?`${sAccent}12`:"transparent",
+                  border:["callout"].includes(lay)?`none`:`1px solid ${sAccent}30`,
+                  borderLeft:["callout","quote_card"].includes(lay)?`4px solid ${sAccent}`:"",
+                  textAlign:["cta","key_message"].includes(lay)?"center":"left",
+                  maxWidth:["cta","key_message"].includes(lay)?"80%":"100%" }}>
+                  {lay==="quote_card"&&<div style={{fontSize:mini?8:28,color:sAccent,opacity:0.3,lineHeight:1}}>"</div>}
+                  <div style={{ fontSize:mini?Math.max(4,bSz*0.4):bSz, color:sBody, lineHeight:1.7, whiteSpace:"pre-line" }}>{(s.body||"").replace(/\\n/g,"\n")}</div>
+                </div>
+                {lay==="cta"&&<div style={{marginTop:mini?4:16,padding:mini?"3px 10px":"12px 32px",borderRadius:mini?3:8,background:sAccent,color:sBg,fontSize:mini?5:14,fontWeight:800}}>
+                  {s.subtitle||"시작하기"}
+                </div>}
+              </div>
+            ) : ["team"].includes(lay) && (s.orgItems||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", gap:mini?4:16, justifyContent:"center", alignItems:"center", flexWrap:"wrap" }}>
+                {s.orgItems.map((o,j)=>(
+                  <div key={j} style={{textAlign:"center",padding:mini?"2px":"8px"}}>
+                    <div style={{width:mini?14:48,height:mini?14:48,borderRadius:"50%",background:`${sAccent}20`,margin:"0 auto",marginBottom:mini?2:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:mini?5:16,color:sAccent}}>{o.name?.[0]||"?"}</div>
+                    <div style={{fontSize:mini?4:12,fontWeight:700,color:sText}}>{o.name}</div>
+                    <div style={{fontSize:mini?3:10,color:sBody}}>{o.role}</div>
+                  </div>
+                ))}
+              </div>
+            ) : ["pricing"].includes(lay) && (s.bullets||[]).length>0 ? (
+              <div style={{ flex:1, display:"flex", gap:mini?3:12, alignItems:"stretch" }}>
+                {s.bullets.slice(0,3).map((b,j)=>(
+                  <div key={j} style={{flex:1,borderRadius:mini?3:12,border:`${j===1?"2":"1"}px solid ${j===1?sAccent:`${sAccent}30`}`,padding:mini?"3px":"16px",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                    <div style={{fontSize:mini?Math.max(4,bSz*0.4):bSz,fontWeight:700,color:j===1?sAccent:sBody}}>{b}</div>
+                  </div>
+                ))}
+              </div>
+            ) : ["contact","thankyou","qna"].includes(lay) ? (
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                <div style={{fontSize:mini?8:28,fontWeight:900,color:sAccent,opacity:0.6}}>{lay==="thankyou"?"Thank You":lay==="qna"?"Q & A":"Contact"}</div>
+                {s.body && <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,marginTop:mini?4:16,textAlign:"center",lineHeight:1.7,whiteSpace:"pre-line"}}>{(s.body||"").replace(/\\n/g,"\n")}</div>}
+              </div>
+            ) : ["image_top"].includes(lay) ? (
+              <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
+                <div style={{height:"40%",background:`${sAccent}10`,borderRadius:mini?2:8,marginBottom:mini?3:10,overflow:"hidden"}}>
+                  {s.image && <img src={s.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>}
+                </div>
+                <div style={{fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85,color:sBody,lineHeight:1.6,whiteSpace:"pre-line"}}>{(s.body||"").replace(/\\n/g,"\n")}</div>
+              </div>
+            ) : ["gallery"].includes(lay) ? (
+              <div style={{ flex:1, display:"flex", gap:mini?3:12 }}>
+                {[s.image, s.image].map((img,j)=>(
+                  <div key={j} style={{flex:1,borderRadius:mini?3:10,background:`${sAccent}08`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {img ? <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <div style={{fontSize:mini?6:14,color:sBody,opacity:0.3}}>이미지</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ flex:1, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, color:sBody, lineHeight:1.8, whiteSpace:"pre-line" }}>{(s.body||"").replace(/\\n/g,"\n")}</div>
+            )}
+          </div>
+        )}
+
         {/* 페이지 번호 */}
         {s.showPageNum!==false && idx > 0 && !isSection && <div style={{ position:"absolute", bottom:"7%", right:"4%", fontSize:mini?5:9, color:theme.sub }}>{idx+1}</div>}
       </div>
