@@ -19,18 +19,29 @@ const THEMES = [
 ];
 
 const LAYOUTS = [
-  { id:"title_only",     label:"표지/강조",    icon:"[ T ]" },
-  { id:"title_body",     label:"제목+본문",    icon:"[T+B]" },
-  { id:"bullets",        label:"불릿 리스트",   icon:"[. .]" },
-  { id:"two_column",     label:"2단 컬럼",     icon:"[| |]" },
-  { id:"image_right",    label:"이미지 오른쪽", icon:"[T|I]" },
-  { id:"image_left",     label:"이미지 왼쪽",   icon:"[I|T]" },
-  { id:"image_full",     label:"전체 이미지",   icon:"[IMG]" },
-  { id:"quote",          label:"인용/강조",     icon:"[ \" ]" },
-  { id:"section",        label:"섹션 구분",     icon:"[---]" },
-  { id:"stats",          label:"숫자/통계",     icon:"[123]" },
-  { id:"comparison",     label:"비교 (좌우)",   icon:"[vs ]" },
-  { id:"timeline",       label:"타임라인",      icon:"[>>>]" },
+  { id:"title_only",     label:"표지",         icon:"[ T ]", cat:"기본" },
+  { id:"title_body",     label:"제목+본문",    icon:"[T+B]", cat:"기본" },
+  { id:"section",        label:"섹션 구분",     icon:"[---]", cat:"기본" },
+  { id:"bullets",        label:"불릿 리스트",   icon:"[. .]", cat:"리스트" },
+  { id:"numbered",       label:"넘버링 리스트", icon:"[1.2]", cat:"리스트" },
+  { id:"icon_grid",      label:"아이콘 그리드", icon:"[:::]", cat:"리스트" },
+  { id:"two_column",     label:"2단 컬럼",     icon:"[| |]", cat:"비교" },
+  { id:"comparison",     label:"VS 비교",      icon:"[vs ]", cat:"비교" },
+  { id:"table",          label:"표/테이블",     icon:"[표 ]", cat:"비교" },
+  { id:"stats",          label:"숫자 강조",     icon:"[123]", cat:"데이터" },
+  { id:"chart_bar",      label:"막대 차트",     icon:"[|||]", cat:"데이터" },
+  { id:"chart_pie",      label:"원형 차트",     icon:"[ O ]", cat:"데이터" },
+  { id:"progress",       label:"진행률/게이지", icon:"[==>]", cat:"데이터" },
+  { id:"timeline",       label:"타임라인",      icon:"[>>>]", cat:"프로세스" },
+  { id:"steps",          label:"단계 프로세스", icon:"[1>2]", cat:"프로세스" },
+  { id:"pyramid",        label:"피라미드",      icon:"[/\\]",  cat:"프로세스" },
+  { id:"quote",          label:"인용/강조",     icon:"[ \" ]", cat:"강조" },
+  { id:"big_number",     label:"핵심 숫자",     icon:"[##]",  cat:"강조" },
+  { id:"image_right",    label:"이미지 우측",   icon:"[T|I]", cat:"이미지" },
+  { id:"image_left",     label:"이미지 좌측",   icon:"[I|T]", cat:"이미지" },
+  { id:"image_full",     label:"전체 이미지",   icon:"[IMG]", cat:"이미지" },
+  { id:"swot",           label:"SWOT 분석",    icon:"[SW]",  cat:"프레임" },
+  { id:"org_chart",      label:"조직도",        icon:"[트리]", cat:"프레임" },
 ];
 
 const ICONS_MAP = {
@@ -102,42 +113,54 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
 ${detail ? `[상세 요구사항]\n${detail}\n` : ""}
 [슬라이드 수] ${slideCount}장
 
-사용 가능한 레이아웃: ${LAYOUTS.map(l=>l.id).join(", ")}
+사용 가능한 레이아웃:
+기본: title_only(표지), title_body(제목+본문), section(섹션구분)
+리스트: bullets(불릿), numbered(넘버링1,2,3), icon_grid(아이콘 4칸 그리드)
+비교: two_column(2단), comparison(VS비교), table(표-rows배열)
+데이터: stats(숫자강조), chart_bar(막대차트-bars배열), chart_pie(원형차트-segments배열), progress(진행률-bars배열)
+프로세스: timeline(타임라인), steps(단계), pyramid(피라미드)
+강조: quote(인용), big_number(핵심숫자)
+이미지: image_right, image_left, image_full
+프레임: swot(SWOT분석-swot객체), org_chart(조직도-orgItems배열)
 
-각 슬라이드를 상세하게 기획하세요:
-- title: 슬라이드 제목
-- subtitle: 부제목 (선택)
-- body: 본문 (줄바꿈은 \\n)
-- bullets: 불릿 항목 배열 (bullets/stats 레이아웃일 때)
-- layout: 레이아웃 ID
-- icon: 슬라이드 대표 아이콘 키 (${Object.keys(ICONS_MAP).join(",")}) 중 1개
-- stats: 통계 배열 [{value:"85%",label:"고객 만족도"}] (stats 레이아웃일 때)
-- leftCol/rightCol: 2단/비교 레이아웃의 좌우 텍스트
-- note: 발표자 노트 (2~3문장)
+슬라이드 JSON 필드:
+- title, subtitle, body, layout, icon(아이콘키), note(발표노트)
+- bullets: 배열 (bullets/numbered/timeline/steps/icon_grid/pyramid)
+- stats: [{value:"85%",label:"만족도"}] (stats/big_number)
+- leftCol/rightCol: 텍스트 (two_column/comparison)
+- rows: [["항목","A","B"],["가격","100","200"]] (table용 2차원배열)
+- bars: [{label:"항목",value:75}] (chart_bar/progress)
+- segments: [{label:"A",value:40},{label:"B",value:60}] (chart_pie)
+- swot: {s:"강점",w:"약점",o:"기회",t:"위협"} (swot)
+- orgItems: [{role:"CEO",name:"대표"},{role:"CTO",name:"기술이사"}] (org_chart)
 
 기획 규칙:
-1. 1번 슬라이드: 표지 (title_only) - 주제 + 발표자/날짜 placeholder
-2. 2번: 목차/어젠다 (bullets) - 전체 발표 흐름 요약
-3. 중간: 내용에 맞게 다양한 레이아웃을 배합
-   - 핵심 수치가 있으면 stats 레이아웃
-   - 비교할 내용이 있으면 comparison 레이아웃
-   - 단계/과정은 timeline 레이아웃
-   - 중간중간 section으로 파트 구분
-   - quote로 핵심 메시지 강조
-4. 마지막 2번째: 요약/핵심 정리
-5. 마지막: Q&A/감사 (title_only)
-6. body는 핵심 내용을 구체적으로 (숫자, 사례, 근거 포함)
-7. 각 슬라이드가 논리적으로 연결되게 구성
+1. 1번: 표지(title_only) - 주제+발표자 placeholder
+2. 2번: 목차(numbered) - 전체 흐름 4~6개
+3. 중간: 최대한 다양한 레이아웃을 골고루 사용
+   - 수치 → stats/chart_bar/chart_pie/progress 중 택1
+   - 비교 → comparison/table
+   - 과정 → timeline/steps
+   - 분석 → swot
+   - 조직 → org_chart
+   - 강조 → quote/big_number
+   - 파트 전환 → section
+4. 마지막 2번째: 요약(bullets)
+5. 마지막: Q&A/감사(title_only)
+6. 같은 레이아웃 연속 사용 금지 (다양하게 배합)
+7. body/bullets에 구체적 수치, 사례, 근거 포함
 
-JSON만 응답: {"slides":[...]}`, Math.max(slideCount * 350, 4000));
+JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
 
       const parsed = parseSlides(r);
       if (!parsed?.length) throw new Error("슬라이드 파싱 실패");
       setSlides(parsed.map((s,i) => ({
         ...s, id:i, layout:s.layout||"title_body",
-        icon:s.icon||"", image:null, imageSize:50,
-        titleSize:null, bodySize:null,
+        icon:s.icon||"", image:null,
         stats:s.stats||[], leftCol:s.leftCol||"", rightCol:s.rightCol||"",
+        rows:s.rows||[], bars:s.bars||[], segments:s.segments||[],
+        swot:s.swot||null, orgItems:s.orgItems||[],
+        titleSize:28, bodySize:16, showPageNum:i>0,
       })));
       setSelIdx(0);
       setStep("edit");
@@ -432,7 +455,194 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
           <div style={{ position:"absolute", top:"5%", right:"4%", fontSize:mini?10:20, color:theme.accent, opacity:0.7 }}>{ICONS_MAP[s.icon]}</div>
         )}
 
-        {idx > 0 && !isSection && <div style={{ position:"absolute", bottom:"7%", right:"4%", fontSize:mini?5:9, color:theme.sub }}>{idx+1}</div>}
+        {/* 표 */}
+        {lay==="table" && s.rows?.length>0 && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, overflow:"hidden" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:mini?5:12, color:theme.body }}>
+                <tbody>
+                  {s.rows.map((row,ri)=>(
+                    <tr key={ri}>
+                      {row.map((cell,ci)=>(
+                        <td key={ci} style={{ padding:mini?"2px 3px":"8px 12px", border:`1px solid ${theme.accent}30`,
+                          background:ri===0?`${theme.accent}20`:"transparent",
+                          fontWeight:ri===0||ci===0?700:400, color:ri===0?theme.accent:theme.body }}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {/* 막대 차트 */}
+        {lay==="chart_bar" && (s.bars||[]).length>0 && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"flex", alignItems:"flex-end", gap:mini?3:12, padding:"0 5% 8%" }}>
+              {s.bars.map((b,j)=>{
+                const max = Math.max(...s.bars.map(x=>x.value||0),1);
+                return <div key={j} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:mini?2:6 }}>
+                  <div style={{ fontSize:mini?5:11, fontWeight:700, color:theme.accent }}>{b.value||0}%</div>
+                  <div style={{ width:"70%", height:`${Math.max((b.value||0)/max*100,5)}%`, background:theme.accent, borderRadius:mini?2:4, minHeight:mini?4:10 }} />
+                  <div style={{ fontSize:mini?4:10, color:theme.body, textAlign:"center" }}>{b.label||""}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+        )}
+        {/* 원형 차트 */}
+        {lay==="chart_pie" && (s.segments||[]).length>0 && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:mini?8:30 }}>
+              <div style={{ width:mini?40:120, height:mini?40:120, borderRadius:"50%", background:`conic-gradient(${s.segments.map((seg,j)=>{
+                const colors = [theme.accent,"#f59e0b","#ef4444","#22c55e","#3b82f6","#ec4899"];
+                const total = s.segments.reduce((a,x)=>a+(x.value||0),0)||1;
+                const start = s.segments.slice(0,j).reduce((a,x)=>a+(x.value||0),0)/total*360;
+                const end = start+((seg.value||0)/total*360);
+                return `${colors[j%6]} ${start}deg ${end}deg`;
+              }).join(",")})`, flexShrink:0 }} />
+              <div style={{ display:"flex", flexDirection:"column", gap:mini?2:6 }}>
+                {s.segments.map((seg,j)=>{
+                  const colors = [theme.accent,"#f59e0b","#ef4444","#22c55e","#3b82f6","#ec4899"];
+                  return <div key={j} style={{ display:"flex", alignItems:"center", gap:mini?3:8 }}>
+                    <div style={{ width:mini?5:10, height:mini?5:10, borderRadius:2, background:colors[j%6], flexShrink:0 }} />
+                    <span style={{ fontSize:mini?5:11, color:theme.body }}>{seg.label} {seg.value}%</span>
+                  </div>;
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 진행률 */}
+        {lay==="progress" && (s.bars||[]).length>0 && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", gap:mini?4:14, padding:"0 3%" }}>
+              {s.bars.map((b,j)=>(
+                <div key={j}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:mini?2:4 }}>
+                    <span style={{ fontSize:mini?5:12, color:theme.body }}>{b.label}</span>
+                    <span style={{ fontSize:mini?5:12, fontWeight:700, color:theme.accent }}>{b.value||0}%</span>
+                  </div>
+                  <div style={{ height:mini?3:8, borderRadius:4, background:`${theme.accent}20`, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${Math.min(b.value||0,100)}%`, background:theme.accent, borderRadius:4 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 넘버링 리스트 */}
+        {lay==="numbered" && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1 }}>
+              {(s.bullets||[]).map((b,j)=>(
+                <div key={j} style={{ display:"flex", gap:mini?4:12, marginBottom:mini?3:10, alignItems:"flex-start" }}>
+                  <div style={{ width:mini?12:28, height:mini?12:28, borderRadius:"50%", background:theme.accent, display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:mini?6:13, fontWeight:900, color:theme.bg, flexShrink:0 }}>{j+1}</div>
+                  <div style={{ fontSize:mini?6:13, color:theme.body, lineHeight:1.5, paddingTop:mini?1:5 }}>{b}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 아이콘 그리드 */}
+        {lay==="icon_grid" && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:12 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:mini?4:12 }}>
+              {(s.bullets||[]).slice(0,4).map((b,j)=>{
+                const icons = ["◆","◎","★","●"];
+                return <div key={j} style={{ borderRadius:mini?3:10, background:`${theme.accent}10`, border:`1px solid ${theme.accent}25`, padding:mini?"3px":"12px 14px", display:"flex", alignItems:"center", gap:mini?3:10 }}>
+                  <div style={{ fontSize:mini?8:22, color:theme.accent }}>{icons[j%4]}</div>
+                  <div style={{ fontSize:mini?5:12, color:theme.body, lineHeight:1.4 }}>{b}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+        )}
+        {/* 큰 숫자 */}
+        {lay==="big_number" && (
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"6%" }}>
+            <div style={{ fontSize:mini?7:14, color:theme.sub, marginBottom:mini?4:12 }}>{s.title||""}</div>
+            <div style={{ fontSize:mini?24:72, fontWeight:900, color:theme.accent, letterSpacing:-2 }}>{(s.stats||[])[0]?.value||"0"}</div>
+            <div style={{ fontSize:mini?7:16, color:theme.body, marginTop:mini?3:10 }}>{(s.stats||[])[0]?.label||""}</div>
+          </div>
+        )}
+        {/* SWOT */}
+        {lay==="swot" && s.swot && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||"SWOT 분석"}</div>
+            <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gridTemplateRows:"1fr 1fr", gap:mini?2:8 }}>
+              {[["S","강점",s.swot.s,"#22c55e"],["W","약점",s.swot.w,"#f59e0b"],["O","기회",s.swot.o,"#3b82f6"],["T","위협",s.swot.t,"#ef4444"]].map(([k,l,v,c])=>(
+                <div key={k} style={{ borderRadius:mini?3:10, border:`2px solid ${c}40`, background:`${c}08`, padding:mini?"3px":"10px 14px" }}>
+                  <div style={{ fontSize:mini?7:14, fontWeight:900, color:c, marginBottom:mini?2:6 }}>{k} - {l}</div>
+                  <div style={{ fontSize:mini?5:11, color:theme.body, lineHeight:1.5 }}>{v||""}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 조직도 */}
+        {lay==="org_chart" && (s.orgItems||[]).length>0 && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||"조직도"}</div>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?3:8 }}>
+              {/* CEO (첫 번째) */}
+              {s.orgItems[0] && <div style={{ padding:mini?"3px 8px":"10px 24px", borderRadius:mini?3:10, background:theme.accent, color:theme.bg, textAlign:"center" }}>
+                <div style={{ fontSize:mini?6:14, fontWeight:800 }}>{s.orgItems[0].role}</div>
+                <div style={{ fontSize:mini?5:11 }}>{s.orgItems[0].name}</div>
+              </div>}
+              {s.orgItems.length>1 && <div style={{ width:2, height:mini?4:16, background:theme.accent }} />}
+              <div style={{ display:"flex", gap:mini?4:12, flexWrap:"wrap", justifyContent:"center" }}>
+                {s.orgItems.slice(1).map((o,j)=>(
+                  <div key={j} style={{ padding:mini?"3px 6px":"8px 18px", borderRadius:mini?3:8, border:`2px solid ${theme.accent}40`, background:`${theme.accent}08`, textAlign:"center" }}>
+                    <div style={{ fontSize:mini?5:12, fontWeight:700, color:theme.accent }}>{o.role}</div>
+                    <div style={{ fontSize:mini?4:10, color:theme.body }}>{o.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 단계 프로세스 */}
+        {lay==="steps" && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"flex", alignItems:"center", gap:mini?1:6 }}>
+              {(s.bullets||[]).slice(0,5).map((item,j)=>(
+                <div key={j} style={{ flex:1, display:"flex", alignItems:"center" }}>
+                  <div style={{ flex:1, padding:mini?"3px":"10px 8px", background:`${theme.accent}${j===0?"30":"12"}`, borderRadius:mini?3:8, textAlign:"center",
+                    border:j===0?`2px solid ${theme.accent}`:"none" }}>
+                    <div style={{ fontSize:mini?5:10, fontWeight:800, color:theme.accent, marginBottom:mini?1:4 }}>STEP {j+1}</div>
+                    <div style={{ fontSize:mini?4:11, color:theme.body }}>{item}</div>
+                  </div>
+                  {j<(s.bullets||[]).length-1 && <div style={{ fontSize:mini?6:16, color:theme.accent, margin:mini?"0 1px":"0 4px", flexShrink:0 }}>→</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 피라미드 */}
+        {lay==="pyramid" && (
+          <div style={{ position:"absolute", inset:0, padding:"4% 5%", display:"flex", flexDirection:"column" }}>
+            <div style={{ fontSize:mini?9:20, fontWeight:800, color:theme.text, marginBottom:mini?4:10 }}>{s.title||""}</div>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?1:4 }}>
+              {(s.bullets||[]).slice(0,5).map((item,j,arr)=>{
+                const w = 30 + (j/(arr.length-1||1)) * 70;
+                return <div key={j} style={{ width:`${w}%`, padding:mini?"2px":"8px 14px", background:`${theme.accent}${Math.round(20+j*12).toString(16)}`,
+                  borderRadius:mini?2:6, textAlign:"center", fontSize:mini?5:12, color:j<2?theme.bg:theme.body, fontWeight:j<2?700:400 }}>{item}</div>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 페이지 번호 */}
+        {s.showPageNum!==false && idx > 0 && !isSection && <div style={{ position:"absolute", bottom:"7%", right:"4%", fontSize:mini?5:9, color:theme.sub }}>{idx+1}</div>}
       </div>
     );
   };
@@ -585,19 +795,24 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
         <div style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
           {/* ── 내용 탭 ── */}
           {editTab === "content" && <>
+            {/* 레이아웃 (카테고리별) */}
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>레이아웃</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
-                {LAYOUTS.map(l => (
-                  <button key={l.id} onClick={()=>upd("layout",l.id)}
-                    style={{ padding:"5px 2px", borderRadius:5, border:`1px solid ${cur.layout===l.id?accent:bdr}`,
-                      background:cur.layout===l.id?`${accent}12`:"transparent", color:cur.layout===l.id?accent:muted,
-                      fontSize:9, fontWeight:cur.layout===l.id?700:400, cursor:"pointer" }}>
-                    <div style={{ fontFamily:"monospace", fontSize:9, marginBottom:1 }}>{l.icon}</div>
-                    {l.label}
-                  </button>
-                ))}
-              </div>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>레이아웃 템플릿</div>
+              {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>(
+                <div key={cat} style={{ marginBottom:4 }}>
+                  <div style={{ fontSize:8, color:muted, marginBottom:2, paddingLeft:2 }}>{cat}</div>
+                  <div style={{ display:"flex", gap:2, flexWrap:"wrap" }}>
+                    {LAYOUTS.filter(l=>l.cat===cat).map(l=>(
+                      <button key={l.id} onClick={()=>upd("layout",l.id)}
+                        style={{ padding:"4px 6px", borderRadius:4, border:`1px solid ${cur.layout===l.id?accent:bdr}`,
+                          background:cur.layout===l.id?`${accent}12`:"transparent", color:cur.layout===l.id?accent:muted,
+                          fontSize:9, fontWeight:cur.layout===l.id?700:400, cursor:"pointer", whiteSpace:"nowrap" }}>
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
             <div style={{ marginBottom:8 }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
@@ -659,6 +874,85 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
                 </div>
               </div>
             </>}
+            {/* 표/테이블 */}
+            {cur.layout==="table" && <div style={{ marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>표 데이터 (행별로)</div>
+              {(cur.rows||[]).map((row,j)=>(
+                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
+                  {row.map((cell,k)=>(
+                    <input key={k} value={cell} onChange={e=>{const n=(cur.rows||[]).map(r=>[...r]);n[j][k]=e.target.value;upd("rows",n);}} style={{ ...inp, fontSize:9, padding:"4px 6px", flex:1 }} />
+                  ))}
+                  <button onClick={()=>upd("rows",(cur.rows||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
+                </div>
+              ))}
+              <div style={{ display:"flex", gap:3 }}>
+                <button onClick={()=>{const cols=(cur.rows?.[0]?.length)||3;upd("rows",[...(cur.rows||[]),Array(cols).fill("")]);}} style={{ flex:1, padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 행 추가</button>
+                <button onClick={()=>upd("rows",(cur.rows||[]).map(r=>[...r,""]))} style={{ flex:1, padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 열 추가</button>
+              </div>
+            </div>}
+            {/* 차트 bars */}
+            {(cur.layout==="chart_bar"||cur.layout==="progress") && <div style={{ marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>데이터 항목</div>
+              {(cur.bars||[]).map((b,j)=>(
+                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
+                  <input value={b.label||""} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],label:e.target.value};upd("bars",n);}} placeholder="항목명" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
+                  <input type="number" value={b.value||0} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],value:Number(e.target.value)};upd("bars",n);}} style={{ ...inp, fontSize:10, padding:"4px 8px", width:50 }} />
+                  <button onClick={()=>upd("bars",(cur.bars||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
+                </div>
+              ))}
+              <button onClick={()=>upd("bars",[...(cur.bars||[]),{label:"",value:50}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
+            </div>}
+            {/* 원형 차트 */}
+            {cur.layout==="chart_pie" && <div style={{ marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>비율 항목 (%)</div>
+              {(cur.segments||[]).map((s,j)=>(
+                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
+                  <input value={s.label||""} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],label:e.target.value};upd("segments",n);}} placeholder="항목" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
+                  <input type="number" value={s.value||0} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],value:Number(e.target.value)};upd("segments",n);}} style={{ ...inp, fontSize:10, padding:"4px 8px", width:50 }} />
+                  <button onClick={()=>upd("segments",(cur.segments||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
+                </div>
+              ))}
+              <button onClick={()=>upd("segments",[...(cur.segments||[]),{label:"",value:25}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
+            </div>}
+            {/* SWOT */}
+            {cur.layout==="swot" && <div style={{ marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>SWOT 분석</div>
+              {[["s","S (강점)","#22c55e"],["w","W (약점)","#f59e0b"],["o","O (기회)","#3b82f6"],["t","T (위협)","#ef4444"]].map(([k,l,c])=>(
+                <div key={k} style={{ marginBottom:4 }}>
+                  <div style={{ fontSize:9, color:c, fontWeight:700, marginBottom:2 }}>{l}</div>
+                  <textarea value={(cur.swot||{})[k]||""} onChange={e=>upd("swot",{...(cur.swot||{}), [k]:e.target.value})} rows={2} style={{ ...inp, fontSize:10, resize:"vertical" }} />
+                </div>
+              ))}
+            </div>}
+            {/* 조직도 */}
+            {cur.layout==="org_chart" && <div style={{ marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>조직 구성원</div>
+              {(cur.orgItems||[]).map((o,j)=>(
+                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
+                  <input value={o.role||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],role:e.target.value};upd("orgItems",n);}} placeholder="직책" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
+                  <input value={o.name||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],name:e.target.value};upd("orgItems",n);}} placeholder="이름" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
+                  <button onClick={()=>upd("orgItems",(cur.orgItems||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
+                </div>
+              ))}
+              <button onClick={()=>upd("orgItems",[...(cur.orgItems||[]),{role:"",name:""}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
+            </div>}
+            {/* 글꼴 크기 + 페이지번호 */}
+            <div style={{ borderTop:`1px solid ${bdr}`, paddingTop:8, marginTop:4, marginBottom:8 }}>
+              <div style={{ display:"flex", gap:8, marginBottom:6 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:9, color:muted, marginBottom:3 }}>제목 크기 ({cur.titleSize||28}px)</div>
+                  <input type="range" min={16} max={52} value={cur.titleSize||28} onChange={e=>upd("titleSize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:9, color:muted, marginBottom:3 }}>본문 크기 ({cur.bodySize||16}px)</div>
+                  <input type="range" min={10} max={28} value={cur.bodySize||16} onChange={e=>upd("bodySize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
+                </div>
+              </div>
+              <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:muted, cursor:"pointer" }}>
+                <input type="checkbox" checked={cur.showPageNum!==false} onChange={e=>upd("showPageNum",e.target.checked)} style={{ accentColor:accent }} />
+                페이지 번호 표시
+              </label>
+            </div>
             <div style={{ marginBottom:8 }}>
               <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>발표 노트</div>
               <textarea value={cur.note||""} onChange={e=>upd("note",e.target.value)} rows={2} style={{ ...inp, fontSize:10, resize:"vertical" }} placeholder="발표자 참고 메모" />
