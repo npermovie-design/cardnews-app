@@ -19,29 +19,77 @@ const THEMES = [
 ];
 
 const LAYOUTS = [
-  { id:"title_only",     label:"표지",         icon:"[ T ]", cat:"기본" },
-  { id:"title_body",     label:"제목+본문",    icon:"[T+B]", cat:"기본" },
-  { id:"section",        label:"섹션 구분",     icon:"[---]", cat:"기본" },
-  { id:"bullets",        label:"불릿 리스트",   icon:"[. .]", cat:"리스트" },
-  { id:"numbered",       label:"넘버링 리스트", icon:"[1.2]", cat:"리스트" },
-  { id:"icon_grid",      label:"아이콘 그리드", icon:"[:::]", cat:"리스트" },
-  { id:"two_column",     label:"2단 컬럼",     icon:"[| |]", cat:"비교" },
-  { id:"comparison",     label:"VS 비교",      icon:"[vs ]", cat:"비교" },
-  { id:"table",          label:"표/테이블",     icon:"[표 ]", cat:"비교" },
-  { id:"stats",          label:"숫자 강조",     icon:"[123]", cat:"데이터" },
-  { id:"chart_bar",      label:"막대 차트",     icon:"[|||]", cat:"데이터" },
-  { id:"chart_pie",      label:"원형 차트",     icon:"[ O ]", cat:"데이터" },
-  { id:"progress",       label:"진행률/게이지", icon:"[==>]", cat:"데이터" },
-  { id:"timeline",       label:"타임라인",      icon:"[>>>]", cat:"프로세스" },
-  { id:"steps",          label:"단계 프로세스", icon:"[1>2]", cat:"프로세스" },
-  { id:"pyramid",        label:"피라미드",      icon:"[/\\]",  cat:"프로세스" },
-  { id:"quote",          label:"인용/강조",     icon:"[ \" ]", cat:"강조" },
-  { id:"big_number",     label:"핵심 숫자",     icon:"[##]",  cat:"강조" },
-  { id:"image_right",    label:"이미지 우측",   icon:"[T|I]", cat:"이미지" },
-  { id:"image_left",     label:"이미지 좌측",   icon:"[I|T]", cat:"이미지" },
-  { id:"image_full",     label:"전체 이미지",   icon:"[IMG]", cat:"이미지" },
-  { id:"swot",           label:"SWOT 분석",    icon:"[SW]",  cat:"프레임" },
-  { id:"org_chart",      label:"조직도",        icon:"[트리]", cat:"프레임" },
+  // 기본 (7)
+  { id:"title_only",     label:"표지",           cat:"기본" },
+  { id:"title_sub",      label:"표지+부제목",     cat:"기본" },
+  { id:"title_body",     label:"제목+본문",       cat:"기본" },
+  { id:"title_body_sub", label:"제목+부제+본문",   cat:"기본" },
+  { id:"section",        label:"섹션 구분",       cat:"기본" },
+  { id:"section_num",    label:"챕터 번호",       cat:"기본" },
+  { id:"agenda",         label:"목차/어젠다",     cat:"기본" },
+  // 리스트 (8)
+  { id:"bullets",        label:"불릿 리스트",     cat:"리스트" },
+  { id:"numbered",       label:"넘버링 리스트",   cat:"리스트" },
+  { id:"icon_grid",      label:"아이콘 4칸",      cat:"리스트" },
+  { id:"icon_grid_6",    label:"아이콘 6칸",      cat:"리스트" },
+  { id:"checklist",      label:"체크리스트",       cat:"리스트" },
+  { id:"card_grid",      label:"카드 그리드",      cat:"리스트" },
+  { id:"horizontal_list",label:"가로 나열",        cat:"리스트" },
+  { id:"definition",     label:"용어 정의",        cat:"리스트" },
+  // 비교/분석 (8)
+  { id:"two_column",     label:"2단 컬럼",        cat:"비교" },
+  { id:"three_column",   label:"3단 컬럼",        cat:"비교" },
+  { id:"comparison",     label:"VS 비교",         cat:"비교" },
+  { id:"table",          label:"표/테이블",        cat:"비교" },
+  { id:"pros_cons",      label:"장단점",           cat:"비교" },
+  { id:"before_after",   label:"Before/After",    cat:"비교" },
+  { id:"matrix",         label:"매트릭스 2x2",     cat:"비교" },
+  { id:"ranking",        label:"순위/랭킹",        cat:"비교" },
+  // 데이터 (9)
+  { id:"stats",          label:"숫자 강조",        cat:"데이터" },
+  { id:"stats_4",        label:"숫자 4칸",         cat:"데이터" },
+  { id:"chart_bar",      label:"막대 차트",        cat:"데이터" },
+  { id:"chart_bar_h",    label:"가로 막대",        cat:"데이터" },
+  { id:"chart_pie",      label:"원형 차트",        cat:"데이터" },
+  { id:"chart_donut",    label:"도넛 차트",        cat:"데이터" },
+  { id:"progress",       label:"진행률 바",        cat:"데이터" },
+  { id:"big_number",     label:"핵심 숫자",        cat:"데이터" },
+  { id:"kpi_card",       label:"KPI 카드",         cat:"데이터" },
+  // 프로세스 (9)
+  { id:"timeline",       label:"타임라인",         cat:"프로세스" },
+  { id:"timeline_v",     label:"세로 타임라인",    cat:"프로세스" },
+  { id:"steps",          label:"단계 (가로)",      cat:"프로세스" },
+  { id:"steps_v",        label:"단계 (세로)",      cat:"프로세스" },
+  { id:"pyramid",        label:"피라미드",         cat:"프로세스" },
+  { id:"funnel",         label:"퍼널",             cat:"프로세스" },
+  { id:"cycle",          label:"순환 사이클",      cat:"프로세스" },
+  { id:"flowchart",      label:"플로우차트",       cat:"프로세스" },
+  { id:"roadmap",        label:"로드맵",           cat:"프로세스" },
+  // 강조 (7)
+  { id:"quote",          label:"인용 문구",        cat:"강조" },
+  { id:"quote_card",     label:"인용 카드",        cat:"강조" },
+  { id:"highlight_box",  label:"강조 박스",        cat:"강조" },
+  { id:"callout",        label:"콜아웃",           cat:"강조" },
+  { id:"key_message",    label:"핵심 메시지",      cat:"강조" },
+  { id:"banner",         label:"배너 강조",        cat:"강조" },
+  { id:"cta",            label:"CTA/행동유도",     cat:"강조" },
+  // 이미지 (6)
+  { id:"image_right",    label:"이미지 우측",      cat:"이미지" },
+  { id:"image_left",     label:"이미지 좌측",      cat:"이미지" },
+  { id:"image_full",     label:"전체 이미지",      cat:"이미지" },
+  { id:"image_top",      label:"이미지 상단",      cat:"이미지" },
+  { id:"gallery",        label:"갤러리 2칸",       cat:"이미지" },
+  { id:"mockup",         label:"디바이스 목업",    cat:"이미지" },
+  // 프레임워크 (9)
+  { id:"swot",           label:"SWOT 분석",       cat:"프레임" },
+  { id:"org_chart",      label:"조직도",           cat:"프레임" },
+  { id:"team",           label:"팀 소개",          cat:"프레임" },
+  { id:"pricing",        label:"가격표",           cat:"프레임" },
+  { id:"faq",            label:"FAQ",             cat:"프레임" },
+  { id:"contact",        label:"연락처/마무리",    cat:"프레임" },
+  { id:"thankyou",       label:"감사 페이지",      cat:"프레임" },
+  { id:"qna",            label:"Q&A",             cat:"프레임" },
+  { id:"references",     label:"참고 자료",        cat:"프레임" },
 ];
 
 const ICONS_MAP = {
@@ -61,6 +109,82 @@ function parseSlides(raw) {
     if (arr) return JSON.parse(arr[0]);
   } catch {}
   return null;
+}
+
+// 미니 슬라이드 프리뷰 (모든 레이아웃 시각화)
+function MiniSlidePreview({ layoutId, W=60, H=34, theme }) {
+  const a=theme.accent, bg=theme.bg, t=theme.text, bd=theme.body;
+  const p=Math.round(W*0.06), r=Math.round(W*0.05);
+  const bar=<div style={{position:"absolute",bottom:0,left:0,right:0,height:Math.max(2,H*0.06),background:a}}/>;
+  const tl=<div style={{width:"55%",height:Math.max(2,H*0.09),background:t,borderRadius:1,opacity:0.7}}/>;
+  const ln=<div style={{width:"30%",height:Math.max(1.5,H*0.05),background:a,borderRadius:1,marginTop:H*0.04}}/>;
+  const bl=(n=3)=>Array.from({length:n}).map((_,i)=><div key={i} style={{width:`${70-i*8}%`,height:Math.max(1.5,H*0.045),background:t,borderRadius:1,opacity:0.2,marginTop:H*0.04}}/>);
+  const dt=(n=3)=>Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:H*0.04,alignItems:"center",marginTop:H*0.04}}><div style={{width:H*0.07,height:H*0.07,borderRadius:"50%",background:a,flexShrink:0}}/><div style={{width:`${50-i*5}%`,height:Math.max(1.5,H*0.045),background:t,opacity:0.2,borderRadius:1}}/></div>);
+  const nm=(n=3)=>Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:H*0.04,alignItems:"center",marginTop:H*0.04}}><div style={{width:H*0.14,height:H*0.14,borderRadius:"50%",background:a,fontSize:Math.max(3,H*0.08),color:bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>{i+1}</div><div style={{width:`${45-i*4}%`,height:Math.max(1.5,H*0.045),background:t,opacity:0.2,borderRadius:1}}/></div>);
+  const ck=(n=3)=>Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:H*0.04,alignItems:"center",marginTop:H*0.04}}><div style={{width:H*0.1,height:H*0.1,borderRadius:2,border:`1px solid ${a}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:Math.max(3,H*0.06),color:a}}>✓</div><div style={{width:`${48-i*5}%`,height:Math.max(1.5,H*0.045),background:t,opacity:0.2,borderRadius:1}}/></div>);
+  const bx={width:W,height:H,background:bg,borderRadius:r,position:"relative",overflow:"hidden"};
+  const id=layoutId;
+  if(id==="title_only"||id==="title_sub") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{width:"60%",height:H*0.09,background:t,borderRadius:1,opacity:0.8}}/>{id==="title_sub"&&<div style={{width:"40%",height:H*0.06,background:a,borderRadius:1,marginTop:H*0.08,opacity:0.5}}/>}<div style={{width:"35%",height:H*0.05,background:t,borderRadius:1,marginTop:H*0.06,opacity:0.3}}/></div>;
+  if(id==="section"||id==="section_num") return <div style={{...bx,background:a,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{id==="section_num"&&<div style={{fontSize:Math.max(6,H*0.2),fontWeight:900,color:bg,opacity:0.4,marginBottom:H*0.04}}>01</div>}<div style={{width:"55%",height:H*0.09,background:bg,borderRadius:1}}/></div>;
+  if(id==="agenda") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.08}}>{nm(4)}</div></div>;
+  if(id==="title_body"||id==="title_body_sub") return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{bl()}</div>;
+  if(id==="bullets") return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{dt(3)}</div>;
+  if(id==="numbered") return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{nm(3)}</div>;
+  if(id==="checklist") return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{ck(3)}</div>;
+  if(id==="icon_grid"||id==="icon_grid_6") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"grid",gridTemplateColumns:id==="icon_grid_6"?"1fr 1fr 1fr":"1fr 1fr",gap:H*0.04,marginTop:H*0.08}}>{Array.from({length:id==="icon_grid_6"?6:4}).map((_,i)=><div key={i} style={{height:H*0.16,borderRadius:r*0.6,background:`${a}18`,border:`0.5px solid ${a}35`}}/>)}</div></div>;
+  if(id==="card_grid") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:H*0.04,marginTop:H*0.08}}>{[0,1,2].map(i=><div key={i} style={{height:H*0.3,borderRadius:r*0.6,background:`${a}10`,border:`0.5px solid ${a}20`}}/>)}</div></div>;
+  if(id==="horizontal_list") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.1}}>{[0,1,2,3].map(i=><div key={i} style={{flex:1,height:H*0.35,borderRadius:r*0.6,background:`${a}${12+i*4}`,border:`0.5px solid ${a}25`}}/>)}</div></div>;
+  if(id==="definition") return <div style={{...bx,padding:p}}>{bar}{tl}{[0,1,2].map(i=><div key={i} style={{display:"flex",gap:H*0.04,marginTop:H*0.05}}><div style={{width:H*0.2,height:H*0.06,background:a,borderRadius:1,opacity:0.6,flexShrink:0}}/><div style={{flex:1,height:H*0.04,background:t,borderRadius:1,opacity:0.15}}/></div>)}</div>;
+  if(id==="two_column"||id==="three_column") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.06}}>{Array.from({length:id==="three_column"?3:2}).map((_,i)=><div key={i} style={{flex:1}}>{bl(3)}</div>)}</div></div>;
+  if(id==="comparison") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.06,alignItems:"center"}}><div style={{flex:1}}>{bl(2)}</div><div style={{width:H*0.22,height:H*0.22,borderRadius:"50%",background:a,fontSize:Math.max(4,H*0.08),color:bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>VS</div><div style={{flex:1}}>{bl(2)}</div></div></div>;
+  if(id==="table") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[0,1,2,3].map(r=><div key={r} style={{display:"flex",gap:1,marginTop:1}}>{[0,1,2,3].map(c=><div key={c} style={{flex:1,height:H*0.08,background:r===0?`${a}30`:`${t}08`,borderRadius:1}}/>)}</div>)}</div></div>;
+  if(id==="pros_cons") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.06}}><div style={{flex:1,borderRadius:r*0.5,background:"rgba(74,222,128,0.1)",border:"0.5px solid rgba(74,222,128,0.3)",height:H*0.5}}/><div style={{flex:1,borderRadius:r*0.5,background:"rgba(248,113,113,0.1)",border:"0.5px solid rgba(248,113,113,0.3)",height:H*0.5}}/></div></div>;
+  if(id==="before_after") return <div style={{...bx,display:"flex"}}>{bar}<div style={{flex:1,background:`${t}08`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:Math.max(5,H*0.12),color:t,opacity:0.3}}>Before</div></div><div style={{width:2,background:a}}/><div style={{flex:1,background:`${a}08`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:Math.max(5,H*0.12),color:a,opacity:0.5}}>After</div></div></div>;
+  if(id==="matrix") return <div style={{...bx,padding:p}}>{bar}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gridTemplateRows:"1fr 1fr",gap:H*0.04,height:"85%"}}>{[a,"#f59e0b","#3b82f6","#22c55e"].map((c,i)=><div key={i} style={{borderRadius:r*0.5,background:`${c}12`,border:`0.5px solid ${c}30`}}/>)}</div></div>;
+  if(id==="ranking") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[90,70,50].map((w,i)=><div key={i} style={{display:"flex",gap:H*0.04,alignItems:"center",marginTop:H*0.04}}><div style={{fontSize:Math.max(4,H*0.1),fontWeight:900,color:a,width:H*0.12}}>{i+1}</div><div style={{height:H*0.1,width:`${w}%`,background:a,borderRadius:2,opacity:0.4+i*0.2}}/></div>)}</div></div>;
+  if(id==="stats"||id==="stats_4") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.06,marginTop:H*0.1,justifyContent:"center"}}>{Array.from({length:id==="stats_4"?4:3}).map((_,i)=><div key={i} style={{textAlign:"center"}}><div style={{fontSize:Math.max(6,H*0.2),fontWeight:900,color:a}}>8{i}</div><div style={{width:W*0.12,height:H*0.04,background:`${t}20`,borderRadius:1,marginTop:H*0.03}}/></div>)}</div></div>;
+  if(id==="chart_bar"||id==="chart_bar_h") {
+    if(id==="chart_bar_h") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[80,55,70,40].map((v,i)=><div key={i} style={{display:"flex",gap:H*0.04,alignItems:"center",marginTop:H*0.04}}><div style={{width:W*0.15,height:H*0.04,background:`${t}15`,borderRadius:1}}/><div style={{height:H*0.07,width:`${v}%`,background:a,borderRadius:2,opacity:0.5+i*0.12}}/></div>)}</div></div>;
+    return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",alignItems:"flex-end",gap:H*0.06,marginTop:H*0.06,height:H*0.4}}>{[70,45,90,55,80].map((v,i)=><div key={i} style={{flex:1,height:`${v}%`,background:a,borderRadius:1,opacity:0.4+i*0.12}}/>)}</div></div>;
+  }
+  if(id==="chart_pie"||id==="chart_donut") {
+    const sz=Math.min(W,H)*0.4;
+    return <div style={{...bx,display:"flex",alignItems:"center",justifyContent:"center",gap:W*0.08}}>{bar}<div style={{width:sz,height:sz,borderRadius:"50%",background:`conic-gradient(${a} 0deg 130deg, #f59e0b 130deg 230deg, #ef4444 230deg 360deg)`,display:"flex",alignItems:"center",justifyContent:"center"}}>{id==="chart_donut"&&<div style={{width:sz*0.5,height:sz*0.5,borderRadius:"50%",background:bg}}/>}</div></div>;
+  }
+  if(id==="progress") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[75,50,90].map((v,i)=><div key={i} style={{height:H*0.08,borderRadius:2,background:`${a}18`,marginTop:H*0.05,overflow:"hidden"}}><div style={{height:"100%",width:`${v}%`,background:a,borderRadius:2}}/></div>)}</div></div>;
+  if(id==="big_number"||id==="kpi_card") return <div style={{...bx,display:"flex",flexDirection:id==="kpi_card"?"row":"column",alignItems:"center",justifyContent:"center",gap:id==="kpi_card"?W*0.06:0}}>{bar}{id==="kpi_card"?<>{[0,1,2].map(i=><div key={i} style={{flex:1,textAlign:"center",borderRight:i<2?`0.5px solid ${a}20`:"none",padding:p*0.5}}><div style={{fontSize:Math.max(7,H*0.22),fontWeight:900,color:a}}>8{i}%</div><div style={{height:H*0.04,background:`${t}15`,borderRadius:1,marginTop:H*0.04}}/></div>)}</>:<><div style={{fontSize:Math.max(10,H*0.35),fontWeight:900,color:a}}>85%</div><div style={{width:W*0.3,height:H*0.05,background:`${t}15`,borderRadius:1,marginTop:H*0.04}}/></>}</div>;
+  if(id==="timeline"||id==="timeline_v") {
+    if(id==="timeline_v") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06,marginLeft:H*0.1}}>{[0,1,2,3].map(i=><div key={i} style={{display:"flex",gap:H*0.06,marginTop:i?H*0.04:0}}><div style={{display:"flex",flexDirection:"column",alignItems:"center"}}><div style={{width:H*0.1,height:H*0.1,borderRadius:"50%",background:a,flexShrink:0}}/>{i<3&&<div style={{width:1,height:H*0.08,background:`${a}40`}}/>}</div><div style={{width:W*0.5,height:H*0.04,background:`${t}12`,borderRadius:1,marginTop:H*0.02}}/></div>)}</div></div>;
+    return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",alignItems:"center",gap:H*0.04,marginTop:H*0.12}}>{[0,1,2,3,4].map(i=><><div key={i} style={{width:H*0.12,height:H*0.12,borderRadius:"50%",background:a,flexShrink:0}}/>{i<4&&<div style={{flex:1,height:1,background:`${a}40`}}/>}</>)}</div></div>;
+  }
+  if(id==="steps"||id==="steps_v") {
+    if(id==="steps_v") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[0,1,2].map(i=><div key={i} style={{padding:H*0.04,borderRadius:r*0.4,background:`${a}${i===0?"25":"10"}`,border:i===0?`0.5px solid ${a}`:"none",marginTop:i?H*0.03:0}}><div style={{height:H*0.04,width:`${60-i*10}%`,background:t,opacity:0.2,borderRadius:1}}/></div>)}</div></div>;
+    return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:1,marginTop:H*0.1}}>{[0,1,2,3].map(i=><div key={i} style={{flex:1,display:"flex",alignItems:"center"}}><div style={{flex:1,height:H*0.22,borderRadius:r*0.4,background:`${a}${i===0?"28":"12"}`,border:i===0?`0.5px solid ${a}`:"none"}}/>{i<3&&<span style={{fontSize:Math.max(4,H*0.1),color:a,flexShrink:0}}>→</span>}</div>)}</div></div>;
+  }
+  if(id==="pyramid"||id==="funnel") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:H*0.02,padding:p}}>{bar}{(id==="funnel"?[65,50,35,20]:[20,35,50,65]).map((w,i)=><div key={i} style={{width:`${w}%`,height:H*0.1,background:`${a}${18+i*8}`,borderRadius:1}}/>)}</div>;
+  if(id==="cycle") return <div style={{...bx,display:"flex",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{width:H*0.55,height:H*0.55,borderRadius:"50%",border:`2px solid ${a}30`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:H*0.2,height:H*0.2,borderRadius:"50%",background:`${a}30`}}/></div>{[0,1,2,3].map(i=><div key={i} style={{position:"absolute",width:H*0.12,height:H*0.12,borderRadius:"50%",background:a,top:`${20+Math.sin(i*Math.PI/2)*25}%`,left:`${35+Math.cos(i*Math.PI/2)*25}%`}}/>)}</div>;
+  if(id==="flowchart") return <div style={{...bx,display:"flex",alignItems:"center",justifyContent:"center",gap:H*0.04}}>{bar}{[0,1,2].map(i=><div key={i} style={{display:"flex",alignItems:"center",gap:H*0.04}}><div style={{width:H*0.2,height:H*0.15,borderRadius:i===1?H*0.08:r*0.4,background:`${a}${15+i*8}`,border:`0.5px solid ${a}40`}}/>{i<2&&<span style={{fontSize:Math.max(4,H*0.08),color:a}}>→</span>}</div>)}</div>;
+  if(id==="roadmap") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{position:"relative",marginTop:H*0.12}}><div style={{position:"absolute",top:H*0.06,left:0,right:0,height:2,background:`${a}30`}}/><div style={{display:"flex",justifyContent:"space-between"}}>{["Q1","Q2","Q3","Q4"].map((q,i)=><div key={i} style={{textAlign:"center",position:"relative",zIndex:1}}><div style={{width:H*0.1,height:H*0.1,borderRadius:"50%",background:i<2?a:`${a}40`,margin:"0 auto"}}/><div style={{fontSize:Math.max(4,H*0.08),color:t,opacity:0.5,marginTop:H*0.03}}>{q}</div></div>)}</div></div></div>;
+  if(id==="quote"||id==="quote_card") return <div style={{...bx,display:"flex",padding:p,gap:H*0.06}}>{bar}<div style={{width:Math.max(2,H*0.05),background:a,borderRadius:1,flexShrink:0}}/><div style={{display:"flex",flexDirection:"column",justifyContent:"center"}}>{id==="quote_card"&&<div style={{fontSize:Math.max(6,H*0.15),color:a,opacity:0.3,lineHeight:1}}>"</div>}<div style={{width:W*0.5,height:H*0.06,background:t,opacity:0.5,borderRadius:1}}/><div style={{width:W*0.35,height:H*0.04,background:t,opacity:0.2,borderRadius:1,marginTop:H*0.06}}/></div></div>;
+  if(id==="highlight_box") return <div style={{...bx,display:"flex",alignItems:"center",justifyContent:"center",padding:p}}>{bar}<div style={{width:"75%",padding:H*0.08,borderRadius:r,background:`${a}15`,border:`1.5px solid ${a}40`,textAlign:"center"}}><div style={{width:"80%",height:H*0.07,background:t,opacity:0.6,borderRadius:1,margin:"0 auto"}}/><div style={{width:"55%",height:H*0.04,background:t,opacity:0.2,borderRadius:1,margin:`${H*0.04}px auto 0`}}/></div></div>;
+  if(id==="callout") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.08,padding:H*0.05,borderLeft:`2px solid ${a}`,background:`${a}08`,borderRadius:`0 ${r*0.4}px ${r*0.4}px 0`}}><div style={{width:"70%",height:H*0.04,background:t,opacity:0.3,borderRadius:1}}/><div style={{width:"50%",height:H*0.04,background:t,opacity:0.15,borderRadius:1,marginTop:H*0.03}}/></div></div>;
+  if(id==="key_message") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{width:"70%",height:H*0.12,background:a,borderRadius:r*0.5,marginBottom:H*0.06}}/><div style={{width:"50%",height:H*0.04,background:t,opacity:0.2,borderRadius:1}}/></div>;
+  if(id==="banner") return <div style={{...bx,display:"flex",flexDirection:"column"}}>{bar}<div style={{height:"40%",background:`${a}20`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"60%",height:H*0.08,background:t,opacity:0.7,borderRadius:1}}/></div><div style={{flex:1,padding:p}}>{bl(2)}</div></div>;
+  if(id==="cta") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:H*0.06}}>{bar}<div style={{width:"60%",height:H*0.07,background:t,opacity:0.5,borderRadius:1}}/><div style={{width:"35%",height:H*0.12,background:a,borderRadius:r*0.6}}/></div>;
+  if(id==="image_top") return <div style={{...bx,display:"flex",flexDirection:"column"}}>{bar}<div style={{height:"45%",background:`${a}12`}}/><div style={{flex:1,padding:p}}>{tl}{bl(2)}</div></div>;
+  if(id==="gallery") return <div style={{...bx,display:"flex",flexDirection:"column",padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.06,flex:1}}><div style={{flex:1,background:`${a}12`,borderRadius:r*0.4}}/><div style={{flex:1,background:`${a}08`,borderRadius:r*0.4}}/></div></div>;
+  if(id==="mockup") return <div style={{...bx,display:"flex",alignItems:"center",justifyContent:"center",gap:W*0.08}}>{bar}<div style={{padding:p}}>{tl}{bl(2)}</div><div style={{width:H*0.25,height:H*0.45,borderRadius:r*0.3,border:`1.5px solid ${a}50`,background:`${a}08`,flexShrink:0}}/></div>;
+  if(id==="swot") return <div style={{...bx,padding:Math.max(2,p*0.5)}}>{bar}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gridTemplateRows:"1fr 1fr",gap:H*0.03,height:"90%"}}>{["#22c55e","#f59e0b","#3b82f6","#ef4444"].map((c,i)=><div key={i} style={{borderRadius:r*0.4,background:`${c}12`,border:`0.5px solid ${c}35`}}/>)}</div></div>;
+  if(id==="org_chart") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:H*0.04}}>{bar}<div style={{width:H*0.35,height:H*0.14,borderRadius:r*0.4,background:a}}/><div style={{width:0.5,height:H*0.08,background:a}}/><div style={{display:"flex",gap:H*0.06}}>{[0,1,2].map(i=><div key={i} style={{width:H*0.22,height:H*0.12,borderRadius:r*0.3,border:`0.5px solid ${a}50`}}/>)}</div></div>;
+  if(id==="team") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.06,marginTop:H*0.08,justifyContent:"center"}}>{[0,1,2,3].map(i=><div key={i} style={{textAlign:"center"}}><div style={{width:H*0.16,height:H*0.16,borderRadius:"50%",background:`${a}25`,margin:"0 auto"}}/><div style={{width:H*0.2,height:H*0.03,background:`${t}15`,borderRadius:1,marginTop:H*0.03}}/></div>)}</div></div>;
+  if(id==="pricing") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{display:"flex",gap:H*0.04,marginTop:H*0.06}}>{[0,1,2].map(i=><div key={i} style={{flex:1,borderRadius:r*0.4,border:`${i===1?"1.5":"0.5"}px solid ${i===1?a:`${a}30`}`,padding:H*0.03,textAlign:"center"}}><div style={{fontSize:Math.max(5,H*0.14),fontWeight:900,color:i===1?a:t,opacity:i===1?1:0.5}}>$</div></div>)}</div></div>;
+  if(id==="faq") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[0,1,2].map(i=><div key={i} style={{padding:H*0.03,borderRadius:r*0.3,background:`${a}${i===0?"12":"06"}`,marginTop:H*0.03,display:"flex",justifyContent:"space-between"}}><div style={{width:`${55-i*5}%`,height:H*0.04,background:t,opacity:0.2,borderRadius:1}}/><div style={{fontSize:Math.max(4,H*0.08),color:a}}>+</div></div>)}</div></div>;
+  if(id==="contact"||id==="thankyou"||id==="qna") return <div style={{...bx,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{fontSize:Math.max(6,H*0.2),fontWeight:900,color:a,opacity:0.5}}>{id==="thankyou"?"Thanks":id==="qna"?"Q&A":"Contact"}</div><div style={{width:"40%",height:H*0.04,background:`${t}15`,borderRadius:1,marginTop:H*0.06}}/></div>;
+  if(id==="references") return <div style={{...bx,padding:p}}>{bar}{tl}<div style={{marginTop:H*0.06}}>{[0,1,2,3].map(i=><div key={i} style={{display:"flex",gap:H*0.03,marginTop:H*0.03}}><div style={{width:H*0.04,height:H*0.04,background:a,borderRadius:1,flexShrink:0,marginTop:1}}/><div style={{width:`${65-i*8}%`,height:H*0.04,background:t,opacity:0.15,borderRadius:1}}/></div>)}</div></div>;
+  if(id==="image_right") return <div style={{...bx,display:"flex"}}>{bar}<div style={{flex:1,padding:p}}>{tl}{ln}{bl()}</div><div style={{width:"35%",background:`${a}12`}}/></div>;
+  if(id==="image_left") return <div style={{...bx,display:"flex"}}>{bar}<div style={{width:"35%",background:`${a}12`}}/><div style={{flex:1,padding:p}}>{tl}{ln}{bl()}</div></div>;
+  if(id==="image_full") return <div style={{...bx,background:`${a}18`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"50%",height:H*0.08,background:"#fff",borderRadius:1,opacity:0.7}}/></div>;
+  return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{bl()}</div>;
 }
 
 export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdate }) {
@@ -83,8 +207,10 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [exporting, setExporting] = useState(false);
   const [editTab, setEditTab] = useState("content");
   const [aiSlideLoading, setAiSlideLoading] = useState(false);
-  const [aiOutline, setAiOutline] = useState(null); // AI 추천 구성안
+  const [aiOutline, setAiOutline] = useState(null);
   const [outlineLoading, setOutlineLoading] = useState(false);
+  const [hoveredLayout, setHoveredLayout] = useState(null);
+  const [layoutCatOpen, setLayoutCatOpen] = useState(null);
   const imgRef = useRef(null);
 
   const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
@@ -865,66 +991,53 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
         <div style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
           {/* ── 내용 탭 ── */}
           {editTab === "content" && <>
-            {/* 레이아웃 (시각 미니프리뷰) */}
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>레이아웃 템플릿</div>
-              {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>(
-                <div key={cat} style={{ marginBottom:6 }}>
-                  <div style={{ fontSize:8, color:muted, marginBottom:3, paddingLeft:2 }}>{cat}</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4 }}>
-                    {LAYOUTS.filter(l=>l.cat===cat).map(l=>{
-                      const sel = cur.layout===l.id;
-                      const a = theme.accent, b2 = theme.bg, t2 = theme.text;
-                      // 미니 프리뷰 도형
-                      const MiniSlide = () => {
-                        const W=60,H=34,p=4;
-                        const bar = <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:a}}/>;
-                        const title = <div style={{width:"55%",height:3,background:t2,borderRadius:1,opacity:0.7}}/>;
-                        const line = <div style={{width:"30%",height:1.5,background:a,borderRadius:1,marginTop:2}}/>;
-                        const bodyL = <>{[1,2,3].map(i=><div key={i} style={{width:`${70-i*8}%`,height:1.5,background:t2,borderRadius:1,opacity:0.2,marginTop:2}}/>)}</>;
-                        const dot = (n) => Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:2,alignItems:"center",marginTop:2}}><div style={{width:2.5,height:2.5,borderRadius:"50%",background:a,flexShrink:0}}/><div style={{width:`${50-i*5}%`,height:1.5,background:t2,opacity:0.2,borderRadius:1}}/></div>);
-                        const numDot = (n) => Array.from({length:n}).map((_,i)=><div key={i} style={{display:"flex",gap:2,alignItems:"center",marginTop:2}}><div style={{width:5,height:5,borderRadius:"50%",background:a,fontSize:3,color:b2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>{i+1}</div><div style={{width:`${45-i*4}%`,height:1.5,background:t2,opacity:0.2,borderRadius:1}}/></div>);
-
-                        if(l.id==="title_only") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>{bar}<div style={{width:"60%",height:3,background:t2,borderRadius:1,opacity:0.8}}/><div style={{width:"35%",height:1.5,background:a,borderRadius:1,marginTop:3,opacity:0.5}}/></div>;
-                        if(l.id==="section") return <div style={{width:W,height:H,background:a,borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"55%",height:3,background:b2,borderRadius:1}}/></div>;
-                        if(l.id==="bullets") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{dot(3)}</div>;
-                        if(l.id==="numbered") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{numDot(3)}</div>;
-                        if(l.id==="icon_grid") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginTop:3}}>{[0,1,2,3].map(i=><div key={i} style={{height:6,borderRadius:2,background:`${a}20`,border:`0.5px solid ${a}40`}}/>)}</div></div>;
-                        if(l.id==="two_column") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:2,marginTop:3,flex:1}}><div style={{flex:1}}>{bodyL}</div><div style={{width:0.5,background:`${a}40`}}/><div style={{flex:1}}>{bodyL}</div></div></div>;
-                        if(l.id==="comparison") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:2,marginTop:3,alignItems:"center"}}><div style={{flex:1}}>{bodyL}</div><div style={{width:8,height:8,borderRadius:4,background:a,fontSize:4,color:b2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>VS</div><div style={{flex:1}}>{bodyL}</div></div></div>;
-                        if(l.id==="table") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{marginTop:3}}>{[0,1,2].map(r=><div key={r} style={{display:"flex",gap:1,marginTop:1}}>{[0,1,2].map(c=><div key={c} style={{flex:1,height:4,background:r===0?`${a}30`:`${t2}08`,borderRadius:1}}/>)}</div>)}</div></div>;
-                        if(l.id==="stats") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:3,marginTop:4,justifyContent:"center"}}>{[0,1,2].map(i=><div key={i} style={{textAlign:"center"}}><div style={{fontSize:7,fontWeight:900,color:a}}>8{i}</div><div style={{width:12,height:1,background:`${t2}20`,borderRadius:1,marginTop:1}}/></div>)}</div></div>;
-                        if(l.id==="chart_bar") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",alignItems:"flex-end",gap:3,marginTop:3,height:14}}>{[70,45,90,55].map((v,i)=><div key={i} style={{flex:1,height:`${v}%`,background:a,borderRadius:1,opacity:0.5+i*0.15}}/>)}</div></div>;
-                        if(l.id==="chart_pie") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{width:16,height:16,borderRadius:"50%",background:`conic-gradient(${a} 0deg 130deg, #f59e0b 130deg 230deg, #ef4444 230deg 360deg)`}}/></div>;
-                        if(l.id==="progress") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{marginTop:3}}>{[75,50,90].map((v,i)=><div key={i} style={{height:3,borderRadius:2,background:`${a}20`,marginTop:2,overflow:"hidden"}}><div style={{height:"100%",width:`${v}%`,background:a,borderRadius:2}}/></div>)}</div></div>;
-                        if(l.id==="timeline") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",alignItems:"center",gap:2,marginTop:5}}>{[0,1,2,3].map(i=><><div key={i} style={{width:5,height:5,borderRadius:"50%",background:a,flexShrink:0}}/>{i<3&&<div style={{flex:1,height:1,background:`${a}40`}}/>}</>)}</div></div>;
-                        if(l.id==="steps") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}<div style={{display:"flex",gap:1,marginTop:4}}>{[0,1,2].map(i=><div key={i} style={{flex:1,display:"flex",alignItems:"center"}}><div style={{flex:1,height:8,borderRadius:2,background:`${a}${i===0?"30":"15"}`,border:i===0?`0.5px solid ${a}`:"none"}}/>{i<2&&<span style={{fontSize:5,color:a,flexShrink:0}}>→</span>}</div>)}</div></div>;
-                        if(l.id==="pyramid") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,padding:p}}>{bar}{[25,40,55].map((w,i)=><div key={i} style={{width:`${w}%`,height:4,background:`${a}${20+i*12}`,borderRadius:1}}/>)}</div>;
-                        if(l.id==="quote") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",padding:p,gap:3}}>{bar}<div style={{width:2,background:a,borderRadius:1,flexShrink:0}}/><div style={{display:"flex",flexDirection:"column",justifyContent:"center"}}><div style={{width:30,height:2,background:t2,opacity:0.5,borderRadius:1}}/><div style={{width:20,height:1.5,background:t2,opacity:0.2,borderRadius:1,marginTop:3}}/></div></div>;
-                        if(l.id==="big_number") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{bar}<div style={{fontSize:12,fontWeight:900,color:a}}>85%</div><div style={{width:20,height:1.5,background:`${t2}20`,borderRadius:1,marginTop:2}}/></div>;
-                        if(l.id==="swot") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:2}}>{bar}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gridTemplateRows:"1fr 1fr",gap:1,height:"100%"}}>{["#22c55e","#f59e0b","#3b82f6","#ef4444"].map((c,i)=><div key={i} style={{borderRadius:2,background:`${c}15`,border:`0.5px solid ${c}40`}}/>)}</div></div>;
-                        if(l.id==="org_chart") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>{bar}<div style={{width:14,height:5,borderRadius:2,background:a}}/><div style={{width:0.5,height:3,background:a}}/><div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:10,height:5,borderRadius:2,border:`0.5px solid ${a}60`}}/>)}</div></div>;
-                        // image layouts
-                        if(l.id==="image_right") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex"}}>{bar}<div style={{flex:1,padding:p}}>{title}{line}{bodyL}</div><div style={{width:"35%",background:`${a}15`}}/></div>;
-                        if(l.id==="image_left") return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",display:"flex"}}>{bar}<div style={{width:"35%",background:`${a}15`}}/><div style={{flex:1,padding:p}}>{title}{line}{bodyL}</div></div>;
-                        if(l.id==="image_full") return <div style={{width:W,height:H,background:`${a}20`,borderRadius:3,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"50%",height:3,background:"#fff",borderRadius:1,opacity:0.8}}/></div>;
-                        return <div style={{width:W,height:H,background:b2,borderRadius:3,position:"relative",overflow:"hidden",padding:p}}>{bar}{title}{line}{bodyL}</div>;
-                      };
-                      return (
-                        <button key={l.id} onClick={()=>upd("layout",l.id)}
-                          style={{ padding:"4px", borderRadius:6, border:`2px solid ${sel?accent:"transparent"}`,
-                            background:sel?`${accent}12`:"transparent", cursor:"pointer", textAlign:"center",
-                            boxShadow:sel?`0 0 0 1px ${accent}40`:"none", transition:"all 0.12s" }}>
-                          <div style={{ display:"flex", justifyContent:"center", marginBottom:2 }}>
-                            <MiniSlide />
-                          </div>
-                          <div style={{ fontSize:8, fontWeight:sel?700:400, color:sel?accent:muted }}>{l.label}</div>
-                        </button>
-                      );
-                    })}
+            {/* 레이아웃 (시각 미니프리뷰 + 호버 확대) */}
+            <div style={{ marginBottom:10, position:"relative" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>레이아웃 ({LAYOUTS.length}종)</div>
+              {/* 호버시 확대 프리뷰 */}
+              {hoveredLayout && (()=>{
+                const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
+                if(!hl) return null;
+                return <div style={{ position:"fixed", zIndex:99999, pointerEvents:"none",
+                  left:0, top:"50%", transform:"translateY(-50%)", marginLeft:8,
+                  width:320, background:D?"rgba(10,8,30,0.97)":"rgba(255,255,255,0.97)",
+                  borderRadius:12, border:`1px solid ${accent}40`, padding:12,
+                  boxShadow:"0 12px 40px rgba(0,0,0,0.4)", backdropFilter:"blur(12px)" }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:6 }}>{hl.label} <span style={{ fontSize:10, color:muted, fontWeight:400 }}>{hl.cat}</span></div>
+                  <MiniSlidePreview layoutId={hoveredLayout} W={296} H={166} theme={theme} />
+                </div>;
+              })()}
+              {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
+                const isOpen = layoutCatOpen===cat || layoutCatOpen===null;
+                const items = LAYOUTS.filter(l=>l.cat===cat);
+                return (
+                  <div key={cat} style={{ marginBottom:4 }}>
+                    <button onClick={()=>setLayoutCatOpen(layoutCatOpen===cat?null:cat)}
+                      style={{ display:"flex", alignItems:"center", gap:4, width:"100%", padding:"3px 2px", border:"none", background:"transparent", cursor:"pointer", fontSize:9, fontWeight:700, color:muted }}>
+                      <span style={{ transform:isOpen?"rotate(90deg)":"none", transition:"transform 0.15s", fontSize:8 }}>▶</span>
+                      {cat} <span style={{ fontSize:8, opacity:0.6 }}>({items.length})</span>
+                    </button>
+                    {isOpen && (
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:3, marginTop:2 }}>
+                        {items.map(l=>{
+                          const sel = cur.layout===l.id;
+                          return (
+                            <button key={l.id} onClick={()=>upd("layout",l.id)}
+                              onMouseEnter={()=>setHoveredLayout(l.id)}
+                              onMouseLeave={()=>setHoveredLayout(null)}
+                              style={{ padding:"3px", borderRadius:5, border:`1.5px solid ${sel?accent:"transparent"}`,
+                                background:sel?`${accent}12`:"transparent", cursor:"pointer", textAlign:"center",
+                                transition:"all 0.1s" }}>
+                              <MiniSlidePreview layoutId={l.id} W={52} H={30} theme={theme} />
+                              <div style={{ fontSize:7, fontWeight:sel?700:400, color:sel?accent:muted, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.label}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div style={{ marginBottom:8 }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
