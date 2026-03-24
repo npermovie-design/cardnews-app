@@ -652,9 +652,13 @@ JSON만 반환: {"trends":[...]}`;
   const changeColor = (c) => c==="up"?"#ef4444":c==="down"?"#3b82f6":c==="new"?"#22c55e":muted;
   const fmtVol = (v) => { if (!v) return "-"; const n = Number(v); if (n >= 10000) return (n/10000).toFixed(1)+"만"; if (n >= 1000) return (n/1000).toFixed(1)+"천"; return String(n); };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{ flex:1, overflowY:"auto", padding:isMobile?"16px 12px 60px":"24px 20px 60px" }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:767px){.az-trend-hdr{display:none!important}.az-trend-row{grid-template-columns:32px 20px 1fr 60px!important}.az-trend-cat,.az-trend-reason{display:none!important}}
+      `}</style>
       <div style={{ maxWidth:900, margin:"0 auto" }}>
         <div style={{ marginBottom:24 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
@@ -672,7 +676,7 @@ JSON만 반환: {"trends":[...]}`;
         </div>
 
         {/* 카테고리 필터 */}
-        <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:16 }}>
+        <div style={{ display:"flex", gap:5, flexWrap:isMobile?"nowrap":"wrap", marginBottom:16, overflowX:isMobile?"auto":"visible", paddingBottom:isMobile?6:0, WebkitOverflowScrolling:"touch" }}>
           {TREND_CATS.map(c => (
             <button key={c} onClick={()=>{setCat(c);fetchTrends(c);}}
               style={{ padding:"6px 14px", borderRadius:20, border:`1px solid ${cat===c?"#7c6aff":bdr}`,
@@ -710,13 +714,13 @@ JSON만 반환: {"trends":[...]}`;
           </div>
         ) : filtered.length > 0 ? (
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-            {/* 테이블 헤더 */}
-            <div style={{ display:"grid", gridTemplateColumns:"40px 28px 1fr 80px 80px 200px", gap:8, padding:"10px 16px",
+            {/* 테이블 헤더 (모바일에서 숨김) */}
+            <div className="az-trend-hdr" style={{ display:"grid", gridTemplateColumns:"40px 28px 1fr 80px 80px 200px", gap:8, padding:"10px 16px",
               borderBottom:`2px solid ${bdr}`, fontSize:11, fontWeight:700, color:muted }}>
               <span>순위</span><span></span><span>키워드</span><span style={{textAlign:"right"}}>검색량</span><span style={{textAlign:"center"}}>카테고리</span><span>급상승 이유</span>
             </div>
             {filtered.slice(0,20).map((t, i) => (
-              <div key={i}
+              <div key={i} className="az-trend-row"
                 style={{ display:"grid", gridTemplateColumns:"40px 28px 1fr 80px 80px 200px", gap:8, padding:"14px 16px",
                   borderBottom:`1px solid ${D?"rgba(255,255,255,0.04)":"#f3f4f6"}`,
                   cursor:"pointer", transition:"background 0.1s", alignItems:"center" }}
@@ -740,12 +744,12 @@ JSON만 반환: {"trends":[...]}`;
                   {fmtVol(t.volume)}
                 </span>
                 {/* 카테고리 */}
-                <span style={{ fontSize:10, textAlign:"center", padding:"2px 8px", borderRadius:10,
+                <span className="az-trend-cat" style={{ fontSize:10, textAlign:"center", padding:"2px 8px", borderRadius:10,
                   background:D?"rgba(255,255,255,0.06)":"#f0f0f6", color:muted, fontWeight:600 }}>
                   {t.category||"-"}
                 </span>
                 {/* 이유 */}
-                <span style={{ fontSize:11, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                <span className="az-trend-reason" style={{ fontSize:11, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {t.reason||""}
                 </span>
               </div>
@@ -758,7 +762,7 @@ JSON만 반환: {"trends":[...]}`;
                   <div style={{ fontSize:18, fontWeight:900, color:text }}>{detail.keyword}</div>
                   <button onClick={()=>setDetail(null)} style={{ background:"none", border:"none", color:muted, cursor:"pointer", fontSize:16 }}>X</button>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:16 }}>
+                <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr", gap:12, marginBottom:16 }}>
                   <div style={{ padding:"14px", borderRadius:10, background:cardBg, border:`1px solid ${bdr}`, textAlign:"center" }}>
                     <div style={{ fontSize:11, color:muted, marginBottom:4 }}>일일 검색량</div>
                     <div style={{ fontSize:22, fontWeight:900, color:"#7c6aff" }}>{fmtVol(detail.volume)}</div>

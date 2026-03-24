@@ -568,10 +568,10 @@ export default function App() {
                     </div>
                   </button>
                 ))}
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1, padding: "10px 10px 8px", borderTop: "1px solid " + C.border, borderBottom: "1px solid " + C.border, margin: "6px 0", marginBottom: 6 }}>AI 분석기획기</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1, padding: "10px 10px 8px", borderTop: "1px solid " + C.border, borderBottom: "1px solid " + C.border, margin: "6px 0", marginBottom: 6 }}>AI 분석기</div>
                 {[
-                  { label:"SNS 분석기 (13개 플랫폼)", desc:"URL 입력 → AI SEO 진단", nav:"analyzer" },
-                  { label:"실시간 검색어 · 인플루언서 랭킹", desc:"트렌드 파악 · TOP100", nav:"analyzer" },
+                  { label:"실시간 검색어", desc:"검색량 · 급상승 이유 · 연관 키워드", nav:"analyzer" },
+                  { label:"인플루언서 · 브랜드 랭킹", desc:"TOP10 · 카테고리별 순위", nav:"analyzer" },
                 ].map(item => (
                   <button key={item.label} onClick={() => { navigate(item.nav); setOpenMenu(null); }}
                     style={{
@@ -854,76 +854,37 @@ export default function App() {
             }}>{m.label}</button>
           ))}
 
-          {/* SNS 글쓰기 */}
+          {/* AI 생성기 */}
           <div style={{ margin: "8px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>✍️ {t("snsWrite")}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>AI 생성기</div>
           </div>
           {[
-            { ai: "blog_naver_intro",   label: t("naverBlog") },
-            { ai: "blog_tistory_intro", label: t("tistory") },
-            { ai: "blog_insta_intro",   label: t("instaCap") },
-            { ai: "blog_youtube_intro", label: t("youtubeScript") },
-            { ai: "blog_thread_intro",  label: t("thread") },
-            { ai: "blog_yt_blog_intro", label: t("ytBlog") },
-            { ai: "blog_news_intro",    label: t("newsBlog") },
-            { ai: "blog_cafe",          label: t("naverCafe") },
+            { ai: "blog_write",       label: "글쓰기" },
+            { ai: "blog_link",        label: "링크 글쓰기" },
+            { ai: "cardnews_simple",  label: "카드뉴스" },
+            { ai: "detail_simple",    label: "상세페이지" },
+            { ai: "thumbnail_gen",    label: "썸네일 생성" },
+            { ai: "product_shot",     label: t("productShot") },
+            { ai: "logo_gen",         label: t("logoGen") },
+            { ai: "mockup_gen",       label: t("mockupGen") },
+            { ai: "model_gen",        label: t("modelGen") },
+            { ai: "face_swap",        label: t("faceSwap") },
+            { ai: "outfit_swap",      label: t("outfitSwap") },
+            { ai: "outpaint",         label: t("outpaint") },
           ].map(m => (
             <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai.replace("_intro",""))) ? "3px solid #7c6aff" : "3px solid transparent",
+              background: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? "rgba(124,106,255,0.08)" : "transparent",
+              color: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? C.purpleL : C.muted,
+              fontSize: 14, fontWeight: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? 700 : 400,
+              borderLeft: (page==="ai"&&(aiMenu===m.ai||aiMenu?.startsWith(m.ai))) ? "3px solid #7c6aff" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
-          {/* SNS 이미지 */}
+          {/* AI 분석기 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🖼 {t("snsImage")}</div>
-          </div>
-          {[
-            { ai: "cardnews_simple", label: t("simpleCard") },
-            { ai: "cardnews_image",  label: t("imageCard") },
-            { ai: "detail_simple",   label: t("simpleDetail") },
-            { ai: "detail_image",    label: t("imageDetail") },
-            ...(user?.role === "admin" ? [{ ai: "shorts", label: t("shortsGen")+" 👑" }] : []),
-          ].map(m => (
-            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu?.startsWith(m.ai)) ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* 이미지 생성 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>🎨 {t("imageGen")}</div>
-          </div>
-          {[
-            { ai: "product_shot", label: t("productShot") },
-            { ai: "logo_gen",     label: t("logoGen") },
-            { ai: "mockup_gen",   label: t("mockupGen") },
-            { ai: "model_gen",    label: t("modelGen") },
-            { ai: "face_swap",    label: t("faceSwap") },
-            { ai: "outpaint",     label: t("outpaint") },
-          ].map(m => (
-            <button key={m.ai} onClick={() => { navigateAi(m.ai); setMobileOpen(false); }} style={{
-              display: "block", width: "100%", textAlign: "left",
-              padding: "10px 16px 10px 20px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: (page==="ai"&&aiMenu===m.ai) ? "rgba(124,106,255,0.08)" : "transparent",
-              color: (page==="ai"&&aiMenu===m.ai) ? C.purpleL : C.muted,
-              fontSize: 14, fontWeight: (page==="ai"&&aiMenu===m.ai) ? 700 : 400,
-              borderLeft: (page==="ai"&&aiMenu===m.ai) ? "3px solid #7c6aff" : "3px solid transparent",
-            }}>{m.label}</button>
-          ))}
-
-          {/* AI 분석기획기 */}
-          <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>📊 AI 분석기획기</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, letterSpacing: 1, padding: "0 4px" }}>AI 분석기</div>
           </div>
           <button onClick={() => { navigate("analyzer"); setMobileOpen(false); }} style={{
             display: "block", width: "100%", textAlign: "left",
@@ -932,11 +893,11 @@ export default function App() {
             color: page==="analyzer" ? C.purpleL : C.muted,
             fontSize: 14, fontWeight: page==="analyzer" ? 700 : 400,
             borderLeft: page==="analyzer" ? "3px solid #7c6aff" : "3px solid transparent",
-          }}>SNS 분석기 · 검색어 · 랭킹</button>
+          }}>실시간 검색어 · 랭킹</button>
 
           {/* 커뮤니티 */}
           <div style={{ margin: "14px 0 6px", paddingBottom: 6, borderBottom: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>💬 {t("community")}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, letterSpacing: 1, padding: "0 4px" }}>{t("community")}</div>
           </div>
           {[
             { board: "info",    label: t("info") },
