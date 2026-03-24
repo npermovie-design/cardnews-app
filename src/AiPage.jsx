@@ -14,6 +14,7 @@ import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import ShortformEditor from "./ShortformEditor";
+import PptGenerator from "./PptGenerator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -113,6 +114,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
         <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
+        <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
 
@@ -2193,6 +2195,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} />;
   }
 
+  // PPT 제작
+  if (aiMenu === "ppt_gen") {
+    return (
+      <div key="ppt_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+      </div>
+    );
+  }
+
   // 핫 키워드
   if (aiMenu === "hot_keyword") {
     return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} />;
@@ -2783,6 +2794,7 @@ const MENU_LABELS = {
   image_edit: "이미지 수정",
   hot_keyword: "핫 키워드",
   prompt_studio: "기획",
+  ppt_gen: "PPT 제작",
 };
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */

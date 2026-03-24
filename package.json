@@ -41,6 +41,7 @@
     "@remotion/player": "^4.0.438",
     "@supabase/supabase-js": "^2.99.2",
     "@tosspayments/tosspayments-sdk": "^2.6.0",
+    "pptxgenjs": "^4.0.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "remotion": "^4.0.438",
