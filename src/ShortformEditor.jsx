@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import { Player } from "@remotion/player";
 import ShortformComposition from "./remotion/ShortformComposition";
+import { KlipyButton } from "./KlipyPicker";
 import { callClaude } from "./aiClient";
 
 const ACC = "#7c6aff";
@@ -1101,6 +1102,19 @@ JSON만:{"clips":[${g.map(c=>`{"index":${c.index},"startTime":"${c.startTime}","
                   style={{width:"100%",padding:"8px",borderRadius:8,border:"none",cursor:rec?"not-allowed":"pointer",background:`linear-gradient(135deg,${ACC},#ec4899)`,color:"#fff",fontSize:11,fontWeight:800,opacity:rec?0.5:1}}>
                   ✂️ 커스텀 자막으로 재추출
                 </button>
+              </div>
+
+              {/* Klipy GIF/스티커 */}
+              <div style={{borderRadius:12,border:`1px solid ${ACC}40`,background:card,padding:"13px",marginBottom:11}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+                  <div style={{fontSize:12,fontWeight:800,color:text}}>🎬 GIF · 스티커 · 클립</div>
+                  <KlipyButton isDark={D} compact onSelect={(item)=>{
+                    if(item.url) setBotText(prev=>`${prev} [GIF: ${item.title||"media"}]`);
+                  }} />
+                </div>
+                <div style={{fontSize:10,color:muted,lineHeight:1.6}}>
+                  KLIPY에서 GIF, 스티커, 짧은 클립을 검색해서 숏폼에 활용하세요
+                </div>
               </div>
 
               {/* 후킹 제목 3버전 */}

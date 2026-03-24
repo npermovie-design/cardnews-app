@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
+import { KlipyButton } from "./KlipyPicker";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
 const DEFAULT_CATS = [
@@ -821,6 +822,17 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
               ))}
             </div>
           )}
+        </div>
+
+        {/* Klipy GIF 삽입 */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <KlipyButton isDark={isDark} compact onSelect={(item)=>{
+            if(item.url){
+              const imgTag=`<img src="${item.url}" alt="${item.title||"GIF"}" style="max-width:100%;border-radius:8px;margin:8px 0"/>`;
+              setBody(prev=>prev+imgTag);
+            }
+          }} />
+          <span style={{fontSize:11,color:C.muted}}>GIF · 스티커 · 밈을 본문에 삽입</span>
         </div>
 
         {/* 자료실 유료/무료 선택 */}

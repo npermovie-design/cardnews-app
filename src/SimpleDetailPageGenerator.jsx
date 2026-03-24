@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { KlipyButton } from "./KlipyPicker";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleDetailPageGenerator.jsx
@@ -830,7 +831,12 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                 </div>
               </div>
 
-              {/* 저장 버튼 */}
+              {/* Klipy + 저장 버튼 */}
+              <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                <KlipyButton isDark={D} compact onSelect={(item)=>{
+                  if(item.url){ setSlides(prev=>{const n=[...prev];n[selIdx]={...n[selIdx],bgImage:item.url};return n;}); }
+                }} buttonStyle={{flex:1,padding:"10px",fontSize:12,justifyContent:"center"}} />
+              </div>
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={()=>saveOne(selIdx)}
                   style={{ flex:1,padding:"13px",borderRadius:11,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:14,fontWeight:800 }}>

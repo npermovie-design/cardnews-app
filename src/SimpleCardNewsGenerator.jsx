@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { KlipyButton } from "./KlipyPicker";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -1316,6 +1317,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>이미지 업로드</button>
                     <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>이미지 검색</button>
                     <button onClick={()=>splitFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }} title="하나의 이미지를 슬라이드 수만큼 분할하여 각 배경에 적용">사진 분할</button>
+                    <KlipyButton isDark={isDark} compact onSelect={(item)=>{
+                      if(item.url){ setSlides(prev=>{const n=[...prev];n[selIdx]={...n[selIdx],bgImage:item.url};return n;}); }
+                    }} buttonStyle={{flex:1,minWidth:80,padding:"8px",fontSize:11,justifyContent:"center"}} />
                   </div>
                 )}
               </div>
