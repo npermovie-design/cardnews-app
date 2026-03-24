@@ -998,13 +998,13 @@ JSON: {"body":"...","subtitle":"...","bullets":[...],"stats":[...],"leftCol":"..
               {hoveredLayout && (()=>{
                 const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
                 if(!hl) return null;
-                return <div style={{ position:"fixed", zIndex:99999, pointerEvents:"none",
-                  left:0, top:"50%", transform:"translateY(-50%)", marginLeft:8,
-                  width:320, background:D?"rgba(10,8,30,0.97)":"rgba(255,255,255,0.97)",
+                return <div style={{ position:"absolute", zIndex:99999, pointerEvents:"none",
+                  right:"calc(100% + 12px)", top:0,
+                  width:340, background:D?"rgba(10,8,30,0.97)":"rgba(255,255,255,0.97)",
                   borderRadius:12, border:`1px solid ${accent}40`, padding:12,
-                  boxShadow:"0 12px 40px rgba(0,0,0,0.4)", backdropFilter:"blur(12px)" }}>
+                  boxShadow:D?"0 12px 40px rgba(0,0,0,0.6)":"0 12px 40px rgba(0,0,0,0.15)", backdropFilter:"blur(12px)" }}>
                   <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:6 }}>{hl.label} <span style={{ fontSize:10, color:muted, fontWeight:400 }}>{hl.cat}</span></div>
-                  <MiniSlidePreview layoutId={hoveredLayout} W={296} H={166} theme={theme} />
+                  <MiniSlidePreview layoutId={hoveredLayout} W={316} H={178} theme={theme} />
                 </div>;
               })()}
               {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
