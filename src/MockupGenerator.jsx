@@ -146,7 +146,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
     { n:3, label:"결과 확인" },
   ];
 
-  const [step,       setStep]       = useState(0); // 0=인트로 1=설정 2=생성중 3=결과
+  const [step,       setStep]       = useState(1); // 1=설정 2=생성중 3=결과
   useGeneratingGuard(step === 2, 30); // 생성 중 이탈 방지
   const [logoText,   setLogoText]   = useState("");
   const [logoB64,    setLogoB64]    = useState(null);

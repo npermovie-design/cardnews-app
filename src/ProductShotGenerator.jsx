@@ -146,7 +146,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
     { n:3, label:"결과 확인" },
   ];
 
-  const [step, setStep] = useState(0); // 0=intro, 1=설정, 2=생성중, 3=결과
+  const [step, setStep] = useState(1); // 1=설정, 2=생성중, 3=결과
   useGeneratingGuard(step === 2, 10);
 
   const fileRef = useRef(null);

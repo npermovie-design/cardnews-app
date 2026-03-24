@@ -125,14 +125,16 @@ JSON 배열로만 응답해줘: [{"keyword":"봄동","reason":"봄 제철 식재
   );
 }
 
-export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate }) {
+export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate, initialMenu, embedded }) {
   const isDark = theme === "dark";
-  const [menu, setMenu] = useState("home");
+  const [menu, setMenu] = useState(initialMenu || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const [history, setHistory] = useState(getHistory);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [pendingMenu, setPendingMenu] = useState(null);
   const [libraryDetail, setLibraryDetail] = useState(null);
+
+  useEffect(() => { if (initialMenu && initialMenu !== menu) setMenu(initialMenu); }, [initialMenu]);
 
   const safeSetMenu = (newMenu) => {
     if (isAnalyzing && newMenu !== menu) {
@@ -173,24 +175,26 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
       `}</style>
 
-      <div className="az-side-d">
-        <Sidebar menu={menu} setMenu={safeSetMenu} isDark={isDark} text={text} muted={muted} sideBg={sideBg} sideBdr={sideBdr} navigate={navigate} />
-      </div>
-      {sideOpen && (
-        <div style={{ position:"absolute", inset:0, zIndex:50 }}>
-          <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} onClick={() => setSideOpen(false)} />
-          <div style={{ position:"absolute", left:0, top:0, bottom:0, width:260, animation:"slideIn 0.2s ease", zIndex:51 }}>
-            <Sidebar menu={menu} setMenu={(m) => { safeSetMenu(m); setSideOpen(false); }} isDark={isDark} text={text} muted={muted} sideBg={sideBg} sideBdr={sideBdr} navigate={navigate} />
-          </div>
+      {!embedded && <>
+        <div className="az-side-d">
+          <Sidebar menu={menu} setMenu={safeSetMenu} isDark={isDark} text={text} muted={muted} sideBg={sideBg} sideBdr={sideBdr} navigate={navigate} />
         </div>
-      )}
+        {sideOpen && (
+          <div style={{ position:"absolute", inset:0, zIndex:50 }}>
+            <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} onClick={() => setSideOpen(false)} />
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:260, animation:"slideIn 0.2s ease", zIndex:51 }}>
+              <Sidebar menu={menu} setMenu={(m) => { safeSetMenu(m); setSideOpen(false); }} isDark={isDark} text={text} muted={muted} sideBg={sideBg} sideBdr={sideBdr} navigate={navigate} />
+            </div>
+          </div>
+        )}
+      </>}
 
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
-        <div style={{ height:44, flexShrink:0, display:"flex", alignItems:"center", padding:"0 12px", borderBottom:"1px solid "+topBdr, background:topBg }}>
+        {!embedded && <div style={{ height:44, flexShrink:0, display:"flex", alignItems:"center", padding:"0 12px", borderBottom:"1px solid "+topBdr, background:topBg }}>
           <button className="az-side-m" onClick={() => setSideOpen(true)}
             style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:isDark?"#fff":"#333", padding:"4px 6px", marginRight:8, display:"none" }}>☰</button>
           <span style={{ fontSize:12, color:topClr, fontWeight:600 }}>{menuLabel}</span>
-        </div>
+        </div>}
 
         <div style={{ flex:1, overflow:"hidden", display:"flex" }}>
           {/* ══ 홈 ══ */}

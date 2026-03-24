@@ -538,59 +538,8 @@ export default function App() {
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
           <NavBtn id="cases" label="고객사례" />
-          {/* AI 도구 (생성기+분석기 통합) */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label="AI 도구" open={openMenu==="aiTool"} active={page==="ai"||page==="analyzer"} onClick={() => setOpenMenu(m => m==="aiTool"?null:"aiTool")} />
-            {openMenu==="aiTool" && (
-              <div style={{
-                position: "absolute", top: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", zIndex: 100,
-                background: C.modalBg, border: "1px solid " + C.border,
-                borderRadius: 13, padding: 10, minWidth: 340,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.12)", animation: "fadeIn 0.15s ease",
-              }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1, padding: "4px 10px 8px", borderBottom: "1px solid " + C.border, marginBottom: 6 }}>AI 생성기</div>
-                {[
-                  { key:"snsWrite", label:t("snsWrite"),  desc:t("snsWriteDesc"),  ai:"blog_naver_intro" },
-                  { key:"snsImage", label:t("snsImage"),   desc:t("snsImageDesc"),   ai:"cardnews_simple"  },
-                  { key:"imageGen", label:t("imageGen"),  desc:t("imageGenDesc"), ai:"product_shot"     },
-                ].map(item => (
-                  <button key={item.key} onClick={() => { navigateAi(item.ai); setOpenMenu(null); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, width: "100%",
-                      padding: "10px 12px", borderRadius: 9, border: "none", cursor: "pointer",
-                      background: "transparent", textAlign: "left", transition: "background 0.12s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{item.desc}</div>
-                    </div>
-                  </button>
-                ))}
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 1, padding: "10px 10px 8px", borderTop: "1px solid " + C.border, borderBottom: "1px solid " + C.border, margin: "6px 0", marginBottom: 6 }}>AI 분석기</div>
-                {[
-                  { label:"실시간 검색어", desc:"검색량 · 급상승 이유 · 연관 키워드", nav:"analyzer" },
-                  { label:"인플루언서 · 브랜드 랭킹", desc:"TOP10 · 카테고리별 순위", nav:"analyzer" },
-                ].map(item => (
-                  <button key={item.label} onClick={() => { navigate(item.nav); setOpenMenu(null); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, width: "100%",
-                      padding: "10px 12px", borderRadius: 9, border: "none", cursor: "pointer",
-                      background: page==="analyzer" ? "rgba(124,106,255,0.06)" : "transparent",
-                      textAlign: "left", transition: "background 0.12s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background = page==="analyzer" ? "rgba(124,106,255,0.06)" : "transparent"}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{item.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* AI 도구 - 드롭다운 없이 바로 진입 */}
+          <NavBtn id="ai" label="AI 도구" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
@@ -847,8 +796,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "cases",    label: "고객사례",       onClick: () => { navigate("cases"); setMobileOpen(false); },    active: page==="cases" },
-            { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai" },
-            { id: "analyzer", label: "AI 분석기",     onClick: () => { navigate("analyzer"); setMobileOpen(false); }, active: page==="analyzer" },
+            { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
             { id: "archive",  label: t("archive"),    onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },

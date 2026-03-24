@@ -7,6 +7,7 @@ import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import ThumbnailGenerator from "./ThumbnailGenerator";
 import SeoAnalyzer from "./SeoAnalyzer";
+import AnalyzerPage from "./AnalyzerPage";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
@@ -121,33 +122,55 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1, overflowY: "auto", overflowX: "visible" }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label={t("home")} icon="" />
-        <Item id="library" label={t("library")} icon="" />
+        <Item id="home" label={t("home")} />
+        <Item id="library" label={t("library")} />
 
-        {/* 글 생성 그룹 */}
-        <Group label="글 생성" icon="" active={!!(aiMenu && aiMenu.startsWith("blog"))} />
+        {/* 콘텐츠 제작 */}
+        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Group label="콘텐츠 제작" active={!!(aiMenu && (aiMenu.startsWith("blog")||["cardnews_simple","detail_simple","thumbnail_gen"].some(x=>aiMenu.startsWith(x))))} />
         {blogOpen && <>
-          <Item id="blog_write"   label="글쓰기"               indent />
-          <Item id="blog_link"    label="링크 글쓰기"           indent />
+          <Item id="blog_write"      label="글쓰기"        indent />
+          <Item id="blog_link"       label="링크 글쓰기"    indent />
+          <Item id="cardnews_simple" label="카드뉴스"       indent />
+          <Item id="detail_simple"   label="상세페이지"      indent />
+          <Item id="thumbnail_gen"   label="썸네일 생성"    indent />
         </>}
 
-        {/* 이미지 생성 그룹 */}
-        <Group label="이미지 생성" icon="" active={!!(aiMenu && ["cardnews_simple","detail_simple","thumbnail_gen","product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
+        {/* 이미지 생성 */}
+        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Group label="이미지 생성" active={!!(aiMenu && ["product_shot","logo_gen","mockup_gen","model_gen"].some(x=>aiMenu.startsWith(x)))} />
         {imageOpen && <>
-          <Item id="cardnews_simple" label={t("cardNews")||"카드뉴스"}    indent />
-          <Item id="detail_simple"   label={t("detailPage")||"상세페이지"}  indent />
-          <Item id="thumbnail_gen"   label="썸네일 생성"  indent />
           <Item id="product_shot" label={t("productShot")}  indent />
           <Item id="logo_gen"     label={t("logoGen")}      indent />
           <Item id="mockup_gen"   label={t("mockupGen")}    indent />
           <Item id="model_gen"    label={t("modelGen")}     indent />
+        </>}
+
+        {/* 이미지 수정 */}
+        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Group label="이미지 수정" active={!!(aiMenu && ["face_swap","outfit_swap","outpaint"].some(x=>aiMenu.startsWith(x)))} />
+        {imageOpen && <>
           <Item id="face_swap"    label={t("faceSwap")}     indent />
           <Item id="outfit_swap"  label={t("outfitSwap")}   indent />
           <Item id="outpaint"     label={t("outpaint")}     indent />
-          {user?.role === "admin" && <Item id="shorts" label={t("shortsGen")} indent />}
         </>}
 
+        {/* 실시간 분석 */}
+        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Group label="실시간 분석" active={!!(aiMenu && (aiMenu.startsWith("seo_")||aiMenu.startsWith("rank_")))} />
+        {analysisOpen && <>
+          <Item id="seo_home"      label="실시간 검색어"    indent />
+          <Item id="rank_youtube"  label="유튜버 TOP10"    indent />
+          <Item id="rank_insta"    label="인스타 TOP10"    indent />
+          <Item id="rank_blog"     label="블로거 TOP10"    indent />
+          <Item id="rank_tiktok"   label="틱톡 TOP10"     indent />
+          <Item id="rank_brand"    label="브랜드 TOP10"   indent />
+        </>}
 
+        {user?.role === "admin" && <>
+          <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+          <Item id="shorts" label={t("shortsGen")} />
+        </>}
       </div>
 
     </div>
@@ -1908,8 +1931,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
   }
   if (aiMenu === "blog_link_intro") {
-    const d = BLOG_INTRO.blog_link;
-    return <IntroScreen {...d} onStart={()=>setAiMenu("blog_link")} />;
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
   }
   // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
   if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
@@ -1990,11 +2012,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // SEO 분석기
-  if (aiMenu && aiMenu.startsWith("seo_")) {
+  // SEO 분석기 + 실시간 분석 (seo_, rank_)
+  if (aiMenu && (aiMenu.startsWith("seo_") || aiMenu.startsWith("rank_"))) {
     return (
-      <div key="seo" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SeoAnalyzer isDark={isDark} menu={aiMenu} user={user} />
+      <div key="analyzer" style={{ flex:1, overflow:"hidden" }}>
+        <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate} initialMenu={aiMenu} embedded />
       </div>
     );
   }

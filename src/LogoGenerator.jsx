@@ -65,7 +65,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
     { n:3, label:"결과 확인" },
   ];
 
-  const [step,      setStep]      = useState(0);
+  const [step,      setStep]      = useState(1);
   useGeneratingGuard(step === 2, 10); // 생성 중 이탈 방지
   const [selStyle,  setSelStyle]  = useState(null);
   const [name,      setName]      = useState("");
