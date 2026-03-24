@@ -128,7 +128,8 @@ export default function EventPage({ C, navigate }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 10,
-                    background: ev.status === "active" ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "#555", color: "#fff" }}>
+                    background: ev.status === "active" ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : (isDark ? "rgba(255,255,255,0.15)" : "#e5e7eb"),
+                    color: ev.status === "active" ? "#fff" : (isDark ? "rgba(255,255,255,0.6)" : "#666") }}>
                     {ev.badge}
                   </span>
                   <span style={{ fontSize: 11, color: muted }}>{ev.period}</span>
