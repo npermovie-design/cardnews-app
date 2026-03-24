@@ -684,7 +684,7 @@ export default function App() {
 
               {/* 프로필 드롭다운 */}
               {profileOpen && (
-                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, width: 280, zIndex: 200,
+                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, width: "min(280px, 85vw)", zIndex: 200,
                   background: theme==="dark" ? "#1a1730" : "#fff",
                   border: "1px solid " + C.border, borderRadius: 16,
                   boxShadow: "0 16px 48px rgba(0,0,0,0.2)", overflow: "hidden" }}>

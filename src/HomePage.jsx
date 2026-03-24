@@ -180,7 +180,7 @@ export default function HomePage({ navigate, C }) {
       }}>
         {particles.map((p, i) => (
           <div key={i} style={{
-            position: "absolute", width: p.size, height: p.size, borderRadius: "50%",
+            position: "absolute", width: `min(${p.size}px, 50vw)`, height: `min(${p.size}px, 50vw)`, borderRadius: "50%",
             background: p.color, filter: `blur(${p.blur}px)`, pointerEvents: "none",
             top: p.top, left: p.left, right: p.right,
             animation: `float ${4 + i}s ease-in-out infinite`, animationDelay: `${i * 0.8}s`,
@@ -385,7 +385,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ CTA ══ */}
       <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, borderRadius: "50%", background: "rgba(124,106,255,0.07)", filter: "blur(80px)", pointerEvents: "none", animation: "pulse 4s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(600px, 80vw)", height: "min(600px, 80vw)", borderRadius: "50%", background: "rgba(124,106,255,0.07)", filter: "blur(80px)", pointerEvents: "none", animation: "pulse 4s ease-in-out infinite" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
           <Badge C={C}>{p("ctaBadge")}</Badge>
           <h2 style={{ fontSize: "clamp(26px,5vw,54px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.15, margin: "0 0 20px" }}>

@@ -149,7 +149,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate })
                 {/* 가이드라인 */}
                 <div style={{ marginBottom:28, padding:"22px 24px", borderRadius:16, background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.03)", border:`1px solid ${isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)"}` }}>
                   <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>이런 기능을 제공해요</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(240px,100%),1fr))", gap:10, marginBottom:16 }}>
                     {[
                       { title:"실시간 인기 검색어", desc:"네이버·구글 트렌드를 카테고리별로 분석, 검색량·급상승 이유·연관 키워드까지 제공" },
                       { title:"인플루언서 랭킹", desc:"유튜버·인스타·블로거·틱토커 TOP10 인플루언서 순위를 카테고리별로 확인" },
