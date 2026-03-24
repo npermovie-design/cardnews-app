@@ -742,8 +742,10 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const D = isDark;
 
   const [input, setInput] = useState("");
-  const [outputType, setOutputType] = useState("blog_naver");
-  const [step, setStep] = useState("input"); // "input" | "loading" | "result"
+  const [docType, setDocType] = useState("proposal");
+  const [tone, setTone] = useState("professional");
+  const [format, setFormat] = useState("structured");
+  const [step, setStep] = useState("input");
   const [result, setResult] = useState("");
   const [plans, setPlans] = useState(getPlanSaves);
   const [copied, setCopied] = useState(false);
@@ -751,44 +753,79 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
 
   const inp = { width:"100%", padding:"12px 16px", borderRadius:12, border:`1px solid ${bdr}`, background:ibg, color:text, fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
-  const OUTPUTS = [
-    { id:"blog_naver", label:"블로그 글", icon:"N",  color:"#03C75A" },
-    { id:"blog_insta", label:"인스타 캡션", icon:"📷", color:"#E4405F" },
-    { id:"blog_youtube",label:"유튜브 대본", icon:"▶", color:"#FF0000" },
-    { id:"blog_thread", label:"스레드",     icon:"@",  color:"#000" },
-    { id:"cardnews_simple", label:"카드뉴스", icon:"📰", color:"#7c6aff" },
-    { id:"detail_simple",   label:"상세페이지",icon:"🛍", color:"#10b981" },
+  const DOC_TYPES = [
+    { id:"proposal",   label:"사업 제안서",   desc:"투자·파트너 제안" },
+    { id:"bizplan",    label:"사업계획서",    desc:"창업·투자유치용" },
+    { id:"ppt_outline",label:"PPT 구성안",   desc:"발표 슬라이드 기획" },
+    { id:"planner",    label:"플래너·일정표", desc:"프로젝트·업무 계획" },
+    { id:"report",     label:"보고서",       desc:"업무·분석 보고서" },
+    { id:"contract",   label:"계약서 초안",   desc:"계약·합의서 템플릿" },
+    { id:"meeting",    label:"회의록",       desc:"회의 안건·결과 정리" },
+    { id:"email",      label:"비즈니스 메일", desc:"공식 이메일·레터" },
+    { id:"manual",     label:"매뉴얼·가이드", desc:"운영·사용 설명서" },
+    { id:"brief",      label:"브리프",       desc:"프로젝트·디자인 브리프" },
+    { id:"resume",     label:"이력서·자소서", desc:"채용·지원서" },
+    { id:"free",       label:"자유 문서",     desc:"형식 없이 자유롭게" },
   ];
 
+  const TONES = [
+    { id:"professional", label:"전문적/공식적" },
+    { id:"friendly",     label:"친근한/대화체" },
+    { id:"concise",      label:"간결한/핵심만" },
+    { id:"persuasive",   label:"설득적/논리적" },
+    { id:"creative",     label:"창의적/자유로운" },
+  ];
+
+  const FORMATS = [
+    { id:"structured", label:"구조화 (목차+본문)" },
+    { id:"outline",    label:"아웃라인 (목차만)" },
+    { id:"full",       label:"완성본 (바로 사용)" },
+    { id:"bullet",     label:"불릿 포인트" },
+  ];
+
+  const docInfo = DOC_TYPES.find(d=>d.id===docType) || DOC_TYPES[0];
+  const toneInfo = TONES.find(t=>t.id===tone) || TONES[0];
+  const formatInfo = FORMATS.find(f=>f.id===format) || FORMATS[0];
+
   const generate = async () => {
-    if (!input.trim()) { setErr("만들고 싶은 내용을 입력해주세요."); return; }
+    if (!input.trim()) { setErr("어떤 문서를 만들지 입력해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     setStep("loading"); setErr(""); setResult("");
     window.__isGenerating = true; window.__generatingCost = 10;
-    const outLabel = OUTPUTS.find(o=>o.id===outputType)?.label || "콘텐츠";
-    const sysPrompt = `당신은 콘텐츠 기획 전문가입니다. 사용자의 요청을 분석해서 "${outLabel}" 형태의 완성된 콘텐츠를 바로 생성해주세요.
-
-규칙:
-- 사용자 요청을 최대한 반영하여 완성된 결과물을 만드세요
-- 블로그: 제목 + 소제목 구조 + 본문 (2000자 이상)
-- 인스타: 캡션 + 해시태그 15개
-- 유튜브: 제목 + 대본(인트로/본론/아웃트로) + 설명란 + 태그
-- 스레드: 짧고 임팩트 있는 연속 게시물 3~5개
-- 카드뉴스: 슬라이드 8장 기획 (각 제목+본문+이미지설명)
-- 상세페이지: 헤드카피 + 특장점 + FAQ
-- 한국어로 작성
-- 바로 사용 가능한 수준으로 완성하세요`;
-
     try {
       const { callClaude } = await import("./aiClient");
-      const r = await callClaude(`요청: ${input}\n\n출력 형태: ${outLabel}`, 4000);
+      const r = await callClaude(
+`당신은 실무 문서 작성 전문가입니다.
+
+[문서 유형] ${docInfo.label}
+[말투/톤] ${toneInfo.label}
+[형식] ${formatInfo.label}
+[요청] ${input}
+
+규칙:
+- 이모티콘, 이모지 사용 금지. 깔끔하고 전문적인 텍스트만 사용
+- 실제 업무에서 바로 사용할 수 있는 수준으로 작성
+- ${docType==="proposal"?"목적, 배경, 제안 내용, 기대 효과, 일정, 예산 항목 포함":""}
+- ${docType==="bizplan"?"사업 개요, 시장 분석, 비즈니스 모델, 재무 계획, 팀 구성, 로드맵 포함":""}
+- ${docType==="ppt_outline"?"슬라이드별 제목 + 핵심 내용 + 발표 스크립트 포함. 15~20장 분량":""}
+- ${docType==="planner"?"일정, 담당자, 마일스톤, 체크리스트 형태로 구성":""}
+- ${docType==="report"?"요약, 현황, 분석, 결론, 제언 구조":""}
+- ${docType==="contract"?"계약 당사자, 계약 목적, 조건, 기간, 금액, 해지 조건, 서명란 포함":""}
+- ${docType==="meeting"?"일시, 참석자, 안건, 논의 내용, 결정사항, 후속조치 구조":""}
+- ${docType==="email"?"제목, 수신자, 본문(인사-목적-내용-마무리), 서명 포함":""}
+- ${docType==="manual"?"목차, 개요, 단계별 설명, 주의사항, FAQ 포함":""}
+- ${docType==="brief"?"프로젝트 배경, 목표, 범위, 일정, 예산, 참고자료 구조":""}
+- ${docType==="resume"?"인적사항, 학력, 경력, 역량, 자기소개서(지원동기/성장과정/입사후포부) 포함":""}
+- ${format==="outline"?"상세 목차와 각 항목의 핵심 키워드만 정리":""}
+- ${format==="bullet"?"불릿 포인트 형태로 핵심만 간결하게":""}
+- ${format==="full"?"완성된 문서 형태로 바로 사용 가능하게":""}
+- 한국어로 작성
+- 마크다운 헤더(#, ##, ###) 사용하여 구조화`, 4000);
       setResult(r || "결과를 생성하지 못했습니다.");
       setStep("result");
-      // 자동 저장
-      const plan = { id:"plan_"+Date.now(), input, outputType, result:r, date:new Date().toLocaleDateString("ko-KR") };
+      const plan = { id:"plan_"+Date.now(), input, docType, tone, format, result:r, date:new Date().toLocaleDateString("ko-KR") };
       savePlan(plan);
       setPlans(getPlanSaves());
-      // 포인트 차감
       if (user && onUserUpdate) {
         try {
           const { changePoints } = await import("./storage");
@@ -801,53 +838,85 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   };
 
   const loadPlan = (p) => {
-    setInput(p.input || "");
-    setOutputType(p.outputType || "blog_naver");
-    setResult(p.result || "");
-    setStep(p.result ? "result" : "input");
+    setInput(p.input||""); setDocType(p.docType||"proposal"); setTone(p.tone||"professional"); setFormat(p.format||"structured");
+    setResult(p.result||""); setStep(p.result?"result":"input");
   };
 
-  const removePlan = (id) => {
-    deletePlan(id);
-    setPlans(getPlanSaves());
+  const removePlan = (id) => { deletePlan(id); setPlans(getPlanSaves()); };
+
+  const downloadTxt = () => {
+    const blob = new Blob([result], { type:"text/plain;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `${docInfo.label}_${new Date().toISOString().slice(0,10)}.txt`; a.click();
   };
 
-  const sendToTool = () => {
-    try { localStorage.setItem("nper_studio_result", JSON.stringify({ text: result, outputType })); } catch {}
-    setAiMenu(outputType);
+  const downloadPdf = () => {
+    const w = window.open("","_blank");
+    if (!w) return;
+    const lines = result.split("\n").map(l => {
+      if (l.startsWith("### ")) return `<h3 style="margin:18px 0 8px;font-size:16px;font-weight:700">${l.slice(4)}</h3>`;
+      if (l.startsWith("## "))  return `<h2 style="margin:24px 0 10px;font-size:18px;font-weight:800">${l.slice(3)}</h2>`;
+      if (l.startsWith("# "))   return `<h1 style="margin:28px 0 12px;font-size:22px;font-weight:900">${l.slice(2)}</h1>`;
+      if (l.startsWith("- "))   return `<li style="margin:3px 0 3px 20px;line-height:1.8">${l.slice(2)}</li>`;
+      if (!l.trim()) return `<br/>`;
+      return `<p style="margin:4px 0;line-height:1.9">${l}</p>`;
+    }).join("");
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${docInfo.label}</title>
+<style>@page{size:A4;margin:20mm}body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:14px;color:#222;max-width:700px;margin:0 auto;padding:40px 20px}
+h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    w.document.close();
   };
 
   const EXAMPLES = [
-    "20대 여성 타겟 다이어트 식단 블로그 글 써줘",
-    "강아지 용품 쇼핑몰 상세페이지 만들어줘",
-    "카페 창업 과정을 카드뉴스 8장으로 정리해줘",
-    "AI 활용법 유튜브 대본 만들어줘",
-    "여행 사진 인스타 캡션 써줘",
+    "AI SaaS 스타트업 투자유치용 사업계획서",
+    "신규 서비스 런칭 제안서 (B2B)",
+    "2026년 마케팅 전략 PPT 구성안",
+    "앱 개발 프로젝트 3개월 플래너",
+    "월간 실적 보고서 양식",
+    "디자인 외주 프로젝트 브리프",
   ];
 
-  // ══ 입력 ══
+  // ── 입력 ──
   if (step === "input") return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
-      <div style={{ maxWidth:640, margin:"0 auto" }}>
+      <div style={{ maxWidth:660, margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ fontSize:44, marginBottom:12 }}>🧠</div>
           <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>기획</div>
-          <div style={{ fontSize:14, color:muted, lineHeight:1.8 }}>만들고 싶은 걸 말해주세요.<br/>AI가 알아서 기획하고 콘텐츠를 생성해드려요.</div>
+          <div style={{ fontSize:14, color:muted, lineHeight:1.8 }}>실무 문서를 AI가 작성해드립니다.</div>
+        </div>
+
+        {/* 문서 유형 */}
+        <div style={{ marginBottom:18 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>문서 유형</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+            {DOC_TYPES.map(d => {
+              const sel = docType===d.id;
+              return (
+                <button key={d.id} onClick={()=>setDocType(d.id)}
+                  style={{ padding:"10px 6px", borderRadius:10, border:`1.5px solid ${sel?accent:bdr}`,
+                    background:sel?`${accent}10`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}>
+                  <div style={{ fontSize:12, fontWeight:sel?800:500, color:sel?accent:text, marginBottom:2 }}>{d.label}</div>
+                  <div style={{ fontSize:9, color:muted }}>{d.desc}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 입력 */}
-        <div style={{ borderRadius:16, border:`2px solid ${accent}40`, background:bg, padding:"20px", marginBottom:16 }}>
+        <div style={{ borderRadius:14, border:`1.5px solid ${accent}30`, background:bg, padding:"18px", marginBottom:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>내용 설명</div>
           <textarea value={input} onChange={e=>{setInput(e.target.value);setErr("");}}
-            style={{ ...inp, minHeight:100, resize:"vertical", fontSize:15, lineHeight:1.8, border:"none", background:"transparent", padding:"0" }}
-            placeholder="예: 20대 여성 타겟 다이어트 식단 블로그 글 써줘" />
+            style={{ ...inp, minHeight:90, resize:"vertical", fontSize:14, lineHeight:1.8, border:"none", background:"transparent", padding:"0" }}
+            placeholder={`예: ${EXAMPLES[DOC_TYPES.findIndex(d=>d.id===docType)%EXAMPLES.length]||EXAMPLES[0]}`} />
         </div>
 
         {/* 예시 */}
-        <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:20 }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:18 }}>
           {EXAMPLES.map((ex,i) => (
             <button key={i} onClick={()=>setInput(ex)}
-              style={{ padding:"6px 14px", borderRadius:20, border:`1px solid ${bdr}`, background:bg,
-                color:muted, fontSize:12, cursor:"pointer", transition:"all 0.12s" }}
+              style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:bg,
+                color:muted, fontSize:11, cursor:"pointer", transition:"all 0.12s" }}
               onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor=bdr;e.currentTarget.style.color=muted;}}>
               {ex}
@@ -855,49 +924,58 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
           ))}
         </div>
 
-        {/* 출력 타입 */}
-        <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>어떤 형태로 만들까요?</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-            {OUTPUTS.map(o => (
-              <button key={o.id} onClick={()=>setOutputType(o.id)}
-                style={{ padding:"12px 10px", borderRadius:12, border:`2px solid ${outputType===o.id?o.color:bdr}`,
-                  background:outputType===o.id?`${o.color}12`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
-                <div style={{ fontSize:18, marginBottom:4 }}>{o.icon}</div>
-                <div style={{ fontSize:12, fontWeight:outputType===o.id?800:500, color:outputType===o.id?o.color:muted }}>{o.label}</div>
-              </button>
-            ))}
+        {/* 말투 + 형식 */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:18 }}>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>말투</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {TONES.map(t => {
+                const sel = tone===t.id;
+                return <button key={t.id} onClick={()=>setTone(t.id)}
+                  style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${sel?accent:bdr}`, background:sel?`${accent}10`:"transparent",
+                    color:sel?accent:muted, fontSize:12, fontWeight:sel?700:400, cursor:"pointer", textAlign:"left" }}>{t.label}</button>;
+              })}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>형식</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {FORMATS.map(f => {
+                const sel = format===f.id;
+                return <button key={f.id} onClick={()=>setFormat(f.id)}
+                  style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${sel?accent:bdr}`, background:sel?`${accent}10`:"transparent",
+                    color:sel?accent:muted, fontSize:12, fontWeight:sel?700:400, cursor:"pointer", textAlign:"left" }}>{f.label}</button>;
+              })}
+            </div>
           </div>
         </div>
 
-        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
         <button onClick={generate} disabled={!input.trim()}
           style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:input.trim()?"pointer":"not-allowed",
-            background:input.trim()?`linear-gradient(135deg,${accent},#ec4899)`:"rgba(128,128,128,0.2)",
-            color:"#fff", fontSize:16, fontWeight:900, opacity:input.trim()?1:0.5,
-            boxShadow:input.trim()?`0 8px 28px ${accent}40`:"none" }}>
-          🧠 AI 기획 시작 (10P)
+            background:input.trim()?accent:"rgba(128,128,128,0.2)",
+            color:"#fff", fontSize:16, fontWeight:900, opacity:input.trim()?1:0.5 }}>
+          AI 생성 (10P)
         </button>
 
         {/* 저장된 기획 */}
         {plans.length > 0 && (
           <div style={{ marginTop:32 }}>
-            <div style={{ fontSize:15, fontWeight:800, color:text, marginBottom:14 }}>📂 내 기획 ({plans.length})</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>내 기획 ({plans.length})</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
               {plans.map(p => (
-                <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderRadius:12,
-                  border:`1px solid ${bdr}`, background:bg, cursor:"pointer", transition:"all 0.12s" }}
+                <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:10,
+                  border:`1px solid ${bdr}`, background:bg, cursor:"pointer" }}
                   onClick={()=>loadPlan(p)}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor=bdr;}}>
-                  <div style={{ fontSize:18 }}>{OUTPUTS.find(o=>o.id===p.outputType)?.icon||"📄"}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.input}</div>
-                    <div style={{ fontSize:11, color:muted }}>{p.date} · {OUTPUTS.find(o=>o.id===p.outputType)?.label||""}</div>
+                    <div style={{ fontSize:11, color:muted }}>{p.date} / {DOC_TYPES.find(d=>d.id===p.docType)?.label||""}</div>
                   </div>
                   <button onClick={e=>{e.stopPropagation();removePlan(p.id);}}
-                    style={{ padding:"4px 10px", borderRadius:6, border:"1px solid rgba(248,113,113,0.2)", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>삭제</button>
+                    style={{ padding:"4px 10px", borderRadius:6, border:"1px solid rgba(248,113,113,0.15)", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>삭제</button>
                 </div>
               ))}
             </div>
@@ -907,67 +985,75 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
     </div>
   );
 
-  // ══ 로딩 ══
+  // ── 로딩 ──
   if (step === "loading") return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:D?"transparent":"#f4f4f8" }}>
       <div style={{ textAlign:"center" }}>
-        <div style={{ fontSize:60, marginBottom:20, animation:"ai-float 2s ease-in-out infinite" }}>🧠</div>
-        <div style={{ fontSize:18, fontWeight:900, color:accent, marginBottom:8 }}>AI가 기획하고 있어요</div>
-        <div style={{ width:280, height:6, borderRadius:3, background:"rgba(128,128,128,0.15)", overflow:"hidden", margin:"0 auto 16px" }}>
-          <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${accent},#ec4899)`, animation:"ai-progress 10s ease-out forwards" }} />
+        <div style={{ fontSize:18, fontWeight:900, color:accent, marginBottom:12 }}>문서 생성 중</div>
+        <div style={{ width:280, height:5, borderRadius:3, background:"rgba(128,128,128,0.12)", overflow:"hidden", margin:"0 auto 16px" }}>
+          <div style={{ height:"100%", borderRadius:3, background:accent, animation:"ai-progress 12s ease-out forwards" }} />
         </div>
-        <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>"{input.slice(0,40)}{input.length>40?"...":""}"<br/>요청을 분석하고 콘텐츠를 생성 중...</div>
+        <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>{docInfo.label} 작성 중...<br/>"{input.slice(0,50)}{input.length>50?"...":""}"</div>
       </div>
     </div>
   );
 
-  // ══ 결과 ══
+  // ── 결과 ──
+  // 마크다운 헤더 → 간단한 HTML 변환
+  const renderResult = () => {
+    return result.split("\n").map((line,i) => {
+      if (line.startsWith("### ")) return <h3 key={i} style={{ fontSize:15, fontWeight:700, color:text, margin:"16px 0 6px" }}>{line.slice(4)}</h3>;
+      if (line.startsWith("## "))  return <h2 key={i} style={{ fontSize:17, fontWeight:800, color:text, margin:"22px 0 8px" }}>{line.slice(3)}</h2>;
+      if (line.startsWith("# "))   return <h1 key={i} style={{ fontSize:20, fontWeight:900, color:text, margin:"26px 0 10px" }}>{line.slice(2)}</h1>;
+      if (line.startsWith("- "))   return <li key={i} style={{ fontSize:14, color:text, lineHeight:1.9, marginLeft:20 }}>{line.slice(2)}</li>;
+      if (!line.trim()) return <br key={i}/>;
+      return <p key={i} style={{ fontSize:14, color:text, lineHeight:1.9, margin:"3px 0" }}>{line}</p>;
+    });
+  };
+
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
-      <div style={{ maxWidth:700, margin:"0 auto" }}>
+      <div style={{ maxWidth:740, margin:"0 auto" }}>
+        {/* 상단 */}
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
           <button onClick={()=>setStep("input")} style={{ background:"none", border:"none", cursor:"pointer", color:muted, fontSize:18 }}>←</button>
-          <div style={{ fontSize:18, fontWeight:900, color:text }}>✅ 생성 완료</div>
+          <div>
+            <div style={{ fontSize:17, fontWeight:900, color:text }}>{docInfo.label}</div>
+            <div style={{ fontSize:11, color:muted }}>{toneInfo.label} / {formatInfo.label}</div>
+          </div>
           <div style={{ flex:1 }} />
           <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
-            style={{ padding:"7px 16px", borderRadius:8, border:`1px solid ${copied?"rgba(74,222,128,0.4)":bdr}`, background:copied?"rgba(74,222,128,0.08)":"transparent", color:copied?"#4ade80":accent, fontSize:12, fontWeight:700, cursor:"pointer" }}>
-            {copied ? "✅ 복사됨" : "📋 전체 복사"}
+            style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${copied?"rgba(74,222,128,0.3)":bdr}`, background:copied?"rgba(74,222,128,0.06)":"transparent", color:copied?"#4ade80":text, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+            {copied ? "복사됨" : "복사"}
           </button>
         </div>
 
-        {/* 원래 요청 */}
-        <div style={{ padding:"12px 16px", borderRadius:10, background:`${accent}08`, border:`1px solid ${accent}20`, marginBottom:16, fontSize:13, color:accent }}>
-          <b>요청:</b> {input}
+        {/* 요청 요약 */}
+        <div style={{ padding:"10px 14px", borderRadius:8, background:ibg, border:`1px solid ${bdr}`, marginBottom:16, fontSize:12, color:muted }}>
+          {input}
         </div>
 
-        {/* 결과 */}
-        <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"24px", marginBottom:16 }}>
-          <div style={{ fontSize:14, color:text, lineHeight:2, whiteSpace:"pre-wrap" }}>{result}</div>
+        {/* 결과 본문 */}
+        <div style={{ borderRadius:14, border:`1px solid ${bdr}`, background:bg, padding:"28px 30px", marginBottom:16 }}>
+          {renderResult()}
         </div>
 
-        {/* 활용 */}
-        <div style={{ borderRadius:14, border:`1px solid ${accent}30`, background:`${accent}06`, padding:"18px", marginBottom:16 }}>
-          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:12 }}>🚀 바로 활용하기</div>
-          <button onClick={sendToTool}
-            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-              background:`linear-gradient(135deg,${OUTPUTS.find(o=>o.id===outputType)?.color||accent},${accent})`,
-              color:"#fff", fontSize:14, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            <span style={{fontSize:18}}>{OUTPUTS.find(o=>o.id===outputType)?.icon}</span>
-            {OUTPUTS.find(o=>o.id===outputType)?.label} 도구로 보내기
+        {/* 다운로드 */}
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          <button onClick={downloadTxt}
+            style={{ flex:1, padding:"13px", borderRadius:10, border:`1px solid ${bdr}`, background:bg, color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            TXT 저장
           </button>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:10 }}>
-            {OUTPUTS.filter(o=>o.id!==outputType).map(o => (
-              <button key={o.id} onClick={()=>{setOutputType(o.id);}}
-                style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${o.color}25`, background:"transparent", color:o.color, fontSize:11, fontWeight:700, cursor:"pointer" }}>
-                {o.icon} {o.label}
-              </button>
-            ))}
-          </div>
+          <button onClick={downloadPdf}
+            style={{ flex:1, padding:"13px", borderRadius:10, border:`1px solid ${bdr}`, background:bg, color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            PDF 저장 (인쇄)
+          </button>
         </div>
 
+        {/* 하단 액션 */}
         <div style={{ display:"flex", gap:10 }}>
-          <button onClick={()=>{setResult("");setStep("input");}} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>✏️ 새로 기획</button>
-          <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${accent},#8b5cf6)`, color:"#fff", fontSize:14, fontWeight:800 }}>🔄 다시 생성 (10P)</button>
+          <button onClick={()=>{setResult("");setStep("input");}} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>새로 기획</button>
+          <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:accent, color:"#fff", fontSize:14, fontWeight:800 }}>다시 생성 (10P)</button>
         </div>
       </div>
     </div>
