@@ -786,28 +786,7 @@ function useGenColors(isDark) {
   };
 }
 
-function StepBar({ step, total, labels, ACC }) {
-  return (
-    <div style={{ marginBottom:20 }}>
-      {/* 프로그레스 바 */}
-      <div style={{ height:3, borderRadius:2, background:"rgba(128,128,128,0.12)", overflow:"hidden", marginBottom:10 }}>
-        <div style={{ height:"100%", borderRadius:2, background:ACC, width: (step / labels.length * 100) + "%", transition:"width 0.4s ease" }} />
-      </div>
-      {/* 현재 단계 표시 */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:11, fontWeight:800, color:ACC }}>{step}/{labels.length}</span>
-          <span style={{ fontSize:12, fontWeight:700, color:ACC }}>{labels[step-1]}</span>
-        </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {labels.map((_,i) => (
-            <div key={i} style={{ width:6, height:6, borderRadius:"50%", background: i+1 <= step ? ACC : "rgba(128,128,128,0.2)", transition:"background 0.3s" }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+function StepBar() { return null; }
 
 function GenLoading({ emoji, title, subtitle, ACC, isDark }) {
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";

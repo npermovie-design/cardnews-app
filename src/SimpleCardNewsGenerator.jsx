@@ -372,6 +372,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [mediaQuery, setMediaQuery] = useState("");
   const [mediaResults, setMediaResults] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
+  const [showSafeZone, setShowSafeZone] = useState(false);
 
   const searchMedia = async (q) => {
     if (!q.trim()) return;
@@ -1327,10 +1328,15 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
             {/* 미리보기 */}
             <div style={{ flexShrink:0,width:360,display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
-              <div style={{ fontSize:11,fontWeight:700,color:muted }}>미리보기</div>
-              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%",cursor:"pointer" }}
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%" }}>
+                <div style={{ fontSize:11,fontWeight:700,color:muted }}>미리보기</div>
+                {imgH > imgW && <button onClick={()=>setShowSafeZone(s=>!s)}
+                  style={{ fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:6,cursor:"pointer",border:`1px solid ${showSafeZone?"rgba(34,197,94,0.4)":bdr}`,background:showSafeZone?"rgba(34,197,94,0.1)":"transparent",color:showSafeZone?"#22c55e":muted }}>
+                  {showSafeZone?"세이프존 ON":"세이프존"}
+                </button>}
+              </div>
+              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%",cursor:"pointer",position:"relative" }}
                 onClick={()=>{
-                  // 전체화면 미리보기
                   const canvas = document.createElement("canvas");
                   drawDetailSlide(canvas, curSlide, curStyle, imgW, imgH, null);
                   const url = canvas.toDataURL("image/png");
@@ -1338,6 +1344,36 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   if(w){w.document.write(`<img src="${url}" style="max-width:100%;max-height:100vh;display:block;margin:auto"/>`);w.document.title="미리보기";}
                 }}>
                 <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={358} bgImageSrc={so.bgImage||undefined}/>
+                {/* 세이프존 가이드 오버레이 (세로 이미지일 때만) */}
+                {showSafeZone && imgH > imgW && (() => {
+                  const scale = 358 / imgW;
+                  const dispH = Math.round(imgH * scale);
+                  // 인스타 릴스 비율 기준 (1080x1920 기준 비율 적용)
+                  const topPct = 250 / 1920; // 상단 ~13%
+                  const botPct = 420 / 1920; // 하단 ~22%
+                  const leftPct = 70 / 1080; // 좌측 ~6.5%
+                  const rightPct = (98 + 193) / 1080; // 우측 ~27%
+                  return (
+                    <div style={{ position:"absolute",inset:0,pointerEvents:"none",height:dispH }}>
+                      {/* 상단 위험 영역 */}
+                      <div style={{ position:"absolute",top:0,left:0,right:0,height:(topPct*100)+"%",background:"rgba(239,68,68,0.18)",borderBottom:"1.5px dashed rgba(239,68,68,0.6)" }}>
+                        <span style={{ position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",fontSize:8,color:"rgba(239,68,68,0.8)",fontWeight:700,whiteSpace:"nowrap" }}>상단 UI 영역</span>
+                      </div>
+                      {/* 하단 위험 영역 */}
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:(botPct*100)+"%",background:"rgba(239,68,68,0.18)",borderTop:"1.5px dashed rgba(239,68,68,0.6)" }}>
+                        <span style={{ position:"absolute",top:2,left:"50%",transform:"translateX(-50%)",fontSize:8,color:"rgba(239,68,68,0.8)",fontWeight:700,whiteSpace:"nowrap" }}>하단 UI 영역</span>
+                      </div>
+                      {/* 우측 위험 영역 */}
+                      <div style={{ position:"absolute",top:(topPct*100)+"%",right:0,bottom:(botPct*100)+"%",width:(rightPct*100)+"%",background:"rgba(239,68,68,0.12)",borderLeft:"1.5px dashed rgba(239,68,68,0.5)" }}>
+                        <span style={{ position:"absolute",top:"50%",left:2,transform:"translateY(-50%) rotate(-90deg)",fontSize:7,color:"rgba(239,68,68,0.7)",fontWeight:700,whiteSpace:"nowrap",transformOrigin:"left center" }}>아이콘</span>
+                      </div>
+                      {/* 세이프존 테두리 */}
+                      <div style={{ position:"absolute",top:(topPct*100)+"%",bottom:(botPct*100)+"%",left:(leftPct*100)+"%",right:(rightPct*100)+"%",border:"1.5px solid rgba(34,197,94,0.5)",borderRadius:4 }}>
+                        <span style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:9,color:"rgba(34,197,94,0.7)",fontWeight:800,whiteSpace:"nowrap" }}>Safe Zone</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
               <div style={{ display:"flex",gap:6,width:"100%" }}>
