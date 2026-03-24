@@ -788,6 +788,42 @@ function useGenColors(isDark) {
 
 function StepBar() { return null; }
 
+// ── 탭 그룹 (글쓰기처럼 상단 탭 + 콘텐츠) ──
+function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderTab }) {
+  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const accent = "#7c6aff";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {/* 헤더 + 탭 */}
+      <div style={{ flexShrink:0, textAlign:"center", padding:"20px 16px 0", background:isDark?"transparent":"#f8f8fc" }}>
+        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>{title}</div>
+        <div style={{ fontSize:12, color:muted, marginBottom:16 }}>{subtitle}</div>
+        <div style={{ display:"flex", justifyContent:"center", gap:0, borderBottom:`1px solid ${bdr}` }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{
+                padding:"10px 20px", border:"none", cursor:"pointer", fontSize:14, fontWeight:activeTab===t.id?700:500,
+                color:activeTab===t.id?accent:muted, background:"transparent",
+                borderBottom:activeTab===t.id?`2.5px solid ${accent}`:"2.5px solid transparent",
+                transition:"all 0.15s",
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* 콘텐츠 */}
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        {renderTab(activeTab)}
+      </div>
+    </div>
+  );
+}
+
 function GenLoading({ emoji, title, subtitle, ACC, isDark }) {
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const text = isDark ? "#fff" : "#1a1a2e";
@@ -1962,34 +1998,66 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
     );
   }
 
-  // 심플 카드뉴스 (인트로 없이 직접 진입)
-  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
-    return (
-      <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // ── 콘텐츠 제작기 (카드뉴스 + 상세페이지 + 썸네일) ──
+  if (["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","content_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
+    return <TabbedGroup key="content" isDark={isDark} theme={theme}
+      title="콘텐츠 제작" subtitle="카드뉴스, 상세페이지, 썸네일을 제작하세요"
+      tabs={[
+        { id:"cardnews_simple", label:"카드뉴스" },
+        { id:"detail_simple", label:"상세페이지" },
+        { id:"thumbnail_gen", label:"썸네일" },
+      ]}
+      defaultTab={aiMenu.startsWith("thumbnail")?"thumbnail_gen":aiMenu.startsWith("detail")?"detail_simple":"cardnews_simple"}
+      renderTab={(tab) => {
+        if (tab === "cardnews_simple") return <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />;
+        if (tab === "detail_simple") return <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />;
+        if (tab === "thumbnail_gen") return <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
+        return null;
+      }}
+    />;
   }
 
-  // 상세페이지 (인트로 없이 직접 진입)
-  if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
-    return (
-      <div key="detail_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // ── 이미지 생성 (제품컷 + 로고 + 목업 + 모델) ──
+  if (["product_shot","logo_gen","mockup_gen","model_gen","image_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
+    return <TabbedGroup key="imggen" isDark={isDark} theme={theme}
+      title="이미지 생성" subtitle="AI로 제품컷, 로고, 목업, 모델 이미지를 생성하세요"
+      tabs={[
+        { id:"product_shot", label:"제품컷" },
+        { id:"logo_gen", label:"로고" },
+        { id:"mockup_gen", label:"목업" },
+        { id:"model_gen", label:"모델" },
+      ]}
+      defaultTab={aiMenu.startsWith("logo")?"logo_gen":aiMenu.startsWith("mockup")?"mockup_gen":aiMenu.startsWith("model")?"model_gen":"product_shot"}
+      renderTab={(tab) => {
+        if (tab === "product_shot") return <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
+        if (tab === "logo_gen") return <LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
+        if (tab === "mockup_gen") return <MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
+        if (tab === "model_gen") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        return null;
+      }}
+    />;
   }
 
-  // 썸네일 생성기 (인트로 없이 직접 진입)
-  if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
-    return (
-      <div key="thumbnail" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />
-      </div>
-    );
+  // ── 이미지 수정 (얼굴교체 + 의상교체 + 여백늘리기) ──
+  if (["face_swap","outfit_swap","outpaint","image_edit"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
+    return <TabbedGroup key="imgedit" isDark={isDark} theme={theme}
+      title="이미지 수정" subtitle="AI로 얼굴 교체, 의상 교체, 여백 확장을 할 수 있어요"
+      tabs={[
+        { id:"face_swap", label:"얼굴 교체" },
+        { id:"outfit_swap", label:"의상 교체" },
+        { id:"outpaint", label:"여백 늘리기" },
+      ]}
+      defaultTab={aiMenu.startsWith("outfit")?"outfit_swap":aiMenu.startsWith("outpaint")?"outpaint":"face_swap"}
+      renderTab={(tab) => {
+        if (tab === "face_swap") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        if (tab === "outfit_swap") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        if (tab === "outpaint") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        return null;
+      }}
+    />;
   }
 
-  // SEO 분석기 + 실시간 분석 (seo_, rank_)
+  // ── 실시간 분석 (검색어 + TOP10) ──
   if (aiMenu && (aiMenu.startsWith("seo_") || aiMenu.startsWith("rank_"))) {
     return (
       <div key="analyzer" style={{ flex:1, overflow:"hidden" }}>
