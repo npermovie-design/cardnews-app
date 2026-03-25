@@ -22,12 +22,19 @@ const PAGE_OG = {
   "/legal": { title: "SNS메이킷 - 이용약관", desc: "서비스 이용약관 및 개인정보처리방침" },
 };
 
-// 소셜 크롤러만 (Googlebot 제외 — JS 렌더링 지원하므로 SPA 직접 크롤링)
-const CRAWLERS = /kakaotalk|facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|Discordbot|WhatsApp|Yeti/i;
+// 소셜 크롤러만 (Googlebot, 카카오톡 인앱브라우저 제외)
+const CRAWLERS = /facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|Discordbot|WhatsApp|Yeti/i;
+// 카카오톡: 링크 미리보기 봇(kakaotalk-scrap)만 크롤러 처리, 인앱 브라우저는 통과
+const KAKAO_SCRAP = /kakaotalk-scrap|kakaostory-og-reader/i;
+const KAKAO_INAPP = /KAKAOTALK\s/i;
 
 export default async function middleware(request) {
   const ua = request.headers.get("user-agent") || "";
-  if (!CRAWLERS.test(ua)) return; // 일반 사용자 + Googlebot은 SPA 그대로
+
+  // 카카오톡 인앱 브라우저 → SPA 그대로 (React 앱 로드)
+  if (KAKAO_INAPP.test(ua) && !KAKAO_SCRAP.test(ua)) return;
+
+  if (!CRAWLERS.test(ua) && !KAKAO_SCRAP.test(ua)) return; // 일반 사용자 + Googlebot은 SPA 그대로
 
   const url = new URL(request.url);
   const path = url.pathname;
