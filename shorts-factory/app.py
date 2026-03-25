@@ -309,7 +309,9 @@ async def analyze(file_id: str, request: Request):
             meta["subtitle_ext"] = ".srt"
             meta["needs_transcription"] = False
         except Exception as e:
-            raise HTTPException(500, f"음성 인식 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(500, f"음성 인식 실패: {str(e)[:200]}")
 
     sub_path = meta["subtitle_path"]
     if meta["subtitle_ext"] == ".srt":

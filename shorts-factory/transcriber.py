@@ -6,10 +6,10 @@ _model: WhisperModel | None = None
 
 
 def get_model() -> WhisperModel:
-    """Whisper 모델 로드 (최초 1회, 이후 캐시)"""
+    """Whisper 모델 로드 (최초 1회, 이후 캐시) - tiny 모델로 메모리 절약"""
     global _model
     if _model is None:
-        _model = WhisperModel("base", device="cpu", compute_type="int8")
+        _model = WhisperModel("tiny", device="cpu", compute_type="int8")
     return _model
 
 
@@ -26,7 +26,7 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
     model = get_model()
     segments, info = model.transcribe(
         video_path,
-        language="ko",
+        language=None,  # 자동 감지 (한국어/영어/일본어 등)
         vad_filter=True,
         vad_parameters=dict(min_silence_duration_ms=300),
         word_timestamps=True,
