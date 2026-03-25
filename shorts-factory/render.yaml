@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: shorts-factory
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    repo: https://github.com/npermovie-design/cardnews-app.git
+    rootDir: shorts-factory
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
+    plan: starter
