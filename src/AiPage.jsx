@@ -733,7 +733,7 @@ function deletePlan(id) {
   try { localStorage.setItem(PLAN_SAVES_KEY, JSON.stringify(getPlanSaves().filter(x=>x.id!==id))); } catch {}
 }
 
-function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, renderFooter }) {
+function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, renderFooter, noHeader }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const ibg = isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc";
@@ -898,10 +898,10 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
   if (step === "input") return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background:D?"transparent":"#f4f4f8" }}>
       <div style={{ maxWidth:660, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}>
+        {!noHeader && <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>기획</div>
           <div style={{ fontSize:14, color:muted, lineHeight:1.8 }}>실무 문서를 AI가 작성해드립니다.</div>
-        </div>
+        </div>}
 
         {/* 문서 유형 (그룹별) */}
         <div style={{ marginBottom:18 }}>
@@ -1098,7 +1098,7 @@ async function fetchTrendsFromAPI(platform) {
 }
 
 // ── 핫키워드 페이지 ──────────────────────────────────────────────────────
-function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
+function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter, noHeader }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
@@ -1192,8 +1192,8 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter }) 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth:800, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:20 }}>
-          <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>🔥 핫 키워드</div>
+        {!noHeader && <div style={{ textAlign:"center", marginBottom:20 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>핫 키워드</div>
           <div style={{ fontSize:13, color:muted }}>플랫폼별 실시간 인기 키워드와 검색량을 확인하세요</div>
           {apiStatus && (
             <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:8, padding:"3px 12px", borderRadius:20,
@@ -1205,7 +1205,7 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter }) 
               </span>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* 플랫폼 탭 */}
         <div style={{ display:"flex", gap:3, marginBottom:16, overflowX:"auto", padding:"4px 0" }}>
@@ -2229,23 +2229,52 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
   }
 
+  // 바형 헤더 공용
+  const BarHeader = ({ title, subtitle }) => (
+    <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px" }}>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ fontSize:18, fontWeight:900, color:homeText, marginBottom:3 }}>{title}</div>
+          <div style={{ fontSize:12, color:homeMuted }}>{subtitle}</div>
+        </div>
+      </div>
+    </div>
+  );
+
   // 기획 스튜디오
   if (aiMenu === "prompt_studio") {
-    return <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} renderFooter={() => <AiFooter />} />;
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <BarHeader title="기획" subtitle="실무 문서를 AI가 작성해드립니다" />
+        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+          <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} renderFooter={() => <AiFooter />} noHeader />
+        </div>
+      </div>
+    );
   }
 
   // PPT 제작
   if (aiMenu === "ppt_gen") {
     return (
-      <div key="ppt_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+      <div key="ppt_gen" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <BarHeader title="PPT 제작" subtitle="주제를 입력하면 AI가 프레젠테이션을 생성해요" />
+        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+          <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        </div>
       </div>
     );
   }
 
   // 핫 키워드
   if (aiMenu === "hot_keyword") {
-    return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} />;
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <BarHeader title="핫 키워드" subtitle="플랫폼별 실시간 인기 키워드를 확인하세요" />
+        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+          <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} noHeader />
+        </div>
+      </div>
+    );
   }
 
   // 홈
@@ -2778,7 +2807,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 영상 제작 > 바로 에디터 진입
+  // 영상 제작
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
 
     // iframe 메시지 수신 (글쓰기 연계 + 포인트 차감)
@@ -2809,6 +2838,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <BarHeader title="영상 제작" subtitle="영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요" />
         <iframe src={(() => { const base = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com"); return base + "?theme=" + (theme === "dark" ? "dark" : "light"); })()} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
       </div>
     );
