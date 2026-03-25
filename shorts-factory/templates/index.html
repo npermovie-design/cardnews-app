@@ -46,6 +46,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .muted{color:var(--muted);font-size:12px}
 .drop{border:2px dashed var(--bdr);border-radius:14px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s}
 .drop:hover,.drop.dragover{border-color:var(--acc);background:var(--accbg)}
+.file-btn{width:100%;padding:10px 14px;border-radius:10px;border:1.5px dashed var(--bdr);background:var(--ibg);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:center}
+.file-btn:hover{border-color:var(--acc);color:var(--acc);background:var(--accbg)}
+.file-btn.selected{border-style:solid;border-color:var(--acc);color:var(--acc);background:var(--accbg)}
+body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--ibg:#f9f9fc;--accbg:rgba(124,106,255,0.08)}
 
 .seg-card{border:1px solid var(--bdr);border-radius:12px;padding:14px;background:var(--card);transition:all 0.15s;cursor:pointer}
 .seg-card:hover{border-color:rgba(124,106,255,0.3)}
@@ -65,15 +69,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <script>
 // 테마 감지: URL 파라미터 > postMessage > prefers-color-scheme
 (function(){
+    function applyTheme(t){
+        document.body.classList.remove('dark','light');
+        document.body.classList.add(t==='dark'?'dark':'light');
+    }
     const p=new URLSearchParams(location.search);
-    if(p.get('theme')==='dark'){document.body.classList.add('dark');return;}
-    if(p.get('theme')==='light'){document.body.classList.remove('dark');return;}
-    if(window.matchMedia('(prefers-color-scheme:dark)').matches)document.body.classList.add('dark');
-    // 부모로부터 테마 변경 수신
+    const t=p.get('theme');
+    if(t){applyTheme(t);return;}
+    applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     window.addEventListener('message',function(e){
-        if(e.data?.type==='theme'){
-            document.body.classList.toggle('dark',e.data.theme==='dark');
-        }
+        if(e.data?.type==='theme') applyTheme(e.data.theme);
     });
 })();
 </script>
@@ -125,8 +130,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div class="card-desc">로고, 폰트, 자막 옵션을 설정해요</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-            <div><label class="label">로고 이미지</label><input id="logoInput" type="file" accept="image/*" style="font-size:11px;color:var(--muted)"></div>
-            <div><label class="label">커스텀 폰트</label><input id="fontInput" type="file" accept=".ttf,.otf" style="font-size:11px;color:var(--muted)"></div>
+            <div>
+                <label class="label">로고 이미지</label>
+                <input id="logoInput" type="file" accept="image/*" style="display:none">
+                <button onclick="document.getElementById('logoInput').click()" class="file-btn" id="logoBtnLabel">+ 로고 업로드</button>
+            </div>
+            <div>
+                <label class="label">커스텀 폰트</label>
+                <input id="fontInput" type="file" accept=".ttf,.otf" style="display:none">
+                <button onclick="document.getElementById('fontInput').click()" class="file-btn" id="fontBtnLabel">+ 폰트 업로드</button>
+            </div>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--bdr)">
@@ -286,8 +299,8 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover
 dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
 fi.addEventListener('change',e=>handleFiles(e.target.files));
-$('logoInput').addEventListener('change',e=>{logoFile=e.target.files[0]||null});
-$('fontInput').addEventListener('change',e=>{fontFile=e.target.files[0]||null});
+$('logoInput').addEventListener('change',e=>{logoFile=e.target.files[0]||null;const b=$('logoBtnLabel');if(logoFile){b.textContent=logoFile.name;b.classList.add('selected');}else{b.textContent='+ 로고 업로드';b.classList.remove('selected');}});
+$('fontInput').addEventListener('change',e=>{fontFile=e.target.files[0]||null;const b=$('fontBtnLabel');if(fontFile){b.textContent=fontFile.name;b.classList.add('selected');}else{b.textContent='+ 폰트 업로드';b.classList.remove('selected');}});
 
 function handleFiles(files){
     for(const f of files){const ext=f.name.split('.').pop().toLowerCase();

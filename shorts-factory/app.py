@@ -119,10 +119,14 @@ async def youtube_download(request: Request):
     try:
         import yt_dlp
         ydl_opts = {
-            "format": "best[ext=mp4]/best",
+            "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
             "outtmpl": str(video_path),
             "quiet": True,
             "no_warnings": True,
+            "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            },
         }
         loop = asyncio.get_event_loop()
         def do_download():
@@ -161,7 +165,11 @@ async def youtube_info(url: str = ""):
         raise HTTPException(400, "URL이 필요합니다")
     try:
         import yt_dlp
-        ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+        ydl_opts = {
+            "quiet": True, "no_warnings": True, "skip_download": True,
+            "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
+            "http_headers": {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"},
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             return {
