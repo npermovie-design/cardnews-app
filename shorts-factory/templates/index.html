@@ -121,6 +121,10 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
         </div>
         <button id="btnYtDownload" class="btn btn-primary" style="margin-bottom:8px">쇼츠로 변환하기 →</button>
         <div id="ytProgress" style="display:none;margin-top:8px"><div class="row"><div class="spinner"></div><span class="muted" id="ytStatus"></span></div></div>
+        <div id="ytCaptionMode" style="display:none;margin-top:12px;padding:16px;border-radius:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)">
+            <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:6px">💡 자막 분석 모드</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">YouTube 영상 다운로드가 제한되어 자막만으로 분석합니다.<br>AI가 최적의 쇼츠 구간을 찾아드리고, 영상 생성 시 MP4 파일을 업로드해주세요.</div>
+        </div>
     </div>
 
     <!-- 파일 업로드 섹션 -->
@@ -254,10 +258,10 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
         <!-- 우측: 편집 패널 -->
         <div style="width:280px;flex-shrink:0">
             <!-- 탭 -->
-            <div style="display:flex;gap:2px;margin-bottom:12px;background:var(--ibg);border-radius:10px;padding:3px">
-                <button class="edit-panel-tab active" onclick="showEditPanel('title')">제목</button>
-                <button class="edit-panel-tab" onclick="showEditPanel('style')">스타일</button>
-                <button class="edit-panel-tab" onclick="showEditPanel('subtitle')">자막</button>
+            <div id="editPanelTabs" style="display:flex;gap:2px;margin-bottom:12px;background:var(--ibg);border-radius:10px;padding:3px">
+                <button class="edit-panel-tab active" data-panel="title">제목</button>
+                <button class="edit-panel-tab" data-panel="style">스타일</button>
+                <button class="edit-panel-tab" data-panel="subtitle">자막</button>
             </div>
 
             <!-- 제목 패널 -->
@@ -470,8 +474,12 @@ $('btnYtDownload').addEventListener('click',async()=>{
         clearTimeout(timeout);
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'다운로드 실패')}
         const d=await r.json();fileId=d.file_id;
-        if(d.caption_only){$('ytStatus').textContent='자막으로 분석 중... (영상 생성 시 MP4 업로드 필요)';}
-        else{$('ytStatus').textContent='다운로드 완료! 분석 시작...';}
+        if(d.caption_only){
+            $('ytStatus').textContent='자막으로 분석합니다...';
+            $('ytCaptionMode').style.display='';
+        }else{
+            $('ytStatus').textContent='다운로드 완료! 분석 시작...';
+        }
         await doAnalyze();
     }catch(e){
         const msg=e.name==='AbortError'?'다운로드 시간 초과. 짧은 영상이나 파일 업로드를 시도해주세요.':e.message;
@@ -647,12 +655,16 @@ $('btnRestart').addEventListener('click',resetAll);
 function resetAll(){showStep('upload');videoFile=null;subFile=null;logoFile=null;fontFile=null;fileId=null;segments=[];editClips=[];
     $('selectedFiles').style.display='none';$('btnUpload').disabled=true;$('uploadProgress').style.display='none';$('btnRestart').style.display='none';fi.value=''}
 
-function showEditPanel(panel){
+function showEditPanel(panel,btn){
     document.querySelectorAll('.edit-panel').forEach(p=>p.style.display='none');
     document.querySelectorAll('.edit-panel-tab').forEach(t=>t.classList.remove('active'));
     const el=document.getElementById('panel-'+panel);if(el)el.style.display='';
-    event.target.classList.add('active');
+    if(btn)btn.classList.add('active');
 }
+// 편집 탭 이벤트
+document.querySelectorAll('#editPanelTabs .edit-panel-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>showEditPanel(btn.dataset.panel,btn));
+});
 function selectTemplate(el){
     document.querySelectorAll('.tmpl-card').forEach(c=>c.classList.remove('active'));
     el.classList.add('active');

@@ -79,7 +79,8 @@ def _transcribe_groq(audio_path: str) -> dict | None:
             data={
                 "model": "whisper-large-v3",
                 "response_format": "verbose_json",
-                "timestamp_granularities[]": "segment",
+                "timestamp_granularities[]": "word",
+                "language": "ko",
             },
             timeout=180,
         )
@@ -155,35 +156,62 @@ def _transcribe_groq_chunked(audio_path: str) -> dict | None:
 
 
 def _write_srt(srt_path: str, data: dict, max_chars: int = 0):
-    """Groq API 응답을 SRT 파일로 변환"""
+    """Groq API 응답을 SRT 파일로 변환 (word 타임스탬프 활용)"""
+    # word 단위 타임스탬프가 있으면 더 정확한 자막 생성
+    words = data.get("words", [])
     segments = data.get("segments", [])
     entries = []
-    for seg in segments:
-        text = seg.get("text", "").strip()
-        if not text:
-            continue
-        start = seg.get("start", 0)
-        end = seg.get("end", 0)
 
-        if max_chars > 0 and len(text) > max_chars:
-            # 긴 텍스트 분할
-            words = text.split()
-            chunk = ""
-            chunk_start = start
-            duration = (end - start) / max(len(words), 1)
-            for j, w in enumerate(words):
-                test = (chunk + " " + w).strip() if chunk else w
-                if len(test) > max_chars and chunk:
-                    chunk_end = start + duration * j
-                    entries.append((chunk_start, chunk_end, chunk))
-                    chunk = w
-                    chunk_start = chunk_end
-                else:
-                    chunk = test
-            if chunk:
-                entries.append((chunk_start, end, chunk))
-        else:
-            entries.append((start, end, text))
+    if words and len(words) > 0:
+        # word 단위로 자막 생성 (더 정확한 타이밍)
+        target_chars = max_chars if max_chars > 0 else 15
+        chunk = ""
+        chunk_start = None
+        chunk_end = 0
+        for w in words:
+            word_text = w.get("word", "").strip()
+            if not word_text:
+                continue
+            w_start = w.get("start", 0)
+            w_end = w.get("end", 0)
+            if chunk_start is None:
+                chunk_start = w_start
+            test = (chunk + " " + word_text).strip() if chunk else word_text
+            if len(test) > target_chars and chunk:
+                entries.append((chunk_start, chunk_end, chunk.strip()))
+                chunk = word_text
+                chunk_start = w_start
+            else:
+                chunk = test
+            chunk_end = w_end
+        if chunk and chunk_start is not None:
+            entries.append((chunk_start, chunk_end, chunk.strip()))
+    elif segments:
+        # segment 단위 폴백
+        for seg in segments:
+            text = seg.get("text", "").strip()
+            if not text:
+                continue
+            start = seg.get("start", 0)
+            end = seg.get("end", 0)
+            if max_chars > 0 and len(text) > max_chars:
+                words_list = text.split()
+                chunk = ""
+                chunk_start = start
+                duration = (end - start) / max(len(words_list), 1)
+                for j, wd in enumerate(words_list):
+                    test = (chunk + " " + wd).strip() if chunk else wd
+                    if len(test) > max_chars and chunk:
+                        chunk_end = start + duration * j
+                        entries.append((chunk_start, chunk_end, chunk))
+                        chunk = wd
+                        chunk_start = chunk_end
+                    else:
+                        chunk = test
+                if chunk:
+                    entries.append((chunk_start, end, chunk))
+            else:
+                entries.append((start, end, text))
 
     with open(srt_path, "w", encoding="utf-8") as f:
         for i, (s, e, t) in enumerate(entries, 1):
