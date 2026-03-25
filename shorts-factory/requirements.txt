@@ -8,4 +8,5 @@ python-dotenv
 faster-whisper
 Pillow
 yt-dlp
+pytubefix
 av

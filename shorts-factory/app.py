@@ -134,38 +134,22 @@ async def youtube_download(request: Request):
     file_dir.mkdir(parents=True, exist_ok=True)
     video_path = file_dir / "video.mp4"
 
-    # 1) Invidious API로 다운로드 시도
-    for base in INVIDIOUS_INSTANCES:
-        try:
-            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-                r = await client.get(f"{base}/api/v1/videos/{vid}")
-                if r.status_code != 200:
-                    continue
-                data = r.json()
-                # mp4 포맷 중 720p 이하 선택
-                streams = [f for f in data.get("formatStreams", []) if f.get("container") == "mp4"]
-                streams.sort(key=lambda f: int(f.get("resolution", "0p").replace("p", "") or 0), reverse=True)
-                dl_url = None
-                for s in streams:
-                    res = int(s.get("resolution", "0p").replace("p", "") or 0)
-                    if res <= 720 and s.get("url"):
-                        dl_url = s["url"]
-                        break
-                if not dl_url and streams:
-                    dl_url = streams[-1].get("url")
-                if not dl_url:
-                    continue
+    # 1) pytubefix로 다운로드 시도
+    try:
+        from pytubefix import YouTube as PyTube
+        loop = asyncio.get_event_loop()
+        def do_pytube():
+            yt = PyTube(url, use_oauth=False, allow_oauth_cache=False)
+            stream = yt.streams.filter(progressive=True, file_extension="mp4").order_by("resolution").desc().first()
+            if not stream:
+                stream = yt.streams.filter(file_extension="mp4").order_by("resolution").desc().first()
+            if stream:
+                stream.download(output_path=str(file_dir), filename="video.mp4")
+        await loop.run_in_executor(None, do_pytube)
+    except Exception as e:
+        print(f"pytubefix failed: {e}")
 
-                # 영상 다운로드
-                async with httpx.AsyncClient(timeout=120, follow_redirects=True) as dl_client:
-                    dr = await dl_client.get(dl_url)
-                    if dr.status_code == 200 and len(dr.content) > 10000:
-                        video_path.write_bytes(dr.content)
-                        break
-        except Exception:
-            continue
-
-    # 2) Invidious 실패 시 yt-dlp 폴백
+    # 2) yt-dlp 폴백
     if not video_path.exists():
         try:
             import yt_dlp
@@ -174,7 +158,6 @@ async def youtube_download(request: Request):
                 "outtmpl": str(video_path),
                 "quiet": True,
                 "no_warnings": True,
-                "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
             }
             loop = asyncio.get_event_loop()
             def do_download():
@@ -216,22 +199,18 @@ async def youtube_info(url: str = ""):
     if not vid:
         raise HTTPException(400, "유효하지 않은 YouTube URL")
 
-    # 1) Invidious
-    for base in INVIDIOUS_INSTANCES:
-        try:
-            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-                r = await client.get(f"{base}/api/v1/videos/{vid}")
-                if r.status_code == 200:
-                    d = r.json()
-                    if d.get("title"):
-                        return {
-                            "title": d["title"],
-                            "duration": d.get("lengthSeconds", 0),
-                            "thumbnail": d.get("videoThumbnails", [{}])[0].get("url", f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"),
-                            "channel": d.get("author", ""),
-                        }
-        except Exception:
-            continue
+    # 1) pytubefix
+    try:
+        from pytubefix import YouTube as PyTube
+        yt = PyTube(f"https://www.youtube.com/watch?v={vid}", use_oauth=False, allow_oauth_cache=False)
+        return {
+            "title": yt.title or "",
+            "duration": yt.length or 0,
+            "thumbnail": yt.thumbnail_url or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
+            "channel": yt.author or "",
+        }
+    except Exception as e:
+        print(f"pytubefix info failed: {e}")
 
     # 2) oEmbed 폴백
     try:
