@@ -177,10 +177,19 @@ class FrameComposer:
 
 
 def get_caption_at_time(subs: list[dict], time_sec: float) -> str:
+    # 정확한 매칭 (약간의 여유 0.15초)
     for s in subs:
-        if s["start_seconds"] <= time_sec <= s["end_seconds"]:
+        if s["start_seconds"] - 0.15 <= time_sec <= s["end_seconds"] + 0.15:
             return s["text"]
-    return ""
+    # 가장 가까운 자막 (0.5초 이내)
+    best = ""
+    best_dist = 0.5
+    for s in subs:
+        dist = min(abs(time_sec - s["start_seconds"]), abs(time_sec - s["end_seconds"]))
+        if dist < best_dist:
+            best_dist = dist
+            best = s["text"]
+    return best
 
 
 def _pre_cut_clip(video_path: str, start: float, end: float, output_dir: str) -> str:

@@ -62,24 +62,30 @@ def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> t
     if not subs:
         return start, end
 
-    # start: 가장 가까운 자막 시작점으로 (start 이전 자막의 시작점)
+    # start: 시작 시점에 걸친 자막이 있으면 그 자막의 시작점으로
     best_start = start
     for s in subs:
         if s["start_seconds"] <= start <= s["end_seconds"]:
             best_start = s["start_seconds"]
             break
         if s["start_seconds"] > start:
-            best_start = s["start_seconds"]
+            # 다음 자막 시작이 1초 이내면 그걸로
+            if s["start_seconds"] - start < 1.0:
+                best_start = s["start_seconds"]
             break
 
-    # end: 가장 가까운 자막 끝점으로 (end 시점에 걸친 자막의 끝점)
+    # end: 끝 시점에 걸친 자막이 있으면 그 자막이 끝날 때까지 연장
     best_end = end
-    for s in reversed(subs):
+    for s in subs:
         if s["start_seconds"] <= end <= s["end_seconds"]:
-            best_end = s["end_seconds"]
+            # 말이 끝나기 전에 잘리는 것 방지 — 자막 끝까지 연장 (최대 2초)
+            if s["end_seconds"] - end < 2.0:
+                best_end = s["end_seconds"] + 0.3
             break
-        if s["end_seconds"] <= end:
-            best_end = s["end_seconds"]
+    # end 직전의 마지막 자막이 끝나는 시점으로
+    for s in reversed(subs):
+        if s["end_seconds"] <= end + 0.5:
+            best_end = max(best_end, s["end_seconds"] + 0.3)
             break
 
     return best_start, best_end
