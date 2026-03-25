@@ -26,16 +26,17 @@ export default async function handler(req, res) {
       process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
       process.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
     );
-    const { data: posts } = await sb.from("posts").select("id,subCat,date").order("id", { ascending: false }).limit(500);
-    if (posts) {
+    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(500);
+    if (error) console.log("Sitemap Supabase error:", error.message);
+    if (posts && posts.length) {
       postUrls = posts.map(p => ({
         url: `/community/${p.subCat || "info"}/post-${p.id}`,
         priority: "0.5",
         freq: "monthly",
-        lastmod: p.date || today,
+        lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
       }));
     }
-  } catch {}
+  } catch (e) { console.log("Sitemap error:", e.message); }
 
   // XML 생성
   const hreflang = (url) => `
