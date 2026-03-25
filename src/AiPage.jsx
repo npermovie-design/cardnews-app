@@ -2969,6 +2969,19 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [shortsJob, setShortsJob] = useState(null); // {total, completed, status}
+
+  // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type !== 'shorts-factory') return;
+      if (e.data.action === 'gen-start') setShortsJob({ total: e.data.total, completed: 0, status: 'processing' });
+      if (e.data.action === 'gen-progress') setShortsJob(prev => ({ ...prev, completed: e.data.completed, total: e.data.total, status: e.data.status }));
+      if (e.data.action === 'gen-complete') setShortsJob(prev => ({ ...prev, status: 'complete' }));
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
   // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
   useEffect(function() {
     window.__onLoginRequest = onLoginRequest || function(){};
@@ -3070,6 +3083,37 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       overflow: "hidden", position: "relative",
     }}>
       {GuardModalInline}
+      {/* 영상 생성 플로팅 배너 */}
+      {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
+        <div onClick={() => setAiMenu('video_create')} style={{
+          position:"absolute", bottom:20, right:20, zIndex:100,
+          background: isDark ? "rgba(124,106,255,0.95)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)",
+          borderRadius:16, padding:"14px 20px", cursor:"pointer",
+          boxShadow:"0 8px 32px rgba(124,106,255,0.4)", minWidth:200,
+          display:"flex", alignItems:"center", gap:12,
+        }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin 1s linear infinite" }} />
+          <div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 중...</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{shortsJob.completed}/{shortsJob.total}개 완료 · 클릭하여 확인</div>
+          </div>
+        </div>
+      )}
+      {shortsJob && shortsJob.status === 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
+        <div onClick={() => { setAiMenu('video_create'); setShortsJob(null); }} style={{
+          position:"absolute", bottom:20, right:20, zIndex:100,
+          background:"linear-gradient(135deg,#22c55e,#16a34a)",
+          borderRadius:16, padding:"14px 20px", cursor:"pointer",
+          boxShadow:"0 8px 32px rgba(34,197,94,0.4)", minWidth:200,
+          display:"flex", alignItems:"center", gap:12,
+        }}>
+          <div style={{ fontSize:24 }}>✅</div>
+          <div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 완료!</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>클릭하여 결과 확인</div>
+          </div>
+        </div>
+      )}
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{width:4px;height:4px}

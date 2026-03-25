@@ -557,6 +557,101 @@ async def generate(request: Request):
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+# ── 비동기 생성 (백그라운드 처리) ──────────────────────────────
+import threading
+job_store: dict[str, dict] = {}
+
+@app.post("/generate-async")
+async def generate_async(request: Request):
+    """비동기 영상 생성 — 즉시 job_id 반환, 백그라운드에서 처리"""
+    body = await request.json()
+    file_id = body.get("file_id")
+    clips = body.get("clips", [])
+
+    if not file_id or file_id not in file_store:
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+    if not clips:
+        raise HTTPException(400, "클립 데이터가 없습니다")
+
+    job_id = uuid.uuid4().hex[:12]
+    meta = file_store[file_id]
+    output_dir = OUTPUT_DIR / file_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    job_store[job_id] = {
+        "status": "processing",
+        "total": len(clips),
+        "completed": 0,
+        "current": 0,
+        "results": [],
+        "file_id": file_id,
+    }
+
+    def run_generation():
+        python_exe = sys.executable
+        worker_script = str(BASE_DIR / "generate_worker.py")
+        for idx, clip in enumerate(clips):
+            job_store[job_id]["current"] = idx
+            output_file = output_dir / f"short_{idx+1:02d}.mp4"
+            edited_subs = [
+                {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
+                for s in clip.get("subtitles", [])
+            ]
+            worker_args = json.dumps({
+                "video_path": meta["video_path"],
+                "srt_path": meta.get("subtitle_path", ""),
+                "start_seconds": clip["start_seconds"],
+                "end_seconds": clip["end_seconds"],
+                "output_path": str(output_file),
+                "title": clip.get("title", ""),
+                "subtitle": clip.get("subtitle_text", ""),
+                "logo_path": meta.get("logo_path", ""),
+                "remove_silence": body.get("remove_silence", False),
+                "subs": edited_subs,
+                "template": body.get("template", "minimal"),
+                "custom_font": meta.get("custom_font_path", ""),
+                "title_color": body.get("title_color", ""),
+                "caption_color": body.get("caption_color", ""),
+            }, ensure_ascii=False)
+            try:
+                proc_result = subprocess.run(
+                    [python_exe, worker_script, worker_args],
+                    capture_output=True, text=True, timeout=600, cwd=str(BASE_DIR),
+                )
+                if proc_result.returncode == 0:
+                    out = json.loads(proc_result.stdout.strip().split('\n')[-1])
+                    if out.get("ok"):
+                        job_store[job_id]["results"].append({"type": "done", "index": idx, "filename": output_file.name})
+                    else:
+                        job_store[job_id]["results"].append({"type": "error", "index": idx, "message": out.get("error", "")[:200]})
+                else:
+                    job_store[job_id]["results"].append({"type": "error", "index": idx, "message": (proc_result.stderr or "")[-200:]})
+            except Exception as e:
+                job_store[job_id]["results"].append({"type": "error", "index": idx, "message": str(e)[:200]})
+            job_store[job_id]["completed"] = idx + 1
+
+        job_store[job_id]["status"] = "complete"
+
+    threading.Thread(target=run_generation, daemon=True).start()
+    return {"job_id": job_id, "status": "processing", "total": len(clips)}
+
+
+@app.get("/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    """비동기 생성 작업 상태 조회"""
+    if job_id not in job_store:
+        raise HTTPException(404, "작업을 찾을 수 없습니다")
+    job = job_store[job_id]
+    return {
+        "status": job["status"],
+        "total": job["total"],
+        "completed": job["completed"],
+        "current": job["current"],
+        "results": job["results"],
+        "file_id": job["file_id"],
+    }
+
+
 @app.post("/api/calculate-points")
 async def calculate_points(request: Request):
     """영상 길이에 따른 포인트 계산

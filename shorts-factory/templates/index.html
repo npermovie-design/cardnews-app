@@ -493,32 +493,57 @@ $('btnGenerate').addEventListener('click',async()=>{
     const c=$('genProgress');c.innerHTML='';
     editClips.forEach((_,i)=>{const r=document.createElement('div');r.id=`gen-${i}`;r.className='card';r.style.padding='12px';
         r.innerHTML=`<div class="row"><div class="spinner"></div><span class="muted">Short ${i+1} 대기 중...</span></div>`;c.appendChild(r)});
+    // 부모에게 생성 시작 알림 (다른 페이지 이동 가능)
+    window.parent.postMessage({type:'shorts-factory',action:'gen-start',total:editClips.length,fileId},'*');
     try{
-        const res=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},
+        // 비동기 생성 시작
+        const res=await fetch('/generate-async',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({file_id:fileId,clips:editClips,remove_silence:$('optSilence').checked,template:selectedTemplate,title_color:titleColor,caption_color:captionColor})});
-        const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
-        while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});
-            const lines=buf.split('\n');buf=lines.pop()||'';
-            for(const line of lines){if(!line.startsWith('data: '))continue;const data=JSON.parse(line.slice(6));
-                if(data.type==='done'){const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#4ade80"></div><span style="font-size:13px;font-weight:600;color:#4ade80">Short ${data.index+1} 완료</span></div>`;
-                    const url=`/outputs/${fileId}/${data.filename}`;$('resultSection').style.display='';
-                    const tab=document.createElement('div');tab.className='sel-btn';tab.textContent=`Short ${data.index+1}`;tab.style.cssText='padding:7px 14px;cursor:pointer';
-                    tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.sel-btn').forEach(t=>t.classList.remove('active'));tab.classList.add('active');$('previewPlayer').src=url});
-                    $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.classList.add('active');$('previewPlayer').src=url}
-                    const g=document.createElement('div');g.className='card';g.style.padding='14px';
-                    g.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Short ${data.index+1}</div>
-                        <a href="${url}" download="${data.filename}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;padding:10px;font-size:13px">영상 다운로드</a>
-                        <div style="display:flex;gap:6px;margin-bottom:8px">
-                            <a href="/api/subtitles/${fileId}/${data.index}?format=srt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">SRT 자막</a>
-                            <a href="/api/subtitles/${fileId}/${data.index}?format=txt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">TXT 자막</a>
-                        </div>
-                        <div style="display:flex;gap:6px">
-                            <button onclick="sendToParent('blog_write',${data.index})" class="btn-ghost" style="flex:1;padding:7px">글쓰기 연계</button>
-                            <button onclick="sendToParent('content_create',${data.index})" class="btn-ghost" style="flex:1;padding:7px">콘텐츠 제작</button>
-                        </div>`;
-                    $('downloadSection').appendChild(g)}
-                if(data.type==='error'){const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#ef4444"></div><span style="font-size:13px;color:#f87171">Short ${data.index+1} 실패: ${esc(data.message)}</span></div>`}
-                if(data.type==='complete'){$('genTitle').textContent='생성 완료!';$('btnRestart').style.display=''}}}
+        if(!res.ok) throw new Error('생성 시작 실패');
+        const {job_id}=await res.json();
+        // 폴링으로 상태 확인
+        let lastCompleted=0;
+        const poll=setInterval(async()=>{
+            try{
+                const sr=await fetch(`/jobs/${job_id}`);
+                if(!sr.ok)return;
+                const job=await sr.json();
+                // 새로 완료된 클립 처리
+                for(let i=lastCompleted;i<job.results.length;i++){
+                    const data=job.results[i];
+                    if(data.type==='done'){
+                        const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#4ade80"></div><span style="font-size:13px;font-weight:600;color:#4ade80">Short ${data.index+1} 완료</span></div>`;
+                        const url=`/outputs/${fileId}/${data.filename}`;$('resultSection').style.display='';
+                        const tab=document.createElement('div');tab.className='sel-btn';tab.textContent=`Short ${data.index+1}`;tab.style.cssText='padding:7px 14px;cursor:pointer';
+                        tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.sel-btn').forEach(t=>t.classList.remove('active'));tab.classList.add('active');$('previewPlayer').src=url});
+                        $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.classList.add('active');$('previewPlayer').src=url}
+                        const g=document.createElement('div');g.className='card';g.style.padding='14px';
+                        g.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Short ${data.index+1}</div>
+                            <a href="${url}" download="${data.filename}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;padding:10px;font-size:13px">영상 다운로드</a>
+                            <div style="display:flex;gap:6px;margin-bottom:8px">
+                                <a href="/api/subtitles/${fileId}/${data.index}?format=srt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">SRT 자막</a>
+                                <a href="/api/subtitles/${fileId}/${data.index}?format=txt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">TXT 자막</a>
+                            </div>
+                            <div style="display:flex;gap:6px">
+                                <button onclick="sendToParent('blog_write',${data.index})" class="btn-ghost" style="flex:1;padding:7px">글쓰기 연계</button>
+                                <button onclick="sendToParent('content_create',${data.index})" class="btn-ghost" style="flex:1;padding:7px">콘텐츠 제작</button>
+                            </div>`;
+                        $('downloadSection').appendChild(g);
+                    }
+                    if(data.type==='error'){const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#ef4444"></div><span style="font-size:13px;color:#f87171">Short ${data.index+1} 실패: ${esc(data.message)}</span></div>`}
+                }
+                lastCompleted=job.results.length;
+                // 현재 처리 중인 클립 표시
+                if(job.current<editClips.length){const r=$(`gen-${job.current}`);if(r&&!r.innerHTML.includes('#4ade80')&&!r.innerHTML.includes('#ef4444'))r.innerHTML=`<div class="row"><div class="spinner"></div><span class="muted">Short ${job.current+1} 생성 중... (${job.completed}/${job.total})</span></div>`}
+                // 부모에게 진행 상태 전달
+                window.parent.postMessage({type:'shorts-factory',action:'gen-progress',completed:job.completed,total:job.total,status:job.status},'*');
+                if(job.status==='complete'){
+                    clearInterval(poll);
+                    $('genTitle').textContent='생성 완료!';$('btnRestart').style.display='';
+                    window.parent.postMessage({type:'shorts-factory',action:'gen-complete',results:job.results.length},'*');
+                }
+            }catch(e){}
+        },3000); // 3초마다 폴링
     }catch(e){$('genTitle').textContent=`오류: ${e.message}`;$('btnRestart').style.display=''}
 });
 
