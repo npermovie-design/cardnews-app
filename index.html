@@ -7,11 +7,17 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- 카카오톡 인앱 브라우저 → 외부 브라우저 리디렉션 -->
+    <!-- 카카오톡 인앱 브라우저 대응 -->
     <script>
     (function(){
       var ua = navigator.userAgent || '';
       if (ua.match(/KAKAOTALK/i)) {
+        // 1) 외부 브라우저로 열기 시도
+        if (/android/i.test(ua)) {
+          location.href = 'intent://' + location.href.replace(/https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+          return;
+        }
+        // 2) iOS or 안드로이드 폴백 — 외부 열기
         location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
       }
     })();
