@@ -296,7 +296,7 @@ async def debug_env():
     return {
         "GROQ_API_KEY": "set" if os.getenv("GROQ_API_KEY") else "NOT SET",
         "OPENROUTER_API_KEY": "set" if os.getenv("OPENROUTER_API_KEY") else "NOT SET",
-        "ffmpeg": bool(subprocess.run(["which", "ffmpeg"], capture_output=True).returncode == 0) if sys.platform != "win32" else "skip",
+        "ffmpeg": bool(subprocess.run(["ffmpeg", "-version"], capture_output=True).returncode == 0),
         "file_store_ids": list(file_store.keys()),
     }
 

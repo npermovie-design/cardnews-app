@@ -16,15 +16,20 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
 
     # 1) 영상에서 오디오 추출 (ffmpeg)
     audio_path = str(output_dir / "audio.mp3")
+    audio_ok = False
     try:
-        subprocess.run([
+        result = subprocess.run([
             "ffmpeg", "-i", video_path, "-vn", "-acodec", "libmp3lame",
             "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", audio_path
         ], capture_output=True, timeout=120)
+        audio_ok = result.returncode == 0 and os.path.exists(audio_path) and os.path.getsize(audio_path) > 1000
+        if not audio_ok:
+            print(f"FFmpeg failed: returncode={result.returncode}, stderr={result.stderr.decode()[:200]}")
     except Exception as e:
         print(f"FFmpeg audio extraction failed: {e}")
-        # 오디오 추출 실패 시 원본 파일 사용
-        audio_path = video_path
+
+    if not audio_ok:
+        audio_path = video_path  # 원본 파일 사용
 
     # 2) Groq Whisper API (무료, 빠름)
     if GROQ_API_KEY:
@@ -35,6 +40,16 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
                 return srt_path
         except Exception as e:
             print(f"Groq transcription failed: {e}")
+        # Groq 실패 시 원본 영상으로 재시도
+        if audio_path != video_path:
+            try:
+                print("Retrying Groq with original video file...")
+                result = _transcribe_groq(video_path)
+                if result:
+                    _write_srt(srt_path, result, max_chars)
+                    return srt_path
+            except Exception as e:
+                print(f"Groq retry failed: {e}")
 
     # 3) 로컬 faster-whisper 폴백
     try:
