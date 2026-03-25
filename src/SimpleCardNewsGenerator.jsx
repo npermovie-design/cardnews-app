@@ -137,6 +137,13 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
     let sw, sh, sx = 0, sy = 0;
     if (iR > cR) { sh = CH; sw = CH * iR; sx = (CW - sw) / 2; }
     else { sw = CW; sh = CW / iR; sy = (CH - sh) / 2; }
+    // 이미지 크기 조절
+    const scale = (slide.bgScale ?? 100) / 100;
+    if (scale !== 1) {
+      const nw = sw * scale, nh = sh * scale;
+      sx = (CW - nw) / 2; sy = (CH - nh) / 2;
+      sw = nw; sh = nh;
+    }
     ctx.save();
     ctx.globalAlpha = slide.bgOpacity ?? 1;
     ctx.drawImage(bgImageEl, sx, sy, sw, sh);
@@ -583,27 +590,28 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const bgFileRef = useRef(null);
   const splitFileRef = useRef(null);
 
-  // 사진 분할: 하나의 이미지를 슬라이드 개수만큼 분할하여 각 배경에 적용
-  const handlePhotoSplit = (file) => {
+  // 사진 분할: 하나의 이미지를 N분할하여 슬라이드 배경에 적용
+  const [splitCount, setSplitCount] = useState(null); // 분할 수 선택 UI
+  const handlePhotoSplit = (file, count) => {
     if (!file) return;
+    const splitN = count || slides.length;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        const count = slides.length;
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        // 세로 분할 (위에서 아래로)
-        const sliceH = img.naturalHeight / count;
+        const sliceH = img.naturalHeight / splitN;
         canvas.width = img.naturalWidth;
         canvas.height = Math.round(sliceH);
         const newSted = { ...sted };
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < splitN && i < slides.length; i++) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, Math.round(sliceH * i), img.naturalWidth, Math.round(sliceH), 0, 0, canvas.width, canvas.height);
           newSted[i] = { ...(newSted[i] || {}), bgImage: canvas.toDataURL("image/jpeg", 0.85) };
         }
         setSted(newSted);
+        setSplitCount(null);
       };
       img.src = ev.target.result;
     };
@@ -1074,7 +1082,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         <input ref={bgFileRef} type="file" accept="image/*" style={{ display:"none" }}
           onChange={e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>updSted(selIdx,"bgImage",ev.target.result); r.readAsDataURL(f); e.target.value=""; }}/>
         <input ref={splitFileRef} type="file" accept="image/*" style={{ display:"none" }}
-          onChange={e=>{ const f=e.target.files[0]; if(f) handlePhotoSplit(f); e.target.value=""; }}/>
+          onChange={e=>{ const f=e.target.files[0]; if(f) handlePhotoSplit(f, splitCount); e.target.value=""; setSplitCount(null); }}/>
 
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 16px 60px", animation:"fadeIn 0.3s ease" }}>
           <div style={{ marginBottom:12 }}>
@@ -1332,6 +1340,16 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                         onChange={e=>updSted(selIdx,"bgOpacity",parseInt(e.target.value)/100)}
                         style={{ width:"100%",accentColor:"#7c6aff" }}/>
                     </div>
+                    {/* 이미지 크기 조절 */}
+                    <div style={{ marginBottom:8 }}>
+                      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+                        <div style={{ fontSize:10,color:muted,marginBottom:4 }}>이미지 크기 ({Math.round((so.bgScale??100))}%)</div>
+                        {(so.bgScale??100)!==100&&<button onClick={()=>updSted(selIdx,"bgScale",100)} style={{ fontSize:9,padding:"1px 6px",borderRadius:4,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer" }}>초기화</button>}
+                      </div>
+                      <input type="range" min="30" max="200" value={so.bgScale??100}
+                        onChange={e=>updSted(selIdx,"bgScale",parseInt(e.target.value))}
+                        style={{ width:"100%",accentColor:"#22c55e" }}/>
+                    </div>
                     {/* 이미지 위 오버레이 색상 */}
                     <div style={{ display:"flex",gap:8,alignItems:"center" }}>
                       <div style={{ flex:1 }}>
@@ -1368,7 +1386,21 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
                     <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>이미지 업로드</button>
                     <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>이미지 검색</button>
-                    <button onClick={()=>splitFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }} title="하나의 이미지를 슬라이드 수만큼 분할하여 각 배경에 적용">사진 분할</button>
+                    <div style={{ flex:1,minWidth:80,position:"relative" }}>
+                      <button onClick={()=>setSplitCount(splitCount ? null : 0)} style={{ width:"100%",padding:"8px",borderRadius:12,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }}>사진 분할 ▾</button>
+                      {splitCount !== null && (
+                        <div style={{ position:"absolute",top:"100%",left:0,right:0,zIndex:20,marginTop:4,background:D?"#1a1740":"#fff",border:`1px solid ${bdr}`,borderRadius:10,padding:6,boxShadow:"0 8px 24px rgba(0,0,0,0.2)" }}>
+                          {[2,3,4].map(n => (
+                            <button key={n} onClick={()=>{ setSplitCount(n); splitFileRef.current?.click(); }}
+                              style={{ display:"block",width:"100%",padding:"7px 10px",border:"none",borderRadius:7,background:"transparent",color:text,fontSize:12,fontWeight:600,cursor:"pointer",textAlign:"left",marginBottom:2 }}
+                              onMouseEnter={e=>e.currentTarget.style.background=D?"rgba(255,255,255,0.08)":"#f0f0f5"}
+                              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                              {n}분할 <span style={{ color:muted,fontSize:10 }}>({n}장 슬라이드에 적용)</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <KlipyButton isDark={isDark} compact onSelect={(item)=>{
                       if(item.url){ setSlides(prev=>{const n=[...prev];n[selIdx]={...n[selIdx],bgImage:item.url};return n;}); }
                     }} buttonStyle={{flex:1,minWidth:80,padding:"8px",fontSize:11,justifyContent:"center"}} />
