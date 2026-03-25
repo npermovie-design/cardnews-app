@@ -73,7 +73,7 @@ export function ContactPage({ C }) {
         </div>
       ) : (
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "48px 28px", textAlign: "center", boxShadow: C.shadow }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(16,185,129,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 20, color: "#10b981", fontWeight: 900 }}>V</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 8 }}>{p("contactSuccess")}</div>
           <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>{p("contactSuccessMsg")}</div>
           <button onClick={() => setSent(false)} style={{ marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 13 }}>{p("contactBack")}</button>

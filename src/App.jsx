@@ -73,7 +73,7 @@ function GuardModal({ cost, onConfirm, onCancel }) {
         boxShadow: "0 24px 64px rgba(0,0,0,0.5)", textAlign: "center",
         animation: "fadeIn 0.15s ease",
       }}>
-        <div style={{ fontSize: "clamp(32px,8vw,44px)", marginBottom: 14 }}>⚠️</div>
+        <div style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 900, color: "#f59e0b", marginBottom: 14 }}>!</div>
         <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 10 }}>
           생성 중입니다!
         </div>
@@ -414,7 +414,7 @@ export default function App() {
     // 404 - 알 수 없는 페이지
     if (page !== "home") return (
       <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
+        <div style={{ fontSize: 48, fontWeight: 900, color: C.muted, marginBottom: 16, opacity: 0.3 }}>404</div>
         <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>페이지를 찾을 수 없습니다</div>
         <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>요청하신 페이지가 존재하지 않거나 이동되었어요.</div>
         <button onClick={() => navigate("home")}
@@ -593,13 +593,13 @@ export default function App() {
           </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0, minHeight: 36 }}>
-            {theme === "light" ? "🌙 "+t("darkMode") : "☀️ "+t("lightMode")}
+            {theme === "light" ? t("darkMode") : t("lightMode")}
           </button>
           {/* 다국어 선택 */}
           <div ref={langRef} style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)}
               style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 12px", borderRadius: 20, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700, color: C.muted, flexShrink: 0, minHeight: 36 }}>
-              🌐 <span style={{ fontSize: 11 }}>{LANGUAGES.find(l=>l.code===lang)?.label||t("translate")}</span>
+              <span style={{ fontSize: 11 }}>{LANGUAGES.find(l=>l.code===lang)?.label||t("translate")}</span>
             </button>
             {langOpen && (
               <>
@@ -638,7 +638,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>💎{(user.points||0).toLocaleString()}P</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{(user.points||0).toLocaleString()}P</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 

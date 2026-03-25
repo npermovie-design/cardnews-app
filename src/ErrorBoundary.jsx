@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component {
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           minHeight: "50vh", padding: "40px 24px", textAlign: "center",
         }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28, color: "#ef4444", fontWeight: 900 }}>!</div>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#ef4444", marginBottom: 8 }}>
             오류가 발생했습니다
           </div>

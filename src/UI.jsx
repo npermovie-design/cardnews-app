@@ -24,7 +24,7 @@ export const SecWrap = ({ children, bg, style = {}, C }) => (
 
 export const SecTitle = ({ badge, title, sub, left, C }) => (
   <div style={{ textAlign: left ? "left" : "center", marginBottom: 56 }}>
-    {badge && <Badge C={C}>+ {badge}</Badge>}
+    {badge && <Badge C={C}>{badge}</Badge>}
     <h2 style={{
       fontSize: "clamp(28px,4vw,46px)", fontWeight: 900, color: C.text,
       letterSpacing: -1, lineHeight: 1.15, marginBottom: 16,

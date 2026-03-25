@@ -32,7 +32,7 @@ export function ToastProvider({ children }) {
               boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
               animation: "toast-in 0.3s ease", pointerEvents: "auto",
             }}>
-              {t.type === "success" && "✅ "}{t.type === "error" && "❌ "}{t.type === "warning" && "⚠️ "}{t.msg}
+              {t.msg}
             </div>
           );
         })}
