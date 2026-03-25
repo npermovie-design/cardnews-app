@@ -14,6 +14,7 @@ import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
+import ShortsCreator from "./ShortsCreator";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
@@ -2210,7 +2211,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   );
 }
 
-function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, onShortsActivate, shortsActive }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -2807,10 +2808,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 영상 제작 — iframe은 AiPage에서 관리, 여기선 활성화만 트리거
+  // 영상 제작 — React 컴포넌트로 직접 렌더링
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-    if (onShortsActivate && !shortsActive) onShortsActivate();
-    return null; // iframe은 AiPage에서 렌더링
+    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} />;
   }
 
   return null;
@@ -3175,19 +3175,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
-          {/* 영상 제작 iframe — 한번 열면 숨기기만 (분석/생성 유지) */}
-          {shortsActive && (
-            <div style={{
-              position: "absolute", inset: 0, zIndex: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 1 : -1,
-              opacity: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 1 : 0,
-              pointerEvents: (aiMenu === "video_create" || aiMenu === "shorts_make") ? "auto" : "none",
-              display: "flex", flexDirection: "column",
-            }}>
-              <iframe src={(() => { const base = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com"); return base + "?theme=" + (theme === "dark" ? "dark" : "light"); })()} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
-            </div>
-          )}
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} onShortsActivate={() => setShortsActive(true)} shortsActive={shortsActive} />
+        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
         </div>
       </div>
     </div>
