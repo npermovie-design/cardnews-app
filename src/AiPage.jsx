@@ -2210,7 +2210,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   );
 }
 
-function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, onShortsActivate, shortsActive }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -2807,41 +2807,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 영상 제작
+  // 영상 제작 — iframe은 AiPage에서 관리, 여기선 활성화만 트리거
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-
-    // iframe 메시지 수신 (글쓰기 연계 + 포인트 차감)
-    useEffect(() => {
-      const handler = async (e) => {
-        if (e.data?.type !== 'shorts-factory') return;
-        if (e.data.action === 'navigate') {
-          // 연계 데이터를 localStorage에 저장 → 글쓰기 컴포넌트에서 읽기
-          if (e.data.data) {
-            try { localStorage.setItem('shorts_linked_data', JSON.stringify(e.data.data)); } catch(err) {}
-          }
-          setAiMenu(e.data.target);
-        }
-        if (e.data.action === 'deduct-points' && user) {
-          try {
-            const { changePoints, setLocalUser } = await import('./storage.js');
-            const cost = Math.abs(e.data.cost || 30);
-            const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
-            const newUser = { ...user, points: newPts };
-            setLocalUser(newUser);
-            if (onUserUpdate) onUserUpdate(newUser);
-          } catch(err) { console.error("포인트 차감 실패:", err); }
-        }
-      };
-      window.addEventListener('message', handler);
-      return () => window.removeEventListener('message', handler);
-    }, [user]);
-
-    return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="영상 제작" subtitle="영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요" />
-        <iframe src={(() => { const base = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com"); return base + "?theme=" + (theme === "dark" ? "dark" : "light"); })()} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
-      </div>
-    );
+    if (onShortsActivate && !shortsActive) onShortsActivate();
+    return null; // iframe은 AiPage에서 렌더링
   }
 
   return null;
@@ -2970,18 +2939,35 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [sideOpen, setSideOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shortsJob, setShortsJob] = useState(null); // {total, completed, status}
+  const [shortsActive, setShortsActive] = useState(false); // iframe 활성화 여부
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
   useEffect(() => {
-    const handler = (e) => {
+    const handler = async (e) => {
       if (e.data?.type !== 'shorts-factory') return;
       if (e.data.action === 'gen-start') setShortsJob({ total: e.data.total, completed: 0, status: 'processing' });
       if (e.data.action === 'gen-progress') setShortsJob(prev => ({ ...prev, completed: e.data.completed, total: e.data.total, status: e.data.status }));
       if (e.data.action === 'gen-complete') setShortsJob(prev => ({ ...prev, status: 'complete' }));
+      if (e.data.action === 'navigate') {
+        if (e.data.data) {
+          try { localStorage.setItem('shorts_linked_data', JSON.stringify(e.data.data)); } catch(err) {}
+        }
+        setAiMenu(e.data.target);
+      }
+      if (e.data.action === 'deduct-points' && user) {
+        try {
+          const { changePoints, setLocalUser } = await import('./storage.js');
+          const cost = Math.abs(e.data.cost || 30);
+          const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
+          const newUser = { ...user, points: newPts };
+          setLocalUser(newUser);
+          if (onUserUpdate) onUserUpdate(newUser);
+        } catch(err) { console.error("포인트 차감 실패:", err); }
+      }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, []);
+  }, [user]);
   // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
   useEffect(function() {
     window.__onLoginRequest = onLoginRequest || function(){};
@@ -3189,8 +3175,19 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
+          {/* 영상 제작 iframe — 한번 열면 숨기기만 (분석/생성 유지) */}
+          {shortsActive && (
+            <div style={{
+              position: "absolute", inset: 0, zIndex: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 1 : -1,
+              opacity: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 1 : 0,
+              pointerEvents: (aiMenu === "video_create" || aiMenu === "shorts_make") ? "auto" : "none",
+              display: "flex", flexDirection: "column",
+            }}>
+              <iframe src={(() => { const base = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com"); return base + "?theme=" + (theme === "dark" ? "dark" : "light"); })()} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
+            </div>
+          )}
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} onShortsActivate={() => setShortsActive(true)} shortsActive={shortsActive} />
         </div>
       </div>
     </div>
