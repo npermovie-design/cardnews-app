@@ -2808,9 +2808,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 영상 제작 — React 컴포넌트로 직접 렌더링
+  // 영상 제작 — AiPage에서 항상 렌더링 (여기서는 null)
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} />;
+    return null;
   }
 
   return null;
@@ -2938,8 +2938,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [shortsJob, setShortsJob] = useState(null); // {total, completed, status}
-  const [shortsActive, setShortsActive] = useState(false); // iframe 활성화 여부
+  const [shortsJob, setShortsJob] = useState(null);
+  const [shortsActive, setShortsActive] = useState(false);
+  const [shortsStatus, setShortsStatus] = useState(""); // "", "loading", "analyzing", "generating", "complete"
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
   useEffect(() => {
@@ -2987,6 +2988,11 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
+
+  // 영상 제작 메뉴 진입 시 ShortsCreator 활성화
+  useEffect(() => {
+    if ((aiMenu === "video_create" || aiMenu === "shorts_make") && !shortsActive) setShortsActive(true);
+  }, [aiMenu]);
 
   // 생성 중 상태 감지 (useGeneratingGuard 이벤트)
   useEffect(() => {
@@ -3069,8 +3075,25 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       overflow: "hidden", position: "relative",
     }}>
       {GuardModalInline}
-      {/* 영상 생성 플로팅 배너 */}
-      {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
+      {/* 영상 분석/생성 플로팅 배너 */}
+      {shortsStatus && ["loading","analyzing","generating"].includes(shortsStatus) && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
+        <div onClick={() => setAiMenu('video_create')} style={{
+          position:"absolute", bottom:20, right:20, zIndex:100,
+          background: isDark ? "rgba(124,106,255,0.95)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)",
+          borderRadius:16, padding:"14px 20px", cursor:"pointer",
+          boxShadow:"0 8px 32px rgba(124,106,255,0.4)", minWidth:200,
+          display:"flex", alignItems:"center", gap:12,
+        }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin 1s linear infinite" }} />
+          <div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>
+              {shortsStatus === "loading" ? "영상 분석 중..." : shortsStatus === "generating" ? "영상 생성 중..." : "처리 중..."}
+            </div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>클릭하여 확인</div>
+          </div>
+        </div>
+      )}
+      {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && !(shortsStatus && ["loading","analyzing","generating"].includes(shortsStatus)) && (
         <div onClick={() => setAiMenu('video_create')} style={{
           position:"absolute", bottom:20, right:20, zIndex:100,
           background: isDark ? "rgba(124,106,255,0.95)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)",
@@ -3175,7 +3198,19 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
+          {/* ShortsCreator — 한번 열면 항상 유지 (분석/생성 중단 방지) */}
+          {shortsActive && (
+            <div style={{
+              position: "absolute", inset: 0, zIndex: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 2 : -1,
+              opacity: (aiMenu === "video_create" || aiMenu === "shorts_make") ? 1 : 0,
+              pointerEvents: (aiMenu === "video_create" || aiMenu === "shorts_make") ? "auto" : "none",
+              display: "flex",
+            }}>
+              <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} onStatusChange={setShortsStatus} />
+            </div>
+          )}
+          {/* 영상 제작 메뉴 진입 시 활성화는 useEffect에서 처리 */}
           <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
         </div>
       </div>

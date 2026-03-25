@@ -17,7 +17,7 @@ const LENGTHS = [
   { id: "s90", label: "90~120초", desc: "아주 길게" },
 ];
 
-export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu }) {
+export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange }) {
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
@@ -62,6 +62,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   const fileRef = useRef(null);
   const timerRef = useRef(null);
+
+  // ── 상태 변경 알림 ─────────────────────
+  useEffect(() => {
+    if (onStatusChange) onStatusChange(step);
+  }, [step]);
 
   // ── 타이머 ─────────────────────────
   useEffect(() => {
