@@ -139,7 +139,9 @@ async def youtube_download(request: Request):
     file_dir.mkdir(parents=True, exist_ok=True)
     video_path = file_dir / "video.mp4"
 
-    # 1) pytubefix로 다운로드 시도
+    errors = []
+
+    # 1) pytubefix 시도 (여러 방식)
     try:
         from pytubefix import YouTube as PyTube
         loop = asyncio.get_event_loop()
@@ -152,25 +154,37 @@ async def youtube_download(request: Request):
                 stream.download(output_path=str(file_dir), filename="video.mp4")
         await loop.run_in_executor(None, do_pytube)
     except Exception as e:
-        print(f"pytubefix failed: {e}")
+        errors.append(f"pytubefix: {str(e)[:100]}")
+        logger.warning(f"pytubefix failed: {e}")
 
-    # 2) yt-dlp 폴백
+    # 2) yt-dlp (여러 player_client 시도)
     if not video_path.exists():
-        try:
-            import yt_dlp
-            ydl_opts = {
-                "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
-                "outtmpl": str(video_path),
-                "quiet": True,
-                "no_warnings": True,
-            }
-            loop = asyncio.get_event_loop()
-            def do_download():
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-            await loop.run_in_executor(None, do_download)
-        except Exception as e:
-            raise HTTPException(500, f"다운로드 실패: YouTube가 서버 다운로드를 차단했어요. MP4 파일을 직접 업로드해주세요.")
+        for client in [["web"], ["android"], ["ios"], ["tv_embedded"]]:
+            try:
+                import yt_dlp
+                ydl_opts = {
+                    "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
+                    "outtmpl": str(video_path),
+                    "quiet": True,
+                    "no_warnings": True,
+                    "extractor_args": {"youtube": {"player_client": client}},
+                    "socket_timeout": 30,
+                }
+                loop = asyncio.get_event_loop()
+                def do_download(opts=ydl_opts):
+                    with yt_dlp.YoutubeDL(opts) as ydl:
+                        ydl.download([url])
+                await loop.run_in_executor(None, do_download)
+                if video_path.exists():
+                    logger.info(f"yt-dlp succeeded with client={client}")
+                    break
+            except Exception as e:
+                errors.append(f"yt-dlp({client[0]}): {str(e)[:80]}")
+                logger.warning(f"yt-dlp {client} failed: {e}")
+
+    if not video_path.exists():
+        logger.error(f"All download methods failed: {errors}")
+        raise HTTPException(500, f"다운로드 실패: YouTube가 서버 다운로드를 차단했어요. MP4 파일을 직접 업로드해주세요.")
 
     if not video_path.exists():
         raise HTTPException(500, "다운로드 실패: MP4 파일을 직접 업로드해주세요.")
@@ -208,14 +222,15 @@ async def youtube_info(url: str = ""):
     try:
         from pytubefix import YouTube as PyTube
         yt = PyTube(f"https://www.youtube.com/watch?v={vid}", use_oauth=False, allow_oauth_cache=False)
-        return {
-            "title": yt.title or "",
-            "duration": yt.length or 0,
-            "thumbnail": yt.thumbnail_url or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
-            "channel": yt.author or "",
-        }
+        if yt.title:
+            return {
+                "title": yt.title or "",
+                "duration": yt.length or 0,
+                "thumbnail": yt.thumbnail_url or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
+                "channel": yt.author or "",
+            }
     except Exception as e:
-        print(f"pytubefix info failed: {e}")
+        logger.warning(f"pytubefix info failed: {e}")
 
     # 2) oEmbed 폴백
     try:
