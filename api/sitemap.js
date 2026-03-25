@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   try {
     const sb = createClient(
       process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
-      process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ""
+      process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ""
     );
     const { data: posts } = await sb.from("posts").select("id,subCat,date").order("id", { ascending: false }).limit(500);
     if (posts) {
