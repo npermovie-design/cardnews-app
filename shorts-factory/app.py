@@ -183,11 +183,23 @@ async def youtube_download(request: Request):
                 logger.warning(f"yt-dlp {client} failed: {e}")
 
     if not video_path.exists():
-        logger.error(f"All download methods failed: {errors}")
+        logger.warning(f"Download failed, trying caption-only analysis: {errors}")
+        # 다운로드 실패 시 → 자막만 가져와서 분석 가능하게
+        caption_srt = await _fetch_youtube_captions(vid, str(file_dir))
+        if caption_srt:
+            file_store[file_id] = {
+                "video_path": "",
+                "subtitle_path": caption_srt,
+                "subtitle_ext": ".srt",
+                "logo_path": "",
+                "custom_font_path": "",
+                "needs_transcription": False,
+                "subs_parsed": None,
+                "caption_only": True,
+            }
+            return {"file_id": file_id, "needs_transcription": False, "caption_only": True,
+                    "message": "영상 다운로드가 차단되어 자막으로 분석합니다. 영상 생성 시 MP4 파일을 업로드해주세요."}
         raise HTTPException(500, f"다운로드 실패: YouTube가 서버 다운로드를 차단했어요. MP4 파일을 직접 업로드해주세요.")
-
-    if not video_path.exists():
-        raise HTTPException(500, "다운로드 실패: MP4 파일을 직접 업로드해주세요.")
 
     file_store[file_id] = {
         "video_path": str(video_path),
@@ -201,6 +213,80 @@ async def youtube_download(request: Request):
     }
 
     return {"file_id": file_id, "needs_transcription": True, "message": "YouTube 영상 다운로드 완료"}
+
+
+async def _fetch_youtube_captions(vid: str, output_dir: str) -> str | None:
+    """YouTube 자막/캡션만 가져오기 (다운로드 차단 우회)"""
+    import httpx
+    srt_path = str(Path(output_dir) / "subtitle.srt")
+
+    # 1) yt-dlp로 자막만 추출 (영상 다운로드 없이)
+    try:
+        import yt_dlp
+        ydl_opts = {
+            "skip_download": True,
+            "writesubtitles": True,
+            "writeautomaticsub": True,
+            "subtitleslangs": ["ko", "en", "ja"],
+            "subtitlesformat": "srt",
+            "outtmpl": str(Path(output_dir) / "video"),
+            "quiet": True,
+        }
+        loop = asyncio.get_event_loop()
+        def do_subs():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([f"https://www.youtube.com/watch?v={vid}"])
+        await loop.run_in_executor(None, do_subs)
+        # 자막 파일 찾기
+        for lang in ["ko", "en", "ja"]:
+            for ext in [".srt", ".vtt"]:
+                p = Path(output_dir) / f"video.{lang}{ext}"
+                if p.exists() and p.stat().st_size > 10:
+                    if ext == ".vtt":
+                        _convert_vtt_to_srt(str(p), srt_path)
+                    else:
+                        import shutil
+                        shutil.copy(str(p), srt_path)
+                    logger.info(f"Caption extracted: {lang}")
+                    return srt_path
+    except Exception as e:
+        logger.warning(f"yt-dlp caption failed: {e}")
+
+    # 2) Invidious API로 캡션 가져오기
+    INVIDIOUS = ["https://invidious.io.lol", "https://inv.tux.pizza", "https://yt.cdaut.de"]
+    for base in INVIDIOUS:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.get(f"{base}/api/v1/captions/{vid}")
+                if r.status_code == 200:
+                    caps = r.json().get("captions", [])
+                    for lang in ["ko", "Korean", "en", "English"]:
+                        cap = next((c for c in caps if lang.lower() in c.get("label", "").lower() or lang.lower() in c.get("language_code", "").lower()), None)
+                        if cap and cap.get("url"):
+                            cr = await client.get(base + cap["url"])
+                            if cr.status_code == 200:
+                                with open(srt_path, "w", encoding="utf-8") as f:
+                                    f.write(cr.text)
+                                return srt_path
+        except Exception:
+            continue
+
+    return None
+
+
+def _convert_vtt_to_srt(vtt_path: str, srt_path: str):
+    """VTT → SRT 간단 변환"""
+    with open(vtt_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    import re
+    content = re.sub(r"WEBVTT.*?\n\n", "", content, count=1)
+    content = content.replace(".", ",")
+    lines = content.strip().split("\n\n")
+    with open(srt_path, "w", encoding="utf-8") as f:
+        for i, block in enumerate(lines, 1):
+            parts = block.strip().split("\n")
+            if len(parts) >= 2:
+                f.write(f"{i}\n" + "\n".join(parts) + "\n\n")
 
 
 @app.post("/api/yt-dl")

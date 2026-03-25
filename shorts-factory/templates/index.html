@@ -377,7 +377,9 @@ $('btnYtDownload').addEventListener('click',async()=>{
         const r=await fetch('/youtube-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url}),signal:controller.signal});
         clearTimeout(timeout);
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'다운로드 실패')}
-        const d=await r.json();fileId=d.file_id;$('ytStatus').textContent='다운로드 완료! 분석 시작...';
+        const d=await r.json();fileId=d.file_id;
+        if(d.caption_only){$('ytStatus').textContent='자막으로 분석 중... (영상 생성 시 MP4 업로드 필요)';}
+        else{$('ytStatus').textContent='다운로드 완료! 분석 시작...';}
         await doAnalyze();
     }catch(e){
         const msg=e.name==='AbortError'?'다운로드 시간 초과. 짧은 영상이나 파일 업로드를 시도해주세요.':e.message;
