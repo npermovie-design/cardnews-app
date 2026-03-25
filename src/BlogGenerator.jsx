@@ -543,6 +543,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
 
+  // 숏폼 연계 데이터 자동 입력
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('shorts_linked_data');
+      if (raw) {
+        const linked = JSON.parse(raw);
+        if (linked.title || linked.content) {
+          setFields(prev => ({ ...prev, keyword: linked.title || prev.keyword || "" }));
+          if (linked.content) {
+            setUrlResult({ title: linked.title || "", content: linked.content, type: "shorts" });
+          }
+          localStorage.removeItem('shorts_linked_data');
+        }
+      }
+    } catch(e) {}
+  }, []);
+
   // 이탈 방지
   useEffect(() => {
     const handler = (e) => {

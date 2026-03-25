@@ -531,8 +531,16 @@ function resetAll(){showStep('upload');videoFile=null;subFile=null;logoFile=null
 
 function fmt(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec.toString().padStart(2,'0')}`}
 function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
-function sendToParent(target,idx){const clip=editClips[idx]||editClips[0];const text=(clip?.subtitles||[]).map(s=>s.text).join('\n');
-    window.parent.postMessage({type:'shorts-factory',action:'navigate',target,data:{title:clip?.title||'',content:text}},'*')}
+function sendToParent(target,idx){const clip=editClips[idx]||editClips[0];
+    const text=(clip?.subtitles||[]).map(s=>s.text).join(' ');
+    const script=clip?.script_body||text;
+    window.parent.postMessage({type:'shorts-factory',action:'navigate',target,data:{
+        title:clip?.title||clip?.hook_text||'',
+        content:script,
+        subtitles:text,
+        hook:clip?.hook_text||'',
+        seo_title:clip?.seo_title||''
+    }},'*')}
 function requestPointDeduction(cost,reason){window.parent.postMessage({type:'shorts-factory',action:'deduct-points',cost,reason},'*')}
 </script>
 </body>

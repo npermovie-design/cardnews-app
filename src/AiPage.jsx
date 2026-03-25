@@ -2785,7 +2785,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     useEffect(() => {
       const handler = async (e) => {
         if (e.data?.type !== 'shorts-factory') return;
-        if (e.data.action === 'navigate') setAiMenu(e.data.target);
+        if (e.data.action === 'navigate') {
+          // 연계 데이터를 localStorage에 저장 → 글쓰기 컴포넌트에서 읽기
+          if (e.data.data) {
+            try { localStorage.setItem('shorts_linked_data', JSON.stringify(e.data.data)); } catch(err) {}
+          }
+          setAiMenu(e.data.target);
+        }
         if (e.data.action === 'deduct-points' && user) {
           try {
             const { changePoints, setLocalUser } = await import('./storage.js');
