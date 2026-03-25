@@ -15,6 +15,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import ShortformEditor from "./ShortformEditor";
 import PptGenerator from "./PptGenerator";
+import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
@@ -107,7 +108,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label={t("home")} />
         <Item id="library" label={t("library")} />
-        <Item id="hot_keyword" label="핫 키워드" icon="🔥" />
+        <Item id="hot_keyword" label="핫 키워드" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <Item id="prompt_studio" label="기획" />
@@ -117,7 +118,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
-        <Item id="video_create" label="영상 제작" ids={["shorts_make","shorts_make_run","virality"]} />
+        <Item id="video_create" label="영상 제작" ids={["shorts_make","virality"]} />
       </div>
 
     </div>
@@ -332,7 +333,7 @@ function deleteSimpleDetailSave(id) {
 }
 
 // ── LibraryPage 컴포넌트 ──────────────────────────────────────────────────────
-function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFooter }) {
   const { t } = useI18n();
   const [tab, setTab] = useState("blog");
   const [blogList, setBlogList] = useState(getBlogSaves);
@@ -716,6 +717,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         </>
       )}
       </div>{/* maxWidth:800 */}
+      {renderFooter && renderFooter()}
     </div>
   );
 }
@@ -732,7 +734,7 @@ function deletePlan(id) {
   try { localStorage.setItem(PLAN_SAVES_KEY, JSON.stringify(getPlanSaves().filter(x=>x.id!==id))); } catch {}
 }
 
-function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate }) {
+function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, renderFooter }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const ibg = isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc";
@@ -1003,6 +1005,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           </div>
         )}
       </div>
+      {renderFooter && renderFooter()}
     </div>
   );
 
@@ -1077,6 +1080,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:accent, color:"#fff", fontSize:14, fontWeight:800 }}>다시 생성 (10P)</button>
         </div>
       </div>
+      {renderFooter && renderFooter()}
     </div>
   );
 }
@@ -1095,7 +1099,7 @@ async function fetchTrendsFromAPI(platform) {
 }
 
 // ── 핫키워드 페이지 ──────────────────────────────────────────────────────
-function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
+function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
@@ -1310,6 +1314,7 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr }) {
           </div>
         )}
       </div>
+      {renderFooter && renderFooter()}
     </div>
   );
 }
@@ -2206,7 +2211,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   );
 }
 
-function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, onUserUpdate }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -2218,14 +2223,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   const isKo = _lang === "ko";
   const _s = (ko, en) => isKo ? ko : en;
 
+  const AiFooter = () => C ? <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} /> : null;
+
   // 보관함
   if (aiMenu === "library") {
-    return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} />;
+    return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
   }
 
   // 기획 스튜디오
   if (aiMenu === "prompt_studio") {
-    return <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} />;
+    return <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} renderFooter={() => <AiFooter />} />;
   }
 
   // PPT 제작
@@ -2239,7 +2246,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
 
   // 핫 키워드
   if (aiMenu === "hot_keyword") {
-    return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} />;
+    return <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} />;
   }
 
   // 홈
@@ -2341,6 +2348,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
             </div>
           ))}
         </div>
+        <AiFooter />
       </div>
     );
   }
@@ -2767,15 +2775,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
             로그아웃
           </button>
         </div>
+        <AiFooter />
       </div>
     );
   }
 
   // 영상 제작 > 바로 에디터 진입
-  if (aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "shorts_make_run" || aiMenu === "virality") {
-    const _t = isDark ? "#fff" : "#1a1a2e";
-    const _m = isDark ? "rgba(255,255,255,0.5)" : "#888";
-    const _bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  if (aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "virality") {
 
     // iframe 메시지 수신 (글쓰기 연계 + 포인트 차감)
     useEffect(() => {
@@ -2785,9 +2791,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
         if (e.data.action === 'deduct-points' && user) {
           try {
             const { changePoints, setLocalUser } = await import('./storage.js');
-            const newPts = await changePoints(user.uid, -e.data.cost, e.data.reason || "숏폼 영상 생성");
-            setLocalUser({ ...user, points: newPts });
-          } catch(err) { console.error(err); }
+            const cost = Math.abs(e.data.cost || 30);
+            const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
+            const newUser = { ...user, points: newPts };
+            setLocalUser(newUser);
+            if (onUserUpdate) onUserUpdate(newUser);
+          } catch(err) { console.error("포인트 차감 실패:", err); }
         }
       };
       window.addEventListener('message', handler);
@@ -2922,7 +2931,7 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
   );
 }
 
-export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
+export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
   const { t: tt } = useI18n();
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
@@ -3104,7 +3113,7 @@ export function AiPage({ user, navigate, C, theme, aiMenu: aiMenuProp, setAiMenu
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
         </div>
       </div>
     </div>

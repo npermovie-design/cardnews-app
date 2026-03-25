@@ -396,7 +396,7 @@ export default function App() {
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
@@ -899,8 +899,8 @@ export default function App() {
         {renderPage()}
       </div>
 
-      {/* ── 푸터 ── */}
-      <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />
+      {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
+      {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { getPageText } from "./i18n-pages.js";
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 
 // ✅ 결제 오픈 시 true로 변경
-const PAYMENT_ENABLED = true;
+const PAYMENT_ENABLED = false;
 
 const COMMON_FEATURES = [
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
@@ -253,17 +253,17 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, marginBottom: 16 }}>{p("pricingFree")}</div>
                   ) : (
                     <>
-                      <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2 }}>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>
                         ₩{price.toLocaleString()}
                       </div>
                       <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
-                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
                       )}
                     </>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} P/월</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16, filter: !plan.free && !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !plan.free && !PAYMENT_ENABLED ? "none" : "auto" }}>{plan.points.toLocaleString()} P/월</div>
 
                   <div style={{ flex: 1, marginBottom: 20 }}>
                     {plan.features.map((f, i) => (
@@ -310,9 +310,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
                 {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
-                <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>₩{plan.amount.toLocaleString()}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: C.text, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
+                <div style={{ fontSize: 11, color: C.muted, filter: !PAYMENT_ENABLED ? "blur(6px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
                 <div style={{ marginTop: 6, width: "100%", position: "relative" }}>
                   <button
                     onClick={() => handleOneOff(plan)}
