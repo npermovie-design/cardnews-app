@@ -495,56 +495,57 @@ async def generate(request: Request):
     python_exe = sys.executable
     worker_script = str(BASE_DIR / "generate_worker.py")
 
-    results = []
-    for idx, clip in enumerate(clips):
-        output_file = output_dir / f"short_{idx+1:02d}.mp4"
-        edited_subs = [
-            {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
-            for s in clip.get("subtitles", [])
-        ]
-        worker_args = json.dumps({
-            "video_path": meta["video_path"],
-            "srt_path": meta.get("subtitle_path", ""),
-            "start_seconds": clip["start_seconds"],
-            "end_seconds": clip["end_seconds"],
-            "output_path": str(output_file),
-            "title": clip.get("title", ""),
-            "subtitle": clip.get("subtitle_text", ""),
-            "logo_path": meta.get("logo_path", ""),
-            "remove_silence": remove_silence,
-            "subs": edited_subs,
-            "template": template,
-            "custom_font": meta.get("custom_font_path", ""),
-            "title_color": title_color,
-            "caption_color": caption_color,
-        }, ensure_ascii=False)
-
-        try:
-            loop = asyncio.get_event_loop()
-            proc_result = await loop.run_in_executor(
-                None,
-                lambda args=worker_args: subprocess.run(
-                    [python_exe, worker_script, args],
-                    capture_output=True, text=True, timeout=600,
-                    cwd=str(BASE_DIR),
-                ),
-            )
-            if proc_result.returncode == 0:
-                out = json.loads(proc_result.stdout.strip().split('\n')[-1])
-                if out.get("ok"):
-                    results.append({"type": "done", "index": idx, "filename": output_file.name})
-                else:
-                    results.append({"type": "error", "index": idx, "message": out.get("error", "알 수 없는 오류")})
-            else:
-                results.append({"type": "error", "index": idx, "message": proc_result.stderr[-500:] if proc_result.stderr else "프로세스 실패"})
-        except subprocess.TimeoutExpired:
-            results.append({"type": "error", "index": idx, "message": "영상 생성 시간 초과 (10분)"})
-        except Exception as e:
-            results.append({"type": "error", "index": idx, "message": str(e)})
-
     async def event_stream():
-        for r in results:
-            yield f"data: {json.dumps(r)}\n\n"
+        for idx, clip in enumerate(clips):
+            # 시작 알림
+            yield f"data: {json.dumps({'type': 'start', 'index': idx, 'total': len(clips)})}\n\n"
+
+            output_file = output_dir / f"short_{idx+1:02d}.mp4"
+            edited_subs = [
+                {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
+                for s in clip.get("subtitles", [])
+            ]
+            worker_args = json.dumps({
+                "video_path": meta["video_path"],
+                "srt_path": meta.get("subtitle_path", ""),
+                "start_seconds": clip["start_seconds"],
+                "end_seconds": clip["end_seconds"],
+                "output_path": str(output_file),
+                "title": clip.get("title", ""),
+                "subtitle": clip.get("subtitle_text", ""),
+                "logo_path": meta.get("logo_path", ""),
+                "remove_silence": remove_silence,
+                "subs": edited_subs,
+                "template": template,
+                "custom_font": meta.get("custom_font_path", ""),
+                "title_color": title_color,
+                "caption_color": caption_color,
+            }, ensure_ascii=False)
+
+            try:
+                loop = asyncio.get_event_loop()
+                proc_result = await loop.run_in_executor(
+                    None,
+                    lambda args=worker_args: subprocess.run(
+                        [python_exe, worker_script, args],
+                        capture_output=True, text=True, timeout=600,
+                        cwd=str(BASE_DIR),
+                    ),
+                )
+                if proc_result.returncode == 0:
+                    out = json.loads(proc_result.stdout.strip().split('\n')[-1])
+                    if out.get("ok"):
+                        yield f"data: {json.dumps({'type': 'done', 'index': idx, 'filename': output_file.name})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'type': 'error', 'index': idx, 'message': out.get('error', '알 수 없는 오류')})}\n\n"
+                else:
+                    err_msg = proc_result.stderr[-300:] if proc_result.stderr else "프로세스 실패"
+                    yield f"data: {json.dumps({'type': 'error', 'index': idx, 'message': err_msg})}\n\n"
+            except subprocess.TimeoutExpired:
+                yield f"data: {json.dumps({'type': 'error', 'index': idx, 'message': '영상 생성 시간 초과 (10분)'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'index': idx, 'message': str(e)[:200]})}\n\n"
+
         yield f"data: {json.dumps({'type': 'complete'})}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
