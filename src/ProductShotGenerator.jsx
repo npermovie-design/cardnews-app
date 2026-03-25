@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
+import { THEMES, isDarkTheme } from "./theme";
 
 /* ═══════════════════════════════════════════════════════════
    ProductShotGenerator.jsx  ·  AI 제품컷 생성기
@@ -132,12 +133,13 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
 }
 
 export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
-  const D      = isDark;
-  const text   = D ? "#fff" : "#1a1a2e";
-  const muted  = D ? "rgba(255,255,255,0.5)" : "#888";
-  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr    = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
-  const inputBg= D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
+  const C      = THEMES[isDark ? "dark" : "light"];
+  const D      = isDarkTheme(C);
+  const text   = C.text;
+  const muted  = C.muted;
+  const cardBg = C.card;
+  const bdr    = C.border;
+  const inputBg= C.inputBg;
   const accent = "#f97316";
 
   const STEPS = [

@@ -47,7 +47,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
     <button onClick={onClick} style={{
       ...base,
       padding: small ? "5px 14px" : "11px 26px",
-      fontSize: small ? 12 : 14,
+      fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
       background: C?.card || "transparent",
       border: "1px solid rgba(124,106,255,0.35)",
       color: C.purpleL,
@@ -61,7 +61,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
     <button onClick={onClick} style={{
       ...base,
       padding: small ? "5px 14px" : "12px 28px",
-      fontSize: small ? 12 : 14,
+      fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
       background: "linear-gradient(135deg,#7c6aff,#ec4899)",
       color: "#fff",
       boxShadow: "0 4px 16px rgba(124,106,255,0.3)",

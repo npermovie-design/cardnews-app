@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
+import { THEMES, isDarkTheme } from "./theme";
 
 /* ═══════════════════════════════════════════════════
    MockupGenerator.jsx  ·  AI 목업 생성기
@@ -131,13 +132,13 @@ async function generateMockup(logoPrompt, mockupType, logoB64, logoMime) {
 }
 
 export default function MockupGenerator({ isDark, user , onUserUpdate}) {
-  const D = isDark;
-  const text    = D ? "#fff" : "#1a1a2e";
-  const muted   = D ? "rgba(255,255,255,0.5)" : "#888";
-  const cardBg  = D ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr     = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
-  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
-  const inputBdr= D ? "rgba(255,255,255,0.15)" : "#ddd";
+  const C       = THEMES[isDark ? "dark" : "light"];
+  const text    = C.text;
+  const muted   = C.muted;
+  const cardBg  = C.card;
+  const bdr     = C.border;
+  const inputBg = C.inputBg;
+  const inputBdr= C.inputBorder;
   const ACC     = "#7c3aed";
 
   const STEPS = [
@@ -159,7 +160,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
   const [error,      setError]      = useState("");
   const fileRef = useRef(null);
 
-  const inp = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+  const inp = { width:"100%", padding:"11px 14px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
   const handleLogoUpload = (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -375,7 +376,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
               : "목업 종류를 선택해주세요"}
           </div>
           <button onClick={generate} disabled={!canGenerate}
-            style={{ padding:"13px 40px", borderRadius:11, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?`linear-gradient(135deg,${ACC},#6d28d9)`:"rgba(124,58,237,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
+            style={{ padding:"13px 40px", borderRadius:12, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?`linear-gradient(135deg,${ACC},#6d28d9)`:"rgba(124,58,237,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
             {user ? `🎨 목업 생성하기 → ${selTypes.length * 10}P` : "✦ 1회 생성하기"}
           </button>
         </div>
@@ -445,7 +446,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
           )}
 
           {/* 진행 바 */}
-          <div style={{ height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:14 }}>
+          <div style={{ height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden", marginBottom:14 }}>
             <div style={{ height:"100%", borderRadius:4, background:`linear-gradient(90deg,${ACC},#6d28d9)`, width:`${pct}%`, transition:"width 0.6s ease" }}/>
           </div>
           <div style={{ fontSize:12, color:muted, marginBottom:14 }}>{done}/{total} 완료 · {Math.max(total-done,0)}개 남음</div>
@@ -515,7 +516,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
             return (
               <div key={id} style={{ borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
                 {/* 이미지 */}
-                <div style={{ aspectRatio:"1", background:D?"rgba(255,255,255,0.03)":"#f5f5f5", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+                <div style={{ aspectRatio:"1", background:isDark?"rgba(255,255,255,0.03)":"#f5f5f5", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                   {img
                     ? <img src={img} alt={t?.label} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
                     : <div style={{ textAlign:"center", color:muted }}>
@@ -571,7 +572,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
         <div style={{ display:'flex', justifyContent:'center', marginTop:20, marginBottom:32 }}>
           <div style={{ width:'100%', maxWidth:640, borderRadius:20,
             border:`1px solid rgba(124,58,237,0.3)`,
-            background: D ? 'rgba(124,58,237,0.06)' : 'rgba(124,58,237,0.04)',
+            background: isDark ? 'rgba(124,58,237,0.06)' : 'rgba(124,58,237,0.04)',
             padding:'20px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:12, textAlign:'center' }}>
             {/* 배지 */}
             <span style={{ fontSize:11, fontWeight:800, padding:'4px 14px', borderRadius:20,
@@ -597,12 +598,12 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
             {/* 버튼 2개 */}
             <div style={{ display:'flex', gap:12, flexWrap:'wrap', justifyContent:'center', width:'100%', marginTop:4 }}>
               <button onClick={e => { e.stopPropagation(); window.open('https://xn--p39ay4k91o0re35a.com/', '_blank'); }}
-                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:11, border:'none', cursor:'pointer',
+                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:12, border:'none', cursor:'pointer',
                   background:`linear-gradient(135deg,${ACC},#6d28d9)`, color:'#fff', fontSize:14, fontWeight:800 }}>
                 포트폴리오 보러가기
               </button>
               <button onClick={e => { e.stopPropagation(); window.open('https://xn--p39ay4k91o0re35a.com/contact', '_blank'); }}
-                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:11, cursor:'pointer',
+                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:12, cursor:'pointer',
                   border:`1px solid rgba(124,58,237,0.5)`, background:'transparent', color:ACC, fontSize:14, fontWeight:800 }}>
                 문의하기
               </button>

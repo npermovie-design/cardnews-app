@@ -224,7 +224,7 @@ export default function HomePage({ navigate, C }) {
                 <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 900, background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   <CountUp to={val} suffix={suffix} />
                 </div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{label}</div>
+                <div style={{ fontSize: "clamp(11px,2.5vw,13px)", color: C.muted, marginTop: 4 }}>{label}</div>
               </div>
             ))}
           </div>
@@ -245,7 +245,7 @@ export default function HomePage({ navigate, C }) {
               <div style={{ fontSize: 15, fontWeight: 800, color: cat.catColor }}>{cat.cat}</div>
               <div style={{ flex: 1, height: 1, background: `${cat.catColor}30` }} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(180px,100%),1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(150px,100%),1fr))", gap: 12 }}>
               {cat.items.map((tool, i) => (
                 <FadeIn key={tool.title} delay={i * 0.06}>
                   <div className="tool-card" onClick={() => navigate(cat.navTarget || "ai")}
@@ -268,7 +268,7 @@ export default function HomePage({ navigate, C }) {
       {/* ══ 사용 방법 (3단계) ══ */}
       <SecWrap C={C}>
         <SecTitle C={C} badge={p("howBadge")} title={p("howTitle")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 20 }}>
           {[
             { step: "01", title: p("how1"), desc: p("how1d"), color: "#7c6aff" },
             { step: "02", title: p("how2"), desc: p("how2d"), color: "#8b5cf6" },
@@ -290,7 +290,7 @@ export default function HomePage({ navigate, C }) {
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
         <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: 16 }}>
           {[
             { name: p("r1name"), job: p("r1job"), avatar: "K", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
             { name: p("r2name"), job: p("r2job"), avatar: "L", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },

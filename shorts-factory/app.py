@@ -1,3 +1,4 @@
+import sys
 import uuid
 import json
 import asyncio
@@ -85,6 +86,11 @@ async def index():
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "shorts-factory"}
+
+
 @app.get("/virality", response_class=HTMLResponse)
 async def virality_page():
     html_path = BASE_DIR / "templates" / "virality.html"
@@ -141,6 +147,31 @@ async def youtube_download(request: Request):
     }
 
     return {"file_id": file_id, "needs_transcription": True, "message": "YouTube 영상 다운로드 완료"}
+
+
+@app.post("/api/yt-dl")
+async def yt_dl_alias(request: Request):
+    """YouTube 다운로드 alias (프론트엔드 호환)"""
+    return await youtube_download(request)
+
+@app.get("/api/youtube-info")
+async def youtube_info(url: str = ""):
+    """YouTube 영상 정보 조회"""
+    if not url:
+        raise HTTPException(400, "URL이 필요합니다")
+    try:
+        import yt_dlp
+        ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            return {
+                "title": info.get("title", ""),
+                "duration": info.get("duration", 0),
+                "thumbnail": info.get("thumbnail", ""),
+                "channel": info.get("channel", ""),
+            }
+    except Exception as e:
+        raise HTTPException(500, f"정보 조회 실패: {str(e)}")
 
 
 @app.post("/upload")
@@ -287,7 +318,7 @@ async def generate(request: Request):
 
     # 클립별로 별도 프로세스에서 생성 (메모리 격리)
     import subprocess
-    python_exe = str(BASE_DIR / "venv" / "Scripts" / "python.exe")
+    python_exe = sys.executable
     worker_script = str(BASE_DIR / "generate_worker.py")
 
     results = []

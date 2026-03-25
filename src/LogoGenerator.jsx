@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { THEMES } from "./theme";
 import StepBar from "./StepBar.jsx";
 
 const LOGO_STYLES = [
@@ -52,12 +53,13 @@ async function callAPI(prompt, refB64, refMime) {
 
 export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   const D = isDark;
-  const text    = D ? "#fff" : "#1a1a2e";
-  const muted   = D ? "rgba(255,255,255,0.5)" : "#888";
-  const cardBg  = D ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr     = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
-  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
-  const inputBdr= D ? "rgba(255,255,255,0.15)" : "#ddd";
+  const C = THEMES[D ? "dark" : "light"];
+  const text    = C.text;
+  const muted   = C.muted;
+  const cardBg  = C.card;
+  const bdr     = C.border;
+  const inputBg = C.inputBg;
+  const inputBdr= C.inputBorder;
 
   const STEPS = [
     { n:1, label:"설정" },
@@ -83,7 +85,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   const [error,     setError]     = useState("");
   const [selResult, setSelResult] = useState(0);
 
-  const inp = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+  const inp = { width:"100%", padding:"11px 14px", borderRadius:12, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
   const handleRef = (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -201,7 +203,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
               const isSel = selStyle === s.id;
               return (
                 <button key={s.id} onClick={() => setSelStyle(isSel ? null : s.id)}
-                  style={{ padding:"10px 6px", borderRadius:11, border:`2px solid ${isSel?s.color:bdr}`, background:isSel?s.bg:cardBg, cursor:"pointer", textAlign:"center", transition:"all 0.1s", boxShadow:isSel?`0 0 0 3px ${s.color}25`:"none" }}>
+                  style={{ padding:"10px 6px", borderRadius:12, border:`2px solid ${isSel?s.color:bdr}`, background:isSel?s.bg:cardBg, cursor:"pointer", textAlign:"center", transition:"all 0.1s", boxShadow:isSel?`0 0 0 3px ${s.color}25`:"none" }}>
                   <div style={{ fontSize:11, fontWeight:800, color:isSel?s.color:text, marginBottom:2 }}>{s.label}</div>
                   <div style={{ fontSize:9, color:muted }}>{s.desc}</div>
                 </button>
@@ -245,7 +247,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
           <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:7 }}>③ 참고 이미지 (선택)</div>
           <input ref={refFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleRef}/>
           {refImage ? (
-            <div style={{ display:"flex", gap:10, alignItems:"center", padding:"10px 14px", borderRadius:11, border:`1px solid ${bdr}`, background:cardBg }}>
+            <div style={{ display:"flex", gap:10, alignItems:"center", padding:"10px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
               <img src={`data:${refMime};base64,${refImage}`} alt="" style={{ width:56, height:56, objectFit:"cover", borderRadius:7, flexShrink:0 }}/>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:text }}>참고 이미지 업로드됨</div>
@@ -254,7 +256,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
               <button onClick={() => { setRefImage(null); setRefMime(null); }} style={{ padding:"3px 9px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>제거</button>
             </div>
           ) : (
-            <button onClick={() => refFileRef.current?.click()} style={{ width:"100%", padding:"12px", borderRadius:11, border:`2px dashed ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
+            <button onClick={() => refFileRef.current?.click()} style={{ width:"100%", padding:"12px", borderRadius:12, border:`2px dashed ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
               📎 참고 이미지 업로드 — 색감·분위기만 반영 (복사 아님)
             </button>
           )}
@@ -277,7 +279,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
             <div style={{ fontSize:11, color:muted }}>{genCount * 10}P</div>
           </div>
           <button onClick={generate} disabled={!canGenerate}
-            style={{ padding:"13px 40px", borderRadius:11, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?"linear-gradient(135deg,#06b6d4,#0891b2)":"rgba(6,182,212,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
+            style={{ padding:"13px 40px", borderRadius:12, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?"linear-gradient(135deg,#06b6d4,#0891b2)":"rgba(6,182,212,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
             {user ? `🏷 로고 생성하기 → ${genCount * 10}P` : "✦ 1회 생성하기"}
           </button>
         </div>
@@ -359,7 +361,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
 
         {results[selResult] && (
           <div style={{ padding:"18px", borderRadius:15, border:`1px solid ${bdr}`, background:cardBg, display:"flex", gap:18, alignItems:"center", flexWrap:"wrap" }}>
-            <div style={{ width:140, height:140, borderRadius:11, background:D?"rgba(255,255,255,0.05)":"#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+            <div style={{ width:140, height:140, borderRadius:12, background:D?"rgba(255,255,255,0.05)":"#f0f0f0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
               <img src={results[selResult]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", padding:8, display:"block" }}/>
             </div>
             <div style={{ flex:1, minWidth:180 }}>
@@ -405,12 +407,12 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
             {/* 버튼 2개 */}
             <div style={{ display:'flex', gap:12, flexWrap:'wrap', justifyContent:'center', width:'100%', marginTop:4 }}>
               <button onClick={e => { e.stopPropagation(); window.open('https://xn--p39ay4k91o0re35a.com/', '_blank'); }}
-                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:11, border:'none', cursor:'pointer',
+                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:12, border:'none', cursor:'pointer',
                   background:'linear-gradient(135deg,#06b6d4,#0891b2)', color:'#fff', fontSize:14, fontWeight:800 }}>
                 포트폴리오 보러가기
               </button>
               <button onClick={e => { e.stopPropagation(); window.open('https://xn--p39ay4k91o0re35a.com/contact', '_blank'); }}
-                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:11, cursor:'pointer',
+                style={{ flex:1, minWidth:140, padding:'13px 20px', borderRadius:12, cursor:'pointer',
                   border:'1px solid rgba(6,182,212,0.5)', background:'transparent', color:'#06b6d4', fontSize:14, fontWeight:800 }}>
                 문의하기
               </button>

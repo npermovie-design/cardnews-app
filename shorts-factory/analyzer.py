@@ -1,7 +1,8 @@
+import os
 import json
 import httpx
 
-OR_KEY = "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"
+OR_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OR_URL = "https://openrouter.ai/api/v1/chat/completions"
 OR_MODEL = "anthropic/claude-sonnet-4-5"
 

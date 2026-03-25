@@ -3,6 +3,7 @@ import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
+import { isDarkTheme } from "./theme";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -290,7 +291,7 @@ function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
   });
   if (!slide) return null;
   return (
-    <canvas ref={cRef} style={{ width:displayW, height:displayH, display:"block", borderRadius:8 }}/>
+    <canvas ref={cRef} style={{ width:displayW, height:displayH, display:"block", borderRadius:12 }}/>
   );
 }
 
@@ -436,7 +437,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
 
   // 테마
-  const D = isDark || theme === "dark";
+  const D = isDarkTheme(theme);
   const text    = D ? "#fff" : "#1a1a2e";
   const muted   = D ? "rgba(255,255,255,0.55)" : "#888";
   const cardBg  = D ? "rgba(255,255,255,0.04)" : "#fff";
@@ -450,7 +451,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const imgRatio = imgW / imgH;
   const activeStyle = selPreset || DESIGN_PRESETS[0];
 
-  const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color:D?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+  const inputStyle = { width:"100%", padding:"11px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:inputBg, color:D?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
   // WizHeader
   const WizHeader = () => (
@@ -701,14 +702,14 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
                 onKeyDown={e=>{ if(e.key==="Enter") fetchFromUrl(); }}
                 placeholder="https://... 뉴스/유튜브/블로그 URL 붙여넣기"
-                style={{ flex:1, padding:"9px 13px", borderRadius:9, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
+                style={{ flex:1, padding:"11px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
+                style={{ padding:"11px 18px", borderRadius:12, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>
             {urlResult && (
-              <div style={{ marginTop:10, padding:"10px 13px", borderRadius:8, background:D?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)", border:`1px solid rgba(99,102,241,0.2)`, display:"flex", gap:10, alignItems:"flex-start" }}>
+              <div style={{ marginTop:10, padding:"11px 14px", borderRadius:12, background:D?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)", border:`1px solid rgba(99,102,241,0.2)`, display:"flex", gap:10, alignItems:"flex-start" }}>
                 {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:56, height:40, objectFit:"cover", borderRadius:5, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{urlResult.title}</div>
@@ -737,7 +738,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:5 }}>주제</div>
             <input value={topic} onChange={e=>setTopic(e.target.value)}
               placeholder="주제를 직접 입력하세요... 예) 직장인 번아웃 극복법 5가지"
-              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:9, padding:"10px 14px", color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:12, padding:"11px 14px", color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
 
             {/* 상세 내용 */}
             <div style={{ fontSize:11, fontWeight:700, color:text, marginTop:12, marginBottom:5 }}>
@@ -745,7 +746,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
             <textarea value={topicDetail} onChange={e=>setTopicDetail(e.target.value)}
               placeholder={"각 슬라이드에 넣고 싶은 내용을 줄바꿈으로 구분해 입력하세요\n예)\n1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)"} rows={5}
-              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:9, padding:"10px 14px", color:text, fontSize:12, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.8 }}/>
+              style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:12, padding:"11px 14px", color:text, fontSize:12, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.8 }}/>
           </div>
 
           {/* 슬라이드 수 */}
@@ -759,7 +760,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 const isC = pageCount===n;
                 return (
                   <button key={n} onClick={()=>setPageCount(n)}
-                    style={{ width:38, height:38, borderRadius:9, border:`1.5px solid ${isC?"#7c6aff":bdr}`, cursor:"pointer", fontSize:13, fontWeight:700, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#a5b4fc":(D?"rgba(255,255,255,0.5)":"#666") }}>
+                    style={{ width:38, height:38, borderRadius:12, border:`1.5px solid ${isC?"#7c6aff":bdr}`, cursor:"pointer", fontSize:13, fontWeight:700, background:isC?"rgba(99,102,241,0.15)":"transparent", color:isC?"#a5b4fc":(D?"rgba(255,255,255,0.5)":"#666") }}>
                     {n}
                   </button>
                 );
@@ -778,7 +779,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <div style={{ fontSize:11, color:muted, marginTop:2 }}>주제를 입력하면 더 구체적인 방향을 추천해줘요</div>
               </div>
               <button onClick={getSugg} disabled={suggesting||!topic.trim()}
-                style={{ padding:"8px 16px", borderRadius:8, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
+                style={{ padding:"8px 16px", borderRadius:12, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
                 {suggesting?"추천 중...":"✨ AI 추천"}
               </button>
             </div>
@@ -849,7 +850,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <div style={{ fontSize:11, color:muted, marginTop:2 }}>불러온 내용을 기반으로 슬라이드가 자동 구성돼요</div>
               </div>
               <button onClick={suggestAll} disabled={planLoading}
-                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
+                style={{ padding:"7px 14px", borderRadius:12, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
                 {planLoading?"구성 중...":"재구성"}
               </button>
             </div>
@@ -860,7 +861,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:11, color:muted, marginTop:2 }}>모든 슬라이드 내용을 AI가 한 번에 추천</div>
             </div>
             <button onClick={suggestAll} disabled={planLoading}
-              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
+              style={{ padding:"9px 20px", borderRadius:12, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
               {planLoading?"추천 중...":"✨ 전체 자동 추천"}
             </button>
           </div>
@@ -882,12 +883,12 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>헤드라인 <span style={{ fontWeight:400 }}>(14자 이내)</span></div>
                     <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))} placeholder="비워두면 AI가 자동 생성"
-                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${sc.headline?"rgba(99,102,241,0.5)":bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
+                      style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${sc.headline?"rgba(99,102,241,0.5)":bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>본문 <span style={{ fontWeight:400 }}>(50자 이내, 선택)</span></div>
                     <input value={sc.body||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,body:e.target.value}:s))} placeholder="비워두면 AI가 자동 생성"
-                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:12,outline:"none",boxSizing:"border-box" }}/>
+                      style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:12,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                 </div>
               </div>
@@ -957,7 +958,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               })}
             </div>
             {selPreset&&(
-              <div style={{ marginTop:10,padding:"9px 14px",borderRadius:9,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)" }}>
+              <div style={{ marginTop:10,padding:"9px 14px",borderRadius:12,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)" }}>
                 <div style={{ fontSize:12,fontWeight:700,color:"#a5b4fc" }}>✓ {selPreset.label} 선택됨</div>
               </div>
             )}
@@ -972,7 +973,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
-                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?"#7c6aff":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                  style={{ padding:"8px 4px",borderRadius:12,border:`1.5px solid ${selSize===i?"#7c6aff":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
                   <span style={{ fontSize:16 }}>{p.icon}</span>
                   <span>{p.label}</span>
                   {p.w&&<span style={{ fontSize:9,opacity:0.7 }}>{p.w}×{p.h}</span>}
@@ -1062,8 +1063,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:18,fontWeight:900,color:text,marginBottom:10 }}>포인트가 모두 소진되었습니다</div>
               <div style={{ fontSize:13,color:muted,lineHeight:1.8,marginBottom:24 }}>추가 작업을 하려면 포인트를 충전하거나<br/>관리자에게 문의해주세요.</div>
               <div style={{ display:"flex",gap:10 }}>
-                <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
-                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>포인트 충전</button>
+                <button onClick={()=>setShowCreditPopup(false)} style={{ flex:1,padding:"11px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:13,cursor:"pointer" }}>닫기</button>
+                <button onClick={()=>{ setShowCreditPopup(false); window.location.hash="#pricing"; }} style={{ flex:1,padding:"11px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer" }}>포인트 충전</button>
               </div>
               <div style={{ marginTop:12,fontSize:12,color:muted }}>또는 <a href="#contact" style={{ color:"#7c6aff" }}>관리자 문의하기 →</a></div>
             </div>
@@ -1090,7 +1091,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   const sl=getCurSlide(i); const ss=getSlideStyle(i); const sBg=(sted[i]||{}).bgImage; const isActive=selIdx===i;
                   return (
                     <div key={i} onClick={()=>setSelIdx(i)}
-                      style={{ borderRadius:8,overflow:"hidden",border:`2px solid ${isActive?"#7c6aff":"transparent"}`,cursor:"pointer",transition:"border 0.12s",background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                      style={{ borderRadius:12,overflow:"hidden",border:`2px solid ${isActive?"#7c6aff":"transparent"}`,cursor:"pointer",transition:"border 0.12s",background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
                       <div style={{ position:"relative" }}>
                         <SlideCanvas slide={sl} style={ss} CW={imgW} CH={imgH} displayW={106} bgImageSrc={sBg||undefined}/>
                         <div style={{ position:"absolute",top:3,left:3,width:16,height:16,borderRadius:4,background:isActive?"#7c6aff":"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:"#fff" }}>{i+1}</div>
@@ -1107,19 +1108,19 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <button onClick={()=>{
                   const newSlide = { id:"slide_"+Date.now(), label:`추가 ${slides.length+1}`, title:"", subtitle:"", body:"", highlight:"" };
                   setSlides(prev=>[...prev,newSlide]);
-                }} style={{ flex:1,padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:"#7c6aff",fontSize:10,cursor:"pointer",fontWeight:700 }}>+ 페이지 추가</button>
+                }} style={{ flex:1,padding:"6px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:"#7c6aff",fontSize:10,cursor:"pointer",fontWeight:700 }}>+ 페이지 추가</button>
                 {slides.length>2 && <button onClick={()=>{
                   if(!window.confirm("마지막 페이지를 삭제할까요?")) return;
                   setSlides(prev=>prev.slice(0,-1));
                   if(selIdx>=slides.length-1) setSelIdx(Math.max(0,slides.length-2));
-                }} style={{ padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:10,cursor:"pointer",fontWeight:700 }}>삭제</button>}
+                }} style={{ padding:"6px 10px",borderRadius:12,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:10,cursor:"pointer",fontWeight:700 }}>삭제</button>}
               </div>
-              <button onClick={resetAll} style={{ marginTop:4,width:"100%",padding:"6px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
+              <button onClick={resetAll} style={{ marginTop:4,width:"100%",padding:"6px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:10,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
             </div>
 
             {/* 편집 패널 */}
             <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:8 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:9,background:cardBg,border:`1px solid ${bdr}` }}>
+              <div style={{ display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:12,background:cardBg,border:`1px solid ${bdr}` }}>
                 <div style={{ width:22,height:22,borderRadius:6,background:"rgba(99,102,241,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#7c6aff",flexShrink:0 }}>{selIdx+1}</div>
                 <span style={{ fontSize:13,fontWeight:800,color:text,flex:1 }}>{slides[selIdx]?.label}</span>
                 <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ ...btnSm,opacity:selIdx===0?0.3:1 }}>‹</button>
@@ -1127,7 +1128,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1} style={{ ...btnSm,opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
               </div>
 
-              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
+              <div style={{ borderRadius:12,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
                 <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:8 }}>📝 텍스트</div>
                 {[
                   { key:"title",label:"제목",placeholder:"제목을 입력하세요" },
@@ -1145,7 +1146,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               </div>
 
               {/* 디자인 프리셋 빠른 변경 */}
-              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"10px 12px",marginBottom:0 }}>
+              <div style={{ borderRadius:12,border:`1px solid ${bdr}`,background:cardBg,padding:"10px 12px",marginBottom:0 }}>
                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6 }}>
                   <div style={{ fontSize:10,fontWeight:700,color:muted }}>🎯 디자인 프리셋</div>
                   <div style={{ display:"flex",gap:4 }}>
@@ -1172,7 +1173,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 </div>
               </div>
 
-              <div style={{ borderRadius:9,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
+              <div style={{ borderRadius:12,border:`1px solid ${bdr}`,background:cardBg,padding:"12px" }}>
                 <div style={{ fontSize:10,fontWeight:700,color:muted,marginBottom:10 }}>🎨 스타일</div>
                 <div style={{ display:"flex",gap:8,marginBottom:10 }}>
                   <div style={{ flex:1 }}>
@@ -1314,12 +1315,12 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     slides.forEach((_,i)=>{ if(i!==selIdx){ const p={...(next[i]||{})}; keys.forEach(k=>{ if(cur[k]!==undefined) p[k]=cur[k]; }); next[i]=p; } });
                     return next;
                   });
-                }} style={{ width:"100%",padding:"8px",borderRadius:8,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.06)",color:"#4ade80",fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:10 }}>
+                }} style={{ width:"100%",padding:"8px",borderRadius:12,border:`1px solid rgba(74,222,128,0.3)`,background:"rgba(74,222,128,0.06)",color:"#4ade80",fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:10 }}>
                   ✨ 현재 스타일 전체 슬라이드에 적용
                 </button>
                 {so.bgImage ? (
                   <div>
-                    <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:8,border:`1px solid ${bdr}`,background:inputBg,marginBottom:8 }}>
+                    <div style={{ display:"flex",gap:8,alignItems:"center",padding:"7px 10px",borderRadius:12,border:`1px solid ${bdr}`,background:inputBg,marginBottom:8 }}>
                       <img src={so.bgImage} alt="" style={{ width:38,height:38,objectFit:"cover",borderRadius:5,flexShrink:0 }}/>
                       <span style={{ flex:1,fontSize:11,color:muted }}>배경 이미지 적용됨</span>
                       <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
@@ -1365,9 +1366,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   </div>
                 ) : (
                   <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-                    <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>이미지 업로드</button>
-                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>이미지 검색</button>
-                    <button onClick={()=>splitFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:8,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }} title="하나의 이미지를 슬라이드 수만큼 분할하여 각 배경에 적용">사진 분할</button>
+                    <button onClick={()=>bgFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer" }}>이미지 업로드</button>
+                    <button onClick={()=>setShowMediaSearch(true)} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1px solid rgba(99,102,241,0.3)`,background:"rgba(99,102,241,0.08)",color:"#a5b4fc",fontSize:11,cursor:"pointer",fontWeight:700 }}>이미지 검색</button>
+                    <button onClick={()=>splitFileRef.current?.click()} style={{ flex:1,minWidth:80,padding:"8px",borderRadius:12,border:`1px solid rgba(34,197,94,0.3)`,background:"rgba(34,197,94,0.08)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:700 }} title="하나의 이미지를 슬라이드 수만큼 분할하여 각 배경에 적용">사진 분할</button>
                     <KlipyButton isDark={isDark} compact onSelect={(item)=>{
                       if(item.url){ setSlides(prev=>{const n=[...prev];n[selIdx]={...n[selIdx],bgImage:item.url};return n;}); }
                     }} buttonStyle={{flex:1,minWidth:80,padding:"8px",fontSize:11,justifyContent:"center"}} />
@@ -1376,8 +1377,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               </div>
 
               <div style={{ display:"flex",gap:8 }}>
-                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:800 }}>PNG 저장</button>
-                <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:10,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"ZIP 저장"}</button>
+                <button onClick={()=>saveOne(selIdx)} style={{ flex:1,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:800 }}>PNG 저장</button>
+                <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"ZIP 저장"}</button>
               </div>
               <ShareButton title={topic||"카드뉴스"} text={topic||""} isDark={D} compact />
             </div>
@@ -1433,9 +1434,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               </div>
               <div style={{ fontSize:10,color:muted,textAlign:"center" }}>{imgW}×{imgH} · {curStyle.label||"커스텀"}</div>
               <div style={{ display:"flex",gap:6,width:"100%" }}>
-                <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===0?0.3:1 }}>‹</button>
+                <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0} style={{ flex:1,padding:"8px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===0?0.3:1 }}>‹</button>
                 <span style={{ flex:2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:muted }}>{selIdx+1} / {slides.length}</span>
-                <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1} style={{ flex:1,padding:"8px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
+                <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1} style={{ flex:1,padding:"8px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:13,opacity:selIdx===slides.length-1?0.3:1 }}>›</button>
               </div>
             </div>
           </div>
@@ -1448,14 +1449,14 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div onClick={e=>e.stopPropagation()} style={{width:"min(700px,95vw)",maxHeight:"80vh",background:D?"#13102a":"#fff",borderRadius:20,padding:"24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`,display:"flex",flexDirection:"column"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
                 <div style={{fontSize:16,fontWeight:900,color:text}}>🔍 이미지 검색 (Pixabay · Pexels)</div>
-                <button onClick={()=>setShowMediaSearch(false)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:16}}>✕</button>
+                <button onClick={()=>setShowMediaSearch(false)} style={{width:30,height:30,borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,cursor:"pointer",fontSize:16}}>✕</button>
               </div>
               <div style={{display:"flex",gap:8,marginBottom:16}}>
                 <input value={mediaQuery} onChange={e=>setMediaQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchMedia(mediaQuery)}
                   placeholder="검색어 입력 (예: nature, food, office)"
-                  style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:inputBg,color:text,fontSize:13,outline:"none"}}/>
+                  style={{flex:1,padding:"11px 14px",borderRadius:12,border:`1px solid ${bdr}`,background:inputBg,color:text,fontSize:13,outline:"none"}}/>
                 <button onClick={()=>searchMedia(mediaQuery)} disabled={mediaLoading}
-                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:700,cursor:mediaLoading?"wait":"pointer",opacity:mediaLoading?0.6:1}}>
+                  style={{padding:"11px 20px",borderRadius:12,border:"none",background:"#7c6aff",color:"#fff",fontSize:13,fontWeight:700,cursor:mediaLoading?"wait":"pointer",opacity:mediaLoading?0.6:1}}>
                   {mediaLoading?"검색중...":"검색"}
                 </button>
               </div>
@@ -1477,7 +1478,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                         imgEl.onerror = () => { updSted(selIdx, "bgImage", img.url); setShowMediaSearch(false); };
                         imgEl.src = img.url;
                       }}
-                        style={{borderRadius:10,overflow:"hidden",border:`1px solid ${bdr}`,cursor:"pointer",position:"relative",aspectRatio:"4/3"}}
+                        style={{borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,cursor:"pointer",position:"relative",aspectRatio:"4/3"}}
                         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"}
                         onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                         <img src={img.thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>

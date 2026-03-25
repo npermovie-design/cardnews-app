@@ -69,11 +69,11 @@ function GuardModal({ cost, onConfirm, onCancel }) {
     }}>
       <div style={{
         background: "#13102a", border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 20, padding: "32px 28px", maxWidth: 360, width: "90%",
+        borderRadius: 20, padding: "clamp(20px,5vw,32px) clamp(16px,4vw,28px)", maxWidth: 360, width: "90%",
         boxShadow: "0 24px 64px rgba(0,0,0,0.5)", textAlign: "center",
         animation: "fadeIn 0.15s ease",
       }}>
-        <div style={{ fontSize: 44, marginBottom: 14 }}>⚠️</div>
+        <div style={{ fontSize: "clamp(32px,8vw,44px)", marginBottom: 14 }}>⚠️</div>
         <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 10 }}>
           생성 중입니다!
         </div>
@@ -466,6 +466,9 @@ export default function App() {
           .hide-mobile{display:none!important}
           .form-row{flex-direction:column!important;gap:10px!important}
         }
+        @media(max-width:600px){
+          .card-grid{grid-template-columns:1fr!important}
+        }
         @media(max-width:480px){
           .card-grid{grid-template-columns:1fr!important}
           .stat-row{grid-template-columns:1fr 1fr!important}
@@ -497,9 +500,9 @@ export default function App() {
       {showAttendance && <AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} />}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "36px 28px", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
-            <div style={{ fontSize: 52, marginBottom: 14 }}>⚡</div>
-            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
+          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
+            <div style={{ fontSize: "clamp(36px,8vw,52px)", marginBottom: 14 }}>⚡</div>
+            <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#a5b4fc" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
               로그인하면 <b style={{ color: "#a5b4fc" }}>20회 추가</b> + 포인트로 무제한 이용 가능해요!
@@ -589,13 +592,13 @@ export default function App() {
             <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>{onlineCount}{t("online")}</span>
           </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
-          <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0 }}>
+          <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0, minHeight: 36 }}>
             {theme === "light" ? "🌙 "+t("darkMode") : "☀️ "+t("lightMode")}
           </button>
           {/* 다국어 선택 */}
           <div ref={langRef} style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 20, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700, color: C.muted, flexShrink: 0 }}>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 12px", borderRadius: 20, border: "1px solid " + C.border, background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700, color: C.muted, flexShrink: 0, minHeight: 36 }}>
               🌐 <span style={{ fontSize: 11 }}>{LANGUAGES.find(l=>l.code===lang)?.label||t("translate")}</span>
             </button>
             {langOpen && (
@@ -725,7 +728,7 @@ export default function App() {
                   </div>
                 );
               })()}
-              <button onClick={() => setShowAuth(true)} style={{ padding: "5px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>로그인</button>
+              <button onClick={() => setShowAuth(true)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)", minHeight: 36 }}>로그인</button>
             </div>
           )}
         </div>
@@ -734,7 +737,7 @@ export default function App() {
         <div className="mobile-controls" style={{ display: "none", alignItems: "center", gap: 6, marginLeft: "auto", marginRight: 4, flexShrink: 0 }}>
           {/* 다크/라이트 토글 */}
           <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", justifyContent: "center",
-            width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
+            width: 36, height: 36, borderRadius: "50%", border: "1px solid " + C.border,
             background: C.toggleBg, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>
             {theme === "light" ? (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -745,7 +748,7 @@ export default function App() {
           {/* 모바일 언어 선택 */}
           <div style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "center",
-              width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border,
+              width: 36, height: 36, borderRadius: "50%", border: "1px solid " + C.border,
               background: C.toggleBg, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             </button>
@@ -771,7 +774,7 @@ export default function App() {
           </div>
           {/* 유저 상태 */}
           {user ? (
-            <button onClick={() => setMobileOpen(s => !s)} style={{ width: 30, height: 30, borderRadius: "50%",
+            <button onClick={() => setMobileOpen(s => !s)} style={{ width: 36, height: 36, borderRadius: "50%",
               background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
               color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
@@ -787,7 +790,7 @@ export default function App() {
         </div>
 
         {/* 햄버거 */}
-        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "4px 8px", lineHeight: 1, flexShrink: 0 }}>
+        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "8px 12px", lineHeight: 1, flexShrink: 0 }}>
           {mobileOpen ? "✕" : "☰"}
         </button>
       </div>
@@ -797,7 +800,7 @@ export default function App() {
         <div style={{
           position: "fixed", top: 60, left: 0, right: 0, bottom: 0, zIndex: 999,
           background: theme === "dark" ? "rgba(10,8,18,0.98)" : "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(20px)", padding: "20px 20px 40px",
+          backdropFilter: "blur(20px)", padding: "16px 16px 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
               {/* PC 상단 메뉴와 동일한 큰 메뉴만 */}

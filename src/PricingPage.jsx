@@ -6,7 +6,7 @@ import { getPageText } from "./i18n-pages.js";
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 
 // ✅ 결제 오픈 시 true로 변경
-const PAYMENT_ENABLED = false;
+const PAYMENT_ENABLED = true;
 
 const COMMON_FEATURES = [
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
@@ -22,38 +22,38 @@ const SUB_PLANS = [
   {
     id: "free", name: "Free", icon: "F",
     monthlyPrice: 0, yearlyPrice: 0,
-    points: 200, color: "#888",
+    points: 50, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 시 200P 지급", ...COMMON_FEATURES],
+    features: ["가입 보너스 50P 지급", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
   {
     id: "basic", name: "Basic", icon: "B",
     monthlyPrice: 9900, yearlyPrice: 95040,
-    points: 4500, color: "#4ade80",
+    points: 3000, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
-    highlight: false, badge: "연세 플랜",
-    features: ["매월 4,500P 충전", ...COMMON_FEATURES],
+    highlight: false, badge: null,
+    features: ["매월 3,000P 충전", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
-    id: "deluxe", name: "Deluxe", icon: "D",
+    id: "pro", name: "Pro", icon: "P",
     monthlyPrice: 19900, yearlyPrice: 191040,
-    points: 9500, color: "#38bdf8",
+    points: 7000, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 9,500P 충전", ...COMMON_FEATURES],
+    features: ["매월 7,000P 충전", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
     id: "premium", name: "Premium", icon: "P",
     monthlyPrice: 29900, yearlyPrice: 287040,
-    points: 14500, color: "#f59e0b",
+    points: 15000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: null,
-    features: ["매월 14,500P 충전", ...COMMON_FEATURES],
+    features: ["매월 15,000P 충전", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
 ];
@@ -85,10 +85,10 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   ];
   const PLANS = SUB_PLANS.map(pl => ({
     ...pl,
-    badge: pl.id==="deluxe" ? p("recommend") : pl.badge,
+    badge: pl.id==="pro" ? p("recommend") : pl.badge,
     btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
     features: [
-      pl.free ? p("pFeatSignup200") : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
+      pl.free ? p("pFeatSignup200") || "가입 보너스 50P 지급" : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
       ...COMMON_F,
     ],
   }));
@@ -229,7 +229,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           </div>
 
           {/* 플랜 카드 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 56 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))", gap: 16, marginBottom: 56 }}>
             {PLANS.map(plan => {
               const isYearly = billing === "yearly";
               const price = isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
@@ -334,6 +334,30 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           </div>
         </div>
       )}
+
+      {/* 포인트 소모 기준 안내 */}
+      <div style={{ background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 20, padding: "28px", marginBottom: 24 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>포인트 소모 기준 (API 비용 반영)</div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>실제 AI 모델 사용량에 따라 포인트가 차감됩니다.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
+          {[
+            { label: "텍스트 생성 (Claude Haiku)", cost: "10P", desc: "빠른 글쓰기·요약" },
+            { label: "텍스트 생성 (Claude Sonnet)", cost: "30P", desc: "고품질 글쓰기·분석" },
+            { label: "이미지 생성 (DALL-E/Flux)", cost: "50P", desc: "1장 기준" },
+            { label: "PPT 생성", cost: "20P", desc: "1덱 기준" },
+            { label: "영상 분석 (Shorts)", cost: "30P", desc: "1건 분석" },
+            { label: "영상 생성", cost: "10~30P", desc: "길이에 따라 변동" },
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{item.desc}</div>
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#7c6aff", whiteSpace: "nowrap", marginLeft: 12 }}>{item.cost}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* 무료 포인트 적립 안내 */}
       <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px", marginBottom: 48 }}>

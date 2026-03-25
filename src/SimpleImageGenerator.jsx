@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { isDarkTheme } from "./theme";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleImageGenerator
@@ -140,7 +141,8 @@ function buildSimplePrompt(slide, topic, styleTemplateId, imgW, imgH, mode) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleImageGenerator({ isDark, user, mode = "card", onUserUpdate }) {
+export default function SimpleImageGenerator({ isDark: isDarkProp, user, mode = "card", theme, onUserUpdate }) {
+  const isDark = theme ? isDarkTheme(theme) : isDarkProp;
   const isCard = mode === "card";
   const defaultSizeIdx = isCard ? 0 : 1; // card=정사각형, detail=세로형
   const SLIDE_TYPES = isCard ? SLIDE_TYPES_CARD : SLIDE_TYPES_DETAIL;
@@ -211,7 +213,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
   const imgH    = preset.h != null ? preset.h : (parseInt(customH) || 1000);
   const imgRatio = imgW / imgH;
 
-  const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color:isDark?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+  const inputStyle = { width:"100%", padding:"11px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:inputBg, color:isDark?"#fff":"#1a1a2e", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
 
   // ── 핸들러 ──────────────────────────────────────────────────
   const handleProductImages = (files) => {
@@ -420,9 +422,9 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
               <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&fetchFromUrl()}
                 placeholder="https://... URL 붙여넣기"
-                style={{ flex:1, padding:"8px 12px", borderRadius:9, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
+                style={{ flex:1, padding:"11px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:12, outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"8px 16px", borderRadius:9, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
+                style={{ padding:"11px 16px", borderRadius:12, border:"none", cursor:urlLoading?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading?0.5:1, flexShrink:0 }}>
                 {urlLoading?"불러오는 중...":"불러오기"}
               </button>
             </div>
@@ -542,7 +544,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
               <div style={{ fontSize:11, color:muted, marginTop:2 }}>모든 슬라이드 내용을 AI가 한 번에 추천해드려요</div>
             </div>
             <button onClick={suggestAllSlides} disabled={planGenLoading}
-              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planGenLoading?"wait":"pointer", background:accentColor, color:"#fff", fontSize:13, fontWeight:800, opacity:planGenLoading?0.6:1, flexShrink:0 }}>
+              style={{ padding:"9px 20px", borderRadius:12, border:"none", cursor:planGenLoading?"wait":"pointer", background:accentColor, color:"#fff", fontSize:13, fontWeight:800, opacity:planGenLoading?0.6:1, flexShrink:0 }}>
               {planGenLoading?"추천 중...":"✨ 전체 자동 추천"}
             </button>
           </div>
@@ -567,13 +569,13 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>헤드라인 <span style={{ fontWeight:400 }}>(14자 이내)</span></div>
                     <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))}
                       placeholder="비워두면 AI가 자동으로 채워줘요"
-                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${sc.headline?`${accentColor}50`:bdr}`,background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
+                      style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${sc.headline?`${accentColor}50`:bdr}`,background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>본문 <span style={{ fontWeight:400 }}>(40자 이내, 선택)</span></div>
                     <input value={sc.body||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,body:e.target.value}:s))}
                       placeholder="비워두면 AI가 자동으로 채워줘요"
-                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:12,outline:"none",boxSizing:"border-box" }}/>
+                      style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:12,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                 </div>
               </div>
@@ -652,7 +654,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
             <div style={{ display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
-                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?accentColor:bdr}`,background:selSize===i?`${accentColor}15`:"transparent",color:selSize===i?accentColor:isDark?"rgba(255,255,255,0.65)":"#555",fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                  style={{ padding:"8px 4px",borderRadius:12,border:`1.5px solid ${selSize===i?accentColor:bdr}`,background:selSize===i?`${accentColor}15`:"transparent",color:selSize===i?accentColor:isDark?"rgba(255,255,255,0.65)":"#555",fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
                   <span style={{ fontSize:16 }}>{p.icon}</span>
                   <span>{p.label}</span>
                   {p.w!=null && <span style={{ fontSize:9,opacity:0.7 }}>{p.w}×{p.h}</span>}
@@ -768,31 +770,31 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
             <div style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
               {/* 메인 뷰어 */}
               <div style={{ flex:1, minWidth:0 }}>
-                {saveMsg && <div style={{ marginBottom:10,padding:"8px 14px",borderRadius:9,background:"rgba(74,222,128,0.1)",border:"1px solid rgba(74,222,128,0.25)",fontSize:12,color:"#4ade80",fontWeight:700 }}>{saveMsg}</div>}
+                {saveMsg && <div style={{ marginBottom:10,padding:"8px 14px",borderRadius:12,background:"rgba(74,222,128,0.1)",border:"1px solid rgba(74,222,128,0.25)",fontSize:12,color:"#4ade80",fontWeight:700 }}>{saveMsg}</div>}
                 <div style={{ position:"relative",width:"100%",paddingTop:`${100/imgRatio}%`,background:"#000",borderRadius:14,overflow:"hidden",border:`1px solid ${bdr}` }}>
                   <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center" }}>
                     {currentPng
                       ? <img src={currentPng} alt="slide" style={{ width:"100%",height:"100%",objectFit:"contain",display:"block" }}/>
                       : <div style={{ textAlign:"center" }}>
                           {!loading && <><div style={{ fontSize:13,color:muted,marginBottom:8 }}>이미지 생성 실패</div>
-                          <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:8,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}
+                          <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"8px 18px",borderRadius:12,border:"none",background:accentColor,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>다시 생성</button></>}
                         </div>}
                   </div>
                 </div>
-                <div style={{ marginTop:10,padding:"9px 13px",borderRadius:9,background:isDark?"rgba(255,200,0,0.07)":"rgba(180,120,0,0.06)",border:`1px solid ${isDark?"rgba(255,200,0,0.2)":"rgba(180,120,0,0.15)"}`,display:"flex",gap:8,alignItems:"flex-start" }}>
+                <div style={{ marginTop:10,padding:"9px 13px",borderRadius:12,background:isDark?"rgba(255,200,0,0.07)":"rgba(180,120,0,0.06)",border:`1px solid ${isDark?"rgba(255,200,0,0.2)":"rgba(180,120,0,0.15)"}`,display:"flex",gap:8,alignItems:"flex-start" }}>
                   <span style={{ fontSize:13,flexShrink:0 }}>💡</span>
                   <div style={{ fontSize:11,color:isDark?"rgba(255,220,80,0.85)":"rgba(100,70,0,0.8)",lineHeight:1.65 }}>
                     AI가 직접 생성한 이미지이므로 <b>이미지 내 텍스트가 깨지거나 어색하게 표시될 수 있어요.</b> 결과가 마음에 들지 않으면 재생성해보세요.
                   </div>
                 </div>
                 <div style={{ display:"flex",gap:8,marginTop:8 }}>
-                  <button onClick={saveCurrent} disabled={!currentPng} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:currentPng?"pointer":"not-allowed",background:accentColor,color:"#fff",fontSize:13,fontWeight:800,opacity:currentPng?1:0.4 }}>PNG 저장</button>
+                  <button onClick={saveCurrent} disabled={!currentPng} style={{ flex:1,padding:"11px",borderRadius:12,border:"none",cursor:currentPng?"pointer":"not-allowed",background:accentColor,color:"#fff",fontSize:13,fontWeight:800,opacity:currentPng?1:0.4 }}>PNG 저장</button>
                   <button onClick={()=>{ if(saveOneToLibrary(curIdx)){ setSlotSaveMsg(p=>({...p,[curIdx]:"✅ 보관함!"})); setTimeout(()=>setSlotSaveMsg(p=>({...p,[curIdx]:""})),2500); } }} disabled={!currentPng}
-                    style={{ flex:1,padding:"11px",borderRadius:10,border:`1px solid ${accentColor}`,background:`${accentColor}15`,color:accentColor,fontSize:13,fontWeight:800,cursor:currentPng?"pointer":"not-allowed",opacity:currentPng?1:0.4 }}>
+                    style={{ flex:1,padding:"11px",borderRadius:12,border:`1px solid ${accentColor}`,background:`${accentColor}15`,color:accentColor,fontSize:13,fontWeight:800,cursor:currentPng?"pointer":"not-allowed",opacity:currentPng?1:0.4 }}>
                     {slotSaveMsg[curIdx]||"📁 보관함"}
                   </button>
-                  {currentPng && !loading && <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"11px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>🔄</button>}
-                  <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving} style={{ flex:1,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>
+                  {currentPng && !loading && <button onClick={()=>regenerateOne(curIdx)} style={{ padding:"11px 14px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer" }}>🔄</button>}
+                  <button onClick={saveAll} disabled={!rendered.some(Boolean)||saving} style={{ flex:1,padding:"11px",borderRadius:12,border:"none",cursor:"pointer",background:isDark?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:rendered.some(Boolean)&&!saving?1:0.4 }}>
                     {saving?"저장 중...":"전체 ZIP"}
                   </button>
                 </div>
@@ -802,7 +804,7 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
                 {slides.map((s, i) => {
                   const isRegen = regenIdx===i, isActive = curIdx===i, hasImg = !!rendered[i];
                   return (
-                    <div key={i} style={{ borderRadius:10,overflow:"hidden",border:`2px solid ${isActive?accentColor:"transparent"}`,transition:"all 0.12s",background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
+                    <div key={i} style={{ borderRadius:12,overflow:"hidden",border:`2px solid ${isActive?accentColor:"transparent"}`,transition:"all 0.12s",background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
                       <div onClick={()=>setCurIdx(i)} style={{ cursor:"pointer",position:"relative" }}>
                         {hasImg && !isRegen
                           ? <img src={rendered[i]} alt="" style={{ width:"100%",height:Math.round(110*imgH/imgW),display:"block",objectFit:"cover" }}/>
@@ -825,12 +827,12 @@ export default function SimpleImageGenerator({ isDark, user, mode = "card", onUs
                     </div>
                   );
                 })}
-                <button onClick={resetAll} style={{ marginTop:8,padding:"8px",borderRadius:9,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
+                <button onClick={resetAll} style={{ marginTop:8,padding:"8px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,cursor:"pointer",fontWeight:700 }}>🔄 처음부터</button>
               </div>
             </div>
           )}
 
-          {err && <div style={{ marginTop:12,padding:"10px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"#f87171" }}>{err}</div>}
+          {err && <div style={{ marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"#f87171" }}>{err}</div>}
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>

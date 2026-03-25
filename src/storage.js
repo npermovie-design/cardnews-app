@@ -26,13 +26,20 @@ export const supabase = _g.__supabase__;
 export const auth = supabase;
 export const db   = supabase;
 
-// ── 포인트 상수 ───────────────────────────────────────────────────────────
+// ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
 export const POINTS = {
   SIGNUP:      200,
-  DAILY_LOGIN: 1,
-  POST_WRITE:  1,
+  DAILY_LOGIN: 3,
+  POST_WRITE:  2,
   COMMENT:     0,
-  AI_USE:      -10,
+  AI_USE:      -10,   // 기본 (텍스트/Haiku)
+  AI_SONNET:   -30,   // Claude Sonnet 사용
+  IMAGE_GEN:   -50,   // 이미지 생성 (DALL-E/Flux)
+  PPT_GEN:     -20,   // PPT 1덱 생성
+  VIDEO_ANALYZE: -30, // 영상 AI 분석
+  VIDEO_GEN:   -10,   // 영상 생성 기본 (15초 이하)
+  VIDEO_GEN_30: -20,  // 영상 생성 (30초)
+  VIDEO_GEN_60: -30,  // 영상 생성 (60초+)
 };
 
 export const PLANS = [
@@ -43,7 +50,7 @@ export const PLANS = [
     points: 50,
     label: "무료",
     color: "#888",
-    features: ["가입 시 50P 지급", "게시글 작성 시 10P 적립", "AI 생성 1회 = 10P 차감", "포인트 소진 시 충전 필요"],
+    features: ["가입 시 50P 지급", "매일 출석 +3P", "텍스트 생성 10P · 이미지 50P", "포인트 소진 시 충전 필요"],
     btnLabel: "현재 플랜",
     highlight: false,
   },
@@ -51,34 +58,34 @@ export const PLANS = [
     id: "basic",
     name: "Basic",
     price: 9900,
-    points: 500,
-    label: "9,900원",
+    points: 3000,
+    label: "9,900원/월",
     color: "#4ade80",
-    features: ["500P 충전", "AI 생성 50회 분량", "게시글 적립 포함", "유효기간 없음"],
+    features: ["3,000P 충전", "텍스트 300회 · 이미지 60회 분량", "PPT·영상 분석 포함", "유효기간 없음"],
     btnLabel: "충전하기",
     highlight: false,
-    badge: "연세 플랜",
+    badge: "입문",
   },
   {
     id: "pro",
     name: "Pro",
     price: 19900,
-    points: 1200,
-    label: "19,900원",
+    points: 7000,
+    label: "19,900원/월",
     color: "#7c6aff",
-    features: ["1,200P 충전", "AI 생성 120회 분량", "게시글 적립 포함", "우선 지원"],
+    features: ["7,000P 충전", "텍스트 700회 · 이미지 140회 분량", "모든 기능 무제한", "우선 지원"],
     btnLabel: "충전하기",
     highlight: true,
-    badge: "🔥 추천",
+    badge: "추천",
   },
   {
     id: "premium",
     name: "Premium",
     price: 29900,
-    points: 2500,
-    label: "29,900원",
+    points: 15000,
+    label: "29,900원/월",
     color: "#f59e0b",
-    features: ["2,500P 충전", "AI 생성 250회 분량", "게시글 적립 포함", "전담 지원"],
+    features: ["15,000P 충전", "텍스트 1,500회 · 이미지 300회 분량", "모든 기능 무제한", "전담 지원"],
     btnLabel: "충전하기",
     highlight: false,
     badge: "전문가용",
@@ -379,21 +386,22 @@ export function setAiUsage(u){ try { localStorage.setItem(AI_KEY, JSON.stringify
 export const FREE_GUEST  = 10;
 export const FREE_MEMBER = 20;
 
-export function getAiLeft(user) {
+export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
   const usage  = getAiUsage();
   const key    = user ? "member_" + user.uid : "guest";
   const used   = usage[key] || 0;
   const limit  = user ? FREE_MEMBER : FREE_GUEST;
   const points = user ? (user.points || 0) : 0;
-  const extraFromPoints = Math.floor(points / Math.abs(POINTS.AI_USE));
+  const extraFromPoints = Math.floor(points / cost);
   return {
-    used, limit,
+    used, limit, points,
     left:   Math.max(0, limit - used) + extraFromPoints,
-    canUse: (limit - used > 0) || (points >= Math.abs(POINTS.AI_USE)),
+    canUse: (limit - used > 0) || (points >= cost),
   };
 }
 
-export async function useAiOnce(user, setUserState) {
+export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason = "AI 생성 사용") {
+  const absCost = Math.abs(cost);
   const usage = getAiUsage();
   const key   = user ? "member_" + user.uid : "guest";
   const used  = usage[key] || 0;
@@ -403,8 +411,9 @@ export async function useAiOnce(user, setUserState) {
     setAiUsage({ ...usage, [key]: used + 1 });
     return true;
   }
-  if (user && (user.points || 0) >= Math.abs(POINTS.AI_USE)) {
-    const newPts = await changePoints(user.uid, POINTS.AI_USE, "AI 생성 사용");
+  if (user && (user.points || 0) >= absCost) {
+    const delta = cost > 0 ? -cost : cost;
+    const newPts = await changePoints(user.uid, delta, reason);
     const newUser = { ...user, points: newPts };
     setLocalUser(newUser);
     setUserState(newUser);
