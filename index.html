@@ -7,21 +7,20 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- 카카오톡 인앱 브라우저 대응 -->
+    <!-- 카카오톡 인앱 브라우저 대응 — JS + meta 폴백 -->
     <script>
     (function(){
       var ua = navigator.userAgent || '';
       if (ua.match(/KAKAOTALK/i)) {
-        // 1) 외부 브라우저로 열기 시도
         if (/android/i.test(ua)) {
           location.href = 'intent://' + location.href.replace(/https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
-          return;
+        } else {
+          location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
         }
-        // 2) iOS or 안드로이드 폴백 — 외부 열기
-        location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
       }
     })();
     </script>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
     <!-- Favicon & PWA -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -148,20 +147,19 @@
     </script>
   </head>
   <body>
-    <div id="root">
-      <!-- React 로드 실패 시 폴백 (카카오톡 인앱 브라우저 등) -->
-      <div id="app-fallback" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f0c29;color:#fff;font-family:-apple-system,sans-serif;text-align:center;padding:20px">
-        <div>
-          <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c6aff,#ec4899);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
-          </div>
-          <div style="font-size:20px;font-weight:900;margin-bottom:8px">SNS메이킷</div>
-          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px;line-height:1.8">AI 카드뉴스·블로그·이미지 자동 생성</div>
-          <a href="https://www.snsmakeit.com" style="display:inline-block;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#7c6aff,#8b5cf6);color:#fff;text-decoration:none;font-size:15px;font-weight:800;margin-bottom:12px">크롬/사파리에서 열기</a>
-          <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:16px">카카오톡 브라우저에서는 일부 기능이 제한됩니다<br>우측 상단 ⋮ → "다른 브라우저로 열기"를 이용해주세요</div>
+    <!-- React 로드 실패 시 폴백 (카카오톡 등) — React 마운트 시 숨김 -->
+    <div id="app-fallback" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f0c29;color:#fff;font-family:-apple-system,sans-serif;text-align:center;padding:20px;position:fixed;inset:0;z-index:99999">
+      <div>
+        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c6aff,#ec4899);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
         </div>
+        <div style="font-size:20px;font-weight:900;margin-bottom:8px">SNS메이킷</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px;line-height:1.8">AI 카드뉴스·블로그·이미지 자동 생성</div>
+        <a href="https://www.snsmakeit.com" style="display:inline-block;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#7c6aff,#8b5cf6);color:#fff;text-decoration:none;font-size:15px;font-weight:800;margin-bottom:12px">크롬/사파리에서 열기</a>
+        <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:16px">카카오톡에서는 우측 상단 ⋮ →<br>"다른 브라우저로 열기"를 이용해주세요</div>
       </div>
     </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

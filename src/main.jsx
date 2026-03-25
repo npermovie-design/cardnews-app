@@ -12,6 +12,10 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// React 로드 성공 → 폴백 제거
+const fb = document.getElementById('app-fallback');
+if (fb) fb.remove();
+
 createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <I18nProvider>
