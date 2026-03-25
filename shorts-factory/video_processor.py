@@ -183,6 +183,22 @@ def get_caption_at_time(subs: list[dict], time_sec: float) -> str:
     return ""
 
 
+def _pre_cut_clip(video_path: str, start: float, end: float, output_dir: str) -> str:
+    """FFmpeg로 클립 구간만 먼저 잘라내기 (메모리 절약)"""
+    import subprocess
+    clip_path = str(Path(output_dir) / f"_clip_{start:.0f}_{end:.0f}.mp4")
+    try:
+        result = subprocess.run([
+            "ffmpeg", "-ss", str(max(0, start - 0.5)), "-to", str(end + 0.5),
+            "-i", video_path, "-c", "copy", "-y", clip_path
+        ], capture_output=True, timeout=60)
+        if result.returncode == 0 and Path(clip_path).exists() and Path(clip_path).stat().st_size > 1000:
+            return clip_path
+    except Exception as e:
+        print(f"Pre-cut failed: {e}")
+    return video_path  # 실패 시 원본 사용
+
+
 def generate_short(
     video_path: str,
     srt_path: str,
@@ -205,7 +221,21 @@ def generate_short(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     duration = end_seconds - start_seconds
 
-    input_container = av.open(str(video_path))
+    # 긴 영상은 먼저 클립 구간만 잘라내기 (메모리 절약)
+    actual_video = video_path
+    clip_offset = 0.0
+    if duration < 120 and Path(video_path).exists():
+        cut_path = _pre_cut_clip(video_path, start_seconds, end_seconds, str(output_path.parent))
+        if cut_path != video_path:
+            actual_video = cut_path
+            clip_offset = max(0, start_seconds - 0.5)
+            start_seconds -= clip_offset
+            end_seconds -= clip_offset
+            # 자막 시간도 조정
+            if subs:
+                subs = [{"start_seconds": s["start_seconds"] - clip_offset, "end_seconds": s["end_seconds"] - clip_offset, "text": s["text"]} for s in subs]
+
+    input_container = av.open(str(actual_video))
     in_video = input_container.streams.video[0]
     in_audio = input_container.streams.audio[0] if input_container.streams.audio else None
 
@@ -226,7 +256,7 @@ def generate_short(
     out_video.width = OUT_W
     out_video.height = OUT_H
     out_video.pix_fmt = "yuv420p"
-    out_video.options = {"preset": "fast", "crf": "23"}
+    out_video.options = {"preset": "ultrafast", "crf": "26"}
 
     out_audio = None
     if in_audio:
@@ -291,6 +321,11 @@ def generate_short(
 
     output_container.close()
     input_container.close()
+    # 임시 클립 파일 정리 + 메모리 해제
+    if actual_video != video_path:
+        try: Path(actual_video).unlink()
+        except: pass
+    gc.collect()
 
     if progress_callback:
         progress_callback(100)
