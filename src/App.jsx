@@ -105,6 +105,12 @@ export default function App() {
   const [user,       setUserState]  = useState(getUser);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const [showAuth,   setShowAuth]   = useState(false);
   const [openMenu,   setOpenMenu]   = useState(null); // "snsWrite"|"snsImage"|"imageGen"|"board"
   const [profileOpen, setProfileOpen] = useState(false);
@@ -435,9 +441,9 @@ export default function App() {
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         html,body,#root{width:100%;min-height:100vh}
-        ::-webkit-scrollbar{width:5px}
+        ::-webkit-scrollbar{width:8px}
         ::-webkit-scrollbar-track{background:#f5f4ff}
-        ::-webkit-scrollbar-thumb{background:rgba(124,106,255,0.25);border-radius:4px}
+        ::-webkit-scrollbar-thumb{background:rgba(124,106,255,0.4);border-radius:4px}
         ::-webkit-scrollbar-thumb:hover{background:rgba(124,106,255,0.4)}
         input::placeholder,textarea::placeholder{color:rgba(26,23,48,0.3)}
         input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;
@@ -501,7 +507,7 @@ export default function App() {
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
-            <div style={{ fontSize: "clamp(36px,8vw,52px)", marginBottom: 14 }}>⚡</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#a5b4fc" }}>P</div>
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#a5b4fc" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
@@ -510,11 +516,11 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}
                 style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
-                🔐 로그인 / 회원가입
+                로그인 / 회원가입
               </button>
               <button onClick={() => { setShowPointsModal(false); navigate("pricing"); }}
                 style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.3)", cursor: "pointer", background: "rgba(124,106,255,0.1)", color: "#a5b4fc", fontSize: 13, fontWeight: 700 }}>
-                💎 포인트 충전하기
+                포인트 충전하기
               </button>
               <button onClick={() => setShowPointsModal(false)}
                 style={{ padding: "9px", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "rgba(255,255,255,0.35)", fontSize: 12 }}>
@@ -581,16 +587,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* 오른쪽: 접속자수 + 테마 + 로그인 */}
+        {/* 오른쪽: 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-          {/* 접속자 수 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20,
-            background: theme==="dark" ? "rgba(74,222,128,0.08)" : "rgba(74,222,128,0.06)",
-            border: "1px solid rgba(74,222,128,0.2)" }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80",
-              boxShadow: "0 0 6px #4ade80", animation: "pulse 2s infinite" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>{onlineCount}{t("online")}</span>
-          </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
           <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0, minHeight: 36 }}>
             {theme === "light" ? t("darkMode") : t("lightMode")}
@@ -668,7 +666,7 @@ export default function App() {
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
                         <span style={{ color: C.muted }}>포인트 잔액</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>💎 {(user.points||0).toLocaleString()}P</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>{(user.points||0).toLocaleString()}P</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
@@ -681,7 +679,7 @@ export default function App() {
                   <div style={{ padding: "8px" }}>
                     {[
                       { icon: "🔴", label: "출석체크", sub: "매일 +3P · 연속 보너스", action: () => { setShowAttendance(true); setProfileOpen(false); } },
-                      { icon: "💎", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "P", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
                       { icon: "👤", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
@@ -901,6 +899,23 @@ export default function App() {
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
       {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
+
+      {showScrollTop && (
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          style={{
+            position: "fixed", bottom: 32, right: 32, zIndex: 900,
+            width: 44, height: 44, borderRadius: "50%",
+            background: theme === "dark" ? "rgba(124,106,255,0.9)" : "rgba(124,106,255,0.85)",
+            border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 16px rgba(124,106,255,0.3)",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+      )}
     </div>
   );
 }

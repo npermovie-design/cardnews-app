@@ -471,13 +471,13 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
             { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 200P 지급" },
-            { icon:"📝", title:"게시글 적립", desc:"작성할 때마다 1P" },
+            { icon:"P", title:"게시글 적립", desc:"작성할 때마다 1P" },
             { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
             { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
           ] : [
             { icon:"💳", title:"포인트 충전" },
             { icon:"🔥", title:"Deluxe 플랜", desc:"₩19,900 / 9,500P" },
-            { icon:"📝", title:"무료 적립", desc:"게시글 작성 1P" },
+            { icon:"P", title:"무료 적립", desc:"게시글 작성 1P" },
             { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
@@ -881,7 +881,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     style={{padding:"5px 10px",borderRadius:12,border:`1px solid ${border}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:12,outline:"none",width:150}}/>
                   <button onClick={()=>fetchImages(imgInput||fields.keyword)} disabled={imgSearching}
                     style={{padding:"5px 12px",borderRadius:12,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:imgSearching?"not-allowed":"pointer",opacity:imgSearching?0.6:1,whiteSpace:"nowrap"}}>
-                    {imgSearching?"검색중...":"🔍 검색"}
+                    {imgSearching?"검색중...":"검색"}
                   </button>
                 </div>
               </div>
@@ -928,7 +928,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   <b style={{color:text}}>③ 티스토리</b> → 글쓰기 → 이미지 → URL 삽입 → 붙여넣기<br/>
                   <b style={{color:text}}>④ 직접 저장</b> → 이미지에 우클릭 → "이미지를 다른 이름으로 저장"
                 </div>
-                <div style={{fontSize:10,color:muted,marginTop:6,opacity:0.7}}>⚠️ 상업적 이용 시 Pixabay·Pexels 라이선스를 확인하세요. (대부분 무료 상업 이용 가능)</div>
+                <div style={{fontSize:10,color:muted,marginTop:6,opacity:0.7}}>상업적 이용 시 Pixabay·Pexels 라이선스를 확인하세요. (대부분 무료 상업 이용 가능)</div>
               </div>
             </div>
           )}
@@ -1095,7 +1095,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"⭐ AI 제목 추천"}
                     </button>
                     <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                      {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"🔍 SEO 키워드"}
+                      {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
                     </button>
                   </div>
                 )}
@@ -1109,7 +1109,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 )}
                 {fk==="keyword" && seoKeys.length>0 && (
                   <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
-                    <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>🔍 SEO 연관 키워드</div>
+                    <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                       {seoKeys.map(function(k,i){return(
                         <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>

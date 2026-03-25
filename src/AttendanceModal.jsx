@@ -247,7 +247,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
           {checkedToday ? (
             <div style={{ padding: "14px", borderRadius: 14, background: `${ACC}12`, border: `1px solid ${ACC}30`,
               textAlign: "center", fontSize: 14, fontWeight: 800, color: ACC }}>
-              ✅ 오늘 출석 완료! (+3P)
+              오늘 출석 완료! (+3P)
             </div>
           ) : (
             <button onClick={doCheckIn} disabled={checking}

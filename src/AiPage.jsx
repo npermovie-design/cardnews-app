@@ -562,7 +562,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {(detailList.length + simpleDetailList.length) === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🛍</div>
+              <div style={{ fontSize:20, marginBottom:12, color:muted, fontWeight:700 }}>상세페이지</div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 상세페이지가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>상세페이지 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("detail_simple")}
@@ -579,7 +579,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
                     {item.thumbnail
                       ? <img src={item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>}
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>상세페이지</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count}장</div>
                     <div style={{ position:"absolute", top:8, left:8, background:"rgba(16,185,129,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>심플</div>
                   </div>
@@ -607,7 +607,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
                     {item.thumb || item.thumbnail
                       ? <img src={item.thumb||item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🖼</div>}
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>이미지</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count||item.slides?.length||0}장</div>
                     <div style={{ position:"absolute", top:8, left:8, background:"rgba(99,102,241,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>이미지</div>
                   </div>
@@ -639,7 +639,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {(cardList.length + detailList.length + simpleDetailList.length) === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🖼</div>
+              <div style={{ fontSize:20, marginBottom:12, color:muted, fontWeight:700 }}>SNS 이미지</div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 SNS 이미지가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스·상세페이지 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
@@ -656,7 +656,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
                     {item.thumbnail
                       ? <img src={item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>✨</div>}
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>카드뉴스</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count}장</div>
                     <div style={{ position:"absolute", top:8, left:8, background:"rgba(99,102,241,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>카드뉴스</div>
                   </div>
@@ -678,7 +678,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
                     {item.thumbnail
                       ? <img src={item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>}
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>상세페이지</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count}장</div>
                     <div style={{ position:"absolute", top:8, left:8, background:"rgba(16,185,129,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>상세페이지</div>
                   </div>
@@ -698,7 +698,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <div style={{ position:"relative", paddingBottom:"100%", background:"#111", overflow:"hidden" }}>
                     {item.thumb||item.thumbnail
                       ? <img src={item.thumb||item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>📋</div>}
+                      : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>상세페이지</div>}
                     <div style={{ position:"absolute", top:8, left:8, background:"rgba(245,158,11,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>상세페이지</div>
                   </div>
                   <div style={{ padding:"12px 14px" }}>
@@ -1223,7 +1223,7 @@ function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter, no
 
         {/* 검색 */}
         <div style={{ position:"relative", marginBottom:16 }}>
-          <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:14, color:muted }}>🔍</span>
+          <svg style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="키워드 검색..."
             style={{ width:"100%", padding:"11px 14px 11px 38px", borderRadius:12, border:`1px solid ${bdr}`,
               background:bg, color:text, fontSize:14, outline:"none", boxSizing:"border-box" }} />
@@ -1472,7 +1472,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
 
   if (step === 4) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="🧍" title="모델 이미지 생성 중..." subtitle={"AI가 모델 이미지를 생성하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="" title="모델 이미지 생성 중..." subtitle={"AI가 모델 이미지를 생성하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
     </div>
   );
 
@@ -1513,11 +1513,11 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>기본 설정</div>
             <div style={{ fontSize:13, color:muted, marginBottom:20 }}>모델의 성별, 나이대, 국적을 선택해요.</div>
             <SelectGroup label="성별" value={gender} onChange={setGender} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"female",l:"👩 여자"},{v:"male",l:"👨 남자"},{v:"both",l:"👫 커플"}]} />
+              options={[{v:"female",l:"여자"},{v:"male",l:"남자"},{v:"both",l:"커플"}]} />
             <SelectGroup label="나이대" value={age} onChange={setAge} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
               options={[{v:"10대",l:"10대"},{v:"20대",l:"20대"},{v:"30대",l:"30대"},{v:"40대",l:"40대"},{v:"50대",l:"50대+"}]} />
             <SelectGroup label="국적 / 인종" value={nationality} onChange={setNationality} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"한국인",l:"🇰🇷 한국인"},{v:"일본인",l:"🇯🇵 일본인"},{v:"중국인",l:"🇨🇳 중국인"},{v:"서양인",l:"🌍 서양인"},{v:"흑인",l:"✊ 흑인"},{v:"다양한",l:"🌐 다양한"}]} />
+              options={[{v:"한국인",l:"한국인"},{v:"일본인",l:"일본인"},{v:"중국인",l:"중국인"},{v:"서양인",l:"서양인"},{v:"흑인",l:"흑인"},{v:"다양한",l:"다양한"}]} />
             <button onClick={() => setStep(2)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>
               다음 → 스타일 설정
             </button>
@@ -1529,11 +1529,11 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>스타일 설정</div>
             <div style={{ fontSize:13, color:muted, marginBottom:20 }}>의상, 배경, 포즈를 선택해요.</div>
             <SelectGroup label="의상 / 스타일" value={outfit} onChange={setOutfit} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"캐주얼",l:"👕 캐주얼"},{v:"비즈니스",l:"👔 비즈니스"},{v:"스트릿",l:"🧢 스트릿"},{v:"스포츠",l:"🏃 스포츠"},{v:"드레스",l:"👗 드레스"},{v:"한복",l:"🎎 한복"},{v:"코트",l:"🧥 코트"},{v:"수영복",l:"🩱 수영복"}]} />
+              options={[{v:"캐주얼",l:"캐주얼"},{v:"비즈니스",l:"비즈니스"},{v:"스트릿",l:"스트릿"},{v:"스포츠",l:"스포츠"},{v:"드레스",l:"드레스"},{v:"한복",l:"한복"},{v:"코트",l:"코트"},{v:"수영복",l:"수영복"}]} />
             <SelectGroup label="배경" value={bgType} onChange={setBgType} cols={2} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"화이트 스튜디오",l:"⬜ 화이트 스튜디오"},{v:"카페 인테리어",l:"☕ 카페"},{v:"도시 거리",l:"🏙 도시 거리"},{v:"자연/공원",l:"🌿 자연/공원"},{v:"해변",l:"🏖 해변"}]} />
+              options={[{v:"화이트 스튜디오",l:"화이트 스튜디오"},{v:"카페 인테리어",l:"카페"},{v:"도시 거리",l:"도시 거리"},{v:"자연/공원",l:"자연/공원"},{v:"해변",l:"해변"}]} />
             <SelectGroup label="포즈" value={pose} onChange={setPose} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"정면",l:"🧍 정면"},{v:"측면",l:"🚶 측면"},{v:"앉기",l:"🪑 앉기"},{v:"걷기",l:"🚶 걷기"},{v:"자연스러운",l:"😊 자연스러운"}]} />
+              options={[{v:"정면",l:"정면"},{v:"측면",l:"측면"},{v:"앉기",l:"앉기"},{v:"걷기",l:"걷기"},{v:"자연스러운",l:"자연스러운"}]} />
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
               <button onClick={() => setStep(3)} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>다음 → 참고 이미지</button>
@@ -1574,7 +1574,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             <div style={{ marginBottom:20 }}>
               <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>참고 이미지 (선택) – 분위기·스타일 반영</div>
               <label style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:10, border:`1.5px dashed ${refImg?ACC:bdr}`, cursor:"pointer", background:card }}>
-                <span style={{ fontSize:20 }}>{refImg?"✅":"📎"}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:refImg?ACC:muted }}>{refImg?"V":"+"}</span>
                 <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?"참고 이미지 선택됨 (클릭하여 변경)":"이미지 파일 선택하기"}</span>
                 <input type="file" accept="image/*" onChange={readRef} style={{ display:"none" }} />
               </label>
@@ -1586,7 +1586,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(2)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
               <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                🧍 모델 이미지 생성 (10P)
+                모델 이미지 생성 (10P)
               </button>
             </div>
           </div>
@@ -1684,7 +1684,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
   if (step === 3) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="😊" title="얼굴 교체 중..." subtitle={"AI가 얼굴을 분석하고 자연스럽게 합성하고 있어요\n예상 시간: 20~35초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="" title="얼굴 교체 중..." subtitle={"AI가 얼굴을 분석하고 자연스럽게 합성하고 있어요\n예상 시간: 20~35초"} ACC={ACC} isDark={isDark} />
     </div>
   );
 
@@ -1712,7 +1712,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
             <label style={{ display:"block", cursor:"pointer" }}>
               <div style={{ aspectRatio:"3/4", borderRadius:12, border:`2px dashed ${srcImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:6 }}>
                 {srcImg ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                  : <><span style={{ fontSize:36 }}>👤</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>얼굴을 교체할<br/>원본 사진</span></>}
+                  : <><span style={{ fontSize:14, color:muted, fontWeight:700 }}>+</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>얼굴을 교체할<br/>원본 사진</span></>}
               </div>
               <input type="file" accept="image/*" onChange={readFile(setSrcImg)} style={{ display:"none" }} />
             </label>
@@ -1722,7 +1722,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
             <label style={{ display:"block", cursor:"pointer" }}>
               <div style={{ aspectRatio:"3/4", borderRadius:12, border:`2px dashed ${refImg?ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:6 }}>
                 {refImg ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                  : <><span style={{ fontSize:36 }}>😊</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>가져올<br/>얼굴 사진</span></>}
+                  : <><span style={{ fontSize:14, color:muted, fontWeight:700 }}>+</span><span style={{ fontSize:11, color:muted, textAlign:"center" }}>가져올<br/>얼굴 사진</span></>}
               </div>
               <input type="file" accept="image/*" onChange={readFile(setRefImg)} style={{ display:"none" }} />
             </label>
@@ -1730,7 +1730,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
         </div>
 
         <div style={{ padding:"10px 14px", borderRadius:10, background:`${ACC}10`, border:`1px solid ${ACC}30`, marginBottom:16, fontSize:12, color:muted, lineHeight:1.7 }}>
-          💡 <b style={{ color:text }}>원본</b>에서 얼굴만 교체되고 몸·의상·배경은 그대로 유지돼요.<br/>
+          <b style={{ color:text }}>원본</b>에서 얼굴만 교체되고 몸·의상·배경은 그대로 유지돼요.<br/>
           정면 또는 약간 측면의 선명한 얼굴 사진이 가장 잘 됩니다.
         </div>
 
@@ -1738,7 +1738,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
           style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg&&refImg?"pointer":"not-allowed",
             background: srcImg&&refImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
             color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg&&refImg?1:0.6 }}>
-          😊 얼굴 교체 생성하기 (10P)
+          얼굴 교체 생성하기 (10P)
         </button>
       </div>
     </div>
@@ -1759,10 +1759,10 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const [err, setErr] = useState("");
 
   const OUTFIT_PRESETS = [
-    { v:"캐주얼", l:"👕 캐주얼" }, { v:"비즈니스 정장", l:"👔 비즈니스 정장" },
-    { v:"드레스", l:"👗 드레스" }, { v:"스포츠웨어", l:"🏃 스포츠웨어" },
-    { v:"스트릿패션", l:"🧢 스트릿" }, { v:"한복", l:"🎎 한복" },
-    { v:"수영복", l:"👙 수영복" }, { v:"코트", l:"🧥 코트" },
+    { v:"캐주얼", l:"캐주얼" }, { v:"비즈니스 정장", l:"비즈니스 정장" },
+    { v:"드레스", l:"드레스" }, { v:"스포츠웨어", l:"스포츠웨어" },
+    { v:"스트릿패션", l:"스트릿" }, { v:"한복", l:"한복" },
+    { v:"수영복", l:"수영복" }, { v:"코트", l:"코트" },
   ];
 
   const readFile = setter => e => {
@@ -1801,7 +1801,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
   if (generating) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="👗" title="의상 교체 중..." subtitle={"AI가 의상을 분석하고 자연스럽게 입히고 있어요\n예상 시간: 20~35초"} ACC={OUTFIT_ACC} isDark={isDark} />
+      <GenLoading emoji="" title="의상 교체 중..." subtitle={"AI가 의상을 분석하고 자연스럽게 입히고 있어요\n예상 시간: 20~35초"} ACC={OUTFIT_ACC} isDark={isDark} />
     </div>
   );
 
@@ -1827,7 +1827,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
           <label style={{ display:"block", cursor:"pointer" }}>
             <div style={{ aspectRatio:"3/4", maxHeight:300, borderRadius:12, border:`2px dashed ${srcImg?OUTFIT_ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
               {srcImg ? <img src={srcImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                : <><span style={{ fontSize:42 }}>👤</span><span style={{ fontSize:13, color:muted }}>의상을 교체할 인물 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
+                : <><span style={{ fontSize:16, color:muted, fontWeight:700 }}>+</span><span style={{ fontSize:13, color:muted }}>의상을 교체할 인물 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
             </div>
             <input type="file" accept="image/*" onChange={readFile(setSrcImg)} style={{ display:"none" }} />
           </label>
@@ -1837,7 +1837,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
         <div style={{ marginBottom:16 }}>
           <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>② 의상 선택 방식</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
-            {[{v:"ref",l:"📸 참고 이미지로"},{v:"preset",l:"🎨 스타일 선택"}].map(o=>(
+            {[{v:"ref",l:"참고 이미지로"},{v:"preset",l:"스타일 선택"}].map(o=>(
               <button key={o.v} onClick={()=>setOutfitMode(o.v)}
                 style={{ padding:"11px", borderRadius:10, border:`2px solid ${outfitMode===o.v?OUTFIT_ACC:bdr}`, background:outfitMode===o.v?`${OUTFIT_ACC}15`:"transparent",
                   color:outfitMode===o.v?OUTFIT_ACC:muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
@@ -1852,7 +1852,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
               <label style={{ display:"block", cursor:"pointer" }}>
                 <div style={{ aspectRatio:"3/4", maxHeight:240, borderRadius:12, border:`2px dashed ${refImg?OUTFIT_ACC:bdr}`, background:card, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:8 }}>
                   {refImg ? <img src={refImg.url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                    : <><span style={{ fontSize:36 }}>👗</span><span style={{ fontSize:12, color:muted }}>의상 참고 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
+                    : <><span style={{ fontSize:14, color:muted, fontWeight:700 }}>+</span><span style={{ fontSize:12, color:muted }}>의상 참고 사진</span><span style={{ fontSize:11, color:muted }}>클릭하여 선택</span></>}
                 </div>
                 <input type="file" accept="image/*" onChange={readFile(setRefImg)} style={{ display:"none" }} />
               </label>
@@ -1875,7 +1875,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
         </div>
 
         <div style={{ padding:"10px 14px", borderRadius:10, background:`${OUTFIT_ACC}10`, border:`1px solid ${OUTFIT_ACC}30`, marginBottom:16, fontSize:12, color:muted, lineHeight:1.7 }}>
-          💡 <b style={{ color:text }}>얼굴·포즈·배경</b>은 그대로 유지하고 의상만 교체해요.<br/>
+          <b style={{ color:text }}>얼굴·포즈·배경</b>은 그대로 유지하고 의상만 교체해요.<br/>
           전신이 잘 보이는 사진일수록 더 잘 됩니다.
         </div>
 
@@ -1883,7 +1883,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
           style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
             background: srcImg?`linear-gradient(135deg,${OUTFIT_ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
             color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6 }}>
-          👗 의상 교체 생성하기 (10P)
+          의상 교체 생성하기 (10P)
         </button>
       </div>
     </div>
@@ -2012,7 +2012,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
   if (step === 3) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="🖼" title="여백 늘리는 중..." subtitle={"이미지의 빈 공간을 AI가 채우고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="" title="여백 늘리는 중..." subtitle={"이미지의 빈 공간을 AI가 채우고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
     </div>
   );
 
@@ -2049,7 +2049,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
                 display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexDirection:"column", gap:10, padding:20 }}>
                 {srcImg
                   ? <img src={srcImg.url} alt="" style={{ maxWidth:"100%", maxHeight:240, objectFit:"contain", borderRadius:8 }} />
-                  : <><span style={{ fontSize:48 }}>🖼</span><span style={{ fontSize:14, color:muted }}>확장할 이미지 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
+                  : <><span style={{ fontSize:16, color:muted, fontWeight:700 }}>이미지</span><span style={{ fontSize:14, color:muted }}>확장할 이미지 업로드</span><span style={{ fontSize:12, color:muted }}>클릭하여 선택</span></>}
               </div>
               <input type="file" accept="image/*" onChange={readFile} style={{ display:"none" }} />
             </label>
@@ -2068,7 +2068,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
             {/* 모드 선택 탭 */}
             <div style={{ display:"flex", background: isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)", borderRadius:12, padding:4, marginBottom:20 }}>
-              {[{v:"manual",l:"✏️ 수동 설정"},{v:"ratio",l:"📐 비율 선택"}].map(({v,l}) => (
+              {[{v:"manual",l:"수동 설정"},{v:"ratio",l:"비율 선택"}].map(({v,l}) => (
                 <button key={v} onClick={()=>setSizeMode(v)} style={{
                   flex:1, padding:"9px 0", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                   background: sizeMode===v ? (isDark?"rgba(255,255,255,0.12)":"#fff") : "transparent",
@@ -2200,12 +2200,12 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 
             {/* 채우기 스타일 (공통) */}
             <SelectGroup label="채우기 스타일" value={fillStyle} onChange={setFillStyle} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"자연스럽게",l:"🌊 자연스럽게"},{v:"흐릿하게",l:"🌫 흐릿하게"},{v:"배경확장",l:"🌄 배경 확장"}]} />
+              options={[{v:"자연스럽게",l:"자연스럽게"},{v:"흐릿하게",l:"흐릿하게"},{v:"배경확장",l:"배경 확장"}]} />
 
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
               <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                🖼 여백 늘리기 (10P)
+                여백 늘리기 (10P)
               </button>
             </div>
           </div>
@@ -2227,7 +2227,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const isKo = _lang === "ko";
   const _s = (ko, en) => isKo ? ko : en;
 
-  const AiFooter = () => C ? <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} /> : null;
+  const AiFooter = () => null;
 
   // 보관함
   if (aiMenu === "library") {
@@ -2282,105 +2282,92 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
+  // SVG 아이콘 맵
+  const TOOL_ICONS = {
+    blog_write: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
+    blog_link: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+    cardnews_simple: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
+    detail_simple: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+    thumbnail_gen: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    product_shot: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+    logo_gen: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    mockup_gen: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+    model_gen: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    face_swap: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
+    outfit_swap: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.38 3.46L16 2 12 5 8 2 3.62 3.46a1 1 0 0 0-.62.94V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4.4a1 1 0 0 0-.62-.94z"/></svg>,
+    outpaint: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
+    shorts_make: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+  };
+
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_write",       icon: "", title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_link",        icon: "", title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
-      { id: "cardnews_simple",  icon: "", title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "detail_simple",    icon: "", title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "thumbnail_gen",    icon: "", title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
-      { id: "product_shot", icon: "", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
-      { id: "logo_gen",     icon: "", title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "mockup_gen",   icon: "", title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
-      { id: "model_gen",    icon: "", title: _s("모델 생성","Model Generator"),         desc: _s("AI 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "face_swap",    icon: "", title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "outfit_swap",  icon: "", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "outpaint",     icon: "",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      { id: "shorts_make", icon: "🎬", title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
+      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "blog_link",        title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
+      { id: "cardnews_simple",  title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
+      { id: "detail_simple",    title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "thumbnail_gen",    title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
+      { id: "product_shot", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
+      { id: "logo_gen",     title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
+      { id: "mockup_gen",   title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
+      { id: "model_gen",    title: _s("모델 생성","Model Generator"),         desc: _s("AI 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "face_swap",    title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
+      { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
+      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
     ];
     // 카테고리별 그룹
     const GROUPS = [
-      { label: _s("SNS 글쓰기","SNS Writing"), icon: "", color: "#7c6aff",
+      { label: _s("SNS 글쓰기","SNS Writing"), color: "#7c6aff",
         items: MENUS.filter(m => m.id.startsWith("blog_")) },
-      { label: _s("SNS 이미지","SNS Image"), icon: "", color: "#ec4899",
+      { label: _s("SNS 이미지","SNS Image"), color: "#ec4899",
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
-      { label: _s("이미지 생성","Image Generation"), icon: "", color: "#f59e0b",
+      { label: _s("이미지 생성","Image Generation"), color: "#f59e0b",
         items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].includes(m.id)) },
-      { label: _s("영상 제작","Video Production"), icon: "🎬", color: "#ef4444",
+      { label: _s("영상 제작","Video Production"), color: "#ef4444",
         items: MENUS.filter(m => m.id === "shorts_make") },
     ];
 
     return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f8f8fb" }}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
-          {/* 헤더 */}
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: homeText, marginBottom: 6 }}>{tt("aiWelcome")}</div>
-            <div style={{ fontSize: 14, color: homeMuted }}>{tt("aiWelcomeSub")}</div>
-          </div>
-
-          {/* 가이드라인 */}
-          <div style={{ marginBottom: 28, padding: "22px 24px", borderRadius: 16, background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.03)", border: `1px solid ${isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.1)"}` }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: homeText, marginBottom: 14 }}>🚀 {_s("이런 기능을 제공해요","Features we offer")}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-              {[
-                { icon: "✍️", title: _s("SNS 글쓰기 (8종)","SNS Writing (8 types)"), desc: _s("네이버 블로그, 티스토리, 인스타, 유튜브 대본, 스레드, 뉴스·유튜브 변환까지 AI가 자동 작성","Naver Blog, Tistory, Instagram, YouTube script, Threads, news/YouTube conversion — AI auto-writes") },
-                { icon: "🖼", title: _s("SNS 이미지 (3종)","SNS Image (3 types)"), desc: _s("카드뉴스, 상세페이지, 썸네일을 텍스트만 입력하면 AI가 디자인까지 완성","Card news, detail pages, thumbnails — enter text and AI completes the design") },
-                { icon: "🎨", title: _s("AI 이미지 생성 (7종)","AI Image Gen (7 types)"), desc: _s("제품컷, 로고, 목업, AI 모델, 얼굴/의상 교체, 여백 늘리기까지 원스톱","Product shots, logos, mockups, AI models, face/outfit swap, outpaint — all in one") },
-                { icon: "", title: _s("포인트 시스템","Point System"), desc: _s("무료 포인트로 시작! 생성당 10P 소모, 매일 무료 충전으로 부담 없이 사용","Start free! 10P per generation, daily free points for worry-free usage") },
-              ].map((g, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{g.icon}</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 3 }}>{g.title}</div>
-                    <div style={{ fontSize: 11, color: homeMuted, lineHeight: 1.6 }}>{g.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: `1px solid ${isDark ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.08)"}`, paddingTop: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: homeText, marginBottom: 10 }}>💡 {_s("이렇게 활용하세요","How to use")}</div>
-              <div style={{ fontSize: 12, color: homeMuted, lineHeight: 2 }}>
-                <b style={{ color: homeText }}>Step 1.</b> {_s("왼쪽 메뉴에서 원하는 기능을 선택하세요 (글쓰기 / 이미지 / 생성)","Select a feature from the left menu (Writing / Image / Generation)")}<br />
-                <b style={{ color: homeText }}>Step 2.</b> {_s("주제, 키워드, 톤 등 기본 정보를 입력하세요","Enter basic info like topic, keywords, and tone")}<br />
-                <b style={{ color: homeText }}>Step 3.</b> {_s("AI가 콘텐츠를 생성하면 미리보기로 확인하세요","Preview the AI-generated content")}<br />
-                <b style={{ color: homeText }}>Step 4.</b> {_s("복사하여 SNS에 바로 업로드하거나, 수정 후 활용하세요","Copy to upload directly to SNS, or edit and use")}
-              </div>
-            </div>
+          {/* 헤더 - 심플하게 */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: homeText, marginBottom: 6 }}>{_s("무엇을 만들어볼까요?","What would you like to create?")}</div>
+            <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
           </div>
 
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
-            <div key={group.label} style={{ marginBottom: 28 }}>
+            <div key={group.label} style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: group.color + "15", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{group.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: homeText }}>{group.label}</div>
-                <div style={{ fontSize: 11, color: homeMuted, marginLeft: 4 }}>{group.items.length}개</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: group.color }}>{group.label}</div>
+                <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
+                <div style={{ fontSize: 11, color: homeMuted }}>{group.items.length}{_s("개","")}</div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12 }}>
                 {group.items.map(m => (
                   <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
-                    padding: "20px 14px", borderRadius: 16, border: `1px solid ${cardBdr}`,
+                    padding: "18px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`,
                     background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
-                    cursor: "pointer", textAlign: "center", transition: "all 0.2s",
+                    cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14,
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isDark ? "0 8px 24px rgba(0,0,0,0.3)" : "0 8px 24px rgba(0,0,0,0.06)"; }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = isDark ? "0 6px 20px rgba(0,0,0,0.3)" : "0 6px 20px rgba(0,0,0,0.05)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 14, background: isDark ? m.darkColor : m.lightColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 10px" }}>
-                      {m.icon}
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: isDark ? m.darkColor : m.lightColor, display: "flex", alignItems: "center", justifyContent: "center", color: group.color, flexShrink: 0 }}>
+                      {TOOL_ICONS[m.id] || m.title[0]}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 4 }}>{m.title}</div>
-                    <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.4 }}>{m.desc}</div>
-                    {m.cr > 0 && <div style={{ marginTop: 6, fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.4)" : "#aaa" }}>{m.cr}P</div>}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 2 }}>{m.title}</div>
+                      <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>
+                    </div>
+                    {m.cr > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.35)" : "#bbb", flexShrink: 0 }}>{m.cr}P</div>}
                   </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <AiFooter />
       </div>
     );
   }
@@ -3097,7 +3084,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           boxShadow:"0 8px 32px rgba(34,197,94,0.4)", minWidth:200,
           display:"flex", alignItems:"center", gap:12,
         }}>
-          <div style={{ fontSize:24 }}>✅</div>
+          <div style={{ width:24, height:24, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#22c55e", fontWeight:900 }}>V</div>
           <div>
             <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 완료!</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>클릭하여 결과 확인</div>
@@ -3164,7 +3151,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
                 color: isDark ? "#fff" : "#333", padding: "4px 6px", marginRight: 4, display: "none" }}>
               ☰
             </button>
-            <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>🤖 {MENU_LABELS[aiMenu] || "AI 생성기"}</span>
+            <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>{MENU_LABELS[aiMenu] || "AI 생성기"}</span>
             {isGenerating && (
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 10px", borderRadius: 12,
                 background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)",

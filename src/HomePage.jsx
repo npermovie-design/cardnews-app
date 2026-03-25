@@ -535,7 +535,7 @@ export default function HomePage({ navigate, C }) {
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
         <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
-        <div style={{ display: "flex", gap: 20, overflowX: "auto", scrollSnapType: "x mandatory", padding: "4px 0 20px", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 20 }}>
           {[
             { name: p("r1name"), job: p("r1job"), avatar: "K", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
             { name: p("r2name"), job: p("r2job"), avatar: "L", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },
@@ -545,7 +545,7 @@ export default function HomePage({ navigate, C }) {
             { name: p("r6name"), job: p("r6job"), avatar: "H", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
           ].map((r, i) => (
             <FadeIn key={r.name} delay={i * 0.08}>
-              <div className="review-card" style={{ minWidth: 320, maxWidth: 380, flexShrink: 0, scrollSnapAlign: "start", background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
+              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
                 <div style={{ display: "flex", gap: 2 }}>
                   {Array(r.rating).fill(0).map((_, j) => (
                     <span key={j} style={{ fontSize: 12, color: "#f59e0b" }}>★</span>
@@ -570,6 +570,42 @@ export default function HomePage({ navigate, C }) {
           ))}
         </div>
       </SecWrap>
+
+      {/* ══ 포인트 적립 시스템 ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 40, alignItems: "center" }}>
+            <FadeIn>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", letterSpacing: 1, marginBottom: 10 }}>POINT SYSTEM</div>
+                <h2 style={{ fontSize: "clamp(24px,3.5vw,36px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
+                  {lang === "ko" ? "매일 무료 포인트를\n쌓을 수 있어요" : "Earn free points\nevery day"}
+                </h2>
+                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 28px", whiteSpace: "pre-line" }}>
+                  {lang === "ko" ? "출석체크, 게시글 작성, 댓글 활동으로 포인트를 적립하세요.\n적립한 포인트로 AI 도구를 무료로 이용할 수 있어요." : "Earn points through daily check-in, posting, and commenting.\nUse earned points to access AI tools for free."}
+                </p>
+                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "포인트 적립 시작" : "Start earning"}</Btn>
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.1}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {[
+                  { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+3P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
+                  { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+1P", desc: lang === "ko" ? "커뮤니티 글 작성 시" : "When posting in community", color: "#22c55e" },
+                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+200P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
+                  { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "10" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
+                ].map(item => (
+                  <div key={item.title} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 18px", textAlign: "center" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: item.color, marginBottom: 6 }}>{item.point}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{item.title}</div>
+                    <div style={{ fontSize: 12, color: C.muted }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
 
       {/* ══ 포인트/요금 안내 ══ */}
       <SecWrap C={C}>
@@ -598,31 +634,6 @@ export default function HomePage({ navigate, C }) {
                 <button onClick={p.onClick} style={{ width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(124,106,255,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   {p.btnText}
                 </button>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-      </SecWrap>
-
-      {/* ══ 차별점 ══ */}
-      <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge={p("whyBadge")} title={p("whyTitle")} sub={p("whySub")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 12 }}>
-          {[
-            { icon: "01", title: p("w1"), desc: p("w1d") },
-            { icon: "02", title: p("w2"), desc: p("w2d") },
-            { icon: "03", title: p("w3"), desc: p("w3d") },
-            { icon: "04", title: p("w4"), desc: p("w4d") },
-          ].map((d, i) => (
-            <FadeIn key={d.title} delay={i * 0.1}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 20px", boxShadow: C.shadow, transition: "all 0.2s" }}
-                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-                onMouseLeave={e => e.currentTarget.style.transform = ""}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(124,106,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: C.purpleL, flexShrink: 0 }}>{d.icon}</div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{d.title}</div>
-                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.75 }}>{d.desc}</div>
-                </div>
               </div>
             </FadeIn>
           ))}

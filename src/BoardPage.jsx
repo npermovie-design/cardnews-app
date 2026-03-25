@@ -1259,7 +1259,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🔗 공유</button>
                 <button onClick={()=>printPost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🖨 인쇄</button>
                 <button onClick={translatePost} disabled={translating} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:translatedBody?"rgba(99,102,241,0.1)":"transparent",color:translatedBody?"#7c6aff":C.muted,fontSize:12,cursor:translating?"wait":"pointer"}}>
-                  {translating?"번역중...":translatedBody?"✓ 번역됨":"🌐 번역"}
+                  {translating?"번역중...":translatedBody?"번역됨":"번역"}
                 </button>
                 {own(view)&&<>
                   <button onClick={()=>setMode("edit")} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>수정</button>
@@ -1273,7 +1273,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {translatedBody && (
               <div style={{marginTop:16,padding:"16px 20px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)",border:"1px solid rgba(99,102,241,0.2)"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                  <span style={{fontSize:12,fontWeight:700,color:"#7c6aff"}}>🌐 번역 결과</span>
+                  <span style={{fontSize:12,fontWeight:700,color:"#7c6aff"}}>번역 결과</span>
                   <button onClick={()=>setTranslatedBody(null)} style={{fontSize:11,padding:"2px 8px",borderRadius:6,border:"1px solid rgba(99,102,241,0.3)",background:"transparent",color:"#7c6aff",cursor:"pointer"}}>닫기</button>
                 </div>
                 <div style={{fontSize:14,color:C.text,lineHeight:1.9,whiteSpace:"pre-wrap"}}>{translatedBody}</div>
