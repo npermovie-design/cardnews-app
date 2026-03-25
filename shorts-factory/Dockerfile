@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libffi-dev \
     ffmpeg \
-    fonts-nanum fonts-nanum-coding \
+    fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
