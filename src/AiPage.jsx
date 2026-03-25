@@ -117,7 +117,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
-        <Item id="video_create" label="영상 제작" ids={["shorts_make","shorts_make_run"]} />
+        <Item id="video_create" label="영상 제작" ids={["shorts_make","shorts_make_run","virality"]} />
       </div>
 
     </div>
@@ -2258,6 +2258,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { id: "outfit_swap",  icon: "", title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     icon: "",  title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       { id: "shorts_make", icon: "🎬", title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
+      { id: "virality", icon: "🔥", title: _s("바이럴 분석","Virality Analysis"), desc: _s("경쟁사 릴스 AI 분석 + 콘셉트 생성","Competitor reels AI analysis + concepts"), cr: 10, darkColor: "rgba(251,146,60,0.18)", lightColor: "rgba(251,146,60,0.07)" },
     ];
     // 카테고리별 그룹
     const GROUPS = [
@@ -2268,7 +2269,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
       { label: _s("이미지 생성","Image Generation"), icon: "", color: "#f59e0b",
         items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].includes(m.id)) },
       { label: _s("영상 제작","Video Production"), icon: "🎬", color: "#ef4444",
-        items: MENUS.filter(m => ["shorts_make"].includes(m.id)) },
+        items: MENUS.filter(m => ["shorts_make","virality"].includes(m.id)) },
     ];
 
     return (
@@ -2771,7 +2772,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
   }
 
   // 영상 제작 > 바로 에디터 진입
-  if (aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "shorts_make_run") {
+  if (aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "shorts_make_run" || aiMenu === "virality") {
     const _t = isDark ? "#fff" : "#1a1a2e";
     const _m = isDark ? "rgba(255,255,255,0.5)" : "#888";
     const _bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
@@ -2795,7 +2796,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
 
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <iframe src="http://localhost:8000" style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
+        <iframe src={aiMenu === "virality" ? "http://localhost:8000/virality" : "http://localhost:8000"} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
       </div>
     );
   }
@@ -2826,6 +2827,7 @@ const MENU_LABELS = {
   outfit_swap: "의상 교체", outfit_swap_make: "의상 교체",
   outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
   shorts: "숏폼편집",
+  virality: "바이럴 분석",
   content_create: "콘텐츠 제작",
   image_create: "이미지 생성",
   image_edit: "이미지 수정",
