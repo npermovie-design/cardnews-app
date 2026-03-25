@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 
 /* ══════════════════════════════════════════════════════════════
@@ -84,9 +84,10 @@ async function generateSlideImage(prompt, productDataUrl = null) {
     productImageMime = productDataUrl.split(":")[1]?.split(";")[0] || "image/jpeg";
     productImageB64  = productDataUrl.split(",")[1] || null;
   }
+  const token = await getAuthToken();
   const res = await fetch("/api/generate-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ prompt, productImageB64, productImageMime }),
   });
   const data = await res.json();

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
@@ -115,9 +115,10 @@ async function generateMockup(logoPrompt, mockupType, logoB64, logoMime) {
   const typePrompt = MOCKUP_PROMPTS[mockupType] || "professional product mockup";
   const fullPrompt = `${typePrompt}. Logo/brand element to apply: ${logoPrompt}. High quality commercial product photography, ultra realistic, professional studio lighting, no text labels, no watermarks, 1:1 square format.`;
 
+  const token = await getAuthToken();
   const res = await fetch("/api/generate-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({
       prompt: fullPrompt,
       productImageB64: logoB64 || null,

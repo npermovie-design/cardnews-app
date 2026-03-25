@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /xk9m2p4q7
 
 # Sitemaps
 Sitemap: https://www.snsmakeit.com/sitemap.xml

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase, uploadFileToStorage, deleteFileFromStorage } from "./storage";
 
-const PIXABAY_KEY = import.meta.env.VITE_PIXABAY_KEY || "";
+const USE_PIXABAY_PROXY = true; // 서버 프록시 사용
 
 /* ─── 카테고리별 Pixabay 검색어 매핑 ── */
 const PIXABAY_QUERY = {
@@ -15,14 +15,11 @@ const PIXABAY_QUERY = {
 };
 
 async function fetchPixabay(cat = "all", page = 1) {
-  if (!PIXABAY_KEY) return [];
+  if (!USE_PIXABAY_PROXY) return [];
   const cfg = PIXABAY_QUERY[cat] || PIXABAY_QUERY.all;
   if (!cfg.q) return [];
   const isVideo = cfg.type === "video";
-  const base = isVideo
-    ? "https://pixabay.com/api/videos/"
-    : "https://pixabay.com/api/";
-  const url = `${base}?key=${PIXABAY_KEY}&q=${cfg.q}&per_page=20&page=${page}&safesearch=true`;
+  const url = `/api/proxy-pixabay?q=${cfg.q}&per_page=20&page=${page}&safesearch=true${isVideo ? "&video=true" : "&image_type=photo"}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -776,7 +773,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
   };
 
   const loadPixabay = async (catId) => {
-    if (!PIXABAY_KEY) return;
+    if (!USE_PIXABAY_PROXY) return;
     setPbLoading(true);
     try { setPbFiles(await fetchPixabay(catId)); } catch { setPbFiles([]); }
     setPbLoading(false);
@@ -794,7 +791,7 @@ function ArchiveContent({ menu, setMenu, cat, setCat, user, theme }) {
 
   const allFiles = [
     ...files,
-    ...(PIXABAY_KEY ? pbFiles : []),
+    ...(USE_PIXABAY_PROXY ? pbFiles : []),
   ];
 
   const filtered = allFiles.filter(v => {

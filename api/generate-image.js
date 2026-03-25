@@ -1,12 +1,38 @@
 // api/generate-image.js
 // Gemini 이미지 생성 API — 2025 최신 모델 자동 fallback
 
+import { createClient } from "@supabase/supabase-js";
+
+const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || req.headers.referer || "";
+  const allowedOrigin = ALLOWED_ORIGINS.find(o => origin.startsWith(o));
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin || ALLOWED_ORIGINS[0]);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용" });
+
+  // ── Supabase 인증 검증 ──
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "인증 토큰이 필요합니다." });
+  }
+  const token = authHeader.replace("Bearer ", "");
+  try {
+    const supabase = createClient(
+      "https://ckzjnpzadeovrasucjmu.supabase.co",
+      process.env.VITE_SUPABASE_KEY || ""
+    );
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: "유효하지 않은 인증 토큰입니다." });
+    }
+  } catch (e) {
+    return res.status(401).json({ error: "인증 확인 실패: " + (e.message || "").slice(0, 100) });
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });

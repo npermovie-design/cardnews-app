@@ -4,7 +4,9 @@
 import ytdl from "ytdl-core";
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers.origin || "";
+  const _ALLOWED = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+  res.setHeader("Access-Control-Allow-Origin", _ALLOWED.includes(_origin) ? _origin : _ALLOWED[0]);
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range");
   res.setHeader("Access-Control-Expose-Headers", "Content-Length,Content-Range,Accept-Ranges");

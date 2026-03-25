@@ -16,7 +16,7 @@ import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import Footer from "./Footer.jsx";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -1449,7 +1449,8 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
     try {
       const body = { prompt: buildPrompt() };
       if (refImg) { body.productImageB64 = refImg.b64; body.productImageMime = refImg.mime; }
-      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+      const _tok = await getAuthToken();
+      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json", ...(_tok ? {Authorization:`Bearer ${_tok}`} : {})}, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다. 다시 시도해주세요.");
@@ -1665,8 +1666,9 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     window.__isGenerating = true; window.__generatingCost = 10;
     const prompt = `Face swap task: The first image is the TARGET person. The second image is the REFERENCE face. Replace ONLY the face of the person in the first image with the face from the second image. Keep everything else identical: body shape, clothing, pose, hair (except where the face overlaps), background, lighting, and skin tone transition. The result must look photorealistic and seamless, as if it were an original photo. High quality, 4K resolution.`;
     try {
+      const _tok2 = await getAuthToken();
       const res = await fetch("/api/generate-image", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers:{"Content-Type":"application/json", ...(_tok2 ? {Authorization:`Bearer ${_tok2}`} : {})},
         body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime, refImageB64: refImg.b64, refImageMime: refImg.mime })
       });
       const data = await res.json();
@@ -1784,7 +1786,8 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     try {
       const body = { prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime };
       if (outfitMode === "ref" && refImg) { body.refImageB64 = refImg.b64; body.refImageMime = refImg.mime; }
-      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+      const _tok3 = await getAuthToken();
+      const res = await fetch("/api/generate-image", { method:"POST", headers:{"Content-Type":"application/json", ...(_tok3 ? {Authorization:`Bearer ${_tok3}`} : {})}, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
@@ -1949,8 +1952,9 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     try {
+      const _tok4 = await getAuthToken();
       const res = await fetch("/api/generate-image", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers:{"Content-Type":"application/json", ...(_tok4 ? {Authorization:`Bearer ${_tok4}`} : {})},
         body: JSON.stringify({ prompt: buildPrompt(), productImageB64: srcImg.b64, productImageMime: srcImg.mime })
       });
       const data = await res.json();

@@ -1,6 +1,27 @@
 // api/crawl.js — URL 크롤링 후 텍스트 추출 (CardNewsApp URL 기획용)
+const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+
+function isBlockedUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    if (!["http:", "https:"].includes(u.protocol)) return true;
+    const host = u.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]") return true;
+    const parts = host.split(".").map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 10) return true;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+      if (parts[0] === 192 && parts[1] === 168) return true;
+      if (parts[0] === 169 && parts[1] === 254) return true;
+      if (parts[0] === 127) return true;
+    }
+    return false;
+  } catch { return true; }
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || "";
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -8,6 +29,7 @@ export default async function handler(req, res) {
 
   const { url } = req.body || {};
   if (!url) return res.status(400).json({ error: "url 필요" });
+  if (isBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL입니다." });
 
   try {
     const r = await fetch(url, {

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
@@ -80,9 +80,10 @@ const MODEL_COUNTS = [
 ];
 
 async function generateProductShot(prompt, productB64, productMime) {
+  const token = await getAuthToken();
   const res = await fetch("/api/generate-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ prompt, productImageB64: productB64, productImageMime: productMime }),
   });
   const data = await res.json();

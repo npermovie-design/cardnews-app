@@ -79,8 +79,8 @@ async function deleteTag(catId, tagId) {
 
 /* ─── 무료 미디어 검색 (자료실용) ──────────────────────────── */
 const GIPHY_KEY    = import.meta.env.VITE_GIPHY_KEY    || "dc6zaTOxFJmzC";
-const PIXABAY_KEY2 = import.meta.env.VITE_PIXABAY_KEY  || "";
-const PEXELS_KEY   = import.meta.env.VITE_PEXELS_KEY   || "";
+const USE_PIXABAY_PROXY = true;
+const USE_PEXELS_PROXY  = true;
 const UNSPLASH_KEY = import.meta.env.VITE_UNSPLASH_KEY || "";
 const TENOR_KEY    = import.meta.env.VITE_TENOR_KEY    || "";
 
@@ -118,9 +118,9 @@ async function fetchTenorData(q="", pos="") {
 }
 
 async function fetchPixabayPhotos(q="nature", page=1) {
-  if (!PIXABAY_KEY2) return {items:[],next:""};
+  if (!USE_PIXABAY_PROXY) return {items:[],next:""};
   try {
-    const d = await _get(`https://pixabay.com/api/?key=${PIXABAY_KEY2}&q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true&image_type=photo`);
+    const d = await _get(`/api/proxy-pixabay?q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true&image_type=photo`);
     return { items: (d.hits||[]).map(h=>({ id:h.id, title:h.tags,
       url:h.largeImageURL||h.webformatURL, preview:h.webformatURL||h.previewURL,
       type:"image", src:"Pixabay" })), next:"" };
@@ -128,9 +128,9 @@ async function fetchPixabayPhotos(q="nature", page=1) {
 }
 
 async function fetchPixabayVideos(q="nature", page=1) {
-  if (!PIXABAY_KEY2) return {items:[],next:""};
+  if (!USE_PIXABAY_PROXY) return {items:[],next:""};
   try {
-    const d = await _get(`https://pixabay.com/api/videos/?key=${PIXABAY_KEY2}&q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true`);
+    const d = await _get(`/api/proxy-pixabay?q=${encodeURIComponent(q)}&per_page=24&page=${page}&safesearch=true&video=true`);
     return { items: (d.hits||[]).map(h=>({ id:h.id, title:h.tags,
       url: h.videos?.medium?.url||h.videos?.small?.url||"",
       preview: h.videos?.tiny?.thumbnail||"", type:"video", src:"Pixabay" })), next:"" };
@@ -138,12 +138,11 @@ async function fetchPixabayVideos(q="nature", page=1) {
 }
 
 async function fetchPexelsPhotos(q="", page=1) {
-  if (!PEXELS_KEY) return {items:[],next:""};
+  if (!USE_PEXELS_PROXY) return {items:[],next:""};
   try {
-    const url = q
-      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=24&page=${page}`
-      : `https://api.pexels.com/v1/curated?per_page=24&page=${page}`;
-    const d = await _get(url, {Authorization: PEXELS_KEY});
+    const path = q ? "v1/search" : "v1/curated";
+    const params = q ? `query=${encodeURIComponent(q)}&per_page=24&page=${page}` : `per_page=24&page=${page}`;
+    const d = await _get(`/api/proxy-pexels?path=${path}&${params}`);
     return { items: (d.photos||[]).map(p=>({ id:p.id, title:p.photographer||"Pexels",
       url:p.src?.large2x||p.src?.large||"", preview:p.src?.medium||"",
       type:"image", src:"Pexels" })), next:"" };
@@ -151,12 +150,11 @@ async function fetchPexelsPhotos(q="", page=1) {
 }
 
 async function fetchPexelsVideos(q="", page=1) {
-  if (!PEXELS_KEY) return {items:[],next:""};
+  if (!USE_PEXELS_PROXY) return {items:[],next:""};
   try {
-    const url = q
-      ? `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=24&page=${page}`
-      : `https://api.pexels.com/videos/popular?per_page=24&page=${page}`;
-    const d = await _get(url, {Authorization: PEXELS_KEY});
+    const path = q ? "videos/search" : "videos/popular";
+    const params = q ? `query=${encodeURIComponent(q)}&per_page=24&page=${page}` : `per_page=24&page=${page}`;
+    const d = await _get(`/api/proxy-pexels?path=${path}&${params}`);
     return { items: (d.videos||[]).map(v=>({ id:v.id, title:v.user?.name||"Pexels Video",
       url: (v.video_files||[]).find(f=>f.quality==="hd")?.link||(v.video_files||[])[0]?.link||"",
       preview:v.image||"", type:"video", src:"Pexels" })), next:"" };
@@ -244,13 +242,13 @@ function buildSources() {
   const s = [];
   s.push({ id:"giphy",     label:"Giphy GIF",      group:"gif"   });
   if (TENOR_KEY)    s.push({ id:"tenor",   label:"Tenor GIF",      group:"gif"   });
-  if (PIXABAY_KEY2) s.push({ id:"pixphoto",label:"Pixabay 사진",   group:"photo" });
-  if (PEXELS_KEY)   s.push({ id:"pexphoto",label:"Pexels 사진",    group:"photo" });
+  if (USE_PIXABAY_PROXY) s.push({ id:"pixphoto",label:"Pixabay 사진",   group:"photo" });
+  if (USE_PEXELS_PROXY)   s.push({ id:"pexphoto",label:"Pexels 사진",    group:"photo" });
   if (UNSPLASH_KEY) s.push({ id:"unsplash",label:"Unsplash",        group:"photo" });
   s.push({ id:"openverse", label:"Openverse",       group:"photo" });
   s.push({ id:"wikimedia", label:"Wikimedia",        group:"photo" });
-  if (PIXABAY_KEY2) s.push({ id:"pixvid",  label:"Pixabay 영상",   group:"video" });
-  if (PEXELS_KEY)   s.push({ id:"pexvid",  label:"Pexels 영상",    group:"video" });
+  if (USE_PIXABAY_PROXY) s.push({ id:"pixvid",  label:"Pixabay 영상",   group:"video" });
+  if (USE_PEXELS_PROXY)   s.push({ id:"pexvid",  label:"Pexels 영상",    group:"video" });
   s.push({ id:"nasa",      label:"NASA 우주",        group:"art"   });
   s.push({ id:"aic",       label:"시카고미술관",    group:"art"   });
   s.push({ id:"picsum",    label:"랜덤 사진",        group:"random" });
@@ -350,8 +348,8 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       ...(TENOR_KEY ? [{ id:"tenor", label:"Tenor" }] : []),
     ],
     photo: [
-      ...(PIXABAY_KEY2 ? [{ id:"pixphoto", label:"Pixabay" }] : []),
-      ...(PEXELS_KEY ? [{ id:"pexphoto", label:"Pexels" }] : []),
+      ...(USE_PIXABAY_PROXY ? [{ id:"pixphoto", label:"Pixabay" }] : []),
+      ...(USE_PEXELS_PROXY ? [{ id:"pexphoto", label:"Pexels" }] : []),
       ...(UNSPLASH_KEY ? [{ id:"unsplash", label:"Unsplash" }] : []),
       { id:"openverse", label:"Openverse" },
       { id:"wikimedia", label:"Wikimedia" },
@@ -360,8 +358,8 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       { id:"picsum", label:"랜덤" },
     ],
     video: [
-      ...(PIXABAY_KEY2 ? [{ id:"pixvid", label:"Pixabay" }] : []),
-      ...(PEXELS_KEY ? [{ id:"pexvid", label:"Pexels" }] : []),
+      ...(USE_PIXABAY_PROXY ? [{ id:"pixvid", label:"Pixabay" }] : []),
+      ...(USE_PEXELS_PROXY ? [{ id:"pexvid", label:"Pexels" }] : []),
     ],
   };
 

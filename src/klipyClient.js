@@ -1,9 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    Klipy API Client – GIF/스티커/클립/밈/AI이모지
+   (서버 프록시를 통해 API 키 보호)
 ═══════════════════════════════════════════════════════════ */
-
-const KLIPY_KEY = "vSVk71ps5Rxe7FxxqjHeUlWzcA3MjfsnmCRw4LzTQorzAHLiPFY0RLmSprcftKH1";
-const BASE = `https://api.klipy.com/api/v1/${KLIPY_KEY}`;
 
 function uid() {
   try { return localStorage.getItem("klipy_uid") || (() => { const id = "u_" + Math.random().toString(36).slice(2, 10); localStorage.setItem("klipy_uid", id); return id; })(); }
@@ -11,8 +9,8 @@ function uid() {
 }
 
 async function call(path, params = {}) {
-  const q = new URLSearchParams({ customer_id: uid(), per_page: "24", locale: "kr", ...params });
-  const res = await fetch(`${BASE}/${path}?${q}`);
+  const q = new URLSearchParams({ path, customer_id: uid(), per_page: "24", locale: "kr", ...params });
+  const res = await fetch(`/api/proxy-klipy?${q}`);
   if (!res.ok) throw new Error(`Klipy API error: ${res.status}`);
   const json = await res.json();
   return json.data || json;

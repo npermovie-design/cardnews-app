@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { changePoints } from "./storage";
+import { changePoints, getAuthToken } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleDetailPage.jsx
@@ -84,9 +84,10 @@ async function generateSlideImage(prompt, productDataUrl = null) {
     productImageMime = productDataUrl.split(":")[1]?.split(";")[0] || "image/jpeg";
     productImageB64  = productDataUrl.split(",")[1] || null;
   }
+  const token = await getAuthToken();
   const res = await fetch("/api/generate-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ prompt, productImageB64, productImageMime }),
   });
   const data = await res.json();

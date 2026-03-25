@@ -419,24 +419,18 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     if (!q.trim()) return;
     setMediaLoading(true);
     const results = [];
-    // Pixabay
-    const pbKey = import.meta.env.VITE_PIXABAY_KEY;
-    if (pbKey) {
-      try {
-        const r = await fetch(`https://pixabay.com/api/?key=${pbKey}&q=${encodeURIComponent(q)}&per_page=12&image_type=photo`);
-        const d = await r.json();
-        (d.hits||[]).forEach(h => results.push({ url: h.largeImageURL, thumb: h.previewURL, src: "Pixabay", w: h.imageWidth, h: h.imageHeight }));
-      } catch {}
-    }
-    // Pexels
-    const pxKey = import.meta.env.VITE_PEXELS_KEY;
-    if (pxKey) {
-      try {
-        const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=12`, { headers: { Authorization: pxKey } });
-        const d = await r.json();
-        (d.photos||[]).forEach(p => results.push({ url: p.src.large, thumb: p.src.small, src: "Pexels", w: p.width, h: p.height }));
-      } catch {}
-    }
+    // Pixabay (서버 프록시)
+    try {
+      const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(q)}&per_page=12&image_type=photo`);
+      const d = await r.json();
+      (d.hits||[]).forEach(h => results.push({ url: h.largeImageURL, thumb: h.previewURL, src: "Pixabay", w: h.imageWidth, h: h.imageHeight }));
+    } catch {}
+    // Pexels (서버 프록시)
+    try {
+      const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(q)}&per_page=12`);
+      const d = await r.json();
+      (d.photos||[]).forEach(p => results.push({ url: p.src.large, thumb: p.src.small, src: "Pexels", w: p.width, h: p.height }));
+    } catch {}
     setMediaResults(results);
     setMediaLoading(false);
   };

@@ -3,6 +3,30 @@
 
 export const config = { runtime: "edge" };
 
+const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+function getAllowedOrigin(req) {
+  const origin = req.headers.get("origin") || "";
+  return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+}
+
+function isBlockedUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    if (!["http:", "https:"].includes(u.protocol)) return true;
+    const host = u.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]") return true;
+    const parts = host.split(".").map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 10) return true;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+      if (parts[0] === 192 && parts[1] === 168) return true;
+      if (parts[0] === 169 && parts[1] === 254) return true;
+      if (parts[0] === 127) return true;
+    }
+    return false;
+  } catch { return true; }
+}
+
 // 지원 언론사 파서 목록
 const PARSERS = [
   { name: "네이버뉴스",  host: "n.news.naver.com",    sel: "#dic_area" },
@@ -92,13 +116,21 @@ function extractAutoContent(html) {
 }
 
 export default async function handler(req) {
+  const _corsOrigin = getAllowedOrigin(req);
   const { searchParams } = new URL(req.url);
   const targetUrl = searchParams.get("url");
 
   if (!targetUrl) {
     return new Response(JSON.stringify({ error: "URL이 필요합니다" }), {
       status: 400,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": _corsOrigin },
+    });
+  }
+
+  if (isBlockedUrl(targetUrl)) {
+    return new Response(JSON.stringify({ error: "허용되지 않는 URL입니다." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": _corsOrigin },
     });
   }
 
@@ -108,7 +140,7 @@ export default async function handler(req) {
   } catch {
     return new Response(JSON.stringify({ error: "올바른 URL 형식이 아닙니다" }), {
       status: 400,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": _corsOrigin },
     });
   }
 
@@ -154,7 +186,7 @@ export default async function handler(req) {
       error: "기사를 불러오지 못했습니다. 지원하지 않는 언론사이거나 접근이 제한된 URL입니다.",
       method: "none",
     }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": _corsOrigin },
     });
   }
 
@@ -184,7 +216,7 @@ export default async function handler(req) {
   }), {
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": _corsOrigin,
       "Cache-Control": "no-store",
     },
   });

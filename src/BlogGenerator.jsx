@@ -719,17 +719,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const fetchImages = async (keyword) => {
     if (!keyword) return;
     setImgSearching(true); setSuggestedImages([]);
-    const PX_KEY = import.meta.env.VITE_PIXABAY_KEY || "";
-    const PE_KEY = import.meta.env.VITE_PEXELS_KEY  || "";
     const imgs = [];
     try {
-      if (PX_KEY) {
-        const r = await fetch(`https://pixabay.com/api/?key=${PX_KEY}&q=${encodeURIComponent(keyword)}&per_page=10&safesearch=true&image_type=photo&lang=ko`);
+      {
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(keyword)}&per_page=10&safesearch=true&image_type=photo&lang=ko`);
         const d = await r.json();
         (d.hits||[]).forEach(h => imgs.push({ id:"px"+h.id, preview:h.webformatURL, url:h.largeImageURL||h.webformatURL, src:"Pixabay" }));
       }
-      if (PE_KEY) {
-        const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=10`, { headers:{ Authorization: PE_KEY } });
+      {
+        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(keyword)}&per_page=10`);
         const d = await r.json();
         (d.photos||[]).forEach(p => imgs.push({ id:"pe"+p.id, preview:p.src.medium, url:p.src.large2x||p.src.large, src:"Pexels" }));
       }

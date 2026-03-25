@@ -26,6 +26,14 @@ export const supabase = _g.__supabase__;
 export const auth = supabase;
 export const db   = supabase;
 
+// ── Auth 토큰 헬퍼 (API 호출 시 사용) ───────────────────────────────────────
+export async function getAuthToken() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  } catch { return null; }
+}
+
 // ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
 export const POINTS = {
   SIGNUP:      200,

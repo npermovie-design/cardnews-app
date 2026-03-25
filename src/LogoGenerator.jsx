@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { THEMES } from "./theme";
 import StepBar from "./StepBar.jsx";
@@ -40,9 +40,10 @@ async function callAPI(prompt, refB64, refMime) {
     ? `[STYLE REFERENCE ONLY - Do NOT copy or reproduce the reference image. Use it only for color palette, mood, and overall aesthetic inspiration.]\n\n${prompt}`
     : prompt;
 
+  const token = await getAuthToken();
   const res = await fetch("/api/generate-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ prompt: finalPrompt, productImageB64: refB64 || null, productImageMime: refMime || null }),
   });
   const data = await res.json();
