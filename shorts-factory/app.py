@@ -2,6 +2,7 @@ import sys
 import uuid
 import json
 import asyncio
+import subprocess
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -42,6 +43,10 @@ async def add_frame_headers(request, call_next):
 
 # Initialize virality database
 init_db()
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("shorts-factory")
 
 BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -284,6 +289,17 @@ async def upload(request: Request):
     return {"file_id": file_id, "needs_transcription": not has_subtitle, "message": "업로드 완료"}
 
 
+@app.get("/debug/env")
+async def debug_env():
+    """환경변수 확인용 디버그 엔드포인트"""
+    import os
+    return {
+        "GROQ_API_KEY": "set" if os.getenv("GROQ_API_KEY") else "NOT SET",
+        "OPENROUTER_API_KEY": "set" if os.getenv("OPENROUTER_API_KEY") else "NOT SET",
+        "ffmpeg": bool(subprocess.run(["which", "ffmpeg"], capture_output=True).returncode == 0) if sys.platform != "win32" else "skip",
+        "file_store_ids": list(file_store.keys()),
+    }
+
 @app.post("/analyze/{file_id}")
 async def analyze(file_id: str, request: Request):
     """자막 분석 → 추천 구간 JSON + 자막 데이터 반환"""
@@ -297,20 +313,24 @@ async def analyze(file_id: str, request: Request):
     max_chars = body.get("max_chars", 0)
 
     meta = file_store[file_id]
+    logger.info(f"[analyze] file_id={file_id}, needs_transcription={meta.get('needs_transcription')}")
 
     if meta.get("needs_transcription") or not meta.get("subtitle_path"):
         try:
             loop = asyncio.get_event_loop()
             file_dir = Path(meta["video_path"]).parent
+            logger.info(f"[analyze] Starting transcription for {meta['video_path']}")
             srt_path = await loop.run_in_executor(
                 None, transcribe_video, meta["video_path"], str(file_dir), max_chars,
             )
             meta["subtitle_path"] = srt_path
             meta["subtitle_ext"] = ".srt"
             meta["needs_transcription"] = False
+            logger.info(f"[analyze] Transcription complete: {srt_path}")
         except Exception as e:
             import traceback
             traceback.print_exc()
+            logger.error(f"[analyze] Transcription failed: {e}")
             raise HTTPException(500, f"음성 인식 실패: {str(e)[:200]}")
 
     sub_path = meta["subtitle_path"]
