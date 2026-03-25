@@ -13,7 +13,6 @@ import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
-import ShortformEditor from "./ShortformEditor";
 import PptGenerator from "./PptGenerator";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage } from "./storage";
