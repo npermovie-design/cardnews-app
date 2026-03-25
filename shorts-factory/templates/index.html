@@ -50,6 +50,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .file-btn:hover{border-color:var(--acc);color:var(--acc);background:var(--accbg)}
 .file-btn.selected{border-style:solid;border-color:var(--acc);color:var(--acc);background:var(--accbg)}
 body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--ibg:#f9f9fc;--accbg:rgba(124,106,255,0.08)}
+.edit-panel-tab{flex:1;padding:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:transparent;color:var(--muted);border-radius:8px;transition:all 0.15s}
+.edit-panel-tab.active{background:var(--acc);color:#fff}
+.tmpl-card{border:2px solid var(--bdr);border-radius:12px;padding:6px;cursor:pointer;transition:all 0.15s;text-align:center}
+.tmpl-card.active{border-color:var(--acc);box-shadow:0 0 0 2px rgba(124,106,255,0.3)}
+.tmpl-card:hover{border-color:var(--acc)}
+.tmpl-preview{height:60px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;margin-bottom:4px}
+.tmpl-name{font-size:10px;font-weight:700;color:var(--muted)}
+@media(max-width:768px){
+  #step-edit>div>div:nth-child(2){flex-direction:column!important}
+  #step-edit>div>div:nth-child(2)>div{width:100%!important}
+  #step-generate>div>div:nth-child(3)>div{flex-direction:column!important}
+  #step-generate>div>div:nth-child(3)>div>div{width:100%!important}
+}
 
 .seg-card{border:1px solid var(--bdr);border-radius:12px;padding:14px;background:var(--card);transition:all 0.15s;cursor:pointer}
 .seg-card:hover{border-color:rgba(124,106,255,0.3)}
@@ -204,51 +217,116 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
 </div>
 </div>
 
-<!-- ===== Step 3: 편집 ===== -->
+<!-- ===== Step 3: 편집 (알파컷 스타일 2컬럼) ===== -->
 <div id="step-edit" class="step">
-<div class="wrap">
+<div style="max-width:1100px;margin:0 auto;padding:20px 20px 60px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:900">편집</div>
-        <button id="btnBackToAnalysis" class="btn-ghost">구간 선택으로</button>
+        <div style="font-size:18px;font-weight:900;color:var(--text)">쇼츠 편집</div>
+        <button id="btnBackToAnalysis" class="btn-ghost">← 구간 선택</button>
     </div>
 
-    <div id="editTabs" style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto"></div>
-
-    <div class="card">
-        <label class="label">제목</label>
-        <input id="edTitle" type="text" class="input" placeholder="쇼츠 제목" style="margin-bottom:10px">
-        <label class="label">서브제목</label>
-        <input id="edSubtitle" type="text" class="input" placeholder="부제목 (선택)">
-    </div>
-
-    <div class="card">
-        <label class="label" style="margin-bottom:10px">디자인 스타일</label>
-        <div class="sel-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
-            <div class="sel-btn tmpl-btn active" data-tmpl="minimal">미니멀</div>
-            <div class="sel-btn tmpl-btn" data-tmpl="bold">볼드</div>
-            <div class="sel-btn tmpl-btn" data-tmpl="neon">네온</div>
-            <div class="sel-btn tmpl-btn" data-tmpl="pastel">파스텔</div>
-            <div class="sel-btn tmpl-btn" data-tmpl="news">뉴스</div>
+    <div style="display:flex;gap:20px;align-items:flex-start">
+        <!-- 좌측: 클립 리스트 -->
+        <div style="width:180px;flex-shrink:0">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">선택된 클립</div>
+            <div id="editTabs" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div><label class="label">제목 색상</label><input id="edTitleColor" type="color" value="#FFFFFF" style="width:100%;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--ibg)"></div>
-            <div><label class="label">자막 색상</label><input id="edCaptionColor" type="color" value="#FFFFFF" style="width:100%;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--ibg)"></div>
+
+        <!-- 중앙: 미리보기 영역 -->
+        <div style="flex:1;min-width:0">
+            <div class="card" style="padding:24px;text-align:center;min-height:300px;display:flex;align-items:center;justify-content:center;flex-direction:column">
+                <div style="width:160px;height:284px;border-radius:16px;background:var(--ibg);border:2px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;position:relative">
+                    <!-- 미니 프리뷰 -->
+                    <div style="flex:0 0 18%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:4px">
+                        <span id="prevTitle" style="font-size:8px;font-weight:900;color:#fff;text-align:center;line-height:1.2">제목</span>
+                    </div>
+                    <div style="flex:1;background:var(--ibg);display:flex;align-items:center;justify-content:center">
+                        <span style="font-size:32px;opacity:0.3">🎬</span>
+                    </div>
+                    <div style="flex:0 0 15%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:4px">
+                        <span id="prevCaption" style="font-size:7px;color:#fff;text-align:center">자막 영역</span>
+                    </div>
+                </div>
+                <div id="edTimeline" class="muted" style="margin-top:12px;font-size:11px"></div>
+            </div>
+        </div>
+
+        <!-- 우측: 편집 패널 -->
+        <div style="width:280px;flex-shrink:0">
+            <!-- 탭 -->
+            <div style="display:flex;gap:2px;margin-bottom:12px;background:var(--ibg);border-radius:10px;padding:3px">
+                <button class="edit-panel-tab active" onclick="showEditPanel('title')">제목</button>
+                <button class="edit-panel-tab" onclick="showEditPanel('style')">스타일</button>
+                <button class="edit-panel-tab" onclick="showEditPanel('subtitle')">자막</button>
+            </div>
+
+            <!-- 제목 패널 -->
+            <div id="panel-title" class="edit-panel">
+                <div class="card" style="padding:14px">
+                    <label class="label">쇼츠 제목</label>
+                    <input id="edTitle" type="text" class="input" placeholder="쇼츠 제목" style="margin-bottom:10px">
+                    <label class="label">서브제목</label>
+                    <input id="edSubtitle" type="text" class="input" placeholder="부제목 (선택)">
+                </div>
+            </div>
+
+            <!-- 스타일 패널 -->
+            <div id="panel-style" class="edit-panel" style="display:none">
+                <div class="card" style="padding:14px">
+                    <label class="label" style="margin-bottom:8px">템플릿</label>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
+                        <div class="tmpl-card active" data-tmpl="minimal" onclick="selectTemplate(this)">
+                            <div class="tmpl-preview" style="background:#000"><div style="color:#fff;font-size:7px;font-weight:900">제목</div><div style="font-size:6px;color:#aaa">자막</div></div>
+                            <div class="tmpl-name">미니멀</div>
+                        </div>
+                        <div class="tmpl-card" data-tmpl="bold" onclick="selectTemplate(this)">
+                            <div class="tmpl-preview" style="background:#0A0A0A"><div style="color:#FFD700;font-size:7px;font-weight:900">제목</div><div style="font-size:6px;color:#FFD700">자막</div></div>
+                            <div class="tmpl-name">볼드</div>
+                        </div>
+                        <div class="tmpl-card" data-tmpl="neon" onclick="selectTemplate(this)">
+                            <div class="tmpl-preview" style="background:#0D0D1A"><div style="color:#00FF88;font-size:7px;font-weight:900">제목</div><div style="font-size:6px;color:#00FF88">자막</div></div>
+                            <div class="tmpl-name">네온</div>
+                        </div>
+                        <div class="tmpl-card" data-tmpl="pastel" onclick="selectTemplate(this)">
+                            <div class="tmpl-preview" style="background:#1A1A2E"><div style="color:#FFB6C1;font-size:7px;font-weight:900">제목</div><div style="font-size:6px;color:#FFB6C1">자막</div></div>
+                            <div class="tmpl-name">파스텔</div>
+                        </div>
+                        <div class="tmpl-card" data-tmpl="news" onclick="selectTemplate(this)">
+                            <div class="tmpl-preview" style="background:#0F1923"><div style="background:#E53935;color:#fff;font-size:6px;font-weight:900;padding:1px 3px;border-radius:2px">속보</div><div style="font-size:6px;color:#fff;margin-top:2px">자막</div></div>
+                            <div class="tmpl-name">뉴스</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div>
+                            <label class="label">제목 색상</label>
+                            <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                <input id="edTitleColor" type="color" value="#FFFFFF" style="width:32px;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);padding:2px">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label">자막 색상</label>
+                            <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                <input id="edCaptionColor" type="color" value="#FFFFFF" style="width:32px;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);padding:2px">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 자막 패널 -->
+            <div id="panel-subtitle" class="edit-panel" style="display:none">
+                <div class="card" style="padding:14px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                        <label class="label" style="margin:0">자막 편집</label>
+                        <button id="btnAddSub" class="btn-ghost" style="padding:4px 10px;font-size:11px">+ 추가</button>
+                    </div>
+                    <div id="subEditor" style="max-height:320px;overflow-y:auto"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <label class="label" style="margin:0">자막</label>
-            <button id="btnAddSub" class="btn-ghost" style="padding:4px 10px;font-size:11px">+ 추가</button>
-        </div>
-        <div id="subEditor" style="max-height:240px;overflow-y:auto"></div>
-    </div>
-
-    <div class="card">
-        <div id="edTimeline" class="muted"></div>
-    </div>
-
-    <button id="btnGenerate" class="btn btn-primary">영상 생성하기</button>
+    <button id="btnGenerate" class="btn btn-primary" style="margin-top:20px">영상 생성하기 →</button>
 </div>
 </div>
 
@@ -490,11 +568,11 @@ function saveCurrentEdit(){
     $('subEditor').querySelectorAll('.sub-text').forEach(input=>{const i=+input.dataset.subIdx;if(clip.subtitles[i])clip.subtitles[i].text=input.value});
 }
 
-document.querySelectorAll('.tmpl-btn').forEach(btn=>btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tmpl-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');selectedTemplate=btn.dataset.tmpl;
-}));
 $('edTitleColor').addEventListener('input',e=>{titleColor=e.target.value});
 $('edCaptionColor').addEventListener('input',e=>{captionColor=e.target.value});
+// 미니 프리뷰 업데이트
+$('edTitle').addEventListener('input',e=>{const p=$('prevTitle');if(p)p.textContent=e.target.value||'제목'});
+$('edSubtitle').addEventListener('input',e=>{const p=$('prevCaption');if(p)p.textContent=e.target.value||'자막 영역'});
 
 // Generate
 $('btnGenerate').addEventListener('click',async()=>{
@@ -569,6 +647,17 @@ $('btnRestart').addEventListener('click',resetAll);
 function resetAll(){showStep('upload');videoFile=null;subFile=null;logoFile=null;fontFile=null;fileId=null;segments=[];editClips=[];
     $('selectedFiles').style.display='none';$('btnUpload').disabled=true;$('uploadProgress').style.display='none';$('btnRestart').style.display='none';fi.value=''}
 
+function showEditPanel(panel){
+    document.querySelectorAll('.edit-panel').forEach(p=>p.style.display='none');
+    document.querySelectorAll('.edit-panel-tab').forEach(t=>t.classList.remove('active'));
+    const el=document.getElementById('panel-'+panel);if(el)el.style.display='';
+    event.target.classList.add('active');
+}
+function selectTemplate(el){
+    document.querySelectorAll('.tmpl-card').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    selectedTemplate=el.dataset.tmpl;
+}
 function fmt(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec.toString().padStart(2,'0')}`}
 function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 function sendToParent(target,idx){const clip=editClips[idx]||editClips[0];
