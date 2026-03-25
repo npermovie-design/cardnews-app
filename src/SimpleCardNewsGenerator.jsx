@@ -130,23 +130,42 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, CW, CH);
 
+  const imgLayout = slide.imgLayout || "full"; // full, top, bottom, left, right
+  const imgRatio = (slide.imgLayoutRatio ?? 50) / 100; // 이미지 영역 비율
+
   // 배경
   if (bgImageEl && bgImageEl.complete && bgImageEl.naturalWidth > 0) {
+    // 레이아웃별 이미지 영역 계산
+    let ix = 0, iy = 0, iw = CW, ih = CH;
+    if (imgLayout === "top") { ih = Math.round(CH * imgRatio); }
+    else if (imgLayout === "bottom") { iy = Math.round(CH * (1 - imgRatio)); ih = Math.round(CH * imgRatio); }
+    else if (imgLayout === "left") { iw = Math.round(CW * imgRatio); }
+    else if (imgLayout === "right") { ix = Math.round(CW * (1 - imgRatio)); iw = Math.round(CW * imgRatio); }
+
+    // full이 아닌 경우 배경색 먼저 채우기
+    if (imgLayout !== "full") {
+      ctx.fillStyle = style.bgColor || "#1c1c1e";
+      ctx.fillRect(0, 0, CW, CH);
+    }
+
+    // 이미지 그리기 (영역에 맞게 cover)
     const iR = bgImageEl.naturalWidth / bgImageEl.naturalHeight;
-    const cR = CW / CH;
-    let sw, sh, sx = 0, sy = 0;
-    if (iR > cR) { sh = CH; sw = CH * iR; sx = (CW - sw) / 2; }
-    else { sw = CW; sh = CW / iR; sy = (CH - sh) / 2; }
-    // 이미지 크기 조절
+    const cR = iw / ih;
+    let sw, sh, sx2 = 0, sy2 = 0;
+    if (iR > cR) { sh = ih; sw = ih * iR; sx2 = (iw - sw) / 2; }
+    else { sw = iw; sh = iw / iR; sy2 = (ih - sh) / 2; }
     const scale = (slide.bgScale ?? 100) / 100;
     if (scale !== 1) {
       const nw = sw * scale, nh = sh * scale;
-      sx = (CW - nw) / 2; sy = (CH - nh) / 2;
+      sx2 = (iw - nw) / 2; sy2 = (ih - nh) / 2;
       sw = nw; sh = nh;
     }
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(ix, iy, iw, ih);
+    ctx.clip();
     ctx.globalAlpha = slide.bgOpacity ?? 1;
-    ctx.drawImage(bgImageEl, sx, sy, sw, sh);
+    ctx.drawImage(bgImageEl, ix + sx2, iy + sy2, sw, sh);
     ctx.restore();
     // 오버레이 (단색 또는 그라데이션)
     const oc = slide.overlayColor || "#000000";
@@ -189,7 +208,13 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   const ox = Math.round(oxRaw * SC);
   const oy = Math.round(oyRaw * SC);
   const PAD = Math.round(CW * 0.09);
-  const maxW = CW - PAD * 2;
+  // 레이아웃에 따른 텍스트 영역 제한
+  let textAreaX = 0, textAreaY = 0, textAreaW = CW, textAreaH = CH;
+  if (imgLayout === "top") { textAreaY = Math.round(CH * imgRatio); textAreaH = CH - textAreaY; }
+  else if (imgLayout === "bottom") { textAreaH = Math.round(CH * (1 - imgRatio)); }
+  else if (imgLayout === "left") { textAreaX = Math.round(CW * imgRatio); textAreaW = CW - textAreaX; }
+  else if (imgLayout === "right") { textAreaW = Math.round(CW * (1 - imgRatio)); }
+  const maxW = (imgLayout === "left" || imgLayout === "right") ? textAreaW - PAD * 2 : CW - PAD * 2;
 
   const tSz = Math.round((style.titleSize || 32) * SC);
   const bSz = Math.round((style.bodySize || 15) * SC);
@@ -220,14 +245,16 @@ function drawDetailSlide(canvas, slide, style, CW, CH, bgImageEl = null) {
   if (bodLines.length) totalH += GAP_TIT + bodLines.length * Math.round(bSz * lhB);
   if (hlLines.length)  totalH += GAP_BOD + hlLines.length * Math.round(hSz * 1.55);
 
-  const minY = PAD + Math.round(sSz * 1.5);
-  let startY = va === "top" ? minY : va === "bottom" ? CH - PAD - totalH : Math.round((CH - totalH) / 2);
+  const minY = textAreaY + PAD + Math.round(sSz * 0.5);
+  const maxY = textAreaY + textAreaH;
+  let startY = va === "top" ? minY : va === "bottom" ? maxY - PAD - totalH : textAreaY + Math.round((textAreaH - totalH) / 2);
   let y = Math.max(minY, startY) + oy;
 
+  const textLeft = (imgLayout === "left") ? textAreaX : 0;
   function getX(lineW) {
-    if (al === "center") return Math.round((CW - lineW) / 2) + ox;
-    if (al === "right")  return CW - PAD - lineW + ox;
-    return PAD + ox;
+    if (al === "center") return textLeft + Math.round((textAreaW - lineW) / 2) + PAD + ox;
+    if (al === "right")  return textLeft + textAreaW - PAD - lineW + ox;
+    return textLeft + PAD + ox;
   }
   function drawLines(ls, fnt, color, alpha, lineH) {
     ctx.font = fnt; ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.textBaseline = "top";
@@ -695,7 +722,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     const canNext = topic.trim().length > 0;
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <WizHeader/>
+        {/* WizHeader 제거 */}
         <div style={{ maxWidth:800, margin:"0 auto", padding:"16px 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>주제를 입력하세요</div>
@@ -844,7 +871,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   if (wizStep === 2) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <WizHeader/>
+        {/* WizHeader 제거 */}
         <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
@@ -918,7 +945,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   if (wizStep === 3) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <WizHeader/>
+        {/* WizHeader 제거 */}
         <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
@@ -1061,7 +1088,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <WizHeader/>
+        {/* WizHeader 제거 */}
 
         {/* 크레딧 소진 팝업 */}
         {showCreditPopup && (
@@ -1332,6 +1359,28 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                       <img src={so.bgImage} alt="" style={{ width:38,height:38,objectFit:"cover",borderRadius:5,flexShrink:0 }}/>
                       <span style={{ flex:1,fontSize:11,color:muted }}>배경 이미지 적용됨</span>
                       <button onClick={()=>updSted(selIdx,"bgImage",undefined)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#f87171",fontSize:11,cursor:"pointer" }}>제거</button>
+                    </div>
+                    {/* 이미지 레이아웃 */}
+                    <div style={{ marginBottom:8 }}>
+                      <div style={{ fontSize:10,color:muted,marginBottom:4 }}>이미지 배치</div>
+                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                        {[["full","전체 배경"],["top","상단"],["bottom","하단"],["left","좌측"],["right","우측"]].map(([v,l])=>(
+                          <button key={v} onClick={()=>updSted(selIdx,"imgLayout",v)}
+                            style={{ padding:"5px 10px",borderRadius:7,border:`1px solid ${(so.imgLayout||"full")===v?"#7c6aff":bdr}`,
+                              background:(so.imgLayout||"full")===v?"rgba(99,102,241,0.15)":"transparent",
+                              color:(so.imgLayout||"full")===v?"#a5b4fc":muted,fontSize:10,fontWeight:(so.imgLayout||"full")===v?700:400,cursor:"pointer" }}>
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                      {(so.imgLayout&&so.imgLayout!=="full")&&(
+                        <div style={{ marginTop:6 }}>
+                          <div style={{ fontSize:9,color:muted,marginBottom:3 }}>이미지 영역 비율 ({so.imgLayoutRatio||50}%)</div>
+                          <input type="range" min="20" max="80" value={so.imgLayoutRatio||50}
+                            onChange={e=>updSted(selIdx,"imgLayoutRatio",parseInt(e.target.value))}
+                            style={{ width:"100%",accentColor:"#7c6aff" }}/>
+                        </div>
+                      )}
                     </div>
                     {/* 배경 이미지 투명도 */}
                     <div style={{ marginBottom:8 }}>
