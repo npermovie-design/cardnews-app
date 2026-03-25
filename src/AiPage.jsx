@@ -2796,7 +2796,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, theme, onLoginRequest, o
 
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <iframe src={aiMenu === "virality" ? "http://localhost:8000/virality" : "http://localhost:8000"} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
+        <iframe src={(() => { const base = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory.onrender.com"); return aiMenu === "virality" ? base + "/virality" : base; })()} style={{ flex:1, border:"none", width:"100%", height:"100%" }} allow="autoplay; fullscreen" />
       </div>
     );
   }

@@ -8,6 +8,7 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 
 from srt_parser import parse_srt, parse_txt, subtitles_to_text
@@ -19,7 +20,24 @@ from virality.routes import router as virality_router
 from virality.db import init_db
 
 app = FastAPI(title="Shorts Factory")
+
+# CORS - iframe 임베딩 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(virality_router)
+
+@app.middleware("http")
+async def add_frame_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "ALLOWALL"
+    response.headers["Content-Security-Policy"] = "frame-ancestors 'self' https://www.snsmakeit.com https://snsmakeit.com http://localhost:*"
+    return response
 
 # Initialize virality database
 init_db()
