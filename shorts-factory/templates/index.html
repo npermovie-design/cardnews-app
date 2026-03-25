@@ -316,21 +316,37 @@ async function doAnalyze(){
     showStep('loading');
     $('loadingDetail').textContent='음성 인식 중...';
     const mc=+document.querySelector('input[name="maxChars"]:checked').value;
-    const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc})});
-    if(!ar.ok){const e=await ar.json().catch(()=>({}));throw new Error(e.detail||'분석 실패')}
-    const ad=await ar.json();segments=ad.segments;allSubs=ad.all_subs||[];
-    renderSegments();showStep('analysis');
+    try{
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),300000); // 5분 타임아웃
+        $('loadingDetail').textContent='음성 인식 중... (최대 2~3분 소요)';
+        const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc}),signal:controller.signal});
+        clearTimeout(timeout);
+        if(!ar.ok){const e=await ar.json().catch(()=>({}));throw new Error(e.detail||'분석 실패 ('+ar.status+')')}
+        const ad=await ar.json();segments=ad.segments;allSubs=ad.all_subs||[];
+        renderSegments();showStep('analysis');
+    }catch(e){
+        if(e.name==='AbortError') throw new Error('분석 시간 초과 (5분). 더 짧은 영상을 시도해주세요.');
+        throw e;
+    }
 }
 
 // YouTube
 $('btnYtDownload').addEventListener('click',async()=>{
     const url=$('ytUrl').value.trim();if(!url)return;
     $('btnYtDownload').disabled=true;$('ytProgress').style.display='';$('ytStatus').textContent='다운로드 중...';
-    try{const r=await fetch('/youtube-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'실패')}
-        const d=await r.json();fileId=d.file_id;$('ytStatus').textContent='분석 시작...';
+    try{
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),120000); // 2분 타임아웃
+        const r=await fetch('/youtube-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url}),signal:controller.signal});
+        clearTimeout(timeout);
+        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'다운로드 실패')}
+        const d=await r.json();fileId=d.file_id;$('ytStatus').textContent='다운로드 완료! 분석 시작...';
         await doAnalyze();
-    }catch(e){$('ytStatus').textContent=`오류: ${e.message}`}$('btnYtDownload').disabled=false;
+    }catch(e){
+        const msg=e.name==='AbortError'?'다운로드 시간 초과. 짧은 영상이나 파일 업로드를 시도해주세요.':e.message;
+        $('ytStatus').textContent=`오류: ${msg}`;
+    }$('btnYtDownload').disabled=false;
 });
 
 // Upload
