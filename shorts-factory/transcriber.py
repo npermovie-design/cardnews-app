@@ -64,11 +64,12 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
 
 
 def _transcribe_groq(audio_path: str) -> dict | None:
-    """Groq Whisper API로 음성 인식"""
+    """Groq Whisper API로 음성 인식 (25MB 초과 시 분할)"""
     file_size = os.path.getsize(audio_path)
-    if file_size > 25 * 1024 * 1024:  # 25MB 제한
-        print(f"Audio file too large for Groq: {file_size} bytes")
-        return None
+
+    if file_size > 25 * 1024 * 1024:
+        print(f"Audio file too large ({file_size} bytes), splitting...")
+        return _transcribe_groq_chunked(audio_path)
 
     with open(audio_path, "rb") as f:
         resp = httpx.post(
@@ -88,6 +89,69 @@ def _transcribe_groq(audio_path: str) -> dict | None:
         return None
 
     return resp.json()
+
+
+def _transcribe_groq_chunked(audio_path: str) -> dict | None:
+    """긴 오디오를 3분 단위로 분할해서 Groq API 호출"""
+    parent = Path(audio_path).parent
+    chunk_dir = parent / "chunks"
+    chunk_dir.mkdir(exist_ok=True)
+
+    # ffmpeg로 3분(180초) 단위 분할
+    try:
+        subprocess.run([
+            "ffmpeg", "-i", audio_path, "-f", "segment",
+            "-segment_time", "180", "-acodec", "libmp3lame",
+            "-ab", "64k", "-ar", "16000", "-ac", "1", "-y",
+            str(chunk_dir / "chunk_%03d.mp3")
+        ], capture_output=True, timeout=120)
+    except Exception as e:
+        print(f"Audio split failed: {e}")
+        return None
+
+    # 각 청크를 Groq으로 전사
+    all_segments = []
+    chunk_files = sorted(chunk_dir.glob("chunk_*.mp3"))
+    if not chunk_files:
+        return None
+
+    time_offset = 0.0
+    for chunk_file in chunk_files:
+        try:
+            with open(chunk_file, "rb") as f:
+                resp = httpx.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                    files={"file": (chunk_file.name, f, "audio/mpeg")},
+                    data={
+                        "model": "whisper-large-v3",
+                        "response_format": "verbose_json",
+                        "timestamp_granularities[]": "segment",
+                    },
+                    timeout=180,
+                )
+            if resp.status_code == 200:
+                data = resp.json()
+                for seg in data.get("segments", []):
+                    seg["start"] = seg.get("start", 0) + time_offset
+                    seg["end"] = seg.get("end", 0) + time_offset
+                    all_segments.append(seg)
+                # 다음 청크 오프셋 = 이 청크의 마지막 세그먼트 끝 또는 180초
+                if data.get("segments"):
+                    time_offset += max(s.get("end", 0) for s in data["segments"])
+                else:
+                    time_offset += 180
+            else:
+                print(f"Groq chunk error {resp.status_code}: {resp.text[:100]}")
+                time_offset += 180
+        except Exception as e:
+            print(f"Groq chunk failed: {e}")
+            time_offset += 180
+
+    if not all_segments:
+        return None
+
+    return {"segments": all_segments}
 
 
 def _write_srt(srt_path: str, data: dict, max_chars: int = 0):
