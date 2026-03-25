@@ -86,33 +86,38 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
 <!-- ===== Step 1: 입력 ===== -->
 <div id="step-upload" class="step active">
 <div class="wrap">
-    <div class="header">
-        <h1>쇼츠 영상 만들기</h1>
-        <p>영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요</p>
-    </div>
-    <div class="tabs">
-        <button class="tab active">쇼츠 영상</button>
+    <!-- 입력 방식 탭 -->
+    <div style="display:flex;border-radius:14px;overflow:hidden;margin-bottom:24px;border:1px solid var(--bdr)">
+        <button id="tabYt" onclick="document.getElementById('secYt').style.display='';document.getElementById('secFile').style.display='none';this.style.background='linear-gradient(135deg,var(--acc),var(--acc2))';this.style.color='#fff';document.getElementById('tabFile').style.background='transparent';document.getElementById('tabFile').style.color='var(--muted)'"
+            style="flex:1;padding:14px;border:none;cursor:pointer;font-size:14px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;display:flex;align-items:center;justify-content:center;gap:6px">
+            <span style="font-size:16px">🔗</span> 유튜브 링크
+        </button>
+        <button id="tabFile" onclick="document.getElementById('secFile').style.display='';document.getElementById('secYt').style.display='none';this.style.background='linear-gradient(135deg,var(--acc),var(--acc2))';this.style.color='#fff';document.getElementById('tabYt').style.background='transparent';document.getElementById('tabYt').style.color='var(--muted)'"
+            style="flex:1;padding:14px;border:none;cursor:pointer;font-size:14px;font-weight:800;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px">
+            <span style="font-size:16px">📁</span> 파일 업로드
+        </button>
     </div>
 
-    <!-- YouTube -->
-    <div class="card">
-        <div class="card-title">YouTube 링크로 시작</div>
-        <div class="card-desc">유튜브 영상 URL을 붙여넣으면 자동으로 다운로드해요</div>
-        <div style="display:flex;gap:8px">
-            <input id="ytUrl" type="text" class="input" placeholder="https://youtube.com/watch?v=..." style="flex:1">
-            <button id="btnYtDownload" style="padding:10px 20px;border-radius:10px;border:none;cursor:pointer;background:#ef4444;color:#fff;font-size:12px;font-weight:700;white-space:nowrap">불러오기</button>
+    <!-- YouTube 섹션 -->
+    <div id="secYt">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <div style="flex:1;position:relative">
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:0.5">🔗</span>
+                <input id="ytUrl" type="text" class="input" placeholder="유튜브 영상 링크를 입력하세요 (예: https://www.youtube.com/watch?v=...)" style="padding-left:38px">
+            </div>
         </div>
+        <button id="btnYtDownload" class="btn btn-primary" style="margin-bottom:8px">쇼츠로 변환하기 →</button>
         <div id="ytProgress" style="display:none;margin-top:8px"><div class="row"><div class="spinner"></div><span class="muted" id="ytStatus"></span></div></div>
     </div>
 
-    <!-- 파일 업로드 -->
-    <div class="card">
-        <div class="card-title">파일로 내용 불러오기</div>
-        <div class="card-desc">MP4 영상 파일을 올리면 AI가 분석해서 자동으로 채워줘요</div>
-        <div id="dropZone" class="drop">
-            <div style="font-size:28px;margin-bottom:6px;opacity:0.5">📁</div>
-            <div style="font-size:13px;font-weight:600;color:var(--muted)">영상 파일을 드래그하세요</div>
-            <div class="muted" style="margin-top:2px">MP4 영상 (+ SRT 자막 선택)</div>
+    <!-- 파일 업로드 섹션 -->
+    <div id="secFile" style="display:none">
+        <div id="dropZone" class="drop" style="padding:40px 20px">
+            <div style="width:56px;height:56px;border-radius:16px;background:var(--accbg);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+                <span style="font-size:24px">⬆️</span>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">영상 파일을 드래그하거나 클릭하세요</div>
+            <div class="muted" style="font-size:12px">MP4, MOV, AVI 영상 파일 (+ SRT 자막 선택)</div>
             <input type="file" id="fileInput" multiple accept=".mp4,.mkv,.avi,.mov,.srt,.txt" style="display:none">
         </div>
         <div id="selectedFiles" style="display:none;margin-top:10px">
@@ -165,26 +170,23 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
 
 <!-- ===== Step 1.5: 로딩 ===== -->
 <div id="step-loading" class="step">
-<div class="wrap">
-    <div class="header">
-        <h1>쇼츠 영상 만들기</h1>
-        <p>영상을 업로드하거나 YouTube 링크를 붙여넣으면 AI가 분석해요</p>
-    </div>
-    <div class="tabs">
-        <button class="tab active">쇼츠 영상</button>
-    </div>
-    <div class="loading-wrap">
-        <div class="loading-emoji">🎬✨</div>
-        <div style="font-size:18px;font-weight:900;color:var(--acc);margin-bottom:4px">AI가 영상을 분석하고 있어요</div>
-        <div class="muted" id="loadingDetail">음성 인식 중...</div>
-        <div class="loading-bar"><div class="loading-fill"></div></div>
-        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center" id="loadingSteps">
-            <span class="badge" style="background:var(--accbg);color:var(--acc)">음성 인식 중...</span>
-            <span class="badge" style="background:var(--ibg);color:var(--muted)">구간 분석 대기</span>
-            <span class="badge" style="background:var(--ibg);color:var(--muted)">스크립트 추출 대기</span>
+<div class="wrap" style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+    <div style="text-align:center;max-width:420px">
+        <div style="width:80px;height:80px;border-radius:50%;border:4px solid var(--bdr);border-top-color:var(--acc);animation:spin 1s linear infinite;margin:0 auto 24px"></div>
+        <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:8px">AI가 영상을 분석하고 있어요</div>
+        <div class="muted" id="loadingDetail" style="font-size:14px;margin-bottom:20px">음성 인식 중...</div>
+
+        <div style="display:flex;gap:4px;justify-content:center;margin-bottom:20px">
+            <div id="step-ind-1" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;background:var(--accbg);color:var(--acc);border:1px solid var(--acc)">1. 음성 인식</div>
+            <div id="step-ind-2" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;background:var(--ibg);color:var(--muted);border:1px solid var(--bdr)">2. 구간 분석</div>
+            <div id="step-ind-3" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;background:var(--ibg);color:var(--muted);border:1px solid var(--bdr)">3. 스크립트</div>
         </div>
-        <div class="muted" style="margin-top:16px">보통 3~7분 소요 · 페이지를 나가지 마세요</div>
-        <div class="muted" style="margin-top:8px;font-size:11px" id="loadingElapsed"></div>
+
+        <div style="background:var(--ibg);border-radius:12px;padding:16px;border:1px solid var(--bdr)">
+            <div class="muted" style="font-size:12px;margin-bottom:4px">⏱ 예상 소요시간: 3~7분</div>
+            <div class="muted" style="font-size:11px" id="loadingElapsed"></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--acc);font-weight:600">다른 페이지로 이동해도 분석이 계속됩니다</div>
+        </div>
     </div>
 </div>
 </div>
@@ -252,23 +254,35 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
 
 <!-- ===== Step 4: 생성 ===== -->
 <div id="step-generate" class="step">
-<div class="wrap">
-    <div class="header">
-        <h1 id="genTitle">생성 중...</h1>
-        <p>영상 1개당 약 3~7분 소요 · 페이지를 나가지 마세요</p>
+<div style="max-width:960px;margin:0 auto;padding:24px 20px 60px">
+    <!-- 상단 상태 -->
+    <div style="text-align:center;margin-bottom:24px">
+        <h1 id="genTitle" style="font-size:20px;font-weight:900;margin-bottom:4px">생성 중...</h1>
+        <p class="muted" style="font-size:12px">영상 1개당 약 3~7분 소요 · 다른 페이지로 이동해도 생성이 계속됩니다</p>
     </div>
-    <div id="genProgress" style="display:flex;flex-direction:column;gap:8px"></div>
 
-    <div id="resultSection" style="display:none;margin-top:24px">
-        <div style="font-size:15px;font-weight:800;margin-bottom:12px">미리보기</div>
-        <div id="previewTabs" style="display:flex;gap:6px;margin-bottom:12px"></div>
-        <div style="display:flex;justify-content:center;margin-bottom:16px">
-            <video id="previewPlayer" controls playsinline style="max-height:420px;border-radius:12px;border:1px solid var(--bdr)"></video>
+    <!-- 진행 상태 카드 -->
+    <div id="genProgress" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px"></div>
+
+    <!-- 결과: 좌측 리스트 + 우측 미리보기 -->
+    <div id="resultSection" style="display:none">
+        <div style="display:flex;gap:20px;align-items:flex-start">
+            <!-- 좌측: 생성된 쇼츠 리스트 -->
+            <div style="width:240px;flex-shrink:0">
+                <div style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--text)">생성된 쇼츠</div>
+                <div id="previewTabs" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+            <!-- 우측: 미리보기 + 다운로드 -->
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:center;margin-bottom:16px;background:var(--card);border-radius:16px;padding:20px;border:1px solid var(--bdr)">
+                    <video id="previewPlayer" controls playsinline style="max-height:480px;max-width:100%;border-radius:12px"></video>
+                </div>
+                <div id="downloadSection" style="display:flex;flex-direction:column;gap:10px"></div>
+            </div>
         </div>
-        <div id="downloadSection" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
 
-    <button id="btnRestart" class="btn btn-primary" style="display:none;margin-top:16px;background:var(--ibg);color:var(--text)">새로운 영상 만들기</button>
+    <button id="btnRestart" class="btn btn-primary" style="display:none;margin-top:20px;background:var(--ibg);color:var(--text)">새로운 영상 만들기</button>
 </div>
 </div>
 
@@ -514,9 +528,10 @@ $('btnGenerate').addEventListener('click',async()=>{
                     if(data.type==='done'){
                         const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#4ade80"></div><span style="font-size:13px;font-weight:600;color:#4ade80">Short ${data.index+1} 완료</span></div>`;
                         const url=`/outputs/${fileId}/${data.filename}`;$('resultSection').style.display='';
-                        const tab=document.createElement('div');tab.className='sel-btn';tab.textContent=`Short ${data.index+1}`;tab.style.cssText='padding:7px 14px;cursor:pointer';
-                        tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.sel-btn').forEach(t=>t.classList.remove('active'));tab.classList.add('active');$('previewPlayer').src=url});
-                        $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.classList.add('active');$('previewPlayer').src=url}
+                        const tab=document.createElement('div');tab.className='card';tab.style.cssText='padding:12px;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent';
+                        tab.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text)">Short ${data.index+1}</div><div class="muted" style="font-size:11px">완료 ✓</div>`;
+                        tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.card').forEach(t=>{t.style.borderLeftColor='transparent';t.style.background='var(--card)'});tab.style.borderLeftColor='var(--acc)';tab.style.background='var(--accbg)';$('previewPlayer').src=url});
+                        $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.style.borderLeftColor='var(--acc)';tab.style.background='var(--accbg)';$('previewPlayer').src=url}
                         const g=document.createElement('div');g.className='card';g.style.padding='14px';
                         g.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Short ${data.index+1}</div>
                             <a href="${url}" download="${data.filename}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;padding:10px;font-size:13px">영상 다운로드</a>
