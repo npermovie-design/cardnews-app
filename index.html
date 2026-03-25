@@ -7,6 +7,15 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 카카오톡 인앱 브라우저 → 외부 브라우저 리디렉션 -->
+    <script>
+    (function(){
+      var ua = navigator.userAgent || '';
+      if (ua.match(/KAKAOTALK/i)) {
+        location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+      }
+    })();
+    </script>
 
     <!-- Favicon & PWA -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
