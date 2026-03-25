@@ -1,92 +1,141 @@
+import os
+import subprocess
 from pathlib import Path
-from faster_whisper import WhisperModel
 
+import httpx
 
-_model: WhisperModel | None = None
-
-
-def get_model() -> WhisperModel:
-    """Whisper 모델 로드 (최초 1회, 이후 캐시) - tiny 모델로 메모리 절약"""
-    global _model
-    if _model is None:
-        _model = WhisperModel("tiny", device="cpu", compute_type="int8")
-    return _model
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 
 def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> str:
-    """영상에서 음성 인식 → SRT 자막 생성
-
-    Args:
-        max_chars: 자막 한 줄 최대 글자수 (0이면 제한 없음)
-    """
+    """영상에서 음성 인식 → SRT 자막 생성 (Groq Whisper API → 로컬 폴백)"""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     srt_path = str(output_dir / "subtitle.srt")
 
-    model = get_model()
+    # 1) 영상에서 오디오 추출 (ffmpeg)
+    audio_path = str(output_dir / "audio.mp3")
+    try:
+        subprocess.run([
+            "ffmpeg", "-i", video_path, "-vn", "-acodec", "libmp3lame",
+            "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", audio_path
+        ], capture_output=True, timeout=120)
+    except Exception as e:
+        print(f"FFmpeg audio extraction failed: {e}")
+        # 오디오 추출 실패 시 원본 파일 사용
+        audio_path = video_path
+
+    # 2) Groq Whisper API (무료, 빠름)
+    if GROQ_API_KEY:
+        try:
+            result = _transcribe_groq(audio_path)
+            if result:
+                _write_srt(srt_path, result, max_chars)
+                return srt_path
+        except Exception as e:
+            print(f"Groq transcription failed: {e}")
+
+    # 3) 로컬 faster-whisper 폴백
+    try:
+        result = _transcribe_local(video_path, max_chars)
+        if result:
+            _write_srt_entries(srt_path, result)
+            return srt_path
+    except Exception as e:
+        print(f"Local whisper failed: {e}")
+
+    raise RuntimeError("음성 인식에 실패했습니다. 자막(SRT) 파일을 직접 업로드해주세요.")
+
+
+def _transcribe_groq(audio_path: str) -> dict | None:
+    """Groq Whisper API로 음성 인식"""
+    file_size = os.path.getsize(audio_path)
+    if file_size > 25 * 1024 * 1024:  # 25MB 제한
+        print(f"Audio file too large for Groq: {file_size} bytes")
+        return None
+
+    with open(audio_path, "rb") as f:
+        resp = httpx.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            files={"file": (os.path.basename(audio_path), f, "audio/mpeg")},
+            data={
+                "model": "whisper-large-v3",
+                "response_format": "verbose_json",
+                "timestamp_granularities[]": "segment",
+            },
+            timeout=180,
+        )
+
+    if resp.status_code != 200:
+        print(f"Groq API error {resp.status_code}: {resp.text[:200]}")
+        return None
+
+    return resp.json()
+
+
+def _write_srt(srt_path: str, data: dict, max_chars: int = 0):
+    """Groq API 응답을 SRT 파일로 변환"""
+    segments = data.get("segments", [])
+    entries = []
+    for seg in segments:
+        text = seg.get("text", "").strip()
+        if not text:
+            continue
+        start = seg.get("start", 0)
+        end = seg.get("end", 0)
+
+        if max_chars > 0 and len(text) > max_chars:
+            # 긴 텍스트 분할
+            words = text.split()
+            chunk = ""
+            chunk_start = start
+            duration = (end - start) / max(len(words), 1)
+            for j, w in enumerate(words):
+                test = (chunk + " " + w).strip() if chunk else w
+                if len(test) > max_chars and chunk:
+                    chunk_end = start + duration * j
+                    entries.append((chunk_start, chunk_end, chunk))
+                    chunk = w
+                    chunk_start = chunk_end
+                else:
+                    chunk = test
+            if chunk:
+                entries.append((chunk_start, end, chunk))
+        else:
+            entries.append((start, end, text))
+
+    with open(srt_path, "w", encoding="utf-8") as f:
+        for i, (s, e, t) in enumerate(entries, 1):
+            f.write(f"{i}\n{_format_time(s)} --> {_format_time(e)}\n{t}\n\n")
+
+
+def _transcribe_local(video_path: str, max_chars: int = 0) -> list:
+    """로컬 faster-whisper 폴백"""
+    from faster_whisper import WhisperModel
+    model = WhisperModel("tiny", device="cpu", compute_type="int8")
     segments, info = model.transcribe(
-        video_path,
-        language=None,  # 자동 감지 (한국어/영어/일본어 등)
-        vad_filter=True,
+        video_path, language=None, vad_filter=True,
         vad_parameters=dict(min_silence_duration_ms=300),
         word_timestamps=True,
     )
-
-    srt_entries = []
+    entries = []
     for seg in segments:
         text = seg.text.strip()
         if not text:
             continue
+        entries.append((seg.start, seg.end, text))
+    return entries
 
-        if max_chars > 0 and seg.words:
-            # 글자수 제한: 단어 단위로 쪼개서 짧은 자막 생성
-            chunks = _split_by_chars(seg.words, max_chars)
-            for chunk_text, chunk_start, chunk_end in chunks:
-                if chunk_text.strip():
-                    srt_entries.append((chunk_start, chunk_end, chunk_text.strip()))
-        else:
-            srt_entries.append((seg.start, seg.end, text))
 
+def _write_srt_entries(srt_path: str, entries: list):
     with open(srt_path, "w", encoding="utf-8") as f:
-        for i, (start, end, text) in enumerate(srt_entries, 1):
-            f.write(f"{i}\n{_format_srt_time(start)} --> {_format_srt_time(end)}\n{text}\n\n")
-
-    return srt_path
+        for i, (s, e, t) in enumerate(entries, 1):
+            f.write(f"{i}\n{_format_time(s)} --> {_format_time(e)}\n{t}\n\n")
 
 
-def _split_by_chars(words, max_chars: int) -> list[tuple[str, float, float]]:
-    """단어 리스트를 max_chars 기준으로 분할"""
-    chunks = []
-    current_text = ""
-    chunk_start = None
-    chunk_end = None
-
-    for w in words:
-        word_text = w.word.strip()
-        if not word_text:
-            continue
-
-        if chunk_start is None:
-            chunk_start = w.start
-
-        test = (current_text + " " + word_text).strip() if current_text else word_text
-
-        if len(test) > max_chars and current_text:
-            chunks.append((current_text, chunk_start, chunk_end))
-            current_text = word_text
-            chunk_start = w.start
-            chunk_end = w.end
-        else:
-            current_text = test
-            chunk_end = w.end
-
-    if current_text and chunk_start is not None:
-        chunks.append((current_text, chunk_start, chunk_end))
-
-    return chunks
-
-
-def _format_srt_time(seconds: float) -> str:
+def _format_time(seconds: float) -> str:
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     s = int(seconds % 60)
