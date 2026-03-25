@@ -184,14 +184,17 @@ def get_caption_at_time(subs: list[dict], time_sec: float) -> str:
 
 
 def _pre_cut_clip(video_path: str, start: float, end: float, output_dir: str) -> str:
-    """FFmpeg로 클립 구간만 먼저 잘라내기 (메모리 절약)"""
+    """FFmpeg로 클립 구간만 먼저 잘라내기 (메모리 절약, 정확한 타이밍)"""
     import subprocess
     clip_path = str(Path(output_dir) / f"_clip_{start:.0f}_{end:.0f}.mp4")
     try:
+        # -ss를 -i 뒤에 배치하면 정확한 시간 추출 (느리지만 정확)
         result = subprocess.run([
-            "ffmpeg", "-ss", str(max(0, start - 0.5)), "-to", str(end + 0.5),
-            "-i", video_path, "-c", "copy", "-y", clip_path
-        ], capture_output=True, timeout=60)
+            "ffmpeg", "-i", video_path,
+            "-ss", str(max(0, start)), "-to", str(end + 0.3),
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
+            "-c:a", "aac", "-y", clip_path
+        ], capture_output=True, timeout=120)
         if result.returncode == 0 and Path(clip_path).exists() and Path(clip_path).stat().st_size > 1000:
             return clip_path
     except Exception as e:
@@ -223,17 +226,17 @@ def generate_short(
 
     # 긴 영상은 먼저 클립 구간만 잘라내기 (메모리 절약)
     actual_video = video_path
-    clip_offset = 0.0
     if duration < 120 and Path(video_path).exists():
         cut_path = _pre_cut_clip(video_path, start_seconds, end_seconds, str(output_path.parent))
         if cut_path != video_path:
             actual_video = cut_path
-            clip_offset = max(0, start_seconds - 0.5)
-            start_seconds -= clip_offset
-            end_seconds -= clip_offset
+            # 재인코딩 방식이므로 정확히 0부터 시작
+            orig_start = start_seconds
+            end_seconds = end_seconds - start_seconds + 0.1
+            start_seconds = 0
             # 자막 시간도 조정
             if subs:
-                subs = [{"start_seconds": s["start_seconds"] - clip_offset, "end_seconds": s["end_seconds"] - clip_offset, "text": s["text"]} for s in subs]
+                subs = [{"start_seconds": s["start_seconds"] - orig_start, "end_seconds": s["end_seconds"] - orig_start, "text": s["text"]} for s in subs]
 
     input_container = av.open(str(actual_video))
     in_video = input_container.streams.video[0]
