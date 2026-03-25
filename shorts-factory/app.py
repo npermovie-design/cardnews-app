@@ -103,41 +103,89 @@ async def get_templates():
     return {"templates": list(TEMPLATES.keys())}
 
 
+INVIDIOUS_INSTANCES = [
+    "https://invidious.io.lol",
+    "https://yt.cdaut.de",
+    "https://invidious.privacyredirect.com",
+    "https://inv.tux.pizza",
+]
+
+def extract_yt_id(url: str) -> str:
+    import re
+    m = re.search(r'(?:v=|youtu\.be/|shorts/|embed/)([^&?/\s]{11})', url)
+    return m.group(1) if m else ""
+
+
 @app.post("/youtube-download")
 async def youtube_download(request: Request):
-    """YouTube URL에서 영상 다운로드"""
+    """YouTube URL에서 영상 다운로드 (Invidious → yt-dlp 폴백)"""
+    import httpx
     body = await request.json()
     url = body.get("url", "").strip()
     if not url:
         raise HTTPException(400, "URL이 필요합니다")
+
+    vid = extract_yt_id(url)
+    if not vid:
+        raise HTTPException(400, "유효하지 않은 YouTube URL입니다")
 
     file_id = uuid.uuid4().hex[:12]
     file_dir = UPLOAD_DIR / file_id
     file_dir.mkdir(parents=True, exist_ok=True)
     video_path = file_dir / "video.mp4"
 
-    try:
-        import yt_dlp
-        ydl_opts = {
-            "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
-            "outtmpl": str(video_path),
-            "quiet": True,
-            "no_warnings": True,
-            "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
-            "http_headers": {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-            },
-        }
-        loop = asyncio.get_event_loop()
-        def do_download():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-        await loop.run_in_executor(None, do_download)
-    except Exception as e:
-        raise HTTPException(500, f"다운로드 실패: {str(e)}")
+    # 1) Invidious API로 다운로드 시도
+    for base in INVIDIOUS_INSTANCES:
+        try:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                r = await client.get(f"{base}/api/v1/videos/{vid}")
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+                # mp4 포맷 중 720p 이하 선택
+                streams = [f for f in data.get("formatStreams", []) if f.get("container") == "mp4"]
+                streams.sort(key=lambda f: int(f.get("resolution", "0p").replace("p", "") or 0), reverse=True)
+                dl_url = None
+                for s in streams:
+                    res = int(s.get("resolution", "0p").replace("p", "") or 0)
+                    if res <= 720 and s.get("url"):
+                        dl_url = s["url"]
+                        break
+                if not dl_url and streams:
+                    dl_url = streams[-1].get("url")
+                if not dl_url:
+                    continue
+
+                # 영상 다운로드
+                async with httpx.AsyncClient(timeout=120, follow_redirects=True) as dl_client:
+                    dr = await dl_client.get(dl_url)
+                    if dr.status_code == 200 and len(dr.content) > 10000:
+                        video_path.write_bytes(dr.content)
+                        break
+        except Exception:
+            continue
+
+    # 2) Invidious 실패 시 yt-dlp 폴백
+    if not video_path.exists():
+        try:
+            import yt_dlp
+            ydl_opts = {
+                "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
+                "outtmpl": str(video_path),
+                "quiet": True,
+                "no_warnings": True,
+                "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
+            }
+            loop = asyncio.get_event_loop()
+            def do_download():
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+            await loop.run_in_executor(None, do_download)
+        except Exception as e:
+            raise HTTPException(500, f"다운로드 실패: YouTube가 서버 다운로드를 차단했어요. MP4 파일을 직접 업로드해주세요.")
 
     if not video_path.exists():
-        raise HTTPException(500, "다운로드된 파일을 찾을 수 없습니다")
+        raise HTTPException(500, "다운로드 실패: MP4 파일을 직접 업로드해주세요.")
 
     file_store[file_id] = {
         "video_path": str(video_path),
@@ -160,26 +208,42 @@ async def yt_dl_alias(request: Request):
 
 @app.get("/api/youtube-info")
 async def youtube_info(url: str = ""):
-    """YouTube 영상 정보 조회"""
+    """YouTube 영상 정보 조회 (Invidious → yt-dlp 폴백)"""
+    import httpx
     if not url:
         raise HTTPException(400, "URL이 필요합니다")
+    vid = extract_yt_id(url)
+    if not vid:
+        raise HTTPException(400, "유효하지 않은 YouTube URL")
+
+    # 1) Invidious
+    for base in INVIDIOUS_INSTANCES:
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                r = await client.get(f"{base}/api/v1/videos/{vid}")
+                if r.status_code == 200:
+                    d = r.json()
+                    if d.get("title"):
+                        return {
+                            "title": d["title"],
+                            "duration": d.get("lengthSeconds", 0),
+                            "thumbnail": d.get("videoThumbnails", [{}])[0].get("url", f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"),
+                            "channel": d.get("author", ""),
+                        }
+        except Exception:
+            continue
+
+    # 2) oEmbed 폴백
     try:
-        import yt_dlp
-        ydl_opts = {
-            "quiet": True, "no_warnings": True, "skip_download": True,
-            "extractor_args": {"youtube": {"player_client": ["ios", "mweb"]}},
-            "http_headers": {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"},
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            return {
-                "title": info.get("title", ""),
-                "duration": info.get("duration", 0),
-                "thumbnail": info.get("thumbnail", ""),
-                "channel": info.get("channel", ""),
-            }
-    except Exception as e:
-        raise HTTPException(500, f"정보 조회 실패: {str(e)}")
+        async with httpx.AsyncClient(timeout=8) as client:
+            r = await client.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={vid}&format=json")
+            if r.status_code == 200:
+                d = r.json()
+                return {"title": d.get("title", ""), "duration": 0, "thumbnail": f"https://img.youtube.com/vi/{vid}/hqdefault.jpg", "channel": d.get("author_name", "")}
+    except Exception:
+        pass
+
+    raise HTTPException(500, "영상 정보를 불러올 수 없습니다")
 
 
 @app.post("/upload")
