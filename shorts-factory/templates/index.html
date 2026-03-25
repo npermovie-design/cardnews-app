@@ -183,7 +183,8 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
             <span class="badge" style="background:var(--ibg);color:var(--muted)">구간 분석 대기</span>
             <span class="badge" style="background:var(--ibg);color:var(--muted)">스크립트 추출 대기</span>
         </div>
-        <div class="muted" style="margin-top:16px">보통 1~3분 소요</div>
+        <div class="muted" style="margin-top:16px">보통 3~7분 소요 · 페이지를 나가지 마세요</div>
+        <div class="muted" style="margin-top:8px;font-size:11px" id="loadingElapsed"></div>
     </div>
 </div>
 </div>
@@ -254,7 +255,7 @@ body.light{--bg:#f4f4f8;--card:#fff;--bdr:#e5e5f0;--text:#1a1a2e;--muted:#888;--
 <div class="wrap">
     <div class="header">
         <h1 id="genTitle">생성 중...</h1>
-        <p>영상 1개당 약 1~3분 소요</p>
+        <p>영상 1개당 약 3~7분 소요 · 페이지를 나가지 마세요</p>
     </div>
     <div id="genProgress" style="display:flex;flex-direction:column;gap:8px"></div>
 
@@ -312,21 +313,56 @@ function handleFiles(files){
         $('selectedFiles').style.display='';$('btnUpload').disabled=false}
 }
 
+let elapsedTimer=null;
+function startElapsed(){
+    const start=Date.now();
+    const el=$('loadingElapsed');
+    if(elapsedTimer)clearInterval(elapsedTimer);
+    elapsedTimer=setInterval(()=>{
+        const s=Math.floor((Date.now()-start)/1000);
+        const m=Math.floor(s/60);
+        el.textContent=`경과 시간: ${m}분 ${s%60}초`;
+    },1000);
+}
+function stopElapsed(){if(elapsedTimer){clearInterval(elapsedTimer);elapsedTimer=null;}}
+
+function showPointsModal(total,analysis,generation){
+    return new Promise(resolve=>{
+        const overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+        overlay.innerHTML=`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:20px;padding:32px 28px;max-width:360px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+            <div style="font-size:36px;margin-bottom:12px">💎</div>
+            <div style="font-size:18px;font-weight:900;color:var(--text);margin-bottom:10px">포인트 차감</div>
+            <div style="font-size:28px;font-weight:900;color:var(--acc);margin-bottom:6px">${total}P</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.8">분석 ${analysis}P + 생성 ${generation}P</div>
+            <div style="display:flex;gap:10px">
+                <button id="_ptCancel" style="flex:1;padding:12px;border-radius:11px;border:1px solid var(--bdr);background:transparent;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer">취소</button>
+                <button id="_ptOk" style="flex:1;padding:12px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:14px;font-weight:700;cursor:pointer">확인</button>
+            </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#_ptOk').onclick=()=>{document.body.removeChild(overlay);resolve(true)};
+        overlay.querySelector('#_ptCancel').onclick=()=>{document.body.removeChild(overlay);resolve(false)};
+    });
+}
+
 async function doAnalyze(){
     showStep('loading');
-    $('loadingDetail').textContent='음성 인식 중...';
+    $('loadingDetail').textContent='음성 인식 중... (최대 3~7분 소요)';
+    startElapsed();
     const mc=+document.querySelector('input[name="maxChars"]:checked').value;
     try{
         const controller=new AbortController();
-        const timeout=setTimeout(()=>controller.abort(),300000); // 5분 타임아웃
-        $('loadingDetail').textContent='음성 인식 중... (최대 2~3분 소요)';
+        const timeout=setTimeout(()=>controller.abort(),600000); // 10분 타임아웃
         const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc}),signal:controller.signal});
         clearTimeout(timeout);
+        stopElapsed();
         if(!ar.ok){const e=await ar.json().catch(()=>({}));throw new Error(e.detail||'분석 실패 ('+ar.status+')')}
         const ad=await ar.json();segments=ad.segments;allSubs=ad.all_subs||[];
         renderSegments();showStep('analysis');
     }catch(e){
-        if(e.name==='AbortError') throw new Error('분석 시간 초과 (5분). 더 짧은 영상을 시도해주세요.');
+        stopElapsed();
+        if(e.name==='AbortError') throw new Error('분석 시간 초과. 더 짧은 영상을 시도해주세요.');
         throw e;
     }
 }
@@ -448,7 +484,7 @@ $('edCaptionColor').addEventListener('input',e=>{captionColor=e.target.value});
 $('btnGenerate').addEventListener('click',async()=>{
     saveCurrentEdit();
     try{const pt=await(await fetch('/api/calculate-points',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clips:editClips,include_analysis:true})})).json();
-        if(!confirm(`총 ${pt.total_cost}P 차감\n(분석 ${pt.analysis_cost}P + 생성 ${pt.generation_cost}P)\n\n진행하시겠습니까?`))return;
+        if(!await showPointsModal(pt.total_cost,pt.analysis_cost,pt.generation_cost))return;
         requestPointDeduction(pt.total_cost,`숏폼 ${editClips.length}개 생성`);
     }catch(e){}
     showStep('generate');$('genTitle').textContent='생성 중...';
