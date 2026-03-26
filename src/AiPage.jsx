@@ -113,11 +113,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="hot_keyword" label="핫 키워드" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3, marginTop: 6 }}>마케팅</div>
-        <Item id="insta_auto_dm" label="인스타 자동DM" />
-        <Item id="sns_analysis" label="SNS 분석툴" ids={["analysis_insta","analysis_tiktok","analysis_youtube"]} />
-
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <Item id="marketing" label="마케팅" ids={["sns_analysis","insta_auto_dm","analysis_insta","analysis_tiktok","analysis_youtube"]} />
         <Item id="prompt_studio" label="기획" />
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
@@ -2674,47 +2670,71 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     />;
   }
 
-  // ── SNS 분석툴 ──
-  if (aiMenu && (aiMenu === "sns_analysis" || aiMenu.startsWith("analysis_"))) {
-    const analysisMap = { analysis_insta: "rank_insta", analysis_tiktok: "rank_tiktok", analysis_youtube: "rank_youtube" };
-    const mappedMenu = analysisMap[aiMenu] || "home";
-    return (
-      <div key="sns-analysis" style={{ flex:1, overflow:"hidden" }}>
-        <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate} initialMenu={mappedMenu} embedded />
-      </div>
-    );
-  }
-
-  // ── 인스타 자동DM (준비 중 페이지) ──
-  if (aiMenu === "insta_auto_dm") {
+  // ── 마케팅 (SNS 분석 + 인스타 자동DM) ──
+  if (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu === "insta_auto_dm" || aiMenu.startsWith("analysis_")) {
     const D = isDark;
+    const MARKETING_TABS = [
+      { id: "sns_analysis", label: "SNS 분석", icon: "/icon-instagram.webp" },
+      { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
+    ];
+    const activeTab = (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu.startsWith("analysis_")) ? "sns_analysis" : "insta_auto_dm";
+    const tabText = D ? "#fff" : "#1a1a2e";
+    const tabMuted = D ? "rgba(255,255,255,0.5)" : "#888";
+    const tabBdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+
     return (
-      <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
-        <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
-          <div style={{ fontSize:48, marginBottom:16 }}>💬</div>
-          <div style={{ fontSize:22, fontWeight:900, color:D?"#fff":"#1a1a2e", marginBottom:8 }}>인스타 자동DM 마케팅</div>
-          <div style={{ fontSize:14, color:D?"rgba(255,255,255,0.6)":"#888", marginBottom:32, lineHeight:1.7 }}>
-            게시물에 댓글을 단 사용자에게 자동으로 DM을 발송하는 마케팅 도구입니다.<br/>
-            팔로워에게는 링크와 정보를, 비팔로워에게는 팔로우 요청을 보냅니다.
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:32 }}>
-            {[
-              { icon:"📝", title:"댓글 감지", desc:"특정 키워드 댓글 자동 감지" },
-              { icon:"📩", title:"자동 DM 발송", desc:"맞춤 메시지 + 링크 버튼" },
-              { icon:"👥", title:"팔로워 관리", desc:"팔로워/비팔로워 분기 처리" },
-            ].map((f,i) => (
-              <div key={i} style={{ padding:20, borderRadius:14, border:`1px solid ${D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
-                <div style={{ fontSize:28, marginBottom:8 }}>{f.icon}</div>
-                <div style={{ fontSize:13, fontWeight:800, color:D?"#fff":"#1a1a2e", marginBottom:4 }}>{f.title}</div>
-                <div style={{ fontSize:11, color:D?"rgba(255,255,255,0.5)":"#888" }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding:16, borderRadius:12, background:D?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.05)", border:"1px solid rgba(124,106,255,0.2)" }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#7c6aff" }}>🚀 준비 중</div>
-            <div style={{ fontSize:12, color:D?"rgba(255,255,255,0.6)":"#888", marginTop:4 }}>Instagram Messaging API 연동 작업 중입니다. 곧 사용 가능합니다.</div>
-          </div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* 탭 헤더 */}
+        <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${tabBdr}`, padding:"0 20px", flexShrink:0, background:D?"rgba(0,0,0,0.2)":"#fff" }}>
+          {MARKETING_TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button key={tab.id} onClick={() => setAiMenu(tab.id)}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"12px 18px", border:"none", cursor:"pointer",
+                  background:"transparent", borderBottom:`2px solid ${isActive?"#7c6aff":"transparent"}`,
+                  color:isActive?tabText:tabMuted, fontSize:13, fontWeight:isActive?800:500 }}>
+                <img src={tab.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain" }} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
+
+        {/* 탭 콘텐츠 */}
+        {activeTab === "sns_analysis" ? (
+          <div style={{ flex:1, overflow:"hidden" }}>
+            <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate}
+              initialMenu={aiMenu.startsWith("analysis_") ? ({analysis_insta:"rank_insta",analysis_tiktok:"rank_tiktok",analysis_youtube:"rank_youtube"}[aiMenu]||"home") : "home"} embedded />
+          </div>
+        ) : (
+          <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
+            <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>💬</div>
+              <div style={{ fontSize:22, fontWeight:900, color:tabText, marginBottom:8 }}>인스타 자동DM 마케팅</div>
+              <div style={{ fontSize:14, color:tabMuted, marginBottom:32, lineHeight:1.7 }}>
+                게시물에 댓글을 단 사용자에게 자동으로 DM을 발송하는 마케팅 도구입니다.<br/>
+                팔로워에게는 링크와 정보를, 비팔로워에게는 팔로우 요청을 보냅니다.
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:32 }}>
+                {[
+                  { icon:"📝", title:"댓글 감지", desc:"특정 키워드 댓글 자동 감지" },
+                  { icon:"📩", title:"자동 DM 발송", desc:"맞춤 메시지 + 링크 버튼" },
+                  { icon:"👥", title:"팔로워 관리", desc:"팔로워/비팔로워 분기 처리" },
+                ].map((f,i) => (
+                  <div key={i} style={{ padding:20, borderRadius:14, border:`1px solid ${tabBdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>{f.icon}</div>
+                    <div style={{ fontSize:13, fontWeight:800, color:tabText, marginBottom:4 }}>{f.title}</div>
+                    <div style={{ fontSize:11, color:tabMuted }}>{f.desc}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:16, borderRadius:12, background:D?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.05)", border:"1px solid rgba(124,106,255,0.2)" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#7c6aff" }}>준비 중</div>
+                <div style={{ fontSize:12, color:tabMuted, marginTop:4 }}>Instagram Messaging API 연동 작업 중입니다. 곧 사용 가능합니다.</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -2905,11 +2925,12 @@ const MENU_LABELS = {
   hot_keyword: "핫 키워드",
   prompt_studio: "기획",
   ppt_gen: "PPT 제작",
-  insta_auto_dm: "인스타 자동DM",
-  sns_analysis: "SNS 분석툴",
-  analysis_insta: "인스타 분석",
-  analysis_tiktok: "틱톡 분석",
-  analysis_youtube: "유튜브 분석",
+  marketing: "마케팅",
+  insta_auto_dm: "마케팅",
+  sns_analysis: "마케팅",
+  analysis_insta: "마케팅",
+  analysis_tiktok: "마케팅",
+  analysis_youtube: "마케팅",
 };
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
