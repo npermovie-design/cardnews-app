@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     if (platform === "youtube") {
       // YouTube 검색 (공식 API 키 없이 Invidious 활용)
       const query = keywords.slice(0, 3).join(" ") + " shorts";
-      const instances = ["https://invidious.io.lol", "https://yt.cdaut.de", "https://inv.tux.pizza"];
+      const instances = ["https://vid.puffyan.us", "https://invidious.nerdvpn.de", "https://inv.nadeko.net", "https://invidious.io.lol", "https://yt.cdaut.de"];
 
       for (const base of instances) {
         try {

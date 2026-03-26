@@ -14,6 +14,6 @@
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/rss.xml", "destination": "/api/rss" },
     { "source": "/feed", "destination": "/api/rss" },
-    { "source": "/((?!robots\\.txt|og-image\\.png|favicon\\.svg|20260323).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|20260323).*)", "destination": "/index.html" }
   ]
 }

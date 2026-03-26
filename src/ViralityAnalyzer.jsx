@@ -65,9 +65,9 @@ export default function ViralityAnalyzer({ isDark }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category: catId, keywords: cat.tags, platform: "youtube" }),
       });
-      const data = await r.json();
-      setFeedVideos(data.videos || []);
-    } catch {}
+      if (!r.ok) { console.error("fetch-trending-videos error:", r.status, await r.text().catch(()=>"")); }
+      else { const data = await r.json(); setFeedVideos(data.videos || []); }
+    } catch (e) { console.error("Feed load error:", e); }
     setFeedLoading(false);
   };
 
