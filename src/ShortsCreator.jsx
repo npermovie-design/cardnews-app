@@ -396,15 +396,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
       {/* 중앙: 미리보기 */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-        <div style={{ width: 200, height: 356, borderRadius: 20, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: `2px solid ${bdr}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ width: 260, height: 462, borderRadius: 22, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: `2px solid ${bdr}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ flex: "0 0 20%", background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
-            <span style={{ fontSize: 10, fontWeight: 900, color: titleColor, textAlign: "center", lineHeight: 1.3 }}>{curClip.title || "제목을 입력하세요"}</span>
+            <span style={{ fontSize: 13, fontWeight: 900, color: titleColor, textAlign: "center", lineHeight: 1.3 }}>{curClip.title || "제목을 입력하세요"}</span>
           </div>
           <div style={{ flex: 1, background: "rgba(128,128,128,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 40, opacity: 0.3 }}>🎬</span>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.3"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
           </div>
-          <div style={{ flex: "0 0 12%", background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}>
-            <span style={{ fontSize: 8, color: captionColor, textAlign: "center" }}>자막 영역</span>
+          <div style={{ flex: "0 0 12%", background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
+            <span style={{ fontSize: 10, color: captionColor, textAlign: "center" }}>자막 영역</span>
           </div>
         </div>
       </div>
@@ -479,7 +479,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return (
       <div style={{ flex: 1, display: "flex", overflow: "hidden", background: D ? "transparent" : "#f4f4f8" }}>
         {/* 좌측: 생성된 쇼츠 리스트 */}
-        <div style={{ width: 220, flexShrink: 0, padding: "16px", overflowY: "auto", borderRight: `1px solid ${bdr}` }}>
+        <div style={{ width: 240, flexShrink: 0, padding: "18px", overflowY: "auto", borderRight: `1px solid ${bdr}` }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>
             {isComplete ? `생성된 쇼츠 (${doneResults.length})` : `생성 중... (${completed}/${total})`}
           </div>
@@ -503,24 +503,24 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
 
         {/* 우측: 미리보기 + 다운로드 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 32px", overflowY: "auto" }}>
           {doneResults.length > 0 ? (
             <>
-              <div style={{ ...cardStyle, width: "100%", maxWidth: 500, textAlign: "center" }}>
+              <div style={{ ...cardStyle, width: "100%", maxWidth: 720, textAlign: "center", padding: 24 }}>
                 <video controls playsinline src={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
-                  style={{ maxHeight: 400, maxWidth: "100%", borderRadius: 12 }} />
+                  style={{ maxHeight: "70vh", width: "100%", maxWidth: 480, borderRadius: 14, background: "#000" }} />
               </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
                 {doneResults.map(r => (
                   <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
-                    style={{ padding: "10px 20px", borderRadius: 10, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+                    style={{ padding: "12px 24px", borderRadius: 12, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                     Short {r.index + 1} 다운로드
                   </a>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>글쓰기 연계</button>
-                <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>콘텐츠 제작</button>
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>글쓰기 연계</button>
+                <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>콘텐츠 제작</button>
               </div>
             </>
           ) : (

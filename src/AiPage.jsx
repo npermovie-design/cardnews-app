@@ -2303,8 +2303,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "blog_link",        title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)"   },
+      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)", iconImg: "/icon-naver-blog.png"  },
+      { id: "blog_link",        title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)", iconImg: "/icon-youtube.png"   },
       { id: "cardnews_simple",  title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
       { id: "detail_simple",    title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "thumbnail_gen",    title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
@@ -2315,7 +2315,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { id: "face_swap",    title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)" },
+      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)", iconImg: "/icon-youtube.png" },
     ];
     // 카테고리별 그룹
     const GROUPS = [
@@ -2356,7 +2356,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = isDark ? "0 6px 20px rgba(0,0,0,0.3)" : "0 6px 20px rgba(0,0,0,0.05)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                     <div style={{ width: 40, height: 40, borderRadius: 12, background: isDark ? m.darkColor : m.lightColor, display: "flex", alignItems: "center", justifyContent: "center", color: group.color, flexShrink: 0 }}>
-                      {TOOL_ICONS[m.id] || m.title[0]}
+                      {m.iconImg ? <img src={m.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain", borderRadius: 4 }} /> : (TOOL_ICONS[m.id] || m.title[0])}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 2 }}>{m.title}</div>
@@ -2842,10 +2842,10 @@ const MENU_LABELS = {
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
 const WRITE_PLATFORMS = [
   { id: "blog_naver",   label: "네이버 블로그", type: "blog_naver",  icon: "/icon-naver-blog.png" },
-  { id: "blog_cafe",    label: "네이버 카페",  type: "blog_cafe",    icon: "/icon-naver-blog.png" },
-  { id: "blog_tistory", label: "티스토리",     type: "blog_tistory" },
+  { id: "blog_cafe",    label: "네이버 카페",  type: "blog_cafe",    icon: "/icon-naver-cafe.webp" },
+  { id: "blog_tistory", label: "티스토리",     type: "blog_tistory", icon: "/icon-tistory.png" },
   { id: "blog_insta",   label: "인스타그램",   type: "blog_insta",   icon: "/icon-instagram.webp" },
-  { id: "blog_thread",  label: "스레드",       type: "blog_thread" },
+  { id: "blog_thread",  label: "스레드",       type: "blog_thread",  icon: "/icon-threads.png" },
 ];
 
 /* ── 통합 탭 헤더 (글쓰기 / 링크 글쓰기 공용) ── */
@@ -2907,8 +2907,8 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
   const tabs = [
     { id: "youtube", label: "유튜브",   icon: "/icon-youtube.png" },
     { id: "news",    label: "뉴스 기사" },
-    { id: "blog",    label: "블로그" },
-    { id: "sns",     label: "SNS" },
+    { id: "blog",    label: "블로그",   icon: "/icon-naver-blog.png" },
+    { id: "sns",     label: "SNS",      icon: "/icon-instagram.webp" },
   ];
 
   return (
