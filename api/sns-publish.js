@@ -140,7 +140,9 @@ export default async function handler(req, res) {
         body: createParams.toString(),
       });
       const createData = await createRes.json();
-      if (createData.id) {
+      if (!createData.id) {
+        publishError = `인스타 컨테이너 실패 [userId:${conn.platform_user_id}] [img:${imageUrl?.slice(0,80)}] [resp:${JSON.stringify(createData)}]`;
+      } else {
         const pubParams = new URLSearchParams({
           creation_id: createData.id,
           access_token: conn.access_token,
@@ -153,8 +155,6 @@ export default async function handler(req, res) {
         const pubData = await pubRes.json();
         postUrl = pubData.id ? `https://www.instagram.com/p/${pubData.id}` : null;
         if (!pubData.id) publishError = pubData.error?.message || "인스타그램 발행 실패";
-      } else {
-        publishError = createData.error?.message || `인스타그램 컨테이너 생성 실패: ${JSON.stringify(createData)}`;
       }
     }
 
