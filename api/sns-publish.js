@@ -129,30 +129,32 @@ export default async function handler(req, res) {
       }
       // Instagram Graph API로 이미지 게시물 발행
       // 1) 미디어 컨테이너 생성
+      const createParams = new URLSearchParams({
+        image_url: imageUrl,
+        caption: content.slice(0, 2200),
+        access_token: conn.access_token,
+      });
       const createRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          caption: content.slice(0, 2200),
-          access_token: conn.access_token,
-        }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: createParams.toString(),
       });
       const createData = await createRes.json();
       if (createData.id) {
+        const pubParams = new URLSearchParams({
+          creation_id: createData.id,
+          access_token: conn.access_token,
+        });
         const pubRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media_publish`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            creation_id: createData.id,
-            access_token: conn.access_token,
-          }),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: pubParams.toString(),
         });
         const pubData = await pubRes.json();
         postUrl = pubData.id ? `https://www.instagram.com/p/${pubData.id}` : null;
         if (!pubData.id) publishError = pubData.error?.message || "인스타그램 발행 실패";
       } else {
-        publishError = createData.error?.message || "인스타그램 컨테이너 생성 실패";
+        publishError = createData.error?.message || `인스타그램 컨테이너 생성 실패: ${JSON.stringify(createData)}`;
       }
     }
 
