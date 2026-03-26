@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { callClaude } from "./aiClient";
+import { changePoints } from "./storage";
 import PptxGenJS from "pptxgenjs";
 
 /* ═══════════════════════════════════════════════════════════
@@ -322,7 +323,6 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
       setStep("edit");
       if (user && onUserUpdate) {
         try {
-          const { changePoints } = await import("./storage");
           const newPts = await changePoints(user.uid, -10, "PPT 생성");
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}

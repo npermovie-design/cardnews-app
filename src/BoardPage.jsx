@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
+import { callAI } from "./aiClient";
 import ShareButton, { ShareRow } from "./ShareButton";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
@@ -948,7 +949,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const langNames = { ko:"한국어", en:"English", ja:"日本語", zh:"中文" };
     setTranslating(true);
     try {
-      const { callAI } = await import("./aiClient");
+      // callAI는 상단에서 정적 import됨
       const txt = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 글을 ${langNames[targetLang]||"English"}로 번역해주세요. 번역된 텍스트만 출력하세요:\n\n제목: ${view.title}\n\n${view.body?.replace(/<[^>]*>/g,"").slice(0,2000)}`}], 2000);
       setTranslatedBody(txt);
     } catch(e) { alert("번역 실패: " + e.message); }
