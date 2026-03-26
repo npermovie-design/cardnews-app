@@ -16,6 +16,7 @@ import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
+import SnsConnectionManager from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2789,6 +2790,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               </div>
             ))}
           </div>
+          <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"4px 0", marginBottom:16, overflow:"hidden" }}><SnsConnectionManager user={user} isDark={isDark} compact /></div>
           {/* 로그아웃 */}
           <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
             style={{ width:"100%", padding:"13px", borderRadius:12, border:"1px solid rgba(248,113,113,0.3)", background:"rgba(248,113,113,0.06)", color:"#f87171", fontSize:14, fontWeight:700, cursor:"pointer" }}>
