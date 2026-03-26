@@ -470,6 +470,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [snsConns, setSnsConns] = useState([]);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState(null);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState("");
 
   useEffect(() => {
     if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
@@ -495,7 +497,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     setCaptionLoading(false);
   };
 
-  const publishToInstagram = async () => {
+  const publishToInstagram = async (scheduledTime) => {
     if (!user?.uid || !caption.trim() || !slides.length) return;
     setPublishing(true); setPublishResult(null);
     try {
@@ -520,7 +522,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       const r = await fetch("/api/sns-publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.uid, platform: "instagram", title: topic || "", content: caption, imageUrl }),
+        body: JSON.stringify({ uid: user.uid, platform: "instagram", title: topic || "", content: caption, imageUrl, ...(scheduledTime ? { scheduledTime } : {}) }),
       });
       const data = await r.json();
       setPublishResult(data);
@@ -1553,12 +1555,35 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   );
                   return (
                     <div style={{ marginTop:10 }}>
-                      <button onClick={publishToInstagram} disabled={publishing || !caption.trim() || caption.length > 2200}
-                        style={{ width:"100%", padding:"12px", borderRadius:10, border:"none", cursor:publishing?"wait":"pointer",
-                          background:"linear-gradient(135deg,#E1306C,#C13584,#833AB4)", color:"#fff", fontSize:13, fontWeight:800,
-                          opacity:(publishing||!caption.trim()||caption.length>2200)?0.6:1 }}>
-                        {publishing ? "발행 중..." : `@${instaConn.platform_username} 인스타그램 발행`}
-                      </button>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <button onClick={()=>publishToInstagram()} disabled={publishing || !caption.trim() || caption.length > 2200}
+                          style={{ flex:1, padding:"12px", borderRadius:10, border:"none", cursor:publishing?"wait":"pointer",
+                            background:"linear-gradient(135deg,#E1306C,#C13584,#833AB4)", color:"#fff", fontSize:13, fontWeight:800,
+                            opacity:(publishing||!caption.trim()||caption.length>2200)?0.6:1 }}>
+                          {publishing ? "발행 중..." : `@${instaConn.platform_username} 발행`}
+                        </button>
+                        <button onClick={()=>setShowSchedule(s=>!s)} disabled={publishing}
+                          style={{ padding:"12px 14px", borderRadius:10, border:`1px solid rgba(225,48,108,0.3)`, cursor:"pointer",
+                            background:showSchedule?"rgba(225,48,108,0.15)":"rgba(225,48,108,0.06)", color:"#E1306C", fontSize:12, fontWeight:700 }}>
+                          예약
+                        </button>
+                      </div>
+                      {showSchedule && (
+                        <div style={{ marginTop:8, padding:12, borderRadius:10, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.03)":"#f9f9f9" }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>예약 발행 시간</div>
+                          <input type="datetime-local" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)}
+                            min={new Date(Date.now()+10*60000).toISOString().slice(0,16)}
+                            max={new Date(Date.now()+75*24*60*60000).toISOString().slice(0,16)}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:12, boxSizing:"border-box" }} />
+                          <button onClick={()=>{ if(scheduleTime){ publishToInstagram(scheduleTime); setShowSchedule(false); } }}
+                            disabled={!scheduleTime || publishing || !caption.trim()}
+                            style={{ width:"100%", marginTop:8, padding:"10px", borderRadius:8, border:"none", cursor:"pointer",
+                              background:"linear-gradient(135deg,#E1306C,#833AB4)", color:"#fff", fontSize:12, fontWeight:700,
+                              opacity:(!scheduleTime||publishing||!caption.trim())?0.5:1 }}>
+                            {scheduleTime ? `${new Date(scheduleTime).toLocaleString("ko-KR")} 예약 발행` : "시간을 선택하세요"}
+                          </button>
+                        </div>
+                      )}
                       {publishResult && (
                         <div style={{ marginTop:8, padding:"8px 12px", borderRadius:8, fontSize:11, fontWeight:600,
                           background: publishResult.success ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
