@@ -531,7 +531,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [loading,    setLoading]    = useState(false);
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
-  const [snsConns,setSnsConns]=useState([]);const [publishing,setPublishing]=useState(null);const [publishResult,setPublishResult]=useState(null);
+  const [snsConns,setSnsConns]=useState([]);const [publishing,setPublishing]=useState(null);const [publishResult,setPublishResult]=useState(null);const [showSchedule,setShowSchedule]=useState(false);const [scheduleTime,setScheduleTime]=useState("");
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
   const [seoKeys,    setSeoKeys]    = useState([]);
@@ -546,7 +546,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgInput,        setImgInput]        = useState("");
 
   useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
-  const handlePublish=async(platform)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({uid:user.uid,platform,title:fields.keyword||"",content:result,tags})});const data=await r.json();setPublishResult({platform,...data});}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
+  const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
   // 숏폼 연계 데이터 자동 입력
   useEffect(() => {
     try {
@@ -887,6 +887,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 );
               });
             })()}
+            {result && initialType === "blog_thread" && snsConns.some(c=>c.platform==="threads") && (
+              <button onClick={()=>setShowSchedule(!showSchedule)}
+                style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${showSchedule?"#7c6aff50":isDark?"rgba(255,255,255,0.1)":"#ddd"}`,
+                  background:showSchedule?(isDark?"#7c6aff15":"#7c6aff08"):"transparent",color:showSchedule?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),
+                  fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                예약 발행
+              </button>
+            )}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -904,6 +913,26 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
 
           {publishResult&&<div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(245,158,11,0.2)"}`}}><span style={{fontSize:16}}>{publishResult.success?"✓":publishResult.clipboard?"📋":"✗"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":publishResult.clipboard?"#f59e0b":"#f87171"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>{publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인 →</a>}{publishResult.message&&<div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}{publishResult.error&&<div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}</div><button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button></div>}
+          {/* 예약 발행 UI */}
+          {showSchedule && result && (
+            <div style={{marginTop:12,padding:"16px",borderRadius:12,background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)",border:`1px solid ${isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)"}`}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{fontSize:13,fontWeight:700,color:text}}>스레드 예약 발행</span>
+                <button onClick={()=>setShowSchedule(false)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <input type="datetime-local" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)}
+                  min={new Date(Date.now()+600000).toISOString().slice(0,16)}
+                  style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#ddd"}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:13,minWidth:180}} />
+                <button onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
+                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                  <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
+                  {publishing?"예약 중...":"예약 발행하기"}
+                </button>
+              </div>
+              <div style={{fontSize:10,color:muted,marginTop:6}}>최소 10분 후 ~ 최대 75일 후 예약 가능</div>
+            </div>
+          )}
           {/* 연관 이미지 추천 */}
           {(imgSearching || suggestedImages.length > 0) && (
             <div style={{marginTop:18}}>
