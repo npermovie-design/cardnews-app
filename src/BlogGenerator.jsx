@@ -7,7 +7,6 @@ import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
-import KeywordInsightPanel from "./KeywordInsightPanel";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -532,7 +531,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [loading,    setLoading]    = useState(false);
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
-  const [snsConns,setSnsConns]=useState([]);const [publishing,setPublishing]=useState(null);const [publishResult,setPublishResult]=useState(null);
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
   const [seoKeys,    setSeoKeys]    = useState([]);
@@ -546,8 +544,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
 
-  useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
-  const handlePublish=async(platform)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({uid:user.uid,platform,title:fields.keyword||"",content:result,tags})});const data=await r.json();setPublishResult({platform,...data});}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
   // 숏폼 연계 데이터 자동 입력
   useEffect(() => {
     try {
