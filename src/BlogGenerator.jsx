@@ -856,23 +856,38 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-            {/* SNS 발행 버튼 */}
-            {result && snsConns.length > 0 && snsConns.map(conn => {
-              const icons = { tistory:"/icon-tistory.png", threads:"/icon-threads.png", naver_blog:"/icon-naver-blog.png", instagram:"/icon-instagram.webp" };
-              const colors = { tistory:"#FF6B35", threads:"#000", naver_blog:"#03C75A", instagram:"#E1306C" };
-              const isPublishing = publishing === conn.platform;
-              const pubDone = publishResult?.platform === conn.platform;
-              return (
-                <button key={conn.platform} onClick={() => handlePublish(conn.platform)} disabled={isPublishing}
-                  style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${pubDone && publishResult?.success ? "rgba(74,222,128,0.4)" : colors[conn.platform]+"40"}`,
-                    background: pubDone && publishResult?.success ? (isDark?"rgba(74,222,128,0.12)":"#f0fdf4") : "transparent",
-                    color: pubDone && publishResult?.success ? "#4ade80" : colors[conn.platform],
-                    fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPublishing?0.6:1}}>
-                  {isPublishing ? <div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${colors[conn.platform]}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/> : <img src={icons[conn.platform]} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}
-                  {isPublishing ? "발행 중..." : pubDone && publishResult?.success ? "발행 완료!" : `${conn.platform_username || conn.platform} 발행`}
-                </button>
-              );
-            })}
+            {/* SNS 발행 버튼 — 수동 플랫폼은 항상 표시, 자동 플랫폼은 연결 시 표시 */}
+            {result && (() => {
+              const manualPlatforms = [
+                { platform:"naver_blog", label:"네이버 블로그", icon:"/icon-naver-blog.png", color:"#03C75A", editorUrl:"https://blog.naver.com/PostWriteForm.naver" },
+                { platform:"tistory", label:"티스토리", icon:"/icon-tistory.png", color:"#FF6B35", editorUrl:"https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite" },
+              ];
+              const autoConns = snsConns.filter(c => c.platform === "threads" || c.platform === "instagram");
+              const allButtons = [
+                ...manualPlatforms.map(p => ({ ...p, isManual:true })),
+                ...autoConns.map(c => ({ platform:c.platform, label:c.platform_username||c.platform, icon:{threads:"/icon-threads.png",instagram:"/icon-instagram.webp"}[c.platform], color:{threads:"#000",instagram:"#E1306C"}[c.platform], isManual:false })),
+              ];
+              return allButtons.map(p => {
+                const isPublishing = publishing === p.platform;
+                const pubDone = publishResult?.platform === p.platform;
+                return (
+                  <button key={p.platform} onClick={async () => {
+                    if (p.isManual) {
+                      try { await navigator.clipboard.writeText(result); } catch {}
+                      window.open(p.editorUrl, "_blank");
+                      setPublishResult({ platform:p.platform, success:false, clipboard:true, message:`내용이 클립보드에 복사되었습니다. ${p.label} 에디터에서 붙여넣기(Ctrl+V)하세요.` });
+                    } else { handlePublish(p.platform); }
+                  }} disabled={isPublishing}
+                    style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${pubDone && publishResult?.success ? "rgba(74,222,128,0.4)" : p.color+"40"}`,
+                      background: pubDone ? (isDark?"rgba(74,222,128,0.12)":"#f0fdf4") : "transparent",
+                      color: pubDone ? "#4ade80" : (isDark && p.color==="#000" ? "#fff" : p.color),
+                      fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPublishing?0.6:1}}>
+                    {isPublishing ? <div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${p.color}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/> : <img src={p.icon} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}
+                    {isPublishing ? "발행 중..." : pubDone ? (publishResult?.clipboard ? "복사됨!" : "발행 완료!") : p.isManual ? `${p.label}` : `${p.label} 발행`}
+                  </button>
+                );
+              });
+            })()}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
