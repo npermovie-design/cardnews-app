@@ -19,7 +19,8 @@ import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import SnsConnectBanner from "./SnsConnectBanner";
 import Footer from "./Footer.jsx";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, changePoints, setLocalUser } from "./storage";
+import { callClaude } from "./aiClient";
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -809,7 +810,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
     setStep("loading"); setErr(""); setResult("");
     window.__isGenerating = true; window.__generatingCost = 10;
     try {
-      const { callClaude } = await import("./aiClient");
+      // callClaude는 상단에서 정적 import됨
       const r = await callClaude(
 `당신은 실무 문서 작성 전문가입니다.
 
@@ -848,7 +849,6 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
       setPlans(getPlanSaves());
       if (user && onUserUpdate) {
         try {
-          const { changePoints } = await import("./storage");
           const newPts = await changePoints(user.uid, -10, "기획 생성");
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}
@@ -2967,7 +2967,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       }
       if (e.data.action === 'deduct-points' && user) {
         try {
-          const { changePoints, setLocalUser } = await import('./storage.js');
           const cost = Math.abs(e.data.cost || 30);
           const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
           const newUser = { ...user, points: newPts };
