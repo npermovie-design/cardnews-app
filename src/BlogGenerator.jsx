@@ -336,10 +336,9 @@ const PLATFORMS = {
     ],
     // 스레드는 개수 기준
     wordCounts: [
-      {id:"single", label:"단문 1개",   desc:"1~3문장"},
-      {id:"medium", label:"스레드 3개", desc:"3개 연속글"},
-      {id:"long",   label:"스레드 7개", desc:"7개 연속글"},
-      {id:"mega",   label:"롱스레드",   desc:"10개+ 연속글"},
+      {id:"single", label:"짧게",  desc:"1~3문장"},
+      {id:"medium", label:"보통",  desc:"적당한 길이"},
+      {id:"long",   label:"길게",  desc:"깊이 있게"},
     ],
     fields: {
       opinion:  ["keyword","stance","extra"],
@@ -358,7 +357,7 @@ const PLATFORMS = {
       article:  ["AI 업계 주요 뉴스 정리","SNS 알고리즘 변경 요약","2026 마케팅 트렌드"],
     },
     buildPrompt(sub, f, tone, wc) {
-      const cnt={single:"1개 (1~3문장)",medium:"3개 연속글",long:"7개 연속글",mega:"10개 이상 연속글"}[wc];
+      const cnt={single:"짧게 (1~3문장)",medium:"보통 (200~400자)",long:"길게 (400~500자)"}[wc];
       const t={casual:"친근한 일상 대화체",thoughtful:"사려 깊고 진지한",provocative:"강렬하고 도발적인",humorous:"유머러스하고 가볍게"}[tone];
       const fmt=`\n\n[필수]\n- 스레드 1개 게시물용 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 절대 금지\n- 제목 없이 바로 본문 시작\n- 마크다운·이모지 금지\n- 줄바꿈으로 문단 구분\n- 마지막에 질문이나 공감 유도\n- 분량: ${cnt}`;
       if(sub==="opinion")  return `스레드 의견·인사이트 (${t})\n주제: ${f.keyword} / 입장: ${f.stance||""}\n${f.extra||""}${fmt}`;
