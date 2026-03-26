@@ -8,6 +8,7 @@ import YtBlogGenerator from "./YtBlogGenerator";
 import ThumbnailGenerator from "./ThumbnailGenerator";
 import SeoAnalyzer from "./SeoAnalyzer";
 import AnalyzerPage from "./AnalyzerPage";
+import ViralityAnalyzer from "./ViralityAnalyzer";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
@@ -2916,38 +2917,31 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
 }
 
 const MARKETING_TABS = [
-  { id: "analysis_insta",   label: "인스타 분석",   icon: "/icon-instagram.webp" },
-  { id: "analysis_youtube", label: "유튜브 분석",   icon: "/icon-youtube.png" },
-  { id: "analysis_tiktok",  label: "틱톡 분석" },
-  { id: "insta_auto_dm",    label: "인스타 자동DM", icon: "/icon-threads.png" },
+  { id: "sns_analysis",  label: "SNS 분석",      icon: "/icon-instagram.webp" },
+  { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
 ];
 
 function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultTab }) {
-  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm"
-    : MARKETING_TABS.find(t => t.id === defaultTab) ? defaultTab : "analysis_insta";
+  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm" : "sns_analysis";
   const [tab, setTab] = useState(initTab);
   const D = isDark;
   const tabText = D ? "#fff" : "#1a1a2e";
   const tabMuted = D ? "rgba(255,255,255,0.5)" : "#888";
   const tabBdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
 
-  // 외부에서 탭 변경 시 반영
   useEffect(() => {
     if (defaultTab === "insta_auto_dm") setTab("insta_auto_dm");
-    else if (MARKETING_TABS.find(t => t.id === defaultTab)) setTab(defaultTab);
-    else setTab("analysis_insta");
+    else setTab("sns_analysis");
   }, [defaultTab]);
-
-  const seoMenuMap = { analysis_insta: "insta", analysis_youtube: "youtube", analysis_tiktok: "tiktok" };
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <TabHeader title="마케팅" subtitle="SNS 분석과 자동 마케팅 도구를 활용해보세요"
+      <TabHeader title="마케팅" subtitle="경쟁사 SNS 분석과 자동 마케팅 도구를 활용해보세요"
         tabs={MARKETING_TABS} activeTab={tab} onTabChange={setTab} isDark={isDark} />
 
-      {tab !== "insta_auto_dm" ? (
+      {tab === "sns_analysis" ? (
         <div style={{ flex:1, overflowY:"auto" }}>
-          <SeoAnalyzer isDark={isDark} menu={seoMenuMap[tab] || "insta"} user={user} navigate={navigate} onUserUpdate={onUserUpdate} />
+          <ViralityAnalyzer isDark={isDark} />
         </div>
       ) : (
         <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
