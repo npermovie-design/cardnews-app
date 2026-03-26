@@ -2672,71 +2672,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // ── 마케팅 (SNS 분석 + 인스타 자동DM) ──
   if (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu === "insta_auto_dm" || aiMenu.startsWith("analysis_")) {
-    const D = isDark;
-    const MARKETING_TABS = [
-      { id: "sns_analysis", label: "SNS 분석", icon: "/icon-instagram.webp" },
-      { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
-    ];
-    const activeTab = (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu.startsWith("analysis_")) ? "sns_analysis" : "insta_auto_dm";
-    const tabText = D ? "#fff" : "#1a1a2e";
-    const tabMuted = D ? "rgba(255,255,255,0.5)" : "#888";
-    const tabBdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-
-    return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        {/* 탭 헤더 */}
-        <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${tabBdr}`, padding:"0 20px", flexShrink:0, background:D?"rgba(0,0,0,0.2)":"#fff" }}>
-          {MARKETING_TABS.map(tab => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button key={tab.id} onClick={() => setAiMenu(tab.id)}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"12px 18px", border:"none", cursor:"pointer",
-                  background:"transparent", borderBottom:`2px solid ${isActive?"#7c6aff":"transparent"}`,
-                  color:isActive?tabText:tabMuted, fontSize:13, fontWeight:isActive?800:500 }}>
-                <img src={tab.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain" }} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 탭 콘텐츠 */}
-        {activeTab === "sns_analysis" ? (
-          <div style={{ flex:1, overflow:"hidden" }}>
-            <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate}
-              initialMenu={aiMenu.startsWith("analysis_") ? ({analysis_insta:"rank_insta",analysis_tiktok:"rank_tiktok",analysis_youtube:"rank_youtube"}[aiMenu]||"home") : "home"} embedded />
-          </div>
-        ) : (
-          <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
-            <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
-              <div style={{ fontSize:48, marginBottom:16 }}>💬</div>
-              <div style={{ fontSize:22, fontWeight:900, color:tabText, marginBottom:8 }}>인스타 자동DM 마케팅</div>
-              <div style={{ fontSize:14, color:tabMuted, marginBottom:32, lineHeight:1.7 }}>
-                게시물에 댓글을 단 사용자에게 자동으로 DM을 발송하는 마케팅 도구입니다.<br/>
-                팔로워에게는 링크와 정보를, 비팔로워에게는 팔로우 요청을 보냅니다.
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:32 }}>
-                {[
-                  { icon:"📝", title:"댓글 감지", desc:"특정 키워드 댓글 자동 감지" },
-                  { icon:"📩", title:"자동 DM 발송", desc:"맞춤 메시지 + 링크 버튼" },
-                  { icon:"👥", title:"팔로워 관리", desc:"팔로워/비팔로워 분기 처리" },
-                ].map((f,i) => (
-                  <div key={i} style={{ padding:20, borderRadius:14, border:`1px solid ${tabBdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
-                    <div style={{ fontSize:28, marginBottom:8 }}>{f.icon}</div>
-                    <div style={{ fontSize:13, fontWeight:800, color:tabText, marginBottom:4 }}>{f.title}</div>
-                    <div style={{ fontSize:11, color:tabMuted }}>{f.desc}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding:16, borderRadius:12, background:D?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.05)", border:"1px solid rgba(124,106,255,0.2)" }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"#7c6aff" }}>준비 중</div>
-                <div style={{ fontSize:12, color:tabMuted, marginTop:4 }}>Instagram Messaging API 연동 작업 중입니다. 곧 사용 가능합니다.</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    return <MarketingHub theme={theme} isDark={isDark} user={user} C={C} navigate={navigate} onUserUpdate={onUserUpdate} defaultTab={aiMenu} />;
   }
 
   // ── 실시간 분석 (검색어 + TOP10) ──
@@ -2975,6 +2911,68 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+const MARKETING_TABS = [
+  { id: "sns_analysis", label: "SNS 분석",      icon: "/icon-instagram.webp" },
+  { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
+];
+
+function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultTab }) {
+  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm" : "sns_analysis";
+  const [tab, setTab] = useState(initTab);
+  const D = isDark;
+  const tabText = D ? "#fff" : "#1a1a2e";
+  const tabMuted = D ? "rgba(255,255,255,0.5)" : "#888";
+  const tabBdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+
+  // 외부에서 탭 변경 시 반영
+  useEffect(() => {
+    if (defaultTab === "insta_auto_dm") setTab("insta_auto_dm");
+    else if (defaultTab === "sns_analysis" || defaultTab === "marketing" || defaultTab?.startsWith("analysis_")) setTab("sns_analysis");
+  }, [defaultTab]);
+
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <TabHeader title="마케팅" subtitle="SNS 분석과 자동 마케팅 도구를 활용해보세요"
+        tabs={MARKETING_TABS} activeTab={tab} onTabChange={setTab} isDark={isDark} />
+
+      {tab === "sns_analysis" ? (
+        <div style={{ flex:1, overflow:"hidden" }}>
+          <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate}
+            initialMenu={defaultTab?.startsWith("analysis_") ? ({analysis_insta:"rank_insta",analysis_tiktok:"rank_tiktok",analysis_youtube:"rank_youtube"}[defaultTab]||"home") : "home"} embedded />
+        </div>
+      ) : (
+        <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
+          <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>💬</div>
+            <div style={{ fontSize:22, fontWeight:900, color:tabText, marginBottom:8 }}>인스타 자동DM 마케팅</div>
+            <div style={{ fontSize:14, color:tabMuted, marginBottom:32, lineHeight:1.7 }}>
+              게시물에 댓글을 단 사용자에게 자동으로 DM을 발송하는 마케팅 도구입니다.<br/>
+              팔로워에게는 링크와 정보를, 비팔로워에게는 팔로우 요청을 보냅니다.
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:32 }}>
+              {[
+                { icon:"📝", title:"댓글 감지", desc:"특정 키워드 댓글 자동 감지" },
+                { icon:"📩", title:"자동 DM 발송", desc:"맞춤 메시지 + 링크 버튼" },
+                { icon:"👥", title:"팔로워 관리", desc:"팔로워/비팔로워 분기 처리" },
+              ].map((f,i) => (
+                <div key={i} style={{ padding:20, borderRadius:14, border:`1px solid ${tabBdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
+                  <div style={{ fontSize:28, marginBottom:8 }}>{f.icon}</div>
+                  <div style={{ fontSize:13, fontWeight:800, color:tabText, marginBottom:4 }}>{f.title}</div>
+                  <div style={{ fontSize:11, color:tabMuted }}>{f.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:16, borderRadius:12, background:D?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.05)", border:"1px solid rgba(124,106,255,0.2)" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#7c6aff" }}>준비 중</div>
+              <div style={{ fontSize:12, color:tabMuted, marginTop:4 }}>Instagram Messaging API 연동 작업 중입니다. 곧 사용 가능합니다.</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
