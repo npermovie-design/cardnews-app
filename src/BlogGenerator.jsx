@@ -8,7 +8,6 @@ import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
-import SnsConnectBanner from "./SnsConnectBanner";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -322,18 +321,12 @@ const PLATFORMS = {
     title: "스레드 게시물 작성",
     accentColor: "#000000",
     subtypes: [
-      {id:"opinion",  icon:"", label:"의견·인사이트", desc:"생각·관점 공유",
-        preview:"요즘 크리에이터들 진짜 불안하더라고. \"AI가 우리 일자리를 빼앗을 거야\"라는 생각에 밤을 새워도, 결국 AI를 안 쓰는 게 더 위험해진 상황이 됐거든.\n\n결론부터 말하면, AI를 경쟁자로 보면 진다. 무기로 써야 한다." },
-      {id:"story",    icon:"", label:"이야기·경험",   desc:"경험담 스토리",
-        preview:"퇴사하고 1년이 지났다. 솔직히 말하면 처음 3개월은 최고였고, 그 다음 3개월은 최악이었다.\n\n자유는 좋았지만 구조가 없는 삶은 생각보다 무서웠다. 그런데 그 과정에서 배운 게 있다." },
-      {id:"tip",      icon:"", label:"꿀팁·정보",     desc:"유용한 팁 공유",
-        preview:"아침에 일어나서 핸드폰부터 보는 습관, 나도 그랬다. 근데 이거 하나 바꿨더니 하루가 달라졌어.\n\n기상 후 1시간 노폰 규칙. 간단한데 효과는 미친 듯." },
-      {id:"question", icon:"", label:"질문·토론",     desc:"커뮤니티 참여 유도",
-        preview:"진짜 궁금한 게 있는데, 요즘 AI 쓰면서 오히려 생산성이 떨어진 사람 나만 그런 건가?\n\n도구는 늘었는데 결과물의 질은 비슷한 느낌... 너는 어때?" },
-      {id:"column",   icon:"", label:"칼럼",          desc:"전문 분석 스레드", autoTitle:true,
-        preview:"퍼스널 브랜딩이 중요하다고 다들 말하지만, 정작 뭘 해야 하는지 아는 사람은 드물다.\n\n핵심은 \"나만의 관점\"이다. 같은 주제를 다뤄도 내 경험과 해석이 담겨야 콘텐츠가 된다." },
-      {id:"article",  icon:"", label:"기사 정리",      desc:"뉴스 요약 스레드", autoTitle:true,
-        preview:"오늘 AI 업계 큰 뉴스가 터졌다. 구글이 새로운 모델을 공개하면서 시장 판도가 바뀔 수 있는 상황.\n\n핵심만 정리해봤다." },
+      {id:"opinion",  icon:"", label:"의견·인사이트", desc:"생각·관점 공유"},
+      {id:"story",    icon:"", label:"이야기·경험",   desc:"경험담 스토리"},
+      {id:"tip",      icon:"", label:"꿀팁·정보",     desc:"유용한 팁 공유"},
+      {id:"question", icon:"", label:"질문·토론",     desc:"커뮤니티 참여 유도"},
+      {id:"column",   icon:"", label:"칼럼",          desc:"전문 분석 스레드", autoTitle:true},
+      {id:"article",  icon:"", label:"기사 정리",      desc:"뉴스 요약 스레드", autoTitle:true},
     ],
     tones: [
       {id:"casual",      label:"일상 대화체"},
@@ -341,10 +334,12 @@ const PLATFORMS = {
       {id:"provocative", label:"도발적·강렬한"},
       {id:"humorous",    label:"유머러스"},
     ],
+    // 스레드는 개수 기준
     wordCounts: [
-      {id:"single", label:"단문 1개",   desc:"짧고 강렬한 한 마디"},
-      {id:"medium", label:"중간 길이", desc:"자연스러운 흐름의 글"},
-      {id:"long",   label:"긴 글",     desc:"깊이 있는 이야기"},
+      {id:"single", label:"단문 1개",   desc:"1~3문장"},
+      {id:"medium", label:"스레드 3개", desc:"3개 연속글"},
+      {id:"long",   label:"스레드 7개", desc:"7개 연속글"},
+      {id:"mega",   label:"롱스레드",   desc:"10개+ 연속글"},
     ],
     fields: {
       opinion:  ["keyword","stance","extra"],
@@ -363,15 +358,15 @@ const PLATFORMS = {
       article:  ["AI 업계 주요 뉴스 정리","SNS 알고리즘 변경 요약","2026 마케팅 트렌드"],
     },
     buildPrompt(sub, f, tone, wc) {
-      const len={single:"1~3문장의 단문 하나",medium:"200~400자 정도의 자연스러운 글",long:"400~500자의 깊이 있는 글"}[wc];
-      const t={casual:"친근한 일상 대화체 (반말 OK, 구어체)",thoughtful:"사려 깊고 진지한 (경어체)",provocative:"강렬하고 도발적인 (짧은 문장, 단정적)",humorous:"유머러스하고 가볍게 (이모지 없이 위트)"}[tone];
-      const common=`\n\n[필수 규칙]\n- 스레드 게시물 1개에 들어갈 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 매기기 절대 금지\n- 제목 따로 쓰지 말고 바로 본문부터 시작\n- 마크다운(##, **, -) 사용 금지\n- 이모지·이모티콘 사용 금지\n- 줄바꿈으로 자연스럽게 문단 구분\n- 마지막에 질문이나 공감 유도 문장으로 마무리\n- 분량: ${len}`;
-      if(sub==="opinion")  return `스레드에 올릴 의견·인사이트 글 작성 (${t})\n주제: ${f.keyword}\n내 입장: ${f.stance||"자유"}\n${f.extra||""}${common}`;
-      if(sub==="story")    return `스레드에 올릴 경험 이야기 글 작성 (${t})\n경험 주제: ${f.keyword}\n교훈/핵심: ${f.lesson||""}\n${f.extra||""}${common}`;
-      if(sub==="tip")      return `스레드에 올릴 꿀팁·정보 글 작성 (${t})\n주제: ${f.keyword}\n핵심 포인트: ${f.points||""}\n${f.extra||""}${common}`;
-      if(sub==="question") return `스레드에 올릴 질문·토론 글 작성 (${t})\n주제: ${f.keyword}\n질문 방향: ${f.angle||""}\n${f.extra||""}${common}`;
-      if(sub==="column")  return `스레드에 올릴 전문 칼럼 글 작성 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${common}`;
-      if(sub==="article") return `스레드에 올릴 뉴스 정리 글 작성 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}${common}`;
+      const cnt={single:"1개 (1~3문장)",medium:"3개 연속글",long:"7개 연속글",mega:"10개 이상 연속글"}[wc];
+      const t={casual:"친근한 일상 대화체",thoughtful:"사려 깊고 진지한",provocative:"강렬하고 도발적인",humorous:"유머러스하고 가볍게"}[tone];
+      const fmt=`\n\n[필수 규칙]\n- 스레드 게시물 1개에 들어갈 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 매기기 절대 금지\n- 제목 따로 쓰지 말고 바로 본문 시작\n- 마크다운(##, **, -) 사용 금지\n- 이모지 사용 금지\n- 줄바꿈으로 자연스럽게 문단 구분\n- 마지막에 질문이나 공감 유도 문장\n- 분량: ${cnt}`;
+      if(sub==="opinion")  return `스레드 의견·인사이트 (${t})\n주제: ${f.keyword} / 입장: ${f.stance||""}\n${f.extra||""}${fmt}`;
+      if(sub==="story")    return `스레드 경험 이야기 (${t})\n경험: ${f.keyword} / 교훈: ${f.lesson||""}\n${f.extra||""}${fmt}`;
+      if(sub==="tip")      return `스레드 꿀팁 공유 (${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}${fmt}`;
+      if(sub==="question") return `스레드 질문·토론 (${t})\n주제: ${f.keyword} / 각도: ${f.angle||""}\n${f.extra||""}${fmt}`;
+      if(sub==="column")  return `스레드 전문 칼럼 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
+      if(sub==="article") return `스레드 뉴스 정리 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
       return "";
     },
   },
@@ -539,8 +534,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
   const [snsConns,   setSnsConns]   = useState([]);
-  const [publishing, setPublishing] = useState(null); // platform id
-  const [publishResult, setPublishResult] = useState(null); // { platform, success, postUrl, error }
+  const [publishing, setPublishing] = useState(null);
+  const [publishResult, setPublishResult] = useState(null);
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleTime, setScheduleTime] = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
@@ -560,24 +555,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
   }, [user?.uid]);
 
-  // SNS 발행 핸들러
+  // SNS 발행
   const handlePublish = async (platform, scheduledTime) => {
     if (!user?.uid || !result) return;
     setPublishing(platform); setPublishResult(null);
     try {
       const tags = result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",") || "";
-      const title = fields.keyword || "";
-      const body = { title, content: result, tags };
+      const body = { uid:user.uid, platform, title:fields.keyword||"", content:result, tags };
       if (scheduledTime) body.scheduledTime = scheduledTime;
-      const pubRes = await fetch("/api/sns-publish", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ uid:user.uid, platform, ...body }) });
-      const r = await pubRes.json();
-      setPublishResult({ platform, ...r });
-      if (r.clipboard) {
-        try { await navigator.clipboard.writeText(result); } catch {}
-        if (r.editorUrl) window.open(r.editorUrl, "_blank");
-      }
-      if (scheduledTime && r.success) setShowSchedule(false);
-    } catch (e) { setPublishResult({ platform, success: false, error: e.message }); }
+      const r = await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const data = await r.json();
+      setPublishResult({ platform, ...data });
+      if (data.clipboard) { try { await navigator.clipboard.writeText(result); } catch {} if (data.editorUrl) window.open(data.editorUrl,"_blank"); }
+      if (scheduledTime && data.success) setShowSchedule(false);
+    } catch(e) { setPublishResult({ platform, success:false, error:e.message }); }
     setPublishing(null);
   };
 
@@ -866,47 +857,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-            {/* SNS 발행 버튼 — 수동 플랫폼은 항상 표시, 자동 플랫폼은 연결 시 표시 */}
-            {result && (() => {
-              const manualPlatforms = [
-                { platform:"naver_blog", label:"네이버 블로그", icon:"/icon-naver-blog.png", color:"#03C75A", editorUrl:"https://blog.naver.com/PostWriteForm.naver" },
-                { platform:"tistory", label:"티스토리", icon:"/icon-tistory.png", color:"#FF6B35", editorUrl:"https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite" },
-              ];
-              const autoConns = snsConns.filter(c => c.platform === "threads" || c.platform === "instagram");
-              const allButtons = [
-                ...manualPlatforms.map(p => ({ ...p, isManual:true })),
-                ...autoConns.map(c => ({ platform:c.platform, label:c.platform_username||c.platform, icon:{threads:"/icon-threads.png",instagram:"/icon-instagram.webp"}[c.platform], color:{threads:"#000",instagram:"#E1306C"}[c.platform], isManual:false })),
-              ];
-              return allButtons.map(p => {
-                const isPublishing = publishing === p.platform;
-                const pubDone = publishResult?.platform === p.platform;
-                return (
-                  <button key={p.platform} onClick={async () => {
-                    if (p.isManual) {
-                      try { await navigator.clipboard.writeText(result); } catch {}
-                      window.open(p.editorUrl, "_blank");
-                      setPublishResult({ platform:p.platform, success:false, clipboard:true, message:`내용이 클립보드에 복사되었습니다. ${p.label} 에디터에서 붙여넣기(Ctrl+V)하세요.` });
-                    } else { handlePublish(p.platform); }
-                  }} disabled={isPublishing}
-                    style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${pubDone && publishResult?.success ? "rgba(74,222,128,0.4)" : p.color+"40"}`,
-                      background: pubDone ? (isDark?"rgba(74,222,128,0.12)":"#f0fdf4") : "transparent",
-                      color: pubDone ? "#4ade80" : (isDark && p.color==="#000" ? "#fff" : p.color),
-                      fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPublishing?0.6:1}}>
-                    {isPublishing ? <div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${p.color}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/> : <img src={p.icon} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}
-                    {isPublishing ? "발행 중..." : pubDone ? (publishResult?.clipboard ? "복사됨!" : "발행 완료!") : p.isManual ? `${p.label}` : `${p.label} 발행`}
-                  </button>
-                );
-              });
-            })()}
-            {result && snsConns.some(c=>c.platform==="threads") && (
-              <button onClick={()=>setShowSchedule(!showSchedule)}
-                style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${showSchedule?acc+"60":isDark?"rgba(255,255,255,0.1)":"#ddd"}`,
-                  background:showSchedule?`${acc}10`:"transparent",color:showSchedule?acc:muted,
-                  fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                예약
-              </button>
-            )}
+            {/* SNS 발행 버튼 */}
+            {result && [
+              {platform:"naver_blog",label:"네이버",icon:"/icon-naver-blog.png",color:"#03C75A",manual:true,editorUrl:"https://blog.naver.com/PostWriteForm.naver"},
+              {platform:"tistory",label:"티스토리",icon:"/icon-tistory.png",color:"#FF6B35",manual:true,editorUrl:"https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite"},
+              ...snsConns.filter(c=>c.platform==="threads").map(c=>({platform:"threads",label:c.platform_username||"스레드",icon:"/icon-threads.png",color:"#000",manual:false})),
+            ].map(p => {
+              const isPub = publishing===p.platform;
+              const done = publishResult?.platform===p.platform;
+              return <button key={p.platform} onClick={async()=>{
+                if(p.manual){try{await navigator.clipboard.writeText(result)}catch{}window.open(p.editorUrl,"_blank");setPublishResult({platform:p.platform,clipboard:true,message:`${p.label} 에디터에서 붙여넣기(Ctrl+V)하세요`})}
+                else handlePublish(p.platform);
+              }} disabled={isPub} style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${done?'rgba(74,222,128,0.4)':p.color+'40'}`,background:done?(isDark?'rgba(74,222,128,0.12)':'#f0fdf4'):'transparent',color:done?'#4ade80':(isDark&&p.color==='#000'?'#fff':p.color),fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4,whiteSpace:'nowrap',opacity:isPub?0.6:1}}>
+                {isPub?<div style={{width:10,height:10,borderRadius:'50%',border:`2px solid ${p.color}`,borderTopColor:'transparent',animation:'spin 0.8s linear infinite'}}/>:<img src={p.icon} alt="" style={{width:14,height:14,objectFit:'contain',borderRadius:2}}/>}
+                {isPub?'발행 중...':done?(publishResult?.clipboard?'복사됨!':'발행!'):p.label}
+              </button>;
+            })}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -923,47 +889,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
 
-          {/* 발행 결과 알림 */}
+          {/* 발행 결과 */}
           {publishResult && (
-            <div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,
-              background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(248,113,113,0.08)":"#fef2f2"),
-              border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(248,113,113,0.2)"}`}}>
-              <span style={{fontSize:16}}>{publishResult.success?"✓":"✗"}</span>
+            <div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(245,158,11,0.2)"}`}}>
+              <span style={{fontSize:16}}>{publishResult.success?"✓":publishResult.clipboard?"📋":"✗"}</span>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":"#f87171"}}>
-                  {publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}
-                </div>
-                {publishResult.postUrl && <a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인하기 →</a>}
-                {publishResult.error && <div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}
-                {publishResult.message && <div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}
+                <div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":publishResult.clipboard?"#f59e0b":"#f87171"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>
+                {publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인 →</a>}
+                {publishResult.message&&<div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}
+                {publishResult.error&&<div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}
               </div>
               <button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
-            </div>
-          )}
-
-          {/* SNS 연동 유도 (미연동 시) */}
-          {result && <SnsConnectBanner isDark={isDark} user={user} variant="inline" connectedPlatforms={snsConns} onNavigateProfile={() => { try { window.history.pushState(null,"","/ai/profile"); } catch {} if (window.__setAiMenu) window.__setAiMenu("profile"); }} />}
-
-          {/* 예약 발행 UI */}
-          {result && showSchedule && (
-            <div style={{marginTop:12,padding:"16px",borderRadius:12,background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)",border:`1px solid ${isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)"}`}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <span style={{fontSize:13,fontWeight:700,color:text}}>예약 발행</span>
-                <button onClick={()=>setShowSchedule(false)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
-              </div>
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <input type="datetime-local" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)}
-                  min={new Date(Date.now()+600000).toISOString().slice(0,16)}
-                  style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#ddd"}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:13}} />
-                {snsConns.filter(c=>c.platform==="threads").map(c=>(
-                  <button key={c.platform} onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
-                    style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5}}>
-                    <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
-                    {publishing?"예약 중...":"스레드 예약 발행"}
-                  </button>
-                ))}
-              </div>
-              <div style={{fontSize:10,color:muted,marginTop:6}}>최소 10분 후 ~ 최대 75일 후 예약 가능</div>
             </div>
           )}
 
@@ -1169,22 +1105,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   </button>;
                 })}
               </div>
-              {/* 선택된 유형의 시각적 예시 미리보기 */}
-              {(() => {
-                const selSub = cfg.subtypes.find(s => s.id === subtype);
-                if (!selSub?.preview) return null;
-                return (
-                  <div style={{marginTop:10,borderRadius:12,overflow:"hidden",border:`1px solid ${border}`}}>
-                    <div style={{padding:"8px 12px",background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",display:"flex",alignItems:"center",gap:6,borderBottom:`1px solid ${border}`}}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                      <span style={{fontSize:11,fontWeight:600,color:muted}}>이런 스타일로 작성됩니다</span>
-                    </div>
-                    <div style={{padding:"14px 16px",background:isDark?"rgba(0,0,0,0.15)":"#fafafa",fontSize:13,color:isDark?"rgba(255,255,255,0.75)":"#444",lineHeight:1.8,whiteSpace:"pre-line",fontStyle:"italic"}}>
-                      {selSub.preview}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
 
             {/* 예시 */}

@@ -16,11 +16,23 @@ import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
-import SnsConnectionManager from "./SnsConnectionManager";
-import SnsConnectBanner from "./SnsConnectBanner";
 import Footer from "./Footer.jsx";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, changePoints, setLocalUser } from "./storage";
-import { callClaude } from "./aiClient";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
+
+// SNS 연동 — lazy import (순환참조 방지)
+let _SnsConnectionManager = null;
+let _SnsConnectBanner = null;
+const getSnsComponents = async () => {
+  if (!_SnsConnectionManager) {
+    const m1 = await import("./SnsConnectionManager");
+    _SnsConnectionManager = m1.default;
+  }
+  if (!_SnsConnectBanner) {
+    const m2 = await import("./SnsConnectBanner");
+    _SnsConnectBanner = m2.default;
+  }
+  return { SnsConnectionManager: _SnsConnectionManager, SnsConnectBanner: _SnsConnectBanner };
+};
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -810,7 +822,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
     setStep("loading"); setErr(""); setResult("");
     window.__isGenerating = true; window.__generatingCost = 10;
     try {
-      // callClaude는 상단에서 정적 import됨
+      const { callClaude } = await import("./aiClient");
       const r = await callClaude(
 `당신은 실무 문서 작성 전문가입니다.
 
@@ -849,6 +861,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
       setPlans(getPlanSaves());
       if (user && onUserUpdate) {
         try {
+          const { changePoints } = await import("./storage");
           const newPts = await changePoints(user.uid, -10, "기획 생성");
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}
@@ -2341,7 +2354,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           </div>
 
           {/* SNS 연동 유도 배너 */}
-          <SnsConnectBanner isDark={isDark} user={user} variant="home" connectedPlatforms={snsConns} onNavigateProfile={() => setAiMenu("profile")} />
+          {SnsComps.SnsConnectBanner && <SnsComps.SnsConnectBanner isDark={isDark} user={user} variant="home" connectedPlatforms={snsConns} onNavigateProfile={() => setAiMenu("profile")} />}
 
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
@@ -2795,9 +2808,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             ))}
           </div>
           {/* SNS 계정 연동 */}
-          <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"4px 0", marginBottom:16, overflow:"hidden" }}>
-            <SnsConnectionManager user={user} isDark={isDark} compact />
-          </div>
+          {SnsComps.SnsConnectionManager && (
+            <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"4px 0", marginBottom:16, overflow:"hidden" }}>
+              <SnsComps.SnsConnectionManager user={user} isDark={isDark} compact />
+            </div>
+          )}
           {/* 로그아웃 */}
           <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
             style={{ width:"100%", padding:"13px", borderRadius:12, border:"1px solid rgba(248,113,113,0.3)", background:"rgba(248,113,113,0.06)", color:"#f87171", fontSize:14, fontWeight:700, cursor:"pointer" }}>
@@ -2944,12 +2959,12 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
   const [snsConns, setSnsConns] = useState([]);
+  const [SnsComps, setSnsComps] = useState({ SnsConnectionManager: null, SnsConnectBanner: null });
 
-  // SNS 연결 목록 조회
+  // SNS 컴포넌트 lazy 로드 + 연결 목록
   useEffect(() => {
-    if (user?.uid) {
-      fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
-    }
+    getSnsComponents().then(setSnsComps).catch(() => {});
+    if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
   }, [user?.uid, aiMenu]);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
@@ -2967,6 +2982,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       }
       if (e.data.action === 'deduct-points' && user) {
         try {
+          const { changePoints, setLocalUser } = await import('./storage.js');
           const cost = Math.abs(e.data.cost || 30);
           const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
           const newUser = { ...user, points: newPts };
@@ -2981,9 +2997,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
   useEffect(function() {
     window.__onLoginRequest = onLoginRequest || function(){};
-    window.__setAiMenu = setAiMenu;
-    return function() { delete window.__onLoginRequest; delete window.__setAiMenu; };
-  }, [onLoginRequest, setAiMenu]);
+    return function() { delete window.__onLoginRequest; };
+  }, [onLoginRequest]);
 
   useEffect(() => {
     const handlePop = () => {
