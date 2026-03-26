@@ -49,28 +49,14 @@ export default async function handler(req, res) {
     let postUrl = null;
     let publishError = null;
 
-    // ── 티스토리 발행 ────────────────────────
+    // ── 티스토리 (API 종료 → 클립보드+에디터 방식) ────────────────────────
     if (platform === "tistory") {
-      const htmlContent = mdToHtml(content);
-      const tistoryRes = await fetch("https://www.tistory.com/apis/post/write", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          access_token: conn.access_token,
-          output: "json",
-          blogName: conn.blog_name,
-          title: title || "제목 없음",
-          content: htmlContent,
-          visibility: visibility === "public" ? "3" : "0",
-          tag: tags || "",
-        }),
+      return res.status(200).json({
+        success: false,
+        clipboard: true,
+        message: "티스토리 Open API가 종료되어 자동 발행이 불가합니다. 내용이 클립보드에 복사되었으며, 에디터가 열립니다.",
+        editorUrl: "https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite",
       });
-      const tistoryData = await tistoryRes.json();
-      if (tistoryData?.tistory?.status === "200") {
-        postUrl = tistoryData.tistory.url || `https://${conn.blog_name}.tistory.com/${tistoryData.tistory.postId}`;
-      } else {
-        publishError = tistoryData?.tistory?.error_message || "티스토리 발행 실패";
-      }
     }
 
     // ── 스레드 발행 ────────────────────────

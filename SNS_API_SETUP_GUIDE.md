@@ -6,30 +6,18 @@ Supabase Dashboard > SQL Editor에서 `supabase_setup.sql` 하단의 `sns_connec
 
 ---
 
-## 2. 티스토리 API 연동
+## 2. 티스토리 (수동 방식)
 
-### 2-1. 앱 등록
-1. https://www.tistory.com/guide/api/manage/register 접속
-2. "앱 등록" 클릭
-3. 정보 입력:
-   - **서비스 명**: SNS메이킷
-   - **서비스 URL**: `https://www.snsmakeit.com`
-   - **CallBack**: `https://www.snsmakeit.com/api/sns-auth-tistory`
-4. 등록 완료 후 **App ID**(Client ID)와 **Secret Key** 확인
+> 티스토리 Open API는 2024년 2월에 종료되었습니다.
+> 자동 발행이 불가하여 **클립보드 복사 + 에디터 열기** 방식으로 동작합니다.
 
-### 2-2. Vercel 환경변수 설정
-Vercel Dashboard > Settings > Environment Variables:
-```
-TISTORY_CLIENT_ID=발급받은_App_ID
-TISTORY_CLIENT_SECRET=발급받은_Secret_Key
-TISTORY_REDIRECT_URI=https://www.snsmakeit.com/api/sns-auth-tistory
-```
+### 동작 흐름
+1. 글 생성 후 "티스토리 발행" 버튼 클릭
+2. 생성된 글이 자동으로 클립보드에 복사됨
+3. 티스토리 글쓰기 에디터가 새 탭으로 열림
+4. 사용자가 에디터에 붙여넣기 (Ctrl+V) → 발행
 
-### 2-3. 동작 흐름
-1. 사용자가 프로필 > "티스토리 연결하기" 클릭
-2. 티스토리 로그인 & 권한 승인 페이지로 이동
-3. 승인 후 콜백 → 토큰이 Supabase `sns_connections`에 저장
-4. 글 생성 후 "티스토리 발행" 버튼 클릭 → 자동 발행
+**별도 API 키 설정 불필요**
 
 ---
 
@@ -108,9 +96,7 @@ NAVER_ADS_CUSTOMER_ID=Customer_ID
 
 | 변수명 | 용도 | 필수 |
 |--------|------|------|
-| `TISTORY_CLIENT_ID` | 티스토리 OAuth | 티스토리 발행 시 |
-| `TISTORY_CLIENT_SECRET` | 티스토리 OAuth | 티스토리 발행 시 |
-| `TISTORY_REDIRECT_URI` | 티스토리 콜백 URL | 티스토리 발행 시 |
+| ~~`TISTORY_*`~~ | ~~티스토리 OAuth~~ | API 종료로 불필요 |
 | `META_APP_ID` | Facebook/Meta 앱 ID | 스레드/인스타 발행 시 |
 | `META_APP_SECRET` | Facebook/Meta 시크릿 | 스레드/인스타 발행 시 |
 | `META_REDIRECT_URI` | Meta 콜백 URL | 스레드/인스타 발행 시 |

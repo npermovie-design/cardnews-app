@@ -11,9 +11,11 @@ const PLATFORMS = [
   {
     id: "tistory", label: "티스토리", color: "#FF6B35",
     icon: "/icon-tistory.png",
-    desc: "블로그 글 자동 발행",
-    authEndpoint: "/api/sns-auth-tistory",
-    canAutoPublish: true,
+    desc: "클립보드 복사 + 에디터 열기",
+    canAutoPublish: false,
+    notice: "Open API 종료(2024.02) → 복사+열기 방식",
+    manualOnly: true,
+    editorUrl: "https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite",
   },
   {
     id: "threads", label: "스레드", color: "#000",
