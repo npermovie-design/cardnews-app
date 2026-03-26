@@ -7,6 +7,7 @@ import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
+import KeywordInsightPanel from "./KeywordInsightPanel";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -359,7 +360,7 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const cnt={single:"1개 (1~3문장)",medium:"3개 연속글",long:"7개 연속글",mega:"10개 이상 연속글"}[wc];
       const t={casual:"친근한 일상 대화체",thoughtful:"사려 깊고 진지한",provocative:"강렬하고 도발적인",humorous:"유머러스하고 가볍게"}[tone];
-      const fmt=wc!=="single"?`\n\n스레드 형식 (${cnt})\n- 각 글은 1~4문장\n- 첫 글에 강력한 훅\n- 마지막 글에 질문/CTA\n- 각 글 앞에 [1/n] 번호 표시`:"\n- 단문 1개, 3문장 이내, 강렬하게";
+      const fmt=`\n\n[필수]\n- 스레드 1개 게시물용 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 절대 금지\n- 제목 없이 바로 본문 시작\n- 마크다운·이모지 금지\n- 줄바꿈으로 문단 구분\n- 마지막에 질문이나 공감 유도\n- 분량: ${cnt}`;
       if(sub==="opinion")  return `스레드 의견·인사이트 (${t})\n주제: ${f.keyword} / 입장: ${f.stance||""}\n${f.extra||""}${fmt}`;
       if(sub==="story")    return `스레드 경험 이야기 (${t})\n경험: ${f.keyword} / 교훈: ${f.lesson||""}\n${f.extra||""}${fmt}`;
       if(sub==="tip")      return `스레드 꿀팁 공유 (${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}${fmt}`;
@@ -531,6 +532,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [loading,    setLoading]    = useState(false);
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
+  const [snsConns,   setSnsConns]   = useState([]);
+  const [publishing, setPublishing] = useState(null);
+  const [publishResult, setPublishResult] = useState(null);
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
   const [seoKeys,    setSeoKeys]    = useState([]);
@@ -543,6 +547,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgSearching,    setImgSearching]    = useState(false);
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
+
+  // SNS 연결 목록 조회
+  useEffect(() => { if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{}); }, [user?.uid]);
+
+  // SNS 발행
+  const handlePublish = async (platform) => {
+    if (!user?.uid || !result) return;
+    setPublishing(platform); setPublishResult(null);
+    try {
+      const tags = result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",") || "";
+      const r = await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({uid:user.uid,platform,title:fields.keyword||"",content:result,tags})});
+      const data = await r.json();
+      setPublishResult({platform,...data});
+    } catch(e) { setPublishResult({platform,success:false,error:e.message}); }
+    setPublishing(null);
+  };
 
   // 숏폼 연계 데이터 자동 입력
   useEffect(() => {
@@ -829,6 +849,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
+            {result&&[{p:"naver_blog",l:"네이버",i:"/icon-naver-blog.png",c:"#03C75A",u:"https://blog.naver.com/PostWriteForm.naver"},{p:"tistory",l:"티스토리",i:"/icon-tistory.png",c:"#FF6B35",u:"https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite"},...snsConns.filter(c=>c.platform==="threads").map(c=>({p:"threads",l:c.platform_username||"스레드",i:"/icon-threads.png",c:"#000"}))].map(b=>{
+              const isPub=publishing===b.p,done=publishResult?.platform===b.p;
+              return <button key={b.p} onClick={async()=>{if(b.u){try{await navigator.clipboard.writeText(result)}catch{}window.open(b.u,"_blank");setPublishResult({platform:b.p,clipboard:true,message:`${b.l} 에디터에서 붙여넣기하세요`})}else handlePublish(b.p)}} disabled={isPub} style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${done?"rgba(74,222,128,0.4)":b.c+"40"}`,background:done?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:done?"#4ade80":(isDark&&b.c==="#000"?"#fff":b.c),fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPub?0.6:1}}>
+                {isPub?<div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${b.c}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:<img src={b.i} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}
+                {isPub?"발행 중...":done?(publishResult?.clipboard?"복사됨!":"발행!"):`${b.l}`}
+              </button>})}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -844,6 +870,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
+
+          {publishResult&&<div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(245,158,11,0.2)"}`}}>
+            <span style={{fontSize:16}}>{publishResult.success?"✓":publishResult.clipboard?"📋":"✗"}</span>
+            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":publishResult.clipboard?"#f59e0b":"#f87171"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>
+            {publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인 →</a>}
+            {publishResult.message&&<div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}
+            {publishResult.error&&<div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}</div>
+            <button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button></div>}
 
           {/* 연관 이미지 추천 */}
           {(imgSearching || suggestedImages.length > 0) && (
@@ -1094,6 +1128,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     </div>
                   </div>
                 )}
+                {fk==="keyword"&&<KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>}
               </div>;
             })}
             {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10}}>{error}</div>}
