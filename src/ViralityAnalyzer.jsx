@@ -29,12 +29,15 @@ export default function ViralityAnalyzer({ isDark }) {
   const [loading, setLoading] = useState(false);
 
   // ── 영상 피드 ──
-  const [feedCat, setFeedCat] = useState("beauty");
+  const [feedPlatform, setFeedPlatform] = useState("instagram"); // instagram | youtube
+  const [feedCat, setFeedCat] = useState(null);
   const [feedVideos, setFeedVideos] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const [selFeedVideo, setSelFeedVideo] = useState(null);
   const [videoAnalysis, setVideoAnalysis] = useState(null);
   const [videoAnalyzing, setVideoAnalyzing] = useState(false);
+  // 인스타 AI 피드 캐시
+  const [instaCache, setInstaCache] = useState({});
 
   // ── 트렌드 분석 ──
   const [selCat, setSelCat] = useState(null);
@@ -55,8 +58,8 @@ export default function ViralityAnalyzer({ isDark }) {
     localStorage.setItem("nper_sns_analysis_history", JSON.stringify(next));
   };
 
-  // 영상 피드 로드
-  const loadFeed = async (catId) => {
+  // 유튜브 영상 피드 로드
+  const loadYoutubeFeed = async (catId) => {
     const cat = CATEGORIES.find(c => c.id === catId);
     if (!cat) return;
     setFeedCat(catId); setFeedLoading(true); setFeedVideos([]);
@@ -71,13 +74,85 @@ export default function ViralityAnalyzer({ isDark }) {
     setFeedLoading(false);
   };
 
-  useEffect(() => { if (tab === "feed") loadFeed(feedCat); }, [tab]);
+  // 인스타 AI 피드 로드
+  const loadInstaFeed = async (catId) => {
+    const cat = CATEGORIES.find(c => c.id === catId);
+    if (!cat) return;
+    // 캐시 확인
+    if (instaCache[catId]) { setFeedCat(catId); setFeedVideos(instaCache[catId]); return; }
+    setFeedCat(catId); setFeedLoading(true); setFeedVideos([]);
+    try {
+      const res = await callAI("claude-sonnet-4-5", [{ role: "user", content: `한국 인스타그램에서 "${cat.label}" 분야의 인기 크리에이터와 최근 바이럴 릴스/게시물을 분석해주세요.
+카테고리: ${cat.label}
+관련 키워드: ${cat.tags.join(", ")}
+
+실제로 활동 중인 한국 인스타그램 인플루언서와 최근 인기 릴스를 기반으로 JSON 배열을 만들어주세요.
+각 항목은 실제 존재하는 인스타 계정이어야 합니다.
+
+JSON 배열 (8~10개):
+[
+  {
+    "id": "고유ID",
+    "platform": "instagram",
+    "username": "@인스타계정명 (실제 계정)",
+    "displayName": "크리에이터 이름/닉네임",
+    "followers": "팔로워수 (예: 125K, 2.3M)",
+    "title": "인기 릴스/게시물 제목 또는 내용 요약",
+    "contentType": "릴스/카루셀/피드/스토리",
+    "likes": "좋아요수 (예: 45.2K)",
+    "comments": "댓글수 (예: 1.2K)",
+    "engagementRate": "참여율 (예: 4.8%)",
+    "hashtags": ["관련해시태그1", "해시태그2", "해시태그3"],
+    "whyViral": "이 콘텐츠가 인기인 이유 한줄",
+    "profileCategory": "뷰티/패션/라이프스타일 등 세부 카테고리",
+    "thumbnail": ""
+  }
+]
+JSON 배열만 출력하세요.` }], 4000,
+        "당신은 한국 인스타그램 인플루언서 및 트렌드 전문 분석가입니다. 2025-2026년 현재 활동 중인 실제 크리에이터와 그들의 최근 인기 콘텐츠를 정확하게 파악하고 있습니다. 실제 존재하는 계정명을 사용하세요."
+      );
+      const parsed = JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim());
+      setFeedVideos(parsed);
+      setInstaCache(prev => ({ ...prev, [catId]: parsed }));
+    } catch (e) { console.error("Insta feed error:", e); }
+    setFeedLoading(false);
+  };
+
+  // 플랫폼별 피드 로드
+  const loadFeed = (catId) => {
+    if (feedPlatform === "youtube") loadYoutubeFeed(catId);
+    else loadInstaFeed(catId);
+  };
+
+  // 플랫폼 변경 시 피드 새로고침
+  useEffect(() => { if (tab === "feed" && feedCat) loadFeed(feedCat); }, [feedPlatform]);
 
   // 개별 영상 AI 분석
   const analyzeVideo = async (video) => {
     setSelFeedVideo(video); setVideoAnalysis(null); setVideoAnalyzing(true);
     try {
-      const res = await callAI("claude-sonnet-4-5", [{ role: "user", content: `다음 영상을 분석해주세요:
+      const isInsta = video.platform === "instagram";
+      const prompt = isInsta
+        ? `다음 인스타그램 콘텐츠를 분석해주세요:
+계정: ${video.username || video.author}${video.displayName ? ` (${video.displayName})` : ""}
+팔로워: ${video.followers || "N/A"}
+콘텐츠: ${video.title}
+유형: ${video.contentType || "릴스"}
+좋아요: ${video.likes || "N/A"} / 댓글: ${video.comments || "N/A"}
+참여율: ${video.engagementRate || "N/A"}
+해시태그: ${(video.hashtags || []).map(t => "#" + t).join(" ")}
+
+JSON으로 분석:
+{
+  "hook": "이 콘텐츠의 훅 분석 (첫 1~3초 또는 첫 이미지)",
+  "why_viral": "바이럴 된 이유 3가지",
+  "content_structure": "콘텐츠 구조 분석",
+  "replication_tips": ["내 콘텐츠에 적용하는 법 1","적용법 2","적용법 3"],
+  "similar_ideas": ["비슷한 콘텐츠 아이디어 1","아이디어 2","아이디어 3"],
+  "recommended_hashtags": ["추천 해시태그 5개"]
+}
+JSON만 출력.`
+        : `다음 영상을 분석해주세요:
 제목: ${video.title}
 채널: ${video.author}
 조회수: ${fmt(video.views)}
@@ -91,7 +166,8 @@ JSON으로 분석:
   "replication_tips": ["내 콘텐츠에 적용하는 법 1","적용법 2","적용법 3"],
   "similar_ideas": ["비슷한 콘텐츠 아이디어 1","아이디어 2","아이디어 3"]
 }
-JSON만 출력.` }], 2000,
+JSON만 출력.`;
+      const res = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 2000,
         "당신은 숏폼 콘텐츠 바이럴 분석 전문가입니다. 영상의 성공 요인을 분석하고 재현 가능한 전략을 제시합니다."
       );
       setVideoAnalysis(JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim()));
@@ -177,6 +253,11 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
   ];
   const plat = PLATS.find(p => p.id === platform) || PLATS[0];
 
+  const FEED_PLATS = [
+    { id: "instagram", label: "인스타그램", icon: "/icon-instagram.webp", color: "#E1306C" },
+    { id: "youtube", label: "유튜브", icon: "/icon-youtube.png", color: "#FF0000" },
+  ];
+
   return (
     <div style={{ padding: "16px 20px 60px", maxWidth: 960, margin: "0 auto" }}>
       {/* 탭 */}
@@ -192,6 +273,20 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
       {/* ═══ 영상 피드 ═══ */}
       {tab === "feed" && (
         <>
+          {/* 플랫폼 토글 */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            {FEED_PLATS.map(p => (
+              <button key={p.id} onClick={() => setFeedPlatform(p.id)}
+                style={{ padding: "8px 16px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${feedPlatform === p.id ? p.color : bdr}`,
+                  background: feedPlatform === p.id ? (D ? p.color + "18" : p.color + "08") : "transparent",
+                  display: "flex", alignItems: "center", gap: 6,
+                  color: feedPlatform === p.id ? (D ? "#fff" : p.color) : muted, fontSize: 12, fontWeight: feedPlatform === p.id ? 800 : 500 }}>
+                <img src={p.icon} alt="" style={{ width: 16, height: 16, borderRadius: 3 }} />{p.label}
+              </button>
+            ))}
+          </div>
+
           {/* 카테고리 필터 */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
             {CATEGORIES.map(c => (
@@ -207,11 +302,50 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
           {feedLoading ? (
             <div style={{ textAlign: "center", padding: 50 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-              <div style={{ fontSize: 13, color: muted }}>영상 수집 중...</div>
+              <div style={{ fontSize: 13, color: muted }}>{feedPlatform === "instagram" ? "AI가 인스타 트렌드 분석 중..." : "영상 수집 중..."}</div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14 }}>
-              {feedVideos.map((v, i) => (
+            <div style={{ display: "grid", gridTemplateColumns: feedPlatform === "instagram" ? "repeat(auto-fill,minmax(280px,1fr))" : "repeat(auto-fill,minmax(200px,1fr))", gap: 14 }}>
+              {feedVideos.map((v, i) => feedPlatform === "instagram" ? (
+                /* ── 인스타그램 카드 ── */
+                <div key={v.id || i} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
+                  onClick={() => analyzeVideo(v)}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                  <div style={{ padding: "14px 14px 10px" }}>
+                    {/* 프로필 헤더 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                        {(v.displayName || v.username || "?")[0]}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.displayName || v.username}</div>
+                        <div style={{ fontSize: 10, color: "#E1306C", fontWeight: 600 }}>{v.username} {v.followers && <span style={{ color: muted }}>· {v.followers}</span>}</div>
+                      </div>
+                      {v.contentType && <span style={{ padding: "2px 8px", borderRadius: 6, background: "#E1306C15", color: "#E1306C", fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{v.contentType}</span>}
+                    </div>
+                    {/* 콘텐츠 */}
+                    <div style={{ fontSize: 12, fontWeight: 600, color: text, lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
+                    {/* 통계 */}
+                    <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
+                      {v.likes && <span style={{ fontSize: 10, color: muted }}>❤️ {v.likes}</span>}
+                      {v.comments && <span style={{ fontSize: 10, color: muted }}>💬 {v.comments}</span>}
+                      {v.engagementRate && <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700 }}>📊 {v.engagementRate}</span>}
+                    </div>
+                    {/* 해시태그 */}
+                    {v.hashtags && v.hashtags.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                        {v.hashtags.slice(0, 4).map((tag, j) => (
+                          <span key={j} style={{ fontSize: 9, color: "#6366f1", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.06)", padding: "1px 6px", borderRadius: 4 }}>#{tag.replace(/^#/,"")}</span>
+                        ))}
+                      </div>
+                    )}
+                    {/* 바이럴 이유 */}
+                    {v.whyViral && <div style={{ marginTop: 8, padding: "6px 10px", borderRadius: 8, background: D ? "rgba(225,48,108,0.08)" : "rgba(225,48,108,0.04)", fontSize: 10, color: "#E1306C", lineHeight: 1.5 }}>🔥 {v.whyViral}</div>}
+                  </div>
+                </div>
+              ) : (
+                /* ── 유튜브 카드 ── */
                 <div key={v.id || i} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
                   onClick={() => analyzeVideo(v)}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)"; }}
@@ -221,11 +355,20 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
                     <div style={{ position: "absolute", bottom: 6, left: 6, padding: "2px 8px", borderRadius: 4, background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 10, fontWeight: 700 }}>
                       ▶ {fmt(v.views)}
                     </div>
-                    {v.duration > 0 && v.duration <= 60 && <div style={{ position: "absolute", top: 6, right: 6, padding: "2px 6px", borderRadius: 4, background: "#ff0050", color: "#fff", fontSize: 9, fontWeight: 700 }}>Shorts</div>}
+                    {v.duration && <div style={{ position: "absolute", bottom: 6, right: 6, padding: "2px 6px", borderRadius: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 9, fontWeight: 600 }}>{v.duration}</div>}
+                    {((v.duration || "").includes(":") && parseInt(v.duration) === 0) && <div style={{ position: "absolute", top: 6, right: 6, padding: "2px 6px", borderRadius: 4, background: "#ff0050", color: "#fff", fontSize: 9, fontWeight: 700 }}>Shorts</div>}
                   </div>
                   <div style={{ padding: "10px 12px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
-                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{v.author}{v.published ? ` · ${v.published}` : ""}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      {v.channelAvatar && <img src={v.channelAvatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: 2 }} />}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: text, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
+                        <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>
+                          {v.author}
+                          {v.published ? ` · ${v.published}` : ""}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -234,24 +377,34 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
 
           {!feedLoading && feedVideos.length === 0 && (
             <div style={{ textAlign: "center", padding: 50, color: muted }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>📹</div>
-              <div style={{ fontSize: 13 }}>카테고리를 선택하면 관련 영상을 불러옵니다</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>{feedPlatform === "instagram" ? "📸" : "📹"}</div>
+              <div style={{ fontSize: 13 }}>카테고리를 선택하면 {feedPlatform === "instagram" ? "인기 인스타 콘텐츠를" : "관련 영상을"} 불러옵니다</div>
             </div>
           )}
 
-          {/* 영상 분석 모달 */}
+          {/* 영상/콘텐츠 분석 모달 */}
           {selFeedVideo && (
             <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setSelFeedVideo(null)}>
               <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} />
               <div style={{ position: "relative", width: "90%", maxWidth: 700, maxHeight: "85vh", overflowY: "auto", borderRadius: 16, background: D ? "#1a1a2e" : "#fff", border: `1px solid ${bdr}`, padding: 24 }} onClick={e => e.stopPropagation()}>
                 <button onClick={() => setSelFeedVideo(null)} style={{ position: "absolute", top: 12, right: 16, background: "none", border: "none", color: muted, fontSize: 20, cursor: "pointer" }}>✕</button>
 
-                <div style={{ display: "flex", gap: 14, marginBottom: 20 }}>
-                  {selFeedVideo.thumbnail && <img src={selFeedVideo.thumbnail} alt="" style={{ width: 120, height: 68, borderRadius: 10, objectFit: "cover" }} />}
+                <div style={{ display: "flex", gap: 14, marginBottom: 20, alignItems: "center" }}>
+                  {selFeedVideo.platform === "instagram" ? (
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                      {(selFeedVideo.displayName || selFeedVideo.username || "?")[0]}
+                    </div>
+                  ) : selFeedVideo.thumbnail ? (
+                    <img src={selFeedVideo.thumbnail} alt="" style={{ width: 120, height: 68, borderRadius: 10, objectFit: "cover" }} />
+                  ) : null}
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 4 }}>{selFeedVideo.title}</div>
-                    <div style={{ fontSize: 12, color: muted }}>{selFeedVideo.author} · ▶ {fmt(selFeedVideo.views)}</div>
-                    <a href={selFeedVideo.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: accent }}>원본 보기 →</a>
+                    <div style={{ fontSize: 12, color: muted }}>
+                      {selFeedVideo.platform === "instagram"
+                        ? `${selFeedVideo.username || selFeedVideo.author} · ${selFeedVideo.followers || ""} · ❤️ ${selFeedVideo.likes || ""}`
+                        : `${selFeedVideo.author} · ▶ ${fmt(selFeedVideo.views)}`}
+                    </div>
+                    {selFeedVideo.url && <a href={selFeedVideo.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: accent }}>원본 보기 →</a>}
                   </div>
                 </div>
 
@@ -278,10 +431,20 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
                       <div style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b", marginBottom: 6 }}>📋 내 콘텐츠에 적용하기</div>
                       {(videoAnalysis.replication_tips || []).map((t, i) => <div key={i} style={{ fontSize: 12, color: text, marginBottom: 4, paddingLeft: 12, borderLeft: `2px solid ${accent}` }}>{t}</div>)}
                     </div>
-                    <div>
+                    <div style={{ marginBottom: videoAnalysis.recommended_hashtags ? 16 : 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 800, color: "#06b6d4", marginBottom: 6 }}>💡 비슷한 콘텐츠 아이디어</div>
                       {(videoAnalysis.similar_ideas || []).map((t, i) => <div key={i} style={{ fontSize: 12, color: muted, marginBottom: 4 }}>• {t}</div>)}
                     </div>
+                    {videoAnalysis.recommended_hashtags && (
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#8b5cf6", marginBottom: 6 }}>#️⃣ 추천 해시태그</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {videoAnalysis.recommended_hashtags.map((tag, i) => (
+                            <span key={i} style={{ padding: "3px 10px", borderRadius: 6, background: D ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.06)", color: "#8b5cf6", fontSize: 11, fontWeight: 600 }}>#{tag.replace(/^#/,"")}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>

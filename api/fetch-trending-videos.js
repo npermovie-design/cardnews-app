@@ -32,9 +32,12 @@ export default async function handler(req, res) {
           if (seen.has(id)) continue;
           seen.add(id);
 
-          const block = html.substring(m.index, m.index + 2000);
+          const block = html.substring(m.index, m.index + 3000);
           const viewMatch = block.match(/"viewCountText":\{"simpleText":"([^"]+)"/);
           const publishMatch = block.match(/"publishedTimeText":\{"simpleText":"([^"]+)"/);
+          const lengthMatch = block.match(/"lengthText".*?"simpleText":"([^"]+)"/);
+          const channelUrlMatch = block.match(/"canonicalBaseUrl":"([^"]+)"/);
+          const avatarMatch = block.match(/"channelThumbnailSupportedRenderers".*?"url":"([^"]+)"/);
           const viewStr = viewMatch?.[1] || "0";
           const viewNum = parseInt(viewStr.replace(/[^0-9]/g, "")) || 0;
 
@@ -43,12 +46,13 @@ export default async function handler(req, res) {
             platform: "youtube",
             title,
             author,
-            authorUrl: "",
+            authorUrl: channelUrlMatch ? `https://youtube.com${channelUrlMatch[1]}` : "",
+            channelAvatar: avatarMatch?.[1] || "",
             thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
             url: `https://youtube.com/watch?v=${id}`,
             views: viewNum,
             published: publishMatch?.[1] || "",
-            duration: "",
+            duration: lengthMatch?.[1] || "",
           });
         }
       }
