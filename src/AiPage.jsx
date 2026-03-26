@@ -2916,6 +2916,254 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
   );
 }
 
+/* ── 인스타 자동DM 컴포넌트 ── */
+function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
+  const D = isDark;
+  const text = D ? "#fff" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
+  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+  const accent = "#E1306C";
+
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  // 새 캠페인 폼
+  const [form, setForm] = useState({
+    name: "", postUrl: "", triggerKeywords: "",
+    dmMessageFollower: "", dmMessageNonFollower: "", dmLink: "",
+  });
+
+  // 캠페인 목록 로드
+  useEffect(() => {
+    if (!user?.uid) { setLoading(false); return; }
+    (async () => {
+      try {
+        const r = await fetch("/api/insta-auto-dm", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "list_campaigns", uid: user.uid }),
+        });
+        const data = await r.json();
+        setCampaigns(data.campaigns || []);
+      } catch (e) { console.error("Campaign load error:", e); }
+      setLoading(false);
+    })();
+  }, [user?.uid]);
+
+  // AI DM 메시지 생성
+  const generateDM = async () => {
+    if (!form.name.trim()) return;
+    setGenerating(true);
+    try {
+      const r = await fetch("/api/insta-auto-dm", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate_dm", category: form.name, tone: "친근하고 전문적", goal: "팔로우 유도 + 링크 클릭" }),
+      });
+      const data = await r.json();
+      if (data.followerMessage) setForm(f => ({ ...f, dmMessageFollower: data.followerMessage, dmMessageNonFollower: data.nonFollowerMessage || "" }));
+    } catch (e) { console.error("Generate error:", e); }
+    setGenerating(false);
+  };
+
+  // 캠페인 저장
+  const saveCampaign = async () => {
+    if (!user?.uid || !form.name.trim()) return;
+    try {
+      const r = await fetch("/api/insta-auto-dm", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_campaign", uid: user.uid,
+          campaign: {
+            name: form.name, postUrl: form.postUrl,
+            triggerKeywords: form.triggerKeywords.split(",").map(s => s.trim()).filter(Boolean),
+            dmMessageFollower: form.dmMessageFollower,
+            dmMessageNonFollower: form.dmMessageNonFollower,
+            dmLink: form.dmLink, isActive: true,
+          },
+        }),
+      });
+      const data = await r.json();
+      if (data.campaign) setCampaigns(prev => [data.campaign, ...prev]);
+      setShowCreate(false);
+      setForm({ name: "", postUrl: "", triggerKeywords: "", dmMessageFollower: "", dmMessageNonFollower: "", dmLink: "" });
+    } catch (e) { alert("저장 실패: " + e.message); }
+  };
+
+  // 캠페인 토글
+  const toggleCampaign = async (id, isActive) => {
+    try {
+      await fetch("/api/insta-auto-dm", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle_campaign", uid: user.uid, campaignId: id, isActive }),
+      });
+      setCampaigns(prev => prev.map(c => c.id === id ? { ...c, is_active: isActive } : c));
+    } catch (e) { console.error(e); }
+  };
+
+  // 캠페인 삭제
+  const deleteCampaign = async (id) => {
+    if (!confirm("이 캠페인을 삭제하시겠습니까?")) return;
+    try {
+      await fetch("/api/insta-auto-dm", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_campaign", uid: user.uid, campaignId: id }),
+      });
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+    } catch (e) { console.error(e); }
+  };
+
+  const InputField = ({ label, value, onChange, placeholder, multiline, hint }) => (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{label}</div>
+      {multiline ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, outline: "none", resize: "vertical", minHeight: 70, fontFamily: "inherit", boxSizing: "border-box" }} />
+      ) : (
+        <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+      )}
+      {hint && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{hint}</div>}
+    </div>
+  );
+
+  if (!user) return (
+    <div style={{ padding: "60px 24px", textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>로그인이 필요합니다</div>
+      <div style={{ fontSize: 13, color: muted }}>인스타 자동DM을 사용하려면 먼저 로그인해주세요.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "20px 24px 60px", maxWidth: 720, margin: "0 auto" }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: text }}>인스타 자동DM</div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>댓글 키워드 감지 → 자동 DM 발송 캠페인</div>
+        </div>
+        <button onClick={() => setShowCreate(!showCreate)}
+          style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: showCreate ? "rgba(239,68,68,0.1)" : `linear-gradient(135deg,${accent},#c13584)`, color: showCreate ? "#ef4444" : "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+          {showCreate ? "취소" : "+ 새 캠페인"}
+        </button>
+      </div>
+
+      {/* 작동 원리 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
+        {[
+          { icon: "📝", title: "게시물 지정", desc: "모니터링할 게시물 URL" },
+          { icon: "🔍", title: "키워드 감지", desc: "특정 키워드 댓글 감지" },
+          { icon: "📩", title: "자동 DM", desc: "팔로워/비팔로워 분기" },
+          { icon: "🔗", title: "링크 전송", desc: "CTA 버튼 + 링크" },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg, textAlign: "center" }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{f.icon}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: text, marginBottom: 2 }}>{f.title}</div>
+            <div style={{ fontSize: 9, color: muted }}>{f.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 캠페인 생성 폼 */}
+      {showCreate && (
+        <div style={{ padding: 20, borderRadius: 16, border: `1px solid ${accent}30`, background: D ? "rgba(225,48,108,0.04)" : "rgba(225,48,108,0.02)", marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: text, marginBottom: 16 }}>새 캠페인 만들기</div>
+
+          <InputField label="캠페인 이름" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="예: 신제품 런칭 이벤트" />
+          <InputField label="게시물 URL" value={form.postUrl} onChange={v => setForm(f => ({ ...f, postUrl: v }))} placeholder="https://www.instagram.com/p/..." hint="모니터링할 인스타그램 게시물 링크" />
+          <InputField label="트리거 키워드" value={form.triggerKeywords} onChange={v => setForm(f => ({ ...f, triggerKeywords: v }))} placeholder="정보, 링크, 궁금, 가격" hint="쉼표로 구분. 이 키워드가 포함된 댓글에 자동 DM 발송" />
+          <InputField label="DM 링크 (CTA)" value={form.dmLink} onChange={v => setForm(f => ({ ...f, dmLink: v }))} placeholder="https://your-link.com" hint="DM에 포함될 링크" />
+
+          {/* AI 메시지 생성 */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: text }}>DM 메시지</div>
+            <button onClick={generateDM} disabled={generating || !form.name.trim()}
+              style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: generating ? "wait" : "pointer", opacity: generating ? 0.6 : 1 }}>
+              {generating ? "생성 중..." : "AI 자동 생성"}
+            </button>
+          </div>
+          <InputField label="팔로워용 메시지" value={form.dmMessageFollower} onChange={v => setForm(f => ({ ...f, dmMessageFollower: v }))} placeholder="안녕하세요! 관심 가져주셔서 감사합니다 🙏 요청하신 정보 보내드려요!" multiline />
+          <InputField label="비팔로워용 메시지" value={form.dmMessageNonFollower} onChange={v => setForm(f => ({ ...f, dmMessageNonFollower: v }))} placeholder="안녕하세요! 팔로우하시면 더 많은 정보를 받아보실 수 있어요 ✨" multiline />
+
+          <button onClick={saveCampaign} disabled={!form.name.trim() || !form.dmMessageFollower.trim()}
+            style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${accent},#c13584)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", opacity: (!form.name.trim() || !form.dmMessageFollower.trim()) ? 0.5 : 1 }}>
+            캠페인 저장
+          </button>
+        </div>
+      )}
+
+      {/* 캠페인 목록 */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 13, color: muted }}>캠페인 로딩 중...</div>
+        </div>
+      ) : campaigns.length === 0 && !showCreate ? (
+        <div style={{ textAlign: "center", padding: 50 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>아직 캠페인이 없어요</div>
+          <div style={{ fontSize: 13, color: muted, marginBottom: 20, lineHeight: 1.7 }}>
+            게시물 댓글에 특정 키워드가 달리면<br/>자동으로 DM을 보내는 캠페인을 만들어보세요.
+          </div>
+          <button onClick={() => setShowCreate(true)}
+            style={{ padding: "12px 28px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${accent},#c13584)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+            첫 캠페인 만들기
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {campaigns.map(c => (
+            <div key={c.id} style={{ padding: 16, borderRadius: 14, border: `1px solid ${c.is_active ? accent + "40" : bdr}`, background: c.is_active ? (D ? accent + "08" : accent + "03") : cardBg }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.is_active ? "#22c55e" : "#888" }} />
+                  <div style={{ fontSize: 14, fontWeight: 800, color: text }}>{c.name}</div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => toggleCampaign(c.id, !c.is_active)}
+                    style={{ padding: "4px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: c.is_active ? "#ef4444" : "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    {c.is_active ? "중지" : "활성화"}
+                  </button>
+                  <button onClick={() => deleteCampaign(c.id)}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid rgba(239,68,68,0.3)`, background: "transparent", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>
+                    삭제
+                  </button>
+                </div>
+              </div>
+              {c.post_url && <div style={{ fontSize: 11, color: muted, marginBottom: 4 }}>📌 {c.post_url}</div>}
+              {c.trigger_keywords?.length > 0 && (
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                  {c.trigger_keywords.map((kw, i) => (
+                    <span key={i} style={{ padding: "2px 8px", borderRadius: 6, background: accent + "15", color: accent, fontSize: 10, fontWeight: 600 }}>{kw}</span>
+                  ))}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: muted }}>
+                📩 팔로워: {(c.dm_message_follower || "").substring(0, 50)}...
+              </div>
+              {c.dm_sent_count > 0 && <div style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, marginTop: 4 }}>✅ {c.dm_sent_count}건 발송됨</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 안내 */}
+      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", marginBottom: 6 }}>📋 이용 안내</div>
+        <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
+          • Instagram 비즈니스/크리에이터 계정이 연결되어 있어야 합니다<br/>
+          • Instagram Messaging API 정책에 따라 24시간 내 대화만 가능합니다<br/>
+          • 하루 발송 제한이 있으며, 스팸으로 감지되면 계정이 제한될 수 있습니다<br/>
+          • 캠페인은 댓글 감지 후 자동으로 DM을 발송하며, 수동 발송도 가능합니다
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const MARKETING_TABS = [
   { id: "sns_analysis",  label: "SNS 분석",      icon: "/icon-instagram.webp" },
   { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
@@ -2944,32 +3192,8 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
           <ViralityAnalyzer isDark={isDark} />
         </div>
       ) : (
-        <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
-          <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
-            <div style={{ fontSize:48, marginBottom:16 }}>💬</div>
-            <div style={{ fontSize:22, fontWeight:900, color:tabText, marginBottom:8 }}>인스타 자동DM 마케팅</div>
-            <div style={{ fontSize:14, color:tabMuted, marginBottom:32, lineHeight:1.7 }}>
-              게시물에 댓글을 단 사용자에게 자동으로 DM을 발송하는 마케팅 도구입니다.<br/>
-              팔로워에게는 링크와 정보를, 비팔로워에게는 팔로우 요청을 보냅니다.
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:32 }}>
-              {[
-                { icon:"📝", title:"댓글 감지", desc:"특정 키워드 댓글 자동 감지" },
-                { icon:"📩", title:"자동 DM 발송", desc:"맞춤 메시지 + 링크 버튼" },
-                { icon:"👥", title:"팔로워 관리", desc:"팔로워/비팔로워 분기 처리" },
-              ].map((f,i) => (
-                <div key={i} style={{ padding:20, borderRadius:14, border:`1px solid ${tabBdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
-                  <div style={{ fontSize:28, marginBottom:8 }}>{f.icon}</div>
-                  <div style={{ fontSize:13, fontWeight:800, color:tabText, marginBottom:4 }}>{f.title}</div>
-                  <div style={{ fontSize:11, color:tabMuted }}>{f.desc}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ padding:16, borderRadius:12, background:D?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.05)", border:"1px solid rgba(124,106,255,0.2)" }}>
-              <div style={{ fontSize:13, fontWeight:700, color:"#7c6aff" }}>준비 중</div>
-              <div style={{ fontSize:12, color:tabMuted, marginTop:4 }}>Instagram Messaging API 연동 작업 중입니다. 곧 사용 가능합니다.</div>
-            </div>
-          </div>
+        <div style={{ flex:1, overflowY:"auto" }}>
+          <InstaAutoDM isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
         </div>
       )}
     </div>

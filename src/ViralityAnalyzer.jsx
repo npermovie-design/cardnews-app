@@ -201,11 +201,14 @@ JSON 배열 (10~12개):
     "whyViral": "이 콘텐츠가 인기인 이유 한줄",
     "profileCategory": "세부 카테고리",
     "published": "업로드 시기 (예: 3일 전, 1주일 전, 2개월 전)",
+    "mood": "콘텐츠 분위기 (예: 감성적, 유머러스, 정보성, 고급스러운, 트렌디, 다이나믹, 따뜻한, 시크한)",
+    "visualStyle": "영상/이미지 스타일 한줄 설명 (예: 파스텔톤 클로즈업 메이크업, 네온 조명 댄스, 자연광 브이로그)",
+    "colorGradient": "콘텐츠 분위기에 맞는 CSS 그라데이션 (예: linear-gradient(135deg,#ff6b9d,#c44569))",
     "thumbnail": ""
   }
 ]
 JSON 배열만 출력.` }], 5000,
-        `당신은 한국 ${platLabel} 인플루언서 및 트렌드 전문 분석가입니다. 2025-2026년 현재 활동 중인 실제 크리에이터와 그들의 최근 인기 콘텐츠를 정확하게 파악하고 있습니다. 실제 존재하는 계정명을 사용하세요. 조회수와 좋아요수를 반드시 포함하세요.`
+        `당신은 한국 ${platLabel} 인플루언서 및 트렌드 전문 분석가입니다. 2025-2026년 현재 활동 중인 실제 크리에이터와 그들의 최근 인기 콘텐츠를 정확하게 파악하고 있습니다. 실제 존재하는 계정명을 사용하세요. 조회수와 좋아요수를 반드시 포함하세요. colorGradient는 콘텐츠 분위기에 맞는 실제 CSS gradient 값을 넣어주세요.`
       );
       const parsed = JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim());
       setFeedRawVideos(parsed);
@@ -440,7 +443,7 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
               <div style={{ fontSize: 13, color: muted }}>{isYT ? "영상 수집 중..." : `AI가 ${curFeedPlat.label} 트렌드 분석 중...`}</div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isYT ? "repeat(auto-fill,minmax(200px,1fr))" : "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isYT ? "repeat(auto-fill,minmax(200px,1fr))" : "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
               {feedVideos.map((v, i) => isYT ? (
                 /* ── 유튜브 카드 ── */
                 <div key={v.id || i} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
@@ -460,45 +463,59 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
                   </div>
                 </div>
               ) : (
-                /* ── 인스타/틱톡 카드 ── */
+                /* ── 인스타/틱톡 카드 (릴스 스타일) ── */
                 <div key={v.id || i} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
                   onClick={() => analyzeVideo(v)}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)"; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                  <div style={{ padding: "14px 14px 10px" }}>
-                    {/* 프로필 헤더 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: v.platform === "tiktok" ? "linear-gradient(135deg,#25f4ee,#fe2c55)" : "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                  {/* 비주얼 썸네일 (릴스/피드 스타일) */}
+                  <div style={{ position: "relative", paddingBottom: "100%", background: v.colorGradient || (v.platform === "tiktok" ? "linear-gradient(135deg,#25f4ee,#fe2c55)" : "linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)") }}>
+                    {/* 분위기 오버레이 */}
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12 }}>
+                      {/* 상단: 플랫폼 + 콘텐츠 타입 */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 9, fontWeight: 700 }}>
+                          {v.platform === "tiktok" ? "TikTok" : "Instagram"} {v.contentType && `· ${v.contentType}`}
+                        </span>
+                        {v.published && <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", color: "rgba(255,255,255,0.8)", fontSize: 9 }}>{v.published}</span>}
+                      </div>
+                      {/* 중앙: 비주얼 스타일 힌트 */}
+                      <div style={{ textAlign: "center" }}>
+                        {v.mood && <div style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{v.mood}</div>}
+                        {v.visualStyle && <div style={{ marginTop: 4, fontSize: 10, color: "rgba(255,255,255,0.7)", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{v.visualStyle}</div>}
+                      </div>
+                      {/* 하단: 통계 */}
+                      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                        {v.views && <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 600 }}>👁 {v.views}</span>}
+                        {v.likes && <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 600 }}>❤️ {v.likes}</span>}
+                        {v.comments && <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 600 }}>💬 {v.comments}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  {/* 하단 정보 */}
+                  <div style={{ padding: "10px 12px" }}>
+                    {/* 프로필 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: v.platform === "tiktok" ? "linear-gradient(135deg,#25f4ee,#fe2c55)" : "linear-gradient(135deg,#f09433,#dc2743,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
                         {(v.displayName || v.username || "?")[0]}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.displayName || v.username}</div>
-                        <div style={{ fontSize: 10, color: curFeedPlat.color, fontWeight: 600 }}>{v.username} {v.followers && <span style={{ color: muted }}>· {v.followers}</span>}</div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-                        {v.contentType && <span style={{ padding: "2px 8px", borderRadius: 6, background: curFeedPlat.color + "15", color: curFeedPlat.color, fontSize: 9, fontWeight: 700 }}>{v.contentType}</span>}
-                        {v.published && <span style={{ fontSize: 9, color: muted }}>{v.published}</span>}
+                        <div style={{ fontSize: 11, fontWeight: 800, color: text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.displayName || v.username}</div>
+                        <div style={{ fontSize: 9, color: muted }}>{v.username} {v.followers && `· ${v.followers}`}{v.engagementRate && ` · ${v.engagementRate}`}</div>
                       </div>
                     </div>
-                    {/* 콘텐츠 */}
-                    <div style={{ fontSize: 12, fontWeight: 600, color: text, lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
-                    {/* 통계 */}
-                    <div style={{ display: "flex", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                      {v.views && <span style={{ fontSize: 10, color: muted }}>👁 {v.views}</span>}
-                      {v.likes && <span style={{ fontSize: 10, color: muted }}>❤️ {v.likes}</span>}
-                      {v.comments && <span style={{ fontSize: 10, color: muted }}>💬 {v.comments}</span>}
-                      {v.engagementRate && <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700 }}>📊 {v.engagementRate}</span>}
-                    </div>
+                    {/* 제목 */}
+                    <div style={{ fontSize: 11, fontWeight: 600, color: text, lineHeight: 1.4, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
                     {/* 해시태그 */}
                     {v.hashtags && v.hashtags.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
-                        {v.hashtags.slice(0, 4).map((tag, j) => (
-                          <span key={j} style={{ fontSize: 9, color: "#6366f1", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.06)", padding: "1px 6px", borderRadius: 4 }}>#{tag.replace(/^#/,"")}</span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
+                        {v.hashtags.slice(0, 3).map((tag, j) => (
+                          <span key={j} style={{ fontSize: 8, color: "#6366f1", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.06)", padding: "1px 5px", borderRadius: 3 }}>#{tag.replace(/^#/,"")}</span>
                         ))}
                       </div>
                     )}
                     {/* 바이럴 이유 */}
-                    {v.whyViral && <div style={{ padding: "6px 10px", borderRadius: 8, background: D ? curFeedPlat.color + "10" : curFeedPlat.color + "06", fontSize: 10, color: curFeedPlat.color, lineHeight: 1.5 }}>🔥 {v.whyViral}</div>}
+                    {v.whyViral && <div style={{ padding: "4px 8px", borderRadius: 6, background: D ? curFeedPlat.color + "10" : curFeedPlat.color + "06", fontSize: 9, color: curFeedPlat.color, lineHeight: 1.4 }}>🔥 {v.whyViral}</div>}
                   </div>
                 </div>
               ))}
