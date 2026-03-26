@@ -15,6 +15,8 @@ export default async function handler(req, res) {
 
   const APP_ID = process.env.META_APP_ID;
   const APP_SECRET = process.env.META_APP_SECRET;
+  const IG_APP_ID = process.env.INSTAGRAM_APP_ID || APP_ID;
+  const IG_APP_SECRET = process.env.INSTAGRAM_APP_SECRET || APP_SECRET;
   const REDIRECT_URI = process.env.META_REDIRECT_URI || "https://www.snsmakeit.com/api/sns-auth-meta";
 
   if (req.method === "GET") {
@@ -71,8 +73,8 @@ export default async function handler(req, res) {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
-              client_id: APP_ID,
-              client_secret: APP_SECRET,
+              client_id: IG_APP_ID,
+              client_secret: IG_APP_SECRET,
               grant_type: "authorization_code",
               redirect_uri: REDIRECT_URI,
               code,
@@ -82,7 +84,7 @@ export default async function handler(req, res) {
           if (!tokenData.access_token) throw new Error("토큰 발급 실패: " + JSON.stringify(tokenData));
 
           // 2) Long-lived token 교환
-          const longRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${APP_SECRET}&access_token=${tokenData.access_token}`);
+          const longRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${IG_APP_SECRET}&access_token=${tokenData.access_token}`);
           const longData = await longRes.json();
           accessToken = longData.access_token || tokenData.access_token;
           if (longData.expires_in) {
@@ -117,14 +119,14 @@ export default async function handler(req, res) {
     }
 
     // 인증 URL 생성
-    if (!APP_ID) return res.status(500).json({ error: "META_APP_ID 환경변수 미설정" });
+    if (!APP_ID && !IG_APP_ID) return res.status(500).json({ error: "META_APP_ID 또는 INSTAGRAM_APP_ID 환경변수 미설정" });
     const { uid, platform = "threads" } = req.query;
     const scopes = platform === "threads"
       ? "threads_basic,threads_content_publish"
       : "instagram_business_basic,instagram_business_content_publish";
     const authUrl = platform === "threads"
       ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`
-      : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
+      : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${IG_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
     return res.status(200).json({ authUrl });
   }
 
