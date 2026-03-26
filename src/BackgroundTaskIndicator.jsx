@@ -42,11 +42,15 @@ export default function BackgroundTaskIndicator({ isDark, currentMenu, onNavigat
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t));
       }
       if (action === "complete") {
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: "complete", ...task } : t));
-        // 5초 후 자동 제거
+        setTasks(prev => {
+          const exists = prev.find(t => t.id === task.id);
+          if (!exists) return prev; // 이미 없으면 무시
+          return prev.map(t => t.id === task.id ? { ...t, status: "complete", ...task } : t);
+        });
+        // 3초 후 자동 제거
         setTimeout(() => {
           setTasks(prev => prev.filter(t => t.id !== task.id));
-        }, 8000);
+        }, 3000);
       }
       if (action === "remove") {
         setTasks(prev => prev.filter(t => t.id !== task.id));
@@ -78,6 +82,11 @@ export default function BackgroundTaskIndicator({ isDark, currentMenu, onNavigat
   const visibleTasks = tasks.filter(t => {
     // 현재 보고있는 메뉴의 작업은 숨기기 (해당 화면에서 직접 표시하므로)
     if (t.type === currentMenu) return false;
+    // blog_write 메뉴에서 blog_naver 등 하위 타입도 숨기기
+    if (currentMenu === "blog_write" && t.type?.startsWith("blog_")) return false;
+    if (currentMenu?.startsWith("blog_") && t.type?.startsWith("blog_")) return false;
+    if (currentMenu === "video_create" && (t.type === "shorts_make" || t.type === "video_create")) return false;
+    if (currentMenu === "shorts_make" && (t.type === "shorts_make" || t.type === "video_create")) return false;
     return true;
   });
 

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { uid, platform, title, content, tags, visibility = "public" } = req.body;
+    const { uid, platform, title, content, tags, visibility = "public", scheduledTime, imageUrl } = req.body;
     if (!uid || !platform || !content) return res.status(400).json({ error: "필수 파라미터 누락 (uid, platform, content)" });
 
     // 연결 정보 조회
@@ -59,32 +59,51 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── 스레드 발행 ────────────────────────
+    // ── 스레드 발행 (즉시 + 예약) ────────────────────────
     else if (platform === "threads") {
       // 1) 미디어 컨테이너 생성
+      const containerBody = {
+        media_type: imageUrl ? "IMAGE" : "TEXT",
+        text: content.slice(0, 500),
+        access_token: conn.access_token,
+      };
+      if (imageUrl) containerBody.image_url = imageUrl;
+
       const createRes = await fetch(`https://graph.threads.net/v1.0/${conn.platform_user_id}/threads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          media_type: "TEXT",
-          text: content.slice(0, 500), // 스레드 글자수 제한
-          access_token: conn.access_token,
-        }),
+        body: JSON.stringify(containerBody),
       });
       const createData = await createRes.json();
       if (createData.id) {
-        // 2) 발행
+        // 2) 발행 (예약 또는 즉시)
+        const publishBody = {
+          creation_id: createData.id,
+          access_token: conn.access_token,
+        };
+        // 예약 발행: Unix timestamp (최소 10분 후 ~ 최대 75일 후)
+        if (scheduledTime) {
+          const ts = Math.floor(new Date(scheduledTime).getTime() / 1000);
+          const minTs = Math.floor(Date.now() / 1000) + 600; // 10분 후
+          const maxTs = Math.floor(Date.now() / 1000) + 75 * 86400; // 75일
+          if (ts < minTs) return res.status(400).json({ error: "예약 시간은 최소 10분 후여야 합니다." });
+          if (ts > maxTs) return res.status(400).json({ error: "예약 시간은 최대 75일 후까지 가능합니다." });
+          publishBody.scheduled_publish_time = ts;
+        }
+
         const pubRes = await fetch(`https://graph.threads.net/v1.0/${conn.platform_user_id}/threads_publish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            creation_id: createData.id,
-            access_token: conn.access_token,
-          }),
+          body: JSON.stringify(publishBody),
         });
         const pubData = await pubRes.json();
-        postUrl = pubData.id ? `https://www.threads.net/@${conn.platform_username}/post/${pubData.id}` : null;
-        if (!pubData.id) publishError = pubData.error?.message || "스레드 발행 실패";
+        if (pubData.id) {
+          postUrl = scheduledTime
+            ? `예약됨: ${new Date(scheduledTime).toLocaleString("ko-KR")}`
+            : `https://www.threads.net/@${conn.platform_username}/post/${pubData.id}`;
+        } else {
+          publishError = pubData.error?.message || "스레드 발행 실패";
+        }
       } else {
         publishError = createData.error?.message || "스레드 컨테이너 생성 실패";
       }
@@ -100,12 +119,41 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── 인스타그램 (이미지 필수 → 안내) ────────────────────────
+    // ── 인스타그램 (이미지 필수) ────────────────────────
     else if (platform === "instagram") {
-      return res.status(200).json({
-        success: false,
-        message: "인스타그램은 이미지가 포함된 게시물만 발행할 수 있습니다. 카드뉴스 생성 후 이용해주세요.",
+      if (!imageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "인스타그램은 이미지가 필요합니다. 카드뉴스나 이미지를 함께 발행해주세요.",
+        });
+      }
+      // Instagram Graph API로 이미지 게시물 발행
+      // 1) 미디어 컨테이너 생성
+      const createRes = await fetch(`https://graph.facebook.com/v19.0/${conn.platform_user_id}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_url: imageUrl,
+          caption: content.slice(0, 2200),
+          access_token: conn.access_token,
+        }),
       });
+      const createData = await createRes.json();
+      if (createData.id) {
+        const pubRes = await fetch(`https://graph.facebook.com/v19.0/${conn.platform_user_id}/media_publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creation_id: createData.id,
+            access_token: conn.access_token,
+          }),
+        });
+        const pubData = await pubRes.json();
+        postUrl = pubData.id ? `https://www.instagram.com/p/${pubData.id}` : null;
+        if (!pubData.id) publishError = pubData.error?.message || "인스타그램 발행 실패";
+      } else {
+        publishError = createData.error?.message || "인스타그램 컨테이너 생성 실패";
+      }
     }
 
     else {
