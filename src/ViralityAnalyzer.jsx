@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { callAI } from "./aiClient";
 
-const API = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com");
-const V = `${API}/api/virality`;
-
-function fmt(n) { if (!n) return "0"; if (n >= 1e6) return (n/1e6).toFixed(1)+"M"; if (n >= 1e3) return (n/1e3).toFixed(1)+"K"; return String(n); }
+const PLATFORMS = [
+  { id: "instagram", label: "인스타그램", icon: "/icon-instagram.webp", color: "#E1306C", placeholder: "@username 또는 릴스 URL" },
+  { id: "tiktok", label: "틱톡", icon: "/icon-youtube.png", color: "#010101", placeholder: "@username 또는 영상 URL" },
+  { id: "youtube", label: "유튜브", icon: "/icon-youtube.png", color: "#FF0000", placeholder: "@채널명 또는 영상 URL" },
+];
 
 export default function ViralityAnalyzer({ isDark }) {
   const D = isDark;
@@ -14,398 +16,277 @@ export default function ViralityAnalyzer({ isDark }) {
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
   const accent = "#7c6aff";
 
-  const [page, setPage] = useState("videos"); // videos | creators
-  const [videos, setVideos] = useState([]);
-  const [creators, setCreators] = useState([]);
-  const [configs, setConfigs] = useState([]);
+  const [platform, setPlatform] = useState("instagram");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Filters
-  const [filterCreator, setFilterCreator] = useState(0);
-  const [filterConfig, setFilterConfig] = useState(0);
-  const [sort, setSort] = useState("views");
-
-  // Modals
-  const [selVideo, setSelVideo] = useState(null);
-  const [modalTab, setModalTab] = useState("analysis");
+  const [profile, setProfile] = useState(null);
   const [analysis, setAnalysis] = useState(null);
-  const [concepts, setConcepts] = useState([]);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [history, setHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("nper_sns_analysis_history") || "[]"); } catch { return []; }
+  });
 
-  // Add creator
-  const [showAddCreator, setShowAddCreator] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [adding, setAdding] = useState(false);
+  const saveHistory = (item) => {
+    const next = [item, ...history.filter(h => !(h.platform === item.platform && h.username === item.username))].slice(0, 20);
+    setHistory(next);
+    localStorage.setItem("nper_sns_analysis_history", JSON.stringify(next));
+  };
 
-  // Add video
-  const [showAddVideo, setShowAddVideo] = useState(false);
-  const [newVideoUrl, setNewVideoUrl] = useState("");
-  const [newVideoCreator, setNewVideoCreator] = useState(0);
+  const analyze = async () => {
+    if (!query.trim()) return;
+    setLoading(true); setProfile(null); setAnalysis(null);
 
-  const fetchVideos = async () => {
-    setLoading(true);
     try {
-      let url = `${V}/videos?sort=${sort}`;
-      if (filterCreator) url += `&creator_id=${filterCreator}`;
-      if (filterConfig) url += `&config_id=${filterConfig}`;
-      const r = await fetch(url);
-      if (r.ok) setVideos(await r.json());
-    } catch {}
+      // 1) 프로필 데이터 수집
+      const pRes = await fetch("/api/analyze-creator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform, username: query.replace(/^@/, "").trim() }),
+      });
+      const pData = await pRes.json();
+      if (pData.error) throw new Error(pData.error);
+      setProfile(pData);
+
+      // 2) AI 분석
+      const systemPrompt = platform === "instagram"
+        ? "당신은 인스타그램 마케팅 분석 전문가입니다. 크리에이터의 공개 프로필 정보를 바탕으로 콘텐츠 전략, 성장 가능성, 개선점을 분석합니다."
+        : platform === "youtube"
+        ? "당신은 유튜브 채널 분석 전문가입니다. 채널의 콘텐츠 전략, 성장 패턴, SEO 전략을 분석합니다."
+        : "당신은 틱톡 마케팅 분석 전문가입니다. 크리에이터의 숏폼 콘텐츠 전략과 바이럴 패턴을 분석합니다.";
+
+      const prompt = `다음 ${platform} 크리에이터를 분석해주세요:
+
+계정명: @${pData.username}
+이름: ${pData.displayName || ""}
+소개: ${pData.bio || "정보 없음"}
+${pData.followers ? `팔로워: ${pData.followers}` : ""}
+${pData.subscribers ? `구독자: ${pData.subscribers}` : ""}
+${pData.posts ? `게시물: ${pData.posts}` : ""}
+
+다음 형식으로 분석해주세요 (JSON으로 출력):
+{
+  "summary": "한줄 요약 (20자 이내)",
+  "score": 85,
+  "sections": [
+    {
+      "title": "콘텐츠 전략",
+      "icon": "📝",
+      "score": 90,
+      "analysis": "상세 분석 내용 (3~5줄)",
+      "tips": ["개선 팁 1", "개선 팁 2"]
+    },
+    {
+      "title": "성장 가능성",
+      "icon": "📈",
+      "score": 80,
+      "analysis": "분석 내용",
+      "tips": ["팁 1", "팁 2"]
+    },
+    {
+      "title": "참여율/인게이지먼트",
+      "icon": "💬",
+      "score": 75,
+      "analysis": "분석 내용",
+      "tips": ["팁 1", "팁 2"]
+    },
+    {
+      "title": "브랜딩/프로필",
+      "icon": "🎯",
+      "score": 85,
+      "analysis": "분석 내용",
+      "tips": ["팁 1", "팁 2"]
+    },
+    {
+      "title": "경쟁 우위/차별화",
+      "icon": "⚡",
+      "score": 70,
+      "analysis": "분석 내용",
+      "tips": ["팁 1", "팁 2"]
+    }
+  ],
+  "recommendations": ["전체 추천 액션 1", "전체 추천 액션 2", "전체 추천 액션 3"]
+}
+
+JSON만 출력하세요. 다른 텍스트 없이.`;
+
+      const aiRes = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 3000, systemPrompt);
+      const cleaned = (aiRes || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      setAnalysis(parsed);
+
+      saveHistory({
+        platform, username: pData.username, displayName: pData.displayName,
+        profilePic: pData.profilePic, score: parsed.score, summary: parsed.summary,
+        date: new Date().toISOString().slice(0, 10),
+      });
+    } catch (e) {
+      alert("분석 실패: " + e.message);
+    }
     setLoading(false);
   };
 
-  const fetchCreators = async () => {
-    try { const r = await fetch(`${V}/creators`); if (r.ok) setCreators(await r.json()); } catch {}
-  };
-
-  const fetchConfigs = async () => {
-    try { const r = await fetch(`${V}/configs`); if (r.ok) setConfigs(await r.json()); } catch {}
-  };
-
-  useEffect(() => { fetchCreators(); fetchConfigs(); }, []);
-  useEffect(() => { fetchVideos(); }, [sort, filterCreator, filterConfig]);
-
-  const openVideo = async (v) => {
-    setSelVideo(v); setModalTab("analysis"); setAnalysis(null); setConcepts([]);
-    try {
-      const cid = filterConfig || (configs[0]?.id) || 0;
-      const r = await fetch(`${V}/videos/${v.id}?config_id=${cid}`);
-      if (r.ok) {
-        const data = await r.json();
-        setAnalysis(data.analysis || null);
-        setConcepts(data.concepts || []);
-      }
-    } catch {}
-  };
-
-  const runAnalysis = async (videoId) => {
-    setAnalyzing(true);
-    try {
-      const cid = filterConfig || (configs[0]?.id) || 0;
-      const r = await fetch(`${V}/videos/${videoId}/analyze`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config_id: cid || undefined }),
-      });
-      if (r.ok) {
-        const data = await r.json();
-        setAnalysis(data.analysis || null);
-        setConcepts(data.concepts || []);
-        fetchVideos();
-      }
-    } catch {}
-    setAnalyzing(false);
-  };
-
-  const addCreator = async () => {
-    if (!newUsername.trim()) return;
-    setAdding(true);
-    try {
-      const r = await fetch(`${V}/creators`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: newUsername.replace("@",""), category: newCategory }),
-      });
-      if (r.ok) { fetchCreators(); setShowAddCreator(false); setNewUsername(""); setNewCategory(""); }
-      else { const d = await r.json(); alert(d.detail || "추가 실패"); }
-    } catch {}
-    setAdding(false);
-  };
-
-  const addVideo = async () => {
-    if (!newVideoCreator) return;
-    setAdding(true);
-    try {
-      const r = await fetch(`${V}/videos/manual`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ creator_id: newVideoCreator, url: newVideoUrl }),
-      });
-      if (r.ok) { fetchVideos(); setShowAddVideo(false); setNewVideoUrl(""); }
-      else { const d = await r.json(); alert(d.detail || "추가 실패"); }
-    } catch {}
-    setAdding(false);
-  };
-
-  const refreshCreator = async (id) => {
-    try { await fetch(`${V}/creators/${id}/refresh`, { method: "POST" }); fetchCreators(); } catch {}
-  };
-
-  const deleteCreator = async (id) => {
-    if (!confirm("이 크리에이터를 삭제하시겠습니까?")) return;
-    try { await fetch(`${V}/creators/${id}`, { method: "DELETE" }); fetchCreators(); } catch {}
-  };
-
-  const selStyle = (active) => ({
-    padding: "7px 14px", borderRadius: 8, border: `1px solid ${active ? accent : bdr}`,
-    background: active ? (D ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.1)") : "transparent",
-    color: active ? accent : muted, fontSize: 12, fontWeight: active ? 700 : 400, cursor: "pointer",
-  });
-
-  // ── VIDEOS PAGE ──
-  const VideosPage = () => (
-    <div>
-      {/* Filters */}
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20, alignItems:"center" }}>
-        <select value={filterCreator} onChange={e=>setFilterCreator(+e.target.value)}
-          style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:12 }}>
-          <option value={0}>전체 크리에이터</option>
-          {creators.map(c => <option key={c.id} value={c.id}>@{c.username}</option>)}
-        </select>
-        <select value={filterConfig} onChange={e=>setFilterConfig(+e.target.value)}
-          style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:12 }}>
-          <option value={0}>전체 설정</option>
-          {configs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <div style={{ display:"flex", gap:4 }}>
-          {[["views","조회순"],["likes","좋아요순"],["recent","최신순"]].map(([k,l])=>
-            <button key={k} onClick={()=>setSort(k)} style={selStyle(sort===k)}>{l}</button>
-          )}
-        </div>
-        <div style={{ flex:1 }} />
-        <span style={{ fontSize:11, color:muted }}>{videos.length}개 영상</span>
-        <button onClick={()=>setShowAddVideo(true)} style={{ padding:"8px 14px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>+ 영상 추가</button>
-      </div>
-
-      {/* Video Grid */}
-      {loading ? <div style={{ textAlign:"center", padding:40, color:muted }}>로딩 중...</div> : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:16 }}>
-          {videos.map(v => (
-            <div key={v.id} style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, background:cardBg, cursor:"pointer", transition:"all 0.2s" }}
-              onClick={()=>openVideo(v)}
-              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.15)";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
-              <div style={{ position:"relative", paddingBottom:"125%", background:"#111" }}>
-                {v.thumbnail_url && <img src={v.thumbnail_url} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
-                <div style={{ position:"absolute", bottom:8, left:8, display:"flex", gap:6, fontSize:11, color:"#fff", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}>
-                  <span>▶ {fmt(v.views)}</span>
-                </div>
-                {(v.has_analysis || v.has_concepts) && (
-                  <div style={{ position:"absolute", top:8, right:8, display:"flex", gap:4 }}>
-                    {v.has_analysis && <span style={{ padding:"2px 6px", borderRadius:4, background:"rgba(124,106,255,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>분석완료</span>}
-                    {v.has_concepts && <span style={{ padding:"2px 6px", borderRadius:4, background:"rgba(236,72,153,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>콘셉트</span>}
-                  </div>
-                )}
-              </div>
-              <div style={{ padding:"10px 12px" }}>
-                <div style={{ fontSize:12, fontWeight:700, color:text }}>@{v.creator_username || "unknown"}</div>
-                <div style={{ display:"flex", gap:10, fontSize:10, color:muted, marginTop:4 }}>
-                  <span>♡ {fmt(v.likes)}</span>
-                  <span>💬 {fmt(v.comments)}</span>
-                  {v.posted_at && <span>{v.posted_at.slice(0,10)}</span>}
-                </div>
-                {v.caption && <div style={{ fontSize:10, color:muted, marginTop:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.caption.slice(0,60)}</div>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {!loading && videos.length === 0 && (
-        <div style={{ textAlign:"center", padding:60, color:muted }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>📹</div>
-          <div style={{ fontSize:14, fontWeight:700, marginBottom:4 }}>영상이 없습니다</div>
-          <div style={{ fontSize:12 }}>크리에이터를 추가하고 영상을 수집해보세요</div>
-        </div>
-      )}
-    </div>
-  );
-
-  // ── CREATORS PAGE ──
-  const CreatorsPage = () => (
-    <div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <span style={{ fontSize:11, color:muted }}>{creators.length}명의 크리에이터</span>
-        <button onClick={()=>setShowAddCreator(true)} style={{ padding:"8px 14px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>+ 크리에이터 추가</button>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16 }}>
-        {creators.map(c => (
-          <div key={c.id} style={{ padding:20, borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
-            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-              {c.profile_pic_url ? <img src={c.profile_pic_url} alt="" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
-                : <div style={{ width:44, height:44, borderRadius:"50%", background:D?"rgba(255,255,255,0.1)":"#e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>👤</div>}
-              <div>
-                <div style={{ fontSize:14, fontWeight:800, color:text }}>@{c.username}</div>
-                {c.category && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:4, background:D?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.08)", color:accent, fontWeight:600 }}>{c.category}</span>}
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
-              {[["팔로워",fmt(c.followers)],["릴스/30일",c.reels_30d||0],["평균조회",fmt(c.avg_views)]].map(([l,v],i)=>
-                <div key={i} style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:16, fontWeight:900, color:text }}>{v}</div>
-                  <div style={{ fontSize:9, color:muted, marginTop:2 }}>{l}</div>
-                </div>
-              )}
-            </div>
-            {c.scraped_at && <div style={{ fontSize:9, color:muted, marginBottom:8 }}>수집: {c.scraped_at.slice(0,10)}</div>}
-            <div style={{ display:"flex", gap:6 }}>
-              <button onClick={()=>refreshCreator(c.id)} style={{ flex:1, padding:"6px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>새로고침</button>
-              <button onClick={()=>{ setFilterCreator(c.id); setPage("videos"); }} style={{ flex:1, padding:"6px", borderRadius:6, border:`1px solid ${accent}40`, background:`${accent}10`, color:accent, fontSize:11, fontWeight:600, cursor:"pointer" }}>영상 보기</button>
-              <button onClick={()=>deleteCreator(c.id)} style={{ padding:"6px 10px", borderRadius:6, border:`1px solid rgba(239,68,68,0.3)`, background:"transparent", color:"#ef4444", fontSize:11, cursor:"pointer" }}>삭제</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // ── ANALYSIS MODAL ──
-  const AnalysisModal = () => {
-    if (!selVideo) return null;
-    return (
-      <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}
-        onClick={()=>setSelVideo(null)}>
-        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }} />
-        <div style={{ position:"relative", width:"90%", maxWidth:800, maxHeight:"85vh", overflowY:"auto", borderRadius:16,
-          background:D?"#1a1a2e":"#fff", border:`1px solid ${bdr}`, padding:0 }}
-          onClick={e=>e.stopPropagation()}>
-
-          {/* Header */}
-          <div style={{ padding:"16px 20px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:12, position:"sticky", top:0, background:D?"#1a1a2e":"#fff", zIndex:1 }}>
-            {selVideo.thumbnail_url && <img src={selVideo.thumbnail_url} alt="" style={{ width:48, height:48, borderRadius:8, objectFit:"cover" }} />}
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:text }}>@{selVideo.creator_username}</div>
-              <div style={{ fontSize:11, color:muted }}>▶ {fmt(selVideo.views)} · ♡ {fmt(selVideo.likes)} · 💬 {fmt(selVideo.comments)}</div>
-            </div>
-            <div style={{ display:"flex", gap:4 }}>
-              {[["analysis","분석"],["concepts","콘셉트"]].map(([k,l])=>
-                <button key={k} onClick={()=>setModalTab(k)} style={selStyle(modalTab===k)}>{l}</button>
-              )}
-            </div>
-            <button onClick={()=>setSelVideo(null)} style={{ background:"none", border:"none", color:muted, fontSize:20, cursor:"pointer" }}>✕</button>
-          </div>
-
-          {/* Content */}
-          <div style={{ padding:20 }}>
-            {!analysis && !concepts.length ? (
-              <div style={{ textAlign:"center", padding:40 }}>
-                <div style={{ fontSize:14, color:muted, marginBottom:16 }}>아직 분석되지 않은 영상입니다</div>
-                <button onClick={()=>runAnalysis(selVideo.id)} disabled={analyzing}
-                  style={{ padding:"12px 24px", borderRadius:10, border:"none", background:accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", opacity:analyzing?0.6:1 }}>
-                  {analyzing ? "분석 중..." : "AI 분석 실행"}
-                </button>
-              </div>
-            ) : modalTab === "analysis" && analysis ? (
-              <div>
-                {[["HOOK",analysis.hook_analysis],["RETENTION",analysis.retention_analysis],["SCRIPT",analysis.script_analysis]].map(([title,content])=>
-                  content ? (
-                    <div key={title} style={{ marginBottom:20 }}>
-                      <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:6, background:D?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)", color:accent, fontSize:12, fontWeight:900, marginBottom:10 }}>{title}</div>
-                      <div style={{ fontSize:13, lineHeight:1.8, color:text, whiteSpace:"pre-wrap" }}>{content}</div>
-                    </div>
-                  ) : null
-                )}
-                {analysis.full_analysis && (
-                  <div style={{ marginTop:20, padding:16, borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.02)":"#fafafa" }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:8 }}>전체 분석</div>
-                    <div style={{ fontSize:12, lineHeight:1.7, color:text, whiteSpace:"pre-wrap" }}>{analysis.full_analysis}</div>
-                  </div>
-                )}
-              </div>
-            ) : modalTab === "concepts" && concepts.length > 0 ? (
-              <div>
-                {concepts.map((c,i) => (
-                  <div key={i} style={{ marginBottom:24, padding:20, borderRadius:14, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.02)":"#fafafa" }}>
-                    <div style={{ fontSize:11, fontWeight:900, color:"#ec4899", marginBottom:6 }}>CONCEPT {i+1}</div>
-                    <div style={{ fontSize:16, fontWeight:900, color:text, marginBottom:8 }}>{c.title}</div>
-                    {c.description && <div style={{ fontSize:13, color:muted, marginBottom:12, lineHeight:1.6 }}>{c.description}</div>}
-                    {c.hook && (
-                      <div style={{ marginBottom:12 }}>
-                        <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:5, background:"rgba(34,197,94,0.15)", color:"#22c55e", fontSize:11, fontWeight:800, marginBottom:6 }}>HOOK</div>
-                        <div style={{ fontSize:13, lineHeight:1.7, color:text, whiteSpace:"pre-wrap" }}>{c.hook}</div>
-                      </div>
-                    )}
-                    {c.script && (
-                      <div style={{ marginBottom:12 }}>
-                        <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:5, background:"rgba(124,106,255,0.15)", color:accent, fontSize:11, fontWeight:800, marginBottom:6 }}>SCRIPT</div>
-                        <div style={{ fontSize:13, lineHeight:1.7, color:text, whiteSpace:"pre-wrap" }}>{c.script}</div>
-                      </div>
-                    )}
-                    {c.why_it_works && (
-                      <div>
-                        <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:5, background:"rgba(245,158,11,0.15)", color:"#f59e0b", fontSize:11, fontWeight:800, marginBottom:6 }}>WHY IT WORKS</div>
-                        <div style={{ fontSize:13, lineHeight:1.7, color:text, whiteSpace:"pre-wrap" }}>{c.why_it_works}</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign:"center", padding:40, color:muted }}>
-                <div style={{ fontSize:14 }}>{modalTab === "analysis" ? "분석 데이터가 없습니다" : "콘셉트가 없습니다"}</div>
-                <button onClick={()=>runAnalysis(selVideo.id)} disabled={analyzing}
-                  style={{ marginTop:12, padding:"10px 20px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                  {analyzing ? "분석 중..." : "AI 분석 실행"}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const plat = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
 
   return (
-    <div style={{ padding:"24px 24px 60px", maxWidth:1100, margin:"0 auto" }}>
-      {/* Page Tabs */}
-      <div style={{ display:"flex", gap:6, marginBottom:24 }}>
-        {[["videos","영상"],["creators","크리에이터"]].map(([k,l])=>
-          <button key={k} onClick={()=>setPage(k)}
-            style={{ padding:"8px 18px", borderRadius:8, border:`1px solid ${page===k?accent:bdr}`,
-              background:page===k?(D?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.08)"):"transparent",
-              color:page===k?accent:muted, fontSize:13, fontWeight:page===k?700:400, cursor:"pointer" }}>
-            {l}
+    <div style={{ padding: "24px 24px 60px", maxWidth: 900, margin: "0 auto" }}>
+
+      {/* 플랫폼 선택 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {PLATFORMS.map(p => (
+          <button key={p.id} onClick={() => setPlatform(p.id)}
+            style={{
+              flex: 1, padding: "14px 12px", borderRadius: 12, cursor: "pointer",
+              border: `2px solid ${platform === p.id ? p.color : bdr}`,
+              background: platform === p.id ? (D ? p.color + "20" : p.color + "08") : cardBg,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              color: platform === p.id ? (D ? "#fff" : p.color) : muted,
+              fontSize: 13, fontWeight: platform === p.id ? 800 : 500, transition: "all 0.15s",
+            }}>
+            <img src={p.icon} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: "contain" }} />
+            {p.label}
           </button>
-        )}
+        ))}
       </div>
 
-      {page === "videos" ? <VideosPage /> : <CreatorsPage />}
+      {/* 검색 입력 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder={plat.placeholder}
+          onKeyDown={e => e.key === "Enter" && analyze()}
+          style={{
+            flex: 1, padding: "14px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
+            background: inputBg, color: text, fontSize: 14, outline: "none", boxSizing: "border-box",
+          }} />
+        <button onClick={analyze} disabled={loading || !query.trim()}
+          style={{
+            padding: "14px 28px", borderRadius: 12, border: "none", cursor: loading ? "wait" : "pointer",
+            background: plat.color, color: "#fff", fontSize: 14, fontWeight: 800,
+            opacity: (loading || !query.trim()) ? 0.6 : 1,
+          }}>
+          {loading ? "분석 중..." : "분석하기"}
+        </button>
+      </div>
 
-      {/* Modals */}
-      {selVideo && <AnalysisModal />}
+      {/* 로딩 */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: 60 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: plat.color, animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+          <div style={{ fontSize: 14, fontWeight: 700, color: text }}>@{query.replace("@", "")} 분석 중...</div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 4 }}>프로필 데이터 수집 + AI 분석 진행 중</div>
+        </div>
+      )}
 
-      {/* Add Creator Modal */}
-      {showAddCreator && (
-        <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}
-          onClick={()=>setShowAddCreator(false)}>
-          <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
-          <div style={{ position:"relative", width:400, borderRadius:16, background:D?"#1a1a2e":"#fff", padding:24, border:`1px solid ${bdr}` }}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{ fontSize:16, fontWeight:900, color:text, marginBottom:16 }}>크리에이터 추가</div>
-            <input value={newUsername} onChange={e=>setNewUsername(e.target.value)} placeholder="@username"
-              style={{ width:"100%", padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, marginBottom:10, boxSizing:"border-box" }} />
-            <input value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="카테고리 (선택)"
-              style={{ width:"100%", padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, marginBottom:16, boxSizing:"border-box" }} />
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={()=>setShowAddCreator(false)} style={{ flex:1, padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:13, cursor:"pointer" }}>취소</button>
-              <button onClick={addCreator} disabled={adding||!newUsername.trim()}
-                style={{ flex:1, padding:10, borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", opacity:adding?0.6:1 }}>
-                {adding ? "추가 중..." : "추가"}
-              </button>
+      {/* 분석 결과 */}
+      {!loading && analysis && profile && (
+        <div>
+          {/* 프로필 헤더 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 20, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg, marginBottom: 20 }}>
+            {profile.profilePic
+              ? <img src={profile.profilePic} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
+              : <div style={{ width: 64, height: 64, borderRadius: "50%", background: D ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>👤</div>}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: text }}>{profile.displayName || profile.username}</div>
+              <div style={{ fontSize: 13, color: muted }}>@{profile.username}</div>
+              {profile.bio && <div style={{ fontSize: 11, color: muted, marginTop: 4, lineHeight: 1.5 }}>{profile.bio.slice(0, 150)}</div>}
             </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: "50%",
+                background: `conic-gradient(${plat.color} ${(analysis.score || 0) * 3.6}deg, ${bdr} 0deg)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <div style={{ width: 58, height: 58, borderRadius: "50%", background: D ? "#1a1a2e" : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20, fontWeight: 900, color: plat.color }}>{analysis.score}</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>종합 점수</div>
+            </div>
+          </div>
+
+          {/* 요약 */}
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: D ? plat.color + "15" : plat.color + "08", border: `1px solid ${plat.color}30`, marginBottom: 20, fontSize: 13, fontWeight: 700, color: D ? "#fff" : plat.color }}>
+            {analysis.summary}
+          </div>
+
+          {/* 섹션별 분석 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+            {(analysis.sections || []).map((sec, i) => (
+              <div key={i} style={{ padding: 20, borderRadius: 14, border: `1px solid ${bdr}`, background: cardBg }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 20 }}>{sec.icon}</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: text }}>{sec.title}</span>
+                  </div>
+                  <div style={{
+                    padding: "4px 12px", borderRadius: 20, fontSize: 13, fontWeight: 900,
+                    background: sec.score >= 80 ? "rgba(34,197,94,0.15)" : sec.score >= 60 ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)",
+                    color: sec.score >= 80 ? "#22c55e" : sec.score >= 60 ? "#f59e0b" : "#ef4444",
+                  }}>{sec.score}점</div>
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.7, color: text, marginBottom: 12 }}>{sec.analysis}</div>
+                {sec.tips && sec.tips.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {sec.tips.map((tip, j) => (
+                      <div key={j} style={{ display: "flex", gap: 8, fontSize: 12, color: muted }}>
+                        <span style={{ color: accent, fontWeight: 700, flexShrink: 0 }}>TIP</span>
+                        <span>{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 추천 액션 */}
+          {analysis.recommendations && (
+            <div style={{ padding: 20, borderRadius: 14, border: `1px solid ${accent}30`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: accent, marginBottom: 12 }}>추천 액션 플랜</div>
+              {analysis.recommendations.map((rec, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 13, color: text }}>
+                  <span style={{ width: 22, height: 22, borderRadius: 6, background: accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ lineHeight: 1.6 }}>{rec}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 최근 분석 히스토리 */}
+      {!loading && !analysis && history.length > 0 && (
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>최근 분석</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 12 }}>
+            {history.map((h, i) => (
+              <div key={i} onClick={() => { setPlatform(h.platform); setQuery(h.username); }}
+                style={{ padding: 16, borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = accent}
+                onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {h.profilePic
+                    ? <img src={h.profilePic} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+                    : <div style={{ width: 36, height: 36, borderRadius: "50%", background: D ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👤</div>}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.displayName || h.username}</div>
+                    <div style={{ fontSize: 11, color: muted }}>@{h.username} · {h.platform}</div>
+                  </div>
+                  {h.score && <div style={{ fontSize: 16, fontWeight: 900, color: h.score >= 80 ? "#22c55e" : h.score >= 60 ? "#f59e0b" : "#ef4444" }}>{h.score}</div>}
+                </div>
+                {h.summary && <div style={{ fontSize: 11, color: muted, marginTop: 8 }}>{h.summary}</div>}
+                <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{h.date}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Add Video Modal */}
-      {showAddVideo && (
-        <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}
-          onClick={()=>setShowAddVideo(false)}>
-          <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
-          <div style={{ position:"relative", width:400, borderRadius:16, background:D?"#1a1a2e":"#fff", padding:24, border:`1px solid ${bdr}` }}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{ fontSize:16, fontWeight:900, color:text, marginBottom:16 }}>영상 추가</div>
-            <select value={newVideoCreator} onChange={e=>setNewVideoCreator(+e.target.value)}
-              style={{ width:"100%", padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, marginBottom:10, boxSizing:"border-box" }}>
-              <option value={0}>크리에이터 선택</option>
-              {creators.map(c => <option key={c.id} value={c.id}>@{c.username}</option>)}
-            </select>
-            <input value={newVideoUrl} onChange={e=>setNewVideoUrl(e.target.value)} placeholder="Instagram 릴스 URL (선택)"
-              style={{ width:"100%", padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:text, fontSize:13, marginBottom:16, boxSizing:"border-box" }} />
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={()=>setShowAddVideo(false)} style={{ flex:1, padding:10, borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:13, cursor:"pointer" }}>취소</button>
-              <button onClick={addVideo} disabled={adding||!newVideoCreator}
-                style={{ flex:1, padding:10, borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", opacity:adding?0.6:1 }}>
-                {adding ? "추가 중..." : "추가"}
-              </button>
-            </div>
+      {/* 빈 상태 */}
+      {!loading && !analysis && history.length === 0 && (
+        <div style={{ textAlign: "center", padding: 60 }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 8 }}>경쟁사 SNS 계정을 분석해보세요</div>
+          <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>
+            인스타그램, 틱톡, 유튜브 크리에이터의 계정명을 입력하면<br />
+            AI가 콘텐츠 전략, 성장 가능성, 참여율을 분석합니다.
           </div>
         </div>
       )}
