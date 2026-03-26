@@ -7,6 +7,8 @@ import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
+import KeywordInsightPanel from "./KeywordInsightPanel";
+import { getConnectedPlatforms, publishToSns } from "./SnsConnectionManager";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -532,6 +534,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
+  const [snsConns,   setSnsConns]   = useState([]);
+  const [publishing, setPublishing] = useState(null); // platform id
+  const [publishResult, setPublishResult] = useState(null); // { platform, success, postUrl, error }
   const [titleSugg,  setTitleSugg]  = useState([]);
   const [seoKeys,    setSeoKeys]    = useState([]);
   const [titleLoading, setTitleLoading] = useState(false);
@@ -543,6 +548,28 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgSearching,    setImgSearching]    = useState(false);
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
+
+  // SNS 연결 목록 조회
+  useEffect(() => {
+    if (user?.uid) getConnectedPlatforms(user.uid).then(setSnsConns);
+  }, [user?.uid]);
+
+  // SNS 발행 핸들러
+  const handlePublish = async (platform) => {
+    if (!user?.uid || !result) return;
+    setPublishing(platform); setPublishResult(null);
+    try {
+      const tags = result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",") || "";
+      const title = fields.keyword || "";
+      const r = await publishToSns(user.uid, platform, { title, content: result, tags });
+      setPublishResult({ platform, ...r });
+      if (r.clipboard) {
+        try { await navigator.clipboard.writeText(result); } catch {}
+        if (r.editorUrl) window.open(r.editorUrl, "_blank");
+      }
+    } catch (e) { setPublishResult({ platform, success: false, error: e.message }); }
+    setPublishing(null);
+  };
 
   // 숏폼 연계 데이터 자동 입력
   useEffect(() => {
@@ -829,6 +856,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
+            {/* SNS 발행 버튼 */}
+            {result && snsConns.length > 0 && snsConns.map(conn => {
+              const icons = { tistory:"/icon-tistory.png", threads:"/icon-threads.png", naver_blog:"/icon-naver-blog.png", instagram:"/icon-instagram.webp" };
+              const colors = { tistory:"#FF6B35", threads:"#000", naver_blog:"#03C75A", instagram:"#E1306C" };
+              const isPublishing = publishing === conn.platform;
+              const pubDone = publishResult?.platform === conn.platform;
+              return (
+                <button key={conn.platform} onClick={() => handlePublish(conn.platform)} disabled={isPublishing}
+                  style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${pubDone && publishResult?.success ? "rgba(74,222,128,0.4)" : colors[conn.platform]+"40"}`,
+                    background: pubDone && publishResult?.success ? (isDark?"rgba(74,222,128,0.12)":"#f0fdf4") : "transparent",
+                    color: pubDone && publishResult?.success ? "#4ade80" : colors[conn.platform],
+                    fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPublishing?0.6:1}}>
+                  {isPublishing ? <div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${colors[conn.platform]}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/> : <img src={icons[conn.platform]} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}
+                  {isPublishing ? "발행 중..." : pubDone && publishResult?.success ? "발행 완료!" : `${conn.platform_username || conn.platform} 발행`}
+                </button>
+              );
+            })}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -844,6 +888,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
+
+          {/* 발행 결과 알림 */}
+          {publishResult && (
+            <div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,
+              background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(248,113,113,0.08)":"#fef2f2"),
+              border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(248,113,113,0.2)"}`}}>
+              <span style={{fontSize:16}}>{publishResult.success?"✓":"✗"}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":"#f87171"}}>
+                  {publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}
+                </div>
+                {publishResult.postUrl && <a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인하기 →</a>}
+                {publishResult.error && <div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}
+                {publishResult.message && <div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}
+              </div>
+              <button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
+            </div>
+          )}
 
           {/* 연관 이미지 추천 */}
           {(imgSearching || suggestedImages.length > 0) && (
@@ -1094,6 +1156,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     </div>
                   </div>
                 )}
+                {fk==="keyword" && <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw) => setField("keyword", kw)} />}
               </div>;
             })}
             {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10}}>{error}</div>}

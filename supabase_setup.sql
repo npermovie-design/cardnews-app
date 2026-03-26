@@ -169,5 +169,69 @@ DROP POLICY IF EXISTS "posts_delete_auth" ON posts;
 CREATE POLICY "posts_delete_auth"
   ON posts FOR DELETE USING (true);
 
+-- ── SNS 연동 계정 테이블 ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sns_connections (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid             TEXT NOT NULL,
+  platform        TEXT NOT NULL,  -- 'tistory', 'instagram', 'threads', 'naver_blog'
+  access_token    TEXT,
+  refresh_token   TEXT,
+  token_expires_at TIMESTAMPTZ,
+  platform_user_id TEXT,
+  platform_username TEXT,
+  blog_name       TEXT,
+  metadata        JSONB DEFAULT '{}',
+  connected_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(uid, platform)
+);
+
+ALTER TABLE sns_connections ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "sns_conn_select_own" ON sns_connections;
+CREATE POLICY "sns_conn_select_own"
+  ON sns_connections FOR SELECT
+  USING (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "sns_conn_insert_own" ON sns_connections;
+CREATE POLICY "sns_conn_insert_own"
+  ON sns_connections FOR INSERT
+  WITH CHECK (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "sns_conn_update_own" ON sns_connections;
+CREATE POLICY "sns_conn_update_own"
+  ON sns_connections FOR UPDATE
+  USING (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "sns_conn_delete_own" ON sns_connections;
+CREATE POLICY "sns_conn_delete_own"
+  ON sns_connections FOR DELETE
+  USING (auth.uid()::text = uid);
+
+-- ── SNS 발행 이력 테이블 ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS publish_history (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid             TEXT NOT NULL,
+  platform        TEXT NOT NULL,
+  title           TEXT,
+  content_preview TEXT,
+  post_url        TEXT,
+  status          TEXT DEFAULT 'success',  -- 'success', 'failed', 'pending'
+  error_message   TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE publish_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "pub_hist_select_own" ON publish_history;
+CREATE POLICY "pub_hist_select_own"
+  ON publish_history FOR SELECT
+  USING (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "pub_hist_insert_own" ON publish_history;
+CREATE POLICY "pub_hist_insert_own"
+  ON publish_history FOR INSERT
+  WITH CHECK (auth.uid()::text = uid);
+
 -- ── 완료 ────────────────────────────────────────────────────────
 -- 위 SQL 실행 후 사이트를 새로고침하면 적용됩니다.

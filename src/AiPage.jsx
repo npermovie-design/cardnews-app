@@ -16,6 +16,7 @@ import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
+import SnsConnectionManager from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2788,6 +2789,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 <span style={{ fontSize:13, fontWeight:600, color:isDark?"#fff":"#1a1a2e" }}>{item.value}</span>
               </div>
             ))}
+          </div>
+          {/* SNS 계정 연동 */}
+          <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"4px 0", marginBottom:16, overflow:"hidden" }}>
+            <SnsConnectionManager user={user} isDark={isDark} compact />
           </div>
           {/* 로그아웃 */}
           <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
