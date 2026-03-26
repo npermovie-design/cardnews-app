@@ -571,6 +571,49 @@ export default function HomePage({ navigate, C }) {
         </div>
       </SecWrap>
 
+      {/* ══ SNS 자동 발행 안내 ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 40, alignItems: "center" }}>
+            <FadeIn>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", letterSpacing: 1, marginBottom: 10 }}>AUTO PUBLISH</div>
+                <h2 style={{ fontSize: "clamp(24px,3.5vw,36px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
+                  {lang === "ko" ? "글 작성부터 발행까지\n원클릭으로 완성" : "From writing to publishing\nin one click"}
+                </h2>
+                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 28px", whiteSpace: "pre-line" }}>
+                  {lang === "ko" ? "AI가 작성한 글을 스레드·네이버 블로그·티스토리에 바로 발행하세요.\nSNS 계정을 연결하면 복사-붙여넣기 없이 자동으로 업로드됩니다." : "Publish AI-written content directly to Threads, Naver Blog, and Tistory.\nConnect your SNS accounts for seamless auto-publishing."}
+                </p>
+                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "자동 발행 시작하기" : "Start auto publishing"}</Btn>
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.1}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {[
+                  { icon: "/icon-threads.png", title: lang === "ko" ? "스레드 자동 발행" : "Threads auto publish", desc: lang === "ko" ? "글 작성 후 원클릭 발행" : "One-click after writing", color: "#000", tag: lang === "ko" ? "자동" : "Auto" },
+                  { icon: "/icon-naver-blog.png", title: lang === "ko" ? "네이버 블로그" : "Naver Blog", desc: lang === "ko" ? "복사 + 에디터 자동 열기" : "Copy + auto open editor", color: "#03C75A", tag: lang === "ko" ? "간편" : "Easy" },
+                  { icon: "/icon-tistory.png", title: lang === "ko" ? "티스토리" : "Tistory", desc: lang === "ko" ? "복사 + 에디터 자동 열기" : "Copy + auto open editor", color: "#FF6B35", tag: lang === "ko" ? "간편" : "Easy" },
+                  { icon: "/icon-instagram.webp", title: lang === "ko" ? "인스타그램" : "Instagram", desc: lang === "ko" ? "카드뉴스 이미지 발행" : "Card news image publishing", color: "#E1306C", tag: lang === "ko" ? "준비중" : "Soon" },
+                ].map(item => (
+                  <div key={item.title} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: item.color + "12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <img src={item.icon} alt="" style={{ width: 22, height: 22, objectFit: "contain", borderRadius: 4 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.title}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: item.tag === (lang==="ko"?"자동":"Auto") ? "rgba(124,106,255,0.12)" : item.tag === (lang==="ko"?"준비중":"Soon") ? "rgba(245,158,11,0.12)" : "rgba(74,222,128,0.12)", color: item.tag === (lang==="ko"?"자동":"Auto") ? "#7c6aff" : item.tag === (lang==="ko"?"준비중":"Soon") ? "#f59e0b" : "#4ade80" }}>{item.tag}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: C.muted }}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
       {/* ══ 포인트 적립 시스템 ══ */}
       <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>

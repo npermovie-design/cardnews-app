@@ -2339,6 +2339,22 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
           </div>
 
+          {/* SNS 자동발행 안내 */}
+          <div onClick={() => navigate("mypage")} style={{ borderRadius:14, padding:"16px 20px", marginBottom:24, cursor:"pointer",
+            background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))" : "linear-gradient(135deg,rgba(124,106,255,0.04),rgba(236,72,153,0.02))",
+            border: `1px solid ${isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)"}`, display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+              {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
+                <img key={i} src={ic} alt="" style={{ width:20, height:20, objectFit:"contain", borderRadius:4, border:`2px solid ${isDark?"#1a1a2e":"#fff"}`, marginLeft:i>0?-8:0 }} />
+              )}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{_s("스레드·블로그 계정을 연결하고 자동 발행해보세요","Connect your SNS and auto-publish")}</div>
+              <div style={{ fontSize:11, color:homeMuted, marginTop:2 }}>{_s("글 작성 후 원클릭으로 바로 업로드됩니다","One-click upload after writing")}</div>
+            </div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#7c6aff", flexShrink:0 }}>{_s("연동하기 →","Connect →")}</div>
+          </div>
+
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
             <div key={group.label} style={{ marginBottom: 32 }}>
