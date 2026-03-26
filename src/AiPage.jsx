@@ -18,7 +18,6 @@ import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import SnsConnectBanner from "./SnsConnectBanner";
-import { getConnectedPlatforms } from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2948,7 +2947,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
   // SNS 연결 목록 조회
   useEffect(() => {
-    if (user?.uid) getConnectedPlatforms(user.uid).then(setSnsConns);
+    if (user?.uid) {
+      fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
+    }
   }, [user?.uid, aiMenu]);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)

@@ -323,12 +323,18 @@ const PLATFORMS = {
     title: "스레드 게시물 작성",
     accentColor: "#000000",
     subtypes: [
-      {id:"opinion",  icon:"", label:"의견·인사이트", desc:"생각·관점 공유"},
-      {id:"story",    icon:"", label:"이야기·경험",   desc:"경험담 스토리"},
-      {id:"tip",      icon:"", label:"꿀팁·정보",     desc:"유용한 팁 공유"},
-      {id:"question", icon:"", label:"질문·토론",     desc:"커뮤니티 참여 유도"},
-      {id:"column",   icon:"", label:"칼럼",          desc:"전문 분석 스레드", autoTitle:true},
-      {id:"article",  icon:"", label:"기사 정리",      desc:"뉴스 요약 스레드", autoTitle:true},
+      {id:"opinion",  icon:"", label:"의견·인사이트", desc:"생각·관점 공유",
+        preview:"요즘 크리에이터들 진짜 불안하더라고. \"AI가 우리 일자리를 빼앗을 거야\"라는 생각에 밤을 새워도, 결국 AI를 안 쓰는 게 더 위험해진 상황이 됐거든.\n\n결론부터 말하면, AI를 경쟁자로 보면 진다. 무기로 써야 한다." },
+      {id:"story",    icon:"", label:"이야기·경험",   desc:"경험담 스토리",
+        preview:"퇴사하고 1년이 지났다. 솔직히 말하면 처음 3개월은 최고였고, 그 다음 3개월은 최악이었다.\n\n자유는 좋았지만 구조가 없는 삶은 생각보다 무서웠다. 그런데 그 과정에서 배운 게 있다." },
+      {id:"tip",      icon:"", label:"꿀팁·정보",     desc:"유용한 팁 공유",
+        preview:"아침에 일어나서 핸드폰부터 보는 습관, 나도 그랬다. 근데 이거 하나 바꿨더니 하루가 달라졌어.\n\n기상 후 1시간 노폰 규칙. 간단한데 효과는 미친 듯." },
+      {id:"question", icon:"", label:"질문·토론",     desc:"커뮤니티 참여 유도",
+        preview:"진짜 궁금한 게 있는데, 요즘 AI 쓰면서 오히려 생산성이 떨어진 사람 나만 그런 건가?\n\n도구는 늘었는데 결과물의 질은 비슷한 느낌... 너는 어때?" },
+      {id:"column",   icon:"", label:"칼럼",          desc:"전문 분석 스레드", autoTitle:true,
+        preview:"퍼스널 브랜딩이 중요하다고 다들 말하지만, 정작 뭘 해야 하는지 아는 사람은 드물다.\n\n핵심은 \"나만의 관점\"이다. 같은 주제를 다뤄도 내 경험과 해석이 담겨야 콘텐츠가 된다." },
+      {id:"article",  icon:"", label:"기사 정리",      desc:"뉴스 요약 스레드", autoTitle:true,
+        preview:"오늘 AI 업계 큰 뉴스가 터졌다. 구글이 새로운 모델을 공개하면서 시장 판도가 바뀔 수 있는 상황.\n\n핵심만 정리해봤다." },
     ],
     tones: [
       {id:"casual",      label:"일상 대화체"},
@@ -336,12 +342,10 @@ const PLATFORMS = {
       {id:"provocative", label:"도발적·강렬한"},
       {id:"humorous",    label:"유머러스"},
     ],
-    // 스레드는 개수 기준
     wordCounts: [
-      {id:"single", label:"단문 1개",   desc:"1~3문장"},
-      {id:"medium", label:"스레드 3개", desc:"3개 연속글"},
-      {id:"long",   label:"스레드 7개", desc:"7개 연속글"},
-      {id:"mega",   label:"롱스레드",   desc:"10개+ 연속글"},
+      {id:"single", label:"단문 1개",   desc:"짧고 강렬한 한 마디"},
+      {id:"medium", label:"중간 길이", desc:"자연스러운 흐름의 글"},
+      {id:"long",   label:"긴 글",     desc:"깊이 있는 이야기"},
     ],
     fields: {
       opinion:  ["keyword","stance","extra"],
@@ -360,15 +364,15 @@ const PLATFORMS = {
       article:  ["AI 업계 주요 뉴스 정리","SNS 알고리즘 변경 요약","2026 마케팅 트렌드"],
     },
     buildPrompt(sub, f, tone, wc) {
-      const cnt={single:"1개 (1~3문장)",medium:"3개 연속글",long:"7개 연속글",mega:"10개 이상 연속글"}[wc];
-      const t={casual:"친근한 일상 대화체",thoughtful:"사려 깊고 진지한",provocative:"강렬하고 도발적인",humorous:"유머러스하고 가볍게"}[tone];
-      const fmt=wc!=="single"?`\n\n스레드 형식 (${cnt})\n- 각 글은 1~4문장\n- 첫 글에 강력한 훅\n- 마지막 글에 질문/CTA\n- 각 글 앞에 [1/n] 번호 표시`:"\n- 단문 1개, 3문장 이내, 강렬하게";
-      if(sub==="opinion")  return `스레드 의견·인사이트 (${t})\n주제: ${f.keyword} / 입장: ${f.stance||""}\n${f.extra||""}${fmt}`;
-      if(sub==="story")    return `스레드 경험 이야기 (${t})\n경험: ${f.keyword} / 교훈: ${f.lesson||""}\n${f.extra||""}${fmt}`;
-      if(sub==="tip")      return `스레드 꿀팁 공유 (${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}${fmt}`;
-      if(sub==="question") return `스레드 질문·토론 (${t})\n주제: ${f.keyword} / 각도: ${f.angle||""}\n${f.extra||""}${fmt}`;
-      if(sub==="column")  return `스레드 전문 칼럼 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
-      if(sub==="article") return `스레드 뉴스 정리 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
+      const len={single:"1~3문장의 단문 하나",medium:"200~400자 정도의 자연스러운 글",long:"400~500자의 깊이 있는 글"}[wc];
+      const t={casual:"친근한 일상 대화체 (반말 OK, 구어체)",thoughtful:"사려 깊고 진지한 (경어체)",provocative:"강렬하고 도발적인 (짧은 문장, 단정적)",humorous:"유머러스하고 가볍게 (이모지 없이 위트)"}[tone];
+      const common=`\n\n[필수 규칙]\n- 스레드 게시물 1개에 들어갈 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 매기기 절대 금지\n- 제목 따로 쓰지 말고 바로 본문부터 시작\n- 마크다운(##, **, -) 사용 금지\n- 이모지·이모티콘 사용 금지\n- 줄바꿈으로 자연스럽게 문단 구분\n- 마지막에 질문이나 공감 유도 문장으로 마무리\n- 분량: ${len}`;
+      if(sub==="opinion")  return `스레드에 올릴 의견·인사이트 글 작성 (${t})\n주제: ${f.keyword}\n내 입장: ${f.stance||"자유"}\n${f.extra||""}${common}`;
+      if(sub==="story")    return `스레드에 올릴 경험 이야기 글 작성 (${t})\n경험 주제: ${f.keyword}\n교훈/핵심: ${f.lesson||""}\n${f.extra||""}${common}`;
+      if(sub==="tip")      return `스레드에 올릴 꿀팁·정보 글 작성 (${t})\n주제: ${f.keyword}\n핵심 포인트: ${f.points||""}\n${f.extra||""}${common}`;
+      if(sub==="question") return `스레드에 올릴 질문·토론 글 작성 (${t})\n주제: ${f.keyword}\n질문 방향: ${f.angle||""}\n${f.extra||""}${common}`;
+      if(sub==="column")  return `스레드에 올릴 전문 칼럼 글 작성 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${common}`;
+      if(sub==="article") return `스레드에 올릴 뉴스 정리 글 작성 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}${common}`;
       return "";
     },
   },
@@ -1165,6 +1169,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   </button>;
                 })}
               </div>
+              {/* 선택된 유형의 시각적 예시 미리보기 */}
+              {(() => {
+                const selSub = cfg.subtypes.find(s => s.id === subtype);
+                if (!selSub?.preview) return null;
+                return (
+                  <div style={{marginTop:10,borderRadius:12,overflow:"hidden",border:`1px solid ${border}`}}>
+                    <div style={{padding:"8px 12px",background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",display:"flex",alignItems:"center",gap:6,borderBottom:`1px solid ${border}`}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                      <span style={{fontSize:11,fontWeight:600,color:muted}}>이런 스타일로 작성됩니다</span>
+                    </div>
+                    <div style={{padding:"14px 16px",background:isDark?"rgba(0,0,0,0.15)":"#fafafa",fontSize:13,color:isDark?"rgba(255,255,255,0.75)":"#444",lineHeight:1.8,whiteSpace:"pre-line",fontStyle:"italic"}}>
+                      {selSub.preview}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 예시 */}
