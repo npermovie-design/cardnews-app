@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, supabase } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
@@ -463,6 +463,64 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   const [showCreditPopup, setShowCreditPopup] = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
+
+  // 인스타 캡션 & 발행
+  const [caption, setCaption] = useState("");
+  const [captionLoading, setCaptionLoading] = useState(false);
+  const [snsConns, setSnsConns] = useState([]);
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState(null);
+
+  useEffect(() => {
+    if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
+  }, [user?.uid]);
+
+  const generateCaption = async () => {
+    if (!topic.trim()) return;
+    setCaptionLoading(true);
+    try {
+      const slideTexts = slides.map((s,i) => {
+        const cur = getCurSlide(i);
+        return [cur.title, cur.subtitle, cur.body].filter(Boolean).join(" ");
+      }).join("\n");
+      const res = await callAI({
+        system: "당신은 인스타그램 캡션 전문 작가입니다. 카드뉴스 내용을 바탕으로 인스타그램 피드 캡션을 작성하세요.",
+        prompt: `카드뉴스 주제: ${topic}\n\n슬라이드 내용:\n${slideTexts}\n\n위 카드뉴스를 인스타그램에 올릴 캡션을 작성해주세요.\n규칙:\n- 첫 줄은 강렬한 훅 (스크롤 멈추게)\n- 본문은 핵심 내용 요약 (3~5줄)\n- 줄바꿈으로 가독성 확보\n- 마지막에 관련 해시태그 10~15개\n- 이모지 적절히 사용\n- 2200자 이내\n- 캡션 텍스트만 출력 (다른 설명 없이)`,
+        max_tokens: 1500,
+      });
+      setCaption(typeof res === "string" ? res.trim() : (res?.text || res?.content || "").trim());
+    } catch (e) { alert("캡션 생성 실패: " + e.message); }
+    setCaptionLoading(false);
+  };
+
+  const publishToInstagram = async () => {
+    if (!user?.uid || !caption.trim() || !slides.length) return;
+    setPublishing(true); setPublishResult(null);
+    try {
+      // 첫 번째 슬라이드를 이미지로 변환 후 Supabase Storage에 업로드
+      const slide = getCurSlide(0);
+      const slideStyle = getSlideStyle(0);
+      const bgImg = (sted[0]||{}).bgImage;
+      const canvas = document.createElement("canvas");
+      const renderImg = bgImg ? await new Promise((res) => { const img = new Image(); img.onload=()=>res(img); img.onerror=()=>res(null); img.src=bgImg; }) : null;
+      drawDetailSlide(canvas, slide, slideStyle, imgW, imgH, renderImg);
+      const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+      const fileName = `instagram/${user.uid}/${Date.now()}.png`;
+      const { error: upErr } = await supabase.storage.from("media").upload(fileName, blob, { contentType: "image/png", upsert: true });
+      if (upErr) throw new Error("이미지 업로드 실패: " + upErr.message);
+      const { data: urlData } = supabase.storage.from("media").getPublicUrl(fileName);
+      const imageUrl = urlData.publicUrl;
+
+      const r = await fetch("/api/sns-publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: user.uid, platform: "instagram", title: topic || "", content: caption, imageUrl }),
+      });
+      const data = await r.json();
+      setPublishResult(data);
+    } catch (e) { setPublishResult({ success: false, error: e.message }); }
+    setPublishing(false);
+  };
 
   // 테마
   const D = isDarkTheme(theme);
@@ -1456,6 +1514,57 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 <button onClick={saveAll} disabled={dlSt.busy} style={{ flex:1,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",background:D?"rgba(255,255,255,0.1)":"#2c2c2c",color:"#fff",fontSize:13,fontWeight:800,opacity:dlSt.busy?0.7:1 }}>{dlSt.msg||"ZIP 저장"}</button>
               </div>
               <ShareButton title={topic||"카드뉴스"} text={topic||""} isDark={D} compact />
+
+              {/* 인스타 캡션 & 발행 */}
+              <div style={{ marginTop:16, padding:16, borderRadius:14, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.03)":"#fafafa" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <img src="/icon-instagram.webp" alt="Instagram" style={{ width:18, height:18, borderRadius:4 }} />
+                    <span style={{ fontSize:13, fontWeight:800, color:text }}>인스타 캡션</span>
+                  </div>
+                  <button onClick={generateCaption} disabled={captionLoading || !topic.trim()}
+                    style={{ fontSize:11, fontWeight:700, padding:"5px 12px", borderRadius:8, border:"none", cursor:captionLoading?"wait":"pointer",
+                      background:"linear-gradient(135deg,#E1306C,#F77737)", color:"#fff", opacity:(captionLoading||!topic.trim())?0.6:1 }}>
+                    {captionLoading ? "생성 중..." : "AI 캡션 생성"}
+                  </button>
+                </div>
+                <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="인스타그램에 올릴 캡션을 입력하거나 AI로 생성하세요..."
+                  style={{ width:"100%", minHeight:120, padding:12, borderRadius:10, border:`1px solid ${bdr}`, background:inputBg, color:text,
+                    fontSize:12, lineHeight:1.6, resize:"vertical", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8 }}>
+                  <span style={{ fontSize:10, color:muted }}>{caption.length}/2200자</span>
+                  {caption.length > 2200 && <span style={{ fontSize:10, color:"#ef4444", fontWeight:700 }}>초과!</span>}
+                </div>
+                {(() => {
+                  const instaConn = snsConns.find(c => c.platform === "instagram");
+                  if (!user) return <div style={{ fontSize:11, color:muted, marginTop:8, textAlign:"center" }}>로그인 후 인스타그램 발행이 가능합니다</div>;
+                  if (!instaConn) return (
+                    <button onClick={() => { if (window.__navigateToMyPage) window.__navigateToMyPage(); }}
+                      style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:`1px solid rgba(225,48,108,0.3)`, cursor:"pointer",
+                        background:"rgba(225,48,108,0.08)", color:"#E1306C", fontSize:12, fontWeight:700 }}>
+                      인스타그램 계정 연동하기
+                    </button>
+                  );
+                  return (
+                    <div style={{ marginTop:10 }}>
+                      <button onClick={publishToInstagram} disabled={publishing || !caption.trim() || caption.length > 2200}
+                        style={{ width:"100%", padding:"12px", borderRadius:10, border:"none", cursor:publishing?"wait":"pointer",
+                          background:"linear-gradient(135deg,#E1306C,#C13584,#833AB4)", color:"#fff", fontSize:13, fontWeight:800,
+                          opacity:(publishing||!caption.trim()||caption.length>2200)?0.6:1 }}>
+                        {publishing ? "발행 중..." : `@${instaConn.platform_username} 인스타그램 발행`}
+                      </button>
+                      {publishResult && (
+                        <div style={{ marginTop:8, padding:"8px 12px", borderRadius:8, fontSize:11, fontWeight:600,
+                          background: publishResult.success ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                          color: publishResult.success ? "#22c55e" : "#ef4444",
+                          border: `1px solid ${publishResult.success ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}` }}>
+                          {publishResult.success ? "발행 완료!" : (publishResult.error || publishResult.message || "발행 실패")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* 미리보기 */}
@@ -1467,14 +1576,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   {showSafeZone?"세이프존 ON":"세이프존"}
                 </button>}
               </div>
-              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%",cursor:"pointer",position:"relative" }}
-                onClick={()=>{
-                  const canvas = document.createElement("canvas");
-                  drawDetailSlide(canvas, curSlide, curStyle, imgW, imgH, null);
-                  const url = canvas.toDataURL("image/png");
-                  const w = window.open("","_blank","width="+Math.min(imgW,1200)+",height="+Math.min(imgH,900));
-                  if(w){w.document.write(`<img src="${url}" style="max-width:100%;max-height:100vh;display:block;margin:auto"/>`);w.document.title="미리보기";}
-                }}>
+              <div style={{ borderRadius:12,overflow:"hidden",boxShadow:"0 6px 28px rgba(0,0,0,0.35)",border:`1px solid ${bdr}`,width:"100%",position:"relative",pointerEvents:"none" }}>
                 <SlideCanvas slide={curSlide} style={curStyle} CW={imgW} CH={imgH} displayW={358} bgImageSrc={so.bgImage||undefined}/>
                 {/* 세이프존 가이드 오버레이 (세로 이미지일 때만) */}
                 {showSafeZone && imgH > imgW && (() => {

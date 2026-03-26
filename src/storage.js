@@ -5,8 +5,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase Config ───────────────────────────────────────────────────────
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co";
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 const _g = typeof window !== "undefined" ? window : globalThis;
 if (!_g.__supabase__) {

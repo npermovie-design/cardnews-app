@@ -18,7 +18,7 @@ const isImageUrl = url => /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)/i.test(url);
 const safeName   = n  => n.replace(/[^a-zA-Z0-9._-]/g, "_");
 
 /* ── Supabase Storage → WebP 썸네일 URL 변환 ── */
-const SB_STORAGE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1";
+const SB_STORAGE = (import.meta.env.VITE_SUPABASE_URL || "") + "/storage/v1";
 function toThumb(url, w=400, h=300) {
   if (!url || typeof url !== "string") return url;
   if (url.includes(SB_STORAGE + "/object/public/")) {
@@ -78,7 +78,7 @@ async function deleteTag(catId, tagId) {
 }
 
 /* ─── 무료 미디어 검색 (자료실용) ──────────────────────────── */
-const GIPHY_KEY    = import.meta.env.VITE_GIPHY_KEY    || "dc6zaTOxFJmzC";
+const GIPHY_KEY    = import.meta.env.VITE_GIPHY_KEY    || "";
 const USE_PIXABAY_PROXY = true;
 const USE_PEXELS_PROXY  = true;
 const UNSPLASH_KEY = import.meta.env.VITE_UNSPLASH_KEY || "";

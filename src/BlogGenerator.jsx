@@ -843,7 +843,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               }
               // 인스타 탭: 인스타만 (준비중)
               else if (isInsta) {
-                btns.push({ p:"instagram", l:"인스타그램", i:"/icon-instagram.webp", c:"#E1306C", soon:true });
+                const instaConn = snsConns.find(c => c.platform === "instagram");
+                btns.push({ p:"instagram", l: instaConn ? "인스타그램 발행" : "인스타그램 연동하기", i:"/icon-instagram.webp", c:"#E1306C", connected:!!instaConn, needLogin:!user });
               }
               // 네이버 블로그 탭
               else if (initialType === "blog_naver") {

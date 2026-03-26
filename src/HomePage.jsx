@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { SecWrap, SecTitle, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
+import { supabase } from "./storage";
 
 /* ── 스크롤 감지 훅 ── */
 function useInView(threshold = 0.15) {
@@ -195,12 +196,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
   useEffect(() => {
     (async () => {
       try {
-        const { createClient } = await import("@supabase/supabase-js");
-        const sb = createClient(
-          import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
-          import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
-        );
-        const { count } = await sb.from("posts").select("*", { count: "exact", head: true });
+        const { count } = await supabase.from("posts").select("*", { count: "exact", head: true });
         if (count != null) setStatsCount(Math.max(count, 5200));
       } catch {}
     })();

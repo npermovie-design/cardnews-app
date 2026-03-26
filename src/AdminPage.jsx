@@ -60,7 +60,7 @@ function getDriveThumb(url) {
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : null;
 }
 
-const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "nper2025admin";
+const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
 const FREE_GUEST  = 10;
 const FREE_MEMBER = 20;
 

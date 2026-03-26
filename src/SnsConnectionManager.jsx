@@ -28,7 +28,7 @@ const PLATFORMS = [
     icon: "/icon-instagram.webp",
     desc: "카드뉴스 이미지 발행 (이미지 필수)",
     authEndpoint: "/api/sns-auth-meta",
-    canAutoPublish: false,
+    canAutoPublish: true,
     notice: "비즈니스/크리에이터 계정만 지원",
   },
   {
