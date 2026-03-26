@@ -1,4 +1,4 @@
-// api/fetch-trending-videos.js — 카테고리별 트렌딩 영상 수집 (YouTube + TikTok)
+// api/fetch-trending-videos.js — 카테고리별 트렌딩 영상 수집 (YouTube 검색 직접 파싱)
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
@@ -8,77 +8,53 @@ export default async function handler(req, res) {
   const { category, keywords, platform = "youtube" } = req.body || {};
   if (!keywords || !keywords.length) return res.status(400).json({ error: "keywords 필요" });
 
-  const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+  const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
   const videos = [];
 
   try {
-    if (platform === "youtube") {
+    if (platform === "youtube" || platform === "all") {
       const query = keywords.slice(0, 3).join(" ") + " shorts";
+      const r = await fetch(
+        `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+        {
+          headers: { "User-Agent": ua, "Accept-Language": "ko-KR,ko;q=0.9", "Accept": "text/html" },
+          signal: AbortSignal.timeout(12000),
+        }
+      );
 
-      // 1차: Piped API (더 안정적)
-      const pipedInstances = ["https://pipedapi.kavin.rocks", "https://pipedapi.adminforge.de", "https://api.piped.projectsegfau.lt"];
-      for (const base of pipedInstances) {
-        try {
-          const r = await fetch(`${base}/search?q=${encodeURIComponent(query)}&filter=videos`, {
-            signal: AbortSignal.timeout(6000),
-            headers: { "User-Agent": ua },
+      if (r.ok) {
+        const html = await r.text();
+        const seen = new Set();
+        const re = /"videoRenderer":\{"videoId":"([^"]+)".*?"title":\{"runs":\[\{"text":"([^"]+)"\}\].*?"ownerText":\{"runs":\[\{"text":"([^"]+)"/g;
+        let m;
+        while ((m = re.exec(html)) && videos.length < 12) {
+          const [, id, title, author] = m;
+          if (seen.has(id)) continue;
+          seen.add(id);
+
+          const block = html.substring(m.index, m.index + 2000);
+          const viewMatch = block.match(/"viewCountText":\{"simpleText":"([^"]+)"/);
+          const publishMatch = block.match(/"publishedTimeText":\{"simpleText":"([^"]+)"/);
+          const viewStr = viewMatch?.[1] || "0";
+          const viewNum = parseInt(viewStr.replace(/[^0-9]/g, "")) || 0;
+
+          videos.push({
+            id,
+            platform: "youtube",
+            title,
+            author,
+            authorUrl: "",
+            thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+            url: `https://youtube.com/watch?v=${id}`,
+            views: viewNum,
+            published: publishMatch?.[1] || "",
+            duration: "",
           });
-          if (!r.ok) continue;
-          const data = await r.json();
-          for (const v of (data.items || []).slice(0, 12)) {
-            const vid = v.url?.replace("/watch?v=", "") || "";
-            if (!vid) continue;
-            videos.push({
-              id: vid,
-              platform: "youtube",
-              title: v.title || "",
-              author: v.uploaderName || "",
-              authorUrl: v.uploaderUrl ? `https://youtube.com${v.uploaderUrl}` : "",
-              thumbnail: v.thumbnail || `https://img.youtube.com/vi/${vid}/hqdefault.jpg`,
-              url: `https://youtube.com/watch?v=${vid}`,
-              views: v.views || 0,
-              published: v.uploadedDate || "",
-              duration: v.duration || 0,
-            });
-          }
-          if (videos.length > 0) break;
-        } catch {}
-      }
-
-      // 2차: Invidious fallback
-      if (videos.length === 0) {
-        const invInstances = ["https://invidious.nerdvpn.de", "https://inv.nadeko.net", "https://yewtu.be", "https://vid.puffyan.us"];
-        for (const base of invInstances) {
-          try {
-            const r = await fetch(`${base}/api/v1/search?q=${encodeURIComponent(query)}&sort_by=date&type=video&region=KR`, {
-              signal: AbortSignal.timeout(6000),
-              headers: { "User-Agent": ua },
-            });
-            if (!r.ok) continue;
-            const data = await r.json();
-            for (const v of (data || []).slice(0, 12)) {
-              if (!v.videoId) continue;
-              videos.push({
-                id: v.videoId,
-                platform: "youtube",
-                title: v.title || "",
-                author: v.author || "",
-                authorUrl: v.authorUrl ? `https://youtube.com${v.authorUrl}` : "",
-                thumbnail: `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
-                url: `https://youtube.com/watch?v=${v.videoId}`,
-                views: v.viewCount || 0,
-                published: v.publishedText || "",
-                duration: v.lengthSeconds || 0,
-              });
-            }
-            if (videos.length > 0) break;
-          } catch {}
         }
       }
     }
 
-    if (platform === "tiktok" || (platform === "youtube" && videos.length === 0)) {
-      // TikTok 검색 시도 (웹 메타데이터)
+    if (platform === "tiktok" || videos.length === 0) {
       for (const kw of keywords.slice(0, 2)) {
         try {
           const r = await fetch(`https://www.tiktok.com/tag/${encodeURIComponent(kw)}`, {
@@ -88,7 +64,6 @@ export default async function handler(req, res) {
           });
           if (!r.ok) continue;
           const html = await r.text();
-          // OG 정보 추출
           const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/)?.[1];
           const ogDesc = html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/)?.[1];
           if (ogTitle) {
