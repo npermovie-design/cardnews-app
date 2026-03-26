@@ -508,9 +508,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       drawDetailSlide(canvas, slide, slideStyle, imgW, imgH, renderImg);
       const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
       const fileName = `instagram/${user.uid}/${Date.now()}.png`;
-      const { error: upErr } = await supabase.storage.from("media").upload(fileName, blob, { contentType: "image/png", upsert: true });
+      const { error: upErr } = await supabase.storage.from("uploads").upload(fileName, blob, { contentType: "image/png", upsert: true });
       if (upErr) throw new Error("이미지 업로드 실패: " + upErr.message);
-      const { data: urlData } = supabase.storage.from("media").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(fileName);
       const imageUrl = urlData.publicUrl;
 
       const r = await fetch("/api/sns-publish", {
