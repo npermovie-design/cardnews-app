@@ -845,11 +845,21 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               else if (isInsta) {
                 btns.push({ p:"instagram", l:"인스타그램", i:"/icon-instagram.webp", c:"#E1306C", soon:true });
               }
-              // 나머지: 해당 플랫폼 + 범용 발행
-              else {
-                btns.push({ p:"naver_blog", l:"네이버", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver" });
+              // 네이버 블로그 탭
+              else if (initialType === "blog_naver") {
+                btns.push({ p:"naver_blog", l:"네이버 블로그", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver" });
+              }
+              // 티스토리 탭
+              else if (initialType === "blog_tistory") {
                 btns.push({ p:"tistory", l:"티스토리", i:"/icon-tistory.png", c:"#FF6B35", u:"https://www.tistory.com/m/entry/write" });
-                btns.push({ p:"threads", l: threadConn ? "스레드" : "스레드 연동", i:"/icon-threads.png", c:"#7c6aff", connected:!!threadConn, needLogin:!user });
+              }
+              // 네이버 카페 탭
+              else if (initialType === "blog_cafe") {
+                btns.push({ p:"naver_cafe", l:"네이버 카페", i:"/icon-naver-cafe.webp", c:"#03C75A", u:"https://cafe.naver.com" });
+              }
+              // 나머지(유튜브 등): 스레드만
+              else {
+                if (threadConn) btns.push({ p:"threads", l:"스레드", i:"/icon-threads.png", c:"#7c6aff" });
               }
               return btns.map(b => {
                 const isPub = publishing === b.p, done = publishResult?.platform === b.p;

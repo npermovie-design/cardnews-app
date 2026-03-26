@@ -46,7 +46,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const inputBg= isDark ? "rgba(255,255,255,0.06)" : "#f5f5f8";
   const inputBdr= isDark ? "rgba(255,255,255,0.15)" : "#ddd";
 
-  const [tab, setTab]       = useState("history");
+  const [tab, setTab]       = useState("info");
   const [history, setHistory] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const [userData, setUserData] = useState(user);
@@ -249,7 +249,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       {/* ── 탭 ── */}
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
-        {[["history","포인트 내역"],["info","계정 정보"]].map(([t,l])=>(
+        {[["info","계정 정보"],["history","포인트 내역"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
             background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
