@@ -2340,24 +2340,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
           </div>
 
-          {/* SNS 연동 유도 */}
-          {user && snsConns.length === 0 && (
-            <div onClick={() => setAiMenu("profile")} style={{ borderRadius:16, padding:"20px 24px", marginBottom:28, cursor:"pointer",
-              background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.12),rgba(236,72,153,0.08))" : "linear-gradient(135deg,rgba(124,106,255,0.06),rgba(236,72,153,0.04))",
-              border: `1px solid ${isDark ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.1)"}`, display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-              <div style={{ flex:1, minWidth:200 }}>
-                <div style={{ fontSize:16, fontWeight:900, color:homeText, marginBottom:4 }}>SNS 계정을 연결하고 원클릭 발행하세요</div>
-                <div style={{ fontSize:13, color:homeMuted }}>글 작성 후 스레드·블로그에 바로 발행할 수 있어요</div>
-                <div style={{ display:"flex", gap:6, marginTop:10 }}>
-                  {[{i:"/icon-threads.png",l:"스레드"},{i:"/icon-instagram.webp",l:"인스타"},{i:"/icon-naver-blog.png",l:"네이버"},{i:"/icon-tistory.png",l:"티스토리"}].map(p=>
-                    <div key={p.l} style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 8px", borderRadius:8, background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.03)", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e5f0"}` }}>
-                      <img src={p.i} alt="" style={{ width:14, height:14, objectFit:"contain", borderRadius:2 }}/><span style={{ fontSize:11, color:homeMuted }}>{p.l}</span>
-                    </div>)}
-                </div>
-              </div>
-              <div style={{ padding:"10px 20px", borderRadius:12, background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>계정 연동하기 →</div>
-            </div>
-          )}
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
             <div key={group.label} style={{ marginBottom: 32 }}>
