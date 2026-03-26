@@ -832,7 +832,35 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-            {result&&[{p:"naver_blog",l:"네이버",i:"/icon-naver-blog.png",c:"#03C75A",u:"https://blog.naver.com/PostWriteForm.naver"},{p:"tistory",l:"티스토리",i:"/icon-tistory.png",c:"#FF6B35",u:"https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite"},...snsConns.filter(c=>c.platform==="threads").map(c=>({p:"threads",l:c.platform_username||"스레드",i:"/icon-threads.png",c:"#000"}))].map(b=>{const isPub=publishing===b.p,done=publishResult?.platform===b.p;return<button key={b.p} onClick={async()=>{if(b.u){try{await navigator.clipboard.writeText(result)}catch{}window.open(b.u,"_blank");setPublishResult({platform:b.p,clipboard:true,message:`${b.l} 에디터에서 붙여넣기하세요`})}else handlePublish(b.p)}} disabled={isPub} style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${done?"rgba(74,222,128,0.4)":b.c+"40"}`,background:done?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",color:done?"#4ade80":(isDark&&b.c==="#000"?"#fff":b.c),fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap",opacity:isPub?0.6:1}}>{isPub?<div style={{width:10,height:10,borderRadius:"50%",border:`2px solid ${b.c}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:<img src={b.i} alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2}}/>}{isPub?"발행 중...":done?(publishResult?.clipboard?"복사됨!":"발행!"):`${b.l}`}</button>})}
+            {result && (() => {
+              const btns = [
+                { p:"naver_blog", l:"네이버", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver?blogId=" },
+                { p:"tistory", l:"티스토리", i:"/icon-tistory.png", c:"#FF6B35", u:"https://www.tistory.com/m/entry/write" },
+                ...snsConns.filter(c => c.platform === "threads").map(c => ({ p:"threads", l:"스레드", i:"/icon-threads.png", c:"#7c6aff" })),
+              ];
+              return btns.map(b => {
+                const isPub = publishing === b.p, done = publishResult?.platform === b.p;
+                return (
+                  <button key={b.p} onClick={async () => {
+                    if (b.u) {
+                      try { await navigator.clipboard.writeText(result); } catch {}
+                      window.open(b.u, "_blank");
+                      setPublishResult({ platform: b.p, clipboard: true, message: `${b.l} 에디터에서 붙여넣기(Ctrl+V)하세요` });
+                    } else { handlePublish(b.p); }
+                  }} disabled={isPub}
+                    style={{ padding:"7px 14px", borderRadius:10, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"50"}`,
+                      background: done ? (isDark ? "rgba(74,222,128,0.12)" : "#f0fdf4") : (isDark ? b.c+"15" : b.c+"08"),
+                      color: done ? "#4ade80" : (isDark ? "#fff" : b.c),
+                      fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", opacity:isPub?0.5:1 }}>
+                    {isPub
+                      ? <div style={{ width:12, height:12, borderRadius:"50%", border:`2px solid ${b.c}`, borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }} />
+                      : <img src={b.i} alt="" style={{ width:18, height:18, objectFit:"contain", borderRadius:3 }} />
+                    }
+                    {isPub ? "발행 중..." : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.l}
+                  </button>
+                );
+              });
+            })()}
             {result&&isTistory&&["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)}
                 style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
