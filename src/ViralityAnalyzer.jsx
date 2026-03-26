@@ -161,58 +161,23 @@ export default function ViralityAnalyzer({ isDark }) {
     setFeedLoading(false);
   };
 
-  // AI 피드 로드 (인스타 / 틱톡)
+  // AI 피드 로드 (인스타 / 틱톡) — 서버 API 사용 (haiku + 캐싱)
   const loadAIFeed = async (catId, plat) => {
     const cat = CATEGORIES.find(c => c.id === catId);
     if (!cat) return;
     const cacheKey = `${plat}_${catId}`;
     if (aiCache[cacheKey]) { setFeedCat(catId); setFeedRawVideos(aiCache[cacheKey]); return; }
     setFeedCat(catId); setFeedLoading(true); setFeedRawVideos([]);
-
-    const platLabel = plat === "instagram" ? "인스타그램" : "틱톡";
-    const platSpecific = plat === "instagram"
-      ? `실제로 활동 중인 한국 인스타그램 인플루언서와 최근 인기 릴스를 기반으로 JSON 배열을 만들어주세요.
-각 항목은 실제 존재하는 인스타 계정이어야 합니다.`
-      : `실제로 활동 중인 한국 틱톡 크리에이터와 최근 바이럴 영상을 기반으로 JSON 배열을 만들어주세요.
-각 항목은 실제 존재하는 틱톡 계정이어야 합니다.`;
-
     try {
-      const res = await callAI("claude-sonnet-4-5", [{ role: "user", content: `한국 ${platLabel}에서 "${cat.label}" 분야의 인기 크리에이터와 최근 바이럴 콘텐츠를 분석해주세요.
-카테고리: ${cat.label}
-관련 키워드: ${cat.tags.join(", ")}
-
-${platSpecific}
-
-JSON 배열 (10~12개):
-[
-  {
-    "id": "고유ID",
-    "platform": "${plat}",
-    "username": "@계정명 (실제 계정)",
-    "displayName": "크리에이터 이름/닉네임",
-    "followers": "팔로워수 (예: 125K, 2.3M)",
-    "title": "인기 콘텐츠 제목 또는 내용 요약",
-    "contentType": "${plat === "instagram" ? "릴스/카루셀/피드" : "숏폼/라이브/듀엣"}",
-    "views": "조회수 (예: 850K, 2.1M)",
-    "likes": "좋아요수 (예: 45.2K)",
-    "comments": "댓글수 (예: 1.2K)",
-    "engagementRate": "참여율 (예: 4.8%)",
-    "hashtags": ["관련해시태그1", "해시태그2", "해시태그3"],
-    "whyViral": "이 콘텐츠가 인기인 이유 한줄",
-    "profileCategory": "세부 카테고리",
-    "published": "업로드 시기 (예: 3일 전, 1주일 전, 2개월 전)",
-    "mood": "콘텐츠 분위기 (예: 감성적, 유머러스, 정보성, 고급스러운, 트렌디, 다이나믹, 따뜻한, 시크한)",
-    "visualStyle": "영상/이미지 스타일 한줄 설명 (예: 파스텔톤 클로즈업 메이크업, 네온 조명 댄스, 자연광 브이로그)",
-    "colorGradient": "콘텐츠 분위기에 맞는 CSS 그라데이션 (예: linear-gradient(135deg,#ff6b9d,#c44569))",
-    "thumbnail": ""
-  }
-]
-JSON 배열만 출력.` }], 5000,
-        `당신은 한국 ${platLabel} 인플루언서 및 트렌드 전문 분석가입니다. 2025-2026년 현재 활동 중인 실제 크리에이터와 그들의 최근 인기 콘텐츠를 정확하게 파악하고 있습니다. 실제 존재하는 계정명을 사용하세요. 조회수와 좋아요수를 반드시 포함하세요. colorGradient는 콘텐츠 분위기에 맞는 실제 CSS gradient 값을 넣어주세요.`
-      );
-      const parsed = JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim());
-      setFeedRawVideos(parsed);
-      setAiCache(prev => ({ ...prev, [cacheKey]: parsed }));
+      const r = await fetch("/api/fetch-sns-feed", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: plat, category: cat.label, keywords: cat.tags }),
+      });
+      if (!r.ok) { console.error("fetch-sns-feed error:", r.status); return; }
+      const data = await r.json();
+      const videos = data.videos || [];
+      setFeedRawVideos(videos);
+      setAiCache(prev => ({ ...prev, [cacheKey]: videos }));
     } catch (e) { console.error(`${plat} feed error:`, e); }
     setFeedLoading(false);
   };
