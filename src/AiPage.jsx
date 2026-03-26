@@ -2916,12 +2916,15 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
 }
 
 const MARKETING_TABS = [
-  { id: "sns_analysis", label: "SNS 분석",      icon: "/icon-instagram.webp" },
-  { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
+  { id: "analysis_insta",   label: "인스타 분석",   icon: "/icon-instagram.webp" },
+  { id: "analysis_youtube", label: "유튜브 분석",   icon: "/icon-youtube.png" },
+  { id: "analysis_tiktok",  label: "틱톡 분석" },
+  { id: "insta_auto_dm",    label: "인스타 자동DM", icon: "/icon-threads.png" },
 ];
 
 function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultTab }) {
-  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm" : "sns_analysis";
+  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm"
+    : MARKETING_TABS.find(t => t.id === defaultTab) ? defaultTab : "analysis_insta";
   const [tab, setTab] = useState(initTab);
   const D = isDark;
   const tabText = D ? "#fff" : "#1a1a2e";
@@ -2931,18 +2934,20 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
   // 외부에서 탭 변경 시 반영
   useEffect(() => {
     if (defaultTab === "insta_auto_dm") setTab("insta_auto_dm");
-    else if (defaultTab === "sns_analysis" || defaultTab === "marketing" || defaultTab?.startsWith("analysis_")) setTab("sns_analysis");
+    else if (MARKETING_TABS.find(t => t.id === defaultTab)) setTab(defaultTab);
+    else setTab("analysis_insta");
   }, [defaultTab]);
+
+  const seoMenuMap = { analysis_insta: "insta", analysis_youtube: "youtube", analysis_tiktok: "tiktok" };
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <TabHeader title="마케팅" subtitle="SNS 분석과 자동 마케팅 도구를 활용해보세요"
         tabs={MARKETING_TABS} activeTab={tab} onTabChange={setTab} isDark={isDark} />
 
-      {tab === "sns_analysis" ? (
-        <div style={{ flex:1, overflow:"hidden" }}>
-          <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={onUserUpdate}
-            initialMenu={defaultTab?.startsWith("analysis_") ? ({analysis_insta:"rank_insta",analysis_tiktok:"rank_tiktok",analysis_youtube:"rank_youtube"}[defaultTab]||"home") : "home"} embedded />
+      {tab !== "insta_auto_dm" ? (
+        <div style={{ flex:1, overflowY:"auto" }}>
+          <SeoAnalyzer isDark={isDark} menu={seoMenuMap[tab] || "insta"} user={user} navigate={navigate} onUserUpdate={onUserUpdate} />
         </div>
       ) : (
         <div style={{ flex:1, overflowY:"auto", padding:"40px 24px", background:D?"transparent":"#f8f8fb" }}>
