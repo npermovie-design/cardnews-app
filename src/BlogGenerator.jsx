@@ -9,7 +9,6 @@ import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
 import SnsConnectBanner from "./SnsConnectBanner";
-import { getConnectedPlatforms, publishToSns } from "./SnsConnectionManager";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -558,7 +557,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // SNS 연결 목록 조회
   useEffect(() => {
-    if (user?.uid) getConnectedPlatforms(user.uid).then(setSnsConns);
+    if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
   }, [user?.uid]);
 
   // SNS 발행 핸들러
@@ -570,7 +569,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       const title = fields.keyword || "";
       const body = { title, content: result, tags };
       if (scheduledTime) body.scheduledTime = scheduledTime;
-      const r = await publishToSns(user.uid, platform, body);
+      const pubRes = await fetch("/api/sns-publish", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ uid:user.uid, platform, ...body }) });
+      const r = await pubRes.json();
       setPublishResult({ platform, ...r });
       if (r.clipboard) {
         try { await navigator.clipboard.writeText(result); } catch {}
