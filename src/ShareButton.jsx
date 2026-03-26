@@ -124,8 +124,8 @@ export default function ShareButton({ title, text, url, imageUrl, imageBlob, vid
           color: accent, fontSize: compact ? 11 : 13, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
         }}>
-        <span style={{ fontSize: compact ? 13 : 15 }}>📤</span>
-        {!compact && "SNS 공유"}
+        <svg width={compact?14:16} height={compact?14:16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        {compact ? "공유" : "SNS 공유"}
         {shared && <span style={{ fontSize: 10, color: "#4ade80" }}>✓</span>}
       </button>
 

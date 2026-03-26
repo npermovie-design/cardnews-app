@@ -887,7 +887,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 );
               });
             })()}
-            {result && initialType === "blog_thread" && snsConns.some(c=>c.platform==="threads") && (
+            {result && initialType === "blog_thread" && (
               <button onClick={()=>setShowSchedule(!showSchedule)}
                 style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${showSchedule?"#7c6aff50":isDark?"rgba(255,255,255,0.1)":"#ddd"}`,
                   background:showSchedule?(isDark?"#7c6aff15":"#7c6aff08"):"transparent",color:showSchedule?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),
@@ -920,17 +920,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <span style={{fontSize:13,fontWeight:700,color:text}}>스레드 예약 발행</span>
                 <button onClick={()=>setShowSchedule(false)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
               </div>
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <input type="datetime-local" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)}
-                  min={new Date(Date.now()+600000).toISOString().slice(0,16)}
-                  style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#ddd"}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:13,minWidth:180}} />
-                <button onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
-                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                  <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
-                  {publishing?"예약 중...":"예약 발행하기"}
-                </button>
-              </div>
-              <div style={{fontSize:10,color:muted,marginTop:6}}>최소 10분 후 ~ 최대 75일 후 예약 가능</div>
+              {!snsConns.some(c=>c.platform==="threads") ? (
+                <div style={{textAlign:"center",padding:"12px 0"}}>
+                  <div style={{fontSize:13,color:muted,marginBottom:10}}>스레드 계정을 먼저 연동해주세요</div>
+                  <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest()}else{try{window.location.href="/mypage"}catch{}}}}
+                    style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    {user?"계정 연동하러 가기":"로그인 후 연동"}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <input type="datetime-local" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)}
+                      min={new Date(Date.now()+600000).toISOString().slice(0,16)}
+                      style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#ddd"}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:13,minWidth:180}} />
+                    <button onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
+                      style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                      <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
+                      {publishing?"예약 중...":"예약 발행하기"}
+                    </button>
+                  </div>
+                  <div style={{fontSize:10,color:muted,marginTop:6}}>최소 10분 후 ~ 최대 75일 후 예약 가능</div>
+                </>
+              )}
             </div>
           )}
           {/* 연관 이미지 추천 */}
