@@ -485,7 +485,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       }).join("\n");
       const prompt = `카드뉴스 주제: ${topic}\n\n슬라이드 내용:\n${slideTexts}\n\n위 카드뉴스를 인스타그램에 올릴 캡션을 작성해주세요.\n규칙:\n- 첫 줄은 강렬한 훅 (스크롤 멈추게)\n- 본문은 핵심 내용 요약 (3~5줄)\n- 줄바꿈으로 가독성 확보\n- 마지막에 관련 해시태그 10~15개\n- 이모지 적절히 사용\n- 2200자 이내\n- 캡션 텍스트만 출력 (다른 설명 없이)`;
       const res = await callAI(
-        null,
+        "claude-sonnet-4-5",
         [{ role: "user", content: prompt }],
         1500,
         "당신은 인스타그램 캡션 전문 작가입니다. 카드뉴스 내용을 바탕으로 인스타그램 피드 캡션을 작성하세요."
