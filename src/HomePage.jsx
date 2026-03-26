@@ -348,6 +348,67 @@ export default function HomePage({ navigate, C }) {
         </div>
       </section>
 
+      {/* ══ SNS 자동 발행 ══ */}
+      <section style={{ padding: "clamp(80px,12vw,120px) clamp(16px,4vw,24px)", position: "relative", overflow: "hidden",
+        background: theme === "dark" ? "linear-gradient(180deg, #0f0c29 0%, #1a1145 50%, #0f0c29 100%)" : "linear-gradient(180deg, #f8f8fb 0%, #ede5ff 50%, #f8f8fb 100%)" }}>
+        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "min(600px,80vw)", height: "min(600px,80vw)", borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(120px)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
+          <FadeIn>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>Auto Publish</div>
+            <h2 style={{ fontSize: "clamp(28px,5vw,48px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.2, margin: "0 0 16px" }}>
+              {lang === "ko" ? <>글 작성부터 SNS 발행까지<br/><span style={{ color: "#7c6aff" }}>원클릭</span>으로 끝</> : <>From writing to publishing<br/>in <span style={{ color: "#7c6aff" }}>one click</span></>}
+            </h2>
+            <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 auto 40px", maxWidth: 560 }}>
+              {lang === "ko" ? "AI가 작성한 글을 복사-붙여넣기 없이 바로 발행하세요.\n계정 연결 한 번이면 스레드·블로그·티스토리에 자동 업로드됩니다." : "Publish AI-written content without copy-paste.\nConnect once, auto-upload to Threads, Blog, and Tistory."}
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(8px,2vw,20px)", flexWrap: "wrap", marginBottom: 48 }}>
+              {[
+                { label: lang === "ko" ? "주제 입력" : "Enter topic", icon: "T", highlight: false },
+                null,
+                { label: lang === "ko" ? "AI 글 생성" : "AI writes", icon: "AI", highlight: false },
+                null,
+                { label: lang === "ko" ? "원클릭 발행" : "One-click", icon: "V", highlight: true },
+              ].map((s, i) => s ? (
+                <div key={i} style={{ width: "clamp(80px,15vw,120px)", textAlign: "center" }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: s.highlight ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (theme==="dark" ? "rgba(255,255,255,0.06)" : "rgba(124,106,255,0.08)"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 20, fontWeight: 900, color: s.highlight ? "#fff" : "#7c6aff" }}>{s.icon}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>{s.label}</div>
+                </div>
+              ) : (
+                <div key={i} style={{ fontSize: 20, color: C.muted, fontWeight: 300 }}>→</div>
+              ))}
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.2}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16, maxWidth: 860, margin: "0 auto 40px" }}>
+              {[
+                { icon: "/icon-threads.png", name: lang === "ko" ? "스레드" : "Threads", desc: lang === "ko" ? "글 작성 후 원클릭 자동 발행" : "Auto publish after writing", color: "#7c6aff", tag: lang === "ko" ? "자동 발행" : "Auto", tagColor: "#7c6aff" },
+                { icon: "/icon-naver-blog.png", name: lang === "ko" ? "네이버 블로그" : "Naver Blog", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#03C75A", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
+                { icon: "/icon-tistory.png", name: lang === "ko" ? "티스토리" : "Tistory", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#FF6B35", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
+                { icon: "/icon-instagram.webp", name: lang === "ko" ? "인스타그램" : "Instagram", desc: lang === "ko" ? "카드뉴스 이미지 자동 발행" : "Card news auto publish", color: "#E1306C", tag: lang === "ko" ? "곧 출시" : "Coming", tagColor: "#f59e0b" },
+              ].map(p => (
+                <div key={p.name} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "28px 20px", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${p.color}20`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: p.color + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                    <img src={p.icon} alt="" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>{p.desc}</div>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: p.tagColor + "15", color: p.tagColor }}>{p.tag}</span>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.3}>
+            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
+              {lang === "ko" ? "지금 바로 시작하기" : "Get started now"} →
+            </Btn>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ══ 신뢰 지표 ══ */}
       <section style={{ padding: "clamp(40px,6vw,64px) clamp(16px,4vw,24px)", background: C.bg }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 24, textAlign: "center" }}>
@@ -570,72 +631,6 @@ export default function HomePage({ navigate, C }) {
           ))}
         </div>
       </SecWrap>
-
-      {/* ══ SNS 자동 발행 ══ */}
-      <section style={{ padding: "clamp(80px,12vw,120px) clamp(16px,4vw,24px)", position: "relative", overflow: "hidden",
-        background: C.isDark ? "linear-gradient(180deg, #0f0c29 0%, #1a1145 50%, #0f0c29 100%)" : "linear-gradient(180deg, #f8f8fb 0%, #eee8ff 50%, #f8f8fb 100%)" }}>
-        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "min(600px,80vw)", height: "min(600px,80vw)", borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(120px)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
-          <FadeIn>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>Auto Publish</div>
-            <h2 style={{ fontSize: "clamp(28px,5vw,48px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.2, margin: "0 0 16px" }}>
-              {lang === "ko" ? <>글 작성부터 SNS 발행까지<br/><span style={{ color: "#7c6aff" }}>원클릭</span>으로 끝</> : <>From writing to publishing<br/>in <span style={{ color: "#7c6aff" }}>one click</span></>}
-            </h2>
-            <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 auto 40px", maxWidth: 560 }}>
-              {lang === "ko" ? "AI가 작성한 글을 복사-붙여넣기 없이 바로 발행하세요. 계정 연결 한 번이면 스레드·블로그·티스토리에 자동 업로드됩니다." : "Publish AI-written content without copy-paste. Connect once, auto-upload to Threads, Blog, and Tistory."}
-            </p>
-          </FadeIn>
-
-          {/* 플로우 시각화 */}
-          <FadeIn delay={0.1}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(8px,2vw,20px)", flexWrap: "wrap", marginBottom: 48 }}>
-              {[
-                { step: "1", label: lang === "ko" ? "주제 입력" : "Enter topic", icon: "T" },
-                { step: "", label: "", icon: "→" },
-                { step: "2", label: lang === "ko" ? "AI 글 생성" : "AI writes", icon: "AI" },
-                { step: "", label: "", icon: "→" },
-                { step: "3", label: lang === "ko" ? "원클릭 발행" : "One-click publish", icon: "V" },
-              ].map((s, i) => s.step ? (
-                <div key={i} style={{ width: "clamp(80px,15vw,120px)", textAlign: "center" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: i === 4 ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (C.isDark ? "rgba(255,255,255,0.06)" : "rgba(124,106,255,0.08)"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 20, fontWeight: 900, color: i === 4 ? "#fff" : "#7c6aff" }}>{s.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>{s.label}</div>
-                </div>
-              ) : (
-                <div key={i} style={{ fontSize: 20, color: C.muted, fontWeight: 300 }}>→</div>
-              ))}
-            </div>
-          </FadeIn>
-
-          {/* 플랫폼 카드 */}
-          <FadeIn delay={0.2}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16, maxWidth: 860, margin: "0 auto 40px" }}>
-              {[
-                { icon: "/icon-threads.png", name: lang === "ko" ? "스레드" : "Threads", desc: lang === "ko" ? "글 작성 후 원클릭 자동 발행" : "Auto publish after writing", color: "#7c6aff", tag: lang === "ko" ? "자동 발행" : "Auto", tagColor: "#7c6aff" },
-                { icon: "/icon-naver-blog.png", name: lang === "ko" ? "네이버 블로그" : "Naver Blog", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#03C75A", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
-                { icon: "/icon-tistory.png", name: lang === "ko" ? "티스토리" : "Tistory", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#FF6B35", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
-                { icon: "/icon-instagram.webp", name: lang === "ko" ? "인스타그램" : "Instagram", desc: lang === "ko" ? "카드뉴스 이미지 자동 발행" : "Card news auto publish", color: "#E1306C", tag: lang === "ko" ? "곧 출시" : "Coming", tagColor: "#f59e0b" },
-              ].map(p => (
-                <div key={p.name} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "28px 20px", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${p.color}20`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: p.color + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                    <img src={p.icon} alt="" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>{p.desc}</div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: p.tagColor + "15", color: p.tagColor }}>{p.tag}</span>
-                </div>
-              ))}
-            </div>
-          </FadeIn>
-
-          <FadeIn delay={0.3}>
-            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
-              {lang === "ko" ? "지금 바로 시작하기" : "Get started now"} →
-            </Btn>
-          </FadeIn>
-        </div>
-      </section>
 
       {/* ══ 포인트 적립 시스템 ══ */}
       <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>

@@ -833,30 +833,46 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
             {result && (() => {
-              const btns = [
-                { p:"naver_blog", l:"네이버", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver?blogId=" },
-                { p:"tistory", l:"티스토리", i:"/icon-tistory.png", c:"#FF6B35", u:"https://www.tistory.com/m/entry/write" },
-                ...snsConns.filter(c => c.platform === "threads").map(c => ({ p:"threads", l:"스레드", i:"/icon-threads.png", c:"#7c6aff" })),
-              ];
+              const isThread = initialType === "blog_thread";
+              const isInsta = initialType === "blog_insta";
+              const threadConn = snsConns.find(c => c.platform === "threads");
+              const btns = [];
+              // 스레드 탭: 스레드만
+              if (isThread) {
+                btns.push({ p:"threads", l: threadConn ? "스레드 발행" : "스레드 연동하기", i:"/icon-threads.png", c:"#7c6aff", connected:!!threadConn, needLogin:!user });
+              }
+              // 인스타 탭: 인스타만 (준비중)
+              else if (isInsta) {
+                btns.push({ p:"instagram", l:"인스타그램", i:"/icon-instagram.webp", c:"#E1306C", soon:true });
+              }
+              // 나머지: 해당 플랫폼 + 범용 발행
+              else {
+                btns.push({ p:"naver_blog", l:"네이버", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver" });
+                btns.push({ p:"tistory", l:"티스토리", i:"/icon-tistory.png", c:"#FF6B35", u:"https://www.tistory.com/m/entry/write" });
+                btns.push({ p:"threads", l: threadConn ? "스레드" : "스레드 연동", i:"/icon-threads.png", c:"#7c6aff", connected:!!threadConn, needLogin:!user });
+              }
               return btns.map(b => {
                 const isPub = publishing === b.p, done = publishResult?.platform === b.p;
                 return (
                   <button key={b.p} onClick={async () => {
+                    if (b.soon) return;
+                    if (b.needLogin) { if (onLoginRequest) onLoginRequest(); return; }
+                    if (b.connected === false && !b.u) { try { window.location.href = "/mypage"; } catch {} return; }
                     if (b.u) {
                       try { await navigator.clipboard.writeText(result); } catch {}
                       window.open(b.u, "_blank");
                       setPublishResult({ platform: b.p, clipboard: true, message: `${b.l} 에디터에서 붙여넣기(Ctrl+V)하세요` });
                     } else { handlePublish(b.p); }
-                  }} disabled={isPub}
+                  }} disabled={isPub || b.soon}
                     style={{ padding:"7px 14px", borderRadius:10, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"50"}`,
                       background: done ? (isDark ? "rgba(74,222,128,0.12)" : "#f0fdf4") : (isDark ? b.c+"15" : b.c+"08"),
                       color: done ? "#4ade80" : (isDark ? "#fff" : b.c),
-                      fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", opacity:isPub?0.5:1 }}>
+                      fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", opacity: isPub || b.soon ? 0.5 : 1 }}>
                     {isPub
                       ? <div style={{ width:12, height:12, borderRadius:"50%", border:`2px solid ${b.c}`, borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }} />
                       : <img src={b.i} alt="" style={{ width:18, height:18, objectFit:"contain", borderRadius:3 }} />
                     }
-                    {isPub ? "발행 중..." : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.l}
+                    {isPub ? "발행 중..." : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.soon ? "준비중" : b.l}
                   </button>
                 );
               });
