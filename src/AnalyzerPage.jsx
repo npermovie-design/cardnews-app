@@ -861,7 +861,7 @@ JSON만 반환: {"trends":[...]}`;
             {getAzLeft(user).exceeded ? (
               <>
                 <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>오늘 무료 사용 횟수를 모두 사용했어요</div>
-                <div style={{ fontSize:13, marginBottom:20 }}>{user ? "회원 하루 10회 무료 제공" : "비회원 하루 5회 무료 제공"}</div>
+                <div style={{ fontSize:13, marginBottom:20 }}>{user ? "회원 하루 5회 무료 제공" : "비회원 하루 5회 무료 제공"}</div>
                 {!user ? (
                   <button onClick={()=>{ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); }}
                     style={{ padding:"12px 28px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>

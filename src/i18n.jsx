@@ -300,8 +300,8 @@ export function I18nProvider({ children }) {
   });
 
   const SEO_META = {
-    ko: { title:"SNS메이킷 - AI 카드뉴스·블로그·이미지 자동 생성", desc:"주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 10회 무료!", locale:"ko_KR" },
-    en: { title:"SNS Makeit - AI Card News · Blog · Image Auto Generator", desc:"Just enter a topic and AI creates card news, detail pages, and blog posts automatically. 10 free trials!", locale:"en_US" },
+    ko: { title:"SNS메이킷 - AI 카드뉴스·블로그·이미지 자동 생성", desc:"주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료!", locale:"ko_KR" },
+    en: { title:"SNS Makeit - AI Card News · Blog · Image Auto Generator", desc:"Just enter a topic and AI creates card news, detail pages, and blog posts automatically. 5 free trials!", locale:"en_US" },
     ja: { title:"SNS Makeit - AI カードニュース·ブログ·画像自動生成", desc:"テーマを入力するだけでAIがカードニュース、詳細ページ、ブログ記事を自動生成。非会員10回無料！", locale:"ja_JP" },
     zh: { title:"SNS Makeit - AI 卡片新闻·博客·图片自动生成", desc:"只需输入主题，AI自动生成卡片新闻、详情页、博客文章。游客10次免费！", locale:"zh_CN" },
   };

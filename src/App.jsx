@@ -511,7 +511,7 @@ export default function App() {
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#a5b4fc" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#a5b4fc" }}>20회 추가</b> + 포인트로 무제한 이용 가능해요!
+              로그인하면 <b style={{ color: "#a5b4fc" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}

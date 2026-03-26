@@ -138,7 +138,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 200P 지급 · AI 생성 비회원 10회 무료</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>가입 즉시 100P 지급 · AI 생성 비회원 5회 무료</div>
         </div>
 
         <div style={{ display: "flex", marginBottom: 24, background: C.toggleBg, borderRadius: 10, padding: 4 }}>

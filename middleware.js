@@ -22,8 +22,8 @@ const PAGE_OG = {
   "/legal": { title: "SNS메이킷 - 이용약관", desc: "서비스 이용약관 및 개인정보처리방침" },
 };
 
-// 소셜 크롤러만 (Googlebot, 카카오톡 인앱브라우저 제외)
-const CRAWLERS = /facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|Discordbot|WhatsApp|Yeti/i;
+// 검색엔진 + 소셜 크롤러 (Googlebot 포함 — 게시글 색인을 위해)
+const CRAWLERS = /Googlebot|bingbot|Yandex|Baiduspider|facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|Discordbot|WhatsApp|Yeti|AdsBot|DuckDuckBot|Applebot/i;
 // 카카오톡: 링크 미리보기 봇(kakaotalk-scrap)만 크롤러 처리, 인앱 브라우저는 통과
 const KAKAO_SCRAP = /kakaotalk-scrap|kakaostory-og-reader/i;
 const KAKAO_INAPP = /KAKAOTALK\s/i;
@@ -34,7 +34,13 @@ export default async function middleware(request) {
   // 카카오톡 인앱 브라우저 → SPA 그대로 (React 앱 로드)
   if (KAKAO_INAPP.test(ua) && !KAKAO_SCRAP.test(ua)) return;
 
-  if (!CRAWLERS.test(ua) && !KAKAO_SCRAP.test(ua)) return; // 일반 사용자 + Googlebot은 SPA 그대로
+  const isGooglebot = /Googlebot|bingbot|Yandex|Baiduspider|DuckDuckBot|Applebot/i.test(ua);
+  const isSocialCrawler = CRAWLERS.test(ua) || KAKAO_SCRAP.test(ua);
+
+  // 검색엔진 봇은 게시글 URL에서만 SSR 처리 (나머지는 SPA 그대로)
+  if (isGooglebot && !path.match(/\/community\/\w+\/post-\d+/)) return;
+
+  if (!isSocialCrawler) return; // 일반 사용자는 SPA 그대로
 
   const url = new URL(request.url);
   const path = url.pathname;
@@ -56,8 +62,11 @@ export default async function middleware(request) {
       const post = data?.[0];
       if (post) {
         title = `${post.title} - SNS메이킷 커뮤니티`;
-        desc = (post.body || "").replace(/<[^>]*>/g, "").slice(0, 155);
+        const plainBody = (post.body || "").replace(/<[^>]*>/g, "");
+        desc = plainBody.slice(0, 155);
         image = post.images?.[0] || DEFAULT_OG.image;
+        // Googlebot에게 전체 본문 전달 (색인용)
+        var fullBody = plainBody;
       }
     } catch {}
   }
@@ -89,7 +98,7 @@ export default async function middleware(request) {
 <meta name="twitter:title" content="${title}"/>
 <meta name="twitter:description" content="${desc}"/>
 <meta name="twitter:image" content="${image}"/>
-</head><body><h1>${title}</h1><p>${desc}</p></body></html>`;
+</head><body><h1>${title}</h1><p>${desc}</p>${typeof fullBody === "string" ? `<article>${fullBody}</article>` : ""}<footer><a href="${SITE}">SNS메이킷</a></footer></body></html>`;
 
   return new Response(html, {
     status: 200,

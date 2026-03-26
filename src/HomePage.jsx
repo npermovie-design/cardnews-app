@@ -663,10 +663,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             <FadeIn delay={0.1}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {[
-                  { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+3P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
-                  { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+1P", desc: lang === "ko" ? "커뮤니티 글 작성 시" : "When posting in community", color: "#22c55e" },
-                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+200P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
-                  { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "10" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
+                  { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+2P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
+                  { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+2P", desc: lang === "ko" ? "커뮤니티 글 작성 시" : "When posting in community", color: "#22c55e" },
+                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+100P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
+                  { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "5" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
                 ].map(item => (
                   <div key={item.title} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 18px", textAlign: "center" }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: item.color, marginBottom: 6 }}>{item.point}</div>
@@ -685,10 +685,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
-            { icon: "FREE", title: p("p1title"), point: p("p1point"), desc: p("p1desc"), color: "#888", btnText: p("p1btn"), onClick: () => navigate("ai") },
-            { icon: "+200P", title: p("p2title"), point: p("p2point"), desc: p("p2desc"), color: "#22c55e", btnText: p("p2btn"), onClick: () => navigate("ai") },
-            { icon: "5,900", title: p("p3title"), point: p("p3point"), desc: p("p3desc"), color: "#7c6aff", btnText: p("p3btn"), onClick: () => navigate("pricing"), highlight: false },
-            { icon: "PRO", title: p("p4title"), point: p("p4point"), desc: p("p4desc"), color: "#8b5cf6", btnText: p("p4btn"), onClick: () => navigate("pricing"), highlight: true },
+            { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료 체험하기":"Try free", onClick: () => navigate("ai") },
+            { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·로그인 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료 회원가입":"Sign up free", onClick: () => navigate("ai") },
+            { icon: "9,900", title: lang==="ko"?"Standard 충전":"Standard", point: "1,200P", desc: lang==="ko"?"텍스트 120회 · 이미지 24회 · 유효기간 없음":"120 texts · 24 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "PRO", title: lang==="ko"?"Pro 충전":"Pro", point: "3,000P", desc: lang==="ko"?"텍스트 300회 · 이미지 60회 · 우선 고객지원":"300 texts · 60 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing") },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
