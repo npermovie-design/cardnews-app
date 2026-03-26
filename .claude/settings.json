@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:dev.to)",
+      "Bash(python -m venv venv)",
+      "Bash(venv/Scripts/pip install:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\엔퍼그로스\\Desktop\\cardnews-app\\shorts-factory"
+    ]
+  }
+}

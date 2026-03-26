@@ -19,21 +19,6 @@ import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
-// SNS 연동 — lazy import (순환참조 방지)
-let _SnsConnectionManager = null;
-let _SnsConnectBanner = null;
-const getSnsComponents = async () => {
-  if (!_SnsConnectionManager) {
-    const m1 = await import("./SnsConnectionManager");
-    _SnsConnectionManager = m1.default;
-  }
-  if (!_SnsConnectBanner) {
-    const m2 = await import("./SnsConnectBanner");
-    _SnsConnectBanner = m2.default;
-  }
-  return { SnsConnectionManager: _SnsConnectionManager, SnsConnectBanner: _SnsConnectBanner };
-};
-
 /* ════════════════════════════════════════════════════════════
    AiPage
 ════════════════════════════════════════════════════════════ */
@@ -2353,9 +2338,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
           </div>
 
-          {/* SNS 연동 유도 배너 */}
-          {SnsComps.SnsConnectBanner && <SnsComps.SnsConnectBanner isDark={isDark} user={user} variant="home" connectedPlatforms={snsConns} onNavigateProfile={() => setAiMenu("profile")} />}
-
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
             <div key={group.label} style={{ marginBottom: 32 }}>
@@ -2807,12 +2789,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               </div>
             ))}
           </div>
-          {/* SNS 계정 연동 */}
-          {SnsComps.SnsConnectionManager && (
-            <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"4px 0", marginBottom:16, overflow:"hidden" }}>
-              <SnsComps.SnsConnectionManager user={user} isDark={isDark} compact />
-            </div>
-          )}
           {/* 로그아웃 */}
           <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
             style={{ width:"100%", padding:"13px", borderRadius:12, border:"1px solid rgba(248,113,113,0.3)", background:"rgba(248,113,113,0.06)", color:"#f87171", fontSize:14, fontWeight:700, cursor:"pointer" }}>
@@ -2958,14 +2934,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [isGenerating, setIsGenerating] = useState(false);
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
-  const [snsConns, setSnsConns] = useState([]);
-  const [SnsComps, setSnsComps] = useState({ SnsConnectionManager: null, SnsConnectBanner: null });
-
-  // SNS 컴포넌트 lazy 로드 + 연결 목록
-  useEffect(() => {
-    getSnsComponents().then(setSnsComps).catch(() => {});
-    if (user?.uid) fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});
-  }, [user?.uid, aiMenu]);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
   useEffect(() => {
