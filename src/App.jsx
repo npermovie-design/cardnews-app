@@ -396,7 +396,7 @@ export default function App() {
 
   /* ── 페이지 렌더 ── */
   const renderPage = () => {
-    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} />;
+    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
@@ -414,7 +414,7 @@ export default function App() {
     if (page === "mypage" || page === "profile")   return <MyPage C={C} theme={theme} user={user} setUser={u => { setLocalUser(u); setUserState(u); }} navigate={navigate} />;
     if (page === "xk9m2p4q7") {
       if (!user) return <div style={{ minHeight: "80vh" }} />;
-      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} />;
+      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
       return <AdminPage C={C} user={user} />;
     }
     // 404 - 알 수 없는 페이지
@@ -429,7 +429,7 @@ export default function App() {
         </button>
       </div>
     );
-    return <HomePage C={C} navigate={navigate} theme={theme} />;
+    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
   };
 
   return (

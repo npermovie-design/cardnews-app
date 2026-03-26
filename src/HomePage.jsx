@@ -185,7 +185,7 @@ function Marquee({ children, speed = 30, reverse = false }) {
   );
 }
 
-export default function HomePage({ navigate, C, theme }) {
+export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
   const _dark = theme === "dark";
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
@@ -403,9 +403,20 @@ export default function HomePage({ navigate, C, theme }) {
             </div>
           </FadeIn>
           <FadeIn delay={0.3}>
-            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
-              {lang === "ko" ? "지금 바로 시작하기" : "Get started now"} →
-            </Btn>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
+                {lang === "ko" ? "지금 바로 시작하기" : "Get started now"} →
+              </Btn>
+              <button onClick={() => { if (!user) { if (onLoginRequest) onLoginRequest(); } else { navigate("mypage"); } }}
+                style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid ${_dark ? "rgba(255,255,255,0.15)" : "rgba(124,106,255,0.3)"}`,
+                  background: "transparent", color: _dark ? "#fff" : "#7c6aff", fontSize: 16, fontWeight: 700, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 8 }}>
+                {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
+                  <img key={i} src={ic} alt="" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
+                )}
+                {lang === "ko" ? (user ? "계정 연동하기" : "회원가입 후 연동") : (user ? "Connect accounts" : "Sign up to connect")}
+              </button>
+            </div>
           </FadeIn>
         </div>
       </section>
