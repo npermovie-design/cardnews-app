@@ -17,6 +17,8 @@ import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
+import SnsConnectBanner from "./SnsConnectBanner";
+import { getConnectedPlatforms } from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2339,6 +2341,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
           </div>
 
+          {/* SNS 연동 유도 배너 */}
+          <SnsConnectBanner isDark={isDark} user={user} variant="home" connectedPlatforms={snsConns} onNavigateProfile={() => setAiMenu("profile")} />
+
           {/* 카테고리별 그리드 */}
           {GROUPS.map(group => (
             <div key={group.label} style={{ marginBottom: 32 }}>
@@ -2939,6 +2944,12 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [isGenerating, setIsGenerating] = useState(false);
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
+  const [snsConns, setSnsConns] = useState([]);
+
+  // SNS 연결 목록 조회
+  useEffect(() => {
+    if (user?.uid) getConnectedPlatforms(user.uid).then(setSnsConns);
+  }, [user?.uid, aiMenu]);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
   useEffect(() => {
@@ -2970,8 +2981,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
   useEffect(function() {
     window.__onLoginRequest = onLoginRequest || function(){};
-    return function() { delete window.__onLoginRequest; };
-  }, [onLoginRequest]);
+    window.__setAiMenu = setAiMenu;
+    return function() { delete window.__onLoginRequest; delete window.__setAiMenu; };
+  }, [onLoginRequest, setAiMenu]);
 
   useEffect(() => {
     const handlePop = () => {

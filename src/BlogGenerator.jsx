@@ -8,6 +8,7 @@ import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
+import SnsConnectBanner from "./SnsConnectBanner";
 import { getConnectedPlatforms, publishToSns } from "./SnsConnectionManager";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
@@ -935,6 +936,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
             </div>
           )}
+
+          {/* SNS 연동 유도 (미연동 시) */}
+          {result && <SnsConnectBanner isDark={isDark} user={user} variant="inline" connectedPlatforms={snsConns} onNavigateProfile={() => { try { window.history.pushState(null,"","/ai/profile"); } catch {} if (window.__setAiMenu) window.__setAiMenu("profile"); }} />}
 
           {/* 예약 발행 UI */}
           {result && showSchedule && (
