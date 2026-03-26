@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase, changePoints } from "./storage";
+import SnsConnectionManager from "./SnsConnectionManager";
 
 /* ═══════════════════════════════════════════════
    MyPage.jsx  ·  회원 전용 마이페이지
@@ -331,6 +332,11 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                 <div style={{ fontSize:10, color:muted }}>{sub}</div>
               </button>
             ))}
+          </div>
+
+          {/* SNS 계정 연동 */}
+          <div style={{ marginTop:16, background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, overflow:"hidden" }}>
+            <SnsConnectionManager user={user} isDark={isDark} compact />
           </div>
         </div>
       )}
