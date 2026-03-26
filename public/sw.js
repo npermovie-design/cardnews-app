@@ -1,4 +1,4 @@
-const CACHE_NAME = "snsmakeit-v1";
+const CACHE_NAME = "snsmakeit-v2";
 const PRECACHE = ["/", "/index.html"];
 
 self.addEventListener("install", (e) => {
@@ -21,6 +21,9 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   if (e.request.url.includes("/api/")) return;
 
+  // navigation 요청(SPA 라우팅)은 SW가 개입하지 않음
+  if (e.request.mode === "navigate") return;
+
   e.respondWith(
     fetch(e.request)
       .then((res) => {
@@ -30,6 +33,8 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() =>
+        caches.match(e.request).then((cached) => cached || new Response("", { status: 503 }))
+      )
   );
 });
