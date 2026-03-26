@@ -185,7 +185,8 @@ function Marquee({ children, speed = 30, reverse = false }) {
   );
 }
 
-export default function HomePage({ navigate, C }) {
+export default function HomePage({ navigate, C, theme }) {
+  const _dark = theme === "dark";
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
 
@@ -350,7 +351,7 @@ export default function HomePage({ navigate, C }) {
 
       {/* ══ SNS 자동 발행 ══ */}
       <section style={{ padding: "clamp(80px,12vw,120px) clamp(16px,4vw,24px)", position: "relative", overflow: "hidden",
-        background: theme === "dark" ? "linear-gradient(180deg, #0f0c29 0%, #1a1145 50%, #0f0c29 100%)" : "linear-gradient(180deg, #f8f8fb 0%, #ede5ff 50%, #f8f8fb 100%)" }}>
+        background: _dark ? "linear-gradient(180deg, #0a0812 0%, #1a1145 50%, #0a0812 100%)" : "linear-gradient(180deg, #f8f8fb 0%, #ede5ff 50%, #f8f8fb 100%)" }}>
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "min(600px,80vw)", height: "min(600px,80vw)", borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(120px)", pointerEvents: "none" }} />
         <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
           <FadeIn>
@@ -372,7 +373,7 @@ export default function HomePage({ navigate, C }) {
                 { label: lang === "ko" ? "원클릭 발행" : "One-click", icon: "V", highlight: true },
               ].map((s, i) => s ? (
                 <div key={i} style={{ width: "clamp(80px,15vw,120px)", textAlign: "center" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: s.highlight ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (theme==="dark" ? "rgba(255,255,255,0.06)" : "rgba(124,106,255,0.08)"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 20, fontWeight: 900, color: s.highlight ? "#fff" : "#7c6aff" }}>{s.icon}</div>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: s.highlight ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (_dark ? "rgba(255,255,255,0.06)" : "rgba(124,106,255,0.08)"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 20, fontWeight: 900, color: s.highlight ? "#fff" : "#7c6aff" }}>{s.icon}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>{s.label}</div>
                 </div>
               ) : (
@@ -388,7 +389,7 @@ export default function HomePage({ navigate, C }) {
                 { icon: "/icon-tistory.png", name: lang === "ko" ? "티스토리" : "Tistory", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#FF6B35", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
                 { icon: "/icon-instagram.webp", name: lang === "ko" ? "인스타그램" : "Instagram", desc: lang === "ko" ? "카드뉴스 이미지 자동 발행" : "Card news auto publish", color: "#E1306C", tag: lang === "ko" ? "곧 출시" : "Coming", tagColor: "#f59e0b" },
               ].map(p => (
-                <div key={p.name} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "28px 20px", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s" }}
+                <div key={p.name} style={{ background: _dark ? "rgba(255,255,255,0.06)" : "#fff", border: "1px solid " + (_dark ? "rgba(255,255,255,0.1)" : C.border), borderRadius: 20, padding: "28px 20px", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s" }}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${p.color}20`; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: p.color + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
