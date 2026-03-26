@@ -16,6 +16,8 @@ import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
+import SnsConnectionManager from "./SnsConnectionManager";
+import SnsConnectBanner from "./SnsConnectBanner";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2933,6 +2935,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [sideOpen, setSideOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [shortsJob, setShortsJob] = useState(null);
+  const [snsConns, setSnsConns] = useState([]);
   const [shortsActive, setShortsActive] = useState(false);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
