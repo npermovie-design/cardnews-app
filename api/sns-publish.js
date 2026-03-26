@@ -129,7 +129,7 @@ export default async function handler(req, res) {
       }
       // Instagram Graph API로 이미지 게시물 발행
       // 1) 미디어 컨테이너 생성
-      const createRes = await fetch(`https://graph.facebook.com/v19.0/${conn.platform_user_id}/media`, {
+      const createRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
       });
       const createData = await createRes.json();
       if (createData.id) {
-        const pubRes = await fetch(`https://graph.facebook.com/v19.0/${conn.platform_user_id}/media_publish`, {
+        const pubRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media_publish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

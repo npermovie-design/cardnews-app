@@ -65,23 +65,35 @@ export default async function handler(req, res) {
           platformUsername = userData.username || "";
 
         } else {
-          // ── Instagram OAuth: graph.facebook.com 사용 ────────────────
-          const tokenRes = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&client_secret=${APP_SECRET}&code=${code}`);
+          // ── Instagram Business Login OAuth ────────────────
+          // 1) Short-lived token 교환
+          const tokenRes = await fetch("https://api.instagram.com/oauth/access_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              client_id: APP_ID,
+              client_secret: APP_SECRET,
+              grant_type: "authorization_code",
+              redirect_uri: REDIRECT_URI,
+              code,
+            }),
+          });
           const tokenData = await tokenRes.json();
-          if (!tokenData.access_token) throw new Error("토큰 발급 실패");
+          if (!tokenData.access_token) throw new Error("토큰 발급 실패: " + JSON.stringify(tokenData));
 
-          const longRes = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}&fb_exchange_token=${tokenData.access_token}`);
+          // 2) Long-lived token 교환
+          const longRes = await fetch(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${APP_SECRET}&access_token=${tokenData.access_token}`);
           const longData = await longRes.json();
           accessToken = longData.access_token || tokenData.access_token;
           if (longData.expires_in) {
             expiresAt = new Date(Date.now() + longData.expires_in * 1000).toISOString();
           }
 
-          // Instagram 사용자 정보
-          const userRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${accessToken}`);
+          // 3) Instagram 사용자 정보
+          const userRes = await fetch(`https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${accessToken}`);
           const userData = await userRes.json();
-          platformUserId = userData.id || "";
-          platformUsername = userData.name || "";
+          platformUserId = userData.user_id || tokenData.user_id || "";
+          platformUsername = userData.username || "";
         }
 
         // Supabase에 저장
@@ -109,10 +121,10 @@ export default async function handler(req, res) {
     const { uid, platform = "threads" } = req.query;
     const scopes = platform === "threads"
       ? "threads_basic,threads_content_publish"
-      : "instagram_basic,instagram_content_publish,pages_read_engagement";
+      : "instagram_business_basic,instagram_business_content_publish";
     const authUrl = platform === "threads"
       ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`
-      : `https://www.facebook.com/v19.0/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
+      : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
     return res.status(200).json({ authUrl });
   }
 
