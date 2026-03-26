@@ -506,12 +506,16 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       const canvas = document.createElement("canvas");
       const renderImg = bgImg ? await new Promise((res) => { const img = new Image(); img.onload=()=>res(img); img.onerror=()=>res(null); img.src=bgImg; }) : null;
       drawDetailSlide(canvas, slide, slideStyle, imgW, imgH, renderImg);
-      const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-      const fileName = `instagram/${user.uid}/${Date.now()}.png`;
-      const { error: upErr } = await supabase.storage.from("uploads").upload(fileName, blob, { contentType: "image/png", upsert: true });
+      const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.92));
+      const fileName = `instagram/${user.uid}/${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage.from("uploads").upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
       if (upErr) throw new Error("이미지 업로드 실패: " + upErr.message);
       const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(fileName);
       const imageUrl = urlData.publicUrl;
+
+      // 이미지 접근 가능 여부 확인
+      const checkRes = await fetch(imageUrl, { method: "HEAD" });
+      if (!checkRes.ok) throw new Error("이미지 URL 접근 불가 (" + checkRes.status + "): " + imageUrl);
 
       const r = await fetch("/api/sns-publish", {
         method: "POST",
