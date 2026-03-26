@@ -13,35 +13,67 @@ export default async function handler(req, res) {
 
   try {
     if (platform === "youtube") {
-      // YouTube 검색 (공식 API 키 없이 Invidious 활용)
       const query = keywords.slice(0, 3).join(" ") + " shorts";
-      const instances = ["https://vid.puffyan.us", "https://invidious.nerdvpn.de", "https://inv.nadeko.net", "https://invidious.io.lol", "https://yt.cdaut.de"];
 
-      for (const base of instances) {
+      // 1차: Piped API (더 안정적)
+      const pipedInstances = ["https://pipedapi.kavin.rocks", "https://pipedapi.adminforge.de", "https://api.piped.projectsegfau.lt"];
+      for (const base of pipedInstances) {
         try {
-          const r = await fetch(`${base}/api/v1/search?q=${encodeURIComponent(query)}&sort_by=date&type=video&features=4k&region=KR`, {
-            signal: AbortSignal.timeout(8000),
+          const r = await fetch(`${base}/search?q=${encodeURIComponent(query)}&filter=videos`, {
+            signal: AbortSignal.timeout(6000),
             headers: { "User-Agent": ua },
           });
           if (!r.ok) continue;
           const data = await r.json();
-          for (const v of (data || []).slice(0, 12)) {
-            if (!v.videoId) continue;
+          for (const v of (data.items || []).slice(0, 12)) {
+            const vid = v.url?.replace("/watch?v=", "") || "";
+            if (!vid) continue;
             videos.push({
-              id: v.videoId,
+              id: vid,
               platform: "youtube",
               title: v.title || "",
-              author: v.author || "",
-              authorUrl: v.authorUrl ? `https://youtube.com${v.authorUrl}` : "",
-              thumbnail: `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
-              url: `https://youtube.com/watch?v=${v.videoId}`,
-              views: v.viewCount || 0,
-              published: v.publishedText || "",
-              duration: v.lengthSeconds || 0,
+              author: v.uploaderName || "",
+              authorUrl: v.uploaderUrl ? `https://youtube.com${v.uploaderUrl}` : "",
+              thumbnail: v.thumbnail || `https://img.youtube.com/vi/${vid}/hqdefault.jpg`,
+              url: `https://youtube.com/watch?v=${vid}`,
+              views: v.views || 0,
+              published: v.uploadedDate || "",
+              duration: v.duration || 0,
             });
           }
           if (videos.length > 0) break;
         } catch {}
+      }
+
+      // 2차: Invidious fallback
+      if (videos.length === 0) {
+        const invInstances = ["https://invidious.nerdvpn.de", "https://inv.nadeko.net", "https://yewtu.be", "https://vid.puffyan.us"];
+        for (const base of invInstances) {
+          try {
+            const r = await fetch(`${base}/api/v1/search?q=${encodeURIComponent(query)}&sort_by=date&type=video&region=KR`, {
+              signal: AbortSignal.timeout(6000),
+              headers: { "User-Agent": ua },
+            });
+            if (!r.ok) continue;
+            const data = await r.json();
+            for (const v of (data || []).slice(0, 12)) {
+              if (!v.videoId) continue;
+              videos.push({
+                id: v.videoId,
+                platform: "youtube",
+                title: v.title || "",
+                author: v.author || "",
+                authorUrl: v.authorUrl ? `https://youtube.com${v.authorUrl}` : "",
+                thumbnail: `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
+                url: `https://youtube.com/watch?v=${v.videoId}`,
+                views: v.viewCount || 0,
+                published: v.publishedText || "",
+                duration: v.lengthSeconds || 0,
+              });
+            }
+            if (videos.length > 0) break;
+          } catch {}
+        }
       }
     }
 
