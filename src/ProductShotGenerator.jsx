@@ -150,7 +150,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
   ];
 
   const [step, setStep] = useState(1); // 1=설정, 2=생성중, 3=결과
-  useGeneratingGuard(step === 2, 10);
+  useGeneratingGuard(step === 2, 10, "product_shot");
 
   const fileRef = useRef(null);
   const [productImg,  setProductImg]  = useState(null); // { b64, mime, url }
@@ -326,12 +326,21 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
       <StepBar steps={STEPS} current={2} isDark={isDark} />
       <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
-        {/* 이중 링 스피너 */}
+        {/* 애니메이션 아이콘 */}
+        <style>{`
+          @keyframes ps-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.05)}}
+          @keyframes ps-ring{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        `}</style>
         <div style={{ position:"relative", width:100, height:100, margin:"0 auto 28px" }}>
           <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:`3px solid rgba(249,115,22,0.12)` }}/>
-          <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent", borderTopColor:accent, animation:"spin 1s linear infinite" }}/>
-          <div style={{ position:"absolute", inset:12, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"rgba(249,115,22,0.45)", animation:"spin 1.7s linear infinite reverse" }}/>
-          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🛍</div>
+          <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent", borderTopColor:accent, borderRightColor:accent, animation:"ps-ring 1.5s linear infinite" }}/>
+          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", animation:"ps-bounce 2s ease-in-out infinite" }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke={accent} strokeWidth="1.8"/>
+              <circle cx="8.5" cy="8.5" r="1.5" fill={accent}/>
+              <path d="M21 15l-5-5L5 21" stroke={accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
         </div>
         <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>AI가 제품컷을 생성 중이에요</div>
         <div style={{ fontSize:13, color:muted, marginBottom:28 }}>보통 15~30초 소요됩니다. 잠시만 기다려주세요.</div>

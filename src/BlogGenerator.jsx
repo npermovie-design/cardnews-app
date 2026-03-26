@@ -6,6 +6,7 @@ import { useI18n } from "./i18n.jsx";
 import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
+import LoadingAnimation from "./LoadingAnimation";
 
 /* ── 블로그 결과 클린업 (이모지·마크다운 제거) ── */
 function cleanBlogText(text) {
@@ -528,7 +529,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   const [loading,    setLoading]    = useState(false);
-  useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
@@ -780,31 +781,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     // 풀스크린 로딩 오버레이
     if (loading) {
-      return (
-        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",padding:"40px 24px",textAlign:"center"}}>
-          <div style={{fontSize:64,marginBottom:16,display:"inline-block",animation:"bl-float 3s ease-in-out infinite",filter:"drop-shadow(0 8px 20px rgba(99,102,241,0.4))"}}>✍️✨</div>
-          <div style={{fontSize:20,fontWeight:900,color:text,marginBottom:8,letterSpacing:"-0.5px"}}>AI가 글을 작성하고 있어요</div>
-          <div style={{fontSize:13,color:muted,marginBottom:24}}>{fields.keyword} · {cfg.title}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:10,textAlign:"left",maxWidth:260,margin:"0 auto 20px"}}>
-            {[{l:"주제 분석 중...",d:true},{l:"구조 기획 중...",d:true},{l:"본문 작성 중...",a:true},{l:"마무리 다듬는 중..."}].map(function(s,i){
-              return (
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,opacity:s.d||s.a?1:0.3}}>
-                  <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
-                    background:s.d?"rgba(74,222,128,0.15)":s.a?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",
-                    border:s.d?"2px solid #4ade80":s.a?"2px solid #7c6aff":"2px solid rgba(255,255,255,0.1)"}}>
-                    {s.d?<span style={{color:"#4ade80"}}>✓</span>:s.a?<div style={{width:8,height:8,borderRadius:"50%",border:"2px solid #7c6aff",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>:null}
-                  </div>
-                  <span style={{fontSize:13,color:s.d?"#4ade80":s.a?text:muted,fontWeight:s.a?700:400}}>{s.l}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{height:4,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden",maxWidth:260,margin:"0 auto 10px"}}>
-            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",animation:"bl-progress 12s ease-out forwards"}}/>
-          </div>
-          <div style={{fontSize:12,color:muted}}>보통 20~60초 소요</div>
-        </div>
-      );
+      return <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword} · ${cfg.title}`} isDark={isDark} />;
     }
     if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);

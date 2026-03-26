@@ -118,7 +118,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
   const [extra,       setExtra]       = useState("");
   const [result,      setResult]      = useState("");
   const [generating,  setGenerating]  = useState(false);
-  useGeneratingGuard(generating, 10);
+  useGeneratingGuard(generating, 10, "video_create");
   const wizStep = generating ? 2 : result ? 3 : 1;
   const STEPS = [{n:1,label:"내용 입력"},{n:2,label:"AI 생성중"},{n:3,label:"결과 확인"}];
   const [genErr,      setGenErr]      = useState("");
@@ -653,7 +653,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
           )}
 
           {generating && !result && (
-            <LoadingAnimation icon="▶️✨" title="AI가 블로그 글을 작성하고 있어요" subtitle={videoInfo?.title||""} isDark={isDark} />
+            <LoadingAnimation featureType="video_create" title="AI가 블로그 글을 작성하고 있어요" subtitle={videoInfo?.title||""} isDark={isDark} />
           )}
 
           {result && (

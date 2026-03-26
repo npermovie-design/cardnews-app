@@ -439,7 +439,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     try { return JSON.parse(localStorage.getItem("nper_custom_fonts")||"[]"); } catch { return []; }
   });
   const fontFileRef = useRef(null);
-  useGeneratingGuard(loading, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(loading, 10, "card_news"); // 생성 중 이탈 방지
 
   // 커스텀 폰트 복원 (페이지 로드 시)
   useEffect(() => {

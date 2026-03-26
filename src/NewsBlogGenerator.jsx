@@ -202,8 +202,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const [extra,      setExtra]      = useState("");
   const [result,     setResult]     = useState("");
   const [generating, setGenerating] = useState(false);
-  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
-  useGeneratingGuard(generating, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(generating, 10, "blog_write"); // 생성 중 이탈 방지
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
   const [loadStep,   setLoadStep]  = useState(0);
@@ -652,7 +651,7 @@ ${articleSection}
 
         {/* 로딩 화면 - 생성 중 */}
         {generating && (
-          <LoadingAnimation icon="📰✨" title="AI가 글을 작성하고 있어요" subtitle={newsInfo?.title?.slice(0,40)||"뉴스 블로그"} isDark={isDark} />
+          <LoadingAnimation featureType="blog_write" title="AI가 글을 작성하고 있어요" subtitle={newsInfo?.title?.slice(0,40)||"뉴스 블로그"} isDark={isDark} />
         )}
 
         {/* 초기 안내 화면 */}

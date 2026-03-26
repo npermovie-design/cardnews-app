@@ -260,6 +260,7 @@ JSON만: {"outline":[{"no":1,"title":"표지","layout":"title_only","desc":"주�
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     setStep("loading"); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_ppt_gen", type: "ppt_gen", message: `PPT ${slideCount}장 기획 중...` } } }));
     try {
       const r = await callClaude(
 `PPT 슬라이드 전문 기획자. 이모지 사용 금지.
@@ -327,7 +328,10 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
         } catch {}
       }
     } catch (e) { setErr("생성 실패: " + (e.message||"")); setStep("input"); }
-    finally { window.__isGenerating = false; }
+    finally {
+      window.__isGenerating = false;
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_ppt_gen" } } }));
+    }
   };
 
   // ── PPTX 내보내기 ──
@@ -1390,7 +1394,22 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
   // ══ LOADING ══
   if (step === "loading") return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:D?"transparent":"#f4f4f8" }}>
+      <style>{`
+        @keyframes ppt-bounce{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-8px) rotate(-3deg)}75%{transform:translateY(-4px) rotate(3deg)}}
+        @keyframes ppt-ring{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+      `}</style>
       <div style={{ textAlign:"center" }}>
+        {/* 애니메이션 아이콘 */}
+        <div style={{ position:"relative", width:90, height:90, margin:"0 auto 20px" }}>
+          <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:`3px solid ${D?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)"}`, borderTopColor:accent, borderRightColor:accent, animation:"ppt-ring 1.5s linear infinite" }} />
+          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", animation:"ppt-bounce 2s ease-in-out infinite" }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="3" width="20" height="14" rx="2" stroke={accent} strokeWidth="1.8"/>
+              <path d="M8 21h8M12 17v4" stroke={accent} strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M7 8h4M7 11h6" stroke={accent} strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/>
+            </svg>
+          </div>
+        </div>
         <div style={{ fontSize:18, fontWeight:900, color:accent, marginBottom:12 }}>PPT {slideCount}장 기획 중</div>
         <div style={{ width:300, height:5, borderRadius:3, background:"rgba(128,128,128,0.12)", overflow:"hidden", margin:"0 auto 16px" }}>
           <div style={{ height:"100%", borderRadius:3, background:accent, animation:"ai-progress 15s ease-out forwards" }} />

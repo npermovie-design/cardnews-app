@@ -405,7 +405,7 @@ export default function DetailPageGenerator({ isDark, user , onUserUpdate}) {
   const [slides,    setSlides]    = useState([]);
   const [rendered,  setRendered]  = useState([]);
   const [loading,   setLoading]   = useState(false);
-  useGeneratingGuard(loading, (slides?.length || pageCount || 1) * 30); // 생성 중 이탈 방지
+  useGeneratingGuard(loading, (slides?.length || pageCount || 1) * 30, "card_news"); // 생성 중 이탈 방지
   const [progress,  setProgress]  = useState({ msg:"", cur:0, total:0 });
   const [err,       setErr]       = useState("");
   const [curIdx,    setCurIdx]    = useState(0);

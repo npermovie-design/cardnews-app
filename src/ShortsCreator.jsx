@@ -2,6 +2,25 @@ import { useState, useRef, useEffect } from "react";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com");
 
+// YouTube URL 정규화 및 검증
+function parseYoutubeUrl(url) {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = trimmed.match(p);
+    if (m) return { id: m[1], url: `https://www.youtube.com/watch?v=${m[1]}` };
+  }
+  return null;
+}
+
 const TEMPLATES = [
   { id: "minimal", name: "미니멀", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#000" },
   { id: "bold", name: "볼드", titleColor: "#FFD700", captionColor: "#FFD700", bg: "#0A0A0A" },
@@ -30,6 +49,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [step, setStep] = useState("upload"); // upload, loading, analysis, edit, generate, result
   const [inputMode, setInputMode] = useState("youtube"); // youtube, file
   const [ytUrl, setYtUrl] = useState("");
+  const [ytParsed, setYtParsed] = useState(null); // { id, url } or null
   const [videoFile, setVideoFile] = useState(null);
   const [subFile, setSubFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
@@ -63,6 +83,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const fileRef = useRef(null);
   const timerRef = useRef(null);
 
+  // ── YouTube URL 파싱 ─────────────────────
+  useEffect(() => {
+    setYtParsed(parseYoutubeUrl(ytUrl));
+  }, [ytUrl]);
+
   // ── 상태 변경 알림 ─────────────────────
   useEffect(() => {
     if (onStatusChange) onStatusChange(step);
@@ -89,10 +114,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // 유튜브 다운로드
   const handleYoutube = async () => {
-    if (!ytUrl.trim()) return;
+    const parsed = parseYoutubeUrl(ytUrl);
+    if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
-      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: ytUrl }) });
+      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }) });
       setFileId(d.file_id);
       if (d.caption_only) setLoadingMsg("자막으로 분석 중... (영상 생성 시 MP4 업로드 필요)");
       else setLoadingMsg("음성 인식 + AI 분석 중...");
@@ -187,20 +213,51 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ═══════════════════════════════════
   if (step === "upload") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 20px 60px" }}>
+      {/* 헤더 - 글쓰기 스타일 */}
+      <div style={{ textAlign: "center", padding: "32px 20px 0" }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: text, letterSpacing: -0.5 }}>영상 제작</div>
+        <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>유튜브 링크 또는 영상 파일로 AI가 쇼츠를 자동 제작해요</div>
+      </div>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
         {/* 탭 */}
         <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 24, border: `1px solid ${bdr}` }}>
-          <button onClick={() => setInputMode("youtube")} style={tabBtn(inputMode === "youtube")}>🔗 유튜브 링크</button>
+          <button onClick={() => setInputMode("youtube")} style={{ ...tabBtn(inputMode === "youtube"), display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><img src="/icon-youtube.png" alt="" style={{ width:18, height:13, objectFit:"contain" }} /> 유튜브 링크</button>
           <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>📁 파일 업로드</button>
         </div>
 
         {inputMode === "youtube" ? (
           <div>
-            <div style={{ position: "relative", marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>유튜브 영상 URL *</div>
+            <div style={{ position: "relative", marginBottom: 8 }}>
               <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, opacity: 0.5 }}>🔗</span>
-              <input value={ytUrl} onChange={e => setYtUrl(e.target.value)} placeholder="유튜브 영상 링크를 입력하세요" style={{ ...inputStyle, paddingLeft: 38 }} />
+              <input value={ytUrl}
+                onChange={e => setYtUrl(e.target.value)}
+                onPaste={e => {
+                  const pasted = e.clipboardData.getData("text");
+                  if (pasted && parseYoutubeUrl(pasted)) {
+                    e.preventDefault();
+                    setYtUrl(pasted.trim());
+                  }
+                }}
+                placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
+                style={{ ...inputStyle, paddingLeft: 38, paddingRight: ytParsed ? 38 : 14 }} />
+              {ytParsed && <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4ade80" }}>✓</span>}
             </div>
-            <button onClick={handleYoutube} style={btnStyle} disabled={!ytUrl.trim()}>쇼츠로 변환하기 →</button>
+            {ytUrl.trim() && !ytParsed && (
+              <div style={{ fontSize: 11, color: "#f87171", marginBottom: 8, paddingLeft: 4 }}>
+                올바른 유튜브 링크 형식이 아닙니다 (youtube.com/watch?v=... 또는 youtu.be/...)
+              </div>
+            )}
+            {ytParsed && (
+              <div style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: 12 }}>
+                <img src={`https://img.youtube.com/vi/${ytParsed.id}/mqdefault.jpg`} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: acc }}>유튜브 영상 감지됨</div>
+                  <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>ID: {ytParsed.id}</div>
+                </div>
+              </div>
+            )}
+            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>쇼츠로 변환하기 →</button>
           </div>
         ) : (
           <div>
@@ -259,10 +316,24 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ═══════════════════════════════════
   if (step === "loading") return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f4f4f8" }}>
-      <div style={{ textAlign: "center", maxWidth: 420 }}>
-        <div style={{ width: 80, height: 80, borderRadius: "50%", border: `4px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite", margin: "0 auto 24px" }} />
+      <style>{`
+        @keyframes shorts-icon-bounce{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-8px) rotate(-5deg)}50%{transform:translateY(0) rotate(0deg)}75%{transform:translateY(-4px) rotate(5deg)}}
+        @keyframes shorts-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        @keyframes shorts-pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+      `}</style>
+      <div style={{ textAlign: "center", maxWidth: 420, padding: "0 20px" }}>
+        {/* 애니메이션 아이콘 */}
+        <div style={{ position: "relative", width: 100, height: 100, margin: "0 auto 24px" }}>
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, borderRightColor: acc, animation: "shorts-ring-spin 1.5s linear infinite" }} />
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ animation: "shorts-icon-bounce 2s ease-in-out infinite" }}>
+              <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8" />
+              <polygon points="10,8 17,12 10,16" fill={acc} />
+            </svg>
+          </div>
+        </div>
         <div style={{ fontSize: 20, fontWeight: 900, color: text, marginBottom: 8 }}>AI가 영상을 분석하고 있어요</div>
-        <div style={{ fontSize: 14, color: muted, marginBottom: 20 }}>{loadingMsg}</div>
+        <div style={{ fontSize: 14, color: muted, marginBottom: 20, animation: "shorts-pulse 2s ease-in-out infinite" }}>{loadingMsg}</div>
         <div style={{ ...cardStyle, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: muted }}>⏱ 경과 시간: {Math.floor(elapsed / 60)}분 {elapsed % 60}초</div>
           <div style={{ fontSize: 11, color: acc, fontWeight: 600, marginTop: 6 }}>다른 메뉴로 이동해도 분석이 계속됩니다</div>
@@ -454,7 +525,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             </>
           ) : (
             <div style={{ textAlign: "center" }}>
-              <div style={{ width: 60, height: 60, borderRadius: "50%", border: `4px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
+              <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 20px" }}>
+                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, borderRightColor: acc, animation: "shorts-ring-spin 1.5s linear infinite" }} />
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: "shorts-icon-bounce 2s ease-in-out infinite" }}>
+                    <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8" />
+                    <polygon points="10,8 17,12 10,16" fill={acc} />
+                  </svg>
+                </div>
+              </div>
               <div style={{ fontSize: 18, fontWeight: 900, color: text }}>영상 생성 중...</div>
               <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>{completed}/{total}개 완료 · 페이지를 이동해도 계속 생성됩니다</div>
             </div>

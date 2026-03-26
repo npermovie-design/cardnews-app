@@ -69,7 +69,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   ];
 
   const [step,      setStep]      = useState(1);
-  useGeneratingGuard(step === 2, 10); // 생성 중 이탈 방지
+  useGeneratingGuard(step === 2, 10, "logo_gen"); // 생성 중 이탈 방지
   const [selStyle,  setSelStyle]  = useState(null);
   const [name,      setName]      = useState("");
   const [industry,  setIndustry]  = useState("");

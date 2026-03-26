@@ -15,6 +15,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
+import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
 
@@ -2840,10 +2841,10 @@ const MENU_LABELS = {
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
 const WRITE_PLATFORMS = [
-  { id: "blog_naver",   label: "네이버 블로그", type: "blog_naver" },
-  { id: "blog_cafe",    label: "네이버 카페",  type: "blog_cafe" },
+  { id: "blog_naver",   label: "네이버 블로그", type: "blog_naver",  icon: "/icon-naver-blog.png" },
+  { id: "blog_cafe",    label: "네이버 카페",  type: "blog_cafe",    icon: "/icon-naver-blog.png" },
   { id: "blog_tistory", label: "티스토리",     type: "blog_tistory" },
-  { id: "blog_insta",   label: "인스타그램",   type: "blog_insta" },
+  { id: "blog_insta",   label: "인스타그램",   type: "blog_insta",   icon: "/icon-instagram.webp" },
   { id: "blog_thread",  label: "스레드",       type: "blog_thread" },
 ];
 
@@ -2866,12 +2867,14 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
             return (
               <button key={t.id} onClick={() => onTabChange(t.id)}
                 style={{
-                  padding:"9px 20px", border:"none", cursor:"pointer",
+                  padding:"9px 16px", border:"none", cursor:"pointer",
                   background:"transparent",
                   color: active ? accent : muted, fontSize:13, fontWeight: active ? 700 : 400,
                   borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
                   transition: "all 0.15s", marginBottom:-1,
+                  display:"flex", alignItems:"center", gap:5,
                 }}>
+                {t.icon && <img src={t.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain", opacity: active ? 1 : 0.5 }} />}
                 {t.label}
               </button>
             );
@@ -2902,7 +2905,7 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
   const [tab, setTab] = useState(defaultTab || "youtube");
   const isDark = theme === "dark";
   const tabs = [
-    { id: "youtube", label: "유튜브" },
+    { id: "youtube", label: "유튜브",   icon: "/icon-youtube.png" },
     { id: "news",    label: "뉴스 기사" },
     { id: "blog",    label: "블로그" },
     { id: "sns",     label: "SNS" },
@@ -3091,6 +3094,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           </div>
         </div>
       )}
+      {/* 글로벌 백그라운드 작업 인디케이터 */}
+      <BackgroundTaskIndicator isDark={isDark} currentMenu={aiMenu} onNavigate={(menu) => setAiMenu(menu)} />
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{width:4px;height:4px}

@@ -149,7 +149,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
   ];
 
   const [step,       setStep]       = useState(1); // 1=설정 2=생성중 3=결과
-  useGeneratingGuard(step === 2, 30); // 생성 중 이탈 방지
+  useGeneratingGuard(step === 2, 30, "mockup_gen"); // 생성 중 이탈 방지
   const [logoText,   setLogoText]   = useState("");
   const [logoB64,    setLogoB64]    = useState(null);
   const [logoMime,   setLogoMime]   = useState(null);
