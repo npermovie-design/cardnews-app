@@ -124,7 +124,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
-        <Item id="image_edit" label="이미지 수정" ids={["face_swap","outfit_swap","outpaint"]} />
+        <Item id="image_edit" label="이미지 수정" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
         <Item id="video_create" label="영상 제작" ids={["shorts_make"]} />
       </div>
 
@@ -1649,6 +1649,167 @@ function BeforeAfterSlider({ srcImg, result, bdr, ACC, muted, text, onReset, dow
 }
 
 /* ── 얼굴 교체 ───────────────────────────────────────────── */
+/* ── 피부 보정 컴포넌트 ── */
+function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+  const C = useGenColors(isDark);
+  const { ACC, bg, card, bdr, text, muted } = C;
+  const [srcImg, setSrcImg] = useState(null);
+  const [result, setResult] = useState(null);
+  const [step, setStep] = useState(1);
+  const [err, setErr] = useState("");
+  const [mood, setMood] = useState("natural");
+  const [intensity, setIntensity] = useState("medium");
+
+  const MOODS = [
+    { id: "natural", label: "자연스럽게", desc: "피부만 매끄럽게", emoji: "✨" },
+    { id: "young", label: "어려보이게", desc: "동안 느낌으로", emoji: "👶" },
+    { id: "glow", label: "광채 피부", desc: "빛나는 윤기 피부", emoji: "💎" },
+    { id: "porcelain", label: "도자기 피부", desc: "결점 없는 매끈함", emoji: "🪷" },
+    { id: "soft", label: "소프트 필터", desc: "부드러운 분위기", emoji: "🌸" },
+    { id: "studio", label: "스튜디오", desc: "전문 촬영 느낌", emoji: "📸" },
+  ];
+
+  const INTENSITIES = [
+    { id: "light", label: "약하게" },
+    { id: "medium", label: "보통" },
+    { id: "strong", label: "강하게" },
+  ];
+
+  const readFile = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setSrcImg({ b64: ev.target.result.split(",")[1], mime: f.type, url: ev.target.result });
+    reader.readAsDataURL(f);
+  };
+
+  const generate = async () => {
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!srcImg) { setErr("사진을 업로드해주세요."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    setStep(3); setErr("");
+    window.__isGenerating = true; window.__generatingCost = 10;
+
+    const moodDesc = MOODS.find(m => m.id === mood)?.desc || "자연스럽게";
+    const intensityDesc = { light: "subtle and minimal", medium: "moderate", strong: "significant and dramatic" }[intensity] || "moderate";
+
+    const prompt = `Professional skin retouching and beauty enhancement task.
+
+Apply ${intensityDesc} skin retouching to this person's photo:
+- Smooth out skin texture, remove blemishes, acne, pores, and imperfections
+- Even out skin tone and reduce dark spots, redness
+- ${mood === "young" ? "Make the person look noticeably younger (5-10 years younger), reduce wrinkles and fine lines, add youthful glow to skin" : ""}
+- ${mood === "glow" ? "Add a radiant, dewy glow to the skin, like Korean glass skin effect. Luminous and hydrated look" : ""}
+- ${mood === "porcelain" ? "Create flawless porcelain-like skin, extremely smooth and even-toned, like a magazine cover" : ""}
+- ${mood === "soft" ? "Apply a soft, dreamy filter effect. Gentle skin smoothing with warm soft lighting" : ""}
+- ${mood === "studio" ? "Professional studio-quality retouching. Perfect lighting, sharp details, magazine-quality skin" : ""}
+- ${mood === "natural" ? "Keep the look natural and believable, just cleaner and smoother skin" : ""}
+
+IMPORTANT: Keep the person's identity, facial features, expression, hair, clothing, background, and overall composition EXACTLY the same. Only improve the skin quality and apply the specified mood. Output must be photorealistic, high quality, 4K resolution.`;
+
+    try {
+      const _tok = await getAuthToken();
+      const res = await fetch("/api/generate-image", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(_tok ? { Authorization: `Bearer ${_tok}` } : {}) },
+        body: JSON.stringify({ prompt, productImageB64: srcImg.b64, productImageMime: srcImg.mime })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
+      setResult(data.image); setStep(4);
+      if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
+    } catch (e) { setErr(e.message || "보정 실패"); setStep(2); }
+    finally { window.__isGenerating = false; }
+  };
+
+  const W = { maxWidth: 640, margin: "0 auto" };
+
+  if (step === 3) return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: bg }}>
+      <GenLoading emoji="✨" title="피부 보정 중..." subtitle={"AI가 피부를 분석하고 보정하고 있어요\n예상 시간: 20~35초"} ACC={ACC} isDark={isDark} />
+    </div>
+  );
+
+  if (step === 4 && result) return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 60px", background: bg }}>
+      <div style={W}>
+        <BeforeAfterSlider srcImg={srcImg} result={result} bdr={bdr} ACC={ACC} muted={muted} text={text}
+          onReset={() => { setResult(null); setStep(1); setSrcImg(null); }}
+          downloadName="skin_retouch.png" />
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 60px", background: bg }}>
+      <div style={W}>
+        {err && <div style={{ padding: "10px 14px", borderRadius: 9, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 14, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{err}{(err.includes("포인트") || err.includes("충전")) && <button onClick={() => navigate("pricing")} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>충전하기</button>}</div>}
+
+        {/* 사진 업로드 */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>보정할 사진</div>
+          <label style={{ display: "block", cursor: "pointer" }}>
+            <div style={{ aspectRatio: "3/4", maxHeight: 320, borderRadius: 14, border: `2px dashed ${srcImg ? ACC : bdr}`, background: card, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexDirection: "column", gap: 8 }}>
+              {srcImg ? <img src={srcImg.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                : <>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: `${ACC}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>📷</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: text }}>사진을 업로드하세요</div>
+                  <div style={{ fontSize: 11, color: muted }}>얼굴이 잘 보이는 사진을 올려주세요</div>
+                </>}
+            </div>
+            <input type="file" accept="image/*" onChange={readFile} style={{ display: "none" }} />
+          </label>
+          {srcImg && <button onClick={() => setSrcImg(null)} style={{ marginTop: 8, padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>다른 사진 선택</button>}
+        </div>
+
+        {/* 보정 분위기 */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>보정 분위기</div>
+          <div className="ai-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+            {MOODS.map(m => (
+              <button key={m.id} onClick={() => setMood(m.id)}
+                style={{ padding: "12px 8px", borderRadius: 12, border: `2px solid ${mood === m.id ? ACC : bdr}`,
+                  background: mood === m.id ? `${ACC}12` : "transparent", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+                <div style={{ fontSize: 20, marginBottom: 4 }}>{m.emoji}</div>
+                <div style={{ fontSize: 12, fontWeight: mood === m.id ? 800 : 500, color: mood === m.id ? ACC : text }}>{m.label}</div>
+                <div style={{ fontSize: 9, color: muted, marginTop: 2 }}>{m.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 보정 강도 */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>보정 강도</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {INTENSITIES.map(i => (
+              <button key={i.id} onClick={() => setIntensity(i.id)}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, border: `2px solid ${intensity === i.id ? ACC : bdr}`,
+                  background: intensity === i.id ? `${ACC}12` : "transparent", cursor: "pointer",
+                  fontSize: 13, fontWeight: intensity === i.id ? 800 : 500, color: intensity === i.id ? ACC : muted }}>
+                {i.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 안내 */}
+        <div style={{ padding: "10px 14px", borderRadius: 10, background: `${ACC}08`, border: `1px solid ${ACC}20`, marginBottom: 16, fontSize: 12, color: muted, lineHeight: 1.7 }}>
+          ✨ AI가 피부 결점을 제거하고 선택한 분위기로 보정합니다. 얼굴, 표정, 헤어, 배경은 그대로 유지됩니다.
+        </div>
+
+        {/* 생성 버튼 */}
+        <button onClick={generate} disabled={!srcImg}
+          style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", cursor: srcImg ? "pointer" : "default",
+            background: srcImg ? `linear-gradient(135deg,${ACC},#ec4899)` : (isDark ? "rgba(255,255,255,0.06)" : "#eee"),
+            color: srcImg ? "#fff" : muted, fontSize: 16, fontWeight: 900,
+            boxShadow: srcImg ? "0 8px 28px rgba(124,106,255,0.25)" : "none" }}>
+          ✨ 피부 보정 시작 (-10P)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
@@ -2318,6 +2479,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { id: "logo_gen",     title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
       { id: "mockup_gen",   title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
       { id: "model_gen",    title: _s("모델 생성","Model Generator"),         desc: _s("AI 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
+      { id: "skin_retouch", title: _s("피부 보정","Skin Retouch"),       desc: _s("AI 피부 보정 · 분위기 변환","AI skin retouching & mood"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "face_swap",    title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
@@ -2330,7 +2492,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { label: _s("SNS 이미지","SNS Image"), color: "#ec4899",
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
       { label: _s("이미지 생성","Image Generation"), color: "#f59e0b",
-        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","face_swap","outfit_swap","outpaint"].includes(m.id)) },
+        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"].includes(m.id)) },
       { label: _s("영상 제작","Video Production"), color: "#ef4444",
         items: MENUS.filter(m => m.id === "shorts_make") },
     ];
@@ -2656,16 +2818,18 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 이미지 수정 (얼굴교체 + 의상교체 + 여백늘리기) ──
-  if (["face_swap","outfit_swap","outpaint","image_edit"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
+  if (["skin_retouch","face_swap","outfit_swap","outpaint","image_edit"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
     return <TabbedGroup key="imgedit" isDark={isDark} theme={theme}
-      title="이미지 수정" subtitle="AI로 얼굴 교체, 의상 교체, 여백 확장을 할 수 있어요"
+      title="이미지 수정" subtitle="AI로 피부 보정, 얼굴 교체, 의상 교체, 여백 확장을 할 수 있어요"
       tabs={[
+        { id:"skin_retouch", label:"피부 보정" },
         { id:"face_swap", label:"얼굴 교체" },
         { id:"outfit_swap", label:"의상 교체" },
         { id:"outpaint", label:"여백 늘리기" },
       ]}
-      defaultTab={aiMenu.startsWith("outfit")?"outfit_swap":aiMenu.startsWith("outpaint")?"outpaint":"face_swap"}
+      defaultTab={aiMenu.startsWith("skin")?"skin_retouch":aiMenu.startsWith("outfit")?"outfit_swap":aiMenu.startsWith("outpaint")?"outpaint":"face_swap"}
       renderTab={(tab) => {
+        if (tab === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
         if (tab === "face_swap") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
         if (tab === "outfit_swap") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
         if (tab === "outpaint") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
@@ -2855,6 +3019,7 @@ const MENU_LABELS = {
   logo_gen: "로고 생성", mockup_gen: "목업 생성", product_shot: "제품컷 생성",
   blog_cafe_make: "네이버 카페",
   model_gen: "모델 생성", model_gen_make: "모델 생성",
+  skin_retouch: "피부 보정", skin_retouch_make: "피부 보정",
   face_swap: "얼굴 교체", face_swap_make: "얼굴 교체",
   outfit_swap: "의상 교체", outfit_swap_make: "의상 교체",
   outpaint: "여백 늘리기", outpaint_make: "여백 늘리기",
