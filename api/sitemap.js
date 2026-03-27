@@ -60,6 +60,6 @@ ${[...staticPages, ...postUrls].map(urlEntry).join("\n")}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
   res.status(200).send(xml);
 }

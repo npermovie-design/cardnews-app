@@ -1,5 +1,5 @@
-// AI 프록시 — OpenRouter API 키를 서버에서만 사용
-// 프론트엔드에서 직접 OpenRouter를 호출하지 않고 이 프록시를 통해 호출
+// AI 프록시 — Edge Runtime (서버리스보다 저렴)
+export const config = { runtime: "edge" };
 
 const OR_KEY = process.env.OPENROUTER_API_KEY;
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -16,64 +16,21 @@ function orModel(m) {
   return MODEL_MAP[m] || (m.includes("/") ? m : `anthropic/${m}`);
 }
 
-export const config = { maxDuration: 120 };
-
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
-
-  if (!OR_KEY) return res.status(500).json({ error: "API key not configured" });
+export default async function handler(req) {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
+  }
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST only" }), { status: 405 });
+  if (!OR_KEY) return new Response(JSON.stringify({ error: "API key not configured" }), { status: 500 });
 
   try {
-    const { model, messages, max_tokens, system, stream } = req.body;
-    if (!model || !messages) return res.status(400).json({ error: "model, messages 필수" });
+    const { model, messages, max_tokens, system, stream } = await req.json();
+    if (!model || !messages) return new Response(JSON.stringify({ error: "model, messages 필수" }), { status: 400 });
 
-    const body = {
-      model: orModel(model),
-      max_tokens: max_tokens || 2000,
-      messages,
-    };
+    const body = { model: orModel(model), max_tokens: max_tokens || 2000, messages };
     if (system) body.system = system;
+    if (stream) body.stream = true;
 
-    // 스트리밍 모드
-    if (stream) {
-      body.stream = true;
-      const orRes = await fetch(OR_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OR_KEY}`,
-          "HTTP-Referer": "https://snsmakeit.com",
-          "X-Title": "SNS Makeit",
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!orRes.ok) {
-        const errText = await orRes.text().catch(() => "");
-        return res.status(orRes.status).json({ error: `AI API 오류: ${errText.slice(0, 200)}` });
-      }
-
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
-
-      const reader = orRes.body.getReader();
-      const decoder = new TextDecoder();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(decoder.decode(value, { stream: true }));
-        }
-      } catch (e) {}
-      return res.end();
-    }
-
-    // 일반 모드
     const orRes = await fetch(OR_URL, {
       method: "POST",
       headers: {
@@ -87,12 +44,20 @@ export default async function handler(req, res) {
 
     if (!orRes.ok) {
       const errText = await orRes.text().catch(() => "");
-      return res.status(orRes.status).json({ error: `AI API 오류: ${errText.slice(0, 200)}` });
+      return new Response(JSON.stringify({ error: `AI API 오류: ${errText.slice(0, 200)}` }), { status: orRes.status });
+    }
+
+    if (stream) {
+      return new Response(orRes.body, {
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Access-Control-Allow-Origin": "*" },
+      });
     }
 
     const data = await orRes.json();
-    return res.status(200).json(data);
+    return new Response(JSON.stringify(data), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "서버 오류" });
+    return new Response(JSON.stringify({ error: e.message || "서버 오류" }), { status: 500 });
   }
 }
