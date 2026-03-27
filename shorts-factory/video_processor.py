@@ -326,6 +326,18 @@ def generate_short(
                 caption = get_caption_at_time(subs, frame_time) if subs else ""
 
                 composed = composer.compose(img, caption)
+
+                # 페이드 인/아웃 효과 (처음 0.5초, 마지막 0.5초)
+                elapsed = frame_time - start_seconds
+                remaining = end_seconds - frame_time
+                fade_duration = 0.5
+                if elapsed < fade_duration:
+                    alpha = elapsed / fade_duration
+                    composed = (composed.astype(np.float32) * alpha).astype(np.uint8)
+                elif remaining < fade_duration:
+                    alpha = remaining / fade_duration
+                    composed = (composed.astype(np.float32) * max(alpha, 0)).astype(np.uint8)
+
                 new_frame = av.VideoFrame.from_ndarray(composed, format="rgb24")
                 new_frame = new_frame.reformat(format="yuv420p")
                 new_frame.pts = frame_count
