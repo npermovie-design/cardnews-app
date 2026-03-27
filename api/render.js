@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="RK3cE_t-6IlrSQbjoV4TvEg9n-Crqg8eaEByIHq_V50" />
-<meta name="naver-site-verification" content="20befb9d4db477010b5f0545bd3097fe2cfa1e6a" />
+<meta name="naver-site-verification" content="b7ec85037f97a6e5870a755bc0c1d9b90d224ed9" />
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <meta name="robots" content="index, follow">
