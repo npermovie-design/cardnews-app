@@ -909,6 +909,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [dragOver, setDragOver] = useState(false);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+  const [archiveEditPost, setArchiveEditPost] = useState(null);
+  const [archiveEditForm, setArchiveEditForm] = useState({ title: "", desc: "", tag: "" });
 
   // 파일 타입 자동 감지
   const detectMediaType = (file) => {
@@ -1853,8 +1855,17 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       const thumb = (p.images||[])[0];
                       const isVid = thumb && /\.(mp4|mov|avi|webm|mkv)/i.test(thumb);
                       const isGif = thumb && /\.gif$/i.test(thumb);
+                      const isPhoto = thumb && !isVid && !isGif && /\.(jpg|jpeg|png|webp|bmp|svg|tiff)/i.test(thumb);
+                      const isMusic = thumb && /\.(mp3|wav|ogg|flac|aac|m4a)/i.test(thumb);
+                      const typeTag = isVid ? "영상" : isGif ? "GIF" : isPhoto ? "사진" : isMusic ? "음악" : (p.tag || "");
+                      const tagColor = isVid ? "rgba(239,68,68,0.85)" : isGif ? "rgba(139,92,246,0.85)" : isPhoto ? "rgba(59,130,246,0.85)" : isMusic ? "rgba(245,158,11,0.85)" : "rgba(100,100,100,0.7)";
                       return (
-                        <div key={p.id} onClick={()=>openPost(p)}
+                        <div key={p.id} onClick={()=>{
+                          if (user?.role==="admin") {
+                            setArchiveEditPost(p);
+                            setArchiveEditForm({ title: p.title||"", desc: (p.body||"").replace(/<[^>]*>/g,""), tag: p.tag||typeTag });
+                          } else { openPost(p); }
+                        }}
                           style={{borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,background:cardBg,cursor:"pointer",position:"relative",transition:"transform 0.15s"}}
                           onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
                           onMouseLeave={e=>e.currentTarget.style.transform="none"}>
@@ -1869,15 +1880,17 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             ) : (
                               <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#94a3b8",fontWeight:600}}>파일</div>
                             )}
-                            {/* 유형 배지 */}
-                            {isVid && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(0,0,0,0.7)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>영상</span>}
-                            {isGif && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(139,92,246,0.8)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>GIF</span>}
+                            {/* 유형 태그 배지 (좌상단) */}
+                            {typeTag && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:tagColor,color:"#fff",padding:"2px 7px",borderRadius:4,fontWeight:700}}>{typeTag}</span>}
                             {/* 유료/무료 배지 */}
                             {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>유료{p.price?` ${p.price}`:""}</span>}
                             {p.priceType==="free"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>무료</span>}
                             {/* 다운로드 */}
                             {thumb&&<button onClick={e=>{e.stopPropagation();downloadFile(thumb);}}
                               style={{position:"absolute",bottom:6,right:6,padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
+                            {/* 관리자 수정 아이콘 */}
+                            {user?.role==="admin"&&<button onClick={e=>{e.stopPropagation(); setArchiveEditPost(p); setArchiveEditForm({title:p.title||"",desc:(p.body||"").replace(/<[^>]*>/g,""),tag:p.tag||typeTag});}}
+                              style={{position:"absolute",bottom:6,left:6,padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(124,106,255,0.85)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>✏️</button>}
                           </div>
                           <div style={{padding:"8px 10px"}}>
                             <div style={{fontSize:12,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</div>
@@ -1903,6 +1916,66 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           background:page===n?"rgba(99,102,241,0.15)":"transparent",color:page===n?"#a5b4fc":C.muted,
                           fontSize:12,fontWeight:page===n?700:400,cursor:"pointer"}}>{n}</button>
                     ))}
+                  </div>
+                )}
+
+                {/* 자료실 인라인 수정 모달 */}
+                {archiveEditPost && (
+                  <div onClick={()=>setArchiveEditPost(null)} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+                    <div onClick={e=>e.stopPropagation()} style={{width:"min(500px,95vw)",maxHeight:"85vh",overflowY:"auto",background:isDark?"#1a1730":"#fff",borderRadius:20,padding:"24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`}}>
+                      {/* 미리보기 */}
+                      {(archiveEditPost.images||[])[0] && (
+                        <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,maxHeight:240}}>
+                          {/\.(mp4|mov|avi|webm|mkv)/i.test(archiveEditPost.images[0])
+                            ? <video src={archiveEditPost.images[0]} controls style={{width:"100%",maxHeight:240,objectFit:"contain",background:"#000"}}/>
+                            : <img src={archiveEditPost.images[0]} alt="" style={{width:"100%",maxHeight:240,objectFit:"contain",background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb"}}/>}
+                        </div>
+                      )}
+                      <div style={{fontSize:18,fontWeight:900,color:C.text,marginBottom:16}}>자료 수정</div>
+                      {/* 제목 */}
+                      <div style={{marginBottom:12}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>제목</div>
+                        <input value={archiveEditForm.title} onChange={e=>setArchiveEditForm(p=>({...p,title:e.target.value}))}
+                          style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                      </div>
+                      {/* 설명 */}
+                      <div style={{marginBottom:12}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>설명</div>
+                        <textarea value={archiveEditForm.desc} onChange={e=>setArchiveEditForm(p=>({...p,desc:e.target.value}))} rows={2}
+                          style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",resize:"vertical",fontFamily:"inherit"}}/>
+                      </div>
+                      {/* 태그 선택 */}
+                      <div style={{marginBottom:16}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:6}}>분류 태그</div>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          {[{id:"영상",c:"#ef4444"},{id:"사진",c:"#3b82f6"},{id:"GIF",c:"#8b5cf6"},{id:"음악",c:"#f59e0b"}].map(t=>(
+                            <button key={t.id} onClick={()=>setArchiveEditForm(p=>({...p,tag:p.tag===t.id?"":t.id}))}
+                              style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${archiveEditForm.tag===t.id?t.c:bdr}`,
+                                background:archiveEditForm.tag===t.id?t.c+"20":"transparent",color:archiveEditForm.tag===t.id?t.c:C.muted,
+                                fontSize:12,fontWeight:archiveEditForm.tag===t.id?700:500,cursor:"pointer"}}>{t.id}</button>
+                          ))}
+                        </div>
+                      </div>
+                      {/* 버튼 */}
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>setArchiveEditPost(null)} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer"}}>취소</button>
+                        <button onClick={async()=>{
+                          try {
+                            const updates = { title: archiveEditForm.title, body: `<p>${archiveEditForm.desc}</p>`, tag: archiveEditForm.tag };
+                            await updatePostInDB(archiveEditPost.id, updates);
+                            const updated = posts.map(p=>p.id===archiveEditPost.id?{...p,...updates,body:updates.body}:p);
+                            syncLocal(updated);
+                            showToast("수정 완료!","success");
+                          } catch(e){ alert("수정 실패: "+e.message); }
+                          setArchiveEditPost(null);
+                        }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>저장</button>
+                        <button onClick={async()=>{
+                          if(!confirm("이 자료를 삭제하시겠습니까?")) return;
+                          try { await deletePostFromDB(archiveEditPost.id); syncLocal(posts.filter(p=>p.id!==archiveEditPost.id)); showToast("삭제 완료","success"); } catch(e){}
+                          setArchiveEditPost(null);
+                        }} style={{padding:"12px 16px",borderRadius:10,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#ef4444",fontSize:14,fontWeight:700,cursor:"pointer"}}>삭제</button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>

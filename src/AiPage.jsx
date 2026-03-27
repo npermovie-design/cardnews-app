@@ -4051,8 +4051,24 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
           <ViralityAnalyzer isDark={isDark} />
         </div>
       ) : tab === "insta_auto_reply" ? (
-        <div style={{ flex:1, overflowY:"auto" }}>
+        <div style={{ flex:1, overflowY:"auto", position:"relative" }}>
           <InstaAutoReply isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
+          {/* 스레드 자동댓글 개발중 오버레이 */}
+          <div style={{ position:"absolute", inset:0, background: D ? "rgba(15,12,41,0.88)" : "rgba(255,255,255,0.88)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}>
+            <div style={{ textAlign:"center", padding:40 }}>
+              <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#000,#333)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+                <img src="/icon-threads.png" alt="" style={{ width:36, height:36, filter:"brightness(10)" }} />
+              </div>
+              <div style={{ fontSize:24, fontWeight:900, color: D ? "#fff" : "#1a1a2e", marginBottom:8 }}>개발중</div>
+              <div style={{ fontSize:14, color: D ? "rgba(255,255,255,0.6)" : "#888", lineHeight:1.8, maxWidth:360 }}>
+                스레드 자동 대댓글 기능을 준비하고 있어요.<br/>
+                Meta 앱 검수 완료 후 오픈될 예정입니다.
+              </div>
+              <div style={{ marginTop:24, padding:"10px 24px", borderRadius:12, background: D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)", color: D ? "rgba(255,255,255,0.5)" : "#888", fontSize:13, fontWeight:700, display:"inline-block" }}>
+                Coming Soon
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <div style={{ flex:1, overflowY:"auto", position:"relative" }}>
