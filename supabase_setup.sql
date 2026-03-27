@@ -275,5 +275,46 @@ CREATE POLICY "pub_hist_insert_own"
   ON publish_history FOR INSERT
   WITH CHECK (auth.uid()::text = uid);
 
+-- ── 인스타 자동 대댓글 캠페인 테이블 ──────────────────────────────
+CREATE TABLE IF NOT EXISTS insta_reply_campaigns (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  uid TEXT NOT NULL,
+  name TEXT NOT NULL,
+  post_url TEXT,
+  media_id TEXT,
+  trigger_keywords JSONB DEFAULT '[]',
+  reply_message TEXT DEFAULT '',
+  reply_link TEXT,
+  is_active BOOLEAN DEFAULT true,
+  reply_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE insta_reply_campaigns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "insta_reply_campaigns_all" ON insta_reply_campaigns;
+CREATE POLICY "insta_reply_campaigns_all" ON insta_reply_campaigns FOR ALL USING (true);
+
+-- insta_dm_log campaign_id를 TEXT로 변경 (대댓글 로그에 "reply_" prefix 사용)
+ALTER TABLE insta_dm_log ALTER COLUMN campaign_id TYPE TEXT USING campaign_id::TEXT;
+
+-- ── 고객사례 테이블 ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS customer_cases (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  brand TEXT NOT NULL,
+  field TEXT DEFAULT '',
+  feature TEXT DEFAULT '',
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  link TEXT DEFAULT '',
+  thumb_url TEXT DEFAULT '',
+  tags JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE customer_cases ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "customer_cases_all" ON customer_cases;
+CREATE POLICY "customer_cases_all" ON customer_cases FOR ALL USING (true);
+
 -- ── 완료 ────────────────────────────────────────────────────────
 -- 위 SQL 실행 후 사이트를 새로고침하면 적용됩니다.

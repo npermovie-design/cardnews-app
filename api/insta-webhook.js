@@ -90,7 +90,7 @@ async function processWebhookEvent(body) {
   }
 }
 
-// ── 댓글 처리: 키워드 매칭 → DM 발송 ──
+// ── 댓글 처리: 키워드 매칭 → DM 발송 + 자동 대댓글 ──
 async function handleComment(igAccountId, commentData) {
   const { media, id: commentId, text: commentText, from } = commentData;
   if (!commentText || !from?.id) {
@@ -100,11 +100,12 @@ async function handleComment(igAccountId, commentData) {
 
   const commenterId = from.id;
   const commenterUsername = from.username || "";
+  const mediaId = media?.id;
 
   await logWebhookEvent("comment_received", {
     igAccountId, commenterId, commenterUsername,
     commentText: commentText.substring(0, 200),
-    mediaId: media?.id,
+    mediaId,
   });
 
   // 1) 이 Instagram 계정의 연동 정보 찾기
@@ -115,7 +116,6 @@ async function handleComment(igAccountId, commentData) {
     .eq("platform_user_id", igAccountId);
 
   if (!connections?.length) {
-    // platform_user_id가 안 맞을 수 있으니 모든 인스타 연동 계정으로 시도
     const { data: allConns } = await supabase
       .from("sns_connections")
       .select("*")
@@ -132,7 +132,6 @@ async function handleComment(igAccountId, commentData) {
     });
 
     if (!allConns?.length) return;
-    // 첫 번째 연동 계정 사용 (단일 사용자 서비스)
     var connection = allConns[0];
   } else {
     var connection = connections[0];
@@ -141,7 +140,11 @@ async function handleComment(igAccountId, commentData) {
   const uid = connection.uid;
   const accessToken = connection.access_token;
 
-  // 2) 이 유저의 활성 캠페인 조회
+  // ── 자동 대댓글 처리 ──
+  await handleAutoReply(uid, accessToken, igAccountId, mediaId, commentId, commentText, commenterId, commenterUsername);
+
+  // ── DM 캠페인 처리 (현재 비활성 - 개발중) ──
+  // 2) 이 유저의 활성 DM 캠페인 조회
   const { data: campaigns } = await supabase
     .from("insta_dm_campaigns")
     .select("*")
@@ -149,11 +152,11 @@ async function handleComment(igAccountId, commentData) {
     .eq("is_active", true);
 
   if (!campaigns?.length) {
-    await logWebhookEvent("no_active_campaigns", { uid });
+    await logWebhookEvent("no_active_dm_campaigns", { uid });
     return;
   }
 
-  await logWebhookEvent("campaigns_found", {
+  await logWebhookEvent("dm_campaigns_found", {
     count: campaigns.length,
     names: campaigns.map(c => c.name),
   });
@@ -161,8 +164,6 @@ async function handleComment(igAccountId, commentData) {
   // 3) 캠페인별 키워드 매칭
   for (const campaign of campaigns) {
     const keywords = campaign.trigger_keywords || [];
-
-    // 키워드가 비어있으면 모든 댓글에 반응
     const matched = keywords.length === 0 ||
       keywords.some(kw => commentText.toLowerCase().includes(kw.toLowerCase()));
 
@@ -191,7 +192,7 @@ async function handleComment(igAccountId, commentData) {
       continue;
     }
 
-    // 5) DM 메시지 결정 (기본: 비팔로워 메시지)
+    // 5) DM 메시지 결정
     const message = campaign.dm_message_non_follower || campaign.dm_message_follower;
     if (!message) continue;
 
@@ -227,8 +228,118 @@ async function handleComment(igAccountId, commentData) {
         .eq("id", campaign.id);
     }
 
-    // 하나의 댓글에 첫 매칭 캠페인만 발송
     break;
+  }
+}
+
+// ── 자동 대댓글 처리 ──
+async function handleAutoReply(uid, accessToken, igAccountId, mediaId, commentId, commentText, commenterId, commenterUsername) {
+  // 활성 대댓글 규칙 조회
+  const { data: replyCampaigns } = await supabase
+    .from("insta_reply_campaigns")
+    .select("*")
+    .eq("uid", uid)
+    .eq("is_active", true);
+
+  if (!replyCampaigns?.length) {
+    await logWebhookEvent("no_active_reply_campaigns", { uid });
+    return;
+  }
+
+  await logWebhookEvent("reply_campaigns_found", {
+    count: replyCampaigns.length,
+    names: replyCampaigns.map(c => c.name),
+  });
+
+  for (const campaign of replyCampaigns) {
+    const keywords = campaign.trigger_keywords || [];
+    const matched = keywords.length === 0 ||
+      keywords.some(kw => commentText.toLowerCase().includes(kw.toLowerCase()));
+
+    if (!matched) continue;
+
+    // 중복 대댓글 체크
+    const { data: existing } = await supabase
+      .from("insta_dm_log")
+      .select("id")
+      .eq("campaign_id", "reply_" + campaign.id)
+      .eq("commenter_id", commenterId)
+      .neq("commenter_id", "webhook_debug")
+      .limit(1);
+
+    if (existing?.length) {
+      await logWebhookEvent("reply_already_sent", { campaign: campaign.name, commenterId });
+      continue;
+    }
+
+    const replyMsg = campaign.reply_link
+      ? `@${commenterUsername} ${campaign.reply_message} ${campaign.reply_link}`
+      : `@${commenterUsername} ${campaign.reply_message}`;
+
+    // 대댓글 발송
+    const sent = await replyToComment(accessToken, commentId, replyMsg);
+
+    // 로그 기록
+    await supabase.from("insta_dm_log").insert({
+      campaign_id: "reply_" + campaign.id,
+      uid,
+      commenter_id: commenterId,
+      commenter_username: commenterUsername,
+      comment_id: commentId || "unknown",
+      comment_text: commentText.substring(0, 500),
+      message_sent: replyMsg.substring(0, 1000),
+      is_follower: false,
+      sent_success: sent,
+      created_at: new Date().toISOString(),
+    });
+
+    // 대댓글 카운트 증가
+    if (sent) {
+      await supabase
+        .from("insta_reply_campaigns")
+        .update({
+          reply_count: (campaign.reply_count || 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", campaign.id);
+    }
+
+    break;
+  }
+}
+
+// ── 대댓글 발송 (Instagram Comment Reply API) ──
+async function replyToComment(accessToken, commentId, message) {
+  try {
+    const url = `https://graph.instagram.com/v21.0/${commentId}/replies`;
+
+    await logWebhookEvent("reply_sending", {
+      commentId, messagePreview: message.substring(0, 100),
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      await logWebhookEvent("reply_send_failed", {
+        status: response.status, error: data,
+      });
+      return false;
+    }
+
+    await logWebhookEvent("reply_send_success", { data });
+    return true;
+  } catch (err) {
+    await logWebhookEvent("reply_send_error", { error: err.message });
+    return false;
   }
 }
 

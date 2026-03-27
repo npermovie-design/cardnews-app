@@ -10,9 +10,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36, marginBottom: 24 }}>
           <div style={{ maxWidth: 280 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
-              </div>
+              <img src="/logo.png" alt="SNS메이킷" style={{ width: 32, height: 32, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
               <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>SNS메이킷</div>
             </div>
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85, margin: 0, whiteSpace: "pre-line" }}>{t("footerDesc") || "비즈니스를 위한 SNS 성장 파트너.\nAI를 활용해 더 빠르게, 더 스마트하게"}</p>

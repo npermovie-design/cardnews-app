@@ -407,7 +407,7 @@ export default function App() {
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
-    if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} />;
+    if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
     if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;
@@ -614,9 +614,7 @@ export default function App() {
 
         {/* 로고 */}
         <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, marginRight: 16, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(124,106,255,0.3)", flexShrink: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
-          </div>
+          <img src="/logo.png" alt="SNS메이킷" style={{ width: 34, height: 34, borderRadius: 11, objectFit: "cover", flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 15, fontWeight: 900, color: C.text, letterSpacing: -0.5, lineHeight: 1 }}>SNS메이킷</div>
           </div>

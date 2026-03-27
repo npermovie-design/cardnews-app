@@ -101,9 +101,12 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       position: "relative",
     }}>
       {/* 브랜드 */}
-      <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}` }}>
-        <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
-        <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>{t("aiGen")}</div>
+      <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <img src="/logo.png" alt="SNS메이킷" style={{ width: 28, height: 28, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
+          <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>{t("aiGen")}</div>
+        </div>
       </div>
 
       {/* 메뉴 */}
@@ -114,7 +117,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="hot_keyword" label="핫 키워드" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="marketing" label="마케팅" ids={["sns_analysis","insta_auto_dm","analysis_insta","analysis_tiktok","analysis_youtube"]} />
+        <Item id="marketing" label="마케팅" ids={["sns_analysis","insta_auto_dm","insta_auto_reply","analysis_insta","analysis_tiktok","analysis_youtube"]} />
         <Item id="prompt_studio" label="기획" />
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
@@ -2672,7 +2675,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 마케팅 (SNS 분석 + 인스타 자동DM) ──
-  if (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu === "insta_auto_dm" || aiMenu.startsWith("analysis_")) {
+  if (aiMenu === "marketing" || aiMenu === "sns_analysis" || aiMenu === "insta_auto_dm" || aiMenu === "insta_auto_reply" || aiMenu.startsWith("analysis_")) {
     return <MarketingHub theme={theme} isDark={isDark} user={user} C={C} navigate={navigate} onUserUpdate={onUserUpdate} defaultTab={aiMenu} />;
   }
 
@@ -2864,6 +2867,7 @@ const MENU_LABELS = {
   ppt_gen: "PPT 제작",
   marketing: "마케팅",
   insta_auto_dm: "마케팅",
+  insta_auto_reply: "마케팅",
   sns_analysis: "마케팅",
   analysis_insta: "마케팅",
   analysis_tiktok: "마케팅",
@@ -2931,6 +2935,456 @@ function DmInputField({ label, value, onChange, placeholder, multiline, hint, st
           style={baseStyle} />
       )}
       {hint && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{hint}</div>}
+    </div>
+  );
+}
+
+/* ── 인스타 자동 대댓글 컴포넌트 ── */
+function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
+  const D = isDark;
+  const text = D ? "#fff" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
+  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+  const accent = "#7c6aff";
+
+  const [instaConnected, setInstaConnected] = useState(null);
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [media, setMedia] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [campaigns, setCampaigns] = useState([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [viewTab, setViewTab] = useState("posts");
+
+  const [form, setForm] = useState({
+    enabled: true, triggerKeywords: "",
+    replyMessage: "", replyLink: "",
+  });
+
+  // 기본 대댓글 템플릿
+  const REPLY_TEMPLATES = [
+    { id: "link", label: "링크 안내", msg: "자세한 내용은 프로필 링크에서 확인해보세요!" },
+    { id: "thanks", label: "감사 인사", msg: "댓글 감사합니다! DM으로 자세한 내용 보내드릴게요." },
+    { id: "info", label: "정보 안내", msg: "궁금하신 내용은 DM으로 문의해주세요!" },
+    { id: "custom", label: "직접 입력", msg: "" },
+  ];
+  const [selectedTemplate, setSelectedTemplate] = useState("link");
+
+  // 1) 인스타 연동 확인
+  useEffect(() => {
+    if (!user?.uid) { setInstaConnected(false); return; }
+    (async () => {
+      try {
+        const r = await fetch(`/api/sns-connections?uid=${user.uid}`);
+        const data = await r.json();
+        const ig = (data.connections || []).find(c => c.platform === "instagram");
+        setInstaConnected(ig ? { username: ig.username || ig.account_name || ig.platform_username || "Instagram" } : false);
+      } catch (e) { setInstaConnected(false); }
+    })();
+  }, [user?.uid]);
+
+  // 2) 미디어 + 캠페인 로드
+  useEffect(() => {
+    if (!user?.uid || !instaConnected) return;
+    setMediaLoading(true);
+    (async () => {
+      try {
+        const r = await fetch(`/api/insta-media?uid=${user.uid}`);
+        const data = await r.json();
+        setMedia(data.media || []);
+      } catch (e) {}
+      setMediaLoading(false);
+    })();
+    setCampaignsLoading(true);
+    (async () => {
+      try {
+        const r = await fetch("/api/insta-auto-reply", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "list_campaigns", uid: user.uid }),
+        });
+        const data = await r.json();
+        setCampaigns(data.campaigns || []);
+      } catch (e) {}
+      setCampaignsLoading(false);
+    })();
+  }, [user?.uid, instaConnected]);
+
+  const startConnect = async () => {
+    if (!user?.uid) return;
+    setConnectLoading(true);
+    try {
+      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=instagram`);
+      const data = await r.json();
+      if (data.authUrl) window.location.href = data.authUrl;
+      else alert(data.error || "인증 URL을 가져올 수 없습니다.");
+    } catch (e) { alert("연동 오류: " + e.message); }
+    setConnectLoading(false);
+  };
+
+  const selectPost = (post) => {
+    if (selectedPost?.id === post.id) { setSelectedPost(null); return; }
+    setSelectedPost(post);
+    const existing = campaigns.find(c => c.post_url === post.permalink);
+    if (existing) {
+      setForm({
+        enabled: existing.is_active !== false,
+        triggerKeywords: (existing.trigger_keywords || []).join(", "),
+        replyMessage: existing.reply_message || "",
+        replyLink: existing.reply_link || "",
+      });
+    } else {
+      const tpl = REPLY_TEMPLATES.find(t => t.id === selectedTemplate);
+      setForm({ enabled: true, triggerKeywords: "", replyMessage: tpl?.msg || "", replyLink: "" });
+    }
+  };
+
+  const postHasCampaign = (permalink) => campaigns.some(c => c.post_url === permalink);
+
+  const saveCampaign = async () => {
+    if (!user?.uid || !selectedPost || !form.replyMessage.trim()) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/insta-auto-reply", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_campaign", uid: user.uid,
+          campaign: {
+            name: (selectedPost.caption || "게시물").substring(0, 40),
+            postUrl: selectedPost.permalink,
+            mediaId: selectedPost.id,
+            triggerKeywords: form.triggerKeywords.split(",").map(s => s.trim()).filter(Boolean),
+            replyMessage: form.replyMessage,
+            replyLink: form.replyLink,
+            isActive: form.enabled,
+          },
+        }),
+      });
+      const data = await r.json();
+      if (data.campaign) {
+        setCampaigns(prev => {
+          const idx = prev.findIndex(c => c.post_url === selectedPost.permalink);
+          if (idx >= 0) { const n = [...prev]; n[idx] = data.campaign; return n; }
+          return [data.campaign, ...prev];
+        });
+      }
+      setSelectedPost(null);
+    } catch (e) { alert("저장 실패: " + e.message); }
+    setSaving(false);
+  };
+
+  const toggleCampaign = async (id, isActive) => {
+    try {
+      await fetch("/api/insta-auto-reply", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle_campaign", uid: user.uid, campaignId: id, isActive }),
+      });
+      setCampaigns(prev => prev.map(c => c.id === id ? { ...c, is_active: isActive } : c));
+    } catch (e) {}
+  };
+
+  const deleteCampaign = async (id) => {
+    if (!confirm("이 규칙을 삭제하시겠습니까?")) return;
+    try {
+      await fetch("/api/insta-auto-reply", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_campaign", uid: user.uid, campaignId: id }),
+      });
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+    } catch (e) {}
+  };
+
+  // 로그인 필요
+  if (!user) return (
+    <div style={{ padding: "60px 24px", textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>로그인이 필요합니다</div>
+      <div style={{ fontSize: 13, color: muted }}>자동 댓글을 사용하려면 먼저 로그인해주세요.</div>
+    </div>
+  );
+
+  if (instaConnected === null) return (
+    <div style={{ padding: "60px 24px", textAlign: "center" }}>
+      <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+      <div style={{ fontSize: 13, color: muted }}>Instagram 연동 상태 확인 중...</div>
+    </div>
+  );
+
+  if (instaConnected === false) return (
+    <div style={{ padding: "20px 24px 60px", maxWidth: 720, margin: "0 auto" }}>
+      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+        <div style={{ width: 80, height: 80, borderRadius: 24, background: `linear-gradient(135deg,${accent},#8b5cf6)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 36 }}>
+          💬
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>Instagram 계정을 연동하세요</div>
+        <div style={{ fontSize: 14, color: muted, lineHeight: 1.7, marginBottom: 28, maxWidth: 400, margin: "0 auto 28px" }}>
+          Instagram 비즈니스/크리에이터 계정을 연동하면<br/>댓글에 자동으로 대댓글을 달 수 있습니다.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 32, textAlign: "left" }}>
+          {[
+            { icon: "📝", title: "게시물 선택", desc: "URL 입력 없이 게시물을 바로 선택" },
+            { icon: "🔍", title: "키워드 감지", desc: "댓글에 특정 키워드가 달리면 즉시 감지" },
+            { icon: "💬", title: "자동 대댓글", desc: "원하는 메시지로 자동 답글" },
+            { icon: "🔗", title: "링크 전달", desc: "대댓글에 원하는 링크 포함" },
+          ].map((b, i) => (
+            <div key={i} style={{ padding: 16, borderRadius: 14, border: `1px solid ${bdr}`, background: cardBg }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>{b.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 4 }}>{b.title}</div>
+              <div style={{ fontSize: 11, color: muted, lineHeight: 1.5 }}>{b.desc}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={startConnect} disabled={connectLoading}
+          style={{ padding: "14px 40px", borderRadius: 14, border: "none", background: `linear-gradient(135deg,${accent},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, cursor: connectLoading ? "wait" : "pointer", opacity: connectLoading ? 0.6 : 1, boxShadow: "0 4px 20px rgba(124,106,255,0.3)" }}>
+          {connectLoading ? "연동 중..." : "Instagram 연동하기"}
+        </button>
+        <div style={{ marginTop: 16, fontSize: 11, color: muted }}>Meta 공식 인증을 통해 안전하게 연동됩니다</div>
+      </div>
+    </div>
+  );
+
+  const activeCampaigns = campaigns.filter(c => c.is_active);
+
+  return (
+    <div style={{ padding: "20px 24px 60px", maxWidth: 720, margin: "0 auto" }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: text }}>자동 댓글 (대댓글)</div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>댓글 키워드 감지 → 자동 대댓글 + 링크 전송</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: `${accent}15`, border: `1px solid ${accent}30` }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>@{instaConnected.username}</span>
+        </div>
+      </div>
+
+      {/* 작동 원리 */}
+      <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
+        {[
+          { icon: "📝", title: "게시물 선택", desc: "내 게시물에서 바로 선택" },
+          { icon: "🔍", title: "키워드 감지", desc: "특정 키워드 댓글 감지" },
+          { icon: "💬", title: "자동 대댓글", desc: "원하는 메시지로 답글" },
+          { icon: "🔗", title: "링크 전송", desc: "대댓글에 링크 포함" },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg, textAlign: "center" }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{f.icon}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: text, marginBottom: 2 }}>{f.title}</div>
+            <div style={{ fontSize: 9, color: muted }}>{f.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 탭 */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderRadius: 12, overflow: "hidden", border: `1px solid ${bdr}` }}>
+        {[
+          { id: "posts", label: "내 게시물", count: media.length },
+          { id: "campaigns", label: "활성 규칙", count: activeCampaigns.length },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => { setViewTab(tab.id); setSelectedPost(null); }}
+            style={{ flex: 1, padding: "11px 0", border: "none", background: viewTab === tab.id ? accent : "transparent", color: viewTab === tab.id ? "#fff" : muted, fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+            {tab.label} {tab.count > 0 && <span style={{ fontSize: 11, opacity: 0.8 }}>({tab.count})</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* 게시물 탭 */}
+      {viewTab === "posts" && (
+        <>
+          {mediaLoading ? (
+            <div style={{ textAlign: "center", padding: 40 }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+              <div style={{ fontSize: 13, color: muted }}>게시물 불러오는 중...</div>
+            </div>
+          ) : media.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 50 }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📷</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>게시물이 없습니다</div>
+              <div style={{ fontSize: 13, color: muted }}>Instagram에 게시물을 올리면 여기에 표시됩니다.</div>
+            </div>
+          ) : (
+            <>
+              <div className="ai-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: selectedPost ? 0 : 20 }}>
+                {media.map(post => {
+                  const isSelected = selectedPost?.id === post.id;
+                  const hasCampaign = postHasCampaign(post.permalink);
+                  return (
+                    <div key={post.id} onClick={() => selectPost(post)}
+                      style={{ position: "relative", paddingBottom: "100%", borderRadius: 12, overflow: "hidden", cursor: "pointer", border: isSelected ? `3px solid ${accent}` : hasCampaign ? "3px solid #22c55e" : `1px solid ${bdr}`, transition: "all 0.2s" }}>
+                      <img src={post.thumbnail_url || post.media_url} alt=""
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 8px 6px", background: "linear-gradient(transparent,rgba(0,0,0,0.7))" }}>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                          {post.like_count != null && <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>❤️ {post.like_count}</span>}
+                          {post.comments_count != null && <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>💬 {post.comments_count}</span>}
+                        </div>
+                      </div>
+                      {hasCampaign && (
+                        <div style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff" }}>✓</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 선택된 게시물 대댓글 설정 */}
+              {selectedPost && (
+                <div style={{ marginTop: 12, padding: 20, borderRadius: 16, border: `1px solid ${accent}30`, background: D ? "rgba(124,106,255,0.04)" : "rgba(124,106,255,0.02)" }}>
+                  {/* 미리보기 */}
+                  <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
+                    <img src={selectedPost.thumbnail_url || selectedPost.media_url} alt=""
+                      style={{ width: 60, height: 60, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {(selectedPost.caption || "캡션 없음").substring(0, 60)}
+                      </div>
+                      <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>
+                        {selectedPost.timestamp ? new Date(selectedPost.timestamp).toLocaleDateString("ko-KR") : ""}
+                        {selectedPost.like_count != null && ` · ❤️ ${selectedPost.like_count}`}
+                        {selectedPost.comments_count != null && ` · 💬 ${selectedPost.comments_count}`}
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedPost(null)}
+                      style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 16, cursor: "pointer", flexShrink: 0, lineHeight: 1 }}>✕</button>
+                  </div>
+
+                  <div style={{ fontSize: 15, fontWeight: 900, color: text, marginBottom: 14 }}>자동 대댓글 설정</div>
+
+                  {/* 활성 토글 */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text }}>자동 대댓글 발송</div>
+                    <div onClick={() => setForm(f => ({ ...f, enabled: !f.enabled }))}
+                      style={{ width: 44, height: 24, borderRadius: 12, background: form.enabled ? "#22c55e" : (D ? "rgba(255,255,255,0.15)" : "#ddd"), cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, left: form.enabled ? 22 : 2, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                    </div>
+                  </div>
+
+                  {/* 트리거 키워드 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>트리거 키워드</div>
+                    <input type="text" value={form.triggerKeywords} onChange={e => setForm(f => ({ ...f, triggerKeywords: e.target.value }))}
+                      placeholder="정보, 링크, 궁금, 가격"
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>쉼표로 구분. 이 키워드가 포함된 댓글에 자동 대댓글. 비우면 모든 댓글에 반응</div>
+                  </div>
+
+                  {/* 대댓글 링크 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>대댓글 링크 (선택)</div>
+                    <input type="text" value={form.replyLink} onChange={e => setForm(f => ({ ...f, replyLink: e.target.value }))}
+                      placeholder="https://your-link.com"
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>대댓글 메시지 끝에 포함될 링크</div>
+                  </div>
+
+                  {/* 템플릿 선택 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>대댓글 템플릿</div>
+                    <div className="ai-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
+                      {REPLY_TEMPLATES.map(t => (
+                        <button key={t.id} onClick={() => { setSelectedTemplate(t.id); if (t.msg) setForm(f => ({ ...f, replyMessage: t.msg })); }}
+                          style={{ padding: "10px 8px", borderRadius: 10, border: `1.5px solid ${selectedTemplate === t.id ? accent : bdr}`,
+                            background: selectedTemplate === t.id ? `${accent}15` : "transparent", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+                          <div style={{ fontSize: 12, fontWeight: selectedTemplate === t.id ? 800 : 500, color: selectedTemplate === t.id ? accent : text }}>{t.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 대댓글 메시지 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>대댓글 메시지</div>
+                    <textarea value={form.replyMessage} onChange={e => setForm(f => ({ ...f, replyMessage: e.target.value }))}
+                      placeholder="자동으로 달릴 대댓글 내용을 입력해주세요"
+                      style={{ width: "100%", minHeight: 80, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                  </div>
+
+                  {/* 미리보기 */}
+                  {form.replyMessage && (
+                    <div style={{ marginBottom: 14, padding: 12, borderRadius: 10, background: D ? "rgba(255,255,255,0.03)" : "#f8f8fc", border: `1px solid ${bdr}` }}>
+                      <div style={{ fontSize: 10, color: muted, marginBottom: 6 }}>대댓글 미리보기</div>
+                      <div style={{ fontSize: 12, color: text, lineHeight: 1.6 }}>
+                        @사용자 {form.replyMessage}{form.replyLink ? ` ${form.replyLink}` : ""}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={saveCampaign} disabled={saving || !form.replyMessage.trim()}
+                    style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${accent},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: saving ? "wait" : "pointer", opacity: (saving || !form.replyMessage.trim()) ? 0.5 : 1 }}>
+                    {saving ? "저장 중..." : postHasCampaign(selectedPost.permalink) ? "규칙 업데이트" : "대댓글 규칙 저장"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* 활성 규칙 탭 */}
+      {viewTab === "campaigns" && (
+        <>
+          {campaignsLoading ? (
+            <div style={{ textAlign: "center", padding: 40 }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 50 }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>아직 규칙이 없어요</div>
+              <div style={{ fontSize: 13, color: muted, marginBottom: 20, lineHeight: 1.7 }}>
+                "내 게시물" 탭에서 게시물을 선택하고<br/>자동 대댓글 규칙을 설정해보세요.
+              </div>
+              <button onClick={() => setViewTab("posts")}
+                style={{ padding: "12px 28px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${accent},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                게시물 선택하러 가기
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {campaigns.map(c => (
+                <div key={c.id} style={{ padding: 16, borderRadius: 14, border: `1px solid ${c.is_active ? accent + "40" : bdr}`, background: c.is_active ? (D ? accent + "08" : accent + "03") : cardBg }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.is_active ? "#22c55e" : "#888" }} />
+                      <div style={{ fontSize: 14, fontWeight: 800, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{c.name}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => toggleCampaign(c.id, !c.is_active)}
+                        style={{ padding: "4px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: c.is_active ? "#ef4444" : "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        {c.is_active ? "중지" : "활성화"}
+                      </button>
+                      <button onClick={() => deleteCampaign(c.id)}
+                        style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid rgba(239,68,68,0.3)`, background: "transparent", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>삭제</button>
+                    </div>
+                  </div>
+                  {c.trigger_keywords?.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                      {c.trigger_keywords.map((kw, i) => (
+                        <span key={i} style={{ padding: "2px 8px", borderRadius: 6, background: accent + "15", color: accent, fontSize: 10, fontWeight: 600 }}>{kw}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: muted }}>💬 대댓글: {(c.reply_message || "").substring(0, 60)}...</div>
+                  {c.reply_count > 0 && <div style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, marginTop: 4 }}>✅ {c.reply_count}건 답글됨</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 안내 */}
+      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: accent, marginBottom: 6 }}>📋 이용 안내</div>
+        <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
+          • 연동된 인스타그램 계정의 게시물에서 자동으로 DM을 발송합니다<br/>
+          • 키워드를 설정하면 해당 키워드가 포함된 댓글에만 대댓글이 달립니다<br/>
+          • 동일 사용자에게 중복 대댓글은 발송되지 않습니다<br/>
+          • Instagram API 정책에 따라 일일 발송 제한이 있을 수 있습니다
+        </div>
+      </div>
     </div>
   );
 }
@@ -3557,6 +4011,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
 
 const MARKETING_TABS = [
   { id: "sns_analysis",  label: "SNS 분석",      icon: "/icon-instagram.webp" },
+  { id: "insta_auto_reply", label: "자동 댓글",  icon: "/icon-instagram.webp" },
   { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
 ];
 
@@ -3582,9 +4037,29 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
         <div style={{ flex:1, overflowY:"auto" }}>
           <ViralityAnalyzer isDark={isDark} />
         </div>
-      ) : (
+      ) : tab === "insta_auto_reply" ? (
         <div style={{ flex:1, overflowY:"auto" }}>
+          <InstaAutoReply isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
+        </div>
+      ) : (
+        <div style={{ flex:1, overflowY:"auto", position:"relative" }}>
           <InstaAutoDM isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
+          {/* 개발중 오버레이 */}
+          <div style={{ position:"absolute", inset:0, background: D ? "rgba(15,12,41,0.88)" : "rgba(255,255,255,0.88)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}>
+            <div style={{ textAlign:"center", padding:40 }}>
+              <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", fontSize:36 }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <div style={{ fontSize:24, fontWeight:900, color: D ? "#fff" : "#1a1a2e", marginBottom:8 }}>개발중</div>
+              <div style={{ fontSize:14, color: D ? "rgba(255,255,255,0.6)" : "#888", lineHeight:1.8, maxWidth:360 }}>
+                인스타 자동DM 기능을 더 안정적으로 개선하고 있어요.<br/>
+                빠른 시일 내에 업데이트될 예정입니다.
+              </div>
+              <div style={{ marginTop:24, padding:"10px 24px", borderRadius:12, background: D ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)", color:"#7c6aff", fontSize:13, fontWeight:700, display:"inline-block" }}>
+                Coming Soon
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
