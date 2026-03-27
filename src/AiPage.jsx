@@ -2939,7 +2939,7 @@ function DmInputField({ label, value, onChange, placeholder, multiline, hint, st
   );
 }
 
-/* ── 인스타 자동 대댓글 컴포넌트 ── */
+/* ── 스레드 자동 대댓글 컴포넌트 ── */
 function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
@@ -2947,7 +2947,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
   const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#7c6aff";
+  const accent = "#000";
 
   const [instaConnected, setInstaConnected] = useState(null);
   const [connectLoading, setConnectLoading] = useState(false);
@@ -2973,26 +2973,26 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
   ];
   const [selectedTemplate, setSelectedTemplate] = useState("link");
 
-  // 1) 인스타 연동 확인
+  // 1) 스레드 연동 확인
   useEffect(() => {
     if (!user?.uid) { setInstaConnected(false); return; }
     (async () => {
       try {
         const r = await fetch(`/api/sns-connections?uid=${user.uid}`);
         const data = await r.json();
-        const ig = (data.connections || []).find(c => c.platform === "instagram");
-        setInstaConnected(ig ? { username: ig.username || ig.account_name || ig.platform_username || "Instagram" } : false);
+        const th = (data.connections || []).find(c => c.platform === "threads");
+        setInstaConnected(th ? { username: th.username || th.account_name || th.platform_username || "Threads" } : false);
       } catch (e) { setInstaConnected(false); }
     })();
   }, [user?.uid]);
 
-  // 2) 미디어 + 캠페인 로드
+  // 2) 스레드 게시물 + 캠페인 로드
   useEffect(() => {
     if (!user?.uid || !instaConnected) return;
     setMediaLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/insta-media?uid=${user.uid}`);
+        const r = await fetch(`/api/threads-media?uid=${user.uid}`);
         const data = await r.json();
         setMedia(data.media || []);
       } catch (e) {}
@@ -3016,7 +3016,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) return;
     setConnectLoading(true);
     try {
-      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=instagram`);
+      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=threads`);
       const data = await r.json();
       if (data.authUrl) window.location.href = data.authUrl;
       else alert(data.error || "인증 URL을 가져올 수 없습니다.");
@@ -3101,26 +3101,26 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     <div style={{ padding: "60px 24px", textAlign: "center" }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
       <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>로그인이 필요합니다</div>
-      <div style={{ fontSize: 13, color: muted }}>자동 댓글을 사용하려면 먼저 로그인해주세요.</div>
+      <div style={{ fontSize: 13, color: muted }}>스레드 자동 댓글을 사용하려면 먼저 로그인해주세요.</div>
     </div>
   );
 
   if (instaConnected === null) return (
     <div style={{ padding: "60px 24px", textAlign: "center" }}>
       <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: accent, animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-      <div style={{ fontSize: 13, color: muted }}>Instagram 연동 상태 확인 중...</div>
+      <div style={{ fontSize: 13, color: muted }}>Threads 연동 상태 확인 중...</div>
     </div>
   );
 
   if (instaConnected === false) return (
     <div style={{ padding: "20px 24px 60px", maxWidth: 720, margin: "0 auto" }}>
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
-        <div style={{ width: 80, height: 80, borderRadius: 24, background: `linear-gradient(135deg,${accent},#8b5cf6)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 36 }}>
-          💬
+        <div style={{ width: 80, height: 80, borderRadius: 24, background: `linear-gradient(135deg,${accent},#333)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <img src="/icon-threads.png" alt="Threads" style={{ width: 40, height: 40, filter: "brightness(10)" }} />
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>Instagram 계정을 연동하세요</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>Threads 계정을 연동하세요</div>
         <div style={{ fontSize: 14, color: muted, lineHeight: 1.7, marginBottom: 28, maxWidth: 400, margin: "0 auto 28px" }}>
-          Instagram 비즈니스/크리에이터 계정을 연동하면<br/>댓글에 자동으로 대댓글을 달 수 있습니다.
+          Threads 계정을 연동하면<br/>댓글에 자동으로 대댓글을 달 수 있습니다.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 32, textAlign: "left" }}>
           {[
@@ -3137,8 +3137,8 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
           ))}
         </div>
         <button onClick={startConnect} disabled={connectLoading}
-          style={{ padding: "14px 40px", borderRadius: 14, border: "none", background: `linear-gradient(135deg,${accent},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, cursor: connectLoading ? "wait" : "pointer", opacity: connectLoading ? 0.6 : 1, boxShadow: "0 4px 20px rgba(124,106,255,0.3)" }}>
-          {connectLoading ? "연동 중..." : "Instagram 연동하기"}
+          style={{ padding: "14px 40px", borderRadius: 14, border: "none", background: `linear-gradient(135deg,${accent},#333)`, color: "#fff", fontSize: 15, fontWeight: 800, cursor: connectLoading ? "wait" : "pointer", opacity: connectLoading ? 0.6 : 1, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
+          {connectLoading ? "연동 중..." : "Threads 연동하기"}
         </button>
         <div style={{ marginTop: 16, fontSize: 11, color: muted }}>Meta 공식 인증을 통해 안전하게 연동됩니다</div>
       </div>
@@ -3152,8 +3152,8 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
       {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: text }}>자동 댓글 (대댓글)</div>
-          <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>댓글 키워드 감지 → 자동 대댓글 + 링크 전송</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: text }}>스레드 자동 대댓글</div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>스레드 댓글 키워드 감지 → 자동 대댓글 + 링크 전송</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: `${accent}15`, border: `1px solid ${accent}30` }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
@@ -3200,29 +3200,42 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
             </div>
           ) : media.length === 0 ? (
             <div style={{ textAlign: "center", padding: 50 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📷</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>게시물이 없습니다</div>
-              <div style={{ fontSize: 13, color: muted }}>Instagram에 게시물을 올리면 여기에 표시됩니다.</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>스레드 게시물이 없습니다</div>
+              <div style={{ fontSize: 13, color: muted }}>Threads에 게시물을 올리면 여기에 표시됩니다.</div>
             </div>
           ) : (
             <>
-              <div className="ai-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: selectedPost ? 0 : 20 }}>
+              {/* 스레드 게시물은 텍스트 기반이므로 카드형 리스트로 표시 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: selectedPost ? 0 : 20 }}>
                 {media.map(post => {
                   const isSelected = selectedPost?.id === post.id;
                   const hasCampaign = postHasCampaign(post.permalink);
                   return (
                     <div key={post.id} onClick={() => selectPost(post)}
-                      style={{ position: "relative", paddingBottom: "100%", borderRadius: 12, overflow: "hidden", cursor: "pointer", border: isSelected ? `3px solid ${accent}` : hasCampaign ? "3px solid #22c55e" : `1px solid ${bdr}`, transition: "all 0.2s" }}>
-                      <img src={post.thumbnail_url || post.media_url} alt=""
-                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 8px 6px", background: "linear-gradient(transparent,rgba(0,0,0,0.7))" }}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                          {post.like_count != null && <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>❤️ {post.like_count}</span>}
-                          {post.comments_count != null && <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>💬 {post.comments_count}</span>}
+                      style={{ padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+                        border: isSelected ? `2px solid ${accent}` : hasCampaign ? "2px solid #22c55e" : `1px solid ${bdr}`,
+                        background: isSelected ? (D ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)") : cardBg, transition: "all 0.2s",
+                        display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      {post.thumbnail_url || post.media_url ? (
+                        <img src={post.thumbnail_url || post.media_url} alt=""
+                          style={{ width: 56, height: 56, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 56, height: 56, borderRadius: 8, background: D ? "rgba(255,255,255,0.06)" : "#f0f0f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <img src="/icon-threads.png" alt="" style={{ width: 24, height: 24, opacity: 0.5 }} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: text, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                          {post.caption || "(내용 없음)"}
+                        </div>
+                        <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+                          {post.timestamp && <span style={{ fontSize: 10, color: muted }}>{new Date(post.timestamp).toLocaleDateString("ko-KR")}</span>}
+                          {post.like_count != null && <span style={{ fontSize: 10, color: muted }}>❤️ {post.like_count}</span>}
                         </div>
                       </div>
                       {hasCampaign && (
-                        <div style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff" }}>✓</div>
+                        <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", flexShrink: 0 }}>✓</div>
                       )}
                     </div>
                   );
@@ -3379,10 +3392,10 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
       <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: accent, marginBottom: 6 }}>📋 이용 안내</div>
         <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
-          • 연동된 인스타그램 계정의 게시물에서 자동으로 DM을 발송합니다<br/>
+          • 연동된 Threads 계정의 게시물에 달린 댓글에 자동 대댓글을 답니다<br/>
           • 키워드를 설정하면 해당 키워드가 포함된 댓글에만 대댓글이 달립니다<br/>
           • 동일 사용자에게 중복 대댓글은 발송되지 않습니다<br/>
-          • Instagram API 정책에 따라 일일 발송 제한이 있을 수 있습니다
+          • Threads API 정책에 따라 일일 발송 제한이 있을 수 있습니다
         </div>
       </div>
     </div>
@@ -4011,7 +4024,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
 
 const MARKETING_TABS = [
   { id: "sns_analysis",  label: "SNS 분석",      icon: "/icon-instagram.webp" },
-  { id: "insta_auto_reply", label: "자동 댓글",  icon: "/icon-instagram.webp" },
+  { id: "insta_auto_reply", label: "스레드 자동댓글",  icon: "/icon-threads.png" },
   { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
 ];
 

@@ -100,6 +100,28 @@ function GuardModal({ cost, onConfirm, onCancel }) {
   );
 }
 
+// OG 메타태그 동적 업데이트 (클라이언트)
+function updateOgMeta(title, description, path, image) {
+  const url = "https://www.snsmakeit.com" + (path || "/");
+  const setMeta = (selector, attr, value) => {
+    const el = document.querySelector(selector);
+    if (el && value) el.setAttribute(attr, value);
+  };
+  setMeta('meta[property="og:title"]', "content", title);
+  setMeta('meta[property="og:url"]', "content", url);
+  setMeta('meta[name="twitter:title"]', "content", title);
+  setMeta('link[rel="canonical"]', "href", url);
+  if (description) {
+    setMeta('meta[property="og:description"]', "content", description);
+    setMeta('meta[name="twitter:description"]', "content", description);
+    setMeta('meta[name="description"]', "content", description);
+  }
+  if (image) {
+    setMeta('meta[property="og:image"]', "content", image);
+    setMeta('meta[name="twitter:image"]', "content", image);
+  }
+}
+
 export default function App() {
   const [page,       setPage]       = useState("home");
   const [user,       setUserState]  = useState(getUser);
@@ -277,7 +299,9 @@ export default function App() {
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
     const titles = titleMap[lang] || titleMap.ko;
-    document.title = target === "home" ? titles.home : (titles[target] || target) + " - " + brand;
+    const pageTitle = target === "home" ? titles.home : (titles[target] || target) + " - " + brand;
+    document.title = pageTitle;
+    updateOgMeta(pageTitle, null, target === "home" ? "/" : "/" + target);
     window.scrollTo(0, 0);
   };
 
@@ -286,11 +310,20 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실" };
+    const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
+    document.title = title;
+    updateOgMeta(title, null, "/community/" + cat);
     window.scrollTo(0, 0);
   };
-  const navigatePost = (postId) => {
+  const navigatePost = (postId, postTitle, postDesc, postThumb) => {
     const cat = boardCat || "info";
     window.history.pushState(null, "", "/community/" + cat + "/post-" + postId);
+    if (postTitle) {
+      const title = postTitle + " - SNS메이킷 커뮤니티";
+      document.title = title;
+      updateOgMeta(title, postDesc, "/community/" + cat + "/post-" + postId, postThumb);
+    }
   };
 
   const navigateAi = async (menu) => {

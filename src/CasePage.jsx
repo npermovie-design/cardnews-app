@@ -20,18 +20,26 @@ const DEFAULT_CASES = [
 
 async function sbFetch(path, options = {}) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: options.method === "POST" ? "return=representation" : undefined,
-      ...options.headers,
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  const headers = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+  if (options.method === "POST") headers["Prefer"] = "return=representation";
+  if (options.method === "DELETE") headers["Prefer"] = "return=minimal";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...options, headers });
+    if (!res.ok) {
+      console.error("sbFetch error:", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    if (options.method === "DELETE") return { ok: true };
+    return res.json();
+  } catch (e) {
+    console.error("sbFetch exception:", e);
+    return null;
+  }
 }
 
 export default function CasePage({ C, isDark, user }) {

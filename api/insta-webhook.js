@@ -68,25 +68,176 @@ async function logWebhookEvent(type, data) {
 
 // ── 웹훅 이벤트 처리 ──
 async function processWebhookEvent(body) {
-  if (body.object !== "instagram") {
-    await logWebhookEvent("skip_not_instagram", { object: body.object });
+  // Instagram 이벤트
+  if (body.object === "instagram") {
+    for (const entry of body.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field === "comments") {
+          await handleComment(entry.id, change.value);
+        }
+      }
+      for (const msg of entry.messaging || []) {
+        if (msg.message && !msg.message.is_echo) {
+          await logWebhookEvent("incoming_dm", { from: msg.sender?.id, text: msg.message?.text?.substring(0, 100) });
+        }
+      }
+    }
     return;
   }
 
-  for (const entry of body.entry || []) {
-    // 댓글 이벤트 처리
-    for (const change of entry.changes || []) {
-      if (change.field === "comments") {
-        await handleComment(entry.id, change.value);
+  // Threads 이벤트
+  if (body.object === "threads") {
+    for (const entry of body.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field === "replies" || change.field === "comments") {
+          await handleThreadsReply(entry.id, change.value);
+        }
       }
+    }
+    return;
+  }
+
+  await logWebhookEvent("skip_unknown_object", { object: body.object });
+}
+
+// ── 스레드 댓글/답글 처리 ──
+async function handleThreadsReply(threadsUserId, replyData) {
+  const { id: replyId, text: replyText, from } = replyData || {};
+  if (!replyText || !from?.id) {
+    await logWebhookEvent("threads_skip_no_data", { replyData });
+    return;
+  }
+
+  const replierId = from.id;
+  const replierUsername = from.username || "";
+
+  await logWebhookEvent("threads_reply_received", {
+    threadsUserId, replierId, replierUsername,
+    replyText: replyText.substring(0, 200),
+  });
+
+  // 스레드 연동 정보 찾기
+  const { data: connections } = await supabase
+    .from("sns_connections")
+    .select("*")
+    .eq("platform", "threads");
+
+  if (!connections?.length) {
+    await logWebhookEvent("threads_no_connection", {});
+    return;
+  }
+
+  const connection = connections.find(c => c.platform_user_id === threadsUserId) || connections[0];
+  const uid = connection.uid;
+  const accessToken = connection.access_token;
+  const userId = connection.platform_user_id;
+
+  // 활성 스레드 대댓글 규칙 조회
+  const { data: replyCampaigns } = await supabase
+    .from("insta_reply_campaigns")
+    .select("*")
+    .eq("uid", uid)
+    .eq("is_active", true);
+
+  if (!replyCampaigns?.length) return;
+
+  for (const campaign of replyCampaigns) {
+    const keywords = campaign.trigger_keywords || [];
+    const matched = keywords.length === 0 ||
+      keywords.some(kw => replyText.toLowerCase().includes(kw.toLowerCase()));
+    if (!matched) continue;
+
+    // 중복 체크
+    const { data: existing } = await supabase
+      .from("insta_dm_log")
+      .select("id")
+      .eq("campaign_id", "threads_reply_" + campaign.id)
+      .eq("commenter_id", replierId)
+      .neq("commenter_id", "webhook_debug")
+      .limit(1);
+
+    if (existing?.length) continue;
+
+    const replyMsg = campaign.reply_link
+      ? `${campaign.reply_message} ${campaign.reply_link}`
+      : campaign.reply_message;
+
+    // 스레드 대댓글 발송
+    const sent = await sendThreadsReply(accessToken, userId, replyId, replyMsg);
+
+    // 로그 기록
+    await supabase.from("insta_dm_log").insert({
+      campaign_id: "threads_reply_" + campaign.id,
+      uid,
+      commenter_id: replierId,
+      commenter_username: replierUsername,
+      comment_id: replyId || "unknown",
+      comment_text: replyText.substring(0, 500),
+      message_sent: replyMsg.substring(0, 1000),
+      is_follower: false,
+      sent_success: sent,
+      created_at: new Date().toISOString(),
+    });
+
+    if (sent) {
+      await supabase
+        .from("insta_reply_campaigns")
+        .update({ reply_count: (campaign.reply_count || 0) + 1, updated_at: new Date().toISOString() })
+        .eq("id", campaign.id);
     }
 
-    // messaging 이벤트
-    for (const msg of entry.messaging || []) {
-      if (msg.message && !msg.message.is_echo) {
-        await logWebhookEvent("incoming_dm", { from: msg.sender?.id, text: msg.message?.text?.substring(0, 100) });
-      }
+    break;
+  }
+}
+
+// ── 스레드 대댓글 발송 (Threads Reply API) ──
+async function sendThreadsReply(accessToken, userId, replyToId, message) {
+  try {
+    // 1) 대댓글 컨테이너 생성
+    const createUrl = `https://graph.threads.net/v1.0/${userId}/threads`;
+    await logWebhookEvent("threads_reply_creating", { replyToId, messagePreview: message.substring(0, 100) });
+
+    const createRes = await fetch(createUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        media_type: "TEXT",
+        text: message,
+        reply_to_id: replyToId,
+        access_token: accessToken,
+      }),
+    });
+
+    const createData = await createRes.json();
+    if (!createRes.ok) {
+      await logWebhookEvent("threads_reply_create_failed", { status: createRes.status, error: createData });
+      return false;
     }
+
+    const creationId = createData.id;
+
+    // 2) 대댓글 발행
+    const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish`;
+    const publishRes = await fetch(publishUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        creation_id: creationId,
+        access_token: accessToken,
+      }),
+    });
+
+    const publishData = await publishRes.json();
+    if (!publishRes.ok) {
+      await logWebhookEvent("threads_reply_publish_failed", { status: publishRes.status, error: publishData });
+      return false;
+    }
+
+    await logWebhookEvent("threads_reply_success", { data: publishData });
+    return true;
+  } catch (err) {
+    await logWebhookEvent("threads_reply_error", { error: err.message });
+    return false;
   }
 }
 
