@@ -13,15 +13,17 @@ import KeywordInsightPanel from "./KeywordInsightPanel";
 function cleanBlogText(text) {
   if (!text) return text;
   return text
-    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}]/gu, '')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}\u{200D}\u{FE0F}]/gu, '')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')
     .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
     .replace(/~~([^~]+)~~/g, '$1')
     .replace(/^>\s+/gm, '')
-    .replace(/[★☆●○■□▶▷◀◁♥♡→←↑↓⇒⇔☑☐✓✗✘※◎]/g, '')
+    .replace(/[★☆●○■□▶▷◀◁♥♡→←↑↓⇒⇔☑☐✓✗✘※◎▪▫◆◇♦♧♣♠♤✦✧⊙⊕⊖△▲▽▼◐◑☀☁☂☃♨♪♬♩✿❀❁❂❃❈❊❋✡✪✫✬✭✮✯✰⭐💡💎🔥🚀📌📍📎✅❌⭕🔗📢📣🎯🎁💰💳🏆🎉🎊👍👉👇👆💪🙏❤️💜💙💚🤔😊😍🥳]/gu, '')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/^[-*]{3,}$/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, (m) => m)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -147,12 +149,15 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}\n${f.extra||""}\n\n- 검색 최적화 제목\n- 소제목은 일반 텍스트로 구조화\n- 실용적 팁/정보 위주\n- 마무리 단락 포함\n\n[필수] 이모티콘·이모지·특수기호(★●■▶♥)·마크다운(##·**·~~) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5\n${f.extra||""}\n\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${f.extra||""}\n\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천해주세요:\n제목: (SEO 최적화된 제목)\n부제목: (핵심 내용 요약)\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용\n- 전문가적 시각으로 깊이 있는 분석\n- 독자에게 시사점 제시\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천해주세요:\n제목: (뉴스 기사 스타일 제목)\n부제목: (핵심 내용 한 줄 요약)\n\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H (누가, 무엇을, 언제, 어디서, 왜, 어떻게) 포함\n- 객관적 사실 기반, 인용·출처 형식 활용\n- 전문 용어 병기, 수치/통계 활용\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복\n2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요\n3. 소제목은 3~5개 정도`;
+      const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
+      const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주\n- 마무리 단락 포함${noSpecial}`;
+      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${noSpecial}`;
+      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${noSpecial}`;
+      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}${custom}${imgRule}\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함${noSpecial}`;
+      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (SEO 최적화된 제목)\n부제목: (핵심 내용 요약)${imgRule}\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용${noSpecial}`;
+      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (뉴스 기사 스타일 제목)\n부제목: (핵심 내용 한 줄 요약)${imgRule}\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H 포함\n- 객관적 사실 기반${noSpecial}`;
       return "";
     },
   },
@@ -442,7 +447,7 @@ const FIELD_LABELS = {
   eventDate:   {label:"날짜/기간 (선택)",      placeholder:"예: 11월 30일까지"},
   steps:       {label:"단계 힌트 (선택)",      placeholder:"예: 계정생성 → 설정 → 포스팅", textarea:true},
   mainPoint:   {label:"핵심 주장 (선택)",      placeholder:"예: AI가 창작의 도구가 되어야 한다"},
-  extra:       {label:"추가 요청 (선택)",      placeholder:"특별히 강조할 내용, 피할 내용 등", textarea:true},
+  extra:       {label:"맞춤 요청 (선택)",      placeholder:"예: 20대 여성 타겟, 존댓말, 경험 기반으로 써줘 / 전문가 느낌으로 / 초보자도 이해하기 쉽게 등", textarea:true},
 };
 
 // ── 메인 ──────────────────────────────────────────────────────────────────
