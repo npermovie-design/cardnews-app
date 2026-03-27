@@ -1692,19 +1692,26 @@ function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     const moodDesc = MOODS.find(m => m.id === mood)?.desc || "자연스럽게";
     const intensityDesc = { light: "subtle and minimal", medium: "moderate", strong: "significant and dramatic" }[intensity] || "moderate";
 
-    const prompt = `Professional skin retouching and beauty enhancement task.
+    const prompt = `Skin retouching ONLY. Apply ${intensityDesc} retouching to this photo.
 
-Apply ${intensityDesc} skin retouching to this person's photo:
-- Smooth out skin texture, remove blemishes, acne, pores, and imperfections
-- Even out skin tone and reduce dark spots, redness
-- ${mood === "young" ? "Make the person look noticeably younger (5-10 years younger), reduce wrinkles and fine lines, add youthful glow to skin" : ""}
-- ${mood === "glow" ? "Add a radiant, dewy glow to the skin, like Korean glass skin effect. Luminous and hydrated look" : ""}
-- ${mood === "porcelain" ? "Create flawless porcelain-like skin, extremely smooth and even-toned, like a magazine cover" : ""}
-- ${mood === "soft" ? "Apply a soft, dreamy filter effect. Gentle skin smoothing with warm soft lighting" : ""}
-- ${mood === "studio" ? "Professional studio-quality retouching. Perfect lighting, sharp details, magazine-quality skin" : ""}
-- ${mood === "natural" ? "Keep the look natural and believable, just cleaner and smoother skin" : ""}
+CRITICAL RULES - DO NOT CHANGE:
+- Face shape, size, proportions must remain EXACTLY identical
+- Eye size, nose shape, lip shape - NO changes whatsoever
+- Facial bone structure must stay the same
+- Hair, clothing, background, pose, expression - keep IDENTICAL
+- Camera angle, framing, composition - keep IDENTICAL
 
-IMPORTANT: Keep the person's identity, facial features, expression, hair, clothing, background, and overall composition EXACTLY the same. Only improve the skin quality and apply the specified mood. Output must be photorealistic, high quality, 4K resolution.`;
+ONLY modify skin texture:
+- Smooth skin pores, blemishes, acne marks, dark spots
+- Even out skin tone, reduce redness and discoloration
+${mood === "young" ? "- Reduce wrinkles and fine lines, add subtle youthful glow" : ""}
+${mood === "glow" ? "- Add dewy, luminous glass-skin glow effect" : ""}
+${mood === "porcelain" ? "- Create flawless porcelain-smooth skin texture" : ""}
+${mood === "soft" ? "- Apply soft warm filter, gentle skin smoothing" : ""}
+${mood === "studio" ? "- Professional studio lighting quality on skin" : ""}
+${mood === "natural" ? "- Minimal, natural-looking skin cleanup only" : ""}
+
+This is a RETOUCH task, not a regeneration. The output must look like the SAME photo with better skin only.`;
 
     try {
       const _tok = await getAuthToken();

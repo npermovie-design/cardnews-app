@@ -12,33 +12,33 @@ OUT_W, OUT_H = 1080, 1920
 # ===== 템플릿 프리셋 =====
 TEMPLATES = {
     "minimal": {
-        "title_size": 48, "title_color": "#FFFFFF", "title_bold": True,
-        "sub_size": 32, "sub_color": "#AAAAAA",
-        "caption_size": 38, "caption_color": "#FFFFFF",
+        "title_size": 52, "title_color": "#FFFFFF", "title_bold": True,
+        "sub_size": 34, "sub_color": "#AAAAAA",
+        "caption_size": 42, "caption_color": "#FFFFFF",
         "bg_color": "#000000", "title_bg": None,
     },
     "bold": {
-        "title_size": 60, "title_color": "#FFD700", "title_bold": True,
-        "sub_size": 36, "sub_color": "#FFFFFF",
-        "caption_size": 42, "caption_color": "#FFD700",
+        "title_size": 64, "title_color": "#FFD700", "title_bold": True,
+        "sub_size": 38, "sub_color": "#FFFFFF",
+        "caption_size": 46, "caption_color": "#FFD700",
         "bg_color": "#0A0A0A", "title_bg": "#FF0000",
     },
     "neon": {
-        "title_size": 52, "title_color": "#00FF88", "title_bold": True,
-        "sub_size": 34, "sub_color": "#00CCFF",
-        "caption_size": 40, "caption_color": "#00FF88",
+        "title_size": 56, "title_color": "#00FF88", "title_bold": True,
+        "sub_size": 36, "sub_color": "#00CCFF",
+        "caption_size": 44, "caption_color": "#00FF88",
         "bg_color": "#0D0D1A", "title_bg": None,
     },
     "pastel": {
-        "title_size": 50, "title_color": "#FFB6C1", "title_bold": True,
-        "sub_size": 34, "sub_color": "#E6E6FA",
-        "caption_size": 38, "caption_color": "#FFB6C1",
+        "title_size": 54, "title_color": "#FFB6C1", "title_bold": True,
+        "sub_size": 36, "sub_color": "#E6E6FA",
+        "caption_size": 42, "caption_color": "#FFB6C1",
         "bg_color": "#1A1A2E", "title_bg": None,
     },
     "news": {
-        "title_size": 46, "title_color": "#FFFFFF", "title_bold": True,
-        "sub_size": 30, "sub_color": "#CCCCCC",
-        "caption_size": 36, "caption_color": "#FFFFFF",
+        "title_size": 50, "title_color": "#FFFFFF", "title_bold": True,
+        "sub_size": 32, "sub_color": "#CCCCCC",
+        "caption_size": 40, "caption_color": "#FFFFFF",
         "bg_color": "#0F1923", "title_bg": "#E53935",
     },
 }
@@ -132,7 +132,7 @@ class FrameComposer:
                 logo_h = min(80, max(self.vid_y - 200, 10))
                 ratio = logo_h / logo.height
                 logo_w = int(logo.width * ratio)
-                logo = logo.resize((logo_w, logo_h), Image.BILINEAR)
+                logo = logo.resize((logo_w, logo_h), Image.LANCZOS)
                 lx = (OUT_W - logo_w) // 2
                 ly = max(self.vid_y - 280, 10)
                 bg.paste(logo, (lx, ly), logo)
@@ -145,23 +145,41 @@ class FrameComposer:
         canvas = self.bg_array.copy()
         vid_img = Image.fromarray(video_frame)
         if vid_img.size != (self.vid_w, self.vid_h):
-            vid_img = vid_img.resize((self.vid_w, self.vid_h), Image.BILINEAR)
+            vid_img = vid_img.resize((self.vid_w, self.vid_h), Image.LANCZOS)
         canvas[self.vid_y:self.vid_y + self.vid_h, 0:self.vid_w] = np.array(vid_img)
 
         if caption:
             caption_img = Image.fromarray(canvas)
             draw = ImageDraw.Draw(caption_img)
-            caption_y = self.vid_y + self.vid_h + 60
+            caption_y = self.vid_y + self.vid_h + 50
+
+            # 자막 줄바꿈 처리 (너무 길면 2줄)
+            max_text_w = OUT_W - 80
+            bbox = draw.textbbox((0, 0), caption, font=self.caption_font)
+            tw = bbox[2] - bbox[0]
+            if tw > max_text_w and len(caption) > 10:
+                mid = len(caption) // 2
+                space_idx = caption.rfind(" ", 0, mid + 5)
+                if space_idx > 3:
+                    caption = caption[:space_idx] + "\n" + caption[space_idx + 1:]
+
             bbox = draw.textbbox((0, 0), caption, font=self.caption_font)
             tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
             x = (OUT_W - tw) // 2
-            pad = 16
-            draw.rounded_rectangle(
-                [x - pad, caption_y - pad // 2, x + tw + pad, caption_y + th + pad // 2],
-                radius=12, fill=(0, 0, 0, 180),
-            )
-            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-                draw.text((x + dx, caption_y + dy), caption, font=self.caption_font, fill="black")
+            pad_x, pad_y = 24, 14
+
+            # 배경 - 둥근 사각형 (더 큰 패딩, 반투명)
+            bg_rect = [x - pad_x, caption_y - pad_y, x + tw + pad_x, caption_y + th + pad_y]
+            draw.rounded_rectangle(bg_rect, radius=16, fill=(0, 0, 0, 200))
+
+            # 텍스트 아웃라인 (두꺼운 외곽선)
+            outline_color = (0, 0, 0)
+            for dx in range(-3, 4):
+                for dy in range(-3, 4):
+                    if dx * dx + dy * dy <= 9:
+                        draw.text((x + dx, caption_y + dy), caption, font=self.caption_font, fill=outline_color)
+
+            # 메인 텍스트
             draw.text((x, caption_y), caption, font=self.caption_font, fill=self.c_color)
             canvas = np.array(caption_img)
 
@@ -171,8 +189,11 @@ class FrameComposer:
         bbox = draw.textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
         x = (OUT_W - tw) // 2
-        for dx, dy in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
-            draw.text((x + dx, y + dy), text, font=font, fill="black")
+        # 두꺼운 아웃라인
+        for dx in range(-3, 4):
+            for dy in range(-3, 4):
+                if dx * dx + dy * dy <= 9:
+                    draw.text((x + dx, y + dy), text, font=font, fill="black")
         draw.text((x, y), text, font=font, fill=fill)
 
 
@@ -201,8 +222,8 @@ def _pre_cut_clip(video_path: str, start: float, end: float, output_dir: str) ->
         result = subprocess.run([
             "ffmpeg", "-i", video_path,
             "-ss", str(max(0, start)), "-to", str(end + 0.3),
-            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
-            "-c:a", "aac", "-y", clip_path
+            "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+            "-c:a", "aac", "-b:a", "192k", "-y", clip_path
         ], capture_output=True, timeout=120)
         if result.returncode == 0 and Path(clip_path).exists() and Path(clip_path).stat().st_size > 1000:
             return clip_path
@@ -268,12 +289,12 @@ def generate_short(
     out_video.width = OUT_W
     out_video.height = OUT_H
     out_video.pix_fmt = "yuv420p"
-    out_video.options = {"preset": "ultrafast", "crf": "26"}
+    out_video.options = {"preset": "medium", "crf": "21", "profile": "high", "level": "4.1"}
 
     out_audio = None
     if in_audio:
         out_audio = output_container.add_stream("aac", rate=in_audio.rate or 44100)
-        out_audio.bit_rate = 128000
+        out_audio.bit_rate = 192000
 
     input_container.seek(int(start_seconds * av.time_base), any_frame=False)
 
