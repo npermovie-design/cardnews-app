@@ -1113,14 +1113,24 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     [...posts].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts]);
 
-  // 자료실 탭: 첨부파일 있는 전체 게시물
+  // 자료실 탭: 첨부파일 있는 전체 게시물 + 필터태그 적용
   const archiveFiltered = useMemo(()=>{
-    let list = posts.filter(p=>(p.images||[]).length>0);
+    let list = posts.filter(p=>(p.cat==="archive"||p.subCat==="archive") && (p.images||[]).length>0);
+    if(filterTag && ["video","photo","gif","music"].includes(filterTag)) {
+      list = list.filter(p => {
+        const imgs = p.images || [];
+        if(filterTag==="video") return imgs.some(u=>/\.(mp4|mov|avi|webm|mkv)/i.test(u));
+        if(filterTag==="photo") return imgs.some(u=>/\.(jpg|jpeg|png|webp|avif|bmp)/i.test(u)) && !imgs.some(u=>/\.gif$/i.test(u));
+        if(filterTag==="gif") return imgs.some(u=>/\.gif$/i.test(u));
+        if(filterTag==="music") return imgs.some(u=>/\.(mp3|wav|ogg|flac|m4a|aac)/i.test(u));
+        return true;
+      });
+    }
     if(search.trim()){const q=search.toLowerCase();list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q));}
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
           :[...list].sort((a,b)=>b.id-a.id);
-  },[posts,search,sort]);
+  },[posts,search,sort,filterTag]);
 
   const isArchivePostsView = subCat==="archive" && archiveView==="posts";
   const activeFiltered = isArchivePostsView ? archiveFiltered : filtered;
