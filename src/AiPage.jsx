@@ -2916,6 +2916,25 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
   );
 }
 
+/* ── DM 입력 필드 (컴포넌트 바깥 정의 — 리렌더 시 포커스 유지) ── */
+function DmInputField({ label, value, onChange, placeholder, multiline, hint, styles }) {
+  const { bdr, inputBg, text, muted } = styles;
+  const baseStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{label}</div>
+      {multiline ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={{ ...baseStyle, resize: "vertical", minHeight: 70 }} />
+      ) : (
+        <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={baseStyle} />
+      )}
+      {hint && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{hint}</div>}
+    </div>
+  );
+}
+
 /* ── 인스타 자동DM 컴포넌트 ── */
 function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
   const D = isDark;
@@ -3176,37 +3195,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
   // 게시물에 캠페인 존재 여부
   const postHasCampaign = (permalink) => campaigns.some(c => c.post_url === permalink);
 
-  const InputField = ({ label, value, onChange, placeholder, multiline, hint }) => {
-    const [local, setLocal] = useState(value);
-    const composing = useRef(false);
-    useEffect(() => { setLocal(value); }, [value]);
-    const handleChange = (e) => {
-      setLocal(e.target.value);
-      if (!composing.current) onChange(e.target.value);
-    };
-    const handleCompositionEnd = (e) => {
-      composing.current = false;
-      onChange(e.target.value);
-    };
-    const inputProps = {
-      value: local, onChange: handleChange, placeholder,
-      onCompositionStart: () => { composing.current = true; },
-      onCompositionEnd: handleCompositionEnd,
-      onBlur: (e) => onChange(e.target.value),
-    };
-    const baseStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-    return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{label}</div>
-      {multiline ? (
-        <textarea {...inputProps} style={{ ...baseStyle, resize: "vertical", minHeight: 70 }} />
-      ) : (
-        <input {...inputProps} style={baseStyle} />
-      )}
-      {hint && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{hint}</div>}
-    </div>
-    );
-  };
+  // InputField는 컴포넌트 바깥(DmInputField)으로 이동됨 — 여기서는 스타일만 전달
+  const fieldStyles = { bdr, inputBg, text, muted };
 
   // ── 로그인 필요 ──
   if (!user) return (
@@ -3390,8 +3380,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
                     </div>
                   </div>
 
-                  <InputField label="트리거 키워드" value={form.triggerKeywords} onChange={v => setForm(f => ({ ...f, triggerKeywords: v }))} placeholder="정보, 링크, 궁금, 가격" hint="쉼표로 구분. 이 키워드가 포함된 댓글에 자동 DM 발송. 비우면 모든 댓글에 반응" />
-                  <InputField label="DM 링크 (CTA)" value={form.dmLink} onChange={v => setForm(f => ({ ...f, dmLink: v }))} placeholder="https://your-link.com" hint="DM에 포함될 링크" />
+                  <DmInputField styles={fieldStyles} label="트리거 키워드" value={form.triggerKeywords} onChange={v => setForm(f => ({ ...f, triggerKeywords: v }))} placeholder="정보, 링크, 궁금, 가격" hint="쉼표로 구분. 이 키워드가 포함된 댓글에 자동 DM 발송. 비우면 모든 댓글에 반응" />
+                  <DmInputField styles={fieldStyles} label="DM 링크 (CTA)" value={form.dmLink} onChange={v => setForm(f => ({ ...f, dmLink: v }))} placeholder="https://your-link.com" hint="DM에 포함될 링크" />
 
                   {/* 말투/톤 선택 */}
                   <div style={{ marginBottom: 14 }}>
@@ -3420,8 +3410,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
                       기본 템플릿 적용
                     </button>
                   </div>
-                  <InputField label="팔로워용 메시지" value={form.dmMessageFollower} onChange={v => setForm(f => ({ ...f, dmMessageFollower: v }))} placeholder="팔로워에게 보낼 감사 메시지" multiline />
-                  <InputField label="비팔로워용 메시지" value={form.dmMessageNonFollower} onChange={v => setForm(f => ({ ...f, dmMessageNonFollower: v }))} placeholder="비팔로워에게 팔로우를 유도하는 메시지" multiline />
+                  <DmInputField styles={fieldStyles} label="팔로워용 메시지" value={form.dmMessageFollower} onChange={v => setForm(f => ({ ...f, dmMessageFollower: v }))} placeholder="팔로워에게 보낼 감사 메시지" multiline />
+                  <DmInputField styles={fieldStyles} label="비팔로워용 메시지" value={form.dmMessageNonFollower} onChange={v => setForm(f => ({ ...f, dmMessageNonFollower: v }))} placeholder="비팔로워에게 팔로우를 유도하는 메시지" multiline />
 
                   <button onClick={saveCampaign} disabled={saving || !form.dmMessageFollower.trim()}
                     style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${accent},#c13584)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: saving ? "wait" : "pointer", opacity: (saving || !form.dmMessageFollower.trim()) ? 0.5 : 1 }}>
