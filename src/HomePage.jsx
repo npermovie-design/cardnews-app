@@ -427,9 +427,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
       <section style={{ padding: "clamp(40px,6vw,64px) clamp(16px,4vw,24px)", background: C.bg }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 24, textAlign: "center" }}>
           {[
-            { val: "5,200+", label: lang === "ko" ? "생성된 콘텐츠" : "Contents created" },
-            { val: "20+", label: lang === "ko" ? "AI 도구" : "AI tools" },
-            { val: "3분", label: lang === "ko" ? "평균 생성 시간" : "Avg. creation time" },
+            { val: statsCount.toLocaleString()+"+", label: lang === "ko" ? "생성된 콘텐츠" : "Contents created" },
+            { val: "25+", label: lang === "ko" ? "AI 도구" : "AI tools" },
+            { val: "3"+lang === "ko" ? "분" : "min", label: lang === "ko" ? "평균 생성 시간" : "Avg. creation time" },
             { val: "85%", label: lang === "ko" ? "시간 절감" : "Time saved" },
           ].map(s => (
             <div key={s.label}>

@@ -104,7 +104,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   const handleBuy = async (plan, isYearly = false) => {
     if (!user) { onLogin?.(); return; }
     if (plan.free) return;
-    if (!PAYMENT_ENABLED) { showToast(p("pricingToast")); return; }
+    if (!PAYMENT_ENABLED) { showToast("결제 시스템 준비 중입니다. 포인트 충전은 관리자에게 문의해주세요."); return; }
     setLoading(plan.id + (isYearly ? "_y" : ""));
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
@@ -135,7 +135,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
   const handleOneOff = async (plan) => {
     if (!user) { onLogin?.(); return; }
-    if (!PAYMENT_ENABLED) { showToast(p("pricingToast")); return; }
+    if (!PAYMENT_ENABLED) { showToast("결제 시스템 준비 중입니다. 포인트 충전은 관리자에게 문의해주세요."); return; }
     setLoading(plan.id);
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);

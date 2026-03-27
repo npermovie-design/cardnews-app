@@ -9,6 +9,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const [regStep,      setRegStep]     = useState(1);   // 1=폼, 2=인증 대기
   const [verifyLoading,setVerifyLoading] = useState(false);
   const [resendCool,   setResendCool]  = useState(false); // 재발송 쿨다운
+  const [resendCount,  setResendCount] = useState(0); // 재발송 카운트다운
   const [pendingUser,  setPendingUser] = useState(null);  // 인증 대기 중인 FB user
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
@@ -116,8 +117,11 @@ export default function AuthModal({ onClose, onAuth, C }) {
     try {
       await supabase.auth.resend({ type: "signup", email: form.email });
       setResendCool(true);
+      setResendCount(30);
       setErr("");
-      setTimeout(() => setResendCool(false), 30000);
+      const timer = setInterval(() => {
+        setResendCount(c => { if (c <= 1) { clearInterval(timer); setResendCool(false); return 0; } return c - 1; });
+      }, 1000);
     } catch(e) { setErr("재발송 중 오류가 발생했어요."); }
   };
 
@@ -270,7 +274,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={resendEmail} disabled={resendCool}
                 style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: resendCool ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.6)", fontSize: 12, cursor: resendCool ? "not-allowed" : "pointer" }}>
-                {resendCool ? "30초 후 재발송 가능" : "메일 재발송"}
+                {resendCool ? `${resendCount}초 후 재발송` : "메일 재발송"}
               </button>
               <button onClick={() => { setRegStep(1); setErr(""); setPendingUser(null); }}
                 style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.6)", fontSize: 12, cursor: "pointer" }}>

@@ -305,7 +305,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
               style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block",background:"#000"}}/>
           ) : (
             <img src={item.preview||item.url} alt="" style={{width:"100%",maxHeight:200,objectFit:"cover",display:"block"}}
-              onError={e=>e.target.style.display="none"}/>
+              onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
           )}
           <div style={{padding:"10px 12px"}}>
             <div style={{fontSize:12,fontWeight:700,color:isDark?"#fff":"#1a1a2e",marginBottom:4,
@@ -823,7 +823,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
                         <span style={{fontSize:11,fontWeight:700,color:"#3b82f6"}}>영상</span>
                         <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"video").slice(0,12)}</span>
                       </div>
-                    : <img src={f.url} alt="" style={{width:90,height:68,objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                    : <img src={f.url} alt="" style={{width:90,height:68,objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                   }
                   <button type="button" onClick={()=>setUploadedFiles(prev=>prev.filter((_,j)=>j!==i))}
                     style={{position:"absolute",top:2,right:2,width:18,height:18,borderRadius:"50%",border:"none",background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>✕</button>
@@ -1370,7 +1370,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       </div>
                     ) : isImageUrl(url) ? (
                       <img key={i} src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
-                        onClick={()=>window.open(url,"_blank")} onError={e=>e.target.style.display="none"}/>
+                        onClick={()=>window.open(url,"_blank")} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                     ) : (
                       <a key={i} href={url} download rel="noopener noreferrer"
                         style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",color:C.text,textDecoration:"none",fontSize:13,fontWeight:600}}>
@@ -1922,7 +1922,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                                 onMouseEnter={e=>e.target.play().catch(()=>{})}
                                 onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
                             ) : thumb ? (
-                              <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                              <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                             ) : (
                               <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#94a3b8",fontWeight:600}}>파일</div>
                             )}
@@ -2144,7 +2144,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 {hoverPreview.thumb && (
                   <img src={toThumb(hoverPreview.thumb,280,210)} alt=""
                     style={{width:"100%",maxHeight:420,objectFit:"contain",display:"block",background:isDark?"#0a0818":"#f0f0f6"}}
-                    onError={e=>e.target.style.display="none"} />
+                    onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}} />
                 )}
                 <div style={{padding:"12px 14px"}}>
                   <div style={{fontSize:13,fontWeight:700,color:isDark?"#e2e8f0":"#1a1730",marginBottom:6,lineHeight:1.4}}>{hoverPreview.post.title}</div>
@@ -2191,7 +2191,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseEnter={e=>e.currentTarget.style.background=hover}
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                        {thumb && <img src={toThumb(thumb,96,72)} alt="" loading="eager" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}} onError={e=>e.target.style.display="none"}/>}
+                        {thumb && <img src={toThumb(thumb,96,72)} alt="" loading="eager" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0,marginTop:2}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4,flexWrap:"wrap"}}>
                             {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0}}>{p.tag}</span>}
@@ -2236,7 +2236,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseLeave={e=>{e.currentTarget.style.background="transparent";setHoverPreview(null);}}>
                       <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {thumb && <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>e.target.style.display="none"}/>}
+                        {thumb && <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
                         {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
@@ -2281,7 +2281,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                               onMouseEnter={e=>e.target.play().catch(()=>{})}
                               onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
                           : thumb
-                          ? <img src={toThumb(thumb,480,270)} alt="" loading="eager" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>
+                          ? <img src={toThumb(thumb,480,270)} alt="" loading="eager" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                           : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{""}</div>
                         }
                         {today&&<span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(239,68,68,0.9)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>NEW</span>}
@@ -2327,7 +2327,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <span style={{fontSize:11,color:C.muted,flexShrink:0,width:28,textAlign:"right"}}>#{num}</span>
                       {thumb
-                        ? <img src={toThumb(thumb,68,52)} alt="" loading="eager" style={{width:34,height:26,objectFit:"cover",borderRadius:4,display:"block",flexShrink:0}} onError={e=>e.target.style.display="none"}/>
+                        ? <img src={toThumb(thumb,68,52)} alt="" loading="eager" style={{width:34,height:26,objectFit:"cover",borderRadius:4,display:"block",flexShrink:0}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                         : <div style={{width:34,height:26,borderRadius:4,flexShrink:0,background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{""}</div>
                       }
                       <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5}}>
