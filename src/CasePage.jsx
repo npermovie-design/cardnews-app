@@ -18,14 +18,14 @@ const DEFAULT_CASES = [
   },
   {
     id: "default_2",
-    brand: "sweety5857",
-    field: "네이버 블로그",
+    brand: "LBE 런던 영국영어",
+    field: "영국영어교육",
     feature: "네이버 블로그 글쓰기",
-    title: "AI 블로그 글쓰기로 네이버 블로그 콘텐츠 자동 생성",
-    desc: "SNS메이킷의 AI 블로그 글쓰기 기능을 활용하여 네이버 블로그에 고품질 콘텐츠를 빠르게 발행한 사례입니다.",
+    title: "영국영어 교육 브랜드의 AI 블로그 콘텐츠 자동 생성",
+    desc: "SNS메이킷의 AI 블로그 글쓰기 기능을 활용하여 네이버 블로그에 영어교육 관련 고품질 콘텐츠를 빠르게 발행한 사례입니다.",
     link: "https://blog.naver.com/sweety5857",
-    thumb: "",
-    tags: ["네이버 블로그", "AI 글쓰기", "콘텐츠 자동화"],
+    thumb: "/case-lbe.png",
+    tags: ["네이버 블로그", "AI 글쓰기", "영어교육"],
   },
 ];
 

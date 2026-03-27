@@ -2,7 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
-  const SITE = "https://www.snsmakeit.com";
+  const SITE = "https://snsmakeit.com";
   const today = new Date().toISOString().slice(0, 10);
 
   // 정적 페이지

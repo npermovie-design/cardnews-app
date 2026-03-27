@@ -102,7 +102,7 @@ function GuardModal({ cost, onConfirm, onCancel }) {
 
 // OG 메타태그 동적 업데이트 (클라이언트)
 function updateOgMeta(title, description, path, image) {
-  const url = "https://www.snsmakeit.com" + (path || "/");
+  const url = "https://snsmakeit.com" + (path || "/");
   const setMeta = (selector, attr, value) => {
     const el = document.querySelector(selector);
     if (el && value) el.setAttribute(attr, value);

@@ -848,7 +848,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               }
               // 네이버 블로그 탭
               else if (initialType === "blog_naver") {
-                btns.push({ p:"naver_blog", l:"네이버 블로그", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostWriteForm.naver" });
+                btns.push({ p:"naver_blog", l:"네이버 블로그", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostList.naver" });
               }
               // 티스토리 탭
               else if (initialType === "blog_tistory") {

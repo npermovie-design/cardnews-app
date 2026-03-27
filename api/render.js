@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
-const SITE_URL = "https://www.snsmakeit.com";
+const SITE_URL = "https://snsmakeit.com";
 
 export const config = { maxDuration: 10 };
 
