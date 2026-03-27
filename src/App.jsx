@@ -574,6 +574,19 @@ export default function App() {
           .nav-logo-text{display:none!important}
         }
 
+        /* 모바일 모달/팝업 가로 오버플로우 방지 */
+        @media(max-width:640px){
+          [style*="width: 500"],[style*="width:500"]{width:95vw!important;max-width:95vw!important}
+          [style*="width: 480"],[style*="width:480"]{width:95vw!important;max-width:95vw!important}
+          [style*="min(640"],[style*="min(560"],[style*="min(500"],[style*="min(480"]{width:95vw!important}
+        }
+
+        /* 모바일 스크롤 성능 */
+        @media(max-width:768px){
+          *{-webkit-tap-highlight-color:transparent}
+          img,video{max-width:100%}
+        }
+
         /* 가로 모드 모바일 */
         @media(max-height:500px) and (orientation:landscape){
           .nav-bar{height:48px!important}
@@ -890,7 +903,7 @@ export default function App() {
         </div>
 
         {/* 햄버거 */}
-        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 22, padding: "8px 12px", lineHeight: 1, flexShrink: 0 }}>
+        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 24, padding: "8px 12px", lineHeight: 1, flexShrink: 0, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {mobileOpen ? "✕" : "☰"}
         </button>
       </div>

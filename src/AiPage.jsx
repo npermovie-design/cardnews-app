@@ -4326,12 +4326,16 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           .ai-sidebar-mobile{display:flex!important}
         }
         @media(max-width:640px){
-          .ai-content-pad{padding:16px 12px 60px!important}
+          .ai-content-pad{padding:16px 10px 60px!important}
           .ai-grid{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-3{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-4{grid-template-columns:repeat(2,1fr)!important}
           .ai-form-row{flex-direction:column!important}
         }
         @media(max-width:400px){
           .ai-grid{grid-template-columns:1fr!important}
+          .ai-grid-3{grid-template-columns:1fr!important}
+          .ai-grid-4{grid-template-columns:repeat(2,1fr)!important}
         }
       `}</style>
 
@@ -4362,8 +4366,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* 모바일 햄버거 */}
             <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20,
-                color: isDark ? "#fff" : "#333", padding: "4px 6px", marginRight: 4 }}>
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22,
+                color: isDark ? "#fff" : "#333", padding: "8px 10px", marginRight: 2, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
               ☰
             </button>
             <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>{MENU_LABELS[aiMenu] || "AI 생성기"}</span>
