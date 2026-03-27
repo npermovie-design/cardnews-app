@@ -3176,19 +3176,37 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
   // 게시물에 캠페인 존재 여부
   const postHasCampaign = (permalink) => campaigns.some(c => c.post_url === permalink);
 
-  const InputField = ({ label, value, onChange, placeholder, multiline, hint }) => (
+  const InputField = ({ label, value, onChange, placeholder, multiline, hint }) => {
+    const [local, setLocal] = useState(value);
+    const composing = useRef(false);
+    useEffect(() => { setLocal(value); }, [value]);
+    const handleChange = (e) => {
+      setLocal(e.target.value);
+      if (!composing.current) onChange(e.target.value);
+    };
+    const handleCompositionEnd = (e) => {
+      composing.current = false;
+      onChange(e.target.value);
+    };
+    const inputProps = {
+      value: local, onChange: handleChange, placeholder,
+      onCompositionStart: () => { composing.current = true; },
+      onCompositionEnd: handleCompositionEnd,
+      onBlur: (e) => onChange(e.target.value),
+    };
+    const baseStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+    return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{label}</div>
       {multiline ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, outline: "none", resize: "vertical", minHeight: 70, fontFamily: "inherit", boxSizing: "border-box" }} />
+        <textarea {...inputProps} style={{ ...baseStyle, resize: "vertical", minHeight: 70 }} />
       ) : (
-        <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+        <input {...inputProps} style={baseStyle} />
       )}
       {hint && <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{hint}</div>}
     </div>
-  );
+    );
+  };
 
   // ── 로그인 필요 ──
   if (!user) return (
