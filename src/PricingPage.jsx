@@ -5,8 +5,8 @@ import { getPageText } from "./i18n-pages.js";
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 
-// ✅ 결제 오픈 시 true로 변경
-const PAYMENT_ENABLED = false;
+// ✅ 결제 활성화
+const PAYMENT_ENABLED = true;
 
 const COMMON_FEATURES = [
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
@@ -22,48 +22,48 @@ const SUB_PLANS = [
   {
     id: "free", name: "Free", icon: "F",
     monthlyPrice: 0, yearlyPrice: 0,
-    points: 50, color: "#888",
+    points: 100, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 보너스 50P 지급", ...COMMON_FEATURES],
+    features: ["가입 보너스 100P 지급", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
   {
     id: "basic", name: "Basic", icon: "B",
     monthlyPrice: 9900, yearlyPrice: 95040,
-    points: 3000, color: "#4ade80",
+    points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 3,000P 충전", ...COMMON_FEATURES],
+    features: ["매월 1,800P 충전", "AI 글쓰기 약 180회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
     id: "pro", name: "Pro", icon: "P",
     monthlyPrice: 19900, yearlyPrice: 191040,
-    points: 7000, color: "#38bdf8",
+    points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 7,000P 충전", ...COMMON_FEATURES],
+    features: ["매월 3,800P 충전", "AI 글쓰기 약 380회", "이미지 생성 약 47회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
     id: "premium", name: "Premium", icon: "P",
-    monthlyPrice: 29900, yearlyPrice: 287040,
-    points: 15000, color: "#f59e0b",
+    monthlyPrice: 34900, yearlyPrice: 335040,
+    points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
-    highlight: false, badge: null,
-    features: ["매월 15,000P 충전", ...COMMON_FEATURES],
+    highlight: false, badge: "최고 가성비",
+    features: ["매월 7,000P 충전", "AI 글쓰기 약 700회", "이미지 생성 약 87회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
 ];
 
 const ONE_OFF_PLANS = [
-  { id:"pack1", name:"Starter",  amount:6900,  points:1500, highlight:false },
-  { id:"pack2", name:"Basic",    amount:13900, points:3000, highlight:false },
-  { id:"pack3", name:"Standard", amount:20900, points:4800, highlight:true  },
-  { id:"pack4", name:"Plus",     amount:27900, points:6450, highlight:false },
-  { id:"pack5", name:"Pro",      amount:41900, points:9750, highlight:false },
+  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false },
+  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false },
+  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true  },
+  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false },
+  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false },
 ];
 
 // FAQ는 컴포넌트 안에서 번역 함수로 동적 생성

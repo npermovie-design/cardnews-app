@@ -36,18 +36,18 @@ export async function getAuthToken() {
 
 // ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
 export const POINTS = {
-  SIGNUP:      100,    // 회원가입 보너스 (200→100)
-  DAILY_LOGIN: 2,      // 일일 로그인 (3→2)
-  POST_WRITE:  2,      // 게시글 작성
+  SIGNUP:      100,    // 회원가입 보너스
+  DAILY_LOGIN: 2,      // 일일 로그인
+  POST_WRITE:  1,      // 게시글 작성
   COMMENT:     0,      // 댓글 작성
-  AI_USE:      -10,    // 기본 (텍스트/Haiku)
-  AI_SONNET:   -30,    // Claude Sonnet 사용
-  IMAGE_GEN:   -50,    // 이미지 생성 (Gemini/Imagen)
-  PPT_GEN:     -20,    // PPT 1덱 생성
-  VIDEO_ANALYZE: -30,  // 영상 AI 분석
-  VIDEO_GEN:   -10,    // 영상 생성 기본 (15초 이하)
-  VIDEO_GEN_30: -20,   // 영상 생성 (30초)
-  VIDEO_GEN_60: -30,   // 영상 생성 (60초+)
+  AI_USE:      -10,    // 기본 텍스트 생성 (Haiku) — cost ~7원, margin 86%+
+  AI_SONNET:   -35,    // 고급 텍스트 생성 (Sonnet) — cost ~42원, margin 72%+
+  IMAGE_GEN:   -80,    // 이미지 생성 (AI 이미지) — cost ~100원, margin 75%+
+  PPT_GEN:     -25,    // PPT 1덱 생성 — cost ~15원, margin 85%+
+  VIDEO_ANALYZE: -35,  // 영상 AI 분석 — cost ~30원, margin 78%+
+  VIDEO_GEN:   -15,    // 영상 생성 기본 (15초 이하) — cost ~10원
+  VIDEO_GEN_30: -25,   // 영상 생성 (30초) — cost ~20원
+  VIDEO_GEN_60: -40,   // 영상 생성 (60초+) — cost ~30원
 };
 
 export const PLANS = [
