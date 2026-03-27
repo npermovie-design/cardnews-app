@@ -947,11 +947,14 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     if (!files || files.length === 0 || !user || user.role !== "admin") return;
     const fileArr = Array.from(files);
 
-    // 단일 파일: 기존 모달 방식
+    // 단일 파일: 모달 방식 + 자동 태그
     if (fileArr.length === 1) {
-      setArchiveUploadFile(fileArr[0]);
-      const cleanName = fileArr[0].name.replace(/\.[^.]+$/, "");
-      setArchiveForm({ title: cleanName, desc: "", priceType: "free", price: "", visibility: "all" });
+      const file = fileArr[0];
+      setArchiveUploadFile(file);
+      const cleanName = file.name.replace(/\.[^.]+$/, "");
+      const autoTag = detectMediaType(file);
+      const tagLabel = { video: "영상", gif: "GIF", photo: "사진", music: "음악" }[autoTag] || "";
+      setArchiveForm({ title: cleanName, desc: "", priceType: "free", price: "", visibility: "all", tag: tagLabel });
       setShowArchiveModal(true);
       return;
     }
@@ -1750,6 +1753,18 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                     </div>
                   )}
+                  {/* 분류 태그 */}
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:6}}>분류</div>
+                    <div style={{display:"flex",gap:6}}>
+                      {[{id:"영상",c:"#ef4444"},{id:"사진",c:"#3b82f6"},{id:"GIF",c:"#8b5cf6"},{id:"음악",c:"#f59e0b"}].map(t=>(
+                        <button key={t.id} onClick={()=>setArchiveForm(p=>({...p,tag:p.tag===t.id?"":t.id}))}
+                          style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${(archiveForm.tag||"")=== t.id?t.c:bdr}`,
+                            background:(archiveForm.tag||"")===t.id?t.c+"20":"transparent",color:(archiveForm.tag||"")===t.id?t.c:C.muted,
+                            fontSize:12,fontWeight:(archiveForm.tag||"")===t.id?700:500,cursor:"pointer"}}>{t.id}</button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{display:"flex",gap:8,marginBottom:16}}>
                     {[["all","전체 공개"],["member","회원 전용"],["nonmember","비회원 포함"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setArchiveForm(p=>({...p,visibility:v}))}
@@ -1767,7 +1782,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         await submitPost({
                           title: archiveForm.title || file.name.replace(/\.[^.]+$/,""),
                           body: `<p>${archiveForm.desc || type+" 자료"}</p>`,
-                          subCat:"archive", tag:"", images:[url],
+                          subCat:"archive", tag: archiveForm.tag || "", images:[url],
                           priceType: archiveForm.priceType, price: archiveForm.price,
                         });
                         showToast("자료가 등록됐어요!","success");
@@ -1840,12 +1855,23 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <div style={{display:"flex",gap:8,marginBottom:16}}>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="자료 검색..."
                     style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
-                  {user?.role==="admin"&&(
+                  {user?.role==="admin"&&<>
+                    <button onClick={async()=>{
+                      try {
+                        const r = await fetch("/api/archive-auto-tag",{method:"POST"});
+                        const d = await r.json();
+                        if(d.updated>0){ showToast(`${d.updated}개 자료 태그 자동 분류 완료!`,"success"); try{const db=await getPostsFromDB();if(db?.length){setPostsS(db.sort((a,b)=>b.id-a.id));setPosts(db);}}catch{} }
+                        else showToast("모든 자료가 이미 분류되어 있어요","info");
+                      } catch(e){ alert("자동 분류 실패"); }
+                    }}
+                      style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      자동 분류
+                    </button>
                     <button onClick={()=>archiveFileRef.current?.click()}
                       style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
                       자료 등록
                     </button>
-                  )}
+                  </>}
                 </div>
 
                 {/* 미디어 카드 그리드 */}
