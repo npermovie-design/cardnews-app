@@ -8,8 +8,9 @@ const supabase = createClient(
 
 const VERIFY_TOKEN = process.env.INSTA_WEBHOOK_VERIFY_TOKEN || "snsmakeit_webhook_2026";
 
+export const config = { maxDuration: 15 };
+
 export default async function handler(req, res) {
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   // ── GET: Webhook 인증 (Hub Challenge) ──
@@ -19,7 +20,6 @@ export default async function handler(req, res) {
     const challenge = req.query["hub.challenge"];
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      console.log("Webhook verified");
       return res.status(200).send(challenge);
     }
     return res.status(403).send("Forbidden");
@@ -28,26 +28,50 @@ export default async function handler(req, res) {
   // ── POST: Webhook 이벤트 수신 ──
   if (req.method === "POST") {
     const body = req.body;
-    console.log("Webhook event:", JSON.stringify(body).substring(0, 500));
 
-    // 즉시 200 반환 (Instagram은 5초 내 응답 필요)
-    res.status(200).send("EVENT_RECEIVED");
+    // 디버그: 수신된 이벤트를 Supabase에 기록
+    await logWebhookEvent("received", body);
 
-    // 비동기로 이벤트 처리
+    // 이벤트 처리 (응답 전에 처리해야 Vercel에서 실행됨)
     try {
       await processWebhookEvent(body);
     } catch (err) {
-      console.error("Webhook processing error:", err);
+      await logWebhookEvent("error", { error: err.message, body });
     }
-    return;
+
+    // 처리 완료 후 200 반환
+    return res.status(200).send("EVENT_RECEIVED");
   }
 
   return res.status(405).send("Method not allowed");
 }
 
+// ── Supabase에 이벤트 로그 기록 (디버깅용) ──
+async function logWebhookEvent(type, data) {
+  try {
+    await supabase.from("insta_dm_log").insert({
+      campaign_id: null,
+      uid: "webhook_debug",
+      commenter_id: type,
+      commenter_username: "",
+      comment_id: "debug_" + Date.now(),
+      comment_text: JSON.stringify(data).substring(0, 500),
+      message_sent: "",
+      is_follower: false,
+      sent_success: false,
+      created_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Log error:", e.message);
+  }
+}
+
 // ── 웹훅 이벤트 처리 ──
 async function processWebhookEvent(body) {
-  if (body.object !== "instagram") return;
+  if (body.object !== "instagram") {
+    await logWebhookEvent("skip_not_instagram", { object: body.object });
+    return;
+  }
 
   for (const entry of body.entry || []) {
     // 댓글 이벤트 처리
@@ -57,10 +81,10 @@ async function processWebhookEvent(body) {
       }
     }
 
-    // messaging 이벤트 (DM 수신 시)도 처리 가능
+    // messaging 이벤트
     for (const msg of entry.messaging || []) {
       if (msg.message && !msg.message.is_echo) {
-        await handleIncomingMessage(entry.id, msg);
+        await logWebhookEvent("incoming_dm", { from: msg.sender?.id, text: msg.message?.text?.substring(0, 100) });
       }
     }
   }
@@ -69,13 +93,19 @@ async function processWebhookEvent(body) {
 // ── 댓글 처리: 키워드 매칭 → DM 발송 ──
 async function handleComment(igAccountId, commentData) {
   const { media, id: commentId, text: commentText, from } = commentData;
-  if (!commentText || !from?.id) return;
+  if (!commentText || !from?.id) {
+    await logWebhookEvent("skip_no_text_or_from", { commentData });
+    return;
+  }
 
-  const mediaId = media?.id;
   const commenterId = from.id;
   const commenterUsername = from.username || "";
 
-  console.log(`Comment on media ${mediaId}: "${commentText}" from @${commenterUsername}`);
+  await logWebhookEvent("comment_received", {
+    igAccountId, commenterId, commenterUsername,
+    commentText: commentText.substring(0, 200),
+    mediaId: media?.id,
+  });
 
   // 1) 이 Instagram 계정의 연동 정보 찾기
   const { data: connections } = await supabase
@@ -85,11 +115,29 @@ async function handleComment(igAccountId, commentData) {
     .eq("platform_user_id", igAccountId);
 
   if (!connections?.length) {
-    console.log("No connection found for IG account:", igAccountId);
-    return;
+    // platform_user_id가 안 맞을 수 있으니 모든 인스타 연동 계정으로 시도
+    const { data: allConns } = await supabase
+      .from("sns_connections")
+      .select("*")
+      .eq("platform", "instagram");
+
+    await logWebhookEvent("connection_lookup", {
+      igAccountId,
+      foundExact: 0,
+      allInstagramConnections: (allConns || []).map(c => ({
+        uid: c.uid,
+        platform_user_id: c.platform_user_id,
+        username: c.platform_username,
+      })),
+    });
+
+    if (!allConns?.length) return;
+    // 첫 번째 연동 계정 사용 (단일 사용자 서비스)
+    var connection = allConns[0];
+  } else {
+    var connection = connections[0];
   }
 
-  const connection = connections[0];
   const uid = connection.uid;
   const accessToken = connection.access_token;
 
@@ -100,7 +148,15 @@ async function handleComment(igAccountId, commentData) {
     .eq("uid", uid)
     .eq("is_active", true);
 
-  if (!campaigns?.length) return;
+  if (!campaigns?.length) {
+    await logWebhookEvent("no_active_campaigns", { uid });
+    return;
+  }
+
+  await logWebhookEvent("campaigns_found", {
+    count: campaigns.length,
+    names: campaigns.map(c => c.name),
+  });
 
   // 3) 캠페인별 키워드 매칭
   for (const campaign of campaigns) {
@@ -110,130 +166,107 @@ async function handleComment(igAccountId, commentData) {
     const matched = keywords.length === 0 ||
       keywords.some(kw => commentText.toLowerCase().includes(kw.toLowerCase()));
 
-    if (!matched) continue;
+    if (!matched) {
+      await logWebhookEvent("keyword_no_match", {
+        campaign: campaign.name, keywords, commentText: commentText.substring(0, 100),
+      });
+      continue;
+    }
 
-    console.log(`Keyword matched! Campaign: ${campaign.name}, Comment: "${commentText}"`);
+    await logWebhookEvent("keyword_matched", {
+      campaign: campaign.name, commentText: commentText.substring(0, 100),
+    });
 
-    // 4) 이미 이 댓글에 DM 보냈는지 중복 체크
+    // 4) 중복 발송 체크
     const { data: existing } = await supabase
       .from("insta_dm_log")
       .select("id")
       .eq("campaign_id", campaign.id)
       .eq("commenter_id", commenterId)
-      .eq("comment_id", commentId)
+      .neq("commenter_id", "webhook_debug")
       .limit(1);
 
     if (existing?.length) {
-      console.log("Already sent DM for this comment, skipping");
+      await logWebhookEvent("already_sent", { campaign: campaign.name, commenterId });
       continue;
     }
 
-    // 5) 팔로워 여부 확인
-    const isFollower = await checkFollower(accessToken, igAccountId, commenterId);
-
-    // 6) DM 메시지 결정
-    const message = isFollower
-      ? campaign.dm_message_follower
-      : campaign.dm_message_non_follower;
-
+    // 5) DM 메시지 결정 (기본: 비팔로워 메시지)
+    const message = campaign.dm_message_non_follower || campaign.dm_message_follower;
     if (!message) continue;
 
-    // 링크가 있으면 메시지에 추가
     const fullMessage = campaign.dm_link
       ? `${message}\n\n${campaign.dm_link}`
       : message;
 
-    // 7) DM 발송
-    const sent = await sendDM(accessToken, igAccountId, commenterId, fullMessage);
+    // 6) DM 발송
+    const sent = await sendDM(accessToken, igAccountId || connection.platform_user_id, commenterId, fullMessage);
 
-    // 8) 발송 로그 기록
+    // 7) 발송 로그 기록
     await supabase.from("insta_dm_log").insert({
       campaign_id: campaign.id,
       uid,
       commenter_id: commenterId,
       commenter_username: commenterUsername,
-      comment_id: commentId,
+      comment_id: commentId || "unknown",
       comment_text: commentText.substring(0, 500),
       message_sent: fullMessage.substring(0, 1000),
-      is_follower: isFollower,
+      is_follower: false,
       sent_success: sent,
       created_at: new Date().toISOString(),
     });
 
-    // 9) 발송 카운트 증가
+    // 8) 발송 카운트 증가
     if (sent) {
-      await supabase.rpc("increment_dm_sent_count", { cid: campaign.id }).catch(() => {
-        // rpc가 없으면 직접 업데이트
-        supabase
-          .from("insta_dm_campaigns")
-          .update({
-            dm_sent_count: (campaign.dm_sent_count || 0) + 1,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", campaign.id)
-          .then(() => {});
-      });
+      await supabase
+        .from("insta_dm_campaigns")
+        .update({
+          dm_sent_count: (campaign.dm_sent_count || 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", campaign.id);
     }
 
-    // 하나의 댓글에 대해 첫 매칭 캠페인만 DM 발송 (중복 방지)
+    // 하나의 댓글에 첫 매칭 캠페인만 발송
     break;
-  }
-}
-
-// ── 수신 DM 처리 (자동 응답) ──
-async function handleIncomingMessage(igAccountId, messaging) {
-  const senderId = messaging.sender?.id;
-  if (!senderId || senderId === igAccountId) return;
-
-  // 수신 DM 로그만 기록 (추후 자동응답 확장 가능)
-  console.log(`Incoming DM from ${senderId}: ${messaging.message?.text?.substring(0, 100)}`);
-}
-
-// ── 팔로워 확인 ──
-async function checkFollower(accessToken, igAccountId, userId) {
-  try {
-    // Instagram Graph API로 팔로워 확인
-    // 참고: 이 API는 비즈니스/크리에이터 계정에서만 동작
-    const res = await fetch(
-      `https://graph.instagram.com/v21.0/${igAccountId}?fields=followers&access_token=${accessToken}`
-    );
-    // 팔로워 목록 직접 조회가 제한적이므로, 기본적으로 비팔로워로 처리
-    // 실제로는 conversation history로 판단하거나 기본값 사용
-    return false;
-  } catch {
-    return false;
   }
 }
 
 // ── DM 발송 (Instagram Send API) ──
 async function sendDM(accessToken, igAccountId, recipientId, message) {
   try {
-    const response = await fetch(
-      `https://graph.instagram.com/v21.0/${igAccountId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          recipient: { id: recipientId },
-          message: { text: message },
-        }),
-      }
-    );
+    const url = `https://graph.instagram.com/v21.0/${igAccountId}/messages`;
+    const body = {
+      recipient: { id: recipientId },
+      message: { text: message },
+    };
+
+    await logWebhookEvent("dm_sending", {
+      url, recipientId, messagePreview: message.substring(0, 100),
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("DM send failed:", data);
+      await logWebhookEvent("dm_send_failed", {
+        status: response.status, error: data,
+      });
       return false;
     }
 
-    console.log("DM sent successfully:", data);
+    await logWebhookEvent("dm_send_success", { data });
     return true;
   } catch (err) {
-    console.error("DM send error:", err);
+    await logWebhookEvent("dm_send_error", { error: err.message });
     return false;
   }
 }
