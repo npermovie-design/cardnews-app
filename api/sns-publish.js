@@ -51,11 +51,14 @@ export default async function handler(req, res) {
 
     // ── 티스토리 (API 종료 → 클립보드+에디터 방식) ────────────────────────
     if (platform === "tistory") {
+      const tistoryBlog = conn.platform_username || conn.blog_name || "";
       return res.status(200).json({
         success: false,
         clipboard: true,
         message: "티스토리 Open API가 종료되어 자동 발행이 불가합니다. 내용이 클립보드에 복사되었으며, 에디터가 열립니다.",
-        editorUrl: "https://www.tistory.com/auth/login?redirectUrl=https%3A%2F%2Fwww.tistory.com%2Fm%2Fentry%2Fwrite",
+        editorUrl: tistoryBlog
+          ? `https://${tistoryBlog}.tistory.com/manage/newpost`
+          : "https://www.tistory.com/",
       });
     }
 
@@ -111,11 +114,14 @@ export default async function handler(req, res) {
 
     // ── 네이버 블로그 (자동 발행 불가 → 안내) ────────────────────────
     else if (platform === "naver_blog") {
+      const blogId = conn.platform_username || conn.platform_user_id || "";
       return res.status(200).json({
         success: false,
         clipboard: true,
         message: "네이버 블로그는 API 발행이 지원되지 않습니다. 내용이 클립보드에 복사되었으며, 블로그 에디터가 열립니다.",
-        editorUrl: "https://blog.naver.com/PostWriteForm.naver",
+        editorUrl: blogId
+          ? `https://blog.naver.com/${blogId}/postwrite`
+          : "https://blog.naver.com/PostWriteForm.naver",
       });
     }
 

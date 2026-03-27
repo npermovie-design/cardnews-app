@@ -123,7 +123,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       if (d.caption_only) setLoadingMsg("자막으로 분석 중... (영상 생성 시 MP4 업로드 필요)");
       else setLoadingMsg("음성 인식 + AI 분석 중...");
       await doAnalyze(d.file_id);
-    } catch (e) { setError(e.message); setStep("upload"); }
+    } catch (e) {
+      setError(e.message);
+      setStep("upload");
+      setInputMode("file"); // 다운로드 실패 시 파일 업로드 탭으로 자동 전환
+    }
   };
 
   // 파일 업로드

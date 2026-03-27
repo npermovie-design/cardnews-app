@@ -148,7 +148,7 @@ async def youtube_download(request: Request):
     errors = []
 
     # 1) yt-dlp (최신 우회 옵션 - 여러 player_client 시도)
-    for client in [["mweb", "android"], ["android", "web"], ["ios"], ["tv_embedded"], ["web"]]:
+    for client in [["default"], ["mweb", "android"], ["android", "web"], ["ios", "web"], ["tv_embedded"]]:
         if video_path.exists():
             break
         try:
@@ -158,15 +158,17 @@ async def youtube_download(request: Request):
                 "outtmpl": str(video_path),
                 "quiet": True,
                 "no_warnings": True,
-                "extractor_args": {"youtube": {"player_client": client}},
+                "extractor_args": {"youtube": {"player_client": client, "player_skip": ["webpage"]}},
                 "socket_timeout": 30,
-                "retries": 3,
-                "fragment_retries": 3,
+                "retries": 5,
+                "fragment_retries": 5,
                 "http_headers": {
                     "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
                     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
                 },
                 "merge_output_format": "mp4",
+                "live_from_start": False,
+                "concurrent_fragment_downloads": 4,
             }
             loop = asyncio.get_event_loop()
             def do_download(opts=ydl_opts):

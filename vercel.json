@@ -15,6 +15,6 @@
     { "source": "/rss.xml", "destination": "/api/rss" },
     { "source": "/feed", "destination": "/api/rss" },
     { "source": "/community/:cat/post-:id", "destination": "/api/render" },
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel|naver[0-9a-f]+\\.html).*)", "destination": "/index.html" }
   ]
 }
