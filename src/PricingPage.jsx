@@ -5,8 +5,8 @@ import { getPageText } from "./i18n-pages.js";
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 
-// ✅ 결제 활성화
-const PAYMENT_ENABLED = true;
+// 토스페이먼츠 연동 완료 후 true로 변경
+const PAYMENT_ENABLED = false;
 
 const COMMON_FEATURES = [
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
