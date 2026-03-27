@@ -52,12 +52,12 @@ export default async function handler(req, res) {
     const media = (mediaData.data || []).map(m => ({
       id: m.id,
       caption: m.caption || "",
-      mediaType: m.media_type,
-      mediaUrl: m.media_url || "",
-      thumbnailUrl: m.thumbnail_url || m.media_url || "",
+      media_type: m.media_type,
+      media_url: m.media_url || "",
+      thumbnail_url: m.thumbnail_url || m.media_url || "",
       timestamp: m.timestamp,
-      likeCount: m.like_count || 0,
-      commentsCount: m.comments_count || 0,
+      like_count: m.like_count || 0,
+      comments_count: m.comments_count || 0,
       permalink: m.permalink || "",
     }));
 
