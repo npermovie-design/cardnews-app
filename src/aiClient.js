@@ -1,24 +1,5 @@
-// OpenRouter API client — central wrapper for all AI calls
-const OR_KEY = "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";
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OR_HEADERS = {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${OR_KEY}`,
-  "HTTP-Referer": "https://snsmakeit.com",
-  "X-Title": "SNS Makeit",
-};
-
-const MODEL_MAP = {
-  "claude-haiku-4-5": "anthropic/claude-haiku-4-5",
-  "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4-5",
-  "claude-sonnet-4-5": "anthropic/claude-sonnet-4-5",
-  "claude-sonnet-4-20250514": "anthropic/claude-sonnet-4-5",
-  "claude-3-5-sonnet-20241022": "anthropic/claude-sonnet-4-5",
-};
-
-function orModel(m) {
-  return MODEL_MAP[m] || (m.includes("/") ? m : `anthropic/${m}`);
-}
+// OpenRouter API client — 서버 프록시를 통해 호출 (API 키 보호)
+const PROXY_URL = "/api/ai-proxy";
 
 // Convert Anthropic vision format → OpenAI image_url format
 function convertMessages(messages) {
@@ -42,16 +23,12 @@ function convertMessages(messages) {
  * Non-streaming AI call. Returns the text response.
  */
 export async function callAI(model, messages, maxTokens = 2000, system = null) {
-  const body = {
-    model: orModel(model),
-    max_tokens: maxTokens,
-    messages: convertMessages(messages),
-  };
+  const body = { model, max_tokens: maxTokens, messages: convertMessages(messages) };
   if (system) body.system = system;
 
-  const res = await fetch(OR_URL, {
+  const res = await fetch(PROXY_URL, {
     method: "POST",
-    headers: OR_HEADERS,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -66,17 +43,12 @@ export async function callAI(model, messages, maxTokens = 2000, system = null) {
  * Streaming AI call. Calls onChunk(text) for each chunk, returns full text.
  */
 export async function callAIStream(model, messages, maxTokens = 4000, onChunk, system = null) {
-  const body = {
-    model: orModel(model),
-    max_tokens: maxTokens,
-    stream: true,
-    messages: convertMessages(messages),
-  };
+  const body = { model, max_tokens: maxTokens, stream: true, messages: convertMessages(messages) };
   if (system) body.system = system;
 
-  const res = await fetch(OR_URL, {
+  const res = await fetch(PROXY_URL, {
     method: "POST",
-    headers: OR_HEADERS,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

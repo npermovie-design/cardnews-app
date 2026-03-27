@@ -938,11 +938,11 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const typeLabel = { video: "영상", gif: "GIF/짤", photo: "사진/이미지", music: "음악", file: "파일" }[mediaType] || "자료";
     const cleanName = fileName.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ").replace(/\d{8,}/g, "").trim();
     try {
-      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const r = await fetch("/api/ai-proxy", {
         method: "POST",
-        headers: { Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "anthropic/claude-sonnet-4-5", temperature: 0.5, max_tokens: 200,
+          model: "claude-haiku-4-5", max_tokens: 200,
           messages: [{ role: "user", content: `파일명: "${cleanName}" (${typeLabel} 파일)\n이 파일의 자료실 등록용 제목과 한줄 설명을 한국어로 만들어줘. JSON만 출력: {"title":"제목","desc":"설명"}` }],
         }),
       });
