@@ -14,6 +14,7 @@
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/rss.xml", "destination": "/api/rss" },
     { "source": "/feed", "destination": "/api/rss" },
+    { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/naver13ff0ecd787361289eef4e82f97736a.html" },
     { "source": "/community/:cat/post-:id", "destination": "/api/render" },
     { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel|naver[0-9a-f]+\\.html).*)", "destination": "/index.html" }
   ]
