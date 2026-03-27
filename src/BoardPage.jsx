@@ -675,9 +675,19 @@ function RichEditor({ value, onChange, isDark }) {
 /* ─── 본문 렌더러 ─────────────────────────────────────────── */
 function RichBody({ html, C }) {
   if (!html) return null;
+  const isDark = !!(C.bg?.includes("0a")||C.bg?.includes("#10")||C.bg?.includes("242"));
   return (
-    <div style={{fontSize:15,color:C.text,lineHeight:1.85,wordBreak:"break-word"}}
-      dangerouslySetInnerHTML={{__html: html}}/>
+    <>
+      <div style={{fontSize:15,color:C.text,lineHeight:1.85,wordBreak:"break-word"}}
+        dangerouslySetInnerHTML={{__html: html}}/>
+      <div style={{marginTop:28,padding:"16px 18px",borderRadius:12,
+        background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.04)",
+        border:`1px solid ${isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.12)"}`,
+        fontSize:13,color:isDark?"rgba(255,255,255,0.55)":"#666",lineHeight:1.7}}>
+        <span style={{fontWeight:700,color:isDark?"#a5b4fc":"#7c6aff"}}>요청합니다</span>{" "}
+        게시판에 원하는 자료 및 정보를 요청하시면 참고해서 더 많은 자료를 공유드립니다.
+      </div>
+    </>
   );
 }
 
