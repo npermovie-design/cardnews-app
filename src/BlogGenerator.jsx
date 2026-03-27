@@ -1198,7 +1198,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {fk==="keyword"&&<KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>}
               </div>;
             })}
-            {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10}}>{error}</div>}
+            {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
+              {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+              )}
+            </div>}
 
             {/* 글 톤 */}
             <div style={{marginBottom:14}}>

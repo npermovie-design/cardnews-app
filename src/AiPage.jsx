@@ -980,7 +980,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           </div>
         </div>
 
-        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         <button onClick={generate} disabled={!input.trim()}
           style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:input.trim()?"pointer":"not-allowed",
@@ -1504,7 +1504,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer",
           }}>🔄 다시 생성하기</button>
         </div>
-        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
       </div>
     </div>
   );
@@ -1513,7 +1513,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
         <StepBar step={step} total={3} labels={["기본 설정","스타일 설정","참고·생성"]} ACC={ACC} />
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         {step === 1 && (
           <div>
@@ -1588,7 +1588,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
               {refImg && <div style={{ marginTop:8, borderRadius:8, overflow:"hidden", maxHeight:120 }}><img src={refImg.url} alt="" style={{ width:"100%", objectFit:"cover" }} /></div>}
             </div>
 
-            {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+            {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(2)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
@@ -1668,7 +1668,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg || !refImg) { setErr("두 이미지를 모두 업로드해주세요."); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     const prompt = `Face swap task: The first image is the TARGET person. The second image is the REFERENCE face. Replace ONLY the face of the person in the first image with the face from the second image. Keep everything else identical: body shape, clothing, pose, hair (except where the face overlaps), background, lighting, and skin tone transition. The result must look photorealistic and seamless, as if it were an original photo. High quality, 4K resolution.`;
@@ -1701,7 +1701,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
         <BeforeAfterSlider srcImg={srcImg} result={result} bdr={bdr} ACC={ACC} muted={muted} text={text}
           onReset={() => { setResult(null); setStep(1); setSrcImg(null); setRefImg(null); }}
           downloadName="face_swap.png" />
-        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
       </div>
     </div>
   );
@@ -1710,7 +1710,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
         <StepBar step={step} total={2} labels={["원본 업로드","참고 얼굴 + 생성"]} ACC={ACC} />
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         {/* 두 이미지를 나란히 */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
@@ -1783,7 +1783,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("원본 이미지를 업로드해주세요."); return; }
     if (outfitMode === "ref" && !refImg) { setErr("참고 의상 이미지를 업로드해주세요."); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
     setGenerating(true); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     const outfitDesc = outfitMode === "ref"
@@ -1818,7 +1818,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
         <BeforeAfterSlider srcImg={srcImg} result={result} bdr={bdr} ACC={OUTFIT_ACC} muted={muted} text={text}
           onReset={() => { setResult(null); setSrcImg(null); setRefImg(null); }}
           downloadName="outfit_swap.png" />
-        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13 }}>{err}</div>}
+        {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
       </div>
     </div>
   );
@@ -1826,7 +1826,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         {/* 원본 업로드 */}
         <div style={{ marginBottom:20 }}>
@@ -1955,7 +1955,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     if (sizeMode === "manual" && expLeft===0 && expRight===0 && expTop===0 && expBottom===0) {
       setErr("최소 한 방향의 여백 크기를 0보다 크게 설정해주세요."); return;
     }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다."); return; }
+    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     try {
@@ -2045,7 +2045,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
         <StepBar step={step} total={2} labels={["이미지 업로드","크기·설정"]} ACC={ACC} />
-        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>navigate("pricing")} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         {step === 1 && (
           <div>
