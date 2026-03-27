@@ -1335,7 +1335,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
           </div>
           <div>
             <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>테마</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
+            <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
               {THEMES.map(t => (
                 <button key={t.id} onClick={()=>setThemeId(t.id)}
                   style={{ padding:"5px 3px", borderRadius:6, border:`1.5px solid ${themeId===t.id?accent:"transparent"}`, cursor:"pointer", textAlign:"center",
@@ -1521,7 +1521,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
                       {cat} <span style={{ fontSize:8, opacity:0.6 }}>({items.length})</span>
                     </button>
                     {isOpen && (
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:3, marginTop:2 }}>
+                      <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:3, marginTop:2 }}>
                         {items.map(l=>{
                           const sel = cur.layout===l.id;
                           return (
@@ -1693,7 +1693,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
             {/* 테마 프리셋 */}
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>테마 프리셋</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
+              <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
                 {THEMES.map(t=>(
                   <button key={t.id} onClick={()=>setThemeId(t.id)}
                     style={{ padding:"6px 3px", borderRadius:6, border:`1.5px solid ${themeId===t.id?accent:"transparent"}`, cursor:"pointer", textAlign:"center", background:themeId===t.id?`${accent}10`:"transparent" }}>

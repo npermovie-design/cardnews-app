@@ -123,7 +123,7 @@ export default async function handler(req, res) {
     const { uid, platform = "threads" } = req.query;
     const scopes = platform === "threads"
       ? "threads_basic,threads_content_publish"
-      : "instagram_business_basic,instagram_business_content_publish";
+      : "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments";
     const authUrl = platform === "threads"
       ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`
       : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${IG_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;

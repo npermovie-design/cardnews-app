@@ -38,6 +38,8 @@ export default async function handler(req, res) {
         return await toggleCampaign(req, res);
       case "generate_dm":
         return await generateDm(req, res);
+      case "list_logs":
+        return await listLogs(req, res);
       default:
         return res.status(400).json({ error: `알 수 없는 action: ${action}` });
     }
@@ -241,4 +243,20 @@ JSON 형식 (반드시 이 형식만 출력):
       raw: true,
     });
   }
+}
+
+// ── DM 발송 로그 조회 ──
+async function listLogs(req, res) {
+  const { uid } = req.body;
+  if (!uid) return res.status(400).json({ error: "uid 필수" });
+
+  const { data, error } = await supabase
+    .from("insta_dm_log")
+    .select("*")
+    .eq("uid", uid)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(200).json({ logs: data || [] });
 }

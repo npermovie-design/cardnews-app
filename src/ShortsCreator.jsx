@@ -286,7 +286,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ ...cardStyle, marginTop: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>세부 설정</div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>⏱ 쇼츠 길이</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
+          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {LENGTHS.map(l => (
               <button key={l.id} onClick={() => setShortsLength(l.id)}
                 style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${shortsLength === l.id ? acc : bdr}`, background: shortsLength === l.id ? `${acc}15` : "transparent", color: shortsLength === l.id ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
@@ -296,7 +296,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>📝 자막 글자수</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
             {[[0, "자동"], [8, "8자"], [15, "15자"], [25, "25자"]].map(([v, l]) => (
               <button key={v} onClick={() => setMaxChars(v)}
                 style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -421,7 +421,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         {/* 템플릿 */}
         <div style={{ ...cardStyle }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 8 }}>템플릿</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
+          <div className="ai-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
             {TEMPLATES.map(t => (
               <div key={t.id} onClick={() => { setTemplate(t.id); setTitleColor(t.titleColor); setCaptionColor(t.captionColor); }}
                 style={{ border: `2px solid ${template === t.id ? acc : bdr}`, borderRadius: 10, padding: 4, cursor: "pointer", textAlign: "center", background: template === t.id ? `${acc}10` : "transparent" }}>

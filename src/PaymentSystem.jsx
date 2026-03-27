@@ -193,7 +193,7 @@ export function PricingPage({ C, navigate, user, onLogin }) {
           <div style={{ textAlign:"center", fontSize:14, color:muted, marginBottom:28 }}>
             구독 없이 크레딧만 구매하세요 · 유효기간 없음
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+          <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
             {CREDIT_PACKS.map(pack=>(
               <div key={pack.id} style={{ borderRadius:16, border:`1px solid ${bdr}`, background:cardBg, padding:"28px 20px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
                 <div style={{ fontSize:44, fontWeight:900, color:"#38bdf8" }}>${pack.priceUSD}</div>

@@ -3,6 +3,48 @@
 -- Supabase Dashboard → SQL Editor에서 실행하세요
 -- ================================================================
 
+-- ── 인스타 자동DM 캠페인 테이블 ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS insta_dm_campaigns (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  uid TEXT NOT NULL,
+  name TEXT NOT NULL,
+  post_url TEXT,
+  trigger_keywords JSONB DEFAULT '[]',
+  dm_message_follower TEXT DEFAULT '',
+  dm_message_non_follower TEXT DEFAULT '',
+  dm_link TEXT,
+  is_active BOOLEAN DEFAULT true,
+  dm_sent_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE insta_dm_campaigns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "insta_dm_campaigns_all" ON insta_dm_campaigns;
+CREATE POLICY "insta_dm_campaigns_all" ON insta_dm_campaigns FOR ALL USING (true);
+
+-- ── 인스타 자동DM 발송 로그 테이블 ──────────────────────────────
+CREATE TABLE IF NOT EXISTS insta_dm_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  campaign_id UUID REFERENCES insta_dm_campaigns(id) ON DELETE CASCADE,
+  uid TEXT NOT NULL,
+  commenter_id TEXT NOT NULL,
+  commenter_username TEXT DEFAULT '',
+  comment_id TEXT NOT NULL,
+  comment_text TEXT DEFAULT '',
+  message_sent TEXT DEFAULT '',
+  is_follower BOOLEAN DEFAULT false,
+  sent_success BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE insta_dm_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "insta_dm_log_all" ON insta_dm_log;
+CREATE POLICY "insta_dm_log_all" ON insta_dm_log FOR ALL USING (true);
+
+-- dm_sent_count 컬럼 추가 (기존 테이블에 없을 경우)
+ALTER TABLE insta_dm_campaigns ADD COLUMN IF NOT EXISTS dm_sent_count INTEGER DEFAULT 0;
+
 -- ── 1. users 테이블에 nick_changed_at 컬럼 추가 ──────────────────
 ALTER TABLE users ADD COLUMN IF NOT EXISTS nick_changed_at TIMESTAMPTZ;
 

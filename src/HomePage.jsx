@@ -267,7 +267,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes marqueeL { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeR { from{transform:translateX(-50%)} to{transform:translateX(0)} }
-        @media(max-width:640px){ .hero-particle{display:none!important} }
+        @media(max-width:640px){
+          .hero-particle{display:none!important}
+          .tool-card:hover,.review-card:hover,.stat-card:hover{transform:none!important}
+        }
+        @media(max-width:480px){
+          section{padding-left:14px!important;padding-right:14px!important}
+        }
         .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
         .stat-card:hover { transform: scale(1.04) !important; }

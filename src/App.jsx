@@ -490,13 +490,84 @@ export default function App() {
           .cta-row button{padding:13px 20px!important;font-size:14px!important}
           table{display:block;overflow-x:auto}
         }
-        /* 모바일 최적화 */
-        @media(max-width:640px){
-          input,textarea,select{font-size:16px!important} /* iOS zoom 방지 */
+        /* ── 모바일 최적화 (종합) ── */
+
+        /* 터치 타겟 최소 크기 보장 */
+        @media(max-width:768px){
+          button,a,[role="button"],[onclick]{min-height:44px}
+          input,textarea,select{min-height:44px;font-size:16px!important} /* iOS zoom 방지 */
         }
+
+        /* 태블릿 (768px 이하) */
+        @media(max-width:768px){
+          .ai-grid-4{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-3{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-2{grid-template-columns:1fr 1fr!important}
+          .ai-content-area{padding:16px 12px 60px!important}
+          .side-panel{width:100%!important;max-width:100%!important;position:fixed!important;z-index:999!important;left:0!important;right:0!important;bottom:0!important;top:60px!important;border-radius:0!important}
+        }
+
+        /* 모바일 중간 (640px 이하) */
+        @media(max-width:640px){
+          .ai-grid-4{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-3{grid-template-columns:1fr!important}
+          .ai-grid-2{grid-template-columns:1fr!important}
+          .flex-col-mobile{flex-direction:column!important}
+          .gap-mobile{gap:10px!important}
+          .p-mobile{padding:12px!important}
+          .text-sm-mobile{font-size:13px!important}
+          h1{font-size:clamp(22px,5vw,36px)!important}
+          h2{font-size:clamp(18px,4vw,28px)!important}
+          h3{font-size:clamp(16px,3.5vw,22px)!important}
+        }
+
+        /* 모바일 작은 화면 (480px 이하) */
         @media(max-width:480px){
+          .ai-grid-4{grid-template-columns:1fr 1fr!important}
+          .ai-grid-3{grid-template-columns:1fr!important}
+          .ai-grid-2{grid-template-columns:1fr!important}
           .preview-area{max-width:100%!important;margin:0!important}
           .preview-area canvas{max-width:100%!important;height:auto!important}
+          .stat-grid{grid-template-columns:1fr 1fr!important}
+          .hide-xs{display:none!important}
+          table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+          th,td{white-space:nowrap;padding:8px 10px!important;font-size:12px!important}
+        }
+
+        /* 초소형 화면 (360px 이하) */
+        @media(max-width:360px){
+          .ai-grid-4{grid-template-columns:1fr!important}
+          body{font-size:14px}
+          .nav-logo-text{display:none!important}
+        }
+
+        /* 가로 모드 모바일 */
+        @media(max-height:500px) and (orientation:landscape){
+          .nav-bar{height:48px!important}
+          .page-top-pad{padding-top:56px!important}
+        }
+
+        /* 모바일 스크롤 성능 */
+        @media(max-width:768px){
+          .scroll-container{-webkit-overflow-scrolling:touch;overflow-scrolling:touch}
+          img{content-visibility:auto}
+        }
+
+        /* 모바일 모달 */
+        @media(max-width:640px){
+          .modal-content{width:95%!important;max-width:95%!important;margin:8px!important;max-height:90vh!important;overflow-y:auto!important}
+        }
+
+        /* 모바일 탭/필터 가로 스크롤 */
+        @media(max-width:640px){
+          .tab-scroll{overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+          .tab-scroll::-webkit-scrollbar{display:none}
+        }
+
+        /* safe-area 대응 (노치 디바이스) */
+        @supports(padding-top: env(safe-area-inset-top)){
+          .nav-bar{padding-top:env(safe-area-inset-top)}
+          .bottom-bar{padding-bottom:env(safe-area-inset-bottom)}
         }
       `}</style>
 
