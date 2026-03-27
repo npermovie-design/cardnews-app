@@ -147,46 +147,55 @@ async def youtube_download(request: Request):
 
     errors = []
 
-    # 1) pytubefix 시도 (여러 방식)
-    try:
-        from pytubefix import YouTube as PyTube
-        loop = asyncio.get_event_loop()
-        def do_pytube():
-            yt = PyTube(url, use_oauth=False, allow_oauth_cache=False)
-            stream = yt.streams.filter(progressive=True, file_extension="mp4").order_by("resolution").desc().first()
-            if not stream:
-                stream = yt.streams.filter(file_extension="mp4").order_by("resolution").desc().first()
-            if stream:
-                stream.download(output_path=str(file_dir), filename="video.mp4")
-        await loop.run_in_executor(None, do_pytube)
-    except Exception as e:
-        errors.append(f"pytubefix: {str(e)[:100]}")
-        logger.warning(f"pytubefix failed: {e}")
+    # 1) yt-dlp (최신 우회 옵션 - 여러 player_client 시도)
+    for client in [["mweb", "android"], ["android", "web"], ["ios"], ["tv_embedded"], ["web"]]:
+        if video_path.exists():
+            break
+        try:
+            import yt_dlp
+            ydl_opts = {
+                "format": "best[ext=mp4][height<=720]/bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+                "outtmpl": str(video_path),
+                "quiet": True,
+                "no_warnings": True,
+                "extractor_args": {"youtube": {"player_client": client}},
+                "socket_timeout": 30,
+                "retries": 3,
+                "fragment_retries": 3,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+                    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+                },
+                "merge_output_format": "mp4",
+            }
+            loop = asyncio.get_event_loop()
+            def do_download(opts=ydl_opts):
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([url])
+            await loop.run_in_executor(None, do_download)
+            if video_path.exists():
+                logger.info(f"yt-dlp succeeded with client={client}")
+                break
+        except Exception as e:
+            errors.append(f"yt-dlp({client[0]}): {str(e)[:80]}")
+            logger.warning(f"yt-dlp {client} failed: {e}")
 
-    # 2) yt-dlp (여러 player_client 시도)
+    # 2) pytubefix 폴백
     if not video_path.exists():
-        for client in [["web"], ["android"], ["ios"], ["tv_embedded"]]:
-            try:
-                import yt_dlp
-                ydl_opts = {
-                    "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
-                    "outtmpl": str(video_path),
-                    "quiet": True,
-                    "no_warnings": True,
-                    "extractor_args": {"youtube": {"player_client": client}},
-                    "socket_timeout": 30,
-                }
-                loop = asyncio.get_event_loop()
-                def do_download(opts=ydl_opts):
-                    with yt_dlp.YoutubeDL(opts) as ydl:
-                        ydl.download([url])
-                await loop.run_in_executor(None, do_download)
-                if video_path.exists():
-                    logger.info(f"yt-dlp succeeded with client={client}")
-                    break
-            except Exception as e:
-                errors.append(f"yt-dlp({client[0]}): {str(e)[:80]}")
-                logger.warning(f"yt-dlp {client} failed: {e}")
+        try:
+            from pytubefix import YouTube as PyTube
+            loop = asyncio.get_event_loop()
+            def do_pytube():
+                yt = PyTube(url, use_oauth=False, allow_oauth_cache=False)
+                stream = yt.streams.filter(progressive=True, file_extension="mp4").order_by("resolution").desc().first()
+                if not stream:
+                    stream = yt.streams.filter(file_extension="mp4").order_by("resolution").desc().first()
+                if stream:
+                    stream.download(output_path=str(file_dir), filename="video.mp4")
+            await loop.run_in_executor(None, do_pytube)
+        except Exception as e:
+            errors.append(f"pytubefix: {str(e)[:100]}")
+            logger.warning(f"pytubefix failed: {e}")
 
     if not video_path.exists():
         logger.warning(f"Download failed, trying caption-only analysis: {errors}")
