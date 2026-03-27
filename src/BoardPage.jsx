@@ -906,27 +906,80 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveUploadFile, setArchiveUploadFile] = useState(null);
   const [archiveForm, setArchiveForm] = useState({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
+  const [dragOver, setDragOver] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+
+  // 파일 타입 자동 감지
+  const detectMediaType = (file) => {
+    const name = file.name.toLowerCase();
+    const mime = (file.type || "").toLowerCase();
+    if (mime.startsWith("video/") || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(name)) return "video";
+    if (/\.gif$/i.test(name) || mime === "image/gif") return "gif";
+    if (mime.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(name)) return "music";
+    if (mime.startsWith("image/") || /\.(jpg|jpeg|png|webp|bmp|svg|tiff)$/i.test(name)) return "photo";
+    return "file";
+  };
+
+  // AI로 파일명에서 제목/설명 자동 생성
+  const generateAiMeta = async (fileName, mediaType) => {
+    const typeLabel = { video: "영상", gif: "GIF/짤", photo: "사진/이미지", music: "음악", file: "파일" }[mediaType] || "자료";
+    const cleanName = fileName.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ").replace(/\d{8,}/g, "").trim();
+    try {
+      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "anthropic/claude-sonnet-4-5", temperature: 0.5, max_tokens: 200,
+          messages: [{ role: "user", content: `파일명: "${cleanName}" (${typeLabel} 파일)\n이 파일의 자료실 등록용 제목과 한줄 설명을 한국어로 만들어줘. JSON만 출력: {"title":"제목","desc":"설명"}` }],
+        }),
+      });
+      const data = await r.json();
+      const txt = (data.choices?.[0]?.message?.content || "").replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(txt);
+      return { title: parsed.title || cleanName, desc: parsed.desc || `${typeLabel} 자료` };
+    } catch { return { title: cleanName || fileName, desc: `${typeLabel} 자료` }; }
+  };
 
   const handleArchiveUpload = async (files) => {
     if (!files || files.length === 0 || !user || user.role !== "admin") return;
-    for (const file of Array.from(files)) {
-      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 50MB 초과`); continue; }
+    const fileArr = Array.from(files);
+
+    // 단일 파일: 기존 모달 방식
+    if (fileArr.length === 1) {
+      setArchiveUploadFile(fileArr[0]);
+      const cleanName = fileArr[0].name.replace(/\.[^.]+$/, "");
+      setArchiveForm({ title: cleanName, desc: "", priceType: "free", price: "", visibility: "all" });
+      setShowArchiveModal(true);
+      return;
+    }
+
+    // 다중 파일: 자동 업로드 + AI 분류
+    setBulkUploading(true);
+    setBulkProgress({ done: 0, total: fileArr.length });
+    let uploaded = 0;
+
+    for (const file of fileArr) {
+      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 50MB 초과`); uploaded++; setBulkProgress(p => ({ ...p, done: uploaded })); continue; }
       try {
+        const mediaType = detectMediaType(file);
+        const meta = await generateAiMeta(file.name, mediaType);
         const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const url = await uploadFileToStorage(file, path);
-        const type = file.type.startsWith("video") ? "video" : file.type.startsWith("image") ? "image" : "file";
-        const newPost = {
-          title: file.name.replace(/\.[^.]+$/, ""),
-          body: `<p>${type === "video" ? "영상" : type === "image" ? "이미지" : "파일"} 자료</p>`,
-          subCat: "archive", tag: "", images: [url],
+        const tagLabel = { video: "영상", gif: "GIF", photo: "사진", music: "음악" }[mediaType] || "";
+        await submitPost({
+          title: meta.title,
+          body: `<p>${meta.desc}</p>`,
+          subCat: "archive", tag: tagLabel, images: [url],
           priceType: "free", price: "",
-          nick: user.nick, date: new Date().toISOString().slice(0, 10),
-          views: 0, likes: 0, comments: [],
-        };
-        await submitPost(newPost);
-        showToast("자료가 등록됐어요!", "success");
-      } catch (e) { alert(`${file.name} 업로드 실패: ${e.message}`); }
+        });
+        uploaded++;
+        setBulkProgress(p => ({ ...p, done: uploaded }));
+      } catch (e) { alert(`${file.name} 업로드 실패: ${e.message}`); uploaded++; setBulkProgress(p => ({ ...p, done: uploaded })); }
     }
+
+    showToast(`${uploaded}개 자료가 등록됐어요!`, "success");
+    setBulkUploading(false);
     try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
   };
   const snippetCache = useRef({}); // postId → snippet text
@@ -1658,9 +1711,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
             {/* 자료실 파일 input (숨김) */}
             {subCat==="archive" && (
-              <input ref={archiveFileRef} type="file" multiple style={{display:"none"}} onChange={e=>{
-                if(e.target.files.length===1){ setArchiveUploadFile(e.target.files[0]); setShowArchiveModal(true); }
-                else { handleArchiveUpload(e.target.files); }
+              <input ref={archiveFileRef} type="file" multiple accept="image/*,video/*,audio/*,.gif" style={{display:"none"}} onChange={e=>{
+                handleArchiveUpload(e.target.files);
                 e.target.value="";
               }}/>
             )}
@@ -1730,6 +1782,43 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 자료실 미디어 그리드 뷰 */}
             {subCat==="archive" && archiveView==="posts" && (
               <>
+                {/* 드래그앤드롭 업로드 영역 (관리자 전용) */}
+                {user?.role==="admin" && (
+                  <div
+                    onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+                    onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+                    onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const files = e.dataTransfer.files; if (files?.length) handleArchiveUpload(files); }}
+                    onClick={() => archiveFileRef.current?.click()}
+                    style={{
+                      marginBottom: 16, padding: bulkUploading ? "16px" : "28px 20px", borderRadius: 16,
+                      border: `2px dashed ${dragOver ? "#7c6aff" : bdr}`,
+                      background: dragOver ? (isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : "transparent",
+                      textAlign: "center", cursor: bulkUploading ? "default" : "pointer",
+                      transition: "all 0.2s",
+                    }}>
+                    {bulkUploading ? (
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+                          업로드 중... ({bulkProgress.done}/{bulkProgress.total})
+                        </div>
+                        <div style={{ width: "100%", height: 6, borderRadius: 3, background: isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg,#7c6aff,#8b5cf6)", width: `${bulkProgress.total ? (bulkProgress.done / bulkProgress.total) * 100 : 0}%`, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>📁</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: dragOver ? "#7c6aff" : C.text, marginBottom: 4 }}>
+                          파일을 여기에 드래그하거나 클릭하세요
+                        </div>
+                        <div style={{ fontSize: 11, color: C.muted }}>
+                          사진 · 영상 · GIF · 음악 파일을 여러 개 한번에 올릴 수 있어요 (AI가 자동 분류)
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* 서브탭 (무료이미지 스타일) */}
                 <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:"2px solid "+bdr}}>
                   {[{id:"",label:"전체"},{id:"video",label:"영상"},{id:"photo",label:"사진"},{id:"gif",label:"GIF · 짤"},{id:"music",label:"음악"}].map(t=>{
