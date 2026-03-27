@@ -15,15 +15,6 @@
     { "source": "/rss.xml", "destination": "/api/rss" },
     { "source": "/feed", "destination": "/api/rss" },
     { "source": "/community/:cat/post-:id", "destination": "/api/render" },
-    { "source": "/community/:cat", "destination": "/api/render" },
-    { "source": "/about", "destination": "/api/render" },
-    { "source": "/howto", "destination": "/api/render" },
-    { "source": "/pricing", "destination": "/api/render" },
-    { "source": "/cases", "destination": "/api/render" },
-    { "source": "/contact", "destination": "/api/render" },
-    { "source": "/event", "destination": "/api/render" },
-    { "source": "/legal", "destination": "/api/render" },
-    { "source": "/ai/:path*", "destination": "/api/render" },
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel).*)", "destination": "/api/render" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel).*)", "destination": "/index.html" }
   ]
 }

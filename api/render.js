@@ -1,220 +1,129 @@
-// 동적 OG 메타태그 렌더링 — 모든 SPA 라우트를 처리
-// 크롤러/SNS 공유 시 페이지별 올바른 OG 태그를 반환
+// 동적 OG 메타태그 렌더링 — 커뮤니티 게시글 공유 시 올바른 OG 태그 반환
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
-// 빌드된 index.html 읽기
-let indexHtml = "";
-try {
-  indexHtml = readFileSync(resolve("dist/index.html"), "utf-8");
-} catch (e) {
-  try {
-    indexHtml = readFileSync(resolve("index.html"), "utf-8");
-  } catch (e2) {}
-}
-
 const SITE_URL = "https://www.snsmakeit.com";
-const DEFAULT_OG = {
-  title: "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성",
-  description: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료 체험!",
-  image: `${SITE_URL}/og-image.png`,
-};
-
-// 페이지별 OG 메타 정보
-const PAGE_META = {
-  home: {
-    title: "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성",
-    description: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버 블로그, 인스타그램, 유튜브 대본까지!",
-  },
-  about: {
-    title: "소개 - SNS메이킷",
-    description: "SNS메이킷은 AI 기반 SNS 콘텐츠 자동 생성 플랫폼입니다. 카드뉴스, 블로그, 상세페이지를 AI가 만들어드립니다.",
-  },
-  howto: {
-    title: "이용방법 - SNS메이킷",
-    description: "SNS메이킷 사용법을 알려드려요. 주제 입력부터 콘텐츠 완성까지 3분이면 충분합니다.",
-  },
-  ai: {
-    title: "AI 도구 - SNS메이킷",
-    description: "AI 카드뉴스, 블로그 글쓰기, 상세페이지, 로고, 목업, PPT 등 다양한 AI 콘텐츠 생성 도구를 활용해보세요.",
-  },
-  pricing: {
-    title: "가격정책 - SNS메이킷",
-    description: "SNS메이킷 크레딧 가격 안내. 비회원 5회 무료 체험, 합리적인 크레딧 충전 요금제를 확인하세요.",
-  },
-  cases: {
-    title: "고객사례 - SNS메이킷",
-    description: "다양한 브랜드와 크리에이터들이 SNS메이킷으로 성공한 사례를 확인하세요.",
-  },
-  community: {
-    title: "커뮤니티 - SNS메이킷",
-    description: "SNS메이킷 사용자들과 정보를 공유하고 소통하는 커뮤니티입니다. 질문답변, 정보공유, 사용후기를 확인하세요.",
-  },
-  contact: {
-    title: "문의하기 - SNS메이킷",
-    description: "SNS메이킷에 대한 문의사항이 있으시면 언제든 연락해주세요.",
-  },
-  event: {
-    title: "이벤트 - SNS메이킷",
-    description: "SNS메이킷 진행 중인 이벤트를 확인하세요. 무료 크레딧, 할인 등 다양한 혜택!",
-  },
-  legal: {
-    title: "약관·정책 - SNS메이킷",
-    description: "SNS메이킷 이용약관 및 개인정보처리방침을 확인하세요.",
-  },
-};
-
-// 커뮤니티 카테고리별 메타
-const COMMUNITY_CAT_META = {
-  info: { title: "정보공유", desc: "유용한 정보와 노하우를 공유하는 게시판" },
-  qna: { title: "질문답변", desc: "궁금한 점을 질문하고 답변을 받아보세요" },
-  free: { title: "자유게시판", desc: "자유롭게 소통하는 게시판" },
-  review: { title: "사용후기", desc: "SNS메이킷 사용 후기를 남겨주세요" },
-  archive: { title: "자료실", desc: "유용한 자료와 템플릿을 다운로드하세요" },
-};
 
 export const config = { maxDuration: 10 };
 
 export default async function handler(req, res) {
   const url = new URL(req.url, `https://${req.headers.host}`);
-  let path = url.pathname;
-  if (path === "/") path = "/home";
-
+  const path = url.pathname;
   const segments = path.split("/").filter(Boolean);
-  const mainPage = segments[0] || "home";
 
-  let meta = { ...DEFAULT_OG };
-  let canonicalUrl = `${SITE_URL}${path === "/home" ? "/" : path}`;
+  let title = "SNS메이킷 커뮤니티";
+  let description = "SNS메이킷 사용자들과 정보를 공유하고 소통하는 커뮤니티입니다.";
+  let image = `${SITE_URL}/og-image.png`;
+  let canonicalUrl = `${SITE_URL}${path}`;
 
-  // 1) 정적 페이지 메타
-  if (PAGE_META[mainPage]) {
-    meta.title = PAGE_META[mainPage].title;
-    meta.description = PAGE_META[mainPage].description;
+  // 커뮤니티 카테고리
+  const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실" };
+  if (segments[1]) {
+    const catName = catNames[segments[1]] || "커뮤니티";
+    title = `${catName} - SNS메이킷 커뮤니티`;
   }
 
-  // 2) 커뮤니티 카테고리
-  if (mainPage === "community" && segments[1]) {
-    const cat = segments[1];
-    const catMeta = COMMUNITY_CAT_META[cat];
-    if (catMeta) {
-      meta.title = `${catMeta.title} - SNS메이킷 커뮤니티`;
-      meta.description = catMeta.desc;
-    }
+  // 개별 게시글 OG 태그
+  if (segments[2] && segments[2].startsWith("post-")) {
+    const postId = segments[2].replace("post-", "");
+    try {
+      const { data: post } = await supabase
+        .from("posts")
+        .select("title, content, author, images")
+        .eq("id", postId)
+        .single();
 
-    // 3) 개별 게시글
-    if (segments[2] && segments[2].startsWith("post-")) {
-      const postId = segments[2].replace("post-", "");
-      try {
-        const { data: post } = await supabase
-          .from("posts")
-          .select("title, content, author, created_at, images")
-          .eq("id", postId)
-          .single();
-
-        if (post) {
-          const bodyPreview = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 150);
-          meta.title = `${post.title} - SNS메이킷 커뮤니티`;
-          meta.description = bodyPreview || meta.description;
-          // 게시글 이미지가 있으면 OG 이미지로 사용
-          const images = Array.isArray(post.images) ? post.images : [];
-          if (images.length > 0) meta.image = images[0];
-          canonicalUrl = `${SITE_URL}/community/${cat}/post-${postId}`;
-        }
-      } catch (e) {
-        // 게시글 조회 실패 시 기본값 유지
+      if (post) {
+        const bodyText = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 160);
+        title = `${post.title} - SNS메이킷`;
+        description = bodyText || description;
+        const imgs = Array.isArray(post.images) ? post.images : [];
+        if (imgs.length > 0) image = imgs[0];
       }
+    } catch (e) {}
+  }
+
+  // SPA를 로드하는 완전한 HTML 반환 (OG 태그 포함)
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="RK3cE_t-6IlrSQbjoV4TvEg9n-Crqg8eaEByIHq_V50" />
+<meta name="naver-site-verification" content="20befb9d4db477010b5f0545bd3097fe2cfa1e6a" />
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="${esc(canonicalUrl)}">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="article">
+<meta property="og:url" content="${esc(canonicalUrl)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:image" content="${esc(image)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="SNS메이킷">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(image)}">
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  if (ua.match(/KAKAOTALK/i)) {
+    if (/android/i.test(ua)) {
+      location.href = 'intent://' + location.href.replace(/https?:\\/\\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    } else {
+      location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
     }
   }
-
-  // 4) AI 도구 서브페이지
-  if (mainPage === "ai" && segments[1]) {
-    const toolNames = {
-      blog_write: "AI 글쓰기", cardnews_simple: "AI 카드뉴스", detail_simple: "AI 상세페이지",
-      thumbnail_gen: "AI 썸네일", logo_gen: "AI 로고", mockup_gen: "AI 목업",
-      ppt_gen: "AI PPT", marketing: "마케팅 분석", product_shot: "AI 제품컷",
-      model_gen: "AI 모델", face_swap: "AI 얼굴교체", outfit_swap: "AI 의상교체",
-      hot_keyword: "핫 키워드", video_create: "숏폼 편집",
-    };
-    const toolName = toolNames[segments[1]];
-    if (toolName) {
-      meta.title = `${toolName} - SNS메이킷`;
-      meta.description = `SNS메이킷의 ${toolName} 기능으로 콘텐츠를 자동으로 생성해보세요.`;
-    }
-  }
-
-  // index.html이 없으면 최소한의 HTML 반환
-  if (!indexHtml) {
-    return res.status(200).setHeader("Content-Type", "text/html; charset=utf-8").send(buildMinimalHtml(meta, canonicalUrl));
-  }
-
-  // index.html의 메타 태그를 동적으로 교체
-  let html = indexHtml;
-
-  // title
-  html = html.replace(
-    /<title>[^<]*<\/title>/,
-    `<title>${escHtml(meta.title)}</title>`
-  );
-
-  // meta description
-  html = html.replace(
-    /<meta name="description" content="[^"]*"/,
-    `<meta name="description" content="${escHtml(meta.description)}"`
-  );
-
-  // canonical
-  html = html.replace(
-    /<link rel="canonical" href="[^"]*"/,
-    `<link rel="canonical" href="${escHtml(canonicalUrl)}"`
-  );
-
-  // og tags
-  html = html.replace(/<meta property="og:url" content="[^"]*"/, `<meta property="og:url" content="${escHtml(canonicalUrl)}"`);
-  html = html.replace(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${escHtml(meta.title)}"`);
-  html = html.replace(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${escHtml(meta.description)}"`);
-  html = html.replace(/<meta property="og:image" content="[^"]*"/, `<meta property="og:image" content="${escHtml(meta.image)}"`);
-
-  // twitter tags
-  html = html.replace(/<meta name="twitter:title" content="[^"]*"/, `<meta name="twitter:title" content="${escHtml(meta.title)}"`);
-  html = html.replace(/<meta name="twitter:description" content="[^"]*"/, `<meta name="twitter:description" content="${escHtml(meta.description)}"`);
-  html = html.replace(/<meta name="twitter:image" content="[^"]*"/, `<meta name="twitter:image" content="${escHtml(meta.image)}"`);
+})();
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E2KGX8KJ4S"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-E2KGX8KJ4S');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"${esc(title)}","description":"${esc(description)}","image":"${esc(image)}","url":"${esc(canonicalUrl)}","publisher":{"@type":"Organization","name":"SNS메이킷","url":"${SITE_URL}"}}
+</script>
+<style>
+body{margin:0;font-family:'Noto Sans KR',sans-serif;background:#0f0c29;color:#fff}
+#seo-content{max-width:700px;margin:60px auto;padding:20px;text-align:center}
+#seo-content h1{font-size:24px;margin-bottom:12px}
+#seo-content p{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7}
+#seo-content a{color:#a5b4fc;text-decoration:none;display:inline-block;margin-top:20px;padding:12px 28px;border-radius:12px;background:linear-gradient(135deg,#7c6aff,#8b5cf6);color:#fff;font-weight:700}
+</style>
+</head>
+<body>
+<div id="seo-content">
+<h1>${esc(title)}</h1>
+<p>${esc(description)}</p>
+<a href="${SITE_URL}${path}">SNS메이킷에서 보기</a>
+</div>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+<script>
+// SPA 로드 후 SEO 콘텐츠 숨기기
+window.addEventListener('DOMContentLoaded',function(){
+  var el=document.getElementById('seo-content');
+  if(el){var check=setInterval(function(){if(document.getElementById('root').children.length>0){el.style.display='none';clearInterval(check)}},200);setTimeout(function(){clearInterval(check)},5000)}
+});
+</script>
+</body>
+</html>`;
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   return res.status(200).send(html);
 }
 
-function escHtml(str) {
-  return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function buildMinimalHtml(meta, canonicalUrl) {
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escHtml(meta.title)}</title>
-  <meta name="description" content="${escHtml(meta.description)}">
-  <link rel="canonical" href="${escHtml(canonicalUrl)}">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="${escHtml(canonicalUrl)}">
-  <meta property="og:title" content="${escHtml(meta.title)}">
-  <meta property="og:description" content="${escHtml(meta.description)}">
-  <meta property="og:image" content="${escHtml(meta.image)}">
-  <meta property="og:site_name" content="SNS메이킷">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escHtml(meta.title)}">
-  <meta name="twitter:description" content="${escHtml(meta.description)}">
-  <meta name="twitter:image" content="${escHtml(meta.image)}">
-  <script>window.location.replace("https://www.snsmakeit.com" + window.location.pathname + window.location.search);</script>
-</head>
-<body></body>
-</html>`;
+function esc(s) {
+  return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

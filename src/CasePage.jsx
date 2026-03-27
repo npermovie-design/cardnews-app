@@ -16,6 +16,17 @@ const DEFAULT_CASES = [
     thumb: "/20260323_145122.png",
     tags: ["네이버 블로그", "SEO", "주얼리"],
   },
+  {
+    id: "default_2",
+    brand: "sweety5857",
+    field: "네이버 블로그",
+    feature: "네이버 블로그 글쓰기",
+    title: "AI 블로그 글쓰기로 네이버 블로그 콘텐츠 자동 생성",
+    desc: "SNS메이킷의 AI 블로그 글쓰기 기능을 활용하여 네이버 블로그에 고품질 콘텐츠를 빠르게 발행한 사례입니다.",
+    link: "https://blog.naver.com/sweety5857",
+    thumb: "",
+    tags: ["네이버 블로그", "AI 글쓰기", "콘텐츠 자동화"],
+  },
 ];
 
 async function sbFetch(path, options = {}) {
