@@ -179,7 +179,7 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복\n2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어, 예: [image: startup office], [image: healthy breakfast])\n3. 소제목은 3~5개 정도`;
+      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 해당 단락 내용을 구체적으로 묘사하는 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입 (반드시 해당 단락의 실제 내용과 직결되는 영문 2~4단어)\n   예시: 혈당 관련 글이면 [image: blood sugar monitor], 카페 후기면 [image: cozy cafe latte art], 여행이면 [image: jeju island ocean view]\n3. 절대 추상적/일반적 키워드 금지 (technology, business, nature 같은 단어 금지). 글의 구체적 소재를 반영할 것\n4. 소제목은 3~5개 정도`;
       const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
       if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주\n- 마무리 단락 포함${noSpecial}`;
@@ -869,9 +869,32 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   };
-  const handleCopy = content => {
+  const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    navigator.clipboard.writeText(cleaned);
+    // 이미지 포함 HTML 복사 (네이버 블로그 등 리치 에디터용)
+    if (withImages && Object.keys(inlineImages).length > 0) {
+      let html = cleaned;
+      // [image: keyword] / [이미지: keyword] 태그를 <img> HTML로 교체
+      html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (match, desc) => {
+        const url = inlineImages[desc.trim()];
+        if (url) return `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>`;
+        return match;
+      });
+      // 줄바꿈을 <br>로
+      html = html.replace(/\n/g, "<br/>");
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([cleaned], { type: "text/plain" }),
+          })
+        ]);
+      } catch {
+        navigator.clipboard.writeText(cleaned);
+      }
+    } else {
+      navigator.clipboard.writeText(cleaned);
+    }
     setCopied(true);
     setTimeout(()=>setCopied(false),2000);
   };
@@ -925,13 +948,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </div>
             )}
             {result&&(
-              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result)}
-                style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
-                  background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                  color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",
-                  display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                {copied?("✓ "+t("copyDone")):("📋 "+t("copyBtn"))}
-              </button>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
+                  style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
+                    background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
+                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                  {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
+                </button>
+              </div>
             )}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
             {result && (() => {

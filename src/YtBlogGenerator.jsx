@@ -311,8 +311,8 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복
-2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어)
+1. 큰 소제목 → [image: 해당 단락 내용의 구체적 영문 키워드] → 본문 설명 순서로 반복
+2. [image: keyword] 형태로 각 소제목마다 1개씩 (해당 단락 실제 내용과 직결되는 영문 2~4단어, 추상적 단어 금지)
 3. 소제목은 3~5개 정도
 
 작성 형식:
@@ -330,8 +330,8 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [image: english keyword] → 본문 설명 순서로 반복
-2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 1~3단어)
+1. 큰 소제목 → [image: 해당 단락 내용의 구체적 영문 키워드] → 본문 설명 순서로 반복
+2. [image: keyword] 형태로 각 소제목마다 1개씩 (해당 단락 실제 내용과 직결되는 영문 2~4단어, 추상적 단어 금지)
 
 ## h2 소제목 적극 활용, **강조 텍스트** 사용, 리스트 구조화
 SEO 최적화, 출처: ${videoInfo.author} 유튜브 채널`,
@@ -454,8 +454,17 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  const handleCopy = async () => {
+    if (Object.keys(inlineImages).length > 0) {
+      let html = result;
+      html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
+        const url = inlineImages[desc.trim()];
+        return url ? `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>` : m;
+      });
+      html = html.replace(/\n/g, "<br/>");
+      try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
+    } else { navigator.clipboard.writeText(result); }
+    setCopied(true); setTimeout(()=>setCopied(false),2000);
   };
 
   const IS = {
@@ -689,7 +698,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
             <div style={{display:"flex",gap:8}}>
               <button onClick={handleCopy}
                 style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                {copied?"✓ 복사됨":"📋 복사"}
+                {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
               </button>
               <button onClick={()=>{
                 const b=new Blob([result],{type:"text/plain;charset=utf-8"});

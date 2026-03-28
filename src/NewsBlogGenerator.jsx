@@ -329,9 +329,10 @@ ${articleSection}
 - 순수 한국어 문장으로만 작성
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복
-2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어, 예: [image: news conference], [image: stock market chart])
-3. 소제목은 3~5개 정도
+1. 큰 소제목 → [image: 해당 단락 내용의 구체적 영문 키워드] → 본문 설명 순서로 반복
+2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입 (해당 단락 실제 내용과 직결되는 영문 2~4단어)
+3. 추상적 키워드 금지 (technology, business 같은 단어 금지). 기사의 구체적 소재 반영
+4. 소제목은 3~5개 정도
 
 작성 형식:
 - SEO 최적화된 블로그 제목 (한 줄)
@@ -353,8 +354,8 @@ ${articleSection}
 - 순수 한국어 문장으로만 작성
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [image: english keyword] → 본문 설명 순서로 반복
-2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 1~3단어)
+1. 큰 소제목 → [image: 해당 단락 내용의 구체적 영문 키워드] → 본문 설명 순서로 반복
+2. [image: keyword] 형태로 각 소제목마다 1개씩 (해당 단락 실제 내용과 직결되는 영문 2~4단어, 추상적 단어 금지)
 
 SEO 최적화된 제목, 소제목으로 구조화, 출처 명시`,
 
@@ -731,11 +732,22 @@ ${articleSection}
                   <span style={{fontSize:10,color:muted}}>공백제외</span>
                   <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
                 </div>
-                <button onClick={()=>{navigator.clipboard.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
+                <button onClick={async()=>{
+                  let html = result;
+                  if (Object.keys(inlineImages).length > 0) {
+                    html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
+                      const url = inlineImages[desc.trim()];
+                      return url ? `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>` : m;
+                    });
+                    html = html.replace(/\n/g, "<br/>");
+                    try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
+                  } else { navigator.clipboard.writeText(result); }
+                  setCopied(true);setTimeout(()=>setCopied(false),2000);
+                }}
                   style={{padding:"5px 14px",borderRadius:7,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
                     background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
                     color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                  {copied?"✓ 복사됨":"📋 복사"}
+                  {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
                 </button>
                 <button onClick={()=>{
                   const b=new Blob([result],{type:"text/plain;charset=utf-8"});
