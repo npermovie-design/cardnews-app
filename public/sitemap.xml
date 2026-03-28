@@ -80,6 +80,22 @@
     <priority>0.6</priority>
   </url>
 
+  <!-- SEO 분석기 -->
+  <url>
+    <loc>https://snsmakeit.com/analyzer</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://snsmakeit.com/analyzer"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://snsmakeit.com/analyzer?lang=en"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 고객사례 -->
+  <url>
+    <loc>https://snsmakeit.com/cases</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
   <!-- 약관 -->
   <url>
     <loc>https://snsmakeit.com/legal</loc>

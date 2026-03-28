@@ -18,7 +18,8 @@ async function handleSitemap(req, res) {
     { url: "/community", priority: "0.6", freq: "daily" },
     { url: "/contact", priority: "0.5", freq: "monthly" },
     { url: "/event", priority: "0.6", freq: "weekly" },
-    { url: "/cases", priority: "0.6", freq: "monthly" },
+    { url: "/analyzer", priority: "0.7", freq: "weekly", langs: true },
+    { url: "/cases", priority: "0.5", freq: "monthly" },
     { url: "/legal", priority: "0.3", freq: "yearly" },
   ];
 
@@ -75,7 +76,7 @@ async function handleRss(req, res) {
   try {
     const sb = createClient(
       process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
-      process.env.VITE_SUPABASE_ANON_KEY || ""
+      process.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
     );
     const { data: posts } = await sb.from("posts").select("id,title,body,subCat,nick,date,images").order("id", { ascending: false }).limit(50);
 
