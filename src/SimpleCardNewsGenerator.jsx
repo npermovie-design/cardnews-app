@@ -1732,8 +1732,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 image: st.bgImage || null,
               };
             })}
-            width={canvasW}
-            height={canvasH}
+            width={imgW}
+            height={imgH}
             C={C}
             onSave={() => setShowCanvasEditor(false)}
             onClose={() => setShowCanvasEditor(false)}
