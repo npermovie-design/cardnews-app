@@ -46,14 +46,36 @@ function mdToHtml(md) {
 
 
 /* ── 마크다운 → JSX 렌더러 ── */
-function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
   if (!text) return null;
   const lines = text.split("\n");
   const elements = [];
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("### ")) {
+    // [이미지: 설명] 태그를 실제 이미지로 렌더링
+    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    if (imgMatch) {
+      const desc = imgMatch[1].trim();
+      const imgUrl = inlineImages && inlineImages[desc];
+      if (imgUrl) {
+        elements.push(
+          <div key={i} style={{margin:"16px 0",borderRadius:12,overflow:"hidden",border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e9ecef"}`}}>
+            <img src={imgUrl} alt={desc} loading="lazy" style={{width:"100%",display:"block",maxHeight:400,objectFit:"cover"}} />
+            <div style={{padding:"8px 12px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.3)":"#f8f8fb",textAlign:"center"}}>{desc}</div>
+          </div>
+        );
+      } else {
+        // 이미지 로딩 중이거나 못 찾은 경우 placeholder
+        elements.push(
+          <div key={i} style={{margin:"16px 0",padding:"24px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#f5f4ff",border:`1px dashed ${isDark?"rgba(255,255,255,0.1)":"rgba(124,106,255,0.2)"}`,textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:6,opacity:0.4}}>&#128247;</div>
+            <div style={{fontSize:12,color:mutedColor}}>{desc}</div>
+            <div style={{fontSize:10,color:mutedColor,opacity:0.6,marginTop:4}}>이미지 검색 중...</div>
+          </div>
+        );
+      }
+    } else if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);
@@ -549,6 +571,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgSearching,    setImgSearching]    = useState(false);
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
+  const [inlineImages,    setInlineImages]    = useState({}); // { "키워드": imageUrl }
 
   // ── 세부 설정 상태 ──
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -735,7 +758,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setAiUsage(_newU2);
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
-      // 이미지 자동 추천
+      // 본문 내 [이미지: ...] 태그에 실제 이미지 자동 삽입
+      if (_savedFull) fetchInlineImages(_savedFull);
+      // 하단 이미지 추천
       if (_savedFull && fields.keyword) fetchImages(fields.keyword);
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
@@ -749,6 +774,33 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         } catch(e) {}
       }
     }
+  };
+
+  /* ── [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
+  const fetchInlineImages = async (blogText) => {
+    if (!blogText) return;
+    const imgTags = blogText.match(/\[이미지:\s*([^\]]+)\]/g);
+    if (!imgTags || imgTags.length === 0) return;
+    const keywords = imgTags.map(tag => tag.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim());
+    const uniqueKeywords = [...new Set(keywords)];
+    const imgMap = {};
+    for (const kw of uniqueKeywords) {
+      try {
+        const searchKw = kw.split(" ").slice(0, 3).join(" ");
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo&lang=ko`);
+        const d = await r.json();
+        if (d.hits && d.hits.length > 0) {
+          imgMap[kw] = d.hits[0].webformatURL;
+        } else {
+          const r2 = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKw)}&per_page=3`);
+          const d2 = await r2.json();
+          if (d2.photos && d2.photos.length > 0) {
+            imgMap[kw] = d2.photos[0].src.medium;
+          }
+        }
+      } catch(e) {}
+    }
+    setInlineImages(imgMap);
   };
 
   /* ── 픽사베이·픽셀스 이미지 자동 추천 ── */
@@ -940,7 +992,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
           {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9}}>
-            {renderMarkdown(result, isDark, text, muted, accentRaw)}
+            {renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}

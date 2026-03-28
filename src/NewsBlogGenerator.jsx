@@ -6,8 +6,8 @@ import LoadingAnimation from "./LoadingAnimation.jsx";
 import { callAIStream } from "./aiClient";
 
 
-/* ── 마크다운 → JSX 렌더러 ── */
-function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
+/* ── 마크다운 → JSX 렌더러 (이미지 태그 자동 삽입 지원) ── */
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
   if (!text) return null;
   const lines = text.split("\n");
   const elements = [];
@@ -16,8 +16,30 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor) {
   while (i < lines.length) {
     const line = lines[i];
 
+    // [이미지: 설명] 태그를 실제 이미지로 렌더링
+    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    if (imgMatch) {
+      const desc = imgMatch[1].trim();
+      const imgUrl = inlineImages && inlineImages[desc];
+      if (imgUrl) {
+        elements.push(
+          <div key={i} style={{margin:"16px 0",borderRadius:12,overflow:"hidden",border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e9ecef"}`}}>
+            <img src={imgUrl} alt={desc} loading="lazy" style={{width:"100%",display:"block",maxHeight:400,objectFit:"cover"}} />
+            <div style={{padding:"8px 12px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.3)":"#f8f8fb",textAlign:"center"}}>{desc}</div>
+          </div>
+        );
+      } else {
+        elements.push(
+          <div key={i} style={{margin:"16px 0",padding:"24px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#f5f4ff",border:`1px dashed ${isDark?"rgba(255,255,255,0.1)":"rgba(124,106,255,0.2)"}`,textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:6,opacity:0.4}}>&#128247;</div>
+            <div style={{fontSize:12,color:mutedColor}}>{desc}</div>
+            <div style={{fontSize:10,color:mutedColor,opacity:0.6,marginTop:4}}>이미지 검색 중...</div>
+          </div>
+        );
+      }
+    }
     // ## 제목
-    if (line.startsWith("### ")) {
+    else if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{line.slice(4)}</h3>);
     } else if (line.startsWith("## ")) {
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{line.slice(3)}</h2>);
@@ -201,6 +223,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const [length,     setLength]     = useState("medium");
   const [extra,      setExtra]      = useState("");
   const [result,     setResult]     = useState("");
+  const [inlineImages, setInlineImages] = useState({});
   const [generating, setGenerating] = useState(false);
   useGeneratingGuard(generating, 10, "blog_write"); // 생성 중 이탈 방지
   const [genErr,     setGenErr]     = useState("");
@@ -241,6 +264,31 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
       setFetchStatus("");
       setFetchErr("⚠️ 기사 불러오기 실패: " + e.message);
     }
+  };
+
+  /* ── [이미지: ...] 태그 자동 이미지 검색 ── */
+  const fetchInlineImages = async (blogText) => {
+    if (!blogText) return;
+    const imgTags = blogText.match(/\[이미지:\s*([^\]]+)\]/g);
+    if (!imgTags || imgTags.length === 0) return;
+    const keywords = imgTags.map(tag => tag.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim());
+    const uniqueKeywords = [...new Set(keywords)];
+    const imgMap = {};
+    for (const kw of uniqueKeywords) {
+      try {
+        const searchKw = kw.split(" ").slice(0, 3).join(" ");
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo&lang=ko`);
+        const d = await r.json();
+        if (d.hits && d.hits.length > 0) {
+          imgMap[kw] = d.hits[0].webformatURL;
+        } else {
+          const r2 = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKw)}&per_page=3`);
+          const d2 = await r2.json();
+          if (d2.photos && d2.photos.length > 0) imgMap[kw] = d2.photos[0].src.medium;
+        }
+      } catch(e) {}
+    }
+    setInlineImages(imgMap);
   };
 
   /* ── 블로그 글 생성 ── */
@@ -289,6 +337,11 @@ ${articleSection}
 - 제목·소제목은 꺾쇠 없이 줄글로 자연스럽게 표현
 - 순수 한국어 문장으로만 작성
 
+[글 구조 필수 규칙]
+1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복
+2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+3. 소제목은 3~5개 정도
+
 작성 형식:
 - SEO 최적화된 블로그 제목 (한 줄)
 - 빈 줄 구분으로 도입부 (기사 핵심 내용 소개)
@@ -307,6 +360,10 @@ ${articleSection}
 - 마크다운 기호(##, ###, **, __, ~~, >, *) 사용 금지
 - 소제목은 줄바꿈 후 일반 텍스트로 자연스럽게 표현
 - 순수 한국어 문장으로만 작성
+
+[글 구조 필수 규칙]
+1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 순서로 반복
+2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
 
 SEO 최적화된 제목, 소제목으로 구조화, 출처 명시`,
 
@@ -410,7 +467,10 @@ ${articleSection}
       });
     } catch { setGenErr("생성 중 오류가 발생했습니다."); }
     finally {
-      if (_nfFull) setResult(cleanBlogText(_nfFull));
+      if (_nfFull) {
+        setResult(cleanBlogText(_nfFull));
+        fetchInlineImages(_nfFull);
+      }
       setGenerating(false); setLoadStep(0);
       if (user) {
         var _u = getAiUsage();
@@ -698,7 +758,7 @@ ${articleSection}
             </div>
             <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
               <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",fontSize:15,color:text,animation:"ns-fadein 0.4s ease",lineHeight:1.9}}>
-                {renderMarkdown(result, isDark, text, muted, accent)}
+                {renderMarkdown(result, isDark, text, muted, accent, inlineImages)}
               </div>
             </div>
           </>

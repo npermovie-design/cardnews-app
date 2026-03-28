@@ -89,6 +89,45 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
+/* ── 마크다운 → JSX 렌더러 (이미지 태그 자동 삽입 지원) ── */
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  const elements = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    if (imgMatch) {
+      const desc = imgMatch[1].trim();
+      const imgUrl = inlineImages && inlineImages[desc];
+      if (imgUrl) {
+        elements.push(
+          <div key={i} style={{margin:"16px 0",borderRadius:12,overflow:"hidden",border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e9ecef"}`}}>
+            <img src={imgUrl} alt={desc} loading="lazy" style={{width:"100%",display:"block",maxHeight:400,objectFit:"cover"}} />
+            <div style={{padding:"8px 12px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.3)":"#f8f8fb",textAlign:"center"}}>{desc}</div>
+          </div>
+        );
+      } else {
+        elements.push(
+          <div key={i} style={{margin:"16px 0",padding:"24px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#f5f4ff",border:`1px dashed ${isDark?"rgba(255,255,255,0.1)":"rgba(124,106,255,0.2)"}`,textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:6,opacity:0.4}}>&#128247;</div>
+            <div style={{fontSize:12,color:mutedColor}}>{desc}</div>
+          </div>
+        );
+      }
+    } else if (line.trim() === "") {
+      elements.push(<div key={i} style={{height:8}}/>);
+    } else if (line.trim().startsWith("#") && line.includes(" #")) {
+      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.9,fontSize:14,color:accentColor}}>{line}</p>);
+    } else if (line.trim()) {
+      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{line}</p>);
+    }
+    i++;
+  }
+  return elements;
+}
+
 export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate}) {
   const isDark = theme === "dark" || (!theme && !!embedded);
 
@@ -117,6 +156,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
   const [length,      setLength]      = useState("medium");
   const [extra,       setExtra]       = useState("");
   const [result,      setResult]      = useState("");
+  const [inlineImages, setInlineImages] = useState({});
   const [generating,  setGenerating]  = useState(false);
   useGeneratingGuard(generating, 10, "video_create");
   const wizStep = generating ? 2 : result ? 3 : 1;
@@ -243,7 +283,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
     // 로그인 회원 차단 없음, 비회원만 5회 초과 차단
     if (!user && guestLimitExceeded()) return;
     if (!user) incrementGuestUsage();
-    setGenErr(""); setGenerating(true); setResult(""); setCopied(false);
+    setGenErr(""); setGenerating(true); setResult(""); setInlineImages({}); setCopied(false);
     // 포인트 즉시 차감
     if (user && user.uid) {
       changePoints(user.uid, -10, "유튜브 블로그 생성").then(newPts => {
@@ -273,6 +313,11 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
 스타일: ${toneLabel} / 분량: ${lenLabel}
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
+[글 구조 필수 규칙]
+1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복
+2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+3. 소제목은 3~5개 정도
+
 작성 형식:
 - SEO 최적화된 블로그 제목
 - 도입부 (영상 소개 + 핵심 미리보기)
@@ -286,6 +331,10 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 채널: ${videoInfo.author}
 스타일: ${toneLabel} / 분량: ${lenLabel}
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
+
+[글 구조 필수 규칙]
+1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 순서로 반복
+2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
 
 ## h2 소제목 적극 활용, **강조 텍스트** 사용, 리스트 구조화
 SEO 최적화, 출처: ${videoInfo.author} 유튜브 채널`,
@@ -377,6 +426,28 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         setAiUsage(_nu);
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
+      // 본문 내 [이미지: ...] 태그에 실제 이미지 자동 삽입
+      if (_nfFull) {
+        const imgTags = _nfFull.match(/\[이미지:\s*([^\]]+)\]/g);
+        if (imgTags && imgTags.length > 0) {
+          const keywords = [...new Set(imgTags.map(t => t.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim()))];
+          const imgMap = {};
+          for (const kw of keywords) {
+            try {
+              const searchKw = kw.split(" ").slice(0, 3).join(" ");
+              const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo&lang=ko`);
+              const d = await r.json();
+              if (d.hits && d.hits.length > 0) { imgMap[kw] = d.hits[0].webformatURL; }
+              else {
+                const r2 = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKw)}&per_page=3`);
+                const d2 = await r2.json();
+                if (d2.photos && d2.photos.length > 0) imgMap[kw] = d2.photos[0].src.medium;
+              }
+            } catch(e) {}
+          }
+          setInlineImages(imgMap);
+        }
+      }
       // 보관함 자동저장
       if (typeof _nfFull !== "undefined" && _nfFull && _nfFull.length > 50) {
         try {
@@ -657,8 +728,8 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
           )}
 
           {result && (
-            <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",whiteSpace:"pre-wrap",lineHeight:2.1,fontSize:16,color:text,fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",animation:"yt-fadein 0.4s ease"}}>
-              {result}
+            <div style={{background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,borderRadius:14,padding:"28px 32px",lineHeight:2.1,fontSize:16,color:text,fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",animation:"yt-fadein 0.4s ease"}}>
+              {renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}
               {generating && <span style={{display:"inline-block",width:2,height:16,background:"#FF0000",marginLeft:2,animation:"yt-blink 1s infinite"}}/>}
             </div>
           )}
