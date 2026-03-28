@@ -1169,9 +1169,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     // 1P 지급
     if(user.uid){
       try {
-        const newPts = await changePoints(user.uid, 1, "커뮤니티 글 작성");
+        const newPts = await changePoints(user.uid, 2, "커뮤니티 글 작성");
         if(onUserUpdate) onUserUpdate({...user, points: newPts});
-        showToast("글이 등록됐어요! +1P 포인트가 지급됐습니다","success");
+        showToast("글이 등록됐어요! +2P 포인트가 지급됐습니다","success");
       } catch(e) {
         showToast("글이 등록됐어요!","success");
       }
@@ -1706,7 +1706,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
           <span style={{fontSize:18}}>💎</span>
           <span style={{fontSize:13,color:isDark?"#86efac":"#166534",lineHeight:1.6}}>
-            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+1P</b> 적립됩니다.
+            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+2P</b> 적립됩니다.
             댓글에는 포인트가 지급되지 않습니다. 적립된 포인트로 AI 생성기를 이용해보세요!
           </span>
         </div>
@@ -2417,7 +2417,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>포인트 적립</span>
               </div>
-              {[["글 작성","+1P"],["AI 생성","-10P"],["가입 즉시","+100P"],["출석체크","+3P"]].map(([a,p])=>(
+              {[["글 작성","+2P"],["AI 생성","-10P"],["가입 즉시","+100P"],["출석체크","+3P"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

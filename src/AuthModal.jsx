@@ -11,6 +11,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const [resendCool,   setResendCool]  = useState(false); // 재발송 쿨다운
   const [resendCount,  setResendCount] = useState(0); // 재발송 카운트다운
   const [pendingUser,  setPendingUser] = useState(null);  // 인증 대기 중인 FB user
+  const [agreedToTerms, setAgreedToTerms] = useState(false); // 이용약관 동의
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -186,6 +187,9 @@ export default function AuthModal({ onClose, onAuth, C }) {
               Google로 로그인
             </button>
 
+            <button onClick={() => alert("npermovie@naver.com으로 문의해주세요")} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 12, textAlign: "center", padding: "2px 0 0" }}>
+              비밀번호를 잊으셨나요?
+            </button>
             <button onClick={() => { setTab("register"); setErr(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 12, textAlign: "center", padding: "4px" }}>
               아직 계정이 없으신가요? <span style={{ color: "#a5b4fc", fontWeight: 700 }}>회원가입</span>
             </button>
@@ -216,7 +220,14 @@ export default function AuthModal({ onClose, onAuth, C }) {
               </div>
             )}
 
-            <button onClick={register} disabled={loading} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700 }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "4px 0" }}>
+              <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
+                style={{ marginTop: 2, accentColor: "#7c6aff", width: 16, height: 16, flexShrink: 0, cursor: "pointer" }} />
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                <a href="/legal" target="_blank" rel="noopener noreferrer" style={{ color: "#a5b4fc", textDecoration: "underline" }}>이용약관 및 개인정보처리방침</a>에 동의합니다
+              </span>
+            </label>
+            <button onClick={register} disabled={loading || !agreedToTerms} style={{ padding: "12px", borderRadius: 12, border: "none", cursor: (loading || !agreedToTerms) ? "not-allowed" : "pointer", background: (loading || !agreedToTerms) ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, opacity: !agreedToTerms ? 0.5 : 1 }}>
               {loading ? "가입 중..." : "회원가입하기"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -233,9 +244,9 @@ export default function AuthModal({ onClose, onAuth, C }) {
             <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>가입 혜택</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
-                ·가입 즉시 <b style={{ color: C.text }}>200P</b> 지급 (AI 20회 분량)<br/>
-                ·게시글 작성 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
-                ·일일 로그인 시 <b style={{ color: C.text }}>1P</b> 적립<br/>
+                ·가입 즉시 <b style={{ color: C.text }}>100P</b> 지급 (AI 10회 분량)<br/>
+                ·게시글 작성 시 <b style={{ color: C.text }}>2P</b> 적립<br/>
+                ·출석체크 시 <b style={{ color: C.text }}>3P</b> 적립<br/>
                 ·포인트 충전으로 AI 무제한 이용
               </div>
             </div>

@@ -81,6 +81,36 @@ function FadeIn({ children, delay = 0, style = {} }) {
   );
 }
 
+/* ── FAQ 아코디언 아이템 ── */
+function FaqItem({ q, a, C, _dark }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      background: C.card, border: "1px solid " + C.border, borderRadius: 14,
+      marginBottom: 10, overflow: "hidden", transition: "all 0.2s",
+    }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", padding: "18px 20px", display: "flex", justifyContent: "space-between",
+        alignItems: "center", background: "none", border: "none", cursor: "pointer",
+        fontSize: 15, fontWeight: 700, color: C.text, textAlign: "left", gap: 12,
+      }}>
+        <span>{q}</span>
+        <span style={{
+          fontSize: 18, color: C.muted, transition: "transform 0.25s", flexShrink: 0,
+          transform: open ? "rotate(45deg)" : "rotate(0deg)",
+        }}>+</span>
+      </button>
+      <div style={{
+        maxHeight: open ? 300 : 0, overflow: "hidden", transition: "max-height 0.3s ease",
+      }}>
+        <div style={{ padding: "0 20px 18px", fontSize: 14, color: C.muted, lineHeight: 1.85 }}>
+          {a}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── 페르소나별 탭 ── */
 function PersonaTabs({ navigate, C }) {
   const [active, setActive] = useState(0);
@@ -327,13 +357,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {/* 실시간 통계 */}
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
-              { val: 25,   suffix: p("statToolsSuffix"), label: p("statTools") },
-              { val: statsCount, suffix: p("statContentsSuffix"), label: p("statContents") },
-              { val: 3,    suffix: p("statTimeSuffix"),  label: p("statTime") },
-            ].map(({ val, suffix, label }) => (
+              { display: "25" + p("statToolsSuffix"), label: p("statTools") },
+              { display: statsCount.toLocaleString() + p("statContentsSuffix"), label: p("statContents") },
+              { display: "3" + p("statTimeSuffix"), label: p("statTime") },
+            ].map(({ display, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: "#7c6aff" }}>
-                  <CountUp to={val} suffix={suffix} />
+                  {display}
                 </div>
                 <div style={{ fontSize: "clamp(11px,2.5vw,13px)", color: C.muted, marginTop: 4 }}>{label}</div>
               </div>
@@ -429,7 +459,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {[
             { val: statsCount.toLocaleString()+"+", label: lang === "ko" ? "생성된 콘텐츠" : "Contents created" },
             { val: "25+", label: lang === "ko" ? "AI 도구" : "AI tools" },
-            { val: "3"+lang === "ko" ? "분" : "min", label: lang === "ko" ? "평균 생성 시간" : "Avg. creation time" },
+            { val: "3" + (lang === "ko" ? "분" : "min"), label: lang === "ko" ? "평균 생성 시간" : "Avg. creation time" },
             { val: "85%", label: lang === "ko" ? "시간 절감" : "Time saved" },
           ].map(s => (
             <div key={s.label}>
@@ -607,6 +637,79 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         </div>
       </section>
 
+      {/* ══ 경쟁사 비교표 ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: _dark ? "linear-gradient(180deg, #0a0812 0%, #12091f 50%, #0a0812 100%)" : "linear-gradient(180deg, #f8f8fb 0%, #f0ecff 50%, #f8f8fb 100%)" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>Comparison</div>
+              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
+                {lang === "ko" ? "왜 SNS메이킷인가요?" : "Why SNS Makeit?"}
+              </h2>
+              <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
+                {lang === "ko" ? "ChatGPT, Canva, 개별 도구 대비 SNS메이킷의 차별점을 확인하세요." : "See how SNS Makeit compares to ChatGPT, Canva, and individual tools."}
+              </p>
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", minWidth: 600, borderCollapse: "separate", borderSpacing: 0, fontSize: 13, color: C.text }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, fontSize: 12 }}>
+                      {lang === "ko" ? "기능" : "Feature"}
+                    </th>
+                    {[
+                      { name: "SNS메이킷", highlight: true },
+                      { name: "ChatGPT", highlight: false },
+                      { name: "Canva", highlight: false },
+                      { name: lang === "ko" ? "개별 도구" : "Individual Tools", highlight: false },
+                    ].map(col => (
+                      <th key={col.name} style={{
+                        padding: "14px 12px", textAlign: "center", fontWeight: 800, fontSize: 13,
+                        color: col.highlight ? "#fff" : C.text,
+                        background: col.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "transparent",
+                        borderBottom: col.highlight ? "none" : "2px solid " + C.border,
+                        borderRadius: col.highlight ? "12px 12px 0 0" : 0,
+                      }}>
+                        {col.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: lang === "ko" ? "콘텐츠 제작 시간" : "Content creation time", vals: [lang === "ko" ? "3분" : "3min", lang === "ko" ? "30분+" : "30min+", lang === "ko" ? "20분+" : "20min+", lang === "ko" ? "2시간+" : "2hrs+"] },
+                    { feature: lang === "ko" ? "카드뉴스/블로그/영상 동시 생성" : "Card news/Blog/Video at once", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "SEO 최적화 글쓰기" : "SEO-optimized writing", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "이미지 생성/수정 (10가지 도구)" : "Image gen/edit (10 tools)", vals: ["check", "cross", "partial", "partial"] },
+                    { feature: lang === "ko" ? "SNS 자동 발행" : "SNS auto-publish", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "포인트 기반 합리적 비용" : "Affordable point system", vals: ["check", "cross", "cross", "cross"] },
+                  ].map((row, ri) => (
+                    <tr key={row.feature} style={{ background: ri % 2 === 0 ? (_dark ? "rgba(255,255,255,0.02)" : "rgba(124,106,255,0.02)") : "transparent" }}>
+                      <td style={{ padding: "14px 16px", fontWeight: 600, borderBottom: "1px solid " + C.border, fontSize: 13 }}>{row.feature}</td>
+                      {row.vals.map((v, ci) => (
+                        <td key={ci} style={{
+                          padding: "14px 12px", textAlign: "center", borderBottom: "1px solid " + C.border,
+                          background: ci === 0 ? (_dark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : "transparent",
+                          fontWeight: ci === 0 ? 700 : 400,
+                          color: v === "check" ? "#22c55e" : v === "cross" ? (C.muted) : v === "partial" ? "#f59e0b" : (ci === 0 ? "#7c6aff" : C.text),
+                        }}>
+                          {v === "check" ? <span style={{ fontSize: 18 }}>&#10003;</span> : v === "cross" ? <span style={{ fontSize: 16, opacity: 0.4 }}>&#10007;</span> : v === "partial" ? <span style={{ fontSize: 12 }}>{lang === "ko" ? "일부" : "Partial"}</span> : <span style={{ fontWeight: 800, color: ci === 0 ? "#7c6aff" : C.text }}>{v}</span>}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ textAlign: "center", marginTop: 32 }}>
+              <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "지금 무료로 체험하기" : "Try free now"} →</Btn>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
         <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
@@ -665,7 +768,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             <FadeIn delay={0.1}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {[
-                  { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+2P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
+                  { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+3P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
                   { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+2P", desc: lang === "ko" ? "커뮤니티 글 작성 시" : "When posting in community", color: "#22c55e" },
                   { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+100P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
                   { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "5" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
@@ -688,9 +791,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료 체험하기":"Try free", onClick: () => navigate("ai") },
-            { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·로그인 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료 회원가입":"Sign up free", onClick: () => navigate("ai") },
-            { icon: "9,900", title: lang==="ko"?"Standard 충전":"Standard", point: "1,200P", desc: lang==="ko"?"텍스트 120회 · 이미지 24회 · 유효기간 없음":"120 texts · 24 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing"), highlight: true },
-            { icon: "PRO", title: lang==="ko"?"Pro 충전":"Pro", point: "3,000P", desc: lang==="ko"?"텍스트 300회 · 이미지 60회 · 우선 고객지원":"300 texts · 60 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing") },
+            { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·출석 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료 회원가입":"Sign up free", onClick: () => navigate("ai") },
+            { icon: "19,900", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"텍스트 350회 · 이미지 70회 · 유효기간 없음":"350 texts · 70 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "PRO", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"텍스트 950회 · 이미지 190회 · 우선 고객지원":"950 texts · 190 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing") },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -714,6 +817,39 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           ))}
         </div>
       </SecWrap>
+
+      {/* ══ FAQ ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>FAQ</div>
+              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
+                {lang === "ko" ? "자주 묻는 질문" : "Frequently Asked Questions"}
+              </h2>
+            </div>
+          </FadeIn>
+          {(lang === "ko" ? [
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 카드뉴스, 상세페이지, AI 이미지 생성, 숏폼 영상 편집까지 20가지 이상의 AI 도구를 하나의 플랫폼에서 제공합니다." },
+            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 카드뉴스, 상세페이지, AI 제품컷, 로고, 목업, 숏폼 영상 등 SNS 마케팅에 필요한 거의 모든 콘텐츠를 AI로 자동 생성할 수 있습니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네! 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 100포인트가 즉시 지급되며, 매일 출석체크(+3P), 게시글 작성(+2P) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
+            { q: "생성된 콘텐츠의 품질은 어떤가요?", a: "최신 AI 모델(Claude Sonnet 4)을 사용하여 사람이 작성한 것과 구분하기 어려운 높은 품질의 콘텐츠를 생성합니다. SEO 최적화까지 자동으로 적용되어 검색 노출에도 유리합니다." },
+            { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 주요 SNS 플랫폼을 지원합니다. 스레드, 네이버 블로그, 티스토리는 원클릭 자동 발행 기능도 제공합니다." },
+            { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 100P가 즉시 지급됩니다. 이후 매일 출석체크(+3P), 커뮤니티 게시글 작성(+2P)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
+          ] : [
+            { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides 20+ AI tools in one place, including blog writing, card news, detail pages, AI image generation, and short-form video editing." },
+            { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, card news, detail pages, AI product shots, logos, mockups, short-form videos, and more." },
+            { q: "Can I use it for free?", a: "Yes! You can try 5 times free without login. Sign up to get 100P instantly, plus earn points daily through check-ins and posting." },
+            { q: "What is the quality of generated content?", a: "We use the latest AI models (Claude Sonnet 4) to produce high-quality content that is virtually indistinguishable from human-written text, with automatic SEO optimization." },
+            { q: "Which platforms are supported?", a: "We support Naver Blog, Tistory, Instagram, YouTube, Threads, and Naver Cafe. Auto-publishing is available for Threads, Naver Blog, and Tistory." },
+            { q: "How do I earn points?", a: "Get 100P on sign-up. Earn +3P daily check-in, +2P per community post. You can also purchase additional points at affordable prices." },
+          ]).map((item, i) => (
+            <FadeIn key={i} delay={i * 0.05}>
+              <FaqItem q={item.q} a={item.a} C={C} _dark={_dark} />
+            </FadeIn>
+          ))}
+        </div>
+      </section>
 
       {/* ══ CTA ══ */}
       <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>

@@ -431,7 +431,7 @@ export default function App() {
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "howto")    return <HowToPage C={C} navigate={navigate} />;
+    if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
