@@ -21,10 +21,51 @@
     { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/naver-verify", "statusCode": 200 }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/rss.xml", "destination": "/api/rss" },
-    { "source": "/feed", "destination": "/api/rss" },
+    { "source": "/sitemap.xml", "destination": "/api/seo?action=sitemap" },
+    { "source": "/rss.xml", "destination": "/api/seo?action=rss" },
+    { "source": "/feed", "destination": "/api/seo?action=rss" },
     { "source": "/community/:cat/post-:id", "destination": "/api/render" },
+
+    { "source": "/api/analyze-creator", "destination": "/api/image?action=analyze-creator" },
+    { "source": "/api/generate-image", "destination": "/api/image?action=generate" },
+
+    { "source": "/api/api-youtube-info", "destination": "/api/youtube?action=info" },
+    { "source": "/api/api-youtube-stream", "destination": "/api/youtube?action=stream" },
+    { "source": "/api/api-youtube-url", "destination": "/api/youtube?action=url" },
+    { "source": "/api/youtube-info", "destination": "/api/youtube?action=distube-info" },
+    { "source": "/api/youtube-stream", "destination": "/api/youtube?action=distube-stream" },
+    { "source": "/api/fetch-youtube", "destination": "/api/youtube?action=fetch" },
+    { "source": "/api/transcript", "destination": "/api/youtube?action=transcript" },
+    { "source": "/api/yt-dl", "destination": "/api/youtube?action=dl" },
+
+    { "source": "/api/sns-publish", "destination": "/api/sns?action=publish" },
+    { "source": "/api/sns-connections", "destination": "/api/sns?action=connections" },
+    { "source": "/api/sns-auth-meta", "destination": "/api/sns?action=auth-meta" },
+    { "source": "/api/sns-auth-tistory", "destination": "/api/sns?action=auth-tistory" },
+    { "source": "/api/threads-media", "destination": "/api/sns?action=threads-media" },
+    { "source": "/api/fetch-sns-feed", "destination": "/api/sns?action=feed" },
+
+    { "source": "/api/insta-auto-dm", "destination": "/api/insta?action=auto-dm" },
+    { "source": "/api/insta-auto-reply", "destination": "/api/insta?action=auto-reply" },
+    { "source": "/api/insta-media", "destination": "/api/insta?action=media" },
+    { "source": "/api/insta-webhook", "destination": "/api/insta?action=webhook" },
+    { "source": "/api/fetch-insta", "destination": "/api/insta?action=fetch" },
+
+    { "source": "/api/crawl", "destination": "/api/content?action=crawl" },
+    { "source": "/api/fetch-url", "destination": "/api/content?action=fetch-url" },
+    { "source": "/api/fetch-url-content", "destination": "/api/content?action=fetch-url-content" },
+    { "source": "/api/fetch-trending-videos", "destination": "/api/content?action=trending-videos" },
+    { "source": "/api/keyword-analysis", "destination": "/api/content?action=keyword-analysis" },
+    { "source": "/api/trends", "destination": "/api/content?action=trends" },
+
+    { "source": "/api/proxy-klipy", "destination": "/api/proxy?action=klipy" },
+    { "source": "/api/proxy-pexels", "destination": "/api/proxy?action=pexels" },
+    { "source": "/api/proxy-pixabay", "destination": "/api/proxy?action=pixabay" },
+
+    { "source": "/api/sitemap", "destination": "/api/seo?action=sitemap" },
+    { "source": "/api/rss", "destination": "/api/seo?action=rss" },
+    { "source": "/api/archive-auto-tag", "destination": "/api/seo?action=archive-auto-tag" },
+
     { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|20260323|_vercel|naver[0-9a-f]+\\.html).*)", "destination": "/index.html" }
   ]
 }

@@ -1,0 +1,619 @@
+// api/content.js — Consolidated content/crawling API
+// Routes via ?action=crawl|fetch-url|fetch-url-content|trending-videos|keyword-analysis|trends
+
+// ── Shared constants & helpers ───────────────────────────────────────────
+
+const ALLOWED_ORIGINS = [
+  "https://www.snsmakeit.com",
+  "https://snsmakeit.com",
+  "http://localhost:5173",
+];
+
+function isBlockedUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    if (!["http:", "https:"].includes(u.protocol)) return true;
+    const host = u.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]") return true;
+    const parts = host.split(".").map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 10) return true;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+      if (parts[0] === 192 && parts[1] === 168) return true;
+      if (parts[0] === 169 && parts[1] === 254) return true;
+      if (parts[0] === 127) return true;
+    }
+    return false;
+  } catch { return true; }
+}
+
+function setCors(req, res, { methods = "POST,OPTIONS", useWildcard = false } = {}) {
+  if (useWildcard) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  } else {
+    const origin = req.headers.origin || "";
+    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  }
+  res.setHeader("Access-Control-Allow-Methods", methods);
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+// ── Action: crawl ────────────────────────────────────────────────────────
+
+async function handleCrawl(req, res) {
+  setCors(req, res, { methods: "POST,OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용" });
+
+  const { url } = req.body || {};
+  if (!url) return res.status(400).json({ error: "url 필요" });
+  if (isBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL입니다." });
+
+  try {
+    const r = await fetch(url, {
+      signal: AbortSignal.timeout(12000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
+    });
+    if (!r.ok) return res.status(400).json({ error: `페이지 불러오기 실패 (${r.status})` });
+
+    const html = await r.text();
+
+    // 스크립트/스타일/네비게이션 등 제거
+    let text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")
+      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "")
+      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "")
+      .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, "")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#\d+;/g, "")
+      .replace(/&[a-z]+;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // 의미 있는 문장만 추출
+    const sentences = text.match(/[가-힣a-zA-Z][^.!?。]{15,}[.!?。]?/g) || [];
+    text = sentences.join(" ").slice(0, 5000);
+
+    if (!text || text.length < 50) {
+      return res.status(200).json({ error: "페이지 내용을 충분히 추출할 수 없습니다." });
+    }
+
+    return res.status(200).json({ text });
+  } catch (e) {
+    return res.status(500).json({ error: "페이지를 불러올 수 없습니다: " + (e.message || "").slice(0, 100) });
+  }
+}
+
+// ── Action: fetch-url ────────────────────────────────────────────────────
+
+async function handleFetchUrl(req, res) {
+  setCors(req, res, { methods: "POST, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  const { url } = req.body || {};
+  if (!url) return res.status(400).json({ error: "url 필요" });
+
+  try {
+    // 네이버 블로그: 모바일 URL로 변환
+    let fetchUrl = url;
+    if (url.includes("blog.naver.com")) {
+      const m = url.match(/blog\.naver\.com\/([^/]+)\/(\d+)/);
+      if (m) fetchUrl = `https://m.blog.naver.com/${m[1]}/${m[2]}`;
+    }
+
+    const response = await fetch(fetchUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) return res.status(response.status).json({ error: `HTTP ${response.status}` });
+
+    const html = await response.text();
+    return res.status(200).json({ html: html.slice(0, 50000) });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+// ── Action: fetch-url-content ────────────────────────────────────────────
+
+async function handleFetchUrlContent(req, res) {
+  setCors(req, res, { methods: "GET,OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: "url 필요" });
+  if (isBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL입니다." });
+
+  // ── YouTube 감지 ───────────────────────────────────────────
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([^&?/\s]{11})/);
+  if (ytMatch) {
+    const id = ytMatch[1];
+    try {
+      // oEmbed로 제목 가져오기
+      const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`, {
+        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": "Mozilla/5.0" },
+      });
+      if (r.ok) {
+        const d = await r.json();
+        // YouTube 설명은 oEmbed에 없으므로 Invidious에서 시도
+        let description = "";
+        const invidiousInstances = ["https://invidious.io.lol", "https://yt.cdaut.de", "https://inv.tux.pizza"];
+        for (const base of invidiousInstances) {
+          try {
+            const iv = await fetch(`${base}/api/v1/videos/${id}`, {
+              signal: AbortSignal.timeout(6000),
+              headers: { "User-Agent": "Mozilla/5.0" },
+            });
+            if (iv.ok) {
+              const ivData = await iv.json();
+              if (!ivData.error && ivData.description) {
+                description = ivData.description.slice(0, 500);
+                break;
+              }
+            }
+          } catch {}
+        }
+        return res.status(200).json({
+          type: "youtube",
+          title: d.title || "",
+          description: description,
+          author: d.author_name || "",
+          thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+          url,
+        });
+      }
+    } catch (e) {
+      console.log("YouTube oEmbed failed:", e.message);
+    }
+    return res.status(500).json({ error: "유튜브 정보를 불러올 수 없습니다." });
+  }
+
+  // ── 일반 웹페이지 (뉴스/블로그) ───────────────────────────
+  try {
+    const r = await fetch(url, {
+      signal: AbortSignal.timeout(12000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
+    });
+    if (!r.ok) return res.status(400).json({ error: `페이지 불러오기 실패 (${r.status})` });
+
+    const html = await r.text();
+
+    // 메타 태그 추출 헬퍼
+    const getMeta = (name) => {
+      const patterns = [
+        new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"),
+        new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']${name}["']`, "i"),
+      ];
+      for (const p of patterns) {
+        const m = html.match(p);
+        if (m?.[1]) return m[1].trim();
+      }
+      return "";
+    };
+
+    // 제목 추출
+    let title = getMeta("og:title") || getMeta("twitter:title");
+    if (!title) {
+      const tm = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      title = tm?.[1]?.trim() || "";
+    }
+    title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, "").trim(); // 사이트명 제거
+
+    // 설명 추출
+    const description = getMeta("og:description") || getMeta("twitter:description") || getMeta("description");
+
+    // 썸네일
+    const thumbnail = getMeta("og:image") || getMeta("twitter:image");
+
+    // 본문 텍스트 추출 (스크립트/스타일 제거 후)
+    let bodyText = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&[a-z]+;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // 의미있는 본문만 (100자 이상 연속 텍스트 블록)
+    const sentences = bodyText.match(/[가-힣a-zA-Z][^.!?。]{20,}[.!?。]?/g) || [];
+    const content = sentences.slice(0, 15).join(" ").slice(0, 800);
+
+    // 사이트 종류 감지
+    let type = "web";
+    const urlLower = url.toLowerCase();
+    if (urlLower.includes("naver.com") || urlLower.includes("daum.net") ||
+        urlLower.includes("news") || urlLower.includes("article") || urlLower.includes("기사")) {
+      type = "news";
+    } else if (urlLower.includes("blog") || urlLower.includes("tistory") || urlLower.includes("brunch")) {
+      type = "blog";
+    }
+
+    return res.status(200).json({
+      type,
+      title,
+      description,
+      content,
+      thumbnail,
+      url,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: "페이지를 불러올 수 없습니다: " + e.message?.slice(0, 100) });
+  }
+}
+
+// ── Action: trending-videos ──────────────────────────────────────────────
+
+async function handleTrendingVideos(req, res) {
+  setCors(req, res, { methods: "POST,OPTIONS", useWildcard: true });
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  const { category, keywords, platform = "youtube" } = req.body || {};
+  if (!keywords || !keywords.length) return res.status(400).json({ error: "keywords 필요" });
+
+  const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+  const videos = [];
+
+  try {
+    if (platform === "youtube" || platform === "all") {
+      const query = keywords.slice(0, 3).join(" ") + " shorts";
+      const r = await fetch(
+        `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+        {
+          headers: { "User-Agent": ua, "Accept-Language": "ko-KR,ko;q=0.9", "Accept": "text/html" },
+          signal: AbortSignal.timeout(12000),
+        }
+      );
+
+      if (r.ok) {
+        const html = await r.text();
+        const seen = new Set();
+        const re = /"videoRenderer":\{"videoId":"([^"]+)".*?"title":\{"runs":\[\{"text":"([^"]+)"\}\].*?"ownerText":\{"runs":\[\{"text":"([^"]+)"/g;
+        let m;
+        while ((m = re.exec(html)) && videos.length < 12) {
+          const [, id, title, author] = m;
+          if (seen.has(id)) continue;
+          seen.add(id);
+
+          const block = html.substring(m.index, m.index + 3000);
+          const viewMatch = block.match(/"viewCountText":\{"simpleText":"([^"]+)"/);
+          const publishMatch = block.match(/"publishedTimeText":\{"simpleText":"([^"]+)"/);
+          const lengthMatch = block.match(/"lengthText".*?"simpleText":"([^"]+)"/);
+          const channelUrlMatch = block.match(/"canonicalBaseUrl":"([^"]+)"/);
+          const avatarMatch = block.match(/"channelThumbnailSupportedRenderers".*?"url":"([^"]+)"/);
+          const viewStr = viewMatch?.[1] || "0";
+          const viewNum = parseInt(viewStr.replace(/[^0-9]/g, "")) || 0;
+
+          videos.push({
+            id,
+            platform: "youtube",
+            title,
+            author,
+            authorUrl: channelUrlMatch ? `https://youtube.com${channelUrlMatch[1]}` : "",
+            channelAvatar: avatarMatch?.[1] || "",
+            thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+            url: `https://youtube.com/watch?v=${id}`,
+            views: viewNum,
+            published: publishMatch?.[1] || "",
+            duration: lengthMatch?.[1] || "",
+          });
+        }
+      }
+    }
+
+    if (platform === "tiktok" || videos.length === 0) {
+      for (const kw of keywords.slice(0, 2)) {
+        try {
+          const r = await fetch(`https://www.tiktok.com/tag/${encodeURIComponent(kw)}`, {
+            headers: { "User-Agent": ua, "Accept": "text/html" },
+            signal: AbortSignal.timeout(8000),
+            redirect: "follow",
+          });
+          if (!r.ok) continue;
+          const html = await r.text();
+          const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/)?.[1];
+          const ogDesc = html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/)?.[1];
+          if (ogTitle) {
+            videos.push({
+              id: `tiktok_tag_${kw}`,
+              platform: "tiktok",
+              title: ogTitle,
+              author: `#${kw}`,
+              thumbnail: "",
+              url: `https://www.tiktok.com/tag/${kw}`,
+              views: 0,
+              description: ogDesc || "",
+            });
+          }
+        } catch {}
+      }
+    }
+
+    return res.json({ videos, category, total: videos.length });
+  } catch (e) {
+    return res.status(500).json({ error: "영상 수집 실패: " + e.message?.slice(0, 100) });
+  }
+}
+
+// ── Action: keyword-analysis ─────────────────────────────────────────────
+
+async function handleKeywordAnalysis(req, res) {
+  setCors(req, res, { methods: "POST,OPTIONS", useWildcard: true });
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { keyword, period = "7d" } = req.body;
+  if (!keyword) return res.status(400).json({ error: "keyword 필수" });
+
+  const NAVER_ID = process.env.NAVER_CLIENT_ID;
+  const NAVER_SECRET = process.env.NAVER_CLIENT_SECRET;
+
+  const result = {
+    keyword,
+    naverTrend: [],
+    relatedKeywords: [],
+    trendDirection: "stable",
+    hasRealData: false,
+  };
+
+  // ── 1) 네이버 DataLab 검색 트렌드 (7일) ────────────────────
+  if (NAVER_ID && NAVER_SECRET) {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 7);
+      const fmt = d => d.toISOString().slice(0, 10);
+
+      const dlRes = await fetch("https://openapi.naver.com/v1/datalab/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Naver-Client-Id": NAVER_ID,
+          "X-Naver-Client-Secret": NAVER_SECRET,
+        },
+        body: JSON.stringify({
+          startDate: fmt(startDate),
+          endDate: fmt(endDate),
+          timeUnit: "date",
+          keywordGroups: [
+            { groupName: keyword, keywords: [keyword] },
+          ],
+        }),
+      });
+      const dlData = await dlRes.json();
+      const points = dlData?.results?.[0]?.data || [];
+      result.naverTrend = points.map(p => ({ date: p.period, ratio: Math.round(p.ratio) }));
+      result.hasRealData = points.length > 0;
+
+      // 트렌드 방향 계산
+      if (points.length >= 4) {
+        const firstHalf = points.slice(0, Math.floor(points.length / 2));
+        const secondHalf = points.slice(Math.floor(points.length / 2));
+        const avg1 = firstHalf.reduce((s, p) => s + p.ratio, 0) / firstHalf.length;
+        const avg2 = secondHalf.reduce((s, p) => s + p.ratio, 0) / secondHalf.length;
+        if (avg2 > avg1 * 1.15) result.trendDirection = "rising";
+        else if (avg2 < avg1 * 0.85) result.trendDirection = "declining";
+        else result.trendDirection = "stable";
+      }
+    } catch (e) {
+      console.error("DataLab API error:", e.message);
+    }
+  }
+
+  // ── 2) 네이버 자동완성으로 관련 키워드 수집 ────────────────────
+  try {
+    const acRes = await fetch(`https://ac.search.naver.com/nx/ac?q=${encodeURIComponent(keyword)}&con=1&frm=nv&ans=2&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1&run=2&rev=4&q_enc=UTF-8`);
+    const acData = await acRes.json();
+    const suggestions = (acData?.items?.[0] || []).map(item => item[0]).filter(Boolean).slice(0, 10);
+
+    // 각 자동완성 키워드에 대해 간단한 경쟁도 추정
+    result.relatedKeywords = suggestions.map((kw, i) => ({
+      keyword: kw,
+      relevance: Math.max(100 - i * 10, 30),
+      competition: i < 3 ? "high" : i < 6 ? "medium" : "low",
+    }));
+  } catch (e) {
+    console.error("Autocomplete error:", e.message);
+  }
+
+  // ── 3) 네이버 DataLab으로 관련 키워드 트렌드 비교 (상위 5개) ─────
+  if (NAVER_ID && NAVER_SECRET && result.relatedKeywords.length > 0) {
+    try {
+      const topKws = result.relatedKeywords.slice(0, 5);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 7);
+      const fmt = d => d.toISOString().slice(0, 10);
+
+      const compareRes = await fetch("https://openapi.naver.com/v1/datalab/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Naver-Client-Id": NAVER_ID,
+          "X-Naver-Client-Secret": NAVER_SECRET,
+        },
+        body: JSON.stringify({
+          startDate: fmt(startDate),
+          endDate: fmt(endDate),
+          timeUnit: "date",
+          keywordGroups: topKws.map(kw => ({
+            groupName: kw.keyword,
+            keywords: [kw.keyword],
+          })),
+        }),
+      });
+      const compareData = await compareRes.json();
+      if (compareData?.results) {
+        compareData.results.forEach(r => {
+          const match = result.relatedKeywords.find(kw => kw.keyword === r.title);
+          if (match) {
+            const points = r.data || [];
+            const avgRatio = points.length > 0 ? Math.round(points.reduce((s, p) => s + p.ratio, 0) / points.length) : 0;
+            match.avgSearchRatio = avgRatio;
+            match.trend = points.map(p => ({ date: p.period, ratio: Math.round(p.ratio) }));
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Compare API error:", e.message);
+    }
+  }
+
+  // ── 4) API 키 없을 때 샘플 데이터 ────────────────────
+  if (!result.hasRealData) {
+    // 샘플 트렌드 데이터 생성 (데모용)
+    const today = new Date();
+    result.naverTrend = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (6 - i));
+      return { date: d.toISOString().slice(0, 10), ratio: 50 + Math.round(Math.random() * 40) };
+    });
+    result.trendDirection = "stable";
+    result.notice = "네이버 API 키가 설정되지 않아 샘플 데이터입니다. NAVER_CLIENT_ID, NAVER_CLIENT_SECRET 환경변수를 설정하세요.";
+  }
+
+  return res.status(200).json(result);
+}
+
+// ── Action: trends ───────────────────────────────────────────────────────
+
+async function handleTrends(req, res) {
+  setCors(req, res, { methods: "GET,OPTIONS" });
+  const { platform = "google" } = req.query;
+
+  try {
+    if (platform === "google") {
+      // Google Trends Daily (Korea)
+      const r = await fetch("https://trends.google.co.kr/trends/trendingsearches/daily/rss?geo=KR");
+      if (r.ok) {
+        const xml = await r.text();
+        const items = [...xml.matchAll(/<title>([^<]+)<\/title>/g)].slice(1, 21);
+        const keywords = items.map((m, i) => ({
+          rank: i + 1,
+          keyword: m[1].trim(),
+          change: i < 5 ? "up" : i < 10 ? "same" : "new",
+        }));
+        if (keywords.length > 0) return res.json({ keywords, source: "google_trends_rss", live: true });
+      }
+      // Fallback: Google Trends JSON
+      const r2 = await fetch("https://trends.google.co.kr/trending/rss?geo=KR");
+      if (r2.ok) {
+        const xml2 = await r2.text();
+        const items2 = [...xml2.matchAll(/<title>([^<]+)<\/title>/g)].slice(1, 21);
+        const kw2 = items2.map((m, i) => ({ rank: i+1, keyword: m[1].trim(), change: i<5?"up":"same" }));
+        if (kw2.length > 0) return res.json({ keywords: kw2, source: "google_trends_rss2", live: true });
+      }
+    }
+
+    if (platform === "naver") {
+      // Naver 실시간 검색 (자동완성 기반)
+      const seeds = ["AI","챗GPT","인스타","유튜브","블로그","마케팅","디자인","부동산","주식","여행","맛집","다이어트","영화","게임","패션"];
+      const all = [];
+      for (const q of seeds.slice(0, 8)) {
+        try {
+          const r = await fetch(`https://ac.search.naver.com/nx/ac?q=${encodeURIComponent(q)}&con=1&frm=nv&ans=2&r_format=json&r_enc=UTF-8&t_koreng=1&run=2`);
+          if (r.ok) {
+            const d = await r.json();
+            (d.items || []).flat().forEach(s => {
+              if (s && s[0] && !all.find(x => x.keyword === s[0])) all.push({ keyword: s[0], change: "same" });
+            });
+          }
+        } catch {}
+      }
+      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "naver_autocomplete", live: true });
+    }
+
+    if (platform === "youtube") {
+      const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행"];
+      const all = [];
+      for (const q of seeds.slice(0, 8)) {
+        try {
+          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q)}&hl=ko`);
+          if (r.ok) {
+            const d = await r.json();
+            (d[1] || []).slice(0, 3).forEach(s => {
+              if (!all.find(x => x.keyword === s)) all.push({ keyword: s, change: "same" });
+            });
+          }
+        } catch {}
+      }
+      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "youtube_autocomplete", live: true });
+    }
+
+    if (platform === "tiktok") {
+      try {
+        const r = await fetch("https://ads.tiktok.com/creative_radar_api/v1/popular_trend/hashtag/list?period=7&country_code=KR&page=1&limit=20");
+        if (r.ok) {
+          const d = await r.json();
+          const list = d.data?.list || [];
+          if (list.length > 0) {
+            return res.json({
+              keywords: list.map((h, i) => ({
+                rank: i + 1,
+                keyword: "#" + (h.hashtag_name || h.name || ""),
+                change: h.trend === 1 ? "up" : h.trend === -1 ? "down" : "same",
+                volume: h.publish_cnt || 0,
+              })),
+              source: "tiktok_creative_center", live: true,
+            });
+          }
+        }
+      } catch {}
+    }
+
+    // 폴백
+    res.json({ keywords: [], source: "none", live: false });
+  } catch (e) {
+    res.status(500).json({ error: e.message, keywords: [] });
+  }
+}
+
+// ── Router ───────────────────────────────────────────────────────────────
+
+const ACTION_HANDLERS = {
+  "crawl": handleCrawl,
+  "fetch-url": handleFetchUrl,
+  "fetch-url-content": handleFetchUrlContent,
+  "trending-videos": handleTrendingVideos,
+  "keyword-analysis": handleKeywordAnalysis,
+  "trends": handleTrends,
+};
+
+export default async function handler(req, res) {
+  const { action } = req.query;
+
+  if (!action || !ACTION_HANDLERS[action]) {
+    const origin = req.headers.origin || "";
+    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+    return res.status(400).json({
+      error: "action 파라미터 필요",
+      validActions: Object.keys(ACTION_HANDLERS),
+    });
+  }
+
+  return ACTION_HANDLERS[action](req, res);
+}
+
+export const config = { maxDuration: 25 };
