@@ -61,6 +61,7 @@
     { "source": "/api/proxy-klipy", "destination": "/api/proxy?action=klipy" },
     { "source": "/api/proxy-pexels", "destination": "/api/proxy?action=pexels" },
     { "source": "/api/proxy-pixabay", "destination": "/api/proxy?action=pixabay" },
+    { "source": "/api/proxy-unsplash", "destination": "/api/proxy?action=unsplash" },
 
     { "source": "/api/sitemap", "destination": "/api/seo?action=sitemap" },
     { "source": "/api/rss", "destination": "/api/seo?action=rss" },

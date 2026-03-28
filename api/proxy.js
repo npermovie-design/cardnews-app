@@ -88,6 +88,30 @@ async function handlePixabay(req, res) {
   }
 }
 
+// ── Unsplash ──
+async function handleUnsplash(req, res) {
+  const UNSPLASH_KEY = process.env.UNSPLASH_KEY;
+  if (!UNSPLASH_KEY) return res.status(500).json({ error: "UNSPLASH_KEY 미설정" });
+
+  const query = req.query.query || req.query.q || "";
+  const perPage = req.query.per_page || "5";
+  const orientation = req.query.orientation || "landscape";
+
+  try {
+    const r = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}`,
+      {
+        headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+    const data = await r.json();
+    return res.status(200).json(data);
+  } catch (e) {
+    return res.status(500).json({ error: "Unsplash API 호출 실패: " + (e.message || "").slice(0, 100) });
+  }
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   setCors(req, res);
@@ -102,7 +126,9 @@ export default async function handler(req, res) {
       return handlePexels(req, res);
     case "pixabay":
       return handlePixabay(req, res);
+    case "unsplash":
+      return handleUnsplash(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: klipy|pexels|pixabay" });
+      return res.status(400).json({ error: "action 파라미터 필요: klipy|pexels|pixabay|unsplash" });
   }
 }

@@ -101,21 +101,18 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
     if (imgMatch) {
       const desc = imgMatch[1].trim();
       const imgUrl = inlineImages && inlineImages[desc];
-      if (imgUrl) {
-        elements.push(
-          <div key={i} style={{margin:"16px 0",borderRadius:12,overflow:"hidden",border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e9ecef"}`}}>
-            <img src={imgUrl} alt={desc} loading="lazy" style={{width:"100%",display:"block",maxHeight:400,objectFit:"cover"}} />
-            <div style={{padding:"8px 12px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.3)":"#f8f8fb",textAlign:"center"}}>{desc}</div>
+      const fallbackSeed = encodeURIComponent(desc.slice(0, 20));
+      const fallbackUrl = `https://picsum.photos/seed/${fallbackSeed}/800/450`;
+      elements.push(
+        <div key={i} style={{margin:"20px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
+          <img src={imgUrl || fallbackUrl} alt={desc} loading="lazy"
+            onError={e => { e.target.onerror = null; e.target.src = fallbackUrl; }}
+            style={{width:"100%",display:"block",height:320,objectFit:"cover"}} />
+          <div style={{padding:"10px 16px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.4)":"#f8f8fb",display:"flex",alignItems:"center",gap:6}}>
+            <span style={{opacity:0.5}}>&#128247;</span> {desc}
           </div>
-        );
-      } else {
-        elements.push(
-          <div key={i} style={{margin:"16px 0",padding:"24px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#f5f4ff",border:`1px dashed ${isDark?"rgba(255,255,255,0.1)":"rgba(124,106,255,0.2)"}`,textAlign:"center"}}>
-            <div style={{fontSize:24,marginBottom:6,opacity:0.4}}>&#128247;</div>
-            <div style={{fontSize:12,color:mutedColor}}>{desc}</div>
-          </div>
-        );
-      }
+        </div>
+      );
     } else if (line.trim() === "") {
       elements.push(<div key={i} style={{height:8}}/>);
     } else if (line.trim().startsWith("#") && line.includes(" #")) {
@@ -432,18 +429,26 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         if (imgTags && imgTags.length > 0) {
           const keywords = [...new Set(imgTags.map(t => t.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim()))];
           const imgMap = {};
+          let usedIdx = 0;
           for (const kw of keywords) {
+            const searchKw = kw.replace(/[^a-zA-Z0-9가-힣\s]/g, "").split(" ").slice(0, 3).join(" ").trim();
+            const englishKw = searchKw.replace(/[가-힣]+/g, "").trim() || searchKw;
             try {
-              const searchKw = kw.split(" ").slice(0, 3).join(" ");
-              const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo&lang=ko`);
+              const r = await fetch(`/api/proxy-unsplash?query=${encodeURIComponent(englishKw || kw)}&per_page=3&orientation=landscape`);
               const d = await r.json();
-              if (d.hits && d.hits.length > 0) { imgMap[kw] = d.hits[0].webformatURL; }
-              else {
-                const r2 = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKw)}&per_page=3`);
-                const d2 = await r2.json();
-                if (d2.photos && d2.photos.length > 0) imgMap[kw] = d2.photos[0].src.medium;
+              if (d.results && d.results.length > 0) {
+                imgMap[kw] = d.results[usedIdx % d.results.length].urls.regular;
+                usedIdx++;
+                continue;
               }
             } catch(e) {}
+            try {
+              const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo`);
+              const d = await r.json();
+              if (d.hits && d.hits.length > 0) { imgMap[kw] = d.hits[0].webformatURL; continue; }
+            } catch(e) {}
+            const seed = encodeURIComponent(kw.slice(0, 20));
+            imgMap[kw] = `https://picsum.photos/seed/${seed}/800/450`;
           }
           setInlineImages(imgMap);
         }
