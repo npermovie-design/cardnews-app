@@ -50,44 +50,44 @@ function loadGFont(family) {
 
 const TEMPLATES = [
   // 솔리드 컬러
-  { name: "다크 모던", category: "솔리드", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
-  { name: "라이트 미니멀", category: "솔리드", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard" },
-  { name: "파스텔 핑크", category: "솔리드", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic" },
-  { name: "네이비 골드", category: "솔리드", bgColor: "#0f172a", textColor: "#fbbf24", accentColor: "#f59e0b", fontFamily: "Pretendard" },
-  { name: "그린 자연", category: "솔리드", bgColor: "#ecfdf5", textColor: "#064e3b", accentColor: "#10b981", fontFamily: "Noto Sans KR" },
-  { name: "코랄 웜", category: "솔리드", bgColor: "#fff7ed", textColor: "#9a3412", accentColor: "#f97316", fontFamily: "Nanum Gothic" },
-  { name: "퍼플 그라데이션", category: "솔리드", bgColor: "#1e1b4b", textColor: "#e0e7ff", accentColor: "#818cf8", fontFamily: "Pretendard" },
-  { name: "모노크롬", category: "솔리드", bgColor: "#f8fafc", textColor: "#0f172a", accentColor: "#64748b", fontFamily: "Pretendard" },
-  { name: "레드 볼드", category: "솔리드", bgColor: "#450a0a", textColor: "#ffffff", accentColor: "#ef4444", fontFamily: "BMDOHYEON" },
-  { name: "스카이 블루", category: "솔리드", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR" },
-  { name: "블랙 골드", category: "솔리드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard" },
-  { name: "소프트 라벤더", category: "솔리드", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic" },
+  { name: "다크 모던", category: "솔리드", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard", layout: "center" },
+  { name: "라이트 미니멀", category: "솔리드", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard", layout: "minimal" },
+  { name: "파스텔 핑크", category: "솔리드", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic", layout: "corner-accent" },
+  { name: "네이비 골드", category: "솔리드", bgColor: "#0f172a", textColor: "#fbbf24", accentColor: "#f59e0b", fontFamily: "Pretendard", layout: "left-bar" },
+  { name: "그린 자연", category: "솔리드", bgColor: "#ecfdf5", textColor: "#064e3b", accentColor: "#10b981", fontFamily: "Noto Sans KR", layout: "top-bold" },
+  { name: "코랄 웜", category: "솔리드", bgColor: "#fff7ed", textColor: "#9a3412", accentColor: "#f97316", fontFamily: "Nanum Gothic", layout: "quote" },
+  { name: "퍼플 그라데이션", category: "솔리드", bgColor: "#1e1b4b", textColor: "#e0e7ff", accentColor: "#818cf8", fontFamily: "Pretendard", layout: "stripe" },
+  { name: "모노크롬", category: "솔리드", bgColor: "#f8fafc", textColor: "#0f172a", accentColor: "#64748b", fontFamily: "Pretendard", layout: "minimal" },
+  { name: "레드 볼드", category: "솔리드", bgColor: "#450a0a", textColor: "#ffffff", accentColor: "#ef4444", fontFamily: "BMDOHYEON", layout: "split-left" },
+  { name: "스카이 블루", category: "솔리드", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR", layout: "top-bold" },
+  { name: "블랙 골드", category: "솔리드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard", layout: "magazine" },
+  { name: "소프트 라벤더", category: "솔리드", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic", layout: "corner-accent" },
   // 실사 배경 (Pexels 무료 이미지)
-  { name: "카페 인테리어", category: "실사", bgColor: "#2c1810", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/1813466/pexels-photo-1813466.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "자연 풍경", category: "실사", bgColor: "#1a3a2a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "도시 야경", category: "실사", bgColor: "#0a0a1a", textColor: "#ffffff", fontFamily: "Montserrat", bgImage: "https://images.pexels.com/photos/1519088/pexels-photo-1519088.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "미니멀 데스크", category: "실사", bgColor: "#f5f5f0", textColor: "#1a1a1a", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "음식 클로즈업", category: "실사", bgColor: "#3d2b1f", textColor: "#ffffff", fontFamily: "GowunBatang", bgImage: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "꽃 & 보타닉", category: "실사", bgColor: "#2d1f3d", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "바다 & 해변", category: "실사", bgColor: "#0c3547", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "산 & 하이킹", category: "실사", bgColor: "#1a2a1a", textColor: "#ffffff", fontFamily: "Black Han Sans", bgImage: "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "텍스처 콘크리트", category: "실사", bgColor: "#4a4a4a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "대리석 럭셔리", category: "실사", bgColor: "#f0ede8", textColor: "#2c2c2c", fontFamily: "Playfair Display", bgImage: "https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "노을 하늘", category: "실사", bgColor: "#4a1942", textColor: "#ffffff", fontFamily: "Do Hyeon", bgImage: "https://images.pexels.com/photos/209831/pexels-photo-209831.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "눈 겨울", category: "실사", bgColor: "#e8edf2", textColor: "#1a2a3a", fontFamily: "Noto Sans KR", bgImage: "https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "카페 인테리어", category: "실사", bgColor: "#2c1810", textColor: "#ffffff", accentColor: "#d4a574", fontFamily: "Nanum Myeongjo", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/1813466/pexels-photo-1813466.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "자연 풍경", category: "실사", bgColor: "#1a3a2a", textColor: "#ffffff", accentColor: "#4ade80", fontFamily: "Pretendard", layout: "magazine", bgImage: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "도시 야경", category: "실사", bgColor: "#0a0a1a", textColor: "#ffffff", accentColor: "#fbbf24", fontFamily: "Montserrat", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/1519088/pexels-photo-1519088.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "미니멀 데스크", category: "실사", bgColor: "#f5f5f0", textColor: "#1a1a1a", accentColor: "#64748b", fontFamily: "Pretendard", layout: "magazine", bgImage: "https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "음식 클로즈업", category: "실사", bgColor: "#3d2b1f", textColor: "#ffffff", accentColor: "#f97316", fontFamily: "GowunBatang", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "꽃 & 보타닉", category: "실사", bgColor: "#2d1f3d", textColor: "#ffffff", accentColor: "#c084fc", fontFamily: "Nanum Myeongjo", layout: "magazine", bgImage: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "바다 & 해변", category: "실사", bgColor: "#0c3547", textColor: "#ffffff", accentColor: "#38bdf8", fontFamily: "Pretendard", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "산 & 하이킹", category: "실사", bgColor: "#1a2a1a", textColor: "#ffffff", accentColor: "#86efac", fontFamily: "Black Han Sans", layout: "magazine", bgImage: "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "텍스처 콘크리트", category: "실사", bgColor: "#4a4a4a", textColor: "#ffffff", accentColor: "#a1a1aa", fontFamily: "Pretendard", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "대리석 럭셔리", category: "실사", bgColor: "#f0ede8", textColor: "#2c2c2c", accentColor: "#b8860b", fontFamily: "Playfair Display", layout: "magazine", bgImage: "https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "노을 하늘", category: "실사", bgColor: "#4a1942", textColor: "#ffffff", accentColor: "#f472b6", fontFamily: "Do Hyeon", layout: "bottom-card", bgImage: "https://images.pexels.com/photos/209831/pexels-photo-209831.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "눈 겨울", category: "실사", bgColor: "#e8edf2", textColor: "#1a2a3a", accentColor: "#60a5fa", fontFamily: "Noto Sans KR", layout: "magazine", bgImage: "https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&w=1080" },
   // 카드뉴스
-  { name: "인스타 감성", category: "카드뉴스", bgColor: "#fef3c7", textColor: "#92400e", fontFamily: "Nanum Myeongjo", bgImage: null },
-  { name: "정보 카드", category: "카드뉴스", bgColor: "#1e3a5f", textColor: "#ffffff", fontFamily: "Pretendard" },
-  { name: "뉴스 스타일", category: "카드뉴스", bgColor: "#ffffff", textColor: "#111827", fontFamily: "Noto Sans KR" },
+  { name: "인스타 감성", category: "카드뉴스", bgColor: "#fef3c7", textColor: "#92400e", accentColor: "#f59e0b", fontFamily: "Nanum Myeongjo", layout: "quote", bgImage: null },
+  { name: "정보 카드", category: "카드뉴스", bgColor: "#1e3a5f", textColor: "#ffffff", accentColor: "#60a5fa", fontFamily: "Pretendard", layout: "left-bar" },
+  { name: "뉴스 스타일", category: "카드뉴스", bgColor: "#ffffff", textColor: "#111827", accentColor: "#ef4444", fontFamily: "Noto Sans KR", layout: "stripe" },
   // 프레젠테이션
-  { name: "비즈니스 블루", category: "프레젠테이션", bgColor: "#1e3a5f", textColor: "#ffffff", fontFamily: "Pretendard" },
-  { name: "스타트업 그린", category: "프레젠테이션", bgColor: "#064e3b", textColor: "#ecfdf5", fontFamily: "Pretendard" },
+  { name: "비즈니스 블루", category: "프레젠테이션", bgColor: "#1e3a5f", textColor: "#ffffff", accentColor: "#3b82f6", fontFamily: "Pretendard", layout: "split-left" },
+  { name: "스타트업 그린", category: "프레젠테이션", bgColor: "#064e3b", textColor: "#ecfdf5", accentColor: "#34d399", fontFamily: "Pretendard", layout: "top-bold" },
   // 상세페이지
-  { name: "쇼핑몰 화이트", category: "상세페이지", bgColor: "#ffffff", textColor: "#1f2937", fontFamily: "Noto Sans KR" },
-  { name: "럭셔리 블랙", category: "상세페이지", bgColor: "#000000", textColor: "#d4af37", fontFamily: "Playfair Display" },
+  { name: "쇼핑몰 화이트", category: "상세페이지", bgColor: "#ffffff", textColor: "#1f2937", accentColor: "#6366f1", fontFamily: "Noto Sans KR", layout: "minimal" },
+  { name: "럭셔리 블랙", category: "상세페이지", bgColor: "#000000", textColor: "#d4af37", accentColor: "#b8860b", fontFamily: "Playfair Display", layout: "magazine" },
   // 소셜미디어
-  { name: "틱톡 네온", category: "소셜미디어", bgColor: "#0a0a0a", textColor: "#00f5d4", fontFamily: "Black Han Sans" },
-  { name: "유튜브 썸네일", category: "소셜미디어", bgColor: "#ff0000", textColor: "#ffffff", fontFamily: "BMDOHYEON" },
+  { name: "틱톡 네온", category: "소셜미디어", bgColor: "#0a0a0a", textColor: "#00f5d4", accentColor: "#00f5d4", fontFamily: "Black Han Sans", layout: "corner-accent" },
+  { name: "유튜브 썸네일", category: "소셜미디어", bgColor: "#ff0000", textColor: "#ffffff", accentColor: "#fbbf24", fontFamily: "BMDOHYEON", layout: "stripe" },
 ];
 
 const TEMPLATE_CATEGORIES = ["전체", "솔리드", "실사", "카드뉴스", "프레젠테이션", "상세페이지", "소셜미디어"];
@@ -413,6 +413,147 @@ export default function CardNewsEditor({
     fc.loadFromJSON(history[newIdx]).then(() => { fc.renderAll(); refreshLayerList(); });
   }
 
+  /* ── layout helpers ───────────────────────────────────────────────── */
+  // Build layout-specific decorative elements and position title/body
+  function getLayoutConfig(layout, fontSize, textColor, accentColor, bgColor) {
+    const ac = accentColor || bgColor || "#7c6aff";
+    const fs = fontSize || 48;
+    const tc = textColor || "#ffffff";
+
+    const layouts = {
+      "center": {
+        title: { left: width / 2, top: height * 0.4, originX: "center", originY: "center", textAlign: "center", width: width - 160, fontSize: fs, fontWeight: "bold" },
+        body: { left: width / 2, top: height * 0.6, originX: "center", originY: "center", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.55), opacity: 0.85 },
+        decos: [],
+      },
+      "left-bar": {
+        title: { left: 60, top: height * 0.3, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: fs, fontWeight: "bold" },
+        body: { left: 60, top: height * 0.55, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 0.55), opacity: 0.85 },
+        decos: [
+          { type: "rect", props: { left: 0, top: 0, width: 12, height: height, fill: ac, selectable: false, evented: false, name: "deco_leftbar" } },
+        ],
+      },
+      "top-bold": {
+        title: { left: width / 2, top: height * 0.15, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 1.4), fontWeight: "900" },
+        body: { left: width / 2, top: height * 0.75, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.45), opacity: 0.7 },
+        decos: [],
+      },
+      "bottom-card": {
+        title: { left: width / 2, top: height * 0.65, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
+        body: { left: width / 2, top: height * 0.82, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.5), fill: "rgba(255,255,255,0.8)" },
+        decos: [
+          { type: "rect", props: { left: 40, top: height * 0.6, width: width - 80, height: height * 0.35, fill: "rgba(0,0,0,0.7)", rx: 20, ry: 20, selectable: false, evented: false, name: "deco_card" } },
+        ],
+      },
+      "magazine": {
+        title: { left: 60, top: height * 0.72, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 1.2), fontWeight: "bold" },
+        body: { left: 60, top: height * 0.88, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 0.45), opacity: 0.8 },
+        decos: [
+          { type: "rect", props: { left: 0, top: height * 0.65, width: width, height: height * 0.35, fill: "rgba(0,0,0,0.5)", selectable: false, evented: false, name: "deco_magoverlay" } },
+        ],
+      },
+      "minimal": {
+        title: { left: width / 2, top: height * 0.45, originX: "center", originY: "center", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.8), fontWeight: "bold" },
+        body: { left: width / 2, top: height * 0.55, originX: "center", originY: "top", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.4), opacity: 0.5 },
+        decos: [
+          { type: "rect", props: { left: width / 2 - 30, top: height * 0.38, width: 60, height: 2, fill: ac, selectable: false, evented: false, name: "deco_minline" } },
+        ],
+      },
+      "quote": {
+        title: { left: width / 2, top: height * 0.42, originX: "center", originY: "center", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.9), fontWeight: "bold", fontStyle: "italic" },
+        body: { left: width / 2, top: height * 0.65, originX: "center", originY: "top", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.4), opacity: 0.8 },
+        decos: [
+          { type: "textbox", props: { left: 80, top: height * 0.15, text: "\u201C", fontSize: 120, fill: tc, opacity: 0.15, fontFamily: "Georgia", selectable: false, evented: false, name: "deco_quotemark" } },
+        ],
+      },
+      "split-left": {
+        title: { left: width * 0.2, top: height * 0.4, originX: "center", originY: "center", textAlign: "center", width: width * 0.3, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
+        body: { left: width * 0.2, top: height * 0.6, originX: "center", originY: "top", textAlign: "center", width: width * 0.3, fontSize: Math.round(fs * 0.45), fill: "rgba(255,255,255,0.8)" },
+        decos: [
+          { type: "rect", props: { left: 0, top: 0, width: width * 0.4, height: height, fill: ac, selectable: false, evented: false, name: "deco_splitpanel" } },
+        ],
+      },
+      "stripe": {
+        title: { left: width / 2, top: height * 0.45, originX: "center", originY: "center", textAlign: "center", width: width - 100, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
+        body: { left: width / 2, top: height * 0.7, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.5), opacity: 0.85 },
+        decos: [
+          { type: "rect", props: { left: 0, top: height * 0.35, width: width, height: height * 0.3, fill: ac || "rgba(0,0,0,0.8)", selectable: false, evented: false, name: "deco_stripe" } },
+        ],
+      },
+      "corner-accent": {
+        title: { left: width - 80, top: height * 0.65, originX: "right", originY: "top", textAlign: "right", width: width - 160, fontSize: fs, fontWeight: "bold" },
+        body: { left: width - 80, top: height * 0.8, originX: "right", originY: "top", textAlign: "right", width: width - 160, fontSize: Math.round(fs * 0.5), opacity: 0.8 },
+        decos: [
+          { type: "circle", props: { left: width * 0.1, top: height * 0.1, radius: 80, fill: ac, opacity: 0.3, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle1" } },
+          { type: "circle", props: { left: width * 0.15, top: height * 0.05, radius: 40, fill: ac, opacity: 0.2, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle2" } },
+        ],
+      },
+    };
+
+    return layouts[layout] || layouts["center"];
+  }
+
+  // Apply layout to canvas: reposition title/body, manage decorative elements
+  function applyLayoutToCanvas(fc, layout, fontSize, textColor, accentColor, bgColor) {
+    const config = getLayoutConfig(layout, fontSize, textColor, accentColor, bgColor);
+
+    // Remove old decorative elements
+    const decoObjs = fc.getObjects().filter(o => o.name && o.name.startsWith("deco_"));
+    decoObjs.forEach(o => fc.remove(o));
+
+    // Add new decorative elements (before text so they're behind)
+    config.decos.forEach(d => {
+      let obj;
+      if (d.type === "rect") obj = new Rect(d.props);
+      else if (d.type === "circle") obj = new Circle(d.props);
+      else if (d.type === "textbox") obj = new Textbox(d.props.text || "", { ...d.props });
+      if (obj) {
+        fc.add(obj);
+        // Send decorative elements to back; bg image will remain behind since it was sent to back first
+        fc.sendObjectToBack(obj);
+        // If there's a bg image, make sure it stays behind the deco
+        const bgImg = fc.getObjects().find(o => o.name === "bgImage");
+        if (bgImg) fc.sendObjectToBack(bgImg);
+      }
+    });
+
+    // Reposition title
+    const titleObj = fc.getObjects().find(o => o.name === "title");
+    if (titleObj && config.title) {
+      titleObj.set({
+        left: config.title.left,
+        top: config.title.top,
+        originX: config.title.originX || "center",
+        originY: config.title.originY || "center",
+        textAlign: config.title.textAlign || "center",
+        width: config.title.width || (width - 160),
+        fontSize: config.title.fontSize || (fontSize || 48),
+        fontWeight: config.title.fontWeight || "bold",
+      });
+      if (config.title.fontStyle) titleObj.set("fontStyle", config.title.fontStyle);
+      if (config.title.fill) titleObj.set("fill", config.title.fill);
+      if (config.title.opacity !== undefined) titleObj.set("opacity", config.title.opacity);
+    }
+
+    // Reposition body
+    const bodyObj = fc.getObjects().find(o => o.name === "body");
+    if (bodyObj && config.body) {
+      bodyObj.set({
+        left: config.body.left,
+        top: config.body.top,
+        originX: config.body.originX || "center",
+        originY: config.body.originY || "center",
+        textAlign: config.body.textAlign || "center",
+        width: config.body.width || (width - 160),
+        fontSize: config.body.fontSize || Math.round((fontSize || 48) * 0.55),
+      });
+      if (config.body.fill) bodyObj.set("fill", config.body.fill);
+      if (config.body.opacity !== undefined) bodyObj.set("opacity", config.body.opacity);
+    }
+
+    fc.renderAll();
+  }
+
   /* ── load slide onto canvas ────────────────────────────────────────── */
   async function loadSlideToCanvas(fc, slide, idx) {
     // If we already have serialized JSON for this slide, use it
@@ -451,39 +592,59 @@ export default function CardNewsEditor({
     const slideFontFamily = slide.fontFamily || "Pretendard";
     loadGFont(slideFontFamily);
 
+    // Determine layout config
+    const slideLayout = slide.layout || "center";
+    const slideFontSize = slide.fontSize || 48;
+    const config = getLayoutConfig(slideLayout, slideFontSize, slide.textColor, slide.accentColor, slide.bgColor);
+
+    // Add decorative elements first (behind text)
+    config.decos.forEach(d => {
+      let obj;
+      if (d.type === "rect") obj = new Rect(d.props);
+      else if (d.type === "circle") obj = new Circle(d.props);
+      else if (d.type === "textbox") obj = new Textbox(d.props.text || "", { ...d.props });
+      if (obj) {
+        fc.add(obj);
+      }
+    });
+
     // title
     if (slide.title) {
-      const title = new Textbox(slide.title, {
-        left: width / 2,
-        top: height * 0.4,
-        originX: "center",
-        originY: "center",
-        width: width - 160,
-        fontSize: slide.fontSize || 48,
+      const titleProps = {
+        left: config.title.left,
+        top: config.title.top,
+        originX: config.title.originX || "center",
+        originY: config.title.originY || "center",
+        width: config.title.width || (width - 160),
+        fontSize: config.title.fontSize || slideFontSize,
         fontFamily: slideFontFamily,
-        fontWeight: "bold",
-        fill: slide.textColor || "#ffffff",
-        textAlign: "center",
+        fontWeight: config.title.fontWeight || "bold",
+        fill: config.title.fill || slide.textColor || "#ffffff",
+        textAlign: config.title.textAlign || "center",
         name: "title",
-      });
+      };
+      if (config.title.fontStyle) titleProps.fontStyle = config.title.fontStyle;
+      if (config.title.opacity !== undefined) titleProps.opacity = config.title.opacity;
+      const title = new Textbox(slide.title, titleProps);
       fc.add(title);
     }
 
     // body
     if (slide.body) {
-      const body = new Textbox(slide.body, {
-        left: width / 2,
-        top: height * 0.6,
-        originX: "center",
-        originY: "center",
-        width: width - 160,
-        fontSize: Math.round((slide.fontSize || 48) * 0.55),
+      const bodyProps = {
+        left: config.body.left,
+        top: config.body.top,
+        originX: config.body.originX || "center",
+        originY: config.body.originY || "center",
+        width: config.body.width || (width - 160),
+        fontSize: config.body.fontSize || Math.round(slideFontSize * 0.55),
         fontFamily: slideFontFamily,
-        fill: slide.textColor || "#ffffff",
-        textAlign: "center",
-        opacity: 0.85,
+        fill: config.body.fill || slide.textColor || "#ffffff",
+        textAlign: config.body.textAlign || "center",
+        opacity: config.body.opacity !== undefined ? config.body.opacity : 0.85,
         name: "body",
-      });
+      };
+      const body = new Textbox(slide.body, bodyProps);
       fc.add(body);
     }
 
@@ -867,9 +1028,9 @@ export default function CardNewsEditor({
       fc.backgroundColor = template.bgColor;
     }
 
-    // 텍스트 스타일 적용
+    // 텍스트 스타일 적용 (색상, 폰트)
     fc.getObjects().forEach(o => {
-      if (o.type === "textbox" || o.type === "text") {
+      if ((o.type === "textbox" || o.type === "text") && !(o.name && o.name.startsWith("deco_"))) {
         o.set("fill", template.textColor);
         o.set("fontFamily", template.fontFamily);
         if (template.bgImage) {
@@ -880,6 +1041,17 @@ export default function CardNewsEditor({
         }
       }
     });
+
+    // 레이아웃 적용
+    if (template.layout) {
+      // Determine font size from existing title or default
+      const titleObj = fc.getObjects().find(o => o.name === "title");
+      const currentFontSize = titleObj ? titleObj.fontSize : 48;
+      // Use base font size (undo any previous layout scaling)
+      const baseFontSize = Math.round(currentFontSize / 1.4) > 20 ? Math.min(currentFontSize, 60) : 48;
+      applyLayoutToCanvas(fc, template.layout, baseFontSize, template.textColor, template.accentColor, template.bgColor);
+    }
+
     fc.renderAll();
     const obj = fc.getActiveObject();
     if (obj) updateSelProps(obj);
