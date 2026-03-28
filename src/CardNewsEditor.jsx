@@ -12,6 +12,21 @@ const FONTS = [
   { label: "배민도현체", value: "BMDOHYEON" },
 ];
 
+const TEMPLATES = [
+  { name: "다크 모던", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
+  { name: "라이트 미니멀", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard" },
+  { name: "파스텔 핑크", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic" },
+  { name: "네이비 골드", bgColor: "#0f172a", textColor: "#fbbf24", accentColor: "#f59e0b", fontFamily: "Pretendard" },
+  { name: "그린 자연", bgColor: "#ecfdf5", textColor: "#064e3b", accentColor: "#10b981", fontFamily: "Noto Sans KR" },
+  { name: "코랄 웜", bgColor: "#fff7ed", textColor: "#9a3412", accentColor: "#f97316", fontFamily: "Nanum Gothic" },
+  { name: "퍼플 그라데이션", bgColor: "#1e1b4b", textColor: "#e0e7ff", accentColor: "#818cf8", fontFamily: "Pretendard" },
+  { name: "모노크롬", bgColor: "#f8fafc", textColor: "#0f172a", accentColor: "#64748b", fontFamily: "Pretendard" },
+  { name: "레드 볼드", bgColor: "#450a0a", textColor: "#ffffff", accentColor: "#ef4444", fontFamily: "BMDOHYEON" },
+  { name: "스카이 블루", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR" },
+  { name: "블랙 골드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard" },
+  { name: "소프트 라벤더", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic" },
+];
+
 const DEFAULT_THEME = {
   purple: "#7c6aff",
   purpleL: "#6357e0",
@@ -287,7 +302,10 @@ export default function CardNewsEditor({
     // title
     if (slide.title) {
       const title = new Textbox(slide.title, {
-        left: 80, top: slide.image ? height * 0.35 : height * 0.3,
+        left: width / 2,
+        top: height * 0.4,
+        originX: "center",
+        originY: "center",
         width: width - 160,
         fontSize: slide.fontSize || 48,
         fontFamily: "Pretendard",
@@ -302,7 +320,10 @@ export default function CardNewsEditor({
     // body
     if (slide.body) {
       const body = new Textbox(slide.body, {
-        left: 80, top: slide.image ? height * 0.55 : height * 0.52,
+        left: width / 2,
+        top: height * 0.6,
+        originX: "center",
+        originY: "center",
         width: width - 160,
         fontSize: Math.round((slide.fontSize || 48) * 0.55),
         fontFamily: "Pretendard",
@@ -567,6 +588,64 @@ export default function CardNewsEditor({
     onClose?.();
   }
 
+  /* ── apply design template ──────────────────────────────────────────── */
+  function applyTemplate(template) {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    fc.backgroundColor = template.bgColor;
+    fc.getObjects().forEach(o => {
+      if (o.type === "textbox" || o.type === "text") {
+        o.set("fill", template.textColor);
+        o.set("fontFamily", template.fontFamily);
+      }
+    });
+    fc.renderAll();
+    const obj = fc.getActiveObject();
+    if (obj) updateSelProps(obj);
+    pushHistory();
+  }
+
+  /* ── download single slide as PNG ───────────────────────────────────── */
+  function downloadCurrentPNG() {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    const dataUrl = fc.toDataURL({ format: "png", multiplier: 1 });
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `slide_${currentIdx + 1}.png`;
+    a.click();
+  }
+
+  /* ── download all slides as individual PNGs ─────────────────────────── */
+  async function downloadAllPNGs() {
+    saveCurrentCanvas();
+    const fc = canvasRef.current;
+    if (!fc) return;
+
+    for (let i = 0; i < totalSlides; i++) {
+      if (i !== currentIdx && slideDataArr[i]) {
+        await fc.loadFromJSON(slideDataArr[i]);
+        fc.renderAll();
+      } else if (i !== currentIdx) {
+        await loadSlideToCanvas(fc, slideMetaArr[i] || initialSlides[i], i);
+      }
+      await new Promise(r => setTimeout(r, 100));
+      const dataUrl = fc.toDataURL({ format: "png", multiplier: 1 });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `slide_${i + 1}.png`;
+      a.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
+    // reload current slide
+    if (slideDataArr[currentIdx]) {
+      await fc.loadFromJSON(slideDataArr[currentIdx]);
+    } else {
+      await loadSlideToCanvas(fc, slideMetaArr[currentIdx] || initialSlides[currentIdx], currentIdx);
+    }
+    fc.renderAll();
+  }
+
   /* ══════════════════════════════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════════════════════════════ */
@@ -587,19 +666,37 @@ export default function CardNewsEditor({
         {/* ── LEFT: Canvas Area ──────────────────────────────────────── */}
         <div style={{ ...S.canvasArea, width: canvasAreaW }}>
 
-          {/* Slide nav */}
+          {/* Header */}
           <div style={S.slideNav}>
+            {/* Left: page nav */}
             <button style={S.navBtn} onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}>
               <Icon.Left />
             </button>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>
               {currentIdx + 1} / {totalSlides} 페이지 편집
             </span>
             <button style={S.navBtn} onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx >= totalSlides - 1}>
               <Icon.Right />
             </button>
             <div style={{ flex: 1 }} />
-            <button style={S.closeBtn} onClick={onClose}><Icon.Close /></button>
+            {/* Right: actions */}
+            <Btn small onClick={downloadCurrentPNG} accent="#10b981" style={{ whiteSpace: "nowrap" }}>PNG 저장</Btn>
+            <Btn small onClick={downloadAllPNGs} accent="#0ea5e9" style={{ whiteSpace: "nowrap" }}>전체 저장</Btn>
+            <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
+          </div>
+
+          {/* Template selector strip */}
+          <div style={S.templateStrip}>
+            {TEMPLATES.map((t, i) => (
+              <button key={i} onClick={() => applyTemplate(t)} style={S.templateBtn} title={t.name}>
+                <span style={{
+                  display: "inline-block", width: 20, height: 20, borderRadius: "50%",
+                  background: t.bgColor, border: "2px solid " + t.accentColor,
+                  flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: "#444" }}>{t.name}</span>
+              </button>
+            ))}
           </div>
 
           {/* Canvas container */}
@@ -803,9 +900,22 @@ const S = {
     borderRadius: 6, padding: "4px 8px", cursor: "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
   },
-  closeBtn: {
-    background: "none", border: "none", cursor: "pointer",
-    color: "#888", padding: 4,
+  templateStrip: {
+    display: "flex", alignItems: "center", gap: 8,
+    padding: "6px 16px",
+    background: "#fff",
+    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    overflowX: "auto",
+    whiteSpace: "nowrap",
+    scrollbarWidth: "thin",
+  },
+  templateBtn: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    padding: "4px 10px", borderRadius: 20,
+    border: "1px solid rgba(0,0,0,0.1)",
+    background: "#f9f9fb", cursor: "pointer",
+    transition: "all 0.15s",
+    flexShrink: 0,
   },
   canvasContainer: {
     flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
