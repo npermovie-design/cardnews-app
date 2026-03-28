@@ -665,7 +665,6 @@ export default function App() {
         {/* 데스크톱 메뉴 — 중앙 정렬 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
-          <NavBtn id="cases" label="고객사례" />
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
@@ -678,12 +677,11 @@ export default function App() {
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
                 <DropItem id="community" label={t("free")}    onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("review")}  onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
+                <DropItem id="community" label={t("archive")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <NavBtn id="archive" label={t("archive")} active={page==="community"&&boardCat==="archive"} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
-          <NavBtn id="event" label="이벤트" />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
             <DropBtn label={t("support")} open={openMenu==="support"} active={["about","contact","howto","faq"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
@@ -902,12 +900,9 @@ export default function App() {
               {/* PC 상단 메뉴와 동일한 큰 메뉴만 */}
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
-            { id: "cases",    label: "고객사례",       onClick: () => { navigate("cases"); setMobileOpen(false); },    active: page==="cases" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
-            { id: "archive",  label: t("archive"),    onClick: () => { navigateBoard("archive"); setMobileOpen(false); }, active: page==="community"&&boardCat==="archive" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
-            { id: "event",    label: "이벤트",         onClick: () => { navigate("event"); setMobileOpen(false); },   active: page==="event" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
