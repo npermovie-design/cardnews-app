@@ -79,49 +79,31 @@ export default async function handler(req) {
 </body>
 </html>`;
   } else {
-    // 일반 브라우저: SPA 전체 로드 (OG 메타 동적 주입)
-    html = `<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="google-site-verification" content="RK3cE_t-6IlrSQbjoV4TvEg9n-Crqg8eaEByIHq_V50" />
-<meta name="naver-site-verification" content="b7ec85037f97a6e5870a755bc0c1d9b90d224ed9" />
+    // 일반 브라우저: /index.html로 리다이렉트 (SPA 라우팅)
+    // Vite 빌드된 JS/CSS는 index.html에 포함되어 있으므로 직접 서빙
+    const indexRes = await fetch(`${SITE_URL}/index.html`);
+    if (indexRes.ok) {
+      let indexHtml = await indexRes.text();
+      // OG 메타태그 동적 주입 (기존 메타 대체)
+      const ogMeta = `
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<meta name="robots" content="index, follow">
 <link rel="canonical" href="${esc(canonicalUrl)}">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="shortcut icon" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/icon-192.png">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#7c6aff">
 <meta property="og:type" content="article">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">
-<meta property="og:site_name" content="SNS메이킷">
-<meta property="og:locale" content="ko_KR">
-<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
-<meta name="twitter:image" content="${esc(image)}">
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-E2KGX8KJ4S"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-E2KGX8KJ4S');</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-@font-face{font-family:'BMDOHYEON';src:url('https://cdn.jsdelivr.net/gh/webfontworld/baemin/BMDOHYEON.woff2') format('woff2');font-display:swap;}
-@font-face{font-family:'NeoDunggeunmo';src:url('https://cdn.jsdelivr.net/gh/webfontworld/nexon/NeoDunggeunmo-Regular.woff2') format('woff2');font-display:swap;}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
-</body>
-</html>`;
+<meta name="twitter:image" content="${esc(image)}">`;
+      // </head> 앞에 OG 메타 주입
+      indexHtml = indexHtml.replace("</head>", ogMeta + "\n</head>");
+      html = indexHtml;
+    } else {
+      // fallback: index.html 가져오기 실패 시 리다이렉트
+      return new Response(null, { status: 302, headers: { Location: canonicalUrl } });
+    }
   }
 
   return new Response(html, {
