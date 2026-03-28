@@ -11,8 +11,8 @@ export const Badge = ({ children, C }) => (
   </div>
 );
 
-export const SecWrap = ({ children, bg, style = {}, C }) => (
-  <section style={{
+export const SecWrap = ({ children, bg, style = {}, C, id }) => (
+  <section id={id} style={{
     position: "relative", overflow: "hidden",
     padding: "clamp(48px,8vw,100px) clamp(16px,4vw,24px)", background: bg || "transparent", ...style,
   }}>
@@ -38,13 +38,13 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
   </div>
 );
 
-export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) => {
+export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, ariaLabel }) => {
   const base = {
     borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700,
     transition: "all 0.2s", fontFamily: "inherit", ...style,
   };
   if (ghost) return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
       padding: small ? "5px 14px" : "11px 26px",
       fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
@@ -58,7 +58,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
     </button>
   );
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
       padding: small ? "5px 14px" : "12px 28px",
       fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
@@ -72,7 +72,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C }) =>
   );
 };
 
-export const Inp = ({ style, C, ...props }) => (
+export const Inp = ({ style, C, "aria-label": ariaLabel, ...props }) => (
   <input
     style={{
       background: C.inputBg, border: "1px solid " + C.inputBorder,

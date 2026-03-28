@@ -33,21 +33,24 @@ import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToke
 function useOnlineCount() {
   const [count, setCount] = useState(1);
   useEffect(() => {
+    let cancelled = false;
     const myId = "u_" + Math.random().toString(36).slice(2, 8);
     const KEY = "nper_online_users";
     function hb() {
+      if (cancelled) return;
       try {
         const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
         const now = Date.now();
         raw[myId] = now;
         Object.keys(raw).forEach(k => { if (now - raw[k] > 30000) delete raw[k]; });
         localStorage.setItem(KEY, JSON.stringify(raw));
-        setCount(Object.keys(raw).length);
+        if (!cancelled) setCount(Object.keys(raw).length);
       } catch(e) {}
     }
     hb();
     const t = setInterval(hb, 15000);
     return () => {
+      cancelled = true;
       clearInterval(t);
       try { const raw = JSON.parse(localStorage.getItem(KEY) || "{}"); delete raw[myId]; localStorage.setItem(KEY, JSON.stringify(raw)); } catch(e) {}
     };

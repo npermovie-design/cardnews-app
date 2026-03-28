@@ -27,9 +27,13 @@ async function handleSitemap(req, res) {
   let postUrls = [];
   try {
     const sb = createClient(
-      process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
-      process.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
+      process.env.VITE_SUPABASE_URL,
+      process.env.VITE_SUPABASE_KEY
     );
+    if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_KEY) {
+      console.log("Sitemap: Supabase env vars missing");
+      return;
+    }
     const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(500);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
@@ -75,9 +79,13 @@ async function handleRss(req, res) {
   let items = "";
   try {
     const sb = createClient(
-      process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
-      process.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
+      process.env.VITE_SUPABASE_URL,
+      process.env.VITE_SUPABASE_KEY
     );
+    if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_KEY) {
+      console.log("RSS: Supabase env vars missing");
+      return;
+    }
     const { data: posts } = await sb.from("posts").select("id,title,content,subCat,author,created_at,images").order("id", { ascending: false }).limit(50);
 
     if (posts) {

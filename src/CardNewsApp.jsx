@@ -121,20 +121,23 @@ function deleteWork(id) {
 function useOnlineCount() {
   var p = useState(1); var count = p[0]; var setCount = p[1];
   useEffect(function() {
+    var cancelled = false;
     var myId = "u_" + Math.random().toString(36).slice(2, 8);
     var KEY = "nper_online_users";
     function hb() {
+      if (cancelled) return;
       try {
         var raw = JSON.parse(localStorage.getItem(KEY) || "{}");
         var now = Date.now();
         raw[myId] = now;
         Object.keys(raw).forEach(function(k) { if (now - raw[k] > 30000) { delete raw[k]; } });
         localStorage.setItem(KEY, JSON.stringify(raw));
-        setCount(Object.keys(raw).length);
+        if (!cancelled) setCount(Object.keys(raw).length);
       } catch(e) {}
     }
     hb(); var t = setInterval(hb, 15000);
     return function() {
+      cancelled = true;
       clearInterval(t);
       try { var raw = JSON.parse(localStorage.getItem(KEY) || "{}"); delete raw[myId]; localStorage.setItem(KEY, JSON.stringify(raw)); } catch(e) {}
     };

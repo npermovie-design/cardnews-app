@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { SecWrap, SecTitle, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
@@ -35,6 +35,24 @@ function FadeIn({ children, delay = 0, style = {} }) {
   );
 }
 
+/* ── 숫자 카운트업 애니메이션 ── */
+function CountUp({ end, duration = 1.5, suffix = "", prefix = "" }) {
+  const [ref, inView] = useInView(0.3);
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / (duration * 1000);
+      if (elapsed >= 1) { setCount(end); clearInterval(timer); return; }
+      const eased = 1 - Math.pow(1 - elapsed, 3);
+      setCount(Math.floor(eased * end));
+    }, 30);
+    return () => clearInterval(timer);
+  }, [inView, end, duration]);
+  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
+}
+
 /* ── FAQ 아코디언 아이템 ── */
 function FaqItem({ q, a, C }) {
   const [open, setOpen] = useState(false);
@@ -43,7 +61,7 @@ function FaqItem({ q, a, C }) {
       background: C.card, border: "1px solid " + C.border, borderRadius: 14,
       marginBottom: 10, overflow: "hidden", transition: "all 0.2s",
     }}>
-      <button onClick={() => setOpen(!open)} style={{
+      <button onClick={() => setOpen(!open)} aria-expanded={open} style={{
         width: "100%", padding: "18px 20px", display: "flex", justifyContent: "space-between",
         alignItems: "center", background: "none", border: "none", cursor: "pointer",
         fontSize: 15, fontWeight: 700, color: C.text, textAlign: "left", gap: 12,
@@ -65,8 +83,25 @@ function FaqItem({ q, a, C }) {
   );
 }
 
+/* ── Before/After 비교 카드 ── */
+function BeforeAfterCard({ before, after, C, lang }) {
+  return (
+    <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 120 }}>
+        <div style={{ padding: "20px 18px", background: "rgba(239,68,68,0.04)", borderRight: "1px solid " + C.border }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", letterSpacing: 1, marginBottom: 8 }}>BEFORE</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{before}</div>
+        </div>
+        <div style={{ padding: "20px 18px", background: "rgba(34,197,94,0.04)" }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: "#22c55e", letterSpacing: 1, marginBottom: 8 }}>AFTER</div>
+          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontWeight: 600 }}>{after}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
-  // dark mode removed - light only
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
 
@@ -123,29 +158,44 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         }} />
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 820 }}>
-          <h1 style={{ fontSize: "clamp(30px,6vw,60px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: -2, color: C.text, margin: "0 0 20px" }}>
-            {lang === "ko" ? "콘텐츠 제작, 직접 하지 마세요" : "Stop creating content yourself"}
+          {/* 신뢰 배지 */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 20, padding: "6px 16px", marginBottom: 24, fontSize: 12, fontWeight: 700, color: "#22c55e" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", animation: "pulse 2s ease-in-out infinite" }} />
+            {lang === "ko" ? "카드 등록 없이 무료로 시작" : "Start free, no credit card"}
+          </div>
+
+          <h1 style={{ fontSize: "clamp(32px,6.5vw,64px)", fontWeight: 900, lineHeight: 1.12, letterSpacing: -2, color: C.text, margin: "0 0 20px" }}>
+            {lang === "ko" ? <>콘텐츠 제작,<br/><span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AI에게 맡기세요</span></> : <>Content creation?<br/><span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Leave it to AI</span></>}
           </h1>
-          <p style={{ fontSize: "clamp(15px,2vw,20px)", color: C.muted, lineHeight: 1.8, maxWidth: 600, margin: "0 auto 36px" }}>
+          <p style={{ fontSize: "clamp(15px,2vw,20px)", color: C.muted, lineHeight: 1.8, maxWidth: 620, margin: "0 auto 20px" }}>
             {lang === "ko"
               ? "주제만 입력하면 AI가 카드뉴스, 블로그, 상세페이지를 3분 만에 완성합니다"
               : "Just enter a topic and AI completes card news, blogs, and detail pages in 3 minutes"}
           </p>
+          <p style={{ fontSize: 13, color: C.muted, opacity: 0.7, marginBottom: 36 }}>
+            {lang === "ko" ? "매월 2,000명 이상의 마케터와 크리에이터가 사용 중" : "Used by 2,000+ marketers and creators every month"}
+          </p>
 
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52 }}>
-            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
+          <div className="cta-row" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52 }}>
+            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
+            <Btn C={C} onClick={() => {
+              const el = document.getElementById("features-section");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }} ghost style={{ fontSize: 15, padding: "13px 28px" }}>
+              {lang === "ko" ? "기능 둘러보기" : "See features"}
+            </Btn>
           </div>
 
-          {/* 실시간 통계 */}
+          {/* 실시간 통계 카운트업 */}
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
-              { display: "25" + p("statToolsSuffix"), label: p("statTools") },
-              { display: statsCount.toLocaleString() + p("statContentsSuffix"), label: p("statContents") },
-              { display: "3" + p("statTimeSuffix"), label: p("statTime") },
-            ].map(({ display, label }) => (
+              { end: 25, suffix: p("statToolsSuffix"), label: p("statTools") },
+              { end: statsCount || 500, suffix: p("statContentsSuffix"), label: p("statContents") },
+              { end: 3, suffix: p("statTimeSuffix"), label: p("statTime") },
+            ].map(({ end, suffix, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: "#7c6aff" }}>
-                  {display}
+                  <CountUp end={end} suffix={suffix} />
                 </div>
                 <div style={{ fontSize: "clamp(11px,2.5vw,13px)", color: C.muted, marginTop: 4 }}>{label}</div>
               </div>
@@ -153,8 +203,14 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </div>
 
           {/* 제품 미리보기 */}
-          <div style={{ marginTop: 48, maxWidth: 700, width: "100%", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(124,106,255,0.15)", border: "1px solid " + C.border }}>
-            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" style={{ width: "100%", display: "block" }} />
+          <div style={{ marginTop: 48, maxWidth: 700, width: "100%", margin: "48px auto 0", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(124,106,255,0.18), 0 0 0 1px rgba(124,106,255,0.08)", border: "1px solid " + C.border, position: "relative" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 32, background: "#f5f4ff", display: "flex", alignItems: "center", gap: 6, padding: "0 12px", borderBottom: "1px solid " + C.border }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e" }} />
+              <span style={{ flex: 1, textAlign: "center", fontSize: 10, color: C.muted, fontWeight: 600 }}>snsmakeit.com</span>
+            </div>
+            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" style={{ width: "100%", display: "block", marginTop: 32 }} />
           </div>
         </div>
 
@@ -287,7 +343,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
       </section>
 
       {/* ══ 핵심 기능 벤토 그리드 (아임웹/Cutback 스타일) ══ */}
-      <SecWrap C={C} bg={C.bg2}>
+      <SecWrap C={C} bg={C.bg2} style={{ scrollMarginTop: 80 }} id="features-section">
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
             {lang === "ko" ? "시작부터 성장까지 쉬워집니다" : "Easy from start to growth"}
@@ -469,36 +525,78 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         </div>
       </section>
 
+      {/* ══ Before vs After ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg2 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>Before vs After</div>
+              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
+                {lang === "ko" ? "SNS메이킷 도입 전 vs 후" : "Before vs After SNS Makeit"}
+              </h2>
+              <p style={{ fontSize: 15, color: C.muted }}>
+                {lang === "ko" ? "같은 작업, 완전히 다른 효율" : "Same tasks, completely different efficiency"}
+              </p>
+            </div>
+          </FadeIn>
+          <div style={{ display: "grid", gap: 14 }}>
+            {[
+              { before: lang === "ko" ? "카드뉴스 1개 제작에 2시간, 디자이너 외주비 5만원" : "2 hours per card news, 50k KRW design outsourcing", after: lang === "ko" ? "AI가 3분 만에 완성, 포인트 10P (약 60원)" : "AI completes in 3 min, 10P (~$0.05)" },
+              { before: lang === "ko" ? "블로그 글 하나에 반나절, SEO 키워드 별도 조사" : "Half a day per blog post, separate SEO research", after: lang === "ko" ? "SEO 최적화 블로그 글 5분 완성, 키워드 자동 반영" : "SEO-optimized blog in 5 min, auto keywords" },
+              { before: lang === "ko" ? "인스타·블로그·스레드 각각 따로 작성" : "Write separately for Instagram, blog, Threads", after: lang === "ko" ? "한 번에 6개 플랫폼용 콘텐츠 동시 생성" : "Generate for 6 platforms at once" },
+              { before: lang === "ko" ? "제품 사진 촬영 + 보정에 하루, 스튜디오 비용 별도" : "Full day for product photos + editing, studio costs", after: lang === "ko" ? "AI 제품컷 즉시 생성, 배경 자동 교체" : "AI product shots instantly, auto background swap" },
+            ].map((item, i) => (
+              <FadeIn key={i} delay={i * 0.08}>
+                <BeforeAfterCard before={item.before} after={item.after} C={C} lang={lang} />
+              </FadeIn>
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 32 }}>
+            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "직접 체험해보기" : "Try it yourself"} →</Btn>
+          </div>
+        </div>
+      </section>
+
       {/* ══ 실사용 후기 ══ */}
-      <SecWrap C={C} bg={C.bg2}>
+      <SecWrap C={C} bg={C.bg}>
         <SecTitle C={C} badge={lang === "ko" ? "후기" : "Reviews"} title={lang === "ko" ? "실제 사용자의 이야기" : "Real user stories"} sub={lang === "ko" ? "SNS메이킷으로 콘텐츠 제작을 혁신한 분들의 후기입니다." : "Stories from those who transformed their content creation."} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 20 }}>
           {[
             {
-              initial: "K",
-              industry: lang === "ko" ? "쇼핑몰 운영" : "E-commerce",
-              text: lang === "ko" ? "카드뉴스 제작 시간이 2시간에서 5분으로 줄었어요. 직원 채용보다 효율적입니다." : "Card news creation went from 2 hours to 5 minutes. More efficient than hiring.",
+              initial: "K", color: "#7c6aff",
+              name: lang === "ko" ? "김** 대표님" : "Kim, CEO",
+              industry: lang === "ko" ? "패션 쇼핑몰 운영 | 사용 3개월" : "Fashion e-commerce | 3 months",
+              text: lang === "ko" ? "카드뉴스 제작 시간이 2시간에서 5분으로 줄었어요. 외주비만 월 50만원 이상 절약하고 있습니다. 디자이너 없이도 프로급 카드뉴스가 나옵니다." : "Card news creation went from 2 hours to 5 minutes. Saving over 500K KRW monthly in outsourcing costs.",
               metric: lang === "ko" ? "제작 시간 95% 단축" : "95% time reduction",
+              stars: 5,
             },
             {
-              initial: "P",
-              industry: lang === "ko" ? "마케팅 대행사" : "Marketing agency",
-              text: lang === "ko" ? "10개 클라이언트의 블로그를 혼자 관리할 수 있게 됐습니다." : "I can now manage 10 clients' blogs by myself.",
-              metric: lang === "ko" ? "관리 효율 3배 향상" : "3x management efficiency",
+              initial: "P", color: "#ec4899",
+              name: lang === "ko" ? "박** 팀장님" : "Park, Team Lead",
+              industry: lang === "ko" ? "마케팅 대행사 | 사용 2개월" : "Marketing agency | 2 months",
+              text: lang === "ko" ? "10개 클라이언트의 블로그를 혼자 관리할 수 있게 됐습니다. 특히 SEO 키워드 자동 반영 기능이 정말 강력해요. 검색 유입이 눈에 띄게 늘었습니다." : "I can now manage 10 clients' blogs by myself. The SEO keyword feature is powerful.",
+              metric: lang === "ko" ? "업무 효율 3배 향상" : "3x efficiency gain",
+              stars: 5,
             },
             {
-              initial: "L",
-              industry: lang === "ko" ? "1인 크리에이터" : "Solo creator",
-              text: lang === "ko" ? "인스타, 블로그, 스레드 콘텐츠를 한 번에 만들어서 매일 발행하고 있어요." : "I create content for Instagram, blog, and Threads all at once and publish daily.",
-              metric: lang === "ko" ? "콘텐츠 발행량 5배 증가" : "5x content output",
+              initial: "L", color: "#22c55e",
+              name: lang === "ko" ? "이** 크리에이터" : "Lee, Creator",
+              industry: lang === "ko" ? "1인 크리에이터 | 사용 1개월" : "Solo creator | 1 month",
+              text: lang === "ko" ? "인스타, 블로그, 스레드 콘텐츠를 한 번에 만들어서 매일 발행하고 있어요. 팔로워 증가 속도가 3배 빨라졌습니다." : "I create content for all platforms at once and publish daily. Follower growth tripled.",
+              metric: lang === "ko" ? "발행량 5배 증가" : "5x content output",
+              stars: 5,
             },
           ].map((r, i) => (
             <FadeIn key={r.initial} delay={i * 0.08}>
-              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16, boxShadow: C.shadow, transition: "all 0.25s" }}>
+              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 14, boxShadow: C.shadow, transition: "all 0.25s" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{r.initial}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.muted }}>{r.industry}</div>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${r.color},${r.color}cc)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{r.initial}</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.name}</div>
+                    <div style={{ fontSize: 12, color: C.muted }}>{r.industry}</div>
+                  </div>
                 </div>
+                <div style={{ color: "#f59e0b", fontSize: 14, letterSpacing: 2 }}>{"★".repeat(r.stars)}</div>
                 <p style={{ fontSize: 14, color: C.text, lineHeight: 1.8, margin: 0, flex: 1 }}>
                   &ldquo;{r.text}&rdquo;
                 </p>
@@ -614,22 +712,35 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
       </section>
 
       {/* ══ CTA ══ */}
-      <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.ctaBg }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(500px, 70vw)", height: "min(500px, 70vw)", borderRadius: "50%", background: "rgba(124,106,255,0.04)", filter: "blur(100px)", pointerEvents: "none" }} />
+      <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #f5f4ff 0%, #fdf2ff 50%, #f0fdf4 100%)" }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(500px, 70vw)", height: "min(500px, 70vw)", borderRadius: "50%", background: "rgba(124,106,255,0.06)", filter: "blur(100px)", pointerEvents: "none" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.purpleL, letterSpacing: 1.5, marginBottom: 14, textTransform: "uppercase" }}>{lang === "ko" ? "무료로 시작하세요" : "Start free now"}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.purpleL, letterSpacing: 1.5, marginBottom: 14, textTransform: "uppercase" }}>{lang === "ko" ? "지금 바로 시작하세요" : "Start right now"}</div>
           <h2 style={{ fontSize: "clamp(24px,4.5vw,44px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, lineHeight: 1.2, margin: "0 0 20px" }}>
             {p("ctaTitle1")}<br/>
-            <span style={{ color: "#7c6aff" }}>
+            <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {p("ctaHighlight")}
             </span>
           </h2>
-          <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 40, whiteSpace: "pre-line" }}>
+          <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 24, whiteSpace: "pre-line" }}>
             {p("ctaDesc")}
           </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
-            <Btn C={C} onClick={() => navigate("ai")} ghost>{lang === "ko" ? "기능 둘러보기" : "Explore features"}</Btn>
+          {/* 핵심 수치 강조 */}
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
+            {[
+              { num: lang === "ko" ? "100P" : "100P", label: lang === "ko" ? "가입 즉시 지급" : "Signup bonus" },
+              { num: lang === "ko" ? "5회" : "5x", label: lang === "ko" ? "비회원 무료" : "Guest free" },
+              { num: lang === "ko" ? "0원" : "$0", label: lang === "ko" ? "카드 등록 불필요" : "No card needed" },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#7c6aff" }}>{s.num}</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="cta-row" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 40px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
+            <Btn C={C} onClick={() => navigate("pricing")} ghost>{lang === "ko" ? "요금 알아보기" : "See pricing"}</Btn>
           </div>
         </div>
       </section>

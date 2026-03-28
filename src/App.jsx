@@ -1,42 +1,58 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
-// 페이지 컴포넌트
+// 핵심 컴포넌트 (즉시 로드)
 import HomePage from "./HomePage";
-import { AboutPage, HowToPage, FaqPage, AiPage, ContactPage } from "./OtherPages";
-import { PricingPage } from "./PricingPage";
-import { PaymentSuccessPage, PaymentFailPage } from "./PaymentPage";
-import { LegalPage } from "./LegalPage";
-import BoardPage from "./BoardPage";
-import AdminPage from "./AdminPage";
 import AuthModal from "./AuthModal";
-import MyPage from "./MyPage";
-import AttendanceModal from "./AttendanceModal";
 import Footer from "./Footer.jsx";
-import EventPage from "./EventPage.jsx";
-import CasePage from "./CasePage.jsx";
-import AnalyzerPage from "./AnalyzerPage.jsx";
+
+// 지연 로드 컴포넌트 (코드 스플리팅)
+const AboutPage = lazy(() => import("./AboutPage").then(m => ({ default: m.AboutPage })));
+const HowToPage = lazy(() => import("./AboutPage").then(m => ({ default: m.HowToPage })));
+const FaqPage = lazy(() => import("./AboutPage").then(m => ({ default: m.FaqPage })));
+const AiPage = lazy(() => import("./AiPage").then(m => ({ default: m.AiPage })));
+const ContactPage = lazy(() => import("./ContactPage").then(m => ({ default: m.ContactPage })));
+const PricingPage = lazy(() => import("./PricingPage").then(m => ({ default: m.PricingPage })));
+const PaymentSuccessPage = lazy(() => import("./PaymentPage").then(m => ({ default: m.PaymentSuccessPage })));
+const PaymentFailPage = lazy(() => import("./PaymentPage").then(m => ({ default: m.PaymentFailPage })));
+const LegalPage = lazy(() => import("./LegalPage").then(m => ({ default: m.LegalPage })));
+const BoardPage = lazy(() => import("./BoardPage"));
+const AdminPage = lazy(() => import("./AdminPage"));
+const MyPage = lazy(() => import("./MyPage"));
+const AttendanceModal = lazy(() => import("./AttendanceModal"));
+const EventPage = lazy(() => import("./EventPage.jsx"));
+const CasePage = lazy(() => import("./CasePage.jsx"));
+const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
+
+// 로딩 폴백
+const PageLoader = () => (
+  <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ textAlign: "center" }}>
+      <div style={{ width: 36, height: 36, border: "3px solid rgba(124,106,255,0.15)", borderTopColor: "#7c6aff", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+      <div style={{ fontSize: 13, color: "rgba(26,23,48,0.4)", fontWeight: 600 }}>Loading...</div>
+    </div>
+  </div>
+);
 
 // 접속자 카운트 훅 (Supabase online_users 테이블 + localStorage 폴백)
 function useOnlineCount() {
   const [count, setCount] = useState(1);
   useEffect(() => {
+    let cancelled = false;
     const myId = "u_" + Math.random().toString(36).slice(2, 8);
     const device = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
     async function hb() {
+      if (cancelled) return;
       try {
-        // Supabase heartbeat
         await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
-        // 20초 이상 비활성 유저 삭제
         const cutoff = new Date(Date.now() - 20000).toISOString();
         await supabase.from("online_users").delete().lt("last_seen", cutoff);
-        // 현재 접속자 수
         const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
-        if (cnt != null) setCount(cnt);
+        if (!cancelled && cnt != null) setCount(cnt);
       } catch(e) {
-        // Supabase 실패 시 localStorage 폴백
+        if (cancelled) return;
         try {
           const KEY = "nper_online_users";
           const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
@@ -44,15 +60,16 @@ function useOnlineCount() {
           raw[myId] = now;
           Object.keys(raw).forEach(k => { if (now - raw[k] > 15000) delete raw[k]; });
           localStorage.setItem(KEY, JSON.stringify(raw));
-          setCount(Object.keys(raw).length);
+          if (!cancelled) setCount(Object.keys(raw).length);
         } catch(e2) {}
       }
     }
     hb();
     const t = setInterval(hb, 8000);
     return () => {
+      cancelled = true;
       clearInterval(t);
-      supabase.from("online_users").delete().eq("id", myId).then(() => {});
+      supabase.from("online_users").delete().eq("id", myId).catch(() => {});
     };
   }, []);
   return count;
@@ -66,27 +83,31 @@ function GuardModal({ cost, onConfirm, onCancel }) {
       position: "fixed", inset: 0, zIndex: 99999,
       display: "flex", alignItems: "center", justifyContent: "center",
       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-    }}>
+    }} role="dialog" aria-modal="true" aria-label="생성 중 이탈 확인">
       <div style={{
         background: "#fff", border: "1px solid rgba(0,0,0,0.1)",
-        borderRadius: 20, padding: "clamp(20px,5vw,32px) clamp(16px,4vw,28px)", maxWidth: 360, width: "90%",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.15)", textAlign: "center",
+        borderRadius: 20, padding: "clamp(20px,5vw,32px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.18)", textAlign: "center",
         animation: "fadeIn 0.15s ease",
       }}>
-        <div style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 900, color: "#f59e0b", marginBottom: 14 }}>!</div>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24 }}>
+          &#9888;
+        </div>
         <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>
           생성 중입니다!
         </div>
-        <div style={{ fontSize: 14, color: "rgba(26,23,48,0.6)", lineHeight: 1.8, marginBottom: 24 }}>
+        <div style={{ fontSize: 14, color: "rgba(26,23,48,0.6)", lineHeight: 1.8, marginBottom: 16 }}>
           페이지를 나가면<br/>
           <span style={{ color: "#ef4444", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
-          <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.<br/>
-          정말 나가시겠습니까?
+          <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.
+        </div>
+        <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
+          소진된 포인트는 복구되지 않습니다
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel}
-            style={{ flex: 1, padding: "12px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.15)",
-              background: "transparent", color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ flex: 1, padding: "12px", borderRadius: 11, border: "1px solid rgba(124,106,255,0.2)",
+              background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             계속 생성하기
           </button>
           <button onClick={onConfirm}
@@ -884,7 +905,7 @@ export default function App() {
         </div>
 
         {/* 햄버거 */}
-        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 24, padding: "8px 12px", lineHeight: 1, flexShrink: 0, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"} aria-expanded={mobileOpen} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 24, padding: "8px 12px", lineHeight: 1, flexShrink: 0, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {mobileOpen ? "✕" : "☰"}
         </button>
       </div>
@@ -987,7 +1008,9 @@ export default function App() {
 
       {/* ── 페이지 ── */}
       <div style={{ paddingTop: 60 }} className="page-anim" key={page}>
-        {renderPage()}
+        <Suspense fallback={<PageLoader />}>
+          {renderPage()}
+        </Suspense>
       </div>
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
@@ -995,10 +1018,11 @@ export default function App() {
 
       {showScrollTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="맨 위로 스크롤"
           style={{
             position: "fixed", bottom: 32, right: 32, zIndex: 900,
             width: 44, height: 44, borderRadius: "50%",
-            background: theme === "dark" ? "rgba(124,106,255,0.9)" : "rgba(124,106,255,0.85)",
+            background: "rgba(124,106,255,0.85)",
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 16px rgba(124,106,255,0.3)",
