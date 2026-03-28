@@ -509,7 +509,7 @@ export async function getPostsFromDB() {
   try {
     const { data, error } = await supabase
       .from("posts")
-      .select("id,title,author,author_uid,cat,subCat,tag,views,likes,created_at,images,comments")
+      .select("id,title,content,author,author_uid,cat,subCat,tag,views,likes,created_at,images,comments")
       .order("id", { ascending: false })
       .limit(300);
     if (error) throw error;
