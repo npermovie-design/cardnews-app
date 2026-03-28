@@ -260,7 +260,7 @@ export async function fbKakaoLogin() {
 }
 
 // 구 카카오 흐름 호환용 (kakaoLoginRedirect, fbKakaoLogin(code) 대체)
-export const KAKAO_REST_KEY = "4d0f0128951fe2ff52b47d4243b1480e";
+export const KAKAO_REST_KEY = import.meta.env.VITE_KAKAO_REST_KEY || "";
 export const KAKAO_REDIRECT = "https://snsmakeit.com/oauth/kakao";
 export function kakaoLoginRedirect() {
   return fbKakaoLogin(); // Supabase OAuth로 통합
@@ -349,8 +349,7 @@ export async function changePoints(uid, delta, reason) {
       uid, delta, reason: reason || "", balance: newPoints, created_at: new Date().toISOString(),
     }); } catch(e) {} })();
 
-    // RPC도 시도 (실패해도 무방)
-    (async () => { try { await supabase.rpc("update_user_points", { p_uid: uid, p_delta: delta, p_reason: reason || "" }); } catch(e) {} })();
+    // RPC 중복 호출 제거 (직접 update + history insert로 이미 처리됨)
 
     return newPoints;
   } catch(e) {

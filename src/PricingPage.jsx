@@ -88,7 +88,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     badge: pl.id==="pro" ? p("recommend") : pl.badge,
     btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
     features: [
-      pl.free ? p("pFeatSignup200") || "가입 보너스 50P 지급" : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
+      pl.free ? p("pFeatSignup200") || "가입 보너스 100P 지급" : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
       ...COMMON_F,
     ],
   }));
@@ -340,11 +340,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
           {[
             { label: "텍스트 생성 (Claude Haiku)", cost: "10P", desc: "빠른 글쓰기·요약" },
-            { label: "텍스트 생성 (Claude Sonnet)", cost: "30P", desc: "고품질 글쓰기·분석" },
-            { label: "이미지 생성 (DALL-E/Flux)", cost: "50P", desc: "1장 기준" },
-            { label: "PPT 생성", cost: "20P", desc: "1덱 기준" },
-            { label: "영상 분석 (Shorts)", cost: "30P", desc: "1건 분석" },
-            { label: "영상 생성", cost: "10~30P", desc: "길이에 따라 변동" },
+            { label: "텍스트 생성 (Claude Sonnet)", cost: "35P", desc: "고품질 글쓰기·분석" },
+            { label: "이미지 생성 (AI 이미지)", cost: "80P", desc: "1장 기준" },
+            { label: "PPT 생성", cost: "25P", desc: "1덱 기준" },
+            { label: "영상 분석 (Shorts)", cost: "35P", desc: "1건 분석" },
+            { label: "영상 생성", cost: "15~40P", desc: "길이에 따라 변동" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
               <div>

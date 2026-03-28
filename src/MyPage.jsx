@@ -204,7 +204,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                 {userData?.role==="admin" && <span style={{ fontSize:10, padding:"2px 7px", borderRadius:5, background:"rgba(251,191,36,0.15)", color:"#fbbf24", fontWeight:700 }}>관리자</span>}
               </div>
               <div style={{ fontSize:12, color:muted, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{userData?.email}</div>
-              <div style={{ fontSize:11, color:muted }}>가입 {userData?.joinDate ? new Date(userData.joinDate).toLocaleDateString("ko-KR") : "-"}</div>
+              <div style={{ fontSize:11, color:muted }}>가입 {userData?.join_date ? new Date(userData.join_date).toLocaleDateString("ko-KR") : (userData?.joinDate ? new Date(userData.joinDate).toLocaleDateString("ko-KR") : "-")}</div>
             </div>
           </div>
 
@@ -305,8 +305,8 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           {[
             { label:"닉네임",         value:userData?.nick || "-" },
             { label:"이메일",         value:userData?.email || "-" },
-            { label:"가입일",         value:userData?.joinDate ? new Date(userData.joinDate).toLocaleDateString("ko-KR") : "-" },
-            { label:"마지막 로그인",  value:userData?.lastLogin ? new Date(userData.lastLogin).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "-" },
+            { label:"가입일",         value:userData?.join_date ? new Date(userData.join_date).toLocaleDateString("ko-KR") : (userData?.joinDate ? new Date(userData.joinDate).toLocaleDateString("ko-KR") : "-") },
+            { label:"마지막 로그인",  value:(userData?.last_login||userData?.lastLogin) ? new Date(userData.last_login||userData.lastLogin).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "-" },
             { label:"계정 유형",      value:userData?.provider==="google"?"구글":userData?.provider==="kakao"?"카카오":"이메일" },
             { label:"닉네임 변경일",  value:userData?.nickChangedAt ? new Date(userData.nickChangedAt).toLocaleDateString("ko-KR") : "변경 기록 없음" },
             { label:"다음 변경 가능", value:canChangeNick() ? "지금 변경 가능" : nextChangeDate() },

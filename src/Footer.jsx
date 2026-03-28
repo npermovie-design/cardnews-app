@@ -65,14 +65,12 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>B</span>
               </a>
-              {/* TODO: 실제 인스타그램 계정 URL로 업데이트 필요 (현재 placeholder) */}
-              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" title="인스타그램"
+              <a href="https://www.instagram.com/snsmakeit" target="_blank" rel="noopener noreferrer" title="인스타그램"
                 style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>IG</span>
               </a>
-              {/* TODO: 실제 유튜브 채널 URL로 업데이트 필요 (현재 placeholder) */}
-              <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" title="유튜브"
+              <a href="https://www.youtube.com/@snsmakeit" target="_blank" rel="noopener noreferrer" title="유튜브"
                 style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>YT</span>
