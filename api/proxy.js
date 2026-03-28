@@ -64,19 +64,25 @@ async function handlePixabay(req, res) {
   const PIXABAY_KEY = process.env.PIXABAY_KEY;
   if (!PIXABAY_KEY) return res.status(500).json({ error: "PIXABAY_KEY 미설정" });
 
-  // 쿼리 파라미터 전달 (key 제외)
+  const isVideo = req.query.video === "true";
+  const endpoint = isVideo ? "https://pixabay.com/api/videos/" : "https://pixabay.com/api/";
+
+  // 쿼리 파라미터 정리 (불필요한 파라미터 제거 후 key 추가)
   const params = new URLSearchParams(req.query);
   params.delete("key");
-  params.set("key", PIXABAY_KEY);
   params.delete("action");
-
-  const endpoint = req.query.video === "true" ? "https://pixabay.com/api/videos/" : "https://pixabay.com/api/";
   params.delete("video");
+  params.set("key", PIXABAY_KEY);
 
   try {
     const r = await fetch(`${endpoint}?${params.toString()}`, { signal: AbortSignal.timeout(10000) });
-    const data = await r.json();
-    return res.status(200).json(data);
+    const text = await r.text();
+    try {
+      const data = JSON.parse(text);
+      return res.status(200).json(data);
+    } catch {
+      return res.status(r.status || 500).json({ error: "Pixabay 응답 파싱 실패: " + text.slice(0, 200) });
+    }
   } catch (e) {
     return res.status(500).json({ error: "Pixabay API 호출 실패: " + (e.message || "").slice(0, 100) });
   }
