@@ -101,14 +101,6 @@ export const PLANS = [
   },
 ];
 
-// ── 게시판 카테고리 ───────────────────────────────────────────────────────
-export const CATS = [
-  { id: "ai",      label: "AI & 프로그램 정보", icon: "🤖" },
-  { id: "news",    label: "뉴스소식",            icon: "📰" },
-  { id: "archive", label: "자료실",              icon: "📁" },
-  { id: "qna",     label: "질문답변",            icon: "💬" },
-];
-
 // ── 로컬스토리지 헬퍼 ─────────────────────────────────────────────────────
 export const POSTS_KEY   = "nper_posts_v2";
 export const USER_KEY    = "nper_user";

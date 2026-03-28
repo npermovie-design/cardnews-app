@@ -64,7 +64,7 @@ function FadeIn({ children, delay = 0, style = {} }) {
 }
 
 /* ── FAQ 아코디언 아이템 ── */
-function FaqItem({ q, a, C, _dark }) {
+function FaqItem({ q, a, C }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{

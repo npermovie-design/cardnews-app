@@ -78,21 +78,21 @@ async function handleRss(req, res) {
       process.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
       process.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs"
     );
-    const { data: posts } = await sb.from("posts").select("id,title,body,subCat,nick,date,images").order("id", { ascending: false }).limit(50);
+    const { data: posts } = await sb.from("posts").select("id,title,content,subCat,author,created_at,images").order("id", { ascending: false }).limit(50);
 
     if (posts) {
       items = posts.map(p => {
-        const plainBody = (p.body || "").replace(/<[^>]*>/g, "").slice(0, 300);
+        const plainBody = (p.content || p.body || "").replace(/<[^>]*>/g, "").slice(0, 300);
         const cat = p.subCat || "info";
         const link = `${SITE}/community/${cat}/post-${p.id}`;
-        const pubDate = p.date ? new Date(p.date).toUTCString() : new Date().toUTCString();
+        const pubDate = p.created_at ? new Date(p.created_at).toUTCString() : new Date().toUTCString();
         const image = p.images?.[0] ? `<enclosure url="${p.images[0]}" type="image/jpeg"/>` : "";
         return `    <item>
       <title><![CDATA[${p.title || "제목 없음"}]]></title>
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
       <description><![CDATA[${plainBody}]]></description>
-      <author>${p.nick || "SNS메이킷"}</author>
+      <author>${p.author || p.nick || "SNS메이킷"}</author>
       <pubDate>${pubDate}</pubDate>
       <category>${cat}</category>
       ${image}

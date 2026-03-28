@@ -68,18 +68,18 @@ function GuardModal({ cost, onConfirm, onCancel }) {
       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
     }}>
       <div style={{
-        background: "#13102a", border: "1px solid rgba(255,255,255,0.12)",
+        background: "#fff", border: "1px solid rgba(0,0,0,0.1)",
         borderRadius: 20, padding: "clamp(20px,5vw,32px) clamp(16px,4vw,28px)", maxWidth: 360, width: "90%",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.5)", textAlign: "center",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.15)", textAlign: "center",
         animation: "fadeIn 0.15s ease",
       }}>
         <div style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 900, color: "#f59e0b", marginBottom: 14 }}>!</div>
-        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 10 }}>
+        <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>
           생성 중입니다!
         </div>
-        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: 24 }}>
+        <div style={{ fontSize: 14, color: "rgba(26,23,48,0.6)", lineHeight: 1.8, marginBottom: 24 }}>
           페이지를 나가면<br/>
-          <span style={{ color: "#f87171", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
+          <span style={{ color: "#ef4444", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
           <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.<br/>
           정말 나가시겠습니까?
         </div>
@@ -464,7 +464,7 @@ export default function App() {
   return (
     <div style={{
       minHeight: "100vh", background: C.bg, color: C.text,
-      fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif",
+      fontFamily: "'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Noto Sans KR',sans-serif",
       transition: "background 0.3s,color 0.3s",
     }}>
       <style>{`
@@ -619,12 +619,12 @@ export default function App() {
       {showAttendance && <AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} />}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.99)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#a5b4fc" }}>P</div>
-            <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#fff", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
-              비회원은 AI 기능을 <b style={{ color: "#a5b4fc" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#a5b4fc" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#7c6aff" }}>P</div>
+            <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
+            <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
+              비회원은 AI 기능을 <b style={{ color: "#7c6aff" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
+              로그인하면 <b style={{ color: "#7c6aff" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}
