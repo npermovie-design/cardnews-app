@@ -93,95 +93,6 @@ function FaqItem({ q, a, C, _dark }) {
   );
 }
 
-/* ── 페르소나별 탭 ── */
-function PersonaTabs({ navigate, C }) {
-  const [active, setActive] = useState(0);
-  const personas = [
-    {
-      label: "블로거",
-      icon: "N",
-      color: "#22c55e",
-      title: "블로그 운영이 쉬워져요",
-      desc: "SEO 최적화 블로그 글을 3분 만에 자동 생성. 키워드만 입력하면 네이버·티스토리에 바로 올릴 수 있는 고품질 글이 완성됩니다.",
-      tools: ["네이버 블로그", "티스토리", "카드뉴스", "실시간 검색어"],
-      result: "글 작성 시간 85% 단축",
-    },
-    {
-      label: "마케터",
-      icon: "IG",
-      color: "#ec4899",
-      title: "SNS 마케팅 올인원 솔루션",
-      desc: "인스타 캡션, 유튜브 대본, 카드뉴스까지 한 번에. 채널별 최적화된 콘텐츠를 빠르게 생산하고 성과를 분석하세요.",
-      tools: ["인스타그램 캡션", "유튜브 대본", "AI 분석기", "숏폼 편집기"],
-      result: "콘텐츠 생산량 3배 증가",
-    },
-    {
-      label: "쇼핑몰 사장님",
-      icon: "DP",
-      color: "#8b5cf6",
-      title: "상품 페이지 자동 완성",
-      desc: "상세페이지, AI 제품컷, 목업 이미지까지 자동 생성. 모델 촬영 없이도 프로급 상품 이미지를 만들어 매출을 올리세요.",
-      tools: ["상세페이지", "AI 제품컷", "AI 모델", "의상 교체"],
-      result: "이미지 제작비 70% 절감",
-    },
-    {
-      label: "크리에이터",
-      icon: "YT",
-      color: "#ef4444",
-      title: "영상 콘텐츠 제작 자동화",
-      desc: "유튜브 대본 작성부터 숏폼 편집, 썸네일 생성까지. AI가 크리에이터의 콘텐츠 제작 워크플로우를 혁신합니다.",
-      tools: ["유튜브 대본", "숏폼 편집기", "AI 로고", "스레드"],
-      result: "영상 발행 속도 2배",
-    },
-  ];
-  const p = personas[active];
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
-        {personas.map((per, i) => (
-          <div key={per.label} className={`persona-tab ${i === active ? "active" : ""}`}
-            onClick={() => setActive(i)}
-            style={{ background: i === active ? `${per.color}12` : C.card, color: i === active ? per.color : C.muted }}>
-            <span style={{ marginRight: 6 }}>{per.icon}</span>{per.label}
-          </div>
-        ))}
-      </div>
-      <FadeIn key={active}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(300px,100%),1fr))", gap: 24, alignItems: "center" }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: p.color, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>{p.label}</div>
-            <h3 style={{ fontSize: "clamp(22px,3.5vw,32px)", fontWeight: 900, color: C.text, lineHeight: 1.3, margin: "0 0 14px" }}>{p.title}</h3>
-            <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 20px" }}>{p.desc}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              {p.tools.map(t => (
-                <span key={t} style={{ fontSize: 12, fontWeight: 600, color: p.color, background: `${p.color}10`, padding: "5px 12px", borderRadius: 20 }}>{t}</span>
-              ))}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981", background: "rgba(16,185,129,0.1)", borderRadius: 10, padding: "8px 16px", display: "inline-block" }}>
-              ✓ {p.result}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {p.tools.map((t, i) => (
-              <div key={t} onClick={() => navigate("ai")} className="hover-lift" style={{
-                background: C.card, border: "1px solid " + C.border, borderRadius: 16,
-                padding: "20px 16px", cursor: "pointer", boxShadow: C.shadow,
-                textAlign: "center",
-              }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${p.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: p.color, margin: "0 auto 10px" }}>
-                  {t[0]}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{t}</div>
-                <div style={{ fontSize: 11, color: p.color, marginTop: 6, fontWeight: 600 }}>바로 사용 →</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </FadeIn>
-    </div>
-  );
-}
-
 export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
   const _dark = theme === "dark";
   const { lang } = useI18n();
@@ -213,6 +124,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         @media(max-width:640px){
           .hero-particle{display:none!important}
           .tool-card:hover,.review-card:hover,.stat-card:hover{transform:none!important}
+          .pain-grid{grid-template-columns:1fr!important}
         }
         @media(max-width:480px){
           section{padding-left:14px!important;padding-right:14px!important}
@@ -220,9 +132,6 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
         .stat-card:hover { transform: scale(1.04) !important; }
-        .persona-tab { cursor:pointer; padding:10px 22px; border-radius:30px; font-size:14px; font-weight:700; border:1.5px solid transparent; transition:all 0.25s; }
-        .persona-tab:hover { transform:translateY(-2px); }
-        .persona-tab.active { border-color:rgba(124,106,255,0.5); box-shadow:0 4px 20px rgba(124,106,255,0.15); }
         .hover-lift { transition: all 0.25s; }
         .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(124,106,255,0.12); }
       `}</style>
@@ -245,28 +154,17 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         ))}
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 820 }}>
-          <div style={{ opacity: 1, transform: "none", animation: "none" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.purpleL, letterSpacing: 0.5, marginBottom: 12 }}>{p("heroBadge")}</div>
-          </div>
-
-          <h1 style={{ fontSize: "clamp(26px,5vw,56px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: -1.5, color: C.text, margin: "0 0 14px" }}>
-            <TypeWriter texts={p("heroTyping")} speed={55} pause={2200} />
+          <h1 style={{ fontSize: "clamp(30px,6vw,60px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: -2, color: C.text, margin: "0 0 20px" }}>
+            {lang === "ko" ? "콘텐츠 제작, 직접 하지 마세요" : "Stop creating content yourself"}
           </h1>
-          <h2 style={{ fontSize: "clamp(20px,3.5vw,42px)", fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, color: C.text, margin: "0 0 28px" }}>
-            {p("heroSub1")}
-            <span style={{ color: "#7c6aff" }}>
-              {p("heroHighlight")}
-            </span>
-          </h2>
-          <p style={{ fontSize: "clamp(14px,1.7vw,18px)", color: C.muted, lineHeight: 1.9, maxWidth: 580, margin: "0 auto 16px" }}>
-            {p("heroDesc1")}<br/>
-            <b style={{ color: C.purpleL }}>{p("heroDesc2")}</b>{p("heroDesc2b")}<br/>
-            <b style={{ color: C.purpleL }}>{p("heroDesc3")}</b>
+          <p style={{ fontSize: "clamp(15px,2vw,20px)", color: C.muted, lineHeight: 1.8, maxWidth: 600, margin: "0 auto 36px" }}>
+            {lang === "ko"
+              ? "주제만 입력하면 AI가 카드뉴스, 블로그, 상세페이지를 3분 만에 완성합니다"
+              : "Just enter a topic and AI completes card news, blogs, and detail pages in 3 minutes"}
           </p>
 
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52, marginTop: 36 }}>
-            <Btn C={C} onClick={() => navigate("ai")}>{p("heroCta1")}</Btn>
-            <Btn C={C} onClick={() => navigate("analyzer")} ghost>AI 분석기</Btn>
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52 }}>
+            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
           </div>
 
           {/* 실시간 통계 */}
@@ -293,6 +191,59 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
 
         <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", opacity: 0.5, animation: "float 2s ease-in-out infinite" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </section>
+
+      {/* ══ 페인 포인트 섹션 ══ */}
+      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
+                {lang === "ko" ? "이런 고민, 하고 계시죠?" : "Sound familiar?"}
+              </h2>
+              <p style={{ fontSize: 15, color: C.muted }}>
+                {lang === "ko" ? "콘텐츠 제작에 지치신 분들을 위해 만들었습니다." : "Built for those tired of content creation."}
+              </p>
+            </div>
+          </FadeIn>
+          <div className="pain-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            {[
+              {
+                icon: "&#9200;",
+                title: lang === "ko" ? "카드뉴스 만드는 데 2시간" : "2 hours for card news",
+                quote: lang === "ko" ? "디자인 감각이 없어 매번 외주를 맡기고 있어요" : "I have no design skills and always outsource",
+              },
+              {
+                icon: "&#128221;",
+                title: lang === "ko" ? "블로그 글 하나에 반나절" : "Half a day for one blog post",
+                quote: lang === "ko" ? "SEO 최적화까지 신경 쓰면 하루가 다 갑니다" : "Add SEO optimization and a whole day is gone",
+              },
+              {
+                icon: "&#128247;",
+                title: lang === "ko" ? "SNS 채널마다 따로 제작" : "Separate content per channel",
+                quote: lang === "ko" ? "같은 내용을 인스타, 블로그, 스레드에 각각 올리느라 지쳐요" : "Exhausted posting the same content to Instagram, blog, and Threads separately",
+              },
+              {
+                icon: "&#127912;",
+                title: lang === "ko" ? "전문가 수준의 이미지 필요" : "Need professional images",
+                quote: lang === "ko" ? "제품 사진, 로고, 목업을 직접 만들 수가 없어요" : "I can't create product photos, logos, or mockups myself",
+              },
+            ].map((pain, i) => (
+              <FadeIn key={i} delay={i * 0.08}>
+                <div style={{
+                  background: "#fff", border: "1px solid " + C.border, borderRadius: 16,
+                  padding: "28px 24px", height: "100%",
+                }}>
+                  <div style={{ fontSize: 28, marginBottom: 14 }} dangerouslySetInnerHTML={{ __html: pain.icon }} />
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 10, lineHeight: 1.4 }}>{pain.title}</div>
+                  <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, margin: 0, fontStyle: "italic" }}>
+                    &ldquo;{pain.quote}&rdquo;
+                  </p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -350,7 +301,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           <FadeIn delay={0.3}>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
-                {lang === "ko" ? "지금 바로 시작하기" : "Get started now"} →
+                {lang === "ko" ? "무료로 시작하기" : "Start free"} →
               </Btn>
               <button onClick={() => { if (!user) { if (onLoginRequest) onLoginRequest(); } else { navigate("mypage"); } }}
                 style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid ${"rgba(124,106,255,0.3)"}`,
@@ -435,97 +386,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>{f.desc}</div>
-                <div style={{ marginTop: 14, fontSize: 12, color: f.color, fontWeight: 700 }}>{lang === "ko" ? "바로 사용하기" : "Try now"} →</div>
+                <div style={{ marginTop: 14, fontSize: 12, color: f.color, fontWeight: 700 }}>{lang === "ko" ? "기능 둘러보기" : "Explore features"} →</div>
               </div>
             </FadeIn>
           ))}
         </div>
       </SecWrap>
-
-      {/* ══ 페르소나별 활용 사례 ══ */}
-      <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge="Use Cases" title={lang === "ko" ? "이런 분들이 사용합니다" : "Made for every creator"} sub={lang === "ko" ? "업종별 맞춤 활용법을 확인하세요." : "Discover tailored solutions for your industry."} />
-        <PersonaTabs navigate={navigate} C={C} lang={lang} />
-      </SecWrap>
-
-      {/* ══ 이렇게 만들어져요 ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-              {lang === "ko" ? "이렇게 만들어져요" : "See how it works"}
-            </h2>
-            <p style={{ fontSize: 15, color: C.muted }}>
-              {lang === "ko" ? "키워드 입력부터 완성까지, 실제 화면을 확인하세요." : "From keyword input to completion, see the actual process."}
-            </p>
-          </div>
-
-          {/* Feature 1: 글쓰기 - 좌 텍스트 / 우 이미지 */}
-          <FadeIn>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 40, alignItems: "center", marginBottom: 64 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#22c55e", letterSpacing: 1, marginBottom: 10 }}>AI WRITING</div>
-                <h3 style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
-                  {lang === "ko" ? "블로그 글, 3분이면 완성" : "Blog posts, done in 3 minutes"}
-                </h3>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 24px" }}>
-                  {lang === "ko" ? "키워드만 입력하면 SEO에 최적화된 블로그 글이 자동으로 작성됩니다. 네이버, 티스토리, 인스타, 유튜브 대본까지 6개 플랫폼을 지원해요." : "Enter keywords and get SEO-optimized blog posts automatically. Supports 6 platforms."}
-                </p>
-                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "글쓰기 시작" : "Start writing"}</Btn>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                  <img src="/screenshots/blog-result.png" alt="AI 블로그 글 생성 결과" loading="lazy" style={{ width: "100%", display: "block" }} />
-                </div>
-                <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{lang === "ko" ? "실제 AI가 작성한 블로그 글" : "Actual blog post written by AI"}</div>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* Feature 2: 카드뉴스 - 우 텍스트 / 좌 이미지 (reversed) */}
-          <FadeIn delay={0.1}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 40, alignItems: "center", marginBottom: 64 }}>
-              <div style={{ order: 1 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                    <img src="/screenshots/cardnews-plan.png" alt="AI 카드뉴스 기획 결과" loading="lazy" style={{ width: "100%", display: "block" }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{lang === "ko" ? "AI가 자동 기획한 카드뉴스 슬라이드" : "Card news slides auto-planned by AI"}</div>
-                </div>
-              </div>
-              <div style={{ order: 2 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#8b5cf6", letterSpacing: 1, marginBottom: 10 }}>CONTENT CREATION</div>
-                <h3 style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
-                  {lang === "ko" ? "카드뉴스, 주제만 입력하세요" : "Card news, just enter a topic"}
-                </h3>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 24px" }}>
-                  {lang === "ko" ? "AI가 슬라이드를 기획하고 디자인까지 완성해요. 카드뉴스, 상세페이지, 썸네일까지 한 번에 만들 수 있어요." : "AI plans slides and completes the design. Create card news, detail pages, and thumbnails at once."}
-                </p>
-                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "콘텐츠 만들기" : "Create content"}</Btn>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* Feature 3: 이미지 수정 - 좌 텍스트 / 우 이미지 */}
-          <FadeIn delay={0.2}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 40, alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", letterSpacing: 1, marginBottom: 10 }}>IMAGE AI</div>
-                <h3 style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
-                  {lang === "ko" ? "AI로 이미지를 자유롭게" : "Edit images freely with AI"}
-                </h3>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 24px" }}>
-                  {lang === "ko" ? "제품컷, 로고, 목업, AI 모델 생성은 물론 얼굴 교체, 의상 교체, 여백 채우기까지. 10가지 이미지 도구가 한 곳에." : "Product shots, logos, mockups, AI models, face swap, outfit change, and more. 10 image tools in one place."}
-                </p>
-                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "이미지 도구 보기" : "View image tools"}</Btn>
-              </div>
-              <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                <img src="/screenshots/image-edit.png" alt="이미지 수정" loading="lazy" style={{ width: "100%", display: "block" }} />
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
 
       {/* ══ 경쟁사 비교표 ══ */}
       <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: "linear-gradient(180deg, #f8f8fb 0%, #f0ecff 50%, #f8f8fb 100%)" }}>
@@ -597,7 +463,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               </table>
             </div>
             <div style={{ textAlign: "center", marginTop: 32 }}>
-              <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "지금 무료로 체험하기" : "Try free now"} →</Btn>
+              <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
             </div>
           </FadeIn>
         </div>
@@ -638,36 +504,39 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
 
       {/* ══ 실사용 후기 ══ */}
       <SecWrap C={C} bg={C.bg2}>
-        <SecTitle C={C} badge={p("reviewBadge")} title={p("reviewTitle")} sub={p("reviewSub")} />
+        <SecTitle C={C} badge={lang === "ko" ? "후기" : "Reviews"} title={lang === "ko" ? "실제 사용자의 이야기" : "Real user stories"} sub={lang === "ko" ? "SNS메이킷으로 콘텐츠 제작을 혁신한 분들의 후기입니다." : "Stories from those who transformed their content creation."} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 20 }}>
           {[
-            { name: p("r1name"), job: p("r1job"), avatar: "K", rating: 5, platform: p("r1plat"), text: p("r1text"), result: p("r1result") },
-            { name: p("r2name"), job: p("r2job"), avatar: "L", rating: 5, platform: p("r2plat"), text: p("r2text"), result: p("r2result") },
-            { name: p("r3name"), job: p("r3job"), avatar: "P", rating: 5, platform: p("r3plat"), text: p("r3text"), result: p("r3result") },
-            { name: p("r4name"), job: p("r4job"), avatar: "C", rating: 5, platform: p("r4plat"), text: p("r4text"), result: p("r4result") },
-            { name: p("r5name"), job: p("r5job"), avatar: "J", rating: 5, platform: p("r5plat"), text: p("r5text"), result: p("r5result") },
-            { name: p("r6name"), job: p("r6job"), avatar: "H", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
+            {
+              initial: "K",
+              industry: lang === "ko" ? "쇼핑몰 운영" : "E-commerce",
+              text: lang === "ko" ? "카드뉴스 제작 시간이 2시간에서 5분으로 줄었어요. 직원 채용보다 효율적입니다." : "Card news creation went from 2 hours to 5 minutes. More efficient than hiring.",
+              metric: lang === "ko" ? "제작 시간 95% 단축" : "95% time reduction",
+            },
+            {
+              initial: "P",
+              industry: lang === "ko" ? "마케팅 대행사" : "Marketing agency",
+              text: lang === "ko" ? "10개 클라이언트의 블로그를 혼자 관리할 수 있게 됐습니다." : "I can now manage 10 clients' blogs by myself.",
+              metric: lang === "ko" ? "관리 효율 3배 향상" : "3x management efficiency",
+            },
+            {
+              initial: "L",
+              industry: lang === "ko" ? "1인 크리에이터" : "Solo creator",
+              text: lang === "ko" ? "인스타, 블로그, 스레드 콘텐츠를 한 번에 만들어서 매일 발행하고 있어요." : "I create content for Instagram, blog, and Threads all at once and publish daily.",
+              metric: lang === "ko" ? "콘텐츠 발행량 5배 증가" : "5x content output",
+            },
           ].map((r, i) => (
-            <FadeIn key={r.name} delay={i * 0.08}>
-              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
-                <div style={{ display: "flex", gap: 2 }}>
-                  {Array(r.rating).fill(0).map((_, j) => (
-                    <span key={j} style={{ fontSize: 12, color: "#f59e0b" }}>★</span>
-                  ))}
+            <FadeIn key={r.initial} delay={i * 0.08}>
+              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16, boxShadow: C.shadow, transition: "all 0.25s" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{r.initial}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.muted }}>{r.industry}</div>
                 </div>
-                <p style={{ fontSize: 13, color: C.text, lineHeight: 1.8, margin: 0, flex: 1 }}>
-                  "{r.text}"
+                <p style={{ fontSize: 14, color: C.text, lineHeight: 1.8, margin: 0, flex: 1 }}>
+                  &ldquo;{r.text}&rdquo;
                 </p>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "rgba(16,185,129,0.1)", borderRadius: 8, padding: "4px 10px", display: "inline-block" }}>
-                  ✓ {r.result}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8, borderTop: "1px solid " + C.border }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.purpleL, flexShrink: 0 }}>{r.avatar}</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{r.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{r.job}</div>
-                  </div>
-                  <div style={{ marginLeft: "auto", fontSize: 10, color: C.purpleL, fontWeight: 600, background: "rgba(124,106,255,0.08)", padding: "3px 8px", borderRadius: 6 }}>{r.platform}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", background: "rgba(124,106,255,0.08)", borderRadius: 10, padding: "8px 16px", textAlign: "center" }}>
+                  {r.metric}
                 </div>
               </div>
             </FadeIn>
@@ -688,7 +557,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 28px", whiteSpace: "pre-line" }}>
                   {lang === "ko" ? "출석체크, 게시글 작성, 댓글 활동으로 포인트를 적립하세요.\n적립한 포인트로 AI 도구를 무료로 이용할 수 있어요." : "Earn points through daily check-in, posting, and commenting.\nUse earned points to access AI tools for free."}
                 </p>
-                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "포인트 적립 시작" : "Start earning"}</Btn>
+                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
               </div>
             </FadeIn>
             <FadeIn delay={0.1}>
@@ -716,10 +585,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
-            { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료 체험하기":"Try free", onClick: () => navigate("ai") },
-            { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·출석 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료 회원가입":"Sign up free", onClick: () => navigate("ai") },
-            { icon: "19,900", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"텍스트 350회 · 이미지 70회 · 유효기간 없음":"350 texts · 70 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing"), highlight: true },
-            { icon: "PRO", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"텍스트 950회 · 이미지 190회 · 우선 고객지원":"950 texts · 190 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"충전하기":"Recharge", onClick: () => navigate("pricing") },
+            { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
+            { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·출석 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
+            { icon: "19,900", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"텍스트 350회 · 이미지 70회 · 유효기간 없음":"350 texts · 70 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"기능 둘러보기":"Explore features", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "PRO", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"텍스트 950회 · 이미지 190회 · 우선 고객지원":"950 texts · 190 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"기능 둘러보기":"Explore features", onClick: () => navigate("pricing") },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -792,8 +661,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             {p("ctaDesc")}
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Btn C={C} onClick={() => navigate("ai")}>{p("ctaBtn1")}</Btn>
-            <Btn C={C} onClick={() => navigate("about")} ghost>{p("ctaBtn2")}</Btn>
+            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
+            <Btn C={C} onClick={() => navigate("ai")} ghost>{lang === "ko" ? "기능 둘러보기" : "Explore features"}</Btn>
           </div>
         </div>
       </section>
