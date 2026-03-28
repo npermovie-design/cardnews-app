@@ -4,6 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import { isDarkTheme } from "./theme";
+import CardNewsEditor from "./CardNewsEditor";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -408,6 +409,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [slides,    setSlides]    = useState(libItem?.slides || []);
   const [sted,      setSted]      = useState({});
   const [selIdx,    setSelIdx]    = useState(0);
+  const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [showMediaSearch, setShowMediaSearch] = useState(false);
   const [mediaQuery, setMediaQuery] = useState("");
@@ -1172,9 +1174,15 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           onChange={e=>{ const f=e.target.files[0]; if(f) handlePhotoSplit(f, splitCount); e.target.value=""; setSplitCount(null); }}/>
 
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 16px 60px", animation:"fadeIn 0.3s ease" }}>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:20,fontWeight:900,color:text,letterSpacing:-0.5,marginBottom:3 }}>슬라이드 편집</div>
-            <div style={{ fontSize:12,color:muted }}>텍스트·배경·색상 변경 후 PNG/ZIP으로 저장하세요</div>
+          <div style={{ marginBottom:12, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
+            <div>
+              <div style={{ fontSize:20,fontWeight:900,color:text,letterSpacing:-0.5,marginBottom:3 }}>슬라이드 편집</div>
+              <div style={{ fontSize:12,color:muted }}>텍스트·배경·색상 변경 후 PNG/ZIP으로 저장하세요</div>
+            </div>
+            <button onClick={()=>setShowCanvasEditor(true)} style={{ padding:"10px 20px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              고급 편집기 열기
+            </button>
           </div>
 
           <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
@@ -1707,6 +1715,29 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               </div>
             </div>
           </div>
+        )}
+
+        {/* ═══ Canvas 고급 편집기 ═══ */}
+        {showCanvasEditor && slides.length > 0 && (
+          <CardNewsEditor
+            slides={slides.map((s, i) => {
+              const st = sted[i] || {};
+              const ss = getSlideStyle(i);
+              return {
+                title: st.title ?? s.title ?? "",
+                body: st.body ?? s.body ?? "",
+                bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
+                textColor: st.textColor || ss.textColor || "#fff",
+                fontSize: ss.fontSize || 42,
+                image: st.bgImage || null,
+              };
+            })}
+            width={canvasW}
+            height={canvasH}
+            C={C}
+            onSave={() => setShowCanvasEditor(false)}
+            onClose={() => setShowCanvasEditor(false)}
+          />
         )}
       </div>
     );
