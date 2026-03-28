@@ -20,34 +20,6 @@ function useInView(threshold = 0.15) {
   return [ref, inView];
 }
 
-/* ── 타이핑 애니메이션 ── */
-function TypeWriter({ texts, speed = 60, pause = 2000 }) {
-  const [display, setDisplay] = useState("");
-  const [idx, setIdx] = useState(0);
-  const [typing, setTyping] = useState(true);
-  useEffect(() => {
-    const cur = texts[idx];
-    if (typing) {
-      if (display.length < cur.length) {
-        const t = setTimeout(() => setDisplay(cur.slice(0, display.length + 1)), speed);
-        return () => clearTimeout(t);
-      } else {
-        const t = setTimeout(() => setTyping(false), pause);
-        return () => clearTimeout(t);
-      }
-    } else {
-      if (display.length > 0) {
-        const t = setTimeout(() => setDisplay(display.slice(0, -1)), speed / 2);
-        return () => clearTimeout(t);
-      } else {
-        setIdx((idx + 1) % texts.length);
-        setTyping(true);
-      }
-    }
-  }, [display, typing, idx, texts, speed, pause]);
-  return <span>{display}<span style={{ animation: "blink 1s infinite", opacity: 1 }}>|</span></span>;
-}
-
 /* ── 페이드인 래퍼 ── */
 function FadeIn({ children, delay = 0, style = {} }) {
   const [ref, inView] = useInView();
@@ -94,33 +66,27 @@ function FaqItem({ q, a, C }) {
 }
 
 export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
-  const _dark = theme === "dark";
+  // dark mode removed - light only
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
 
   // 실시간 통계 (Supabase에서 posts 수 가져오기)
-  const [statsCount, setStatsCount] = useState(5200);
+  const [statsCount, setStatsCount] = useState(0);
   useEffect(() => {
     (async () => {
       try {
         const { count } = await supabase.from("posts").select("*", { count: "exact", head: true });
-        if (count != null) setStatsCount(Math.max(count, 5200));
+        if (count != null) setStatsCount(count);
       } catch {}
     })();
   }, []);
 
-  /* 배경 그라데이션 (파티클 대신 심플한 그라데이션) */
-  const particles = [
-    { top: "20%", left: "15%", size: 400, color: "rgba(124,106,255,0.04)", blur: 100 },
-  ];
+  /* 배경 장식 */
 
   return (
     <div>
       <style>{`
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes marqueeL { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-        @keyframes marqueeR { from{transform:translateX(-50%)} to{transform:translateX(0)} }
         @media(max-width:768px){
           .hero-particle{display:none!important}
           .tool-card:hover,.review-card:hover,.stat-card:hover,.hover-lift:hover{transform:none!important;box-shadow:none!important}
@@ -150,14 +116,11 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         textAlign: "center", position: "relative", overflow: "hidden",
         background: C.heroBg,
       }}>
-        {particles.map((p, i) => (
-          <div key={i} className="hero-particle" style={{
-            position: "absolute", width: `min(${p.size}px, 50vw)`, height: `min(${p.size}px, 50vw)`, borderRadius: "50%",
-            background: p.color, filter: `blur(${p.blur}px)`, pointerEvents: "none",
-            top: p.top, left: p.left, right: p.right,
-            animation: `float ${4 + i}s ease-in-out infinite`, animationDelay: `${i * 0.8}s`,
-          }} />
-        ))}
+        <div className="hero-particle" style={{
+          position: "absolute", width: "min(400px,50vw)", height: "min(400px,50vw)", borderRadius: "50%",
+          background: "rgba(124,106,255,0.04)", filter: "blur(100px)", pointerEvents: "none",
+          top: "20%", left: "15%", animation: "float 4s ease-in-out infinite",
+        }} />
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 820 }}>
           <h1 style={{ fontSize: "clamp(30px,6vw,60px)", fontWeight: 900, lineHeight: 1.15, letterSpacing: -2, color: C.text, margin: "0 0 20px" }}>
@@ -644,7 +607,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             { q: "How do I earn points?", a: "Get 100P on sign-up. Earn +3P daily check-in, +2P per community post. You can also purchase additional points at affordable prices." },
           ]).map((item, i) => (
             <FadeIn key={i} delay={i * 0.05}>
-              <FaqItem q={item.q} a={item.a} C={C} _dark={_dark} />
+              <FaqItem q={item.q} a={item.a} C={C} />
             </FadeIn>
           ))}
         </div>
