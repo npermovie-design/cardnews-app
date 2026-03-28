@@ -1734,7 +1734,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             })}
             width={imgW}
             height={imgH}
-            C={C}
+            C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
             onSave={() => setShowCanvasEditor(false)}
             onClose={() => setShowCanvasEditor(false)}
           />

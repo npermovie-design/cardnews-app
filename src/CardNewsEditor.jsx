@@ -134,30 +134,34 @@ export default function CardNewsEditor({
   /* ── init canvas ───────────────────────────────────────────────────── */
   useEffect(() => {
     if (!canvasElRef.current) return;
-    const fc = new Canvas(canvasElRef.current, {
-      width, height,
-      backgroundColor: "#ffffff",
-      preserveObjectStacking: true,
-    });
-    canvasRef.current = fc;
+    try {
+      const fc = new Canvas(canvasElRef.current, {
+        width, height,
+        backgroundColor: "#ffffff",
+        preserveObjectStacking: true,
+      });
+      canvasRef.current = fc;
 
-    fc.on("selection:created", handleSelection);
-    fc.on("selection:updated", handleSelection);
-    fc.on("selection:cleared", () => { setSelectedObj(null); setSelProps({}); });
-    fc.on("object:modified", handleObjModified);
-    fc.on("text:changed", handleObjModified);
+      fc.on("selection:created", handleSelection);
+      fc.on("selection:updated", handleSelection);
+      fc.on("selection:cleared", () => { setSelectedObj(null); setSelProps({}); });
+      fc.on("object:modified", handleObjModified);
+      fc.on("text:changed", handleObjModified);
 
-    // load first slide
-    if (initialSlides.length) {
-      loadSlideToCanvas(fc, initialSlides[0], 0);
+      // load first slide
+      if (initialSlides.length) {
+        loadSlideToCanvas(fc, initialSlides[0], 0).catch(e => console.warn("slide load error", e));
+      }
+
+      setTimeout(fitCanvas, 50);
+
+      return () => {
+        try { fc.dispose(); } catch {}
+        canvasRef.current = null;
+      };
+    } catch (e) {
+      console.error("Canvas init error:", e);
     }
-
-    fitCanvas();
-
-    return () => {
-      fc.dispose();
-      canvasRef.current = null;
-    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── fit canvas to container ───────────────────────────────────────── */
