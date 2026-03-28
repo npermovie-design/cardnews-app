@@ -49,6 +49,7 @@ function loadGFont(family) {
 }
 
 const TEMPLATES = [
+  // 솔리드 컬러
   { name: "다크 모던", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
   { name: "라이트 미니멀", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard" },
   { name: "파스텔 핑크", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic" },
@@ -61,6 +62,19 @@ const TEMPLATES = [
   { name: "스카이 블루", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR" },
   { name: "블랙 골드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard" },
   { name: "소프트 라벤더", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic" },
+  // 실사 배경 (Pexels 무료 이미지)
+  { name: "카페 인테리어", bgColor: "#2c1810", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/1813466/pexels-photo-1813466.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "자연 풍경", bgColor: "#1a3a2a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "도시 야경", bgColor: "#0a0a1a", textColor: "#ffffff", fontFamily: "Montserrat", bgImage: "https://images.pexels.com/photos/1519088/pexels-photo-1519088.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "미니멀 데스크", bgColor: "#f5f5f0", textColor: "#1a1a1a", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "음식 클로즈업", bgColor: "#3d2b1f", textColor: "#ffffff", fontFamily: "GowunBatang", bgImage: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "꽃 & 보타닉", bgColor: "#2d1f3d", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "바다 & 해변", bgColor: "#0c3547", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "산 & 하이킹", bgColor: "#1a2a1a", textColor: "#ffffff", fontFamily: "Black Han Sans", bgImage: "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "텍스처 콘크리트", bgColor: "#4a4a4a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "대리석 럭셔리", bgColor: "#f0ede8", textColor: "#2c2c2c", fontFamily: "Playfair Display", bgImage: "https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "노을 하늘", bgColor: "#4a1942", textColor: "#ffffff", fontFamily: "Do Hyeon", bgImage: "https://images.pexels.com/photos/209831/pexels-photo-209831.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "눈 겨울", bgColor: "#e8edf2", textColor: "#1a2a3a", fontFamily: "Noto Sans KR", bgImage: "https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&w=1080" },
 ];
 
 const DEFAULT_THEME = {
@@ -803,14 +817,47 @@ export default function CardNewsEditor({
   }
 
   /* ── apply design template ──────────────────────────────────────────── */
-  function applyTemplate(template) {
+  async function applyTemplate(template) {
     const fc = canvasRef.current;
     if (!fc) return;
-    fc.backgroundColor = template.bgColor;
+
+    // 기존 배경 이미지 제거
+    const existingBg = fc.getObjects().find(o => o.name === "bgImage");
+    if (existingBg) fc.remove(existingBg);
+
+    // 실사 배경 이미지 적용
+    if (template.bgImage) {
+      fc.backgroundColor = template.bgColor || "#000000";
+      try {
+        const img = await FabricImage.fromURL(template.bgImage, { crossOrigin: "anonymous" });
+        const scaleX = width / img.width;
+        const scaleY = height / img.height;
+        const scale = Math.max(scaleX, scaleY);
+        img.set({
+          scaleX: scale, scaleY: scale,
+          left: width / 2, top: height / 2,
+          originX: "center", originY: "center",
+          selectable: true, evented: true,
+          name: "bgImage", opacity: 0.7,
+        });
+        fc.add(img);
+        fc.sendObjectToBack(img);
+      } catch (e) { console.warn("template bg image failed", e); }
+    } else {
+      fc.backgroundColor = template.bgColor;
+    }
+
+    // 텍스트 스타일 적용
     fc.getObjects().forEach(o => {
       if (o.type === "textbox" || o.type === "text") {
         o.set("fill", template.textColor);
         o.set("fontFamily", template.fontFamily);
+        if (template.bgImage) {
+          // 실사 배경일 때 텍스트에 그림자 추가 (가독성)
+          o.set("shadow", new Shadow({ color: "rgba(0,0,0,0.6)", blur: 8, offsetX: 2, offsetY: 2 }));
+        } else {
+          o.set("shadow", null);
+        }
       }
     });
     fc.renderAll();
@@ -912,11 +959,19 @@ export default function CardNewsEditor({
           <div style={S.templateStrip}>
             {TEMPLATES.map((t, i) => (
               <button key={i} onClick={() => applyTemplate(t)} style={S.templateBtn} title={t.name}>
-                <span style={{
-                  display: "inline-block", width: 20, height: 20, borderRadius: "50%",
-                  background: t.bgColor, border: "2px solid " + t.accentColor,
-                  flexShrink: 0,
-                }} />
+                {t.bgImage ? (
+                  <span style={{
+                    display: "inline-block", width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                    backgroundImage: `url(${t.bgImage})`, backgroundSize: "cover", backgroundPosition: "center",
+                    border: "2px solid rgba(255,255,255,0.6)", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                  }} />
+                ) : (
+                  <span style={{
+                    display: "inline-block", width: 20, height: 20, borderRadius: "50%",
+                    background: t.bgColor, border: "2px solid " + (t.accentColor || "#ccc"),
+                    flexShrink: 0,
+                  }} />
+                )}
                 <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: "#444" }}>{t.name}</span>
               </button>
             ))}
