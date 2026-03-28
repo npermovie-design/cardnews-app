@@ -93,6 +93,7 @@ export default function CardNewsEditor({
   C: themeIn,
   onSave,
   onClose,
+  inline = false,
 }) {
   const C = { ...DEFAULT_THEME, ...(themeIn || {}) };
 
@@ -572,9 +573,16 @@ export default function CardNewsEditor({
   const panelW = isMobile ? "100%" : "38%";
   const canvasAreaW = isMobile ? "100%" : "62%";
 
+  const overlayStyle = inline
+    ? { width: "100%", minHeight: "70vh", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 0 }
+    : S.overlay;
+  const modalStyle = inline
+    ? { width: "100%", maxWidth: 1200, background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", flexDirection: isMobile ? "column" : "row" }
+    : { ...S.modal, flexDirection: isMobile ? "column" : "row" };
+
   return (
-    <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}>
-      <div style={{ ...S.modal, flexDirection: isMobile ? "column" : "row" }}>
+    <div style={overlayStyle} onClick={inline ? undefined : (e) => { if (e.target === e.currentTarget) onClose?.(); }}>
+      <div style={modalStyle}>
 
         {/* ── LEFT: Canvas Area ──────────────────────────────────────── */}
         <div style={{ ...S.canvasArea, width: canvasAreaW }}>
