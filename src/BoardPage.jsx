@@ -1082,6 +1082,26 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         updatePostInDB(found.id, {views: updated.views});
         setView(updated);
         if(found.subCat||found.cat) setSubCat(found.subCat||found.cat);
+        // body가 없으면 Supabase에서 full post 로드
+        if(!found.body){
+          getPostByIdFromDB(found.id).then(full=>{
+            if(full){
+              const withBody={...updated, body:full.body, images:full.images||updated.images};
+              setView(withBody);
+              setPostsS(prev=>prev.map(pp=>pp.id===found.id?{...pp,body:full.body}:pp));
+            }
+          });
+        }
+      } else {
+        // 목록에 없으면 Supabase에서 직접 로드
+        getPostByIdFromDB(Number(pendingPostId)).then(full=>{
+          if(full){
+            const updated={...full, views:(full.views||0)+1};
+            setView(updated);
+            if(full.subCat||full.cat) setSubCat(full.subCat||full.cat);
+            updatePostInDB(full.id, {views: updated.views}).catch(()=>{});
+          }
+        });
       }
       if(onPendingPostClear) onPendingPostClear();
     }
