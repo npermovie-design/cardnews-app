@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { callClaude } from "./aiClient";
 import PptxGenJS from "pptxgenjs";
+import CardNewsEditor from "./CardNewsEditor";
 
 /* ═══════════════════════════════════════════════════════════
    PptGenerator v2 - AI PPT 제작 (디자인 다양화 + 이미지/아이콘)
@@ -213,6 +214,7 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [hoverPos, setHoverPos] = useState({ x:0, y:0 });
   const [layoutCatOpen, setLayoutCatOpen] = useState(null);
   const [mobilePanel, setMobilePanel] = useState("preview"); // "list" | "preview" | "edit"
+  const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const imgRef = useRef(null);
 
@@ -1453,6 +1455,10 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
           <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:10, cursor:"pointer" }}>← 처음</button>
           <div style={{ flex:1, fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic}</div>
           <span style={{ fontSize:10, color:muted }}>{slides.length}장</span>
+          <button onClick={()=>setShowCanvasEditor(true)}
+            style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${accent}`, background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+            캔버스 편집기로 열기
+          </button>
           <button onClick={exportPptx} disabled={exporting}
             style={{ padding:"6px 16px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:11, fontWeight:800, cursor:exporting?"not-allowed":"pointer", opacity:exporting?0.6:1 }}>
             {exporting?"내보내는 중...":"PPTX 다운로드"}
@@ -1832,6 +1838,27 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
           {[["list","목록"],["preview","미리보기"],["edit","편집"]].map(([id,label])=>(
             <button key={id} onClick={()=>setMobilePanel(id)} style={{ flex:1, padding:"12px 0", border:"none", background:mobilePanel===id?"rgba(124,106,255,0.15)":"transparent", color:mobilePanel===id?"#7c6aff":"rgba(255,255,255,0.45)", fontSize:12, fontWeight:mobilePanel===id?700:400, cursor:"pointer" }}>{label}</button>
           ))}
+        </div>
+      )}
+
+      {/* 캔버스 편집기 모달 */}
+      {showCanvasEditor && (
+        <div style={{ position:"fixed", inset:0, zIndex:10000, background:D?"rgba(0,0,0,0.92)":"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ width:"95vw", height:"95vh", borderRadius:16, overflow:"hidden", background:D?"#1a1a2e":"#fff", display:"flex", flexDirection:"column" }}>
+            <CardNewsEditor
+              slides={slides.map(slide => ({
+                title: slide.title || "",
+                body: slide.body || slide.subtitle || "",
+                bgColor: slide.customBg || theme.bg || "#ffffff",
+                textColor: slide.customTextColor || theme.text || "#1a1a2e",
+                fontSize: 36,
+                image: slide.image || null,
+              }))}
+              width={1920}
+              height={1080}
+              onClose={() => setShowCanvasEditor(false)}
+            />
+          </div>
         </div>
       )}
     </div>
