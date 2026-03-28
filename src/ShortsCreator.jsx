@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const API = import.meta.env.VITE_SHORTS_FACTORY_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://shorts-factory-r33o.onrender.com");
+const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
 // YouTube URL 정규화 및 검증
 function parseYoutubeUrl(url) {
@@ -107,9 +107,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // ── API 호출 ────────────────────────
   const apiCall = async (path, opts = {}) => {
-    const r = await fetch(`${API}${path}`, { ...opts, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `요청 실패 (${r.status})`); }
-    return r.json();
+    const timeout = opts.timeout || 60000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const r = await fetch(`${API}${path}`, { ...opts, signal: controller.signal, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `요청 실패 (${r.status})`); }
+      return r.json();
+    } finally { clearTimeout(timer); }
   };
 
   // 유튜브 다운로드

@@ -235,7 +235,7 @@ JSON만 출력.`;
         "당신은 숏폼 콘텐츠 바이럴 분석 전문가입니다. 영상의 성공 요인을 분석하고 재현 가능한 전략을 제시합니다."
       );
       setVideoAnalysis(JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim()));
-    } catch { setVideoAnalysis(null); }
+    } catch (e) { setVideoAnalysis(null); console.error("Video analysis parse error:", e); }
     setVideoAnalyzing(false);
   };
 
@@ -266,7 +266,7 @@ JSON만 출력.` }], 4000,
         "당신은 인스타그램 트렌드 분석 전문가입니다. 2025-2026년 최신 알고리즘과 바이럴 패턴에 정통합니다. 한국 시장 기준."
       );
       setTrendData(JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim()));
-    } catch (e) { alert("분석 실패: " + e.message); }
+    } catch (e) { setTrendData(null); console.error("분석 실패:", e.message); }
     setLoading(false);
   };
 
@@ -306,7 +306,7 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
       const parsed = JSON.parse((res || "").replace(/```json\n?/g, "").replace(/```/g, "").trim());
       setAnalysis(parsed);
       saveHistory({ platform, username: pData.username, displayName: pData.displayName, profilePic: pData.profilePic, score: parsed.score, summary: parsed.summary, date: new Date().toISOString().slice(0, 10) });
-    } catch (e) { alert("분석 실패: " + e.message); }
+    } catch (e) { setTrendData(null); console.error("분석 실패:", e.message); }
     setLoading(false);
   };
 
