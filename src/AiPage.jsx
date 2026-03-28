@@ -4401,12 +4401,12 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     <div style={{ position:"fixed", inset:0, zIndex:99999,
       display:"flex", alignItems:"center", justifyContent:"center",
       background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }}>
-      <div style={{ background:"#13102a", border:"1px solid rgba(255,255,255,0.12)",
+      <div style={{ background:C.modalBg||C.card, border:"1px solid "+C.border,
         borderRadius:20, padding:"32px 28px", maxWidth:360, width:"90%",
-        boxShadow:"0 24px 64px rgba(0,0,0,0.5)", textAlign:"center" }}>
+        boxShadow:"0 24px 64px rgba(0,0,0,0.18)", textAlign:"center" }}>
         <div style={{ width:44, height:44, borderRadius:12, background:"rgba(239,68,68,0.1)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{color:"#ef4444",fontSize:20,fontWeight:900}}>!</span></div>
-        <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:10 }}>생성 중입니다!</div>
-        <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.8, marginBottom:24 }}>
+        <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:10 }}>생성 중입니다!</div>
+        <div style={{ fontSize:14, color:C.muted, lineHeight:1.8, marginBottom:24 }}>
           페이지를 나가면<br/>
           <span style={{ color:"#f87171", fontWeight:700 }}>결과물이 저장되지 않으며</span><br/>
           <span style={{ color:"#f59e0b", fontWeight:700 }}>{guardModal.cost}P 포인트가 소진</span>됩니다.<br/>
@@ -4414,8 +4414,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         </div>
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={guardModal.onCancel}
-            style={{ flex:1, padding:"12px", borderRadius:11, border:"1px solid rgba(255,255,255,0.15)",
-              background:"transparent", color:"rgba(255,255,255,0.7)", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            style={{ flex:1, padding:"12px", borderRadius:11, border:"1px solid "+C.border,
+              background:"transparent", color:C.muted, fontSize:14, fontWeight:700, cursor:"pointer" }}>
             계속 생성하기
           </button>
           <button onClick={guardModal.onConfirm}

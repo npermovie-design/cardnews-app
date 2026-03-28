@@ -253,17 +253,17 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, marginBottom: 16 }}>{p("pricingFree")}</div>
                   ) : (
                     <>
-                      <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2 }}>
                         ₩{price.toLocaleString()}
                       </div>
                       <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
-                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
                       )}
                     </>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16, filter: !plan.free && !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !plan.free && !PAYMENT_ENABLED ? "none" : "auto" }}>{plan.points.toLocaleString()} P/월</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} P/월</div>
 
                   <div style={{ flex: 1, marginBottom: 20 }}>
                     {plan.features.map((f, i) => (
@@ -280,14 +280,13 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                       style={{ padding: "12px", borderRadius: 11, border: (plan.free && user) ? "1px solid " + C.border : "none", cursor: (plan.free && user) || isLoading ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%",
                         background: (plan.free && user) ? (isDark?"rgba(255,255,255,0.06)":"#f0f0f5") : isLoading ? "rgba(99,102,241,0.3)" : plan.gradient,
                         color: (plan.free && user) ? C.muted : "#fff",
-                        filter: (!plan.free && !plan.free && PAYMENT_ENABLED === false) ? "blur(1.5px)" : "none",
                         opacity: (!plan.free && PAYMENT_ENABLED === false) ? 0.55 : 1,
                       }}>
                       {!user ? p("pricingLogin") : (plan.free && user) ? p("pricingCurrent") : isLoading ? p("pricingOpening") : plan.btnLabel}
                     </button>
                     {!plan.free && !PAYMENT_ENABLED && (
                       <div onClick={() => handleBuy(plan, isYearly)} style={{ position: "absolute", inset: 0, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>{p("pricingPreparing")}</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>곧 오픈 예정</span>
                       </div>
                     )}
                   </div>
@@ -310,22 +309,21 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
                 {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>₩{plan.amount.toLocaleString()}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: C.text, filter: !PAYMENT_ENABLED ? "blur(8px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
-                <div style={{ fontSize: 11, color: C.muted, filter: !PAYMENT_ENABLED ? "blur(6px)" : "none", userSelect: !PAYMENT_ENABLED ? "none" : "auto" }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
+                <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
                 <div style={{ marginTop: 6, width: "100%", position: "relative" }}>
                   <button
                     onClick={() => handleOneOff(plan)}
                     disabled={loading === plan.id}
                     style={{ width: "100%", padding: "11px", borderRadius: 9, border: "none", cursor: loading === plan.id ? "not-allowed" : "pointer", background: loading === plan.id ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 800,
-                      filter: PAYMENT_ENABLED === false ? "blur(1.5px)" : "none",
                       opacity: PAYMENT_ENABLED === false ? 0.55 : 1,
                     }}>
                     {!user ? p("pricingLogin") : loading === plan.id ? p("pricingOpening") : p("pricingBuy")}
                   </button>
                   {PAYMENT_ENABLED === false && (
                     <div onClick={() => handleOneOff(plan)} style={{ position: "absolute", inset: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>{p("pricingPreparing")}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>곧 오픈 예정</span>
                     </div>
                   )}
                 </div>
