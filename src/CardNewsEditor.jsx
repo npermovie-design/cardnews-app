@@ -50,32 +50,47 @@ function loadGFont(family) {
 
 const TEMPLATES = [
   // 솔리드 컬러
-  { name: "다크 모던", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
-  { name: "라이트 미니멀", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard" },
-  { name: "파스텔 핑크", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic" },
-  { name: "네이비 골드", bgColor: "#0f172a", textColor: "#fbbf24", accentColor: "#f59e0b", fontFamily: "Pretendard" },
-  { name: "그린 자연", bgColor: "#ecfdf5", textColor: "#064e3b", accentColor: "#10b981", fontFamily: "Noto Sans KR" },
-  { name: "코랄 웜", bgColor: "#fff7ed", textColor: "#9a3412", accentColor: "#f97316", fontFamily: "Nanum Gothic" },
-  { name: "퍼플 그라데이션", bgColor: "#1e1b4b", textColor: "#e0e7ff", accentColor: "#818cf8", fontFamily: "Pretendard" },
-  { name: "모노크롬", bgColor: "#f8fafc", textColor: "#0f172a", accentColor: "#64748b", fontFamily: "Pretendard" },
-  { name: "레드 볼드", bgColor: "#450a0a", textColor: "#ffffff", accentColor: "#ef4444", fontFamily: "BMDOHYEON" },
-  { name: "스카이 블루", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR" },
-  { name: "블랙 골드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard" },
-  { name: "소프트 라벤더", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic" },
+  { name: "다크 모던", category: "솔리드", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
+  { name: "라이트 미니멀", category: "솔리드", bgColor: "#ffffff", textColor: "#1a1a2e", accentColor: "#7c6aff", fontFamily: "Pretendard" },
+  { name: "파스텔 핑크", category: "솔리드", bgColor: "#fff0f5", textColor: "#4a2040", accentColor: "#ec4899", fontFamily: "Nanum Gothic" },
+  { name: "네이비 골드", category: "솔리드", bgColor: "#0f172a", textColor: "#fbbf24", accentColor: "#f59e0b", fontFamily: "Pretendard" },
+  { name: "그린 자연", category: "솔리드", bgColor: "#ecfdf5", textColor: "#064e3b", accentColor: "#10b981", fontFamily: "Noto Sans KR" },
+  { name: "코랄 웜", category: "솔리드", bgColor: "#fff7ed", textColor: "#9a3412", accentColor: "#f97316", fontFamily: "Nanum Gothic" },
+  { name: "퍼플 그라데이션", category: "솔리드", bgColor: "#1e1b4b", textColor: "#e0e7ff", accentColor: "#818cf8", fontFamily: "Pretendard" },
+  { name: "모노크롬", category: "솔리드", bgColor: "#f8fafc", textColor: "#0f172a", accentColor: "#64748b", fontFamily: "Pretendard" },
+  { name: "레드 볼드", category: "솔리드", bgColor: "#450a0a", textColor: "#ffffff", accentColor: "#ef4444", fontFamily: "BMDOHYEON" },
+  { name: "스카이 블루", category: "솔리드", bgColor: "#f0f9ff", textColor: "#0c4a6e", accentColor: "#0ea5e9", fontFamily: "Noto Sans KR" },
+  { name: "블랙 골드", category: "솔리드", bgColor: "#000000", textColor: "#ffd700", accentColor: "#b8860b", fontFamily: "Pretendard" },
+  { name: "소프트 라벤더", category: "솔리드", bgColor: "#f5f3ff", textColor: "#4c1d95", accentColor: "#8b5cf6", fontFamily: "Nanum Gothic" },
   // 실사 배경 (Pexels 무료 이미지)
-  { name: "카페 인테리어", bgColor: "#2c1810", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/1813466/pexels-photo-1813466.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "자연 풍경", bgColor: "#1a3a2a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "도시 야경", bgColor: "#0a0a1a", textColor: "#ffffff", fontFamily: "Montserrat", bgImage: "https://images.pexels.com/photos/1519088/pexels-photo-1519088.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "미니멀 데스크", bgColor: "#f5f5f0", textColor: "#1a1a1a", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "음식 클로즈업", bgColor: "#3d2b1f", textColor: "#ffffff", fontFamily: "GowunBatang", bgImage: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "꽃 & 보타닉", bgColor: "#2d1f3d", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "바다 & 해변", bgColor: "#0c3547", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "산 & 하이킹", bgColor: "#1a2a1a", textColor: "#ffffff", fontFamily: "Black Han Sans", bgImage: "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "텍스처 콘크리트", bgColor: "#4a4a4a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "대리석 럭셔리", bgColor: "#f0ede8", textColor: "#2c2c2c", fontFamily: "Playfair Display", bgImage: "https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "노을 하늘", bgColor: "#4a1942", textColor: "#ffffff", fontFamily: "Do Hyeon", bgImage: "https://images.pexels.com/photos/209831/pexels-photo-209831.jpeg?auto=compress&cs=tinysrgb&w=1080" },
-  { name: "눈 겨울", bgColor: "#e8edf2", textColor: "#1a2a3a", fontFamily: "Noto Sans KR", bgImage: "https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "카페 인테리어", category: "실사", bgColor: "#2c1810", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/1813466/pexels-photo-1813466.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "자연 풍경", category: "실사", bgColor: "#1a3a2a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "도시 야경", category: "실사", bgColor: "#0a0a1a", textColor: "#ffffff", fontFamily: "Montserrat", bgImage: "https://images.pexels.com/photos/1519088/pexels-photo-1519088.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "미니멀 데스크", category: "실사", bgColor: "#f5f5f0", textColor: "#1a1a1a", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "음식 클로즈업", category: "실사", bgColor: "#3d2b1f", textColor: "#ffffff", fontFamily: "GowunBatang", bgImage: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "꽃 & 보타닉", category: "실사", bgColor: "#2d1f3d", textColor: "#ffffff", fontFamily: "Nanum Myeongjo", bgImage: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "바다 & 해변", category: "실사", bgColor: "#0c3547", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "산 & 하이킹", category: "실사", bgColor: "#1a2a1a", textColor: "#ffffff", fontFamily: "Black Han Sans", bgImage: "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "텍스처 콘크리트", category: "실사", bgColor: "#4a4a4a", textColor: "#ffffff", fontFamily: "Pretendard", bgImage: "https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "대리석 럭셔리", category: "실사", bgColor: "#f0ede8", textColor: "#2c2c2c", fontFamily: "Playfair Display", bgImage: "https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "노을 하늘", category: "실사", bgColor: "#4a1942", textColor: "#ffffff", fontFamily: "Do Hyeon", bgImage: "https://images.pexels.com/photos/209831/pexels-photo-209831.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  { name: "눈 겨울", category: "실사", bgColor: "#e8edf2", textColor: "#1a2a3a", fontFamily: "Noto Sans KR", bgImage: "https://images.pexels.com/photos/688660/pexels-photo-688660.jpeg?auto=compress&cs=tinysrgb&w=1080" },
+  // 카드뉴스
+  { name: "인스타 감성", category: "카드뉴스", bgColor: "#fef3c7", textColor: "#92400e", fontFamily: "Nanum Myeongjo", bgImage: null },
+  { name: "정보 카드", category: "카드뉴스", bgColor: "#1e3a5f", textColor: "#ffffff", fontFamily: "Pretendard" },
+  { name: "뉴스 스타일", category: "카드뉴스", bgColor: "#ffffff", textColor: "#111827", fontFamily: "Noto Sans KR" },
+  // 프레젠테이션
+  { name: "비즈니스 블루", category: "프레젠테이션", bgColor: "#1e3a5f", textColor: "#ffffff", fontFamily: "Pretendard" },
+  { name: "스타트업 그린", category: "프레젠테이션", bgColor: "#064e3b", textColor: "#ecfdf5", fontFamily: "Pretendard" },
+  // 상세페이지
+  { name: "쇼핑몰 화이트", category: "상세페이지", bgColor: "#ffffff", textColor: "#1f2937", fontFamily: "Noto Sans KR" },
+  { name: "럭셔리 블랙", category: "상세페이지", bgColor: "#000000", textColor: "#d4af37", fontFamily: "Playfair Display" },
+  // 소셜미디어
+  { name: "틱톡 네온", category: "소셜미디어", bgColor: "#0a0a0a", textColor: "#00f5d4", fontFamily: "Black Han Sans" },
+  { name: "유튜브 썸네일", category: "소셜미디어", bgColor: "#ff0000", textColor: "#ffffff", fontFamily: "BMDOHYEON" },
 ];
+
+const TEMPLATE_CATEGORIES = ["전체", "솔리드", "실사", "카드뉴스", "프레젠테이션", "상세페이지", "소셜미디어"];
 
 const DEFAULT_THEME = {
   purple: "#7c6aff",
@@ -202,6 +217,7 @@ export default function CardNewsEditor({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [customFonts, setCustomFonts] = useState([]);
   const [canvasObjects, setCanvasObjects] = useState([]);
+  const [templateCat, setTemplateCat] = useState("전체");
 
   /* text effect states */
   const [textStrokeColor, setTextStrokeColor] = useState("#000000");
@@ -431,6 +447,10 @@ export default function CardNewsEditor({
       } catch (e) { console.warn("bg image load failed", e); }
     }
 
+    // load font if specified
+    const slideFontFamily = slide.fontFamily || "Pretendard";
+    loadGFont(slideFontFamily);
+
     // title
     if (slide.title) {
       const title = new Textbox(slide.title, {
@@ -440,7 +460,7 @@ export default function CardNewsEditor({
         originY: "center",
         width: width - 160,
         fontSize: slide.fontSize || 48,
-        fontFamily: "Pretendard",
+        fontFamily: slideFontFamily,
         fontWeight: "bold",
         fill: slide.textColor || "#ffffff",
         textAlign: "center",
@@ -458,7 +478,7 @@ export default function CardNewsEditor({
         originY: "center",
         width: width - 160,
         fontSize: Math.round((slide.fontSize || 48) * 0.55),
-        fontFamily: "Pretendard",
+        fontFamily: slideFontFamily,
         fill: slide.textColor || "#ffffff",
         textAlign: "center",
         opacity: 0.85,
@@ -955,9 +975,29 @@ export default function CardNewsEditor({
             <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
           </div>
 
+          {/* Template category tabs */}
+          <div style={S.templateCatStrip}>
+            {TEMPLATE_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setTemplateCat(cat)}
+                style={{
+                  ...S.templateCatBtn,
+                  background: templateCat === cat ? "#7c6aff" : "#f3f4f6",
+                  color: templateCat === cat ? "#fff" : "#555",
+                  borderColor: templateCat === cat ? "#7c6aff" : "rgba(0,0,0,0.08)",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           {/* Template selector strip */}
           <div style={S.templateStrip}>
-            {TEMPLATES.map((t, i) => (
+            {TEMPLATES
+              .filter(t => templateCat === "전체" || t.category === templateCat)
+              .map((t, i) => (
               <button key={i} onClick={() => applyTemplate(t)} style={S.templateBtn} title={t.name}>
                 {t.bgImage ? (
                   <span style={{
@@ -1335,6 +1375,22 @@ const S = {
     background: "none", border: "1px solid rgba(0,0,0,0.12)",
     borderRadius: 6, padding: "4px 8px", cursor: "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  templateCatStrip: {
+    display: "flex", alignItems: "center", gap: 6,
+    padding: "8px 16px 4px",
+    background: "#fff",
+    overflowX: "auto",
+    whiteSpace: "nowrap",
+    scrollbarWidth: "thin",
+  },
+  templateCatBtn: {
+    display: "inline-flex", alignItems: "center",
+    padding: "4px 12px", borderRadius: 20,
+    border: "1px solid rgba(0,0,0,0.08)",
+    fontSize: 11, fontWeight: 600,
+    cursor: "pointer", transition: "all 0.15s",
+    flexShrink: 0,
   },
   templateStrip: {
     display: "flex", alignItems: "center", gap: 8,

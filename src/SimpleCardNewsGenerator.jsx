@@ -1155,7 +1155,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
               textColor: st.textColor || ss.textColor || "#fff",
               fontSize: ss.titleSize || ss.fontSize || 42,
-              image: st.bgImage || null,
+              fontFamily: st.fontFamily || ss.fontFamily || "Pretendard",
+              image: st.bgImage || ss.bgImage || null,
             };
           })}
           width={imgW}
