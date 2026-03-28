@@ -878,6 +878,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       try { await navigator.clipboard.writeText(result); } catch {}
                       window.open(b.u, "_blank");
                       setPublishResult({ platform: b.p, clipboard: true, message: `${b.l} 에디터에서 붙여넣기(Ctrl+V)하세요` });
+                      setTimeout(() => setPublishResult(null), 3000);
                     } else { handlePublish(b.p); }
                   }} disabled={isPub || b.soon}
                     style={{ padding:"7px 14px", borderRadius:10, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"50"}`,
