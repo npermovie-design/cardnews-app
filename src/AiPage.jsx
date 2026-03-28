@@ -126,6 +126,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
         <Item id="video_create" label="영상 제작" ids={["shorts_make"]} />
+
+        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
+        <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>리퍼포징</div>
+        <Item id="repurpose" label="원소스 멀티유즈" />
       </div>
 
     </div>
@@ -2390,6 +2394,299 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   );
 }
 
+// ── 콘텐츠 리퍼포징 (원소스 멀티유즈) ──────────────────────────────────────
+function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate }) {
+  const [sourceType, setSourceType] = useState("text"); // "text" | "url"
+  const [sourceText, setSourceText] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [formats, setFormats] = useState({
+    insta: true, thread: true, cardnews: true, naver: false, shorts: false,
+  });
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState(null); // { insta, thread, cardnews, naver, shorts }
+  const [activeTab, setActiveTab] = useState("insta");
+  const [copied, setCopied] = useState("");
+  const [error, setError] = useState("");
+
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const accent = "#7c6aff";
+
+  const FORMAT_LIST = [
+    { id: "insta",    label: "인스타그램 캡션", desc: "해시태그 포함" },
+    { id: "thread",   label: "스레드 포스트", desc: "280자 이내" },
+    { id: "cardnews", label: "카드뉴스 슬라이드 기획", desc: "5-7장" },
+    { id: "naver",    label: "네이버 블로그", desc: "SEO 최적화" },
+    { id: "shorts",   label: "유튜브 숏폼 대본", desc: "60초 이내" },
+  ];
+
+  const selectedCount = Object.values(formats).filter(Boolean).length;
+
+  // URL에서 콘텐츠 가져오기
+  const fetchUrl = async () => {
+    if (!sourceUrl.trim()) return;
+    setFetchingUrl(true); setError("");
+    try {
+      const res = await fetch(`/api/content?action=fetch-url-content&url=${encodeURIComponent(sourceUrl.trim())}`);
+      if (!res.ok) throw new Error("URL에서 콘텐츠를 가져올 수 없습니다.");
+      const data = await res.json();
+      setSourceText(data.content || data.text || "");
+      setSourceType("text");
+    } catch (e) {
+      setError(e.message || "URL 가져오기 실패");
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
+
+  // AI 변환 실행
+  const handleGenerate = async () => {
+    if (!sourceText.trim()) { setError("원본 콘텐츠를 입력해주세요."); return; }
+    if (selectedCount === 0) { setError("최소 1개 이상의 형식을 선택해주세요."); return; }
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+
+    setError(""); setLoading(true); setResults(null);
+
+    try {
+      // 포인트 차감 (35P - AI_SONNET)
+      const info = getAiLeft(user);
+      const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
+      if (info.used >= freeLimit) {
+        const { changePoints } = await import("./storage");
+        const newPts = await changePoints(user.uid, -35, "콘텐츠 리퍼포징");
+        if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
+      }
+
+      const selectedFormats = FORMAT_LIST.filter(f => formats[f.id]);
+      const formatInstructions = selectedFormats.map(f => {
+        if (f.id === "insta") return `[인스타그램 캡션]\n- 감성적이고 읽기 쉬운 캡션 작성\n- 관련 해시태그 15-20개 포함\n- 줄바꿈 활용하여 가독성 높이기`;
+        if (f.id === "thread") return `[스레드 포스트]\n- 280자 이내로 핵심만 전달\n- 임팩트 있는 한 줄 또는 짧은 문단\n- 대화체, 반말 OK`;
+        if (f.id === "cardnews") return `[카드뉴스 슬라이드 기획]\n- 5~7장 슬라이드 구성\n- 각 슬라이드별 제목(14자 이내)과 본문(50자 이내) 작성\n- 표지 + 핵심 내용 + 마무리 구조`;
+        if (f.id === "naver") return `[네이버 블로그]\n- SEO 키워드 자연스럽게 포함\n- 서론/본론/결론 구조\n- 1500~2000자 분량\n- 소제목(##) 활용`;
+        if (f.id === "shorts") return `[유튜브 숏폼 대본]\n- 60초 이내 분량\n- 훅(첫 3초) → 핵심 내용 → CTA 구조\n- 구어체, 직접 말하는 톤`;
+        return "";
+      }).join("\n\n");
+
+      const prompt = `당신은 콘텐츠 리퍼포징 전문가입니다. 아래 원본 콘텐츠를 각 플랫폼에 맞게 변환해주세요.
+
+## 원본 콘텐츠
+${sourceText.trim()}
+
+## 변환할 형식과 지침
+${formatInstructions}
+
+## 출력 형식
+각 형식을 아래와 같이 구분하여 작성해주세요:
+${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
+
+중요: 각 형식의 시작은 반드시 ===={형식id}==== 로 시작하세요. 자연스럽고 한국어로 작성해주세요.`;
+
+      const { callAI } = await import("./aiClient");
+      const aiResult = await callAI(
+        "claude-sonnet-4-5",
+        [{ role: "user", content: prompt }],
+        6000
+      );
+
+      // 결과 파싱
+      const parsed = {};
+      selectedFormats.forEach(f => {
+        const regex = new RegExp(`====${f.id}====\\s*([\\s\\S]*?)(?=====\\w+====|$)`);
+        const match = aiResult.match(regex);
+        parsed[f.id] = match ? match[1].trim() : "";
+      });
+
+      setResults(parsed);
+      // 첫 번째 결과 탭으로 이동
+      const firstKey = selectedFormats[0]?.id;
+      if (firstKey) setActiveTab(firstKey);
+
+      // 사용량 기록
+      const usage = getAiUsage(user);
+      setAiUsage(user, usage + 1);
+    } catch (e) {
+      setError(e.message || "변환 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = (id) => {
+    if (!results?.[id]) return;
+    navigator.clipboard.writeText(results[id]).then(() => {
+      setCopied(id);
+      setTimeout(() => setCopied(""), 2000);
+    });
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* 헤더 */}
+      <div style={{ flexShrink: 0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom: `1px solid ${bdr}` }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 24px" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>콘텐츠 리퍼포징</div>
+            <div style={{ fontSize: 12, color: muted }}>하나의 콘텐츠를 여러 플랫폼에 맞게 자동 변환합니다 (35P)</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 본문 */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 60px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+
+          {/* 소스 입력 영역 */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>원본 콘텐츠</div>
+
+            {/* 탭: 직접 입력 / URL */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+              {[
+                { id: "text", label: "직접 입력" },
+                { id: "url", label: "URL에서 가져오기" },
+              ].map(t => (
+                <button key={t.id} onClick={() => setSourceType(t.id)}
+                  style={{
+                    padding: "7px 16px", borderRadius: 8, border: `1px solid ${sourceType === t.id ? accent : bdr}`,
+                    background: sourceType === t.id ? (isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)") : "transparent",
+                    color: sourceType === t.id ? accent : muted, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {sourceType === "url" && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+                  placeholder="https://blog.naver.com/... 또는 유튜브, 뉴스 URL"
+                  style={{
+                    flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`,
+                    background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: text, fontSize: 13, outline: "none",
+                  }} />
+                <button onClick={fetchUrl} disabled={fetchingUrl}
+                  style={{
+                    padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer",
+                    background: accent, color: "#fff", fontSize: 12, fontWeight: 700, opacity: fetchingUrl ? 0.6 : 1, whiteSpace: "nowrap",
+                  }}>
+                  {fetchingUrl ? "가져오는 중..." : "가져오기"}
+                </button>
+              </div>
+            )}
+
+            <textarea value={sourceText} onChange={e => setSourceText(e.target.value)}
+              placeholder="블로그 글, 기사, SNS 포스트 등 원본 콘텐츠를 붙여넣으세요..."
+              style={{
+                width: "100%", minHeight: 180, padding: "14px 16px", borderRadius: 12,
+                border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#fff",
+                color: text, fontSize: 13, lineHeight: 1.7, resize: "vertical", outline: "none",
+                fontFamily: "inherit",
+              }} />
+            <div style={{ fontSize: 11, color: muted, marginTop: 4, textAlign: "right" }}>
+              {sourceText.length.toLocaleString()}자
+            </div>
+          </div>
+
+          {/* 형식 선택 */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>변환 형식 선택</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
+              {FORMAT_LIST.map(f => {
+                const checked = formats[f.id];
+                return (
+                  <label key={f.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                      borderRadius: 10, border: `1px solid ${checked ? accent + "60" : bdr}`,
+                      background: checked ? (isDark ? "rgba(124,106,255,0.1)" : "rgba(124,106,255,0.04)") : cardBg,
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}>
+                    <input type="checkbox" checked={checked}
+                      onChange={() => setFormats(p => ({ ...p, [f.id]: !p[f.id] }))}
+                      style={{ accentColor: accent, width: 16, height: 16, cursor: "pointer" }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{f.label}</div>
+                      <div style={{ fontSize: 11, color: muted }}>{f.desc}</div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: muted, marginTop: 6 }}>{selectedCount}개 형식 선택됨</div>
+          </div>
+
+          {/* 에러 */}
+          {error && (
+            <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "#f87171", fontSize: 13, marginBottom: 16 }}>
+              {error}
+            </div>
+          )}
+
+          {/* 생성 버튼 */}
+          <button onClick={handleGenerate} disabled={loading}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 12, border: "none", cursor: loading ? "default" : "pointer",
+              background: loading ? (isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.4)") : `linear-gradient(135deg,${accent},#8b5cf6)`,
+              color: "#fff", fontSize: 15, fontWeight: 800, marginBottom: 28,
+              boxShadow: loading ? "none" : `0 6px 24px ${accent}40`,
+              opacity: loading ? 0.7 : 1, transition: "all 0.2s",
+            }}>
+            {loading ? "변환 중..." : `한 번에 변환하기 (${selectedCount}개 형식 · 35P)`}
+          </button>
+
+          {/* 결과 영역 */}
+          {results && (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 12 }}>변환 결과</div>
+
+              {/* 탭 */}
+              <div style={{ display: "flex", gap: 2, marginBottom: 16, overflowX: "auto", borderBottom: `1px solid ${bdr}` }}>
+                {FORMAT_LIST.filter(f => results[f.id] !== undefined).map(f => {
+                  const active = activeTab === f.id;
+                  return (
+                    <button key={f.id} onClick={() => setActiveTab(f.id)}
+                      style={{
+                        padding: "9px 16px", border: "none", cursor: "pointer", background: "transparent",
+                        color: active ? accent : muted, fontSize: 13, fontWeight: active ? 700 : 400,
+                        borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
+                        marginBottom: -1, whiteSpace: "nowrap", transition: "all 0.15s",
+                      }}>
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 결과 내용 */}
+              {FORMAT_LIST.filter(f => f.id === activeTab && results[f.id]).map(f => (
+                <div key={f.id} style={{ borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg, overflow: "hidden" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: `1px solid ${bdr}` }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: text }}>{f.label}</span>
+                    <button onClick={() => handleCopy(f.id)}
+                      style={{
+                        padding: "5px 14px", borderRadius: 7, border: `1px solid ${copied === f.id ? "#4ade8060" : bdr}`,
+                        background: copied === f.id ? "rgba(74,222,128,0.1)" : "transparent",
+                        color: copied === f.id ? "#4ade80" : muted, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      }}>
+                      {copied === f.id ? "복사 완료" : "복사"}
+                    </button>
+                  </div>
+                  <div style={{ padding: "16px", whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.8, color: text }}>
+                    {results[f.id]}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
@@ -2472,6 +2769,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     outfit_swap: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.38 3.46L16 2 12 5 8 2 3.62 3.46a1 1 0 0 0-.62.94V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4.4a1 1 0 0 0-.62-.94z"/></svg>,
     outpaint: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
     shorts_make: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+    repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
 
   // 홈
@@ -2491,6 +2789,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
       { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)", iconImg: "/icon-youtube.png" },
+      { id: "repurpose",    title: _s("원소스 멀티유즈","Content Repurposing"), desc: _s("한 콘텐츠 → 다채널 변환","One content → multi-channel"), cr: 35, darkColor: "rgba(16,185,129,0.18)", lightColor: "rgba(16,185,129,0.07)" },
     ];
     // 카테고리별 그룹
     const GROUPS = [
@@ -2502,6 +2801,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"].includes(m.id)) },
       { label: _s("영상 제작","Video Production"), color: "#ef4444",
         items: MENUS.filter(m => m.id === "shorts_make") },
+      { label: _s("리퍼포징","Repurposing"), color: "#10b981",
+        items: MENUS.filter(m => m.id === "repurpose") },
     ];
 
     return (
@@ -2999,6 +3300,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
+  // 콘텐츠 리퍼포징
+  if (aiMenu === "repurpose") {
+    return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
+  }
+
   // 영상 제작
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} />;
@@ -3044,6 +3350,7 @@ const MENU_LABELS = {
   analysis_insta: "마케팅",
   analysis_tiktok: "마케팅",
   analysis_youtube: "마케팅",
+  repurpose: "원소스 멀티유즈",
 };
 
 /* ── 통합 글쓰기 (플랫폼 선택 탭) ── */
