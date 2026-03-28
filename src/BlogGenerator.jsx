@@ -54,7 +54,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
   while (i < lines.length) {
     const line = lines[i];
     // [이미지: 설명] 태그를 실제 이미지로 렌더링
-    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    const imgMatch = line.match(/^\[(?:이미지|image):\s*([^\]]+)\]$/);
     if (imgMatch) {
       const desc = imgMatch[1].trim();
       const imgUrl = inlineImages && inlineImages[desc];
@@ -179,7 +179,7 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복\n2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요\n3. 소제목은 3~5개 정도`;
+      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복\n2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어, 예: [image: startup office], [image: healthy breakfast])\n3. 소제목은 3~5개 정도`;
       const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
       if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주\n- 마무리 단락 포함${noSpecial}`;
@@ -784,42 +784,40 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
-  /* ── [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
+  /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
   const fetchInlineImages = async (blogText) => {
     if (!blogText) return;
-    const imgTags = blogText.match(/\[이미지:\s*([^\]]+)\]/g);
+    const imgTags = blogText.match(/\[(?:이미지|image):\s*([^\]]+)\]/g);
     if (!imgTags || imgTags.length === 0) return;
-    const keywords = imgTags.map(tag => tag.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim());
+    const keywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
     const uniqueKeywords = [...new Set(keywords)];
+
+    // 단일 키워드 이미지 검색 (Unsplash → Pexels → Pixabay → Picsum)
+    const searchOne = async (kw, idx) => {
+      const q = encodeURIComponent(kw.trim());
+      // 1) Unsplash
+      try {
+        const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`);
+        if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; }
+      } catch {}
+      // 2) Pexels
+      try {
+        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=5&orientation=landscape`);
+        if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[idx % d.photos.length].src.large; }
+      } catch {}
+      // 3) Pixabay
+      try {
+        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=5&safesearch=true&image_type=photo`);
+        if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
+      } catch {}
+      // 4) Picsum 최종 폴백
+      return `https://picsum.photos/seed/${encodeURIComponent(kw.slice(0, 20))}/800/450`;
+    };
+
+    // 병렬로 모든 키워드 검색
+    const results = await Promise.all(uniqueKeywords.map((kw, i) => searchOne(kw, i)));
     const imgMap = {};
-    let usedUnsplashIdx = 0;
-    for (const kw of uniqueKeywords) {
-      const searchKw = kw.replace(/[^a-zA-Z0-9가-힣\s]/g, "").split(" ").slice(0, 3).join(" ").trim();
-      const englishKw = searchKw.replace(/[가-힣]+/g, "").trim() || searchKw;
-      try {
-        // 1차: Unsplash (고품질, 안정적)
-        const r = await fetch(`/api/proxy-unsplash?query=${encodeURIComponent(englishKw || kw)}&per_page=3&orientation=landscape`);
-        const d = await r.json();
-        if (d.results && d.results.length > 0) {
-          const idx = usedUnsplashIdx % d.results.length;
-          imgMap[kw] = d.results[idx].urls.regular;
-          usedUnsplashIdx++;
-          continue;
-        }
-      } catch(e) {}
-      try {
-        // 2차: Pixabay 폴백
-        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo`);
-        const d = await r.json();
-        if (d.hits && d.hits.length > 0) {
-          imgMap[kw] = d.hits[0].webformatURL;
-          continue;
-        }
-      } catch(e) {}
-      // 3차: Picsum 폴백 (항상 동작, 키워드 기반 시드)
-      const seed = encodeURIComponent(kw.slice(0, 20));
-      imgMap[kw] = `https://picsum.photos/seed/${seed}/800/450`;
-    }
+    uniqueKeywords.forEach((kw, i) => { imgMap[kw] = results[i]; });
     setInlineImages(imgMap);
   };
 

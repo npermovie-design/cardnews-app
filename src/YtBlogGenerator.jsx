@@ -97,7 +97,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    const imgMatch = line.match(/^\[(?:이미지|image):\s*([^\]]+)\]$/);
     if (imgMatch) {
       const desc = imgMatch[1].trim();
       const imgUrl = inlineImages && inlineImages[desc];
@@ -311,8 +311,8 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate})
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복
-2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복
+2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어)
 3. 소제목은 3~5개 정도
 
 작성 형식:
@@ -330,8 +330,8 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 순서로 반복
-2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+1. 큰 소제목 → [image: english keyword] → 본문 설명 순서로 반복
+2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 1~3단어)
 
 ## h2 소제목 적극 활용, **강조 텍스트** 사용, 리스트 구조화
 SEO 최적화, 출처: ${videoInfo.author} 유튜브 채널`,
@@ -423,33 +423,21 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         setAiUsage(_nu);
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
-      // 본문 내 [이미지: ...] 태그에 실제 이미지 자동 삽입
+      // 본문 내 [image: ...] / [이미지: ...] 태그에 실제 이미지 자동 삽입
       if (_nfFull) {
-        const imgTags = _nfFull.match(/\[이미지:\s*([^\]]+)\]/g);
+        const imgTags = _nfFull.match(/\[(?:이미지|image):\s*([^\]]+)\]/g);
         if (imgTags && imgTags.length > 0) {
-          const keywords = [...new Set(imgTags.map(t => t.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim()))];
+          const keywords = [...new Set(imgTags.map(t => t.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim()))];
+          const searchOne = async (kw, idx) => {
+            const q = encodeURIComponent(kw.trim());
+            try { const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`); if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; } } catch {}
+            try { const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=5&orientation=landscape`); if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[idx % d.photos.length].src.large; } } catch {}
+            try { const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=5&safesearch=true&image_type=photo`); if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; } } catch {}
+            return `https://picsum.photos/seed/${encodeURIComponent(kw.slice(0, 20))}/800/450`;
+          };
+          const results = await Promise.all(keywords.map((kw, i) => searchOne(kw, i)));
           const imgMap = {};
-          let usedIdx = 0;
-          for (const kw of keywords) {
-            const searchKw = kw.replace(/[^a-zA-Z0-9가-힣\s]/g, "").split(" ").slice(0, 3).join(" ").trim();
-            const englishKw = searchKw.replace(/[가-힣]+/g, "").trim() || searchKw;
-            try {
-              const r = await fetch(`/api/proxy-unsplash?query=${encodeURIComponent(englishKw || kw)}&per_page=3&orientation=landscape`);
-              const d = await r.json();
-              if (d.results && d.results.length > 0) {
-                imgMap[kw] = d.results[usedIdx % d.results.length].urls.regular;
-                usedIdx++;
-                continue;
-              }
-            } catch(e) {}
-            try {
-              const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo`);
-              const d = await r.json();
-              if (d.hits && d.hits.length > 0) { imgMap[kw] = d.hits[0].webformatURL; continue; }
-            } catch(e) {}
-            const seed = encodeURIComponent(kw.slice(0, 20));
-            imgMap[kw] = `https://picsum.photos/seed/${seed}/800/450`;
-          }
+          keywords.forEach((kw, i) => { imgMap[kw] = results[i]; });
           setInlineImages(imgMap);
         }
       }

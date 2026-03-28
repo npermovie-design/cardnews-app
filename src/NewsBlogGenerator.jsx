@@ -17,7 +17,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
     const line = lines[i];
 
     // [이미지: 설명] 태그를 실제 이미지로 렌더링
-    const imgMatch = line.match(/^\[이미지:\s*([^\]]+)\]$/);
+    const imgMatch = line.match(/^\[(?:이미지|image):\s*([^\]]+)\]$/);
     if (imgMatch) {
       const desc = imgMatch[1].trim();
       const imgUrl = inlineImages && inlineImages[desc];
@@ -262,35 +262,23 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
     }
   };
 
-  /* ── [이미지: ...] 태그 자동 이미지 검색 ── */
+  /* ── [image: ...] / [이미지: ...] 태그 자동 이미지 검색 ── */
   const fetchInlineImages = async (blogText) => {
     if (!blogText) return;
-    const imgTags = blogText.match(/\[이미지:\s*([^\]]+)\]/g);
+    const imgTags = blogText.match(/\[(?:이미지|image):\s*([^\]]+)\]/g);
     if (!imgTags || imgTags.length === 0) return;
-    const keywords = imgTags.map(tag => tag.replace(/\[이미지:\s*/, "").replace(/\]$/, "").trim());
+    const keywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
     const uniqueKeywords = [...new Set(keywords)];
+    const searchOne = async (kw, idx) => {
+      const q = encodeURIComponent(kw.trim());
+      try { const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`); if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; } } catch {}
+      try { const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=5&orientation=landscape`); if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[idx % d.photos.length].src.large; } } catch {}
+      try { const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=5&safesearch=true&image_type=photo`); if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; } } catch {}
+      return `https://picsum.photos/seed/${encodeURIComponent(kw.slice(0, 20))}/800/450`;
+    };
+    const results = await Promise.all(uniqueKeywords.map((kw, i) => searchOne(kw, i)));
     const imgMap = {};
-    let usedIdx = 0;
-    for (const kw of uniqueKeywords) {
-      const searchKw = kw.replace(/[^a-zA-Z0-9가-힣\s]/g, "").split(" ").slice(0, 3).join(" ").trim();
-      const englishKw = searchKw.replace(/[가-힣]+/g, "").trim() || searchKw;
-      try {
-        const r = await fetch(`/api/proxy-unsplash?query=${encodeURIComponent(englishKw || kw)}&per_page=3&orientation=landscape`);
-        const d = await r.json();
-        if (d.results && d.results.length > 0) {
-          imgMap[kw] = d.results[usedIdx % d.results.length].urls.regular;
-          usedIdx++;
-          continue;
-        }
-      } catch(e) {}
-      try {
-        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKw)}&per_page=3&safesearch=true&image_type=photo`);
-        const d = await r.json();
-        if (d.hits && d.hits.length > 0) { imgMap[kw] = d.hits[0].webformatURL; continue; }
-      } catch(e) {}
-      const seed = encodeURIComponent(kw.slice(0, 20));
-      imgMap[kw] = `https://picsum.photos/seed/${seed}/800/450`;
-    }
+    uniqueKeywords.forEach((kw, i) => { imgMap[kw] = results[i]; });
     setInlineImages(imgMap);
   };
 
@@ -341,8 +329,8 @@ ${articleSection}
 - 순수 한국어 문장으로만 작성
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 → 다음 소제목 → [이미지: 사진 설명] → 본문 설명 순서로 반복
-2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+1. 큰 소제목 → [image: english keyword] → 본문 설명 → 다음 소제목 → [image: english keyword] → 본문 설명 순서로 반복
+2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 검색 키워드 1~3단어, 예: [image: news conference], [image: stock market chart])
 3. 소제목은 3~5개 정도
 
 작성 형식:
@@ -365,8 +353,8 @@ ${articleSection}
 - 순수 한국어 문장으로만 작성
 
 [글 구조 필수 규칙]
-1. 큰 소제목 → [이미지: 소제목 관련 사진 설명] → 본문 설명 순서로 반복
-2. [이미지: ~~~] 형태로 각 소제목마다 1개씩 이미지 위치를 표시해주세요
+1. 큰 소제목 → [image: english keyword] → 본문 설명 순서로 반복
+2. [image: english search keyword] 형태로 각 소제목마다 1개씩 이미지 위치를 표시 (반드시 영문 1~3단어)
 
 SEO 최적화된 제목, 소제목으로 구조화, 출처 명시`,
 
