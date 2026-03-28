@@ -1,16 +1,52 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Canvas, Textbox, Rect, Circle, FabricImage } from "fabric";
+import { Canvas, Textbox, Rect, Circle, FabricImage, Shadow, Gradient } from "fabric";
 
 /* ──────────────────────────────────────────────────────────────────────
    CardNewsEditor  –  Fabric.js v7 기반 카드뉴스 에디터
    ────────────────────────────────────────────────────────────────────── */
 
 const FONTS = [
-  { label: "Pretendard", value: "Pretendard" },
-  { label: "Noto Sans KR", value: "Noto Sans KR" },
+  // 한글 기본
+  { label: "프리텐다드", value: "Pretendard" },
+  { label: "노토산스", value: "Noto Sans KR" },
   { label: "나눔고딕", value: "Nanum Gothic" },
-  { label: "배민도현체", value: "BMDOHYEON" },
+  { label: "나눔명조", value: "Nanum Myeongjo" },
+  { label: "나눔스퀘어", value: "NanumSquare" },
+  { label: "나눔바른고딕", value: "NanumBarunGothic" },
+  // 특수/디자인
+  { label: "배민도현", value: "BMDOHYEON" },
+  { label: "던전모", value: "NeoDunggeunmo" },
+  { label: "마루부리", value: "MaruBuri" },
+  { label: "고운바탕", value: "GowunBatang" },
+  { label: "고운도현", value: "GowunDodum" },
+  { label: "이롭게 바탕", value: "EarlyFontDiary" },
+  { label: "검은고딕", value: "Black Han Sans" },
+  { label: "송명", value: "Song Myung" },
+  { label: "하이멜로디", value: "Hi Melody" },
+  { label: "도현", value: "Do Hyeon" },
+  { label: "주아", value: "Jua" },
+  { label: "나눔펜", value: "Nanum Pen Script" },
+  { label: "나눔브러시", value: "Nanum Brush Script" },
+  { label: "IBM플렉스", value: "IBM Plex Sans KR" },
+  { label: "스포카한산스", value: "Spoqa Han Sans Neo" },
+  // 영문
+  { label: "Montserrat", value: "Montserrat" },
+  { label: "Playfair", value: "Playfair Display" },
+  { label: "Roboto", value: "Roboto" },
+  { label: "Inter", value: "Inter" },
+  { label: "Poppins", value: "Poppins" },
 ];
+
+/* ── Google Fonts dynamic loader ───────────────────────────────────── */
+const loadedFonts = new Set();
+function loadGFont(family) {
+  if (!family || loadedFonts.has(family)) return;
+  loadedFonts.add(family);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;700;900&display=swap`;
+  document.head.appendChild(link);
+}
 
 const TEMPLATES = [
   { name: "다크 모던", bgColor: "#1a1a2e", textColor: "#ffffff", accentColor: "#7c6aff", fontFamily: "Pretendard" },
@@ -80,6 +116,8 @@ const Icon = {
   AlignCenter: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>,
   AlignRight: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>,
   Close: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  Up: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>,
+  Down: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>,
 };
 
 /* ── Btn component ───────────────────────────────────────────────────── */
@@ -96,6 +134,23 @@ function Btn({ children, onClick, active, small, accent, disabled, style }) {
     ...style,
   };
   return <button style={base} onClick={disabled ? undefined : onClick}>{children}</button>;
+}
+
+/* ── CollapsibleSection component ────────────────────────────────────── */
+function CollapsibleSection({ title, defaultOpen = true, children, C }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={S.section}>
+      <div
+        style={{ ...S.sectionLabel, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+        onClick={() => setOpen(!open)}
+      >
+        <span>{title}</span>
+        <span style={{ fontSize: 11, color: "#999", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9660;</span>
+      </div>
+      {open && children}
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -119,6 +174,7 @@ export default function CardNewsEditor({
   const fileInputRef = useRef(null);
   const bgFileInputRef = useRef(null);
   const replaceFileInputRef = useRef(null);
+  const fontFileInputRef = useRef(null);
 
   /* state */
   const [slideDataArr, setSlideDataArr] = useState([]); // Fabric JSON per slide
@@ -130,8 +186,23 @@ export default function CardNewsEditor({
   const [history, setHistory] = useState([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [customFonts, setCustomFonts] = useState([]);
+  const [canvasObjects, setCanvasObjects] = useState([]);
+
+  /* text effect states */
+  const [textStrokeColor, setTextStrokeColor] = useState("#000000");
+  const [textStrokeWidth, setTextStrokeWidth] = useState(0);
+  const [shadowColor, setShadowColor] = useState("#000000");
+  const [shadowBlur, setShadowBlur] = useState(0);
+  const [shadowOffsetX, setShadowOffsetX] = useState(0);
+  const [shadowOffsetY, setShadowOffsetY] = useState(0);
+  const [gradientEnabled, setGradientEnabled] = useState(false);
+  const [gradColor1, setGradColor1] = useState("#7c6aff");
+  const [gradColor2, setGradColor2] = useState("#ec4899");
+  const [gradDirection, setGradDirection] = useState("horizontal");
 
   const totalSlides = initialSlides.length || 1;
+  const allFonts = [...FONTS, ...customFonts];
 
   /* ── responsive ────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -163,6 +234,8 @@ export default function CardNewsEditor({
       fc.on("selection:cleared", () => { setSelectedObj(null); setSelProps({}); });
       fc.on("object:modified", handleObjModified);
       fc.on("text:changed", handleObjModified);
+      fc.on("object:added", refreshLayerList);
+      fc.on("object:removed", refreshLayerList);
 
       // load first slide
       if (initialSlides.length) {
@@ -179,6 +252,19 @@ export default function CardNewsEditor({
       console.error("Canvas init error:", e);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── refresh layer list ──────────────────────────────────────────── */
+  function refreshLayerList() {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    const objs = fc.getObjects().map((o, i) => ({
+      index: i,
+      type: o.type,
+      name: o.name || o.text?.substring(0, 20) || `${o.type} ${i + 1}`,
+      obj: o,
+    }));
+    setCanvasObjects([...objs].reverse()); // top = front
+  }
 
   /* ── fit canvas to container ───────────────────────────────────────── */
   const fitCanvas = useCallback(() => {
@@ -208,6 +294,7 @@ export default function CardNewsEditor({
     if (!obj) return;
     setSelectedObj(obj);
     updateSelProps(obj);
+    refreshLayerList();
   }
 
   function updateSelProps(obj) {
@@ -224,6 +311,35 @@ export default function CardNewsEditor({
       text: obj.text || "",
     };
     setSelProps(p);
+
+    // Sync text effect states
+    if (obj.type === "textbox" || obj.type === "text") {
+      setTextStrokeColor(obj.stroke || "#000000");
+      setTextStrokeWidth(obj.strokeWidth || 0);
+      const sh = obj.shadow;
+      if (sh) {
+        setShadowColor(sh.color || "#000000");
+        setShadowBlur(sh.blur || 0);
+        setShadowOffsetX(sh.offsetX || 0);
+        setShadowOffsetY(sh.offsetY || 0);
+      } else {
+        setShadowColor("#000000");
+        setShadowBlur(0);
+        setShadowOffsetX(0);
+        setShadowOffsetY(0);
+      }
+      // Check if fill is a gradient
+      if (obj.fill && typeof obj.fill === "object" && obj.fill.type === "linear") {
+        setGradientEnabled(true);
+        const stops = obj.fill.colorStops || [];
+        if (stops.length >= 2) {
+          setGradColor1(stops[0].color || "#7c6aff");
+          setGradColor2(stops[1].color || "#ec4899");
+        }
+      } else {
+        setGradientEnabled(false);
+      }
+    }
   }
 
   function handleObjModified() {
@@ -232,6 +348,7 @@ export default function CardNewsEditor({
     const obj = fc.getActiveObject();
     if (obj) updateSelProps(obj);
     pushHistory();
+    refreshLayerList();
   }
 
   /* ── history (undo/redo) ───────────────────────────────────────────── */
@@ -254,7 +371,7 @@ export default function CardNewsEditor({
     setHistoryIdx(newIdx);
     const fc = canvasRef.current;
     if (!fc) return;
-    fc.loadFromJSON(history[newIdx]).then(() => fc.renderAll());
+    fc.loadFromJSON(history[newIdx]).then(() => { fc.renderAll(); refreshLayerList(); });
   }
 
   function redo() {
@@ -263,7 +380,7 @@ export default function CardNewsEditor({
     setHistoryIdx(newIdx);
     const fc = canvasRef.current;
     if (!fc) return;
-    fc.loadFromJSON(history[newIdx]).then(() => fc.renderAll());
+    fc.loadFromJSON(history[newIdx]).then(() => { fc.renderAll(); refreshLayerList(); });
   }
 
   /* ── load slide onto canvas ────────────────────────────────────────── */
@@ -272,6 +389,7 @@ export default function CardNewsEditor({
     if (slideDataArr[idx]) {
       await fc.loadFromJSON(slideDataArr[idx]);
       fc.renderAll();
+      refreshLayerList();
       pushHistory();
       return;
     }
@@ -336,6 +454,7 @@ export default function CardNewsEditor({
     }
 
     fc.renderAll();
+    refreshLayerList();
     pushHistory();
   }
 
@@ -383,6 +502,101 @@ export default function CardNewsEditor({
     fc.backgroundColor = color;
     fc.renderAll();
     pushHistory();
+  }
+
+  /* ── text effect setters ────────────────────────────────────────────── */
+  function applyTextStroke(color, w) {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (!obj) return;
+    obj.set({ stroke: color, strokeWidth: w });
+    fc.renderAll();
+    pushHistory();
+  }
+
+  function applyTextShadow(color, blur, ox, oy) {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (!obj) return;
+    if (blur === 0 && ox === 0 && oy === 0) {
+      obj.set({ shadow: null });
+    } else {
+      obj.set({ shadow: new Shadow({ color, blur, offsetX: ox, offsetY: oy }) });
+    }
+    fc.renderAll();
+    pushHistory();
+  }
+
+  function applyGradient(enabled, c1, c2, dir) {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (!obj) return;
+    if (!enabled) {
+      // revert to solid color
+      obj.set({ fill: gradColor1 || "#333333" });
+    } else {
+      obj.set({
+        fill: new Gradient({
+          type: "linear",
+          coords: {
+            x1: 0, y1: 0,
+            x2: dir === "horizontal" ? obj.width : 0,
+            y2: dir === "vertical" ? obj.height : 0,
+          },
+          colorStops: [
+            { offset: 0, color: c1 },
+            { offset: 1, color: c2 },
+          ],
+        }),
+      });
+    }
+    fc.renderAll();
+    pushHistory();
+  }
+
+  /* ── custom font upload ─────────────────────────────────────────────── */
+  function handleCustomFont(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const name = file.name.replace(/\.[^.]+$/, "");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const font = new FontFace(name, ev.target.result);
+      font.load().then((loaded) => {
+        document.fonts.add(loaded);
+        setCustomFonts(prev => [...prev, { label: name + " (내 폰트)", value: name }]);
+      }).catch(err => console.error("Font load error:", err));
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
+
+  /* ── layer operations ───────────────────────────────────────────────── */
+  function bringForward(obj) {
+    const fc = canvasRef.current;
+    if (!fc || !obj) return;
+    fc.bringObjectForward(obj);
+    fc.renderAll();
+    refreshLayerList();
+    pushHistory();
+  }
+
+  function sendBackward(obj) {
+    const fc = canvasRef.current;
+    if (!fc || !obj) return;
+    fc.sendObjectBackwards(obj);
+    fc.renderAll();
+    refreshLayerList();
+    pushHistory();
+  }
+
+  function selectLayerObj(obj) {
+    const fc = canvasRef.current;
+    if (!fc || !obj) return;
+    fc.setActiveObject(obj);
+    fc.renderAll();
+    setSelectedObj(obj);
+    updateSelProps(obj);
   }
 
   /* ── add objects ───────────────────────────────────────────────────── */
@@ -646,6 +860,13 @@ export default function CardNewsEditor({
     fc.renderAll();
   }
 
+  /* ── layer type icon helper ─────────────────────────────────────────── */
+  function layerIcon(type) {
+    if (type === "textbox" || type === "text") return "T";
+    if (type === "image") return "\uD83D\uDDBC";
+    return "\u25FC";
+  }
+
   /* ══════════════════════════════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════════════════════════════ */
@@ -658,6 +879,8 @@ export default function CardNewsEditor({
   const modalStyle = inline
     ? { width: "100%", maxWidth: 1200, background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", flexDirection: isMobile ? "column" : "row" }
     : { ...S.modal, flexDirection: isMobile ? "column" : "row" };
+
+  const isTextSelected = selectedObj && (selProps.type === "textbox" || selProps.type === "text");
 
   return (
     <div style={overlayStyle} onClick={inline ? undefined : (e) => { if (e.target === e.currentTarget) onClose?.(); }}>
@@ -739,6 +962,8 @@ export default function CardNewsEditor({
             onChange={e => { addBgImage(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={replaceFileInputRef} type="file" accept="image/*" style={{ display: "none" }}
             onChange={e => { replaceImage(e.target.files?.[0]); e.target.value = ""; }} />
+          <input ref={fontFileInputRef} type="file" accept=".ttf,.otf,.woff2" style={{ display: "none" }}
+            onChange={handleCustomFont} />
         </div>
 
         {/* ── RIGHT: Properties Panel ────────────────────────────────── */}
@@ -746,16 +971,23 @@ export default function CardNewsEditor({
           <div style={S.panelTitle}>속성 패널</div>
 
           {/* === Text props === */}
-          {selectedObj && (selProps.type === "textbox" || selProps.type === "text") && (
-            <div style={S.section}>
-              <div style={S.sectionLabel}>텍스트 속성</div>
-
+          {isTextSelected && (
+            <CollapsibleSection title="텍스트" defaultOpen={true} C={C}>
               {/* Font family */}
               <label style={S.label}>폰트</label>
               <select style={S.select} value={selProps.fontFamily}
-                onChange={e => setProp("fontFamily", e.target.value)}>
-                {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                onChange={e => {
+                  const fam = e.target.value;
+                  loadGFont(fam);
+                  setProp("fontFamily", fam);
+                }}>
+                {allFonts.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
+
+              {/* Custom font upload button */}
+              <Btn small onClick={() => fontFileInputRef.current?.click()} style={{ marginTop: 8, width: "100%", justifyContent: "center" }}>
+                내 폰트 업로드
+              </Btn>
 
               {/* Font size */}
               <label style={S.label}>크기: {selProps.fontSize}px</label>
@@ -765,9 +997,9 @@ export default function CardNewsEditor({
               {/* Color */}
               <label style={S.label}>색상</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" value={hexFromAny(selProps.fill)} style={S.colorInput}
-                  onChange={e => setProp("fill", e.target.value)} />
-                <span style={{ fontSize: 12, color: "#888" }}>{hexFromAny(selProps.fill)}</span>
+                <input type="color" value={typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "#000000"} style={S.colorInput}
+                  onChange={e => { setGradientEnabled(false); setProp("fill", e.target.value); }} />
+                <span style={{ fontSize: 12, color: "#888" }}>{typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "그라데이션"}</span>
               </div>
 
               {/* Bold / Italic */}
@@ -790,14 +1022,131 @@ export default function CardNewsEditor({
                 <Btn small active={selProps.textAlign === "right"}
                   onClick={() => setProp("textAlign", "right")} accent={C.purple}><Icon.AlignRight /></Btn>
               </div>
-            </div>
+
+              {/* Opacity */}
+              <label style={S.label}>투명도: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <input type="range" min={0} max={100} step={1}
+                value={Math.round((selProps.opacity ?? 1) * 100)}
+                style={S.range}
+                onChange={e => setProp("opacity", +e.target.value / 100)} />
+            </CollapsibleSection>
+          )}
+
+          {/* === Text Stroke === */}
+          {isTextSelected && (
+            <CollapsibleSection title="테두리" defaultOpen={false} C={C}>
+              <label style={S.label}>테두리 색상</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="color" value={textStrokeColor} style={S.colorInput}
+                  onChange={e => {
+                    setTextStrokeColor(e.target.value);
+                    applyTextStroke(e.target.value, textStrokeWidth);
+                  }} />
+                <span style={{ fontSize: 12, color: "#888" }}>{textStrokeColor}</span>
+              </div>
+              <label style={S.label}>테두리 두께: {textStrokeWidth}px</label>
+              <input type="range" min={0} max={10} step={0.5} value={textStrokeWidth}
+                style={S.range}
+                onChange={e => {
+                  const w = +e.target.value;
+                  setTextStrokeWidth(w);
+                  applyTextStroke(textStrokeColor, w);
+                }} />
+            </CollapsibleSection>
+          )}
+
+          {/* === Text Shadow === */}
+          {isTextSelected && (
+            <CollapsibleSection title="그림자" defaultOpen={false} C={C}>
+              <label style={S.label}>그림자 색상</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="color" value={shadowColor} style={S.colorInput}
+                  onChange={e => {
+                    setShadowColor(e.target.value);
+                    applyTextShadow(e.target.value, shadowBlur, shadowOffsetX, shadowOffsetY);
+                  }} />
+                <span style={{ fontSize: 12, color: "#888" }}>{shadowColor}</span>
+              </div>
+              <label style={S.label}>블러: {shadowBlur}</label>
+              <input type="range" min={0} max={20} step={1} value={shadowBlur}
+                style={S.range}
+                onChange={e => {
+                  const v = +e.target.value;
+                  setShadowBlur(v);
+                  applyTextShadow(shadowColor, v, shadowOffsetX, shadowOffsetY);
+                }} />
+              <label style={S.label}>X 오프셋: {shadowOffsetX}</label>
+              <input type="range" min={-20} max={20} step={1} value={shadowOffsetX}
+                style={S.range}
+                onChange={e => {
+                  const v = +e.target.value;
+                  setShadowOffsetX(v);
+                  applyTextShadow(shadowColor, shadowBlur, v, shadowOffsetY);
+                }} />
+              <label style={S.label}>Y 오프셋: {shadowOffsetY}</label>
+              <input type="range" min={-20} max={20} step={1} value={shadowOffsetY}
+                style={S.range}
+                onChange={e => {
+                  const v = +e.target.value;
+                  setShadowOffsetY(v);
+                  applyTextShadow(shadowColor, shadowBlur, shadowOffsetX, v);
+                }} />
+            </CollapsibleSection>
+          )}
+
+          {/* === Text Gradient === */}
+          {isTextSelected && (
+            <CollapsibleSection title="그라데이션" defaultOpen={false} C={C}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>그라데이션 적용</label>
+                <input type="checkbox" checked={gradientEnabled}
+                  onChange={e => {
+                    const enabled = e.target.checked;
+                    setGradientEnabled(enabled);
+                    applyGradient(enabled, gradColor1, gradColor2, gradDirection);
+                  }} />
+              </div>
+              {gradientEnabled && (
+                <>
+                  <label style={S.label}>시작색</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="color" value={gradColor1} style={S.colorInput}
+                      onChange={e => {
+                        setGradColor1(e.target.value);
+                        applyGradient(true, e.target.value, gradColor2, gradDirection);
+                      }} />
+                    <span style={{ fontSize: 12, color: "#888" }}>{gradColor1}</span>
+                  </div>
+                  <label style={S.label}>끝색</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="color" value={gradColor2} style={S.colorInput}
+                      onChange={e => {
+                        setGradColor2(e.target.value);
+                        applyGradient(true, gradColor1, e.target.value, gradDirection);
+                      }} />
+                    <span style={{ fontSize: 12, color: "#888" }}>{gradColor2}</span>
+                  </div>
+                  <label style={S.label}>방향</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Btn small active={gradDirection === "horizontal"}
+                      onClick={() => {
+                        setGradDirection("horizontal");
+                        applyGradient(true, gradColor1, gradColor2, "horizontal");
+                      }} accent={C.purple}>가로</Btn>
+                    <Btn small active={gradDirection === "vertical"}
+                      onClick={() => {
+                        setGradDirection("vertical");
+                        applyGradient(true, gradColor1, gradColor2, "vertical");
+                      }} accent={C.purple}>세로</Btn>
+                  </div>
+                </>
+              )}
+            </CollapsibleSection>
           )}
 
           {/* === Image props === */}
           {selectedObj && selProps.type === "image" && (
-            <div style={S.section}>
-              <div style={S.sectionLabel}>이미지 속성</div>
-
+            <CollapsibleSection title="이미지 속성" defaultOpen={true} C={C}>
               <Btn small onClick={() => replaceFileInputRef.current?.click()} style={{ marginBottom: 10 }}>
                 이미지 교체
               </Btn>
@@ -807,14 +1156,12 @@ export default function CardNewsEditor({
                 value={Math.round((selProps.opacity ?? 1) * 100)}
                 style={S.range}
                 onChange={e => setProp("opacity", +e.target.value / 100)} />
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* === Shape props === */}
           {selectedObj && (selProps.type === "rect" || selProps.type === "circle") && (
-            <div style={S.section}>
-              <div style={S.sectionLabel}>도형 속성</div>
-
+            <CollapsibleSection title="도형 속성" defaultOpen={true} C={C}>
               <label style={S.label}>채우기 색상</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" value={hexFromAny(selProps.fill)} style={S.colorInput}
@@ -827,7 +1174,7 @@ export default function CardNewsEditor({
                 value={Math.round((selProps.opacity ?? 1) * 100)}
                 style={S.range}
                 onChange={e => setProp("opacity", +e.target.value / 100)} />
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* === No selection === */}
@@ -852,6 +1199,40 @@ export default function CardNewsEditor({
               </div>
             </div>
           )}
+
+          {/* === Layer Panel === */}
+          <CollapsibleSection title="레이어" defaultOpen={true} C={C}>
+            {canvasObjects.length === 0 && (
+              <div style={{ fontSize: 12, color: "#999", padding: "4px 0" }}>오브젝트가 없습니다</div>
+            )}
+            {canvasObjects.map((item, i) => {
+              const isActive = selectedObj === item.obj;
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 8px", marginBottom: 2,
+                  borderRadius: 6,
+                  background: isActive ? C.bg2 : "transparent",
+                  border: isActive ? `1px solid ${C.purple}` : "1px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.12s",
+                }}
+                  onClick={() => selectLayerObj(item.obj)}
+                >
+                  <span style={{ fontSize: 14, width: 22, textAlign: "center", flexShrink: 0 }}>{layerIcon(item.type)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.name}
+                  </span>
+                  <button style={S.layerBtn} title="앞으로" onClick={e => { e.stopPropagation(); bringForward(item.obj); }}>
+                    <Icon.Up />
+                  </button>
+                  <button style={S.layerBtn} title="뒤로" onClick={e => { e.stopPropagation(); sendBackward(item.obj); }}>
+                    <Icon.Down />
+                  </button>
+                </div>
+              );
+            })}
+          </CollapsibleSection>
 
           {/* Save buttons */}
           <div style={S.saveArea}>
@@ -977,5 +1358,10 @@ const S = {
     width: "100%", padding: "12px 0", border: "none", borderRadius: 10,
     color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
     transition: "opacity 0.15s",
+  },
+  layerBtn: {
+    background: "none", border: "1px solid rgba(0,0,0,0.1)",
+    borderRadius: 4, padding: "2px 4px", cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
   },
 };
