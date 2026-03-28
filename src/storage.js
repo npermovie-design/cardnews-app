@@ -261,7 +261,7 @@ export async function fbKakaoLogin() {
 
 // 구 카카오 흐름 호환용 (kakaoLoginRedirect, fbKakaoLogin(code) 대체)
 export const KAKAO_REST_KEY = "4d0f0128951fe2ff52b47d4243b1480e";
-export const KAKAO_REDIRECT = "https://www.snsmakeit.com/oauth/kakao";
+export const KAKAO_REDIRECT = "https://snsmakeit.com/oauth/kakao";
 export function kakaoLoginRedirect() {
   return fbKakaoLogin(); // Supabase OAuth로 통합
 }

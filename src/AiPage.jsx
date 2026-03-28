@@ -4184,7 +4184,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
         <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
           • Instagram 비즈니스/크리에이터 계정이 연결되어 있어야 합니다<br/>
           • Meta 앱 대시보드에서 Webhook을 설정해야 자동 DM이 작동합니다<br/>
-          • Webhook URL: <span style={{ fontFamily: "monospace", fontSize: 10, color: accent }}>https://www.snsmakeit.com/api/insta-webhook</span><br/>
+          • Webhook URL: <span style={{ fontFamily: "monospace", fontSize: 10, color: accent }}>https://snsmakeit.com/api/insta-webhook</span><br/>
           • 인증 토큰: <span style={{ fontFamily: "monospace", fontSize: 10, color: accent }}>snsmakeit_webhook_2026</span><br/>
           • Instagram Messaging API 정책에 따라 24시간 내 대화만 가능합니다<br/>
           • 하루 발송 제한이 있으며, 스팸으로 감지되면 계정이 제한될 수 있습니다

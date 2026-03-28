@@ -69,7 +69,7 @@ ${[...staticPages, ...postUrls].map(urlEntry).join("\n")}
 
 // ── RSS ──
 async function handleRss(req, res) {
-  const SITE = "https://www.snsmakeit.com";
+  const SITE = "https://snsmakeit.com";
 
   let items = "";
   try {

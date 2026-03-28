@@ -327,7 +327,7 @@ export function I18nProvider({ children }) {
     if (twDesc) twDesc.content = seo.desc;
     // hreflang links (remove old, add new)
     document.querySelectorAll('link[hreflang]').forEach(el => el.remove());
-    const base = "https://www.snsmakeit.com";
+    const base = "https://snsmakeit.com";
     Object.keys(SEO_META).forEach(lc => {
       const link = document.createElement("link");
       link.rel = "alternate"; link.hreflang = lc === "zh" ? "zh-CN" : lc;

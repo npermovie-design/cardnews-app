@@ -244,7 +244,7 @@ async function handleAuthMeta(req, res) {
   const APP_SECRET = process.env.META_APP_SECRET;
   const IG_APP_ID = process.env.INSTAGRAM_APP_ID || APP_ID;
   const IG_APP_SECRET = process.env.INSTAGRAM_APP_SECRET || APP_SECRET;
-  const REDIRECT_URI = process.env.META_REDIRECT_URI || "https://www.snsmakeit.com/api/sns-auth-meta";
+  const REDIRECT_URI = process.env.META_REDIRECT_URI || "https://snsmakeit.com/api/sns-auth-meta";
 
   if (req.method === "GET") {
     const { code, state } = req.query;
@@ -366,7 +366,7 @@ async function handleAuthMeta(req, res) {
 async function handleAuthTistory(req, res) {
   const CLIENT_ID = process.env.TISTORY_CLIENT_ID;
   const CLIENT_SECRET = process.env.TISTORY_CLIENT_SECRET;
-  const REDIRECT_URI = process.env.TISTORY_REDIRECT_URI || "https://www.snsmakeit.com/api/sns-auth-tistory";
+  const REDIRECT_URI = process.env.TISTORY_REDIRECT_URI || "https://snsmakeit.com/api/sns-auth-tistory";
 
   // GET: OAuth 인증 URL 반환 또는 콜백 처리
   if (req.method === "GET") {

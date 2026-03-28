@@ -2,10 +2,10 @@ User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://www.snsmakeit.com/sitemap.xml
+Sitemap: https://snsmakeit.com/sitemap.xml
 
 # RSS Feed
-# https://www.snsmakeit.com/rss.xml
+# https://snsmakeit.com/rss.xml
 
 # Host
-Host: https://www.snsmakeit.com
+Host: https://snsmakeit.com

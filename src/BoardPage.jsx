@@ -1217,7 +1217,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const ogDesc = document.querySelector('meta[property="og:description"]');
     if (ogDesc) ogDesc.content = (p.body||"").replace(/<[^>]*>/g,"").slice(0,155);
     const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.content = `https://www.snsmakeit.com/community/${cat}/post-${p.id}`;
+    if (ogUrl) ogUrl.content = `https://snsmakeit.com/community/${cat}/post-${p.id}`;
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
     // body가 없으면 Supabase에서 full post 로드
     if (!p.body) {
