@@ -75,7 +75,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
   const pct = Math.min(Math.round(info.used / freeLimit * 100), 100) + "%";
 
-  const Item = ({ id, label, icon, ids }) => {
+  const Item = ({ id, label, icon, ids, badge, badgeColor }) => {
     const baseId = id.replace('_intro', '');
     const active = aiMenu === id || aiMenu.startsWith(baseId) || (ids && ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
     return (
@@ -88,7 +88,16 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: icon ? 7 : 0, marginBottom: 2,
       }}>
-        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}{label}
+        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+        <span style={{ flex: 1 }}>{label}</span>
+        {badge && (
+          <span style={{
+            fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8,
+            background: badgeColor === "orange" ? "rgba(249,115,22,0.15)" : badgeColor === "green" ? "rgba(16,185,129,0.15)" : "rgba(59,130,246,0.15)",
+            color: badgeColor === "orange" ? "#f97316" : badgeColor === "green" ? "#10b981" : "#3b82f6",
+            flexShrink: 0, marginLeft: 4, lineHeight: "16px",
+          }}>{badge}</span>
+        )}
       </button>
     );
   };
@@ -121,17 +130,52 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="prompt_studio" label="기획" />
         <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
         <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
-        <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} />
+        <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} badge="추천" badgeColor="orange" />
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
-        <Item id="video_create" label="영상 제작" ids={["shorts_make"]} />
+        <Item id="video_create" label="영상 제작" ids={["shorts_make"]} badge="Beta" badgeColor="blue" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>리퍼포징</div>
-        <Item id="repurpose" label="원소스 멀티유즈" />
+        <Item id="repurpose" label="원소스 멀티유즈" badge="NEW" badgeColor="green" />
       </div>
 
+      {/* 하단 섹션 – SNS 연동 + 포인트 */}
+      <div style={{
+        padding: "10px 12px 12px", borderTop: `1px solid ${sideBdr}`,
+        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(99,102,241,0.03)",
+        flexShrink: 0,
+      }}>
+        <button onClick={() => navigate && navigate("mypage")} style={{
+          width: "100%", padding: "8px 10px", borderRadius: 8,
+          border: `1px solid ${isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.12)"}`,
+          background: isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.05)",
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          color: isDark ? "#a5b4fc" : "#6366f1", fontSize: 11, fontWeight: 600,
+          marginBottom: 8, transition: "background 0.15s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.1)"}
+          onMouseLeave={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.05)"}
+        >
+          <span style={{ fontSize: 13 }}>🔗</span>
+          SNS 계정 연동·관리
+        </button>
+        {user && (
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "0 4px", fontSize: 11, color: isDark ? "rgba(255,255,255,0.35)" : "#aaa",
+          }}>
+            <span>보유 포인트</span>
+            <span style={{
+              fontWeight: 700, fontSize: 12,
+              color: isDark ? "#a5b4fc" : "#6366f1",
+            }}>
+              {Math.max(0, (freeLimit - info.used) * 10 + (user.points || 0)).toLocaleString()}P
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2805,10 +2849,58 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         items: MENUS.filter(m => m.id === "repurpose") },
     ];
 
+    const quickStartCards = [
+      { icon: "📝", title: "블로그 글쓰기", desc: "AI가 SEO 최적화 글을 자동 작성해요", menu: "blog_naver", tag: "인기", tagColor: "#ef4444", tagBg: "rgba(239,68,68,0.1)" },
+      { icon: "🎨", title: "카드뉴스 만들기", desc: "주제만 입력하면 슬라이드 완성", menu: "cardnews_simple", tag: "추천", tagColor: "#f97316", tagBg: "rgba(249,115,22,0.1)" },
+      { icon: "🔄", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
+    ];
+
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f8f8fb" }}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
-          {/* 헤더 - 심플하게 */}
+
+          {/* 환영 헤더 */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: homeText, marginBottom: 6 }}>
+              안녕하세요{user?.nick ? `, ${user.nick}님` : ""}!
+            </div>
+            <div style={{ fontSize: 14, color: homeMuted, lineHeight: 1.6 }}>
+              핵심 기능을 하나씩 체험하면 보너스 포인트를 받을 수 있어요!
+            </div>
+          </div>
+
+          {/* 퀵스타트 카드 */}
+          <div style={{ display: "flex", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+            {quickStartCards.map((card, idx) => (
+              <div key={idx} onClick={() => setAiMenu(card.menu)} style={{
+                flex: "1 1 200px", minWidth: 200, padding: "20px 18px", borderRadius: 16,
+                border: `1px solid ${cardBdr}`,
+                background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+                cursor: "pointer", transition: "all 0.2s",
+                display: "flex", flexDirection: "column", gap: 10, position: "relative",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isDark ? "0 8px 24px rgba(0,0,0,0.3)" : "0 8px 24px rgba(99,102,241,0.1)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 28 }}>{card.icon}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                    background: card.tagBg, color: card.tagColor,
+                  }}>{card.tag}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: homeText, marginBottom: 4 }}>{card.title}</div>
+                  <div style={{ fontSize: 12, color: homeMuted, lineHeight: 1.5 }}>{card.desc}</div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+                  <span style={{ fontSize: 16, color: isDark ? "rgba(255,255,255,0.25)" : "#ccc" }}>→</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 기존 헤더 */}
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: homeText, marginBottom: 6 }}>{_s("무엇을 만들어볼까요?","What would you like to create?")}</div>
             <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
