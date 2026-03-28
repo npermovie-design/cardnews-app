@@ -158,11 +158,7 @@ export default function App() {
   // 현재 테마 팔레트
   const C = THEMES[theme];
 
-  const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    try { localStorage.setItem(THEME_KEY, next); } catch {}
-  };
+  const toggleTheme = () => {};
 
   // 포인트 소진 이벤트 수신
   useEffect(() => {
@@ -705,9 +701,6 @@ export default function App() {
         {/* 오른쪽: 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
-          <button onClick={toggleTheme} title={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 20, border: "1px solid " + C.border, background: C.toggleBg, cursor: "pointer", fontSize: 12, fontWeight: 700, color: C.muted, transition: "all 0.2s", flexShrink: 0, minHeight: 36 }}>
-            {theme === "light" ? t("darkMode") : t("lightMode")}
-          </button>
           {/* 다국어 선택 */}
           <div ref={langRef} style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)}
@@ -846,18 +839,8 @@ export default function App() {
           )}
         </div>
 
-        {/* 모바일 전용 컨트롤: 다크모드 + 유저상태 */}
+        {/* 모바일 전용 컨트롤 */}
         <div className="mobile-controls" style={{ display: "none", alignItems: "center", gap: 6, marginLeft: "auto", marginRight: 4, flexShrink: 0 }}>
-          {/* 다크/라이트 토글 */}
-          <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", justifyContent: "center",
-            width: 36, height: 36, borderRadius: "50%", border: "1px solid " + C.border,
-            background: C.toggleBg, cursor: "pointer", fontSize: 14, flexShrink: 0 }}>
-            {theme === "light" ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            )}
-          </button>
           {/* 모바일 언어 선택 */}
           <div style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "center",
