@@ -595,3 +595,8 @@ export async function migrateLocalPostsToDB() {
     return 0;
   }
 }
+
+// ── 브랜드 키트 헬퍼 ─────────────────────────────────────────
+export function getBrandKit() {
+  try { return JSON.parse(localStorage.getItem("nper_brand_kit")) || null; } catch { return null; }
+}

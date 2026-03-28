@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { supabase, changePoints } from "./storage";
+import { useState, useEffect, useRef } from "react";
+import { supabase, changePoints, getBrandKit } from "./storage";
 import SnsConnectionManager from "./SnsConnectionManager";
 
 /* ═══════════════════════════════════════════════
@@ -62,6 +62,22 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [nickLoading, setNickLoading] = useState(false);
   const [nickMsg, setNickMsg]     = useState("");
   const [toast, setToast]         = useState("");
+
+  // 브랜드 키트
+  const DEFAULT_BRAND_KIT = {
+    colors: { primary: "#7c6aff", secondary: "#ec4899", accent: "#22c55e" },
+    font: "Pretendard",
+    logo: null,
+    name: "",
+    slogan: "",
+    tone: "전문적",
+  };
+  const [brandKit, setBrandKit] = useState(() => {
+    const saved = getBrandKit();
+    return saved || { ...DEFAULT_BRAND_KIT };
+  });
+  const [brandSaving, setBrandSaving] = useState(false);
+  const logoInputRef = useRef(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""), 3000); };
 
@@ -178,6 +194,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           .myp-quick-grid { grid-template-columns: 1fr 1fr !important; }
           .myp-info-row { flex-direction: column !important; align-items: flex-start !important; gap: 4px !important; }
           .myp-info-val { text-align: left !important; font-size: 12px !important; }
+          .myp-tab { flex: 1 !important; padding: 7px 8px !important; font-size: 11px !important; }
         }
       `}</style>
 
@@ -249,7 +266,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       {/* ── 탭 ── */}
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
-        {[["info","계정 정보"],["history","포인트 내역"]].map(([t,l])=>(
+        {[["info","계정 정보"],["history","포인트 내역"],["brand","브랜드 키트"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
             background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
@@ -338,6 +355,126 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           <div style={{ marginTop:16, background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, overflow:"hidden" }}>
             <SnsConnectionManager user={user} isDark={isDark} compact />
           </div>
+        </div>
+      )}
+
+      {/* ── 브랜드 키트 탭 ── */}
+      {tab === "brand" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+
+          {/* 브랜드 컬러 */}
+          <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"18px 18px 14px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:14 }}>브랜드 컬러</div>
+            <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+              {[["primary","프라이머리"],["secondary","세컨더리"],["accent","액센트"]].map(([key,label])=>(
+                <div key={key} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+                  <label style={{ fontSize:11, fontWeight:700, color:muted }}>{label}</label>
+                  <div style={{ position:"relative", width:48, height:48, borderRadius:12, overflow:"hidden", border:`2px solid ${bdr}`, cursor:"pointer" }}>
+                    <input type="color" value={brandKit.colors[key]}
+                      onChange={e=>setBrandKit(prev=>({...prev, colors:{...prev.colors, [key]:e.target.value}}))}
+                      style={{ position:"absolute", inset:0, width:"150%", height:"150%", border:"none", cursor:"pointer", transform:"translate(-16%,-16%)" }}/>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:600, color:text, fontFamily:"monospace" }}>{brandKit.colors[key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 브랜드 폰트 */}
+          <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"18px 18px 14px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:10 }}>브랜드 폰트</div>
+            <select value={brandKit.font} onChange={e=>setBrandKit(prev=>({...prev, font:e.target.value}))}
+              style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
+              {["Pretendard","Noto Sans KR","Nanum Gothic","Nanum Myeongjo","BMDOHYEON"].map(f=>(
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+            <div style={{ marginTop:10, padding:"12px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb", border:`1px solid ${bdr}` }}>
+              <span style={{ fontFamily:brandKit.font, fontSize:15, color:text, fontWeight:600 }}>미리보기: {brandKit.font} 폰트입니다.</span>
+            </div>
+          </div>
+
+          {/* 로고 업로드 */}
+          <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"18px 18px 14px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:10 }}>로고 업로드</div>
+            <input ref={logoInputRef} type="file" accept="image/*" style={{ display:"none" }}
+              onChange={e=>{
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 500*1024) { showToast("로고 이미지는 500KB 이하만 가능해요."); e.target.value=""; return; }
+                const reader = new FileReader();
+                reader.onload = ev => setBrandKit(prev=>({...prev, logo:ev.target.result}));
+                reader.readAsDataURL(file);
+                e.target.value = "";
+              }}/>
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              {brandKit.logo ? (
+                <div style={{ position:"relative" }}>
+                  <img src={brandKit.logo} alt="로고" style={{ width:64, height:64, borderRadius:12, objectFit:"contain", border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#f5f5f8" }}/>
+                  <button onClick={()=>setBrandKit(prev=>({...prev, logo:null}))}
+                    style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%", border:"none", background:"#f87171", color:"#fff", fontSize:12, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>x</button>
+                </div>
+              ) : (
+                <div style={{ width:64, height:64, borderRadius:12, border:`2px dashed ${inputBdr}`, display:"flex", alignItems:"center", justifyContent:"center", color:muted, fontSize:11, fontWeight:600 }}>
+                  없음
+                </div>
+              )}
+              <button onClick={()=>logoInputRef.current?.click()}
+                style={{ padding:"9px 18px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                {brandKit.logo ? "변경" : "업로드"}
+              </button>
+            </div>
+            <div style={{ fontSize:10, color:muted, marginTop:8 }}>PNG/JPG, 최대 500KB</div>
+          </div>
+
+          {/* 브랜드 이름 & 슬로건 */}
+          <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"18px 18px 14px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>브랜드 정보</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div>
+                <label style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4, display:"block" }}>브랜드 이름</label>
+                <input value={brandKit.name} onChange={e=>setBrandKit(prev=>({...prev, name:e.target.value}))} placeholder="예: 엔퍼콘텐츠랩" maxLength={30}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              </div>
+              <div>
+                <label style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4, display:"block" }}>슬로건</label>
+                <input value={brandKit.slogan} onChange={e=>setBrandKit(prev=>({...prev, slogan:e.target.value}))} placeholder="예: AI로 만드는 콘텐츠" maxLength={60}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              </div>
+            </div>
+          </div>
+
+          {/* 브랜드 톤 */}
+          <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"18px 18px 14px" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:10 }}>브랜드 톤</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              {["전문적","친근한","캐주얼","격식있는","유머러스"].map(t=>(
+                <button key={t} onClick={()=>setBrandKit(prev=>({...prev, tone:t}))}
+                  style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${brandKit.tone===t?"#7c6aff":bdr}`, background:brandKit.tone===t?(isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.08)"):"transparent", color:brandKit.tone===t?"#a5b4fc":muted, fontSize:12, fontWeight:700, cursor:"pointer", transition:"all 0.15s" }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 저장 버튼 */}
+          <button disabled={brandSaving} onClick={async()=>{
+            setBrandSaving(true);
+            try {
+              localStorage.setItem("nper_brand_kit", JSON.stringify(brandKit));
+              if (user?.uid) {
+                await supabase.from("users").update({ brand_kit: brandKit }).eq("uid", user.uid);
+              }
+              showToast("브랜드 키트가 저장됐어요!");
+            } catch(e) {
+              showToast("저장 중 오류가 발생했어요.");
+              console.error("brand kit save error:", e);
+            } finally { setBrandSaving(false); }
+          }}
+            style={{ padding:"14px 0", borderRadius:13, border:"none", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800, cursor:brandSaving?"wait":"pointer", opacity:brandSaving?0.6:1, transition:"opacity 0.15s" }}>
+            {brandSaving ? "저장 중..." : "브랜드 키트 저장"}
+          </button>
+
         </div>
       )}
     </div>
