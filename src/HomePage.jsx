@@ -121,13 +121,19 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         @keyframes marqueeL { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeR { from{transform:translateX(-50%)} to{transform:translateX(0)} }
-        @media(max-width:640px){
+        @media(max-width:768px){
           .hero-particle{display:none!important}
-          .tool-card:hover,.review-card:hover,.stat-card:hover{transform:none!important}
+          .tool-card:hover,.review-card:hover,.stat-card:hover,.hover-lift:hover{transform:none!important;box-shadow:none!important}
           .pain-grid{grid-template-columns:1fr!important}
+          .compare-table{font-size:11px!important}
+          .compare-table th,.compare-table td{padding:10px 6px!important}
         }
         @media(max-width:480px){
-          section{padding-left:14px!important;padding-right:14px!important}
+          section{padding-left:12px!important;padding-right:12px!important}
+          h1{font-size:24px!important}
+          h2{font-size:20px!important}
+          .compare-table{font-size:10px!important;min-width:auto!important}
+          .compare-table th,.compare-table td{padding:8px 4px!important;font-size:10px!important}
         }
         .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
@@ -409,7 +415,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </FadeIn>
           <FadeIn delay={0.1}>
             <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "100%", minWidth: 700, borderCollapse: "separate", borderSpacing: 0, fontSize: 13, color: C.text }}>
+              <table className="compare-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: 13, color: C.text }}>
                 <thead>
                   <tr>
                     <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, fontSize: 12 }}>
@@ -417,10 +423,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                     </th>
                     {[
                       { name: "SNS메이킷", highlight: true },
-                      { name: "Mirra", highlight: false },
                       { name: "ChatGPT", highlight: false },
                       { name: "Canva", highlight: false },
-                      { name: lang === "ko" ? "미리캔버스" : "Miricanvas", highlight: false },
+                      { name: lang === "ko" ? "개별 도구" : "Individual", highlight: false },
                     ].map(col => (
                       <th key={col.name} style={{
                         padding: "14px 10px", textAlign: "center", fontWeight: 800, fontSize: 12,
@@ -436,14 +441,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 </thead>
                 <tbody>
                   {[
-                    { feature: lang === "ko" ? "콘텐츠 제작 시간" : "Content creation time", vals: [lang === "ko" ? "3분" : "3min", lang === "ko" ? "5분" : "5min", lang === "ko" ? "30분+" : "30min+", lang === "ko" ? "20분+" : "20min+", lang === "ko" ? "15분+" : "15min+"] },
-                    { feature: lang === "ko" ? "카드뉴스 자동 생성" : "Auto card news", vals: ["check", "check", "cross", "partial", "partial"] },
-                    { feature: lang === "ko" ? "블로그/SEO 글쓰기" : "Blog/SEO writing", vals: ["check", "partial", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "AI 이미지 생성/수정" : "AI image gen/edit", vals: ["check", "cross", "cross", "partial", "partial"] },
-                    { feature: lang === "ko" ? "한국 SNS 최적화" : "Korean SNS optimized", vals: ["check", "partial", "cross", "cross", "check"] },
-                    { feature: lang === "ko" ? "SNS 자동 발행" : "SNS auto-publish", vals: ["check", "check", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "계정 안전성" : "Account safety", vals: ["check", "cross", "check", "check", "check"] },
-                    { feature: lang === "ko" ? "무료 체험" : "Free trial", vals: ["check", "partial", "partial", "partial", "check"] },
+                    { feature: lang === "ko" ? "콘텐츠 제작 시간" : "Content creation time", vals: [lang === "ko" ? "3분" : "3min", lang === "ko" ? "30분+" : "30min+", lang === "ko" ? "20분+" : "20min+", lang === "ko" ? "2시간+" : "2hrs+"] },
+                    { feature: lang === "ko" ? "카드뉴스+블로그+영상 동시" : "Card+Blog+Video at once", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "SEO 최적화 글쓰기" : "SEO writing", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "AI 이미지 생성/수정" : "AI image gen/edit", vals: ["check", "cross", "partial", "partial"] },
+                    { feature: lang === "ko" ? "한국 SNS 최적화" : "Korean SNS", vals: ["check", "cross", "cross", "partial"] },
+                    { feature: lang === "ko" ? "SNS 자동 발행" : "Auto-publish", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "무료 체험 (카드 불필요)" : "Free (no card)", vals: ["check", "partial", "partial", "partial"] },
                   ].map((row, ri) => (
                     <tr key={row.feature} style={{ background: ri % 2 === 0 ? ("rgba(124,106,255,0.02)") : "transparent" }}>
                       <td style={{ padding: "14px 16px", fontWeight: 600, borderBottom: "1px solid " + C.border, fontSize: 13 }}>{row.feature}</td>
@@ -478,18 +482,18 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 &#128274;
               </div>
               <h3 style={{ fontSize: "clamp(20px,3.5vw,28px)", fontWeight: 800, color: C.text, margin: "0 0 12px" }}>
-                {lang === "ko" ? "계정 걱정 없는 안전한 AI 콘텐츠" : "Safe AI content, no account risk"}
+                {lang === "ko" ? "AI가 만들고, 내가 결정하는 콘텐츠" : "AI creates, you decide"}
               </h3>
               <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.85, maxWidth: 600, margin: "0 auto 28px" }}>
                 {lang === "ko"
-                  ? "SNS메이킷은 콘텐츠 생성 도구입니다. 자동화 봇이 아니기 때문에 계정 정지 위험이 없습니다. AI가 만든 고품질 콘텐츠를 직접 검토하고 발행하세요."
-                  : "SNS Makeit is a content creation tool, not an automation bot. No risk of account suspension. Review AI-generated content and publish with confidence."}
+                  ? "AI가 초안을 만들고, 직접 검토한 뒤 발행하세요. 콘텐츠의 품질과 톤을 완벽하게 컨트롤할 수 있습니다."
+                  : "AI drafts the content, you review and publish. Full control over quality and tone."}
               </p>
               <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
                 {[
-                  { icon: "&#9989;", text: lang === "ko" ? "플랫폼 정책 준수" : "Platform policy compliant" },
-                  { icon: "&#9989;", text: lang === "ko" ? "계정 정지 위험 0%" : "0% suspension risk" },
-                  { icon: "&#9989;", text: lang === "ko" ? "발행 전 검토 가능" : "Review before publish" },
+                  { icon: "&#9989;", text: lang === "ko" ? "AI 초안 → 내가 검토" : "AI draft → You review" },
+                  { icon: "&#9989;", text: lang === "ko" ? "톤·스타일 완벽 제어" : "Full tone control" },
+                  { icon: "&#9989;", text: lang === "ko" ? "원클릭 발행 또는 수정" : "One-click publish or edit" },
                 ].map(item => (
                   <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: "#22c55e" }}>
                     <span dangerouslySetInnerHTML={{ __html: item.icon }} />
