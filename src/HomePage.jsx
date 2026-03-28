@@ -20,24 +20,6 @@ function useInView(threshold = 0.15) {
   return [ref, inView];
 }
 
-/* ── 카운터 애니메이션 ── */
-function CountUp({ to, suffix = "", duration = 1800 }) {
-  const [val, setVal] = useState(0);
-  const [ref, inView] = useInView(0.3);
-  useEffect(() => {
-    if (!inView) return;
-    let start = 0;
-    const step = Math.ceil(to / (duration / 16));
-    const t = setInterval(() => {
-      start += step;
-      if (start >= to) { setVal(to); clearInterval(t); }
-      else setVal(start);
-    }, 16);
-    return () => clearInterval(t);
-  }, [inView, to, duration]);
-  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
-}
-
 /* ── 타이핑 애니메이션 ── */
 function TypeWriter({ texts, speed = 60, pause = 2000 }) {
   const [display, setDisplay] = useState("");
@@ -181,13 +163,11 @@ function PersonaTabs({ navigate, C }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {p.tools.map((t, i) => (
-              <div key={t} onClick={() => navigate("ai")} style={{
+              <div key={t} onClick={() => navigate("ai")} className="hover-lift" style={{
                 background: C.card, border: "1px solid " + C.border, borderRadius: 16,
-                padding: "20px 16px", cursor: "pointer", transition: "all 0.25s", boxShadow: C.shadow,
+                padding: "20px 16px", cursor: "pointer", boxShadow: C.shadow,
                 textAlign: "center",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = ""}>
+              }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: `${p.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: p.color, margin: "0 auto 10px" }}>
                   {t[0]}
                 </div>
@@ -198,20 +178,6 @@ function PersonaTabs({ navigate, C }) {
           </div>
         </div>
       </FadeIn>
-    </div>
-  );
-}
-
-/* ── 무한 스크롤 마퀴 ── */
-function Marquee({ children, speed = 30, reverse = false }) {
-  return (
-    <div style={{ overflow: "hidden", width: "100%", position: "relative" }}>
-      <div style={{
-        display: "flex", gap: 48, whiteSpace: "nowrap", willChange: "transform",
-        animation: `${reverse ? "marqueeR" : "marqueeL"} ${speed}s linear infinite`,
-      }}>
-        {children}{children}
-      </div>
     </div>
   );
 }
@@ -237,64 +203,11 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
     { top: "20%", left: "15%", size: 400, color: "rgba(124,106,255,0.04)", blur: 100 },
   ];
 
-  const ALL_TOOLS = [
-    {
-      cat: p("catWrite"), catColor: "#7c6aff",
-      items: [
-        { icon: "N", title: p("tNaver"), desc: p("tNaverD"), tag: p("tagPopular"), color: "#22c55e" },
-        { icon: "C", title: p("tCafe"), desc: p("tCafeD"), tag: "", color: "#06b6d4" },
-        { icon: "T", title: p("tTistory"), desc: p("tTistoryD"), tag: "", color: "#f59e0b" },
-        { icon: "IG", title: p("tInsta"), desc: p("tInstaD"), tag: "", color: "#ec4899" },
-        { icon: "YT", title: p("tYoutube"), desc: p("tYoutubeD"), tag: "", color: "#ef4444" },
-        { icon: "Th", title: p("tThread"), desc: p("tThreadD"), tag: "", color: "#a855f7" },
-      ],
-    },
-    {
-      cat: p("catImage"), catColor: "#8b5cf6",
-      items: [
-        { icon: "CN", title: p("tCardNews"), desc: p("tCardNewsD"), tag: "", color: "#8b5cf6" },
-        { icon: "SC", title: p("tSimpleCard"), desc: p("tSimpleCardD"), tag: "", color: "#7c6aff" },
-        { icon: "DP", title: p("tDetail"), desc: p("tDetailD"), tag: "", color: "#ec4899" },
-        { icon: "SD", title: p("tSimpleDetail"), desc: p("tSimpleDetailD"), tag: p("tagNew"), color: "#10b981" },
-      ],
-    },
-    {
-      cat: p("catAiImg"), catColor: "#ec4899",
-      items: [
-        { icon: "PS", title: p("tProduct"), desc: p("tProductD"), tag: p("tagPopular"), color: "#f59e0b" },
-        { icon: "LG", title: p("tLogo"), desc: p("tLogoD"), tag: "", color: "#7c6aff" },
-        { icon: "MK", title: p("tMockup"), desc: p("tMockupD"), tag: "", color: "#8b5cf6" },
-        { icon: "MD", title: p("tModel"), desc: p("tModelD"), tag: "", color: "#ec4899" },
-        { icon: "FS", title: p("tFace"), desc: p("tFaceD"), tag: "", color: "#10b981" },
-        { icon: "OS", title: p("tOutfit"), desc: p("tOutfitD"), tag: "", color: "#f59e0b" },
-        { icon: "OP", title: p("tOutpaint"), desc: p("tOutpaintD"), tag: p("tagNew"), color: "#06b6d4" },
-      ],
-    },
-    {
-      cat: p("catVideo"), catColor: "#ef4444",
-      items: [
-        { icon: "SF", title: p("tShorts"), desc: p("tShortsD"), tag: p("tagNew"), color: "#ef4444" },
-      ],
-    },
-    {
-      cat: p("catAnalyzer"), catColor: "#22c55e", navTarget: "analyzer",
-      items: [
-        { icon: "SEO", title: p("tAnalyze"), desc: p("tAnalyzeD"), tag: p("tagNew"), color: "#22c55e" },
-        { icon: "TR", title: p("tTrend"), desc: p("tTrendD"), tag: "", color: "#7c6aff" },
-        { icon: "RK", title: p("tRanking"), desc: p("tRankingD"), tag: "", color: "#8b5cf6" },
-        { icon: "BR", title: p("tBrandRank"), desc: p("tBrandRankD"), tag: "", color: "#06b6d4" },
-      ],
-    },
-  ];
-
   return (
     <div>
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes slideRight { from{transform:translateX(-100%)} to{transform:translateX(0)} }
-        @keyframes pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes marqueeL { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes marqueeR { from{transform:translateX(-50%)} to{transform:translateX(0)} }
         @media(max-width:640px){
@@ -310,6 +223,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         .persona-tab { cursor:pointer; padding:10px 22px; border-radius:30px; font-size:14px; font-weight:700; border:1.5px solid transparent; transition:all 0.25s; }
         .persona-tab:hover { transform:translateY(-2px); }
         .persona-tab.active { border-color:rgba(124,106,255,0.5); box-shadow:0 4px 20px rgba(124,106,255,0.15); }
+        .hover-lift { transition: all 0.25s; }
+        .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(124,106,255,0.12); }
       `}</style>
 
       {/* ══ 히어로 ══ */}
@@ -372,11 +287,11 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
 
           {/* 제품 미리보기 */}
           <div style={{ marginTop: 48, maxWidth: 700, width: "100%", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(124,106,255,0.15)", border: "1px solid " + C.border }}>
-            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" style={{ width: "100%", display: "block" }} />
+            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" style={{ width: "100%", display: "block" }} />
           </div>
         </div>
 
-        <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", opacity: 0.2 }}>
+        <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", opacity: 0.5, animation: "float 2s ease-in-out infinite" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </section>
@@ -391,7 +306,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             <h2 style={{ fontSize: "clamp(28px,5vw,48px)", fontWeight: 900, color: C.text, letterSpacing: -2, lineHeight: 1.2, margin: "0 0 16px" }}>
               {lang === "ko" ? <>글 작성부터 SNS 발행까지<br/><span style={{ color: "#7c6aff" }}>원클릭</span>으로 끝</> : <>From writing to publishing<br/>in <span style={{ color: "#7c6aff" }}>one click</span></>}
             </h2>
-            <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 auto 40px", maxWidth: 560 }}>
+            <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 auto 40px", maxWidth: 560, whiteSpace: "pre-line" }}>
               {lang === "ko" ? "AI가 작성한 글을 복사-붙여넣기 없이 바로 발행하세요.\n계정 연결 한 번이면 스레드·블로그·티스토리에 자동 업로드됩니다." : "Publish AI-written content without copy-paste.\nConnect once, auto-upload to Threads, Blog, and Tistory."}
             </p>
           </FadeIn>
@@ -421,11 +336,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 { icon: "/icon-tistory.png", name: lang === "ko" ? "티스토리" : "Tistory", desc: lang === "ko" ? "복사 + 에디터 바로 열기" : "Copy + open editor", color: "#FF6B35", tag: lang === "ko" ? "간편 발행" : "Easy", tagColor: "#4ade80" },
                 { icon: "/icon-instagram.webp", name: lang === "ko" ? "인스타그램" : "Instagram", desc: lang === "ko" ? "카드뉴스 이미지 자동 발행" : "Card news auto publish", color: "#E1306C", tag: lang === "ko" ? "곧 출시" : "Coming", tagColor: "#f59e0b" },
               ].map(p => (
-                <div key={p.name} style={{ background: "#fff", border: "1px solid " + (C.border), borderRadius: 20, padding: "28px 20px", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${p.color}20`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                <div key={p.name} className="hover-lift" style={{ background: "#fff", border: "1px solid " + (C.border), borderRadius: 16, padding: "28px 20px", textAlign: "center" }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: p.color + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                    <img src={p.icon} alt="" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
+                    <img src={p.icon} alt="" loading="lazy" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
                   </div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>{p.desc}</div>
@@ -444,29 +357,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   background: "transparent", color: "#7c6aff", fontSize: 16, fontWeight: 700, cursor: "pointer",
                   display: "flex", alignItems: "center", gap: 8 }}>
                 {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
-                  <img key={i} src={ic} alt="" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
+                  <img key={i} src={ic} alt="" loading="lazy" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
                 )}
                 {lang === "ko" ? (user ? "계정 연동하기" : "회원가입 후 연동") : (user ? "Connect accounts" : "Sign up to connect")}
               </button>
             </div>
           </FadeIn>
-        </div>
-      </section>
-
-      {/* ══ 신뢰 지표 ══ */}
-      <section style={{ padding: "clamp(40px,6vw,64px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 24, textAlign: "center" }}>
-          {[
-            { val: statsCount.toLocaleString()+"+", label: lang === "ko" ? "생성된 콘텐츠" : "Contents created" },
-            { val: "25+", label: lang === "ko" ? "AI 도구" : "AI tools" },
-            { val: "3" + (lang === "ko" ? "분" : "min"), label: lang === "ko" ? "평균 생성 시간" : "Avg. creation time" },
-            { val: "85%", label: lang === "ko" ? "시간 절감" : "Time saved" },
-          ].map(s => (
-            <div key={s.label}>
-              <div style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, color: C.text, letterSpacing: -1 }}>{s.val}</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{s.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -485,9 +381,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16 }}>
           {/* 글쓰기 - 대형 카드 */}
           <FadeIn style={{ gridColumn: "span 1" }}>
-            <div onClick={() => navigate("ai")} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, overflow: "hidden", cursor: "pointer", transition: "all 0.3s", height: "100%" }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = ""}>
+            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", height: "100%" }}>
               <div style={{ padding: "28px 24px 0" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#22c55e", marginBottom: 8 }}>{lang === "ko" ? "SNS 글쓰기" : "SNS Writing"}</div>
                 <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 8px", lineHeight: 1.3 }}>
@@ -497,17 +391,15 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   {lang === "ko" ? "네이버 블로그, 인스타, 유튜브 대본까지 6개 플랫폼 지원" : "Supports 6 platforms including Naver Blog, Instagram, YouTube"}
                 </p>
               </div>
-              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 20px 20px" }}>
-                <img src="/screenshots/blog-writer.png" alt="블로그 글쓰기 UI" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
+              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
+                <img src="/screenshots/blog-writer.png" alt="블로그 글쓰기 UI" loading="lazy" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
               </div>
             </div>
           </FadeIn>
 
           {/* 카드뉴스/상세페이지 */}
           <FadeIn delay={0.1} style={{ gridColumn: "span 1" }}>
-            <div onClick={() => navigate("ai")} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, overflow: "hidden", cursor: "pointer", transition: "all 0.3s", height: "100%" }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = ""}>
+            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", height: "100%" }}>
               <div style={{ padding: "28px 24px 0" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#8b5cf6", marginBottom: 8 }}>{lang === "ko" ? "콘텐츠 제작" : "Content Creation"}</div>
                 <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 8px", lineHeight: 1.3 }}>
@@ -517,8 +409,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   {lang === "ko" ? "주제만 입력하면 슬라이드 기획부터 디자인까지 AI가 완성" : "AI handles everything from slide planning to design"}
                 </p>
               </div>
-              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 20px 20px" }}>
-                <img src="/screenshots/cardnews.png" alt="카드뉴스 제작 UI" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
+              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
+                <img src="/screenshots/cardnews.png" alt="카드뉴스 제작 UI" loading="lazy" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
               </div>
             </div>
           </FadeIn>
@@ -533,12 +425,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             { title: lang === "ko" ? "SEO 분석기" : "SEO Analyzer", desc: lang === "ko" ? "실시간 검색어, 인플루언서 랭킹" : "Trending keywords, influencer rankings", color: "#22c55e", items: "4" },
           ].map((f, i) => (
             <FadeIn key={f.title} delay={i * 0.08}>
-              <div onClick={() => navigate(f.color === "#22c55e" ? "analyzer" : "ai")} style={{
+              <div onClick={() => navigate(f.color === "#22c55e" ? "analyzer" : "ai")} className="hover-lift" style={{
                 background: C.card, border: "1px solid " + C.border, borderRadius: 16,
-                padding: "24px 20px", cursor: "pointer", transition: "all 0.25s", height: "100%",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = ""}>
+                padding: "24px 20px", cursor: "pointer", height: "100%",
+              }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: `${f.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: f.color }}>{f.items}</div>
                   <div style={{ fontSize: 11, color: f.color, fontWeight: 700 }}>{f.items}{lang === "ko" ? "개 도구" : " tools"}</div>
@@ -585,7 +475,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                  <img src="/screenshots/blog-result.png" alt="AI 블로그 글 생성 결과" style={{ width: "100%", display: "block" }} />
+                  <img src="/screenshots/blog-result.png" alt="AI 블로그 글 생성 결과" loading="lazy" style={{ width: "100%", display: "block" }} />
                 </div>
                 <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{lang === "ko" ? "실제 AI가 작성한 블로그 글" : "Actual blog post written by AI"}</div>
               </div>
@@ -598,7 +488,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               <div style={{ order: 1 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                    <img src="/screenshots/cardnews-plan.png" alt="AI 카드뉴스 기획 결과" style={{ width: "100%", display: "block" }} />
+                    <img src="/screenshots/cardnews-plan.png" alt="AI 카드뉴스 기획 결과" loading="lazy" style={{ width: "100%", display: "block" }} />
                   </div>
                   <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{lang === "ko" ? "AI가 자동 기획한 카드뉴스 슬라이드" : "Card news slides auto-planned by AI"}</div>
                 </div>
@@ -630,7 +520,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "이미지 도구 보기" : "View image tools"}</Btn>
               </div>
               <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + C.border, boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
-                <img src="/screenshots/image-edit.png" alt="이미지 수정" style={{ width: "100%", display: "block" }} />
+                <img src="/screenshots/image-edit.png" alt="이미지 수정" loading="lazy" style={{ width: "100%", display: "block" }} />
               </div>
             </div>
           </FadeIn>
@@ -759,7 +649,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             { name: p("r6name"), job: p("r6job"), avatar: "H", rating: 5, platform: p("r6plat"), text: p("r6text"), result: p("r6result") },
           ].map((r, i) => (
             <FadeIn key={r.name} delay={i * 0.08}>
-              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
+              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, boxShadow: C.shadow, transition: "all 0.25s" }}>
                 <div style={{ display: "flex", gap: 2 }}>
                   {Array(r.rating).fill(0).map((_, j) => (
                     <span key={j} style={{ fontSize: 12, color: "#f59e0b" }}>★</span>
@@ -835,7 +725,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               <div className="stat-card" style={{
                 background: p.highlight ? "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))" : C.card,
                 border: p.highlight ? "2px solid rgba(99,102,241,0.4)" : "1px solid " + C.border,
-                borderRadius: 20, padding: "26px 20px", textAlign: "center",
+                borderRadius: 16, padding: "26px 20px", textAlign: "center",
                 boxShadow: p.highlight ? "0 8px 32px rgba(99,102,241,0.15)" : C.shadow,
                 transition: "all 0.2s", cursor: "default",
                 position: "relative", overflow: "hidden",
