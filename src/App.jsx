@@ -70,7 +70,7 @@ function useOnlineCount() {
     return () => {
       cancelled = true;
       clearInterval(t);
-      supabase.from("online_users").delete().eq("id", myId).catch(() => {});
+      supabase.from("online_users").delete().eq("id", myId).then(() => {}).catch(() => {});
     };
   }, []);
   return count;

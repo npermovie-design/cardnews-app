@@ -417,7 +417,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     return (
       <div style={{ minHeight: "80vh", padding: "clamp(20px,4vw,40px) clamp(16px,3vw,28px) 60px", background: "#f8f8fb" }}>
         <NewsDetail article={selected} onBack={() => setSelected(null)} isAdmin={isAdmin} onEdit={handleEdit} onDelete={handleDelete} isDark={isDark} />
-        <div style={{ maxWidth: 760, margin: "40px auto 0" }}><Footer /></div>
+        <div style={{ maxWidth: 760, margin: "40px auto 0" }}><Footer C={C || { text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", purpleL:"#6357e0", card:"#fff", footerBg:"#fafafa", toggleBg:"#f5f4ff" }} /></div>
       </div>
     );
   }
@@ -501,7 +501,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       {/* 에디터 모달 */}
       {editorOpen && <NewsEditorModal article={editTarget} onSave={handleSave} onClose={() => { setEditorOpen(false); setEditTarget(null); }} isDark={isDark} />}
 
-      <Footer />
+      <Footer C={C || { text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", purpleL:"#6357e0", card:"#fff", footerBg:"#fafafa", toggleBg:"#f5f4ff" }} />
     </div>
   );
 }
