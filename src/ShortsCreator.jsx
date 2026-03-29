@@ -148,8 +148,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       if (subFile) form.append("subtitle", subFile);
       if (logoFile) form.append("logo", logoFile);
       if (fontFile) form.append("custom_font", fontFile);
-      const r = await fetch(`${API}/upload`, { method: "POST", body: form });
-      if (!r.ok) throw new Error("업로드 실패");
+      const r = await fetch(`${API}/upload`, { method: "POST", body: form }).catch(() => null);
+      if (!r) throw new Error("숏츠 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      if (!r.ok) {
+        const errBody = await r.json().catch(() => ({}));
+        throw new Error(errBody.detail || `업로드 실패 (${r.status})`);
+      }
       const d = await r.json();
       setFileId(d.file_id);
       setLoadingMsg("음성 인식 + AI 분석 중...");

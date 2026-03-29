@@ -191,7 +191,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
               { end: 20, suffix: p("statToolsSuffix"), label: p("statTools") },
-              { end: statsCount || 500, suffix: p("statContentsSuffix"), label: p("statContents") },
+              { end: statsCount > 0 ? statsCount : 500, suffix: p("statContentsSuffix"), label: p("statContents") },
               { end: 3, suffix: p("statTimeSuffix"), label: p("statTime") },
             ].map(({ end, suffix, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
@@ -697,6 +697,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             { q: "생성된 콘텐츠의 품질은 어떤가요?", a: "최신 AI 모델(Claude Sonnet 4)을 사용하여 사람이 작성한 것과 구분하기 어려운 높은 품질의 콘텐츠를 생성합니다. SEO 최적화까지 자동으로 적용되어 검색 노출에도 유리합니다." },
             { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 주요 SNS 플랫폼을 지원합니다. 스레드, 네이버 블로그, 티스토리는 원클릭 자동 발행 기능도 제공합니다." },
             { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 100P가 즉시 지급됩니다. 이후 매일 출석체크(+3P), 커뮤니티 게시글 작성(+2P)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
+            { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠(글, 이미지, 카드뉴스 등)는 상업적 용도로 자유롭게 사용할 수 있습니다. 별도의 라이선스 비용 없이 블로그, SNS, 쇼핑몰 등에 바로 활용하세요." },
+            { q: "개인정보는 안전하게 보호되나요?", a: "SNS메이킷은 Supabase 인프라를 사용하여 데이터를 안전하게 관리합니다. 소셜 로그인(Google, Kakao)은 각 플랫폼의 공식 OAuth 인증을 통해 처리되며, 비밀번호는 암호화되어 저장됩니다." },
           ] : [
             { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides 20+ AI tools in one place, including blog writing, card news, detail pages, AI image generation, and short-form video editing." },
             { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, card news, detail pages, AI product shots, logos, mockups, short-form videos, and more." },
@@ -704,6 +706,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             { q: "What is the quality of generated content?", a: "We use the latest AI models (Claude Sonnet 4) to produce high-quality content that is virtually indistinguishable from human-written text, with automatic SEO optimization." },
             { q: "Which platforms are supported?", a: "We support Naver Blog, Tistory, Instagram, YouTube, Threads, and Naver Cafe. Auto-publishing is available for Threads, Naver Blog, and Tistory." },
             { q: "How do I earn points?", a: "Get 100P on sign-up. Earn +3P daily check-in, +2P per community post. You can also purchase additional points at affordable prices." },
+            { q: "Can I use generated content commercially?", a: "Yes! All content created with SNS Makeit (text, images, card news, etc.) can be freely used for commercial purposes without any additional licensing fees." },
+            { q: "Is my data safe?", a: "SNS Makeit uses Supabase infrastructure for secure data management. Social logins (Google, Kakao) are processed through official OAuth authentication, and passwords are encrypted." },
           ]).map((item, i) => (
             <FadeIn key={i} delay={i * 0.05}>
               <FaqItem q={item.q} a={item.a} C={C} />

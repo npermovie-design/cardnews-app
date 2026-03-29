@@ -438,7 +438,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
               <button onClick={download} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>PNG 다운로드</button>
               <button onClick={openEditor}
                 style={{ padding:"12px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer" }}>편집</button>
-              <button onClick={()=>{try{const d=canvasRef.current?.toDataURL("image/png");if(d){navigator.clipboard.write([new ClipboardItem({"image/png":fetch(d).then(r=>r.blob())})]);}}catch{}alert("복사됨!");}}
+              <button onClick={async()=>{try{const d=canvasRef.current?.toDataURL("image/png");if(d){const blob=await fetch(d).then(r=>r.blob());await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);alert("복사됨!");}else{alert("이미지를 생성해주세요.");}}catch(e){alert("복사 실패: 브라우저가 이미지 복사를 지원하지 않습니다.");}}}
                 style={{ padding:"12px 16px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>복사</button>
             </div>
 
