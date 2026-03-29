@@ -925,7 +925,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
                   {(s.bullets||[]).map((b,j) => (
                     <div key={j} style={{ display:"flex", gap:mini?3:8, marginBottom:mini?2:6, alignItems:"flex-start" }}>
                       <div style={{ width:mini?3:5, height:mini?3:5, borderRadius:"50%", background:theme.accent, marginTop:mini?3:6, flexShrink:0 }} />
-                      <div style={{ fontSize:mini?6:13, color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85 }}>{b}</div>
+                      <div style={{ color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85 }}>{b}</div>
                     </div>
                   ))}
                 </div>

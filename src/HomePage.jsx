@@ -133,8 +133,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           section{padding-left:12px!important;padding-right:12px!important}
           h1{font-size:24px!important}
           h2{font-size:20px!important}
-          .compare-table{font-size:10px!important;min-width:auto!important}
-          .compare-table th,.compare-table td{padding:8px 4px!important;font-size:10px!important}
+          .compare-table{font-size:11px!important;min-width:auto!important}
+          .compare-table th,.compare-table td{padding:8px 4px!important;font-size:11px!important}
+          .point-grid{grid-template-columns:1fr!important}
         }
         .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
         .review-card:hover { transform: translateY(-4px) !important; }
@@ -626,7 +627,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               </div>
             </FadeIn>
             <FadeIn delay={0.1}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="point-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {[
                   { title: lang === "ko" ? "매일 출석체크" : "Daily check-in", point: "+3P", desc: lang === "ko" ? "하루 한 번 출석만 해도" : "Just check in once a day", color: "#7c6aff" },
                   { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+2P", desc: lang === "ko" ? "커뮤니티 글 작성 시" : "When posting in community", color: "#22c55e" },
@@ -669,7 +670,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 6 }}>{p.title}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: p.color, marginBottom: 8 }}>{p.point}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{p.desc}</div>
-                <button onClick={p.onClick} style={{ width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(124,106,255,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={p.onClick} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(124,106,255,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
                   {p.btnText}
                 </button>
               </div>

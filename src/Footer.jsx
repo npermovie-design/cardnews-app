@@ -19,7 +19,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5 }}>{t("community") || "커뮤니티"}</div>
               {[{id:"info",label:t("info")||"정보공유"},{id:"qna",label:t("qna")||"질문답변"},{id:"free",label:t("free")||"자유게시판"},{id:"review",label:t("review")||"사용후기"},{id:"archive",label:t("archive")||"자료실"}].map(cc => (
-                <div key={cc.id} onClick={() => navigateBoard?.(cc.id)} style={{ fontSize: 13, color: C.muted, padding: "5px 0", cursor: "pointer" }}
+                <div key={cc.id} onClick={() => navigateBoard?.(cc.id)} style={{ fontSize: 13, color: C.muted, padding: "7px 0", cursor: "pointer", transition: "color 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                   onMouseLeave={e => e.currentTarget.style.color = C.muted}>
                   {cc.label}
@@ -29,7 +29,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5 }}>{t("service") || "서비스"}</div>
               {[{ai:"blog_naver_intro",label:t("blogWrite")||"블로그 글쓰기"},{ai:"cardnews_simple",label:t("cardNews")||"카드뉴스"},{ai:"product_shot",label:t("imageGen")||"이미지 생성"}].map(cc => (
-                <div key={cc.ai} onClick={() => navigateAi?.(cc.ai)} style={{ fontSize: 13, color: C.muted, padding: "5px 0", cursor: "pointer" }}
+                <div key={cc.ai} onClick={() => navigateAi?.(cc.ai)} style={{ fontSize: 13, color: C.muted, padding: "7px 0", cursor: "pointer", transition: "color 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                   onMouseLeave={e => e.currentTarget.style.color = C.muted}>
                   {cc.label}
@@ -43,7 +43,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
             {[{label:t("terms")||"이용약관",tab:"terms"},{label:t("privacy")||"개인정보처리방침",tab:"privacy"},{label:t("refund")||"환불정책",tab:"refund"}].map(item => (
               <button key={item.tab} onClick={() => navigate?.("legal", item.tab)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.muted, padding: "10px 8px", fontWeight: item.tab==="privacy"?700:400, textDecoration: "underline" }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.muted, padding: "10px 8px", fontWeight: item.tab==="privacy"?700:400, textDecoration: "underline", minHeight: 44, transition: "color 0.12s" }}
                 onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                 onMouseLeave={e => e.currentTarget.style.color = C.muted}>
                 {item.label}

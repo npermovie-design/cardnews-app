@@ -655,11 +655,11 @@ export default function App() {
                 로그인 / 회원가입
               </button>
               <button onClick={() => { setShowPointsModal(false); navigate("pricing"); }}
-                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.3)", cursor: "pointer", background: "rgba(124,106,255,0.1)", color: "#a5b4fc", fontSize: 13, fontWeight: 700 }}>
+                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.2)", cursor: "pointer", background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 13, fontWeight: 700 }}>
                 포인트 충전하기
               </button>
               <button onClick={() => setShowPointsModal(false)}
-                style={{ padding: "9px", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "rgba(255,255,255,0.35)", fontSize: 12 }}>
+                style={{ padding: "9px", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "rgba(26,23,48,0.35)", fontSize: 12 }}>
                 닫기
               </button>
             </div>

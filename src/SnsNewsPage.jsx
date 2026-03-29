@@ -449,7 +449,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
             {/* 검색 */}
             <div style={{ position: "relative" }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="검색..."
-                style={{ padding: "8px 14px 8px 32px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#fff", color: text, fontSize: 13, outline: "none", width: 180 }} />
+                style={{ padding: "8px 14px 8px 32px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#fff", color: text, fontSize: 13, outline: "none", width: "min(180px, 40vw)" }} />
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
               </svg>
@@ -475,7 +475,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
             <div style={{ fontSize: 13, lineHeight: 1.8 }}>SNS 관련 소식이 등록되면 여기서 확인할 수 있어요</div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }} className="card-grid">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: 20 }} className="card-grid">
             {articles.map(a => (
               <NewsCard key={a.id} article={a} onClick={() => viewArticle(a)} isDark={isDark} />
             ))}

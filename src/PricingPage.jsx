@@ -285,7 +285,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   <button
                     onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan, isYearly)}
                     disabled={isLoading || (plan.free && !!user)}
-                    style={{ padding: "12px", borderRadius: 11, border: (plan.free && user) ? "1px solid " + C.border : "none", cursor: (plan.free && user) || isLoading ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%",
+                    style={{ padding: "13px", borderRadius: 11, border: (plan.free && user) ? "1px solid " + C.border : "none", cursor: (plan.free && user) || isLoading ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%", minHeight: 44,
                       background: (plan.free && user) ? (isDark?"rgba(255,255,255,0.06)":"#f0f0f5") : isLoading ? "rgba(99,102,241,0.3)" : plan.gradient,
                       color: (plan.free && user) ? C.muted : "#fff",
                       opacity: (!plan.free && PAYMENT_ENABLED === false) ? 0.55 : 1,
@@ -337,7 +337,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   <button
                     onClick={() => handleOneOff(plan)}
                     disabled={loading === plan.id}
-                    style={{ width: "100%", padding: "11px", borderRadius: 9, border: "none", cursor: loading === plan.id ? "not-allowed" : "pointer", background: loading === plan.id ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 800,
+                    style={{ width: "100%", padding: "13px", borderRadius: 9, border: "none", cursor: loading === plan.id ? "not-allowed" : "pointer", background: loading === plan.id ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 800, minHeight: 44,
                       opacity: PAYMENT_ENABLED === false ? 0.55 : 1,
                     }}>
                     {!user ? p("pricingLogin") : loading === plan.id ? p("pricingOpening") : p("pricingBuy")}

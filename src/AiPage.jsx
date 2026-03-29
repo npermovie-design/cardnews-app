@@ -83,14 +83,17 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     const active = aiMenu === id || aiMenu.startsWith(baseId) || (ids && ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
     return (
       <button onClick={() => setAiMenu(id)} style={{
-        width: "100%", padding: "10px 12px",
+        width: "100%", padding: "11px 12px",
         borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
-        fontSize: 14, fontWeight: active ? 700 : 400,
+        fontSize: 13, fontWeight: active ? 700 : 500,
         borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: icon ? 7 : 0, marginBottom: 2,
-      }}>
+        minHeight: 40, transition: "background 0.12s",
+      }}
+        onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(99,102,241,0.05)"; }}
+        onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
         {icon && (typeof icon === "string" && icon.startsWith("/") ? <img src={icon} alt="" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} /> : <span style={{ fontSize: 14 }}>{icon}</span>)}
         <span style={{ flex: 1 }}>{label}</span>
         {badge && (

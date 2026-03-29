@@ -1332,7 +1332,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:13, fontWeight:700, color:text }}>이미지 크기</div>
               <div style={{ fontSize:14, fontWeight:900, color:"#7c6aff" }}>{imgW} × {imgH} px</div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
+            <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
                   style={{ padding:"8px 4px",borderRadius:12,border:`1.5px solid ${selSize===i?"#7c6aff":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>

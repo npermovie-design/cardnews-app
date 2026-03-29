@@ -48,7 +48,7 @@ export default function EventPage({ C, navigate }) {
     return (
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
         <button onClick={() => setSelected(null)}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 13, marginBottom: 20, padding: 0 }}>
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 13, marginBottom: 20, padding: "10px 0", minHeight: 44 }}>
           ← 이벤트 목록
         </button>
         <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 20, overflow: "hidden" }}>

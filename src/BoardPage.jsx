@@ -2083,7 +2083,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 {/* 자료실은 관리자만 글쓰기 가능 */}
                 {(subCat!=="archive" || user?.role==="admin") && (
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                    style={{padding:"8px 14px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)"}}>
+                    style={{padding:"10px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)",minHeight:44}}>
                     {subCat==="archive"?"자료 등록":t("writePost")}
                   </button>
                 )}
