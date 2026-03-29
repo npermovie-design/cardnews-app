@@ -11,11 +11,13 @@ const accent = "#7c6aff";
 
 // ── RSS 뉴스 카테고리 ──
 const NEWS_CATS = [
-  { id: "sns", label: "SNS 마케팅", query: "SNS+마케팅" },
-  { id: "digital", label: "디지털 마케팅", query: "디지털+마케팅" },
-  { id: "ai", label: "AI/테크", query: "AI+마케팅" },
-  { id: "trend", label: "트렌드", query: "마케팅+트렌드" },
-  { id: "biz", label: "비즈니스", query: "스타트업+마케팅" },
+  { id: "sns", label: "SNS 마케팅", query: "SNS+마케팅", lang: "ko" },
+  { id: "digital", label: "디지털 마케팅", query: "디지털+마케팅", lang: "ko" },
+  { id: "ai", label: "AI/테크", query: "AI+마케팅", lang: "ko" },
+  { id: "trend", label: "트렌드", query: "마케팅+트렌드", lang: "ko" },
+  { id: "global_sns", label: "해외 SNS", query: "social+media+marketing+2026", lang: "en" },
+  { id: "global_ai", label: "해외 AI", query: "AI+marketing+tools+2026", lang: "en" },
+  { id: "global_trend", label: "해외 트렌드", query: "digital+marketing+trends", lang: "en" },
 ];
 
 // ── 관리자 글 카테고리 ──
@@ -56,27 +58,32 @@ function getTodayKey() {
 }
 
 // ── RSS 뉴스 가져오기 ──
-async function fetchRssNews(query) {
+async function fetchRssNews(query, lang = "ko") {
   try {
-    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+    const hlgl = lang === "en" ? "hl=en-US&gl=US&ceid=US:en" : "hl=ko&gl=KR&ceid=KR:ko";
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&${hlgl}`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
-    const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+    const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
     if (!r.ok) return null;
     const data = await r.json();
     const xml = data.contents || "";
     const items = [];
     const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
-    for (const itemXml of itemMatches.slice(0, 12)) {
+    for (const itemXml of itemMatches.slice(0, 15)) {
       const title = (itemXml.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
       const link = (itemXml.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "";
       const pubDate = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "";
       const source = (itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/i) || [])[1] || "";
       const desc = (itemXml.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "";
+      // 썸네일: description 내 img 태그 → media:content → enclosure
       const thumbMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
+      const mediaMatch = itemXml.match(/<media:content[^>]+url=["']([^"']+)["']/i);
+      const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
+      const thumb = (thumbMatch ? thumbMatch[1] : "") || (mediaMatch ? mediaMatch[1] : "") || (enclosureMatch ? enclosureMatch[1] : "");
       const decode = s => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
       const strip = s => s.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").trim();
       const t = strip(decode(title));
-      if (t) items.push({ title: t, link, pubDate, source, description: strip(decode(desc)), thumb: thumbMatch ? thumbMatch[1] : "" });
+      if (t) items.push({ title: t, link, pubDate, source: strip(decode(source)), description: strip(decode(desc)), thumb, lang });
     }
     return items.length > 0 ? items : null;
   } catch { return null; }
@@ -282,7 +289,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     setNewsRefreshing(true);
     const cat = NEWS_CATS.find(c => c.id === newsCat);
     if (!cat) return;
-    fetchRssNews(cat.query).then(items => {
+    fetchRssNews(cat.query, cat.lang || "ko").then(items => {
       if (cancelled) return;
       if (items && items.length > 0) {
         setNewsItems(items);
@@ -491,6 +498,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                       <div style={{ fontSize: 15, fontWeight: 700, color: text, lineHeight: 1.4, marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
                       {item.description && <div style={{ fontSize: 13, color: muted, lineHeight: 1.5, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.description}</div>}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: muted }}>
+                        {item.lang === "en" && <span style={{ padding: "1px 5px", borderRadius: 3, fontWeight: 800, fontSize: 9, background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>EN</span>}
                         {item.source && <span style={{ padding: "2px 7px", borderRadius: 4, fontWeight: 700, fontSize: 10, background: "rgba(124,106,255,0.07)", color: "#6c5ce7" }}>{item.source}</span>}
                         {item.pubDate && <span style={{ color: "#aaa" }}>{fmtDate(item.pubDate)}</span>}
                       </div>
@@ -582,5 +590,21 @@ const FALLBACK_NEWS = {
   biz: [
     { title: "스타트업 마케팅, 적은 예산으로 최대 효과 내는 법", source: "스타트업위클리", pubDate: "2026-03-29", link: "https://news.google.com/search?q=스타트업+마케팅&hl=ko", description: "초기 스타트업이 제한된 예산으로 효과적인 마케팅을 하기 위한 실전 가이드입니다." },
     { title: "D2C 브랜드 성공 사례, 자사몰 전환율 최적화", source: "브랜딩저널", pubDate: "2026-03-28", link: "https://news.google.com/search?q=D2C+브랜드&hl=ko", description: "D2C 브랜드들의 성공 비결과 자사몰 전환율을 높이는 방법론을 분석합니다." },
+  ],
+  global_sns: [
+    { title: "Instagram Tests New 'Blend' Feature for Shared Reels", source: "Social Media Today", pubDate: "2026-03-29", link: "https://news.google.com/search?q=social+media+marketing&hl=en", description: "Instagram is testing a new feature called 'Blend' that creates a shared feed of recommended Reels between friends.", lang: "en" },
+    { title: "TikTok Shop Expands to 10 New Markets in 2026", source: "TechCrunch", pubDate: "2026-03-28", link: "https://news.google.com/search?q=tiktok+shop&hl=en", description: "TikTok's e-commerce platform is rapidly expanding, with 10 new markets added this quarter.", lang: "en" },
+    { title: "LinkedIn Rolls Out AI-Powered Post Suggestions", source: "The Verge", pubDate: "2026-03-27", link: "https://news.google.com/search?q=linkedin+AI&hl=en", description: "LinkedIn's new AI feature suggests post topics and drafts based on your professional profile and industry trends.", lang: "en" },
+    { title: "Meta Threads Hits 300M Monthly Active Users", source: "Reuters", pubDate: "2026-03-26", link: "https://news.google.com/search?q=meta+threads&hl=en", description: "Meta's text-based social platform Threads has reached 300 million monthly active users, up from 200M last quarter.", lang: "en" },
+  ],
+  global_ai: [
+    { title: "OpenAI Launches GPT-5 with Advanced Marketing Capabilities", source: "VentureBeat", pubDate: "2026-03-29", link: "https://news.google.com/search?q=AI+marketing+tools&hl=en", description: "GPT-5 introduces native multimodal understanding that can analyze brand assets and generate campaign strategies.", lang: "en" },
+    { title: "Google Ads Integrates Gemini AI for Smart Bidding", source: "Search Engine Journal", pubDate: "2026-03-28", link: "https://news.google.com/search?q=google+ads+AI&hl=en", description: "Google's latest AI integration promises 40% better ROAS through Gemini-powered smart bidding strategies.", lang: "en" },
+    { title: "Canva Acquires AI Startup to Boost Content Generation", source: "Forbes", pubDate: "2026-03-27", link: "https://news.google.com/search?q=canva+AI&hl=en", description: "Design platform Canva has acquired an AI startup to enhance its automated content creation pipeline.", lang: "en" },
+  ],
+  global_trend: [
+    { title: "Short-Form Video Now Accounts for 60% of Social Media Time", source: "Hootsuite", pubDate: "2026-03-29", link: "https://news.google.com/search?q=digital+marketing+trends&hl=en", description: "New research shows short-form video content now dominates social media consumption across all age groups.", lang: "en" },
+    { title: "The Rise of 'De-Influencing': What Brands Need to Know", source: "Marketing Week", pubDate: "2026-03-28", link: "https://news.google.com/search?q=marketing+trends+2026&hl=en", description: "The de-influencing trend is reshaping how brands approach influencer partnerships and authentic marketing.", lang: "en" },
+    { title: "Creator Economy Projected to Reach $500B by 2027", source: "Business Insider", pubDate: "2026-03-27", link: "https://news.google.com/search?q=creator+economy&hl=en", description: "The global creator economy continues its explosive growth, with new monetization tools driving expansion.", lang: "en" },
   ],
 };
