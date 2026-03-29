@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useI18n } from "./i18n.jsx";
 import { supabase } from "./storage";
 
+// 기획 저장 헬퍼 (LibraryPage에서 사용)
+const PLAN_SAVES_KEY = "nper_plans_v1";
+function getPlanSaves() { try { return JSON.parse(localStorage.getItem(PLAN_SAVES_KEY)||"[]"); } catch { return []; } }
+function deletePlan(id) { try { localStorage.setItem(PLAN_SAVES_KEY, JSON.stringify(getPlanSaves().filter(x=>x.id!==id))); } catch {} }
+
 /* ════════════════════════════════════════════════════════════
    AI 보관함 (Library) - 블로그/카드뉴스/상세페이지 저장 관리
 ════════════════════════════════════════════════════════════ */

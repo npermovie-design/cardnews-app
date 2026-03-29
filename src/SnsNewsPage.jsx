@@ -105,11 +105,17 @@ function renderBriefing(content) {
       return <div key={i} style={{ fontSize: 17, fontWeight: 800, color: "#1a1730", marginTop: i === 0 ? 0 : 24, marginBottom: 6, lineHeight: 1.5 }}>{t.replace(/^#{1,3}\s*/, "")}</div>;
     }
     if (t.startsWith("📎")) {
-      const parts = t.replace(/^📎\s*/, "").split(/(#[^\s#]+)/g).filter(Boolean);
+      const raw = t.replace(/^📎\s*/, "");
+      const parts = raw.split(/(#[^\s#]+)/g).filter(Boolean);
       return (
-        <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 13 }}>📎</span>
-          {parts.map((p, j) => p.startsWith("#") ? <span key={j} style={{ fontSize: 12, fontWeight: 700, color: accent, background: "rgba(124,106,255,0.1)", borderRadius: 20, padding: "2px 8px" }}>{p}</span> : <span key={j} style={{ fontSize: 12, color: "#888" }}>{p.trim()}</span>)}
+        <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, marginBottom: 4, alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.08)" }}>
+          <span style={{ fontSize: 12 }}>📎</span>
+          {parts.map((p, j) => {
+            if (p.startsWith("#")) return <span key={j} style={{ fontSize: 11, fontWeight: 700, color: accent, background: "rgba(124,106,255,0.1)", borderRadius: 20, padding: "2px 8px" }}>{p}</span>;
+            // "출처: 언론사명" 부분 강조
+            if (p.includes("출처")) return <span key={j} style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{p.trim()}</span>;
+            return <span key={j} style={{ fontSize: 11, color: "#888" }}>{p.trim()}</span>;
+          })}
         </div>
       );
     }
@@ -255,7 +261,25 @@ export default function SnsNewsPage({ C, user, navigate }) {
       try {
         const { callAI } = await import("./aiClient");
         const result = await callAI("claude-haiku-4-5", [
-          { role: "user", content: `오늘(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 작성해줘.\n\n형식:\n## 1. [뉴스 제목]\n[상세 내용 3~5문장]\n📎 관련 키워드: #키워드1 #키워드2\n\n총 5~7개 항목. 마크다운 **볼드** 사용하지 마. 순수 텍스트로.` }
+          { role: "user", content: `[${todayLabel} 마케팅 뉴스클리핑] 오늘 기준 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
+
+형식 (반드시 이 형식을 따라):
+## 1. [구체적인 뉴스 제목]
+[상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함. 실제 뉴스처럼 객관적으로 작성]
+📎 출처: [언론사/플랫폼명] | 관련: #키워드1 #키워드2
+
+## 2. [뉴스 제목]
+...
+
+규칙:
+- 총 7개 항목
+- 각 항목은 ## 번호. 제목 형식
+- 내용은 3~5문장으로 구체적으로
+- 📎 출처와 관련 키워드 필수
+- 이모지 사용 금지 (📎만 허용)
+- 마크다운 볼드(**) 사용 금지
+- 카테고리: 플랫폼 업데이트, 알고리즘 변경, 마케팅 트렌드, AI/테크, 이커머스, 크리에이터 경제 등 다양하게
+- 한국 시장 뉴스 4개 + 글로벌 뉴스 3개 비율` }
         ], 2500);
         const content = typeof result === "string" ? result : (result?.content || result?.text || "");
         if (!cancelled && content) {
