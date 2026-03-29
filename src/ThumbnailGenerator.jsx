@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import SimpleThumbnailEditor from "./SimpleThumbnailEditor";
 
 /* ── Google Fonts 로더 ── */
 const _loaded = new Set();
@@ -201,6 +202,8 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
     try { return JSON.parse(localStorage.getItem("nper_custom_fonts")||"[]").map(f=>f.name); } catch { return []; }
   });
   const [activeTab, setActiveTab] = useState("design"); // design | bg | text
+  const [editMode, setEditMode] = useState(false);
+  const [editImageUrl, setEditImageUrl] = useState(null);
   const canvasRef = useRef(null);
   const bgInputRef = useRef(null);
   const fontFileRef = useRef(null);
@@ -393,6 +396,12 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
     a.click();
   };
 
+  const openEditor = () => {
+    const c = canvasRef.current; if (!c) return;
+    setEditImageUrl(c.toDataURL("image/png"));
+    setEditMode(true);
+  };
+
   const cur = texts[selText];
   const tabBtn = (id, label) => (
     <button onClick={()=>setActiveTab(id)}
@@ -427,6 +436,8 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
               <button onClick={download} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>PNG 다운로드</button>
+              <button onClick={openEditor}
+                style={{ padding:"12px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer" }}>편집</button>
               <button onClick={()=>{try{const d=canvasRef.current?.toDataURL("image/png");if(d){navigator.clipboard.write([new ClipboardItem({"image/png":fetch(d).then(r=>r.blob())})]);}}catch{}alert("복사됨!");}}
                 style={{ padding:"12px 16px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>복사</button>
             </div>
@@ -698,6 +709,22 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
           </div>
         </div>
       </div>
+
+      {/* fabric.js 라이브 편집 모달 */}
+      {editMode && editImageUrl && (
+        <SimpleThumbnailEditor
+          imageDataUrl={editImageUrl}
+          width={canvasW}
+          height={canvasH}
+          isDark={D}
+          onClose={() => setEditMode(false)}
+          onSave={(dataUrl) => {
+            // 저장된 이미지를 배경으로 설정
+            setBgImg(dataUrl);
+            setEditMode(false);
+          }}
+        />
+      )}
     </div>
   );
 }

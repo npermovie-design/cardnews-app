@@ -4701,6 +4701,328 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
   );
 }
 
+/* ── 파일 받아쓰기 컴포넌트 ── */
+const FILE_TEMPLATES = [
+  { id:"info",    icon:"📋", label:"정보성 글",     desc:"정보/노하우/가이드" },
+  { id:"visit",   icon:"📍", label:"체험/방문후기", desc:"장소/매장 방문 후기" },
+  { id:"travel",  icon:"✈️",  label:"여행 후기",     desc:"국내외 여행 기록" },
+  { id:"product", icon:"📦", label:"제품 후기",     desc:"제품/서비스 리뷰" },
+  { id:"column",  icon:"📰", label:"칼럼",         desc:"전문 의견/분석 글" },
+  { id:"article", icon:"🗞️",  label:"기사 방식",     desc:"뉴스 기사 스타일" },
+];
+
+function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
+  const D = isDark;
+  const text = D ? "#e8eaed" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const accent = "#7c6aff";
+  const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
+  const card = D ? "rgba(255,255,255,0.05)" : "#fff";
+  const accentBg = D ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)";
+
+  const [file, setFile] = useState(null);
+  const [fileContent, setFileContent] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
+  const fileRef = useRef(null);
+
+  const cardStyle = { background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 12 };
+  const inputStyle = { width:"100%", padding:"11px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:ibg, color:text, fontSize:13, outline:"none" };
+  const btnStyle = { padding:"14px", borderRadius:12, border:"none", cursor:"pointer", fontSize:15, fontWeight:900, width:"100%", background:`linear-gradient(135deg,${accent},#8b5cf6)`, color:"#fff" };
+
+  // 파일 업로드 처리
+  const handleFile = async (f) => {
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { setError("파일은 10MB 이하만 가능합니다."); return; }
+    setFile(f);
+    setError("");
+    setAnalyzing(true);
+    setFileContent("");
+    setResult("");
+    setSelectedTemplate(null);
+    try {
+      const { callAI } = await import("./aiClient");
+      if (f.type.startsWith("image/")) {
+        const reader = new FileReader();
+        const base64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+        const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:f.type,data:base64.split(",")[1]}},
+          {type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 텍스트가 있다면 모두 추출하고, 이미지의 주제와 내용을 자세히 기술해주세요."}
+        ]}], 1500);
+        setFileContent(txt);
+      } else {
+        const rawText = await f.text();
+        const content = rawText.slice(0, 5000);
+        setFileContent(content);
+      }
+    } catch (err) {
+      setError("파일 분석 중 오류: " + err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // 템플릿 선택 후 글 생성
+  const generateFromTemplate = async (tmpl) => {
+    if (!fileContent.trim()) { setError("파일 내용이 없습니다."); return; }
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    setSelectedTemplate(tmpl);
+    setGenerating(true);
+    setResult("");
+    setError("");
+    try {
+      const { callAIStream } = await import("./aiClient");
+      const templatePrompts = {
+        info: "정보성 블로그 글 (유용한 정보/노하우/가이드 형식, 검색 최적화 제목 포함, 소제목으로 구분된 체계적 구성)",
+        visit: "체험/방문후기 형식 글 (방문 전 기대 → 방문 과정 → 솔직 총평, 장단점 명확, 재방문 의사 포함)",
+        travel: "여행 후기 형식 글 (일정별 구조화, 맛집/명소/교통 정보, 실제 여행자 감성, 예산 팁 포함)",
+        product: "제품 후기 형식 글 (구매 전 고민 → 언박싱 → 실사용기, 장단점 비교, 추천 대상/가성비 총평)",
+        column: "전문 칼럼 형식 글 (주장 → 근거 → 반론 → 결론, 데이터/사례/통계 인용, 논리적 전개)",
+        article: "뉴스 기사 방식 글 (역피라미드 구조, 5W1H 포함, 객관적 사실 기반, 보도 형식)",
+      };
+      const prompt = `다음 파일 내용을 기반으로 ${templatePrompts[tmpl] || "블로그 글"}로 변환해주세요.
+
+[파일 내용]
+${fileContent.slice(0, 4000)}
+
+[작성 규칙]
+- 2,000~3,000자 분량
+- 한국어로 작성
+- 소제목 3~5개로 구조화
+- 자연스러운 문체
+- 글 맨 앞에 SEO 최적화 제목 포함
+- 마지막에 해시태그 10개 추가
+- 이모티콘/이모지/마크다운 사용 금지, 순수 텍스트만`;
+
+      await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], 4000, (accumulated) => {
+        setResult(accumulated);
+      });
+    } catch (err) {
+      setError("글 생성 중 오류: " + err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // 다운로드 기능
+  const downloadTxt = () => {
+    const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "글_받아쓰기.txt"; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const downloadDoc = () => {
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>글 받아쓰기</title></head><body style="font-family:'맑은 고딕',sans-serif;font-size:12pt;line-height:1.8;">${result.split("\n").map(l => l.trim() ? `<p>${l}</p>` : "<br>").join("")}</body></html>`;
+    const blob = new Blob(["\ufeff" + html], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "글_받아쓰기.doc"; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const downloadPdf = () => {
+    const lines = result.split("\n");
+    let y = 50;
+    const pageW = 595, pageH = 842, margin = 50, lineH = 18, maxW = pageW - margin * 2;
+    let pages = [[]];
+    let curPage = 0;
+    for (const line of lines) {
+      if (y + lineH > pageH - margin) { pages.push([]); curPage++; y = margin; }
+      // 한 줄이 길면 줄바꿈 (약 40자 단위)
+      const chunks = [];
+      if (line.length > 40) {
+        for (let i = 0; i < line.length; i += 40) chunks.push(line.slice(i, i + 40));
+      } else {
+        chunks.push(line || " ");
+      }
+      for (const chunk of chunks) {
+        if (y + lineH > pageH - margin) { pages.push([]); curPage++; y = margin; }
+        pages[curPage].push({ text: chunk, y });
+        y += lineH;
+      }
+    }
+    // 간단한 PDF 생성 (텍스트 전용)
+    let pdf = "%PDF-1.4\n";
+    const objs = [];
+    const addObj = (content) => { objs.push({ offset: pdf.length, content }); pdf += `${objs.length} 0 obj\n${content}\nendobj\n`; };
+    // 1: Catalog
+    addObj(`<< /Type /Catalog /Pages 2 0 R >>`);
+    // 2: Pages
+    const pageRefs = pages.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
+    addObj(`<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>`);
+    // 3: Font
+    addObj(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`);
+    // Pages + Contents
+    for (let p = 0; p < pages.length; p++) {
+      const contentIdx = 4 + p * 2 + 1;
+      const pageIdx = 4 + p * 2;
+      // 텍스트를 ASCII로 변환 (한글은 ?로 대체 - 기본 PDF 폰트 제한)
+      const streamLines = [`BT /F1 11 Tf`];
+      for (const item of pages[p]) {
+        const safe = item.text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+        streamLines.push(`${margin} ${pageH - item.y} Td (${safe}) Tj`);
+        streamLines.push(`${-margin} ${-(pageH - item.y)} Td`);
+      }
+      streamLines.push("ET");
+      const stream = streamLines.join("\n");
+      addObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Contents ${contentIdx} 0 R /Resources << /Font << /F1 3 0 R >> >> >>`);
+      addObj(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    }
+    const xrefOff = pdf.length;
+    pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+    for (const o of objs) pdf += `${String(o.offset).padStart(10, "0")} 00000 n \n`;
+    pdf += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOff}\n%%EOF`;
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "글_받아쓰기.pdf"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", background: D ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:640, margin:"0 auto", padding:"24px 20px 60px" }}>
+
+        {/* 파일 업로드 영역 */}
+        {!result && (
+          <div style={cardStyle}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>파일 업로드</div>
+            <div style={{ fontSize:12, color:muted, marginBottom:12, lineHeight:1.6 }}>
+              이미지, PDF, TXT 파일을 업로드하면 AI가 내용을 분석하고 원하는 형식의 글로 변환해줘요
+            </div>
+            <div onClick={() => fileRef.current?.click()}
+              style={{ border:`2px dashed ${bdr}`, borderRadius:14, padding:"36px 20px", textAlign:"center", cursor:"pointer", background:ibg, transition:"border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+              <div style={{ width:56, height:56, borderRadius:16, background:`${accent}15`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+                <span style={{ fontSize:24 }}>📄</span>
+              </div>
+              <div style={{ fontSize:14, fontWeight:700, color:text }}>클릭하여 파일을 선택하세요</div>
+              <div style={{ fontSize:12, color:muted, marginTop:4 }}>이미지 (JPG, PNG), PDF, TXT (최대 10MB)</div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*,.pdf,.txt,.doc,.docx" style={{ display:"none" }}
+              onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; handleFile(f); }} />
+            {file && (
+              <div style={{ marginTop:10, padding:"10px 14px", borderRadius:10, background:accentBg, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:14 }}>📎</span>
+                <span style={{ fontSize:13, fontWeight:700, color:accent, flex:1 }}>{file.name}</span>
+                <span style={{ fontSize:11, color:muted }}>{(file.size / 1024).toFixed(0)}KB</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 분석 중 */}
+        {analyzing && (
+          <div style={{ ...cardStyle, textAlign:"center", padding:32 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:text, marginBottom:8 }}>파일 분석 중...</div>
+            <div style={{ fontSize:13, color:muted }}>AI가 파일 내용을 읽고 있어요</div>
+          </div>
+        )}
+
+        {/* 파일 분석 완료 → 템플릿 선택 */}
+        {fileContent && !result && !analyzing && (
+          <>
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:6 }}>분석된 내용 미리보기</div>
+              <div style={{ fontSize:12, color:muted, lineHeight:1.8, maxHeight:150, overflowY:"auto", padding:"10px 12px", borderRadius:10, background:ibg, border:`1px solid ${bdr}`, whiteSpace:"pre-wrap" }}>
+                {fileContent.slice(0, 500)}{fileContent.length > 500 ? "..." : ""}
+              </div>
+            </div>
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:6 }}>글 형식 선택</div>
+              <div style={{ fontSize:12, color:muted, marginBottom:12 }}>어떤 형식으로 글을 변환할까요?</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8 }}>
+                {FILE_TEMPLATES.map(t => {
+                  const isA = selectedTemplate === t.id;
+                  return (
+                    <button key={t.id} onClick={() => generateFromTemplate(t.id)}
+                      disabled={generating}
+                      style={{ padding:"14px", borderRadius:12, textAlign:"left", cursor: generating ? "not-allowed" : "pointer",
+                        border: isA ? `2px solid ${accent}` : `2px solid ${bdr}`,
+                        background: isA ? accentBg : ibg, opacity: generating && !isA ? 0.5 : 1, transition:"all 0.15s" }}>
+                      <div style={{ fontSize:20, marginBottom:4 }}>{t.icon}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color: isA ? accent : text }}>{t.label}</div>
+                      <div style={{ fontSize:11, color:muted, marginTop:2 }}>{t.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 생성 중 */}
+        {generating && !result && (
+          <div style={{ ...cardStyle, textAlign:"center", padding:32 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:text, marginBottom:8 }}>글 생성 중...</div>
+            <div style={{ fontSize:13, color:muted }}>선택한 형식에 맞게 변환하고 있어요</div>
+          </div>
+        )}
+
+        {/* 결과 표시 */}
+        {result && (
+          <>
+            <div style={cardStyle}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:text }}>변환 결과</div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <button onClick={() => { navigator.clipboard.writeText(result); }}
+                    style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                    복사
+                  </button>
+                </div>
+              </div>
+              <div style={{ fontSize:13, color:text, lineHeight:2, maxHeight:500, overflowY:"auto", padding:"14px 16px", borderRadius:10, background:ibg, border:`1px solid ${bdr}`, whiteSpace:"pre-wrap" }}>
+                {result}
+              </div>
+            </div>
+
+            {/* 다운로드 버튼 */}
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:10 }}>다운로드</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                <button onClick={downloadTxt} style={{ padding:"12px 8px", borderRadius:10, border:`1.5px solid ${bdr}`, background:ibg, cursor:"pointer", textAlign:"center" }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>📝</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:text }}>TXT</div>
+                  <div style={{ fontSize:10, color:muted }}>텍스트 파일</div>
+                </button>
+                <button onClick={downloadDoc} style={{ padding:"12px 8px", borderRadius:10, border:`1.5px solid ${bdr}`, background:ibg, cursor:"pointer", textAlign:"center" }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>📄</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:text }}>DOCX</div>
+                  <div style={{ fontSize:10, color:muted }}>워드 문서</div>
+                </button>
+                <button onClick={downloadPdf} style={{ padding:"12px 8px", borderRadius:10, border:`1.5px solid ${bdr}`, background:ibg, cursor:"pointer", textAlign:"center" }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>📕</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:text }}>PDF</div>
+                  <div style={{ fontSize:10, color:muted }}>PDF 문서</div>
+                </button>
+              </div>
+            </div>
+
+            {/* 다시 하기 */}
+            <button onClick={() => { setFile(null); setFileContent(""); setResult(""); setSelectedTemplate(null); setError(""); }}
+              style={{ ...btnStyle, background:"transparent", border:`1.5px solid ${bdr}`, color:muted, marginTop:8 }}>
+              다른 파일로 다시 하기
+            </button>
+          </>
+        )}
+
+        {error && <div style={{ marginTop:12, padding:14, borderRadius:12, background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", color:"#f87171", fontSize:13 }}>{error}</div>}
+      </div>
+    </div>
+  );
+}
+
 function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, showPointConfirm, defaultPlatform }) {
   const defaultIsLink = defaultPlatform && WRITE_PLATFORMS.find(p => p.id === defaultPlatform)?.link;
   const [category, setCategory] = useState(defaultIsLink ? "link" : "direct");
@@ -4710,7 +5032,7 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
 
   const directTabs = WRITE_PLATFORMS.filter(p => !p.link && !p.separator);
   const linkTabs = WRITE_PLATFORMS.filter(p => p.link);
-  const subTabs = category === "direct" ? directTabs : linkTabs;
+  const subTabs = category === "direct" ? directTabs : category === "link" ? linkTabs : [];
 
   const handleCategoryChange = (cat) => {
     setCategory(cat);
@@ -4729,11 +5051,11 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
         <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
           <div style={{ textAlign:"center", marginBottom:12 }}>
             <div style={{ fontSize:18, fontWeight:900, color:_text, marginBottom:3 }}>글쓰기</div>
-            <div style={{ fontSize:12, color:_muted }}>직접 작성하거나, 링크를 블로그 글로 변환할 수 있어요</div>
+            <div style={{ fontSize:12, color:_muted }}>직접 작성하거나, 링크/파일을 블로그 글로 변환할 수 있어요</div>
           </div>
           {/* 대분류 탭 */}
           <div style={{ display:"flex", justifyContent:"center", gap:4, marginBottom:10 }}>
-            {[{id:"direct",label:"직접 작성"},{id:"link",label:"링크에서 변환"}].map(c => {
+            {[{id:"direct",label:"직접 작성"},{id:"link",label:"링크에서 변환"},{id:"file",label:"파일 받아쓰기"}].map(c => {
               const active = category === c.id;
               return (
                 <button key={c.id} onClick={() => handleCategoryChange(c.id)} style={{
@@ -4744,27 +5066,31 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
               );
             })}
           </div>
-          {/* 세부 플랫폼 탭 */}
-          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${_bdr}`, flexWrap:"wrap" }}>
-            {subTabs.map(t => {
-              const active = platform === t.id;
-              return (
-                <button key={t.id} onClick={() => setPlatform(t.id)} style={{
-                  padding:"9px 16px", border:"none", cursor:"pointer", background:"transparent",
-                  color: active ? _accent : _muted, fontSize:13, fontWeight: active ? 700 : 400,
-                  borderBottom: active ? `2px solid ${_accent}` : "2px solid transparent",
-                  transition:"all 0.15s", marginBottom:-1, display:"flex", alignItems:"center", gap:5,
-                }}>
-                  {t.icon && <img src={t.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain", opacity: active ? 1 : 0.5 }} />}
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* 세부 플랫폼 탭 (파일 받아쓰기에서는 숨김) */}
+          {category !== "file" && (
+            <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${_bdr}`, flexWrap:"wrap" }}>
+              {subTabs.map(t => {
+                const active = platform === t.id;
+                return (
+                  <button key={t.id} onClick={() => setPlatform(t.id)} style={{
+                    padding:"9px 16px", border:"none", cursor:"pointer", background:"transparent",
+                    color: active ? _accent : _muted, fontSize:13, fontWeight: active ? 700 : 400,
+                    borderBottom: active ? `2px solid ${_accent}` : "2px solid transparent",
+                    transition:"all 0.15s", marginBottom:-1, display:"flex", alignItems:"center", gap:5,
+                  }}>
+                    {t.icon && <img src={t.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain", opacity: active ? 1 : 0.5 }} />}
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        {isLink ? (
+        {category === "file" ? (
+          <FileTranscriber isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+        ) : isLink ? (
           info.linkTab === "youtube" ? (
             <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
           ) : (

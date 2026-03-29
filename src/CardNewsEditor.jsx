@@ -331,7 +331,7 @@ export default function CardNewsEditor({
     if (!obj) { setSelProps({}); return; }
     const p = {
       type: obj.type,
-      fontSize: obj.fontSize || 24,
+      fontSize: obj.fontSize || 48,
       fontFamily: obj.fontFamily || "Pretendard",
       fill: obj.fill || "#000000",
       fontWeight: obj.fontWeight || "normal",
@@ -417,75 +417,78 @@ export default function CardNewsEditor({
   // Build layout-specific decorative elements and position title/body
   function getLayoutConfig(layout, fontSize, textColor, accentColor, bgColor) {
     const ac = accentColor || bgColor || "#7c6aff";
-    const fs = fontSize || 48;
+    const fs = fontSize || 56;
     const tc = textColor || "#ffffff";
+
+    const pad = 80; // 좌우 여백
+    const contentW = width - pad * 2; // 콘텐츠 영역 너비
 
     const layouts = {
       "center": {
-        title: { left: width / 2, top: height * 0.4, originX: "center", originY: "center", textAlign: "center", width: width - 160, fontSize: fs, fontWeight: "bold" },
-        body: { left: width / 2, top: height * 0.6, originX: "center", originY: "center", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.55), opacity: 0.85 },
+        title: { left: width / 2, top: height * 0.32, originX: "center", originY: "center", textAlign: "center", width: contentW, fontSize: Math.round(fs * 1.1), fontWeight: "bold", lineHeight: 1.3 },
+        body: { left: width / 2, top: height * 0.58, originX: "center", originY: "center", textAlign: "center", width: contentW, fontSize: Math.round(fs * 0.5), opacity: 0.85, lineHeight: 1.6 },
         decos: [],
       },
       "left-bar": {
-        title: { left: 60, top: height * 0.3, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: fs, fontWeight: "bold" },
-        body: { left: 60, top: height * 0.55, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 0.55), opacity: 0.85 },
+        title: { left: pad + 20, top: height * 0.25, originX: "left", originY: "top", textAlign: "left", width: contentW - 20, fontSize: Math.round(fs * 1.05), fontWeight: "bold", lineHeight: 1.3 },
+        body: { left: pad + 20, top: height * 0.50, originX: "left", originY: "top", textAlign: "left", width: contentW - 20, fontSize: Math.round(fs * 0.48), opacity: 0.85, lineHeight: 1.7 },
         decos: [
-          { type: "rect", props: { left: 0, top: 0, width: 12, height: height, fill: ac, selectable: false, evented: false, name: "deco_leftbar" } },
+          { type: "rect", props: { left: 0, top: 0, width: 14, height: height, fill: ac, selectable: false, evented: false, name: "deco_leftbar" } },
         ],
       },
       "top-bold": {
-        title: { left: width / 2, top: height * 0.15, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 1.4), fontWeight: "900" },
-        body: { left: width / 2, top: height * 0.75, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.45), opacity: 0.7 },
+        title: { left: width / 2, top: height * 0.12, originX: "center", originY: "top", textAlign: "center", width: contentW, fontSize: Math.round(fs * 1.5), fontWeight: "900", lineHeight: 1.2 },
+        body: { left: width / 2, top: height * 0.60, originX: "center", originY: "top", textAlign: "center", width: contentW, fontSize: Math.round(fs * 0.45), opacity: 0.7, lineHeight: 1.7 },
         decos: [],
       },
       "bottom-card": {
-        title: { left: width / 2, top: height * 0.65, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
-        body: { left: width / 2, top: height * 0.82, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.5), fill: "rgba(255,255,255,0.8)" },
+        title: { left: width / 2, top: height * 0.62, originX: "center", originY: "top", textAlign: "center", width: contentW, fontSize: Math.round(fs * 1.05), fontWeight: "bold", fill: "#ffffff", lineHeight: 1.3 },
+        body: { left: width / 2, top: height * 0.80, originX: "center", originY: "top", textAlign: "center", width: contentW, fontSize: Math.round(fs * 0.45), fill: "rgba(255,255,255,0.85)", lineHeight: 1.6 },
         decos: [
-          { type: "rect", props: { left: 40, top: height * 0.6, width: width - 80, height: height * 0.35, fill: "rgba(0,0,0,0.7)", rx: 20, ry: 20, selectable: false, evented: false, name: "deco_card" } },
+          { type: "rect", props: { left: 30, top: height * 0.55, width: width - 60, height: height * 0.40, fill: "rgba(0,0,0,0.7)", rx: 24, ry: 24, selectable: false, evented: false, name: "deco_card" } },
         ],
       },
       "magazine": {
-        title: { left: 60, top: height * 0.72, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 1.2), fontWeight: "bold" },
-        body: { left: 60, top: height * 0.88, originX: "left", originY: "top", textAlign: "left", width: width - 120, fontSize: Math.round(fs * 0.45), opacity: 0.8 },
+        title: { left: pad, top: height * 0.68, originX: "left", originY: "top", textAlign: "left", width: contentW, fontSize: Math.round(fs * 1.25), fontWeight: "bold", lineHeight: 1.2 },
+        body: { left: pad, top: height * 0.86, originX: "left", originY: "top", textAlign: "left", width: contentW, fontSize: Math.round(fs * 0.42), opacity: 0.8, lineHeight: 1.6 },
         decos: [
-          { type: "rect", props: { left: 0, top: height * 0.65, width: width, height: height * 0.35, fill: "rgba(0,0,0,0.5)", selectable: false, evented: false, name: "deco_magoverlay" } },
+          { type: "rect", props: { left: 0, top: height * 0.62, width: width, height: height * 0.38, fill: "rgba(0,0,0,0.55)", selectable: false, evented: false, name: "deco_magoverlay" } },
         ],
       },
       "minimal": {
-        title: { left: width / 2, top: height * 0.45, originX: "center", originY: "center", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.8), fontWeight: "bold" },
-        body: { left: width / 2, top: height * 0.55, originX: "center", originY: "top", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.4), opacity: 0.5 },
+        title: { left: width / 2, top: height * 0.40, originX: "center", originY: "center", textAlign: "center", width: contentW, fontSize: Math.round(fs * 0.95), fontWeight: "bold", lineHeight: 1.3 },
+        body: { left: width / 2, top: height * 0.56, originX: "center", originY: "top", textAlign: "center", width: contentW - 40, fontSize: Math.round(fs * 0.42), opacity: 0.55, lineHeight: 1.7 },
         decos: [
-          { type: "rect", props: { left: width / 2 - 30, top: height * 0.38, width: 60, height: 2, fill: ac, selectable: false, evented: false, name: "deco_minline" } },
+          { type: "rect", props: { left: width / 2 - 40, top: height * 0.33, width: 80, height: 3, fill: ac, selectable: false, evented: false, name: "deco_minline" } },
         ],
       },
       "quote": {
-        title: { left: width / 2, top: height * 0.42, originX: "center", originY: "center", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.9), fontWeight: "bold", fontStyle: "italic" },
-        body: { left: width / 2, top: height * 0.65, originX: "center", originY: "top", textAlign: "center", width: width - 200, fontSize: Math.round(fs * 0.4), opacity: 0.8 },
+        title: { left: width / 2, top: height * 0.40, originX: "center", originY: "center", textAlign: "center", width: contentW - 40, fontSize: Math.round(fs * 1.0), fontWeight: "bold", fontStyle: "italic", lineHeight: 1.4 },
+        body: { left: width / 2, top: height * 0.62, originX: "center", originY: "top", textAlign: "center", width: contentW - 40, fontSize: Math.round(fs * 0.42), opacity: 0.8, lineHeight: 1.7 },
         decos: [
-          { type: "textbox", props: { left: 80, top: height * 0.15, text: "\u201C", fontSize: 120, fill: tc, opacity: 0.15, fontFamily: "Georgia", selectable: false, evented: false, name: "deco_quotemark" } },
+          { type: "textbox", props: { left: pad, top: height * 0.12, text: "\u201C", fontSize: 160, fill: tc, opacity: 0.12, fontFamily: "Georgia", selectable: false, evented: false, name: "deco_quotemark" } },
         ],
       },
       "split-left": {
-        title: { left: width * 0.2, top: height * 0.4, originX: "center", originY: "center", textAlign: "center", width: width * 0.3, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
-        body: { left: width * 0.2, top: height * 0.6, originX: "center", originY: "top", textAlign: "center", width: width * 0.3, fontSize: Math.round(fs * 0.45), fill: "rgba(255,255,255,0.8)" },
+        title: { left: width * 0.2, top: height * 0.35, originX: "center", originY: "center", textAlign: "center", width: width * 0.32, fontSize: Math.round(fs * 1.0), fontWeight: "bold", fill: "#ffffff", lineHeight: 1.3 },
+        body: { left: width * 0.2, top: height * 0.58, originX: "center", originY: "top", textAlign: "center", width: width * 0.32, fontSize: Math.round(fs * 0.42), fill: "rgba(255,255,255,0.85)", lineHeight: 1.6 },
         decos: [
           { type: "rect", props: { left: 0, top: 0, width: width * 0.4, height: height, fill: ac, selectable: false, evented: false, name: "deco_splitpanel" } },
         ],
       },
       "stripe": {
-        title: { left: width / 2, top: height * 0.45, originX: "center", originY: "center", textAlign: "center", width: width - 100, fontSize: fs, fontWeight: "bold", fill: "#ffffff" },
-        body: { left: width / 2, top: height * 0.7, originX: "center", originY: "top", textAlign: "center", width: width - 160, fontSize: Math.round(fs * 0.5), opacity: 0.85 },
+        title: { left: width / 2, top: height * 0.43, originX: "center", originY: "center", textAlign: "center", width: contentW, fontSize: Math.round(fs * 1.1), fontWeight: "bold", fill: "#ffffff", lineHeight: 1.2 },
+        body: { left: width / 2, top: height * 0.68, originX: "center", originY: "top", textAlign: "center", width: contentW, fontSize: Math.round(fs * 0.45), opacity: 0.85, lineHeight: 1.7 },
         decos: [
-          { type: "rect", props: { left: 0, top: height * 0.35, width: width, height: height * 0.3, fill: ac || "rgba(0,0,0,0.8)", selectable: false, evented: false, name: "deco_stripe" } },
+          { type: "rect", props: { left: 0, top: height * 0.32, width: width, height: height * 0.32, fill: ac || "rgba(0,0,0,0.8)", selectable: false, evented: false, name: "deco_stripe" } },
         ],
       },
       "corner-accent": {
-        title: { left: width - 80, top: height * 0.65, originX: "right", originY: "top", textAlign: "right", width: width - 160, fontSize: fs, fontWeight: "bold" },
-        body: { left: width - 80, top: height * 0.8, originX: "right", originY: "top", textAlign: "right", width: width - 160, fontSize: Math.round(fs * 0.5), opacity: 0.8 },
+        title: { left: width - pad, top: height * 0.58, originX: "right", originY: "top", textAlign: "right", width: contentW, fontSize: Math.round(fs * 1.05), fontWeight: "bold", lineHeight: 1.3 },
+        body: { left: width - pad, top: height * 0.76, originX: "right", originY: "top", textAlign: "right", width: contentW, fontSize: Math.round(fs * 0.42), opacity: 0.8, lineHeight: 1.6 },
         decos: [
-          { type: "circle", props: { left: width * 0.1, top: height * 0.1, radius: 80, fill: ac, opacity: 0.3, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle1" } },
-          { type: "circle", props: { left: width * 0.15, top: height * 0.05, radius: 40, fill: ac, opacity: 0.2, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle2" } },
+          { type: "circle", props: { left: width * 0.12, top: height * 0.12, radius: 100, fill: ac, opacity: 0.25, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle1" } },
+          { type: "circle", props: { left: width * 0.18, top: height * 0.04, radius: 50, fill: ac, opacity: 0.18, originX: "center", originY: "center", selectable: false, evented: false, name: "deco_circle2" } },
         ],
       },
     };
@@ -527,8 +530,9 @@ export default function CardNewsEditor({
         originY: config.title.originY || "center",
         textAlign: config.title.textAlign || "center",
         width: config.title.width || (width - 160),
-        fontSize: config.title.fontSize || (fontSize || 48),
+        fontSize: config.title.fontSize || (fontSize || 56),
         fontWeight: config.title.fontWeight || "bold",
+        lineHeight: config.title.lineHeight || 1.3,
       });
       if (config.title.fontStyle) titleObj.set("fontStyle", config.title.fontStyle);
       if (config.title.fill) titleObj.set("fill", config.title.fill);
@@ -545,7 +549,8 @@ export default function CardNewsEditor({
         originY: config.body.originY || "center",
         textAlign: config.body.textAlign || "center",
         width: config.body.width || (width - 160),
-        fontSize: config.body.fontSize || Math.round((fontSize || 48) * 0.55),
+        fontSize: config.body.fontSize || Math.round((fontSize || 56) * 0.45),
+        lineHeight: config.body.lineHeight || 1.6,
       });
       if (config.body.fill) bodyObj.set("fill", config.body.fill);
       if (config.body.opacity !== undefined) bodyObj.set("opacity", config.body.opacity);
@@ -594,7 +599,7 @@ export default function CardNewsEditor({
 
     // Determine layout config
     const slideLayout = slide.layout || "center";
-    const slideFontSize = slide.fontSize || 48;
+    const slideFontSize = slide.fontSize || 56;
     const config = getLayoutConfig(slideLayout, slideFontSize, slide.textColor, slide.accentColor, slide.bgColor);
 
     // Add decorative elements first (behind text)
@@ -621,6 +626,7 @@ export default function CardNewsEditor({
         fontWeight: config.title.fontWeight || "bold",
         fill: config.title.fill || slide.textColor || "#ffffff",
         textAlign: config.title.textAlign || "center",
+        lineHeight: config.title.lineHeight || 1.3,
         name: "title",
       };
       if (config.title.fontStyle) titleProps.fontStyle = config.title.fontStyle;
@@ -637,11 +643,12 @@ export default function CardNewsEditor({
         originX: config.body.originX || "center",
         originY: config.body.originY || "center",
         width: config.body.width || (width - 160),
-        fontSize: config.body.fontSize || Math.round(slideFontSize * 0.55),
+        fontSize: config.body.fontSize || Math.round(slideFontSize * 0.45),
         fontFamily: slideFontFamily,
         fill: config.body.fill || slide.textColor || "#ffffff",
         textAlign: config.body.textAlign || "center",
         opacity: config.body.opacity !== undefined ? config.body.opacity : 0.85,
+        lineHeight: config.body.lineHeight || 1.6,
         name: "body",
       };
       const body = new Textbox(slide.body, bodyProps);
@@ -799,10 +806,11 @@ export default function CardNewsEditor({
     const fc = canvasRef.current;
     if (!fc) return;
     const t = new Textbox("텍스트를 입력하세요", {
-      left: width * 0.15, top: height * 0.4,
-      width: width * 0.7,
-      fontSize: 36, fontFamily: "Pretendard",
+      left: width * 0.1, top: height * 0.4,
+      width: width * 0.8,
+      fontSize: 48, fontFamily: "Pretendard",
       fill: "#333333", textAlign: "center",
+      lineHeight: 1.4,
     });
     fc.add(t);
     fc.setActiveObject(t);
@@ -1029,26 +1037,23 @@ export default function CardNewsEditor({
     }
 
     // 텍스트 스타일 적용 (색상, 폰트)
+    loadGFont(template.fontFamily);
     fc.getObjects().forEach(o => {
       if ((o.type === "textbox" || o.type === "text") && !(o.name && o.name.startsWith("deco_"))) {
         o.set("fill", template.textColor);
         o.set("fontFamily", template.fontFamily);
         if (template.bgImage) {
           // 실사 배경일 때 텍스트에 그림자 추가 (가독성)
-          o.set("shadow", new Shadow({ color: "rgba(0,0,0,0.6)", blur: 8, offsetX: 2, offsetY: 2 }));
+          o.set("shadow", new Shadow({ color: "rgba(0,0,0,0.7)", blur: 10, offsetX: 2, offsetY: 3 }));
         } else {
           o.set("shadow", null);
         }
       }
     });
 
-    // 레이아웃 적용
+    // 레이아웃 적용 - 항상 기본 56px 기준으로 레이아웃 계산
+    const baseFontSize = 56;
     if (template.layout) {
-      // Determine font size from existing title or default
-      const titleObj = fc.getObjects().find(o => o.name === "title");
-      const currentFontSize = titleObj ? titleObj.fontSize : 48;
-      // Use base font size (undo any previous layout scaling)
-      const baseFontSize = Math.round(currentFontSize / 1.4) > 20 ? Math.min(currentFontSize, 60) : 48;
       applyLayoutToCanvas(fc, template.layout, baseFontSize, template.textColor, template.accentColor, template.bgColor);
     }
 

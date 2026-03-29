@@ -75,6 +75,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [removeSilence, setRemoveSilence] = useState(false);
   const [maxChars, setMaxChars] = useState(0);
   const [shortsLength, setShortsLength] = useState("s30");
+  const [userPrompt, setUserPrompt] = useState(""); // 사용자 분석 요청 프롬프트
 
   // 생성
   const [jobId, setJobId] = useState(null);
@@ -160,7 +161,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const doAnalyze = async (fid) => {
     setLoadingMsg("AI가 영상을 분석하고 있어요...");
     try {
-      const d = await apiCall(`/analyze/${fid}`, { method: "POST", body: JSON.stringify({ max_chars: maxChars }) });
+      const analyzeBody = { max_chars: maxChars };
+      if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
+      const d = await apiCall(`/analyze/${fid}`, { method: "POST", body: JSON.stringify(analyzeBody) });
       setSegments(d.segments || []);
       setSelectedSegs(d.segments?.map((_, i) => i) || []);
       setStep("analysis");
@@ -293,6 +296,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <button onClick={handleUpload} style={btnStyle} disabled={!videoFile}>쇼츠 생성해보기 →</button>
           </div>
         )}
+
+        {/* 분석 요청 프롬프트 */}
+        <div style={{ ...cardStyle, marginTop: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 6 }}>분석 요청 (선택)</div>
+          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.5 }}>원하는 부분만 추출하고 싶을 때 AI에게 요청해보세요</div>
+          <textarea
+            value={userPrompt}
+            onChange={e => setUserPrompt(e.target.value)}
+            placeholder="원하는 부분을 설명해주세요 (예: 가장 재미있는 부분만, 핵심 요약만, 특정 주제 관련 부분만)"
+            rows={3}
+            style={{ ...inputStyle, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
+          />
+        </div>
 
         {/* 설정 */}
         <div style={{ ...cardStyle, marginTop: 20 }}>
