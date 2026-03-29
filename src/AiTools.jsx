@@ -5,6 +5,7 @@ import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { InstaAutoReply, InstaAutoDM, TabHeader } from "./AiInstagram.jsx";
+import { getAiUsage, setAiUsage, getAiLeft, FREE_MEMBER, FREE_GUEST, changePoints } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AI 도구 모듈: RepurposePage, MarketingHub, FileTranscriber,
@@ -122,8 +123,9 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
       if (firstKey) setActiveTab(firstKey);
 
       // 사용량 기록
-      const usage = getAiUsage(user);
-      setAiUsage(user, usage + 1);
+      const usage = getAiUsage();
+      const key = user ? "member_" + user.uid : "guest";
+      setAiUsage({ ...usage, [key]: (usage[key] || 0) + 1 });
     } catch (e) {
       setError(e.message || "변환 중 오류가 발생했습니다.");
     } finally {

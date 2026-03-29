@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useI18n } from "./i18n.jsx";
+import { changePoints, supabase } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AI 기획 (Prompt Studio) - 비즈니스 문서 생성
