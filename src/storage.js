@@ -324,29 +324,40 @@ export async function fetchUser(uid) {
 export async function changePoints(uid, delta, reason) {
   if (!uid) { console.warn("changePoints: uid 없음"); return 0; }
   try {
-    // 현재 포인트 직접 조회
+    // RPC가 있으면 원자적 처리 시도
+    try {
+      const { data: rpcResult, error: rpcErr } = await supabase.rpc("change_points", {
+        p_uid: uid, p_delta: delta, p_reason: reason || "",
+      });
+      if (!rpcErr && rpcResult !== null && rpcResult !== undefined) return rpcResult;
+    } catch {}
+
+    // RPC 없으면 폴백: 읽기 + 쓰기 (레이스 컨디션 가능하나 최선)
     const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
     const currentPoints = row?.points || 0;
-    const newPoints = Math.max(0, currentPoints + delta);
 
-    // users 테이블 직접 업데이트
+    // 차감 시 잔액 부족하면 거부
+    if (delta < 0 && currentPoints < Math.abs(delta)) {
+      console.warn("changePoints: 포인트 부족", currentPoints, delta);
+      return currentPoints;
+    }
+
+    const newPoints = Math.max(0, currentPoints + delta);
     const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", uid);
     if (error) {
       console.warn("changePoints 업데이트 실패:", error.message);
       return currentPoints;
     }
 
-    // point_history 직접 기록 (실패해도 무방)
-    (async () => { try { await supabase.from("point_history").insert({
+    // point_history 기록
+    supabase.from("point_history").insert({
       uid, delta, reason: reason || "", balance: newPoints, created_at: new Date().toISOString(),
-    }); } catch(e) {} })();
-
-    // RPC 중복 호출 제거 (직접 update + history insert로 이미 처리됨)
+    }).then(() => {}).catch(() => {});
 
     return newPoints;
   } catch(e) {
     console.error("changePoints 오류:", e.message);
-    return 0;
+    return null;
   }
 }
 
@@ -380,8 +391,28 @@ export async function deleteFileFromStorage(path) {
 }
 
 // ── AI 사용 횟수 ──────────────────────────────────────────────────────────
-export function getAiUsage() { try { return JSON.parse(localStorage.getItem(AI_KEY) || "{}"); } catch { return {}; } }
-export function setAiUsage(u){ try { localStorage.setItem(AI_KEY, JSON.stringify(u)); } catch {} }
+export function getAiUsage() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(AI_KEY) || "{}");
+    // 월간 리셋: 저장된 월과 현재 월이 다르면 카운트 초기화
+    const now = new Date();
+    const curMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    if (raw._month !== curMonth) {
+      // 게스트 카운트는 유지, 멤버 카운트만 리셋
+      const reset = { _month: curMonth, guest: raw.guest || 0 };
+      localStorage.setItem(AI_KEY, JSON.stringify(reset));
+      return reset;
+    }
+    return raw;
+  } catch { return {}; }
+}
+export function setAiUsage(u){
+  try {
+    const now = new Date();
+    u._month = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    localStorage.setItem(AI_KEY, JSON.stringify(u));
+  } catch {}
+}
 
 export const FREE_GUEST  = 5;     // 비회원 무료 (10→5)
 export const FREE_MEMBER = 10;    // 회원 월 무료 (20→10)
