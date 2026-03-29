@@ -304,8 +304,8 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
 
   // WizHeader
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:900, margin:"0 auto" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
+    <div style={{ padding:"12px 24px 0", maxWidth:960, margin:"0 auto" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:16 }}>
         {[["1","상품 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","편집"]].map(([n,label],i)=>{
           const step=parseInt(n); const done=wizStep>step; const active=wizStep===step;
           return (
