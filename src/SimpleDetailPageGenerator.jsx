@@ -48,11 +48,11 @@ const SLIDE_TYPES = [
 
 // ── 사이즈 프리셋 ────────────────────────────────────────────
 const SIZE_PRESETS = [
-  { label:"세로형",    w:860,  h:1100, icon:"📱", desc:"쇼핑몰 상세 세로형" },
-  { label:"정사각형",  w:1000, h:1000, icon:"⬜", desc:"SNS / 인스타그램" },
-  { label:"가로형",    w:1200, h:628,  icon:"🖥",  desc:"배너 / 블로그" },
-  { label:"세로 9:16", w:1080, h:1920, icon:"📲", desc:"쇼츠 / 릴스" },
-  { label:"직접 입력", w:null, h:null, icon:"✏️", desc:"직접 설정" },
+  { label:"세로형",    w:860,  h:1100, icon:"3:4", desc:"쇼핑몰 상세 세로형" },
+  { label:"정사각형",  w:1000, h:1000, icon:"1:1", desc:"SNS / 인스타그램" },
+  { label:"가로형",    w:1200, h:628,  icon:"16:9", desc:"배너 / 블로그" },
+  { label:"세로 9:16", w:1080, h:1920, icon:"9:16", desc:"쇼츠 / 릴스" },
+  { label:"직접 입력", w:null, h:null, icon:"W×H", desc:"직접 설정" },
 ];
 
 // ── 디자인 프리셋 (CardNewsApp 스타일) ───────────────────────

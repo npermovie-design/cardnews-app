@@ -91,7 +91,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: icon ? 7 : 0, marginBottom: 2,
       }}>
-        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+        {icon && (typeof icon === "string" && icon.startsWith("/") ? <img src={icon} alt="" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} /> : <span style={{ fontSize: 14 }}>{icon}</span>)}
         <span style={{ flex: 1 }}>{label}</span>
         {badge && (
           <span style={{
@@ -124,23 +124,22 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       {/* 메뉴 */}
       <div style={{ padding: "8px", flex: 1, overflowY: "auto", overflowX: "visible" }}>
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label={t("home")} />
-        <Item id="library" label={t("library")} />
-        <Item id="hot_keyword" label="SNS 뉴스" />
+        <Item id="home" label={t("home")} icon="/icons3d/sns-heart.png" />
+        <Item id="library" label={t("library")} icon="/icons3d/search-book.png" />
+        <Item id="hot_keyword" label="SNS 뉴스" icon="/icons3d/news.png" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="marketing" label="마케팅" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
-        <Item id="prompt_studio" label="비즈니스 문서" />
-        <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"]} />
-        <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} badge="추천" badgeColor="orange" />
-        <Item id="ppt_gen" label="PPT 제작" />
-        <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
-        <Item id="image_edit" label="이미지 수정" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
-        <Item id="video_create" label="영상 제작" ids={["shorts_make"]} badge="Beta" badgeColor="blue" />
+        <Item id="marketing" label="마케팅" icon="/icons3d/analytics.png" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
+        <Item id="prompt_studio" label="비즈니스 문서" icon="/icons3d/report.png" />
+        <Item id="blog_write" label="글쓰기" icon="/icons3d/blog-write.png" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"]} />
+        <Item id="content_create" label="콘텐츠 제작" icon="/icons3d/palette.png" ids={["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"]} badge="추천" badgeColor="orange" />
+        <Item id="image_create" label="이미지 생성" icon="/icons3d/instagram-cam.png" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
+        <Item id="image_edit" label="이미지 수정" icon="/icons3d/camera.png" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
+        <Item id="video_create" label="영상 제작" icon="/icons3d/sns-app.png" ids={["shorts_make"]} badge="Beta" badgeColor="blue" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>리퍼포징</div>
-        <Item id="repurpose" label="원소스 멀티유즈" badge="NEW" badgeColor="green" />
+        <Item id="repurpose" label="원소스 멀티유즈" icon="/icons3d/sns-share.png" badge="NEW" badgeColor="green" />
       </div>
 
       {/* 하단 섹션 – SNS 연동 + 포인트 */}
@@ -1555,8 +1554,10 @@ async function fetchSnsNewsByCategory(categoryId) {
       const desc = (itemXml.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "";
       const thumbMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
       const thumb = thumbMatch ? thumbMatch[1] : "";
-      const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
-      const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
+      const decodeEntities = s => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+      const stripHtml = s => s.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").trim();
+      const cleanTitle = stripHtml(decodeEntities(title));
+      const cleanDesc = stripHtml(decodeEntities(desc));
       if (cleanTitle) {
         items.push({ title: cleanTitle, link, pubDate, source, description: cleanDesc, thumb });
       }
@@ -1723,6 +1724,28 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   };
 
   /* ── 브리핑 콘텐츠 파싱 렌더러 ── */
+  // 인라인 마크다운 처리 헬퍼: **bold**, #tag
+  const renderInlineMarkdown = (text, bodyColor, tagColor, tagBg) => {
+    // **bold** 처리 + #tag 처리
+    const parts = text.split(/(\*\*[^*]+\*\*|#[^\s#]+)/g).filter(Boolean);
+    return parts.map((p, j) => {
+      if (p.startsWith("**") && p.endsWith("**")) {
+        return <strong key={j} style={{ fontWeight: 800, color: bodyColor }}>{p.slice(2, -2)}</strong>;
+      }
+      if (p.startsWith("#") && p.length > 1) {
+        return (
+          <span key={j} style={{
+            display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
+            background: tagBg, borderRadius: 20, padding: "2px 8px", marginLeft: 2, marginRight: 2,
+          }}>
+            {p}
+          </span>
+        );
+      }
+      return <span key={j}>{p}</span>;
+    });
+  };
+
   const renderBriefingContent = (content, isCard = false) => {
     if (!content) return null;
     const lines = content.split("\n");
@@ -1736,15 +1759,15 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
       const trimmed = line.trim();
       if (!trimmed) return <div key={i} style={{ height: 8 }} />;
 
-      // ## 제목
-      if (trimmed.startsWith("##")) {
-        const titleText = trimmed.replace(/^##\s*/, "");
+      // ## 제목 또는 # 제목
+      if (trimmed.startsWith("#")) {
+        const titleText = trimmed.replace(/^#{1,3}\s*/, "");
         return (
           <div key={i} style={{
             fontSize: 17, fontWeight: 800, color: headingColor, marginTop: i === 0 ? 0 : 24, marginBottom: 6,
             letterSpacing: -0.3, lineHeight: 1.5,
           }}>
-            {titleText}
+            {renderInlineMarkdown(titleText, headingColor, tagColor, tagBg)}
           </div>
         );
       }
@@ -1773,21 +1796,10 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
         );
       }
 
-      // 일반 텍스트 (인라인 #키워드 처리)
-      const inlineParts = trimmed.split(/(#[^\s#]+)/g).filter(Boolean);
-      const hasHash = inlineParts.some(p => p.startsWith("#"));
+      // 일반 텍스트 (인라인 **bold** + #키워드 처리)
       return (
         <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: bodyColor, marginBottom: 2 }}>
-          {hasHash ? inlineParts.map((p, j) =>
-            p.startsWith("#") ? (
-              <span key={j} style={{
-                display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
-                background: tagBg, borderRadius: 20, padding: "2px 8px", marginLeft: 2, marginRight: 2,
-              }}>
-                {p}
-              </span>
-            ) : <span key={j}>{p}</span>
-          ) : trimmed}
+          {renderInlineMarkdown(trimmed, bodyColor, tagColor, tagBg)}
         </div>
       );
     });
@@ -3426,17 +3438,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // PPT 제작
-  if (aiMenu === "ppt_gen") {
-    return (
-      <div key="ppt_gen" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="PPT 제작" subtitle="주제를 입력하면 AI가 프레젠테이션을 생성해요" />
-        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-        </div>
-      </div>
-    );
-  }
 
   // SNS 뉴스
   if (aiMenu === "hot_keyword") {
@@ -3825,20 +3826,22 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작기 (카드뉴스 + 상세페이지 + 썸네일) ──
-  if (["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","content_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
+  // ── 콘텐츠 제작기 (카드뉴스 + 상세페이지 + 썸네일 + PPT) ──
+  if (["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","content_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
     return <TabbedGroup key="content" isDark={isDark} theme={theme}
-      title="콘텐츠 제작" subtitle="카드뉴스, 상세페이지, 썸네일을 제작하세요"
+      title="콘텐츠 제작" subtitle="카드뉴스, 상세페이지, 썸네일, PPT를 제작하세요"
       tabs={[
         { id:"cardnews_simple", label:"카드뉴스" },
         { id:"detail_simple", label:"상세페이지" },
         { id:"thumbnail_gen", label:"썸네일" },
+        { id:"ppt_gen", label:"PPT" },
       ]}
-      defaultTab={aiMenu.startsWith("thumbnail")?"thumbnail_gen":aiMenu.startsWith("detail")?"detail_simple":"cardnews_simple"}
+      defaultTab={aiMenu.startsWith("ppt")?"ppt_gen":aiMenu.startsWith("thumbnail")?"thumbnail_gen":aiMenu.startsWith("detail")?"detail_simple":"cardnews_simple"}
       renderTab={(tab) => {
         if (tab === "cardnews_simple") return <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
         if (tab === "detail_simple") return <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
         if (tab === "thumbnail_gen") return <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "ppt_gen") return <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
         return null;
       }}
     />;

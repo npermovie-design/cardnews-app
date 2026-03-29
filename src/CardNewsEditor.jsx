@@ -235,6 +235,12 @@ export default function CardNewsEditor({
   const [showSharedTemplateModal, setShowSharedTemplateModal] = useState(false);
   const [sharedTemplates, setSharedTemplates] = useState([]);
   const [sharedTemplatesLoading, setSharedTemplatesLoading] = useState(false);
+  const [showImageLib, setShowImageLib] = useState(false);
+  const [imgLibTab, setImgLibTab] = useState("pexels"); // pexels, pixabay, local
+  const [imgLibQuery, setImgLibQuery] = useState("");
+  const [imgLibResults, setImgLibResults] = useState([]);
+  const [imgLibLoading, setImgLibLoading] = useState(false);
+  const [imgLibPage, setImgLibPage] = useState(1);
 
   /* text effect states */
   const [textStrokeColor, setTextStrokeColor] = useState("#000000");
@@ -299,6 +305,15 @@ export default function CardNewsEditor({
       console.error("Canvas init error:", e);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── resize canvas when width/height props change ─────────────── */
+  useEffect(() => {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    fc.setDimensions({ width, height });
+    // re-fit to container
+    setTimeout(fitCanvas, 50);
+  }, [width, height]);
 
   /* ── refresh layer list ──────────────────────────────────────────── */
   function refreshLayerList() {
@@ -937,6 +952,84 @@ export default function CardNewsEditor({
     reader.readAsDataURL(file);
   }
 
+  /* ── image library search ──────────────────────────────────────── */
+  async function searchImageLib(query, source, page = 1) {
+    setImgLibLoading(true);
+    setImgLibResults(prev => page === 1 ? [] : prev);
+    try {
+      let items = [];
+      if (source === "pexels") {
+        const path = query ? "v1/search" : "v1/curated";
+        const params = query ? `query=${encodeURIComponent(query)}&per_page=20&page=${page}` : `per_page=20&page=${page}`;
+        const res = await fetch(`/api/proxy?action=pexels&path=${path}&${params}`);
+        const data = await res.json();
+        items = (data.photos || []).map(p => ({
+          id: p.id, title: p.photographer || "Pexels",
+          url: p.src?.large2x || p.src?.large || "",
+          preview: p.src?.medium || p.src?.small || "",
+          source: "Pexels",
+        }));
+      } else if (source === "pixabay") {
+        const res = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(query || "nature")}&per_page=20&page=${page}&safesearch=true&image_type=photo`);
+        const data = await res.json();
+        items = (data.hits || []).map(h => ({
+          id: h.id, title: h.tags,
+          url: h.largeImageURL || h.webformatURL,
+          preview: h.webformatURL || h.previewURL,
+          source: "Pixabay",
+        }));
+      } else if (source === "local") {
+        // Local 3D icons from public/icons3d
+        const localIcons = [
+          { id: "blog-write", title: "블로그 글쓰기", preview: "/icons3d/blog-write.png", url: "/icons3d/blog-write.png" },
+          { id: "blog", title: "블로그", preview: "/icons3d/blog.png", url: "/icons3d/blog.png" },
+          { id: "sns-content", title: "SNS 콘텐츠", preview: "/icons3d/sns-content.png", url: "/icons3d/sns-content.png" },
+          { id: "sns-marketing", title: "SNS 마케팅", preview: "/icons3d/sns-marketing.png", url: "/icons3d/sns-marketing.png" },
+          { id: "sns-share", title: "공유", preview: "/icons3d/sns-share.png", url: "/icons3d/sns-share.png" },
+          { id: "report", title: "리포트", preview: "/icons3d/report.png", url: "/icons3d/report.png" },
+          { id: "analytics", title: "분석", preview: "/icons3d/analytics.png", url: "/icons3d/analytics.png" },
+          { id: "palette", title: "팔레트", preview: "/icons3d/palette.png", url: "/icons3d/palette.png" },
+          { id: "camera", title: "카메라", preview: "/icons3d/camera.png", url: "/icons3d/camera.png" },
+          { id: "clock", title: "시계", preview: "/icons3d/clock.png", url: "/icons3d/clock.png" },
+          { id: "memo", title: "메모", preview: "/icons3d/memo.png", url: "/icons3d/memo.png" },
+          { id: "search-book", title: "검색", preview: "/icons3d/search-book.png", url: "/icons3d/search-book.png" },
+          { id: "thumbsup", title: "좋아요", preview: "/icons3d/thumbsup.png", url: "/icons3d/thumbsup.png" },
+          { id: "sns-heart", title: "SNS 하트", preview: "/icons3d/sns-heart.png", url: "/icons3d/sns-heart.png" },
+          { id: "sns-app", title: "앱 아이콘", preview: "/icons3d/sns-app.png", url: "/icons3d/sns-app.png" },
+          { id: "instagram-cam", title: "인스타그램", preview: "/icons3d/instagram-cam.png", url: "/icons3d/instagram-cam.png" },
+          { id: "seo-book", title: "SEO 분석", preview: "/icons3d/seo-book.png", url: "/icons3d/seo-book.png" },
+          { id: "news", title: "뉴스", preview: "/icons3d/news.png", url: "/icons3d/news.png" },
+          { id: "ppt", title: "프레젠테이션", preview: "/icons3d/ppt.png", url: "/icons3d/ppt.png" },
+        ];
+        const filtered = query ? localIcons.filter(i => i.title.toLowerCase().includes(query.toLowerCase())) : localIcons;
+        items = filtered.map(i => ({ ...i, source: "로컬 자료실" }));
+      }
+      setImgLibResults(prev => page === 1 ? items : [...prev, ...items]);
+      setImgLibPage(page);
+    } catch (e) {
+      console.warn("Image lib search failed:", e);
+    }
+    setImgLibLoading(false);
+  }
+
+  async function addImageFromUrl(url) {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    try {
+      const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+      const maxDim = width * 0.5;
+      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+      img.set({
+        left: width * 0.25, top: height * 0.25,
+        scaleX: scale, scaleY: scale,
+      });
+      fc.add(img);
+      fc.setActiveObject(img);
+      fc.renderAll();
+      pushHistory();
+    } catch (e) { console.error("Image from URL failed:", e); }
+  }
+
   function deleteSelected() {
     const fc = canvasRef.current;
     const obj = fc?.getActiveObject();
@@ -1317,6 +1410,7 @@ export default function CardNewsEditor({
           <div style={S.toolbar}>
             <Btn small onClick={addText}>+ 텍스트</Btn>
             <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
+            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">이미지 검색</Btn>
             <Btn small onClick={() => addShape("rect")}>▬ 사각형</Btn>
             <Btn small onClick={() => addShape("circle")}>● 원</Btn>
             <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
@@ -1367,6 +1461,100 @@ export default function CardNewsEditor({
             onChange={e => { replaceImage(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={fontFileInputRef} type="file" accept=".ttf,.otf,.woff2" style={{ display: "none" }}
             onChange={handleCustomFont} />
+
+          {/* 이미지 라이브러리 모달 */}
+          {showImageLib && (
+            <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+              onClick={(e) => { if(e.target===e.currentTarget) setShowImageLib(false); }}>
+              <div style={{ background:"#fff", borderRadius:16, maxWidth:720, width:"100%", maxHeight:"85vh", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column" }}>
+                {/* Header */}
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>이미지 라이브러리</div>
+                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>검색 후 클릭하면 캔버스에 추가됩니다</div>
+                  </div>
+                  <button onClick={() => setShowImageLib(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
+                    <Icon.Close />
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div style={{ display:"flex", gap:4, padding:"10px 20px 0", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
+                  {[
+                    { id:"pexels", label:"Pexels" },
+                    { id:"pixabay", label:"Pixabay" },
+                    { id:"local", label:"3D 아이콘" },
+                  ].map(tab => (
+                    <button key={tab.id} onClick={() => { setImgLibTab(tab.id); searchImageLib(imgLibQuery, tab.id, 1); }}
+                      style={{ padding:"8px 16px", borderRadius:"8px 8px 0 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:imgLibTab===tab.id?700:500,
+                        background:imgLibTab===tab.id?"rgba(124,106,255,0.1)":"transparent",
+                        color:imgLibTab===tab.id?"#7c6aff":"#888",
+                        borderBottom:imgLibTab===tab.id?"2px solid #7c6aff":"2px solid transparent",
+                      }}>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Search */}
+                <div style={{ padding:"12px 20px", display:"flex", gap:8 }}>
+                  <input type="text" placeholder="이미지 검색어 입력..." value={imgLibQuery}
+                    onChange={e => setImgLibQuery(e.target.value)}
+                    onKeyDown={e => { if(e.key==="Enter") searchImageLib(imgLibQuery, imgLibTab, 1); }}
+                    style={{ flex:1, padding:"10px 14px", borderRadius:10, border:"1px solid rgba(0,0,0,0.12)", fontSize:13, outline:"none" }}
+                  />
+                  <button onClick={() => searchImageLib(imgLibQuery, imgLibTab, 1)}
+                    style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    검색
+                  </button>
+                </div>
+
+                {/* Results */}
+                <div style={{ flex:1, overflowY:"auto", padding:"0 20px 16px" }}>
+                  {imgLibLoading && imgLibResults.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13 }}>
+                      <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 10px" }} />
+                      이미지 검색 중...
+                    </div>
+                  ) : imgLibResults.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13, lineHeight:1.8 }}>
+                      검색어를 입력하고 검색 버튼을 눌러주세요
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:10 }}>
+                        {imgLibResults.map((item, idx) => (
+                          <div key={`${item.id}-${idx}`} style={{ borderRadius:10, overflow:"hidden", border:"1px solid rgba(0,0,0,0.08)", cursor:"pointer", transition:"all 0.15s", background:"#fff" }}
+                            onClick={() => { addImageFromUrl(item.url); setShowImageLib(false); }}
+                            onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 16px rgba(99,102,241,0.2)"}
+                            onMouseLeave={e => e.currentTarget.style.boxShadow="none"}>
+                            <div style={{ width:"100%", paddingBottom:"100%", position:"relative", background:"#f5f5f5" }}>
+                              <img src={item.preview} alt={item.title} loading="lazy"
+                                style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                            </div>
+                            <div style={{ padding:"6px 8px" }}>
+                              <div style={{ fontSize:11, fontWeight:600, color:"#333", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+                              <div style={{ fontSize:9, color:"#aaa", marginTop:2 }}>{item.source}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {imgLibTab !== "local" && imgLibResults.length >= 20 && (
+                        <div style={{ textAlign:"center", marginTop:16 }}>
+                          <button onClick={() => searchImageLib(imgLibQuery, imgLibTab, imgLibPage + 1)}
+                            disabled={imgLibLoading}
+                            style={{ padding:"10px 28px", borderRadius:10, border:"1px solid rgba(124,106,255,0.3)", background:"rgba(124,106,255,0.08)", color:"#7c6aff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                            {imgLibLoading ? "로딩 중..." : "더 보기"}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+          )}
 
           {/* 공유 템플릿 모달 */}
           {showSharedTemplateModal && (
