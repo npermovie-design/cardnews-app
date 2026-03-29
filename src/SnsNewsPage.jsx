@@ -10,14 +10,20 @@ const THEME_C = { text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0
 const accent = "#7c6aff";
 
 // ── RSS 뉴스 카테고리 ──
+// 실시간 뉴스: 큰 카테고리 3개 (국내+해외 통합)
 const NEWS_CATS = [
-  { id: "sns", label: "SNS 마케팅", query: "SNS+마케팅", lang: "ko" },
-  { id: "digital", label: "디지털 마케팅", query: "디지털+마케팅", lang: "ko" },
-  { id: "ai", label: "AI/테크", query: "AI+마케팅", lang: "ko" },
-  { id: "trend", label: "트렌드", query: "마케팅+트렌드", lang: "ko" },
-  { id: "global_sns", label: "해외 SNS", query: "social+media+marketing+2026", lang: "en" },
-  { id: "global_ai", label: "해외 AI", query: "AI+marketing+tools+2026", lang: "en" },
-  { id: "global_trend", label: "해외 트렌드", query: "digital+marketing+trends", lang: "en" },
+  { id: "sns", label: "SNS", queries: [
+    { query: "SNS+마케팅+인스타그램+틱톡", lang: "ko" },
+    { query: "social+media+marketing+instagram+tiktok", lang: "en" },
+  ]},
+  { id: "ai", label: "AI/테크", queries: [
+    { query: "AI+마케팅+생성형AI", lang: "ko" },
+    { query: "AI+marketing+tools+generative", lang: "en" },
+  ]},
+  { id: "trend", label: "트렌드", queries: [
+    { query: "마케팅+트렌드+디지털마케팅", lang: "ko" },
+    { query: "digital+marketing+trends+2026", lang: "en" },
+  ]},
 ];
 
 // ── 관리자 글 카테고리 ──
@@ -278,22 +284,27 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const [newsRefreshing, setNewsRefreshing] = useState(false);
   useEffect(() => {
     if (mainTab !== "news") return;
-    // 캐시가 있으면 즉시 표시
     if (newsCache[newsCat]) { setNewsItems(newsCache[newsCat]); return; }
-    // 폴백 데이터 즉시 표시 (0ms)
+    // 폴백 즉시 표시
     const fallback = FALLBACK_NEWS[newsCat] || [];
     setNewsItems(fallback);
     setNewsLoading(false);
-    // RSS를 백그라운드에서 갱신
+    // 국내+해외 RSS 병렬 fetch 후 합산
     let cancelled = false;
     setNewsRefreshing(true);
     const cat = NEWS_CATS.find(c => c.id === newsCat);
     if (!cat) return;
-    fetchRssNews(cat.query, cat.lang || "ko").then(items => {
+    Promise.all(
+      cat.queries.map(q => fetchRssNews(q.query, q.lang))
+    ).then(results => {
       if (cancelled) return;
-      if (items && items.length > 0) {
-        setNewsItems(items);
-        setNewsCache(prev => ({ ...prev, [newsCat]: items }));
+      const merged = results.flatMap(r => r || []);
+      // 시간순 정렬
+      merged.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+      if (merged.length > 0) {
+        const deduped = merged.filter((item, i, arr) => arr.findIndex(x => x.title === item.title) === i).slice(0, 20);
+        setNewsItems(deduped);
+        setNewsCache(prev => ({ ...prev, [newsCat]: deduped }));
       } else {
         setNewsCache(prev => ({ ...prev, [newsCat]: fallback }));
       }
@@ -302,23 +313,23 @@ export default function SnsNewsPage({ C, user, navigate }) {
     return () => { cancelled = true; };
   }, [newsCat, mainTab]);
 
-  // ── 3) 관리자 직접 작성 (Supabase) ──
+  // ── 3) 공지 + 소식 (Supabase) ──
+  const NOTICE_CATS = ["platform", "algorithm", "policy"]; // 공지 카테고리
+  const TIPS_CATS = ["trend", "marketing", "briefing"]; // 소식 카테고리
   const [articles, setArticles] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(false);
-  const [articleCat, setArticleCat] = useState("all");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
 
   useEffect(() => {
-    if (mainTab !== "articles") return;
+    if (mainTab !== "notice" && mainTab !== "tips") return;
     let cancelled = false;
     setArticlesLoading(true);
+    const cats = mainTab === "notice" ? NOTICE_CATS : TIPS_CATS;
     (async () => {
       try {
-        let q = supabase.from("sns_news").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
-        if (articleCat !== "all") q = q.eq("category", articleCat);
-        const { data } = await q;
+        const { data } = await supabase.from("sns_news").select("*").in("category", cats).order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
         if (!cancelled) setArticles(data || []);
       } catch {
         if (!cancelled) setArticles([]);
@@ -326,7 +337,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       if (!cancelled) setArticlesLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [mainTab, articleCat]);
+  }, [mainTab]);
 
   const handleSaveArticle = async (data) => {
     try {
@@ -395,7 +406,8 @@ export default function SnsNewsPage({ C, user, navigate }) {
           {[
             { id: "briefing", label: "AI 브리핑" },
             { id: "news", label: "실시간 뉴스" },
-            { id: "articles", label: "공지/소식" },
+            { id: "notice", label: "공지" },
+            { id: "tips", label: "소식" },
           ].map(t => (
             <button key={t.id} onClick={() => setMainTab(t.id)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: mainTab === t.id ? "#fff" : "transparent", color: mainTab === t.id ? accent : muted, boxShadow: mainTab === t.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none", minHeight: 42 }}>{t.label}</button>
           ))}
@@ -511,16 +523,12 @@ export default function SnsNewsPage({ C, user, navigate }) {
           </div>
         )}
 
-        {/* ═══ 탭 3: 공지/소식 (관리자 직접 작성) ═══ */}
-        {mainTab === "articles" && (
+        {/* ═══ 탭 3/4: 공지 또는 소식 ═══ */}
+        {(mainTab === "notice" || mainTab === "tips") && (
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-              <div className="tab-scroll" style={{ display: "flex", gap: 4, overflowX: "auto", flex: 1 }}>
-                {ARTICLE_CATS.map(c => (
-                  <button key={c.id} onClick={() => setArticleCat(c.id)} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${articleCat === c.id ? c.color : "transparent"}`, background: articleCat === c.id ? c.color + "12" : "transparent", color: articleCat === c.id ? c.color : muted, fontSize: 13, fontWeight: articleCat === c.id ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, minHeight: 40 }}>{c.label}</button>
-                ))}
-              </div>
-              {isAdmin && <button onClick={() => { setEditTarget(null); setEditorOpen(true); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}>+ 새 뉴스</button>}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text }}>{mainTab === "notice" ? "공지사항" : "마케팅 소식"}</div>
+              {isAdmin && <button onClick={() => { setEditTarget(null); setEditorOpen(true); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}>+ 새 글</button>}
             </div>
             {articlesLoading ? (
               <div style={{ textAlign: "center", padding: "60px 0" }}><div style={{ width: 28, height: 28, border: `3px solid ${accent}20`, borderTopColor: accent, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" }} /></div>

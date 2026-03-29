@@ -304,41 +304,63 @@ export default function CardNewsEditor({
         if (!obj) return;
         clearGuides();
         const cw = fc.width, ch = fc.height;
-        const objCx = obj.left + (obj.width * obj.scaleX) / 2;
-        const objCy = obj.top + (obj.height * obj.scaleY) / 2;
-        const objR = obj.left + obj.width * obj.scaleX;
-        const objB = obj.top + obj.height * obj.scaleY;
+        // getBoundingRect 대신 직접 계산 (Fabric v7 호환)
+        const w = (obj.width || 0) * (obj.scaleX || 1);
+        const h = (obj.height || 0) * (obj.scaleY || 1);
+        const l = obj.left || 0;
+        const t = obj.top || 0;
+        const cx = l + w / 2;
+        const cy = t + h / 2;
 
-        // 수평 중앙
-        if (Math.abs(objCx - cw / 2) < SNAP) {
-          obj.set({ left: cw / 2 - (obj.width * obj.scaleX) / 2 });
+        // 세로 중앙선 (수직 가이드)
+        if (Math.abs(cx - cw / 2) < SNAP) {
+          obj.set({ left: cw / 2 - w / 2 });
           addGuideLine(cw / 2, 0, cw / 2, ch);
         }
-        // 수직 중앙
-        if (Math.abs(objCy - ch / 2) < SNAP) {
-          obj.set({ top: ch / 2 - (obj.height * obj.scaleY) / 2 });
+        // 가로 중앙선 (수평 가이드)
+        if (Math.abs(cy - ch / 2) < SNAP) {
+          obj.set({ top: ch / 2 - h / 2 });
           addGuideLine(0, ch / 2, cw, ch / 2);
         }
-        // 좌측 정렬
-        if (Math.abs(obj.left) < SNAP) {
+        // 좌측
+        if (Math.abs(l) < SNAP) {
           obj.set({ left: 0 });
           addGuideLine(0, 0, 0, ch);
         }
-        // 우측 정렬
-        if (Math.abs(objR - cw) < SNAP) {
-          obj.set({ left: cw - obj.width * obj.scaleX });
+        // 우측
+        if (Math.abs(l + w - cw) < SNAP) {
+          obj.set({ left: cw - w });
           addGuideLine(cw, 0, cw, ch);
         }
-        // 상단 정렬
-        if (Math.abs(obj.top) < SNAP) {
+        // 상단
+        if (Math.abs(t) < SNAP) {
           obj.set({ top: 0 });
           addGuideLine(0, 0, cw, 0);
         }
-        // 하단 정렬
-        if (Math.abs(objB - ch) < SNAP) {
-          obj.set({ top: ch - obj.height * obj.scaleY });
+        // 하단
+        if (Math.abs(t + h - ch) < SNAP) {
+          obj.set({ top: ch - h });
           addGuideLine(0, ch, cw, ch);
         }
+        // 1/3 가이드 (세로)
+        if (Math.abs(cx - cw / 3) < SNAP) {
+          obj.set({ left: cw / 3 - w / 2 });
+          addGuideLine(cw / 3, 0, cw / 3, ch);
+        }
+        if (Math.abs(cx - cw * 2 / 3) < SNAP) {
+          obj.set({ left: cw * 2 / 3 - w / 2 });
+          addGuideLine(cw * 2 / 3, 0, cw * 2 / 3, ch);
+        }
+        // 1/3 가이드 (가로)
+        if (Math.abs(cy - ch / 3) < SNAP) {
+          obj.set({ top: ch / 3 - h / 2 });
+          addGuideLine(0, ch / 3, cw, ch / 3);
+        }
+        if (Math.abs(cy - ch * 2 / 3) < SNAP) {
+          obj.set({ top: ch * 2 / 3 - h / 2 });
+          addGuideLine(0, ch * 2 / 3, cw, ch * 2 / 3);
+        }
+        obj.setCoords();
         fc.renderAll();
       });
 
