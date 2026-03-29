@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
+// AiSidebar 분리 파일 (향후 마이그레이션용)
+// import { AiSidebar } from "./AiSidebar.jsx";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
