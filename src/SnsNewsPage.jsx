@@ -75,7 +75,7 @@ async function fetchRssNews(query, lang = "ko") {
     const xml = data.contents || "";
     const items = [];
     const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
-    for (const itemXml of itemMatches.slice(0, 15)) {
+    for (const itemXml of itemMatches.slice(0, 25)) {
       const title = (itemXml.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
       const link = (itemXml.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "";
       const pubDate = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "";

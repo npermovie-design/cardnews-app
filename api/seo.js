@@ -188,7 +188,66 @@ export default async function handler(req, res) {
       return handleRss(req, res);
     case "archive-auto-tag":
       return handleArchiveAutoTag(req, res);
+    case "cron-briefing":
+      return handleCronBriefing(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing" });
+  }
+}
+
+// ── 매일 오전 7시 자동 SNS 브리핑 ──
+async function handleCronBriefing(req, res) {
+  const OPENROUTER_KEY = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_KEY) return res.status(500).json({ error: "OPENROUTER_API_KEY 미설정" });
+
+  const supabase = createClient(
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  );
+
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const todayKey = now.toISOString().slice(0, 10);
+  const todayLabel = todayKey.replace(/-/g, ".");
+  const briefingId = `briefing_${todayKey}`;
+
+  // 중복 체크
+  const { data: existing } = await supabase.from("sns_news").select("id").eq("id", briefingId).single();
+  if (existing) return res.status(200).json({ message: "이미 존재", date: todayKey });
+
+  const prompt = `[${todayLabel} 마케팅 뉴스클리핑] 오늘 기준 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
+
+형식:
+## 1. [구체적인 뉴스 제목]
+[상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함]
+📎 출처: [언론사/플랫폼명] | 관련: #키워드1 #키워드2
+
+총 7개. 한국 뉴스 4개 + 글로벌 3개. 이모지 금지(📎만 허용). 볼드(**) 금지.`;
+
+  try {
+    const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_KEY}`, "HTTP-Referer": "https://snsmakeit.com" },
+      body: JSON.stringify({ model: "anthropic/claude-haiku-4-5", max_tokens: 3000, messages: [{ role: "user", content: prompt }] }),
+    });
+    const aiData = await aiRes.json();
+    const content = aiData.choices?.[0]?.message?.content || "";
+    if (!content || content.length < 100) throw new Error("AI 응답 부족");
+
+    await supabase.from("sns_news").upsert({
+      id: briefingId,
+      title: `[${todayLabel}] SNS 마케팅 뉴스클리핑`,
+      content,
+      category: "briefing",
+      platforms: ["instagram", "youtube", "tiktok", "naver"],
+      author_uid: "system_cron",
+      pinned: false,
+      views: 0,
+      summary: `${todayLabel} SNS 마케팅 주요 뉴스 7선 - 매일 오전 7시 자동 발행`,
+      created_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+
+    return res.status(200).json({ success: true, date: todayKey, length: content.length });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 }
