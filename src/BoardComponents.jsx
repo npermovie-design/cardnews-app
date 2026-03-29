@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase, uploadFileToStorage } from "./storage";
 import { useI18n } from "./i18n.jsx";
+import { KlipyButton } from "./KlipyPicker";
 
 /* ════════════════════════════════════════════════════════════
    BoardComponents - 게시판 하위 컴포넌트
