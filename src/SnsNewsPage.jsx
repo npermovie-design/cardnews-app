@@ -21,6 +21,7 @@ const NEWS_CATS = [
 // ── 관리자 글 카테고리 ──
 const ARTICLE_CATS = [
   { id: "all",       label: "전체",         color: "#7c6aff" },
+  { id: "briefing",  label: "AI 브리핑",    color: "#6366f1" },
   { id: "platform",  label: "플랫폼 업데이트", color: "#3b82f6" },
   { id: "algorithm", label: "알고리즘",      color: "#f59e0b" },
   { id: "trend",     label: "트렌드",        color: "#10b981" },
@@ -178,16 +179,31 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const [briefingHistory, setBriefingHistory] = useState([]);
   const [expandedHistory, setExpandedHistory] = useState(null);
 
-  const loadBriefingHistory = () => {
-    const items = [];
+  const loadBriefingHistory = async () => {
+    // localStorage에서 로드
+    const localItems = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith("nper_sns_briefing_")) {
-        try { items.push({ date: key.replace("nper_sns_briefing_", ""), ...JSON.parse(localStorage.getItem(key)) }); } catch {}
+        try { localItems.push({ date: key.replace("nper_sns_briefing_", ""), ...JSON.parse(localStorage.getItem(key)) }); } catch {}
       }
     }
-    items.sort((a, b) => b.date.localeCompare(a.date));
-    setBriefingHistory(items);
+    // Supabase에서도 과거 브리핑 로드
+    try {
+      const { data } = await supabase.from("sns_news").select("*").eq("category", "briefing").order("created_at", { ascending: false }).limit(30);
+      if (data) {
+        for (const item of data) {
+          const dateKey = item.id?.replace("briefing_", "") || "";
+          if (dateKey && !localItems.find(l => l.date === dateKey)) {
+            localItems.push({ date: dateKey, title: item.title, content: item.content });
+            // localStorage에도 캐싱
+            try { localStorage.setItem(`nper_sns_briefing_${dateKey}`, JSON.stringify({ title: item.title, content: item.content, date: dateKey })); } catch {}
+          }
+        }
+      }
+    } catch {}
+    localItems.sort((a, b) => b.date.localeCompare(a.date));
+    setBriefingHistory(localItems);
   };
 
   useEffect(() => {
@@ -214,9 +230,10 @@ export default function SnsNewsPage({ C, user, navigate }) {
           // Supabase에도 자동 저장
           try {
             await supabase.from("sns_news").upsert({
-              id: `briefing_${todayKey}`, title: `${todayLabel} SNS브리핑`, content, category: "trend",
+              id: `briefing_${todayKey}`, title: `${todayLabel} SNS브리핑`, content, category: "briefing",
               platforms: ["instagram","youtube","tiktok","naver"], author_uid: "system_ai", pinned: false, views: 0,
               summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`,
+              created_at: new Date().toISOString(),
             }, { onConflict: "id" });
           } catch {}
         }
