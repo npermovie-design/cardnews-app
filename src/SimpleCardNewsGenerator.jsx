@@ -1264,7 +1264,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#7c6aff",animation:"spin 0.8s linear infinite" }}/>추천 중</>:"✦ AI 추천"}
                   </button>
                 </div>
-                <div style={{ padding:"14px 16px", display:"grid", gap:10 }}>
+                <div style={{ padding:"10px 14px", display:"grid", gap:8 }}>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>헤드라인 <span style={{ fontWeight:400 }}>(14자 이내)</span></div>
                     <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))} placeholder="비워두면 AI가 자동 생성"
