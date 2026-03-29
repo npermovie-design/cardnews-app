@@ -639,6 +639,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [selIdx,    setSelIdx]    = useState(0);
   const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [loading,   setLoading]   = useState(false);
+  const [genError,  setGenError]  = useState("");
   const [showMediaSearch, setShowMediaSearch] = useState(false);
   const [mediaQuery, setMediaQuery] = useState("");
   const [mediaResults, setMediaResults] = useState([]);
@@ -849,6 +850,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     if (!user && guestLimitExceeded()) return;
     if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage();
+    setGenError("");
     // 포인트 즉시 차감
     if (user?.uid) {
       changePoints(user.uid, -10, "심플 카드뉴스 생성").then(newPts => {
@@ -884,7 +886,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       saveToCardLibrary(slidesData);
       // 포인트 차감은 생성 시작 시점에 처리됨
-    } catch(e) { setSlides([]); setWizStep(1); console.error("생성 실패:", e.message); }
+    } catch(e) { setSlides([]); setWizStep(3); setGenError("생성에 실패했습니다: " + (e.message || "다시 시도해주세요.")); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 
@@ -1388,6 +1390,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:11,color:muted }}>{imgW>imgH?"가로형":imgW<imgH?"세로형":"정사각형"} · {(imgW/imgH).toFixed(2)}:1</div>
             </div>
           </div>
+
+          {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:13 }}>{genError}</div>}
 
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
