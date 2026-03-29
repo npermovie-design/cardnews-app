@@ -206,39 +206,58 @@ export default function SnsNewsPage({ C, user, navigate }) {
     setBriefingHistory(localItems);
   };
 
+  // 브리핑 로드: 1) localStorage 즉시 → 2) Supabase 빠르게 → 3) AI 생성 백그라운드
+  const [briefingGenerating, setBriefingGenerating] = useState(false);
   useEffect(() => {
     let cancelled = false;
+    const todayKey = getTodayKey();
+    const todayLabel = todayKey.replace(/-/g, ".");
+    const cacheKey = `nper_sns_briefing_${todayKey}`;
+
+    // 1단계: localStorage 즉시 로드 (0ms)
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try { setBriefing(JSON.parse(cached)); setBriefingLoading(false); } catch {}
+      loadBriefingHistory();
+      return () => { cancelled = true; };
+    }
+
+    // 2단계: Supabase에서 빠르게 로드 (0.5~2초)
     (async () => {
-      const todayKey = getTodayKey();
-      const cacheKey = `nper_sns_briefing_${todayKey}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try { if (!cancelled) { setBriefing(JSON.parse(cached)); setBriefingLoading(false); } loadBriefingHistory(); return; } catch {}
-      }
-      setBriefingLoading(true);
+      try {
+        const { data } = await supabase.from("sns_news").select("*").eq("id", `briefing_${todayKey}`).single();
+        if (!cancelled && data?.content) {
+          const br = { title: data.title, content: data.content, date: todayKey };
+          setBriefing(br); setBriefingLoading(false);
+          try { localStorage.setItem(cacheKey, JSON.stringify(br)); } catch {}
+          loadBriefingHistory();
+          return;
+        }
+      } catch {}
+
+      // 3단계: AI 생성 (백그라운드, 5~15초)
+      if (cancelled) return;
+      setBriefingLoading(false); // 로딩 스피너 먼저 해제
+      setBriefingGenerating(true); // "생성 중" 표시
       try {
         const { callAI } = await import("./aiClient");
-        const todayLabel = todayKey.replace(/-/g, ".");
         const result = await callAI("claude-haiku-4-5", [
           { role: "user", content: `오늘(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 작성해줘.\n\n형식:\n## 1. [뉴스 제목]\n[상세 내용 3~5문장]\n📎 관련 키워드: #키워드1 #키워드2\n\n총 5~7개 항목. 마크다운 **볼드** 사용하지 마. 순수 텍스트로.` }
         ], 2500);
         const content = typeof result === "string" ? result : (result?.content || result?.text || "");
         if (!cancelled && content) {
-          const data = { title: `${todayLabel} SNS브리핑`, content, date: todayKey };
-          localStorage.setItem(cacheKey, JSON.stringify(data));
-          setBriefing(data);
-          // Supabase에도 자동 저장
-          try {
-            await supabase.from("sns_news").upsert({
-              id: `briefing_${todayKey}`, title: `${todayLabel} SNS브리핑`, content, category: "briefing",
-              platforms: ["instagram","youtube","tiktok","naver"], author_uid: "system_ai", pinned: false, views: 0,
-              summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`,
-              created_at: new Date().toISOString(),
-            }, { onConflict: "id" });
-          } catch {}
+          const br = { title: `${todayLabel} SNS브리핑`, content, date: todayKey };
+          localStorage.setItem(cacheKey, JSON.stringify(br));
+          setBriefing(br);
+          supabase.from("sns_news").upsert({
+            id: `briefing_${todayKey}`, title: br.title, content, category: "briefing",
+            platforms: ["instagram","youtube","tiktok","naver"], author_uid: "system_ai", pinned: false, views: 0,
+            summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`, created_at: new Date().toISOString(),
+          }, { onConflict: "id" }).then(() => {}).catch(() => {});
+          loadBriefingHistory();
         }
       } catch (e) { console.error("브리핑 생성 실패:", e); }
-      if (!cancelled) { setBriefingLoading(false); loadBriefingHistory(); }
+      if (!cancelled) setBriefingGenerating(false);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -249,19 +268,29 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsCache, setNewsCache] = useState({});
 
+  const [newsRefreshing, setNewsRefreshing] = useState(false);
   useEffect(() => {
     if (mainTab !== "news") return;
+    // 캐시가 있으면 즉시 표시
     if (newsCache[newsCat]) { setNewsItems(newsCache[newsCat]); return; }
+    // 폴백 데이터 즉시 표시 (0ms)
+    const fallback = FALLBACK_NEWS[newsCat] || [];
+    setNewsItems(fallback);
+    setNewsLoading(false);
+    // RSS를 백그라운드에서 갱신
     let cancelled = false;
-    setNewsLoading(true);
+    setNewsRefreshing(true);
     const cat = NEWS_CATS.find(c => c.id === newsCat);
     if (!cat) return;
     fetchRssNews(cat.query).then(items => {
       if (cancelled) return;
-      const result = items || FALLBACK_NEWS[newsCat] || [];
-      setNewsItems(result);
-      setNewsCache(prev => ({ ...prev, [newsCat]: result }));
-      setNewsLoading(false);
+      if (items && items.length > 0) {
+        setNewsItems(items);
+        setNewsCache(prev => ({ ...prev, [newsCat]: items }));
+      } else {
+        setNewsCache(prev => ({ ...prev, [newsCat]: fallback }));
+      }
+      setNewsRefreshing(false);
     });
     return () => { cancelled = true; };
   }, [newsCat, mainTab]);
@@ -378,7 +407,15 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 {briefingLoading ? (
                   <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                    브리핑 작성 중...
+                    브리핑 불러오는 중...
+                  </div>
+                ) : briefingGenerating ? (
+                  <div style={{ padding: "20px 0" }}>
+                    <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                      오늘의 브리핑을 AI가 작성하고 있어요...
+                    </div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>첫 방문 시 10~20초 정도 소요됩니다. 아래 탭에서 실시간 뉴스를 먼저 확인해보세요.</div>
                   </div>
                 ) : briefing ? (
                   <div style={{ wordBreak: "break-word" }}>
@@ -431,7 +468,13 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 <button key={cat.id} onClick={() => setNewsCat(cat.id)} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: newsCat === cat.id ? 800 : 500, color: newsCat === cat.id ? accent : muted, background: "transparent", whiteSpace: "nowrap", borderBottom: newsCat === cat.id ? `2.5px solid ${accent}` : "2.5px solid transparent", marginBottom: -2, flexShrink: 0, minHeight: 44 }}>{cat.label}</button>
               ))}
             </div>
-            {newsLoading ? (
+            {newsRefreshing && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "6px 12px", borderRadius: 8, background: "rgba(124,106,255,0.06)", width: "fit-content" }}>
+                <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(124,106,255,0.2)", borderTopColor: accent, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                <span style={{ fontSize: 11, color: accent, fontWeight: 600 }}>실시간 뉴스 갱신 중...</span>
+              </div>
+            )}
+            {newsItems.length === 0 && newsLoading ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
                 <div style={{ width: 36, height: 36, border: `3px solid ${accent}30`, borderTopColor: accent, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
                 <div style={{ fontSize: 13 }}>뉴스 불러오는 중...</div>
