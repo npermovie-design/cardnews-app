@@ -226,7 +226,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:5 }}>
               {INDUSTRIES.map(ind => (
                 <button key={ind} onClick={() => setIndustry(ind)}
-                  style={{ padding:"3px 9px", borderRadius:12, border:`1px solid ${industry===ind?"#06b6d4":bdr}`, background:industry===ind?"rgba(6,182,212,0.15)":"transparent", color:industry===ind?"#06b6d4":muted, fontSize:10, cursor:"pointer", fontWeight:industry===ind?700:400 }}>{ind}</button>
+                  style={{ padding:"6px 12px", borderRadius:12, border:`1px solid ${industry===ind?"#06b6d4":bdr}`, background:industry===ind?"rgba(6,182,212,0.15)":"transparent", color:industry===ind?"#06b6d4":muted, fontSize:11, cursor:"pointer", fontWeight:industry===ind?700:400 }}>{ind}</button>
               ))}
             </div>
             <input value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="직접 입력" style={inp}/>

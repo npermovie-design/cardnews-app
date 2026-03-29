@@ -167,7 +167,7 @@ export function LegalPage({ C, navigate, initialTab }) {
       <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, minHeight: 44,
               background: tab === t.id ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f5"),
               color: tab === t.id ? "#fff" : C.muted,
               boxShadow: tab === t.id ? "0 4px 16px rgba(124,106,255,0.3)" : "none" }}>
