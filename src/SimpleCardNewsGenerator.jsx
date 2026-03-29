@@ -819,6 +819,67 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     } catch {}
   };
 
+  // ── 템플릿 공유 ──────────────────────────────────────────
+  const shareAsTemplate = (previewImage) => {
+    const title = window.prompt("공유할 템플릿 제목을 입력하세요:", topic || "");
+    if (!title) return;
+
+    // 첫 슬라이드 미리보기 생성 (previewImage가 없으면 직접 그리기)
+    let preview = previewImage;
+    if (!preview) {
+      try {
+        const c = document.createElement("canvas");
+        const firstSlide = slides[0] || {};
+        const ss = getSlideStyle(0);
+        drawDetailSlide(c, { title: firstSlide.title||"", subtitle: firstSlide.subtitle||"", body: firstSlide.body||"", highlight: firstSlide.highlight||"" }, ss, imgW, imgH, null);
+        preview = c.toDataURL("image/jpeg", 0.5);
+      } catch {}
+    }
+
+    const templateData = {
+      id: Date.now(),
+      title,
+      author: user?.nick || user?.nickname || user?.email?.split("@")[0] || "익명",
+      user_id: user?.id || null,
+      preset_key: activeStyle.key || "bold_dark",
+      preset_label: activeStyle.label || "볼드 다크",
+      slide_count: slides.length,
+      slides_data: JSON.stringify(slides),
+      preview: preview || null,
+      created_at: new Date().toISOString(),
+      use_count: 0,
+    };
+
+    // Supabase에 저장 시도
+    (async () => {
+      let savedToSupabase = false;
+      try {
+        if (supabase) {
+          const { error } = await supabase.from("shared_templates").insert([templateData]);
+          if (!error) savedToSupabase = true;
+        }
+      } catch {}
+
+      // localStorage에 저장 (내 템플릿)
+      try {
+        const myList = JSON.parse(localStorage.getItem("nper_shared_templates_mine") || "[]");
+        myList.unshift(templateData);
+        localStorage.setItem("nper_shared_templates_mine", JSON.stringify(myList.slice(0, 50)));
+      } catch {}
+
+      // Supabase 실패 시 커뮤니티 localStorage에도 저장
+      if (!savedToSupabase) {
+        try {
+          const comList = JSON.parse(localStorage.getItem("nper_shared_templates_community") || "[]");
+          comList.unshift(templateData);
+          localStorage.setItem("nper_shared_templates_community", JSON.stringify(comList.slice(0, 100)));
+        } catch {}
+      }
+
+      alert("템플릿이 공유되었습니다!");
+    })();
+  };
+
   const resetAll = () => {
     setWizStep(1); setTopic(""); setTopicDetail(""); setPageCount(6); setAiSugg(null);
     setSlideContents([]); setSelPreset(null); setSelSize(0);
@@ -1211,6 +1272,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
           onSave={() => {}}
           onClose={() => setWizStep(3)}
+          onShareTemplate={shareAsTemplate}
           inline
         />
       </div>

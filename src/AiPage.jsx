@@ -463,6 +463,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
           ["detail","상세페이지", detailList.length + simpleDetailList.length],
           ["ppt","PPT", pptList.length],
           ["doc","문서", docList.length],
+          ["shared","공유 템플릿", null],
         ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
@@ -935,9 +936,184 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
           )}
         </>
       )}
+      {/* 공유 템플릿 탭 */}
+      {tab === "shared" && <SharedTemplatesTab isDark={isDark} text={text} muted={muted} bdr={bdr} bg={bg} accent={accent} setAiMenu={setAiMenu} />}
+
       </div>{/* maxWidth:800 */}
       {renderFooter && renderFooter()}
     </div>
+  );
+}
+
+// ── 공유 템플릿 탭 컴포넌트 ──────────────────────────────────────────────────────
+function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu }) {
+  const [subTab, setSubTab] = useState("mine"); // "mine" | "community"
+  const [myTemplates, setMyTemplates] = useState([]);
+  const [communityTemplates, setCommunityTemplates] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // 내 템플릿 로드
+  useEffect(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem("nper_shared_templates_mine") || "[]");
+      setMyTemplates(list);
+    } catch { setMyTemplates([]); }
+  }, []);
+
+  // 커뮤니티 템플릿 로드
+  useEffect(() => {
+    if (subTab !== "community") return;
+    setLoading(true);
+    (async () => {
+      try {
+        // Supabase 시도
+        const { supabase } = await import("./storage");
+        if (supabase) {
+          const { data, error } = await supabase.from("shared_templates").select("*").order("created_at", { ascending: false }).limit(50);
+          if (!error && data && data.length > 0) {
+            setCommunityTemplates(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+      // localStorage 폴백
+      try {
+        const list = JSON.parse(localStorage.getItem("nper_shared_templates_community") || "[]");
+        setCommunityTemplates(list);
+      } catch { setCommunityTemplates([]); }
+      setLoading(false);
+    })();
+  }, [subTab]);
+
+  const handleUse = (tmpl) => {
+    try {
+      // 템플릿 데이터를 localStorage에 저장하고 카드뉴스 메뉴로 이동
+      const slidesData = typeof tmpl.slides_data === "string" ? JSON.parse(tmpl.slides_data) : tmpl.slides_data;
+      localStorage.setItem("nper_open_card", JSON.stringify({
+        id: "shared_" + tmpl.id,
+        topic: tmpl.title,
+        count: tmpl.slide_count || slidesData?.length || 0,
+        slides: slidesData || [],
+        gs: { key: tmpl.preset_key, label: tmpl.preset_label },
+        sted: {},
+      }));
+      // use_count 증가 시도
+      (async () => {
+        try {
+          const { supabase } = await import("./storage");
+          if (supabase) await supabase.from("shared_templates").update({ use_count: (tmpl.use_count || 0) + 1 }).eq("id", tmpl.id);
+        } catch {}
+      })();
+      setAiMenu("cardnews_simple_open");
+    } catch { alert("템플릿 불러오기에 실패했습니다."); }
+  };
+
+  const handleUnshare = (tmpl) => {
+    if (!window.confirm("공유를 취소하시겠습니까?")) return;
+    try {
+      const list = JSON.parse(localStorage.getItem("nper_shared_templates_mine") || "[]");
+      const updated = list.filter(x => x.id !== tmpl.id);
+      localStorage.setItem("nper_shared_templates_mine", JSON.stringify(updated));
+      setMyTemplates(updated);
+      // Supabase에서도 삭제 시도
+      (async () => {
+        try {
+          const { supabase } = await import("./storage");
+          if (supabase) await supabase.from("shared_templates").delete().eq("id", tmpl.id);
+        } catch {}
+      })();
+      // 커뮤니티 localStorage에서도 삭제
+      try {
+        const comList = JSON.parse(localStorage.getItem("nper_shared_templates_community") || "[]");
+        localStorage.setItem("nper_shared_templates_community", JSON.stringify(comList.filter(x => x.id !== tmpl.id)));
+      } catch {}
+    } catch {}
+  };
+
+  const TemplateCard = ({ tmpl, showUnshare }) => (
+    <div style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* 미리보기 이미지 */}
+      <div style={{ width: "100%", aspectRatio: "1", background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.06)", overflow: "hidden", position: "relative" }}>
+        {tmpl.preview ? (
+          <img src={tmpl.preview} alt={tmpl.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: muted, fontWeight: 700 }}>미리보기 없음</div>
+        )}
+        {tmpl.slide_count && (
+          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 5 }}>{tmpl.slide_count}장</div>
+        )}
+      </div>
+      {/* 정보 */}
+      <div style={{ padding: "12px 12px 10px", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.title || "제목 없음"}</div>
+        <div style={{ fontSize: 11, color: muted, marginBottom: 2 }}>{tmpl.author || "익명"}</div>
+        {tmpl.preset_label && (
+          <div style={{ fontSize: 10, color: accent, fontWeight: 600, marginBottom: 8 }}>{tmpl.preset_label}</div>
+        )}
+        <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
+          <button onClick={() => handleUse(tmpl)}
+            style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", cursor: "pointer",
+              background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700 }}>
+            사용하기
+          </button>
+          {showUnshare && (
+            <button onClick={() => handleUnshare(tmpl)}
+              style={{ padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: "rgba(248,113,113,0.1)", color: "#f87171", fontSize: 11, fontWeight: 600 }}>
+              공유 취소
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const templates = subTab === "mine" ? myTemplates : communityTemplates;
+
+  return (
+    <>
+      {/* 서브탭 */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, background: isDark ? "rgba(255,255,255,0.05)" : "#e9e9ef", borderRadius: 8, padding: 3, width: "fit-content" }}>
+        {[["mine", "내 템플릿"], ["community", "커뮤니티"]].map(([id, label]) => (
+          <button key={id} onClick={() => setSubTab(id)}
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
+              background: subTab === id ? (isDark ? "rgba(99,102,241,0.5)" : "#fff") : "transparent",
+              color: subTab === id ? (isDark ? "#fff" : accent) : muted,
+              boxShadow: subTab === id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
+          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(99,102,241,0.3)", borderTopColor: "#7c6aff", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 13 }}>불러오는 중...</div>
+        </div>
+      ) : templates.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(99,102,241,0.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12, fontSize: 20 }}>
+            {subTab === "mine" ? "📤" : "🌍"}
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: text }}>
+            {subTab === "mine" ? "아직 공유한 템플릿이 없어요" : "아직 공유된 템플릿이 없어요"}
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+            {subTab === "mine" ? "카드뉴스 편집 화면에서 '템플릿 공유' 버튼을 눌러보세요" : "다른 사용자가 템플릿을 공유하면 여기 표시됩니다"}
+          </div>
+          <button onClick={() => setAiMenu("cardnews_simple")}
+            style={{ marginTop: 16, padding: "10px 24px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+            카드뉴스 만들기 →
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 12 }}>
+          {templates.map(tmpl => <TemplateCard key={tmpl.id} tmpl={tmpl} showUnshare={subTab === "mine"} />)}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1316,70 +1492,119 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
 }
 
 // ── SNS 뉴스 피드 API ────────────────────────────────────────────────────
-async function fetchSnsNews() {
-  // Google News RSS를 통해 SNS 마케팅 관련 뉴스 가져오기
-  const QUERIES = ["SNS 마케팅", "소셜미디어 마케팅", "인스타그램 마케팅"];
-  const query = QUERIES[Math.floor(Math.random() * QUERIES.length)];
+// ── 카테고리별 뉴스 RSS 가져오기 ──────────────────────────────────────────
+const NEWS_CATEGORIES = [
+  { id: "sns", label: "SNS 마케팅", query: "SNS+마케팅" },
+  { id: "digital", label: "디지털 마케팅", query: "디지털+마케팅" },
+  { id: "ai", label: "AI/테크", query: "AI+마케팅" },
+  { id: "trend", label: "트렌드", query: "마케팅+트렌드" },
+  { id: "biz", label: "비즈니스", query: "스타트업+마케팅" },
+];
+
+const FALLBACK_NEWS_BY_CATEGORY = {
+  sns: [
+    { title: "2026 SNS 마케팅 트렌드: AI 콘텐츠 자동화가 대세", source: "마케팅타임즈", pubDate: "2026-03-29", link: "https://news.google.com/search?q=SNS+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "올해 SNS 마케팅의 핵심 키워드는 AI 기반 콘텐츠 자동화입니다. 인스타그램, 틱톡 등 주요 플랫폼에서 AI 도구를 활용한 콘텐츠 제작이 급증하고 있습니다.", thumb: "" },
+    { title: "인스타그램 릴스 알고리즘 변경, 마케터가 알아야 할 것들", source: "소셜미디어투데이", pubDate: "2026-03-28", link: "https://news.google.com/search?q=%EC%9D%B8%EC%8A%A4%ED%83%80%EA%B7%B8%EB%9E%A8+%EB%A6%B4%EC%8A%A4&hl=ko", description: "인스타그램이 릴스 추천 알고리즘을 대폭 개편했습니다. 짧은 영상보다 정보성 콘텐츠에 더 높은 가중치를 부여하는 방향으로 변경되었습니다.", thumb: "" },
+    { title: "틱톡 커머스 기능 확대, 소상공인 매출 증가 효과", source: "이커머스뉴스", pubDate: "2026-03-28", link: "https://news.google.com/search?q=%ED%8B%B1%ED%86%A1+%EC%BB%A4%EB%A8%B8%EC%8A%A4&hl=ko", description: "틱톡의 인앱 쇼핑 기능이 확대되면서 소상공인들의 매출이 평균 35% 증가한 것으로 나타났습니다.", thumb: "" },
+    { title: "스레드(Threads) 마케팅 활용법, 브랜드 사례 분석", source: "디지털마케팅인사이트", pubDate: "2026-03-26", link: "https://news.google.com/search?q=Threads+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "메타의 스레드가 마케팅 채널로 주목받고 있습니다. 성공적인 브랜드 활용 사례와 전략을 분석합니다.", thumb: "" },
+    { title: "카드뉴스 vs 릴스, 2026년 최적의 콘텐츠 포맷은?", source: "콘텐츠마케팅랩", pubDate: "2026-03-26", link: "https://news.google.com/search?q=%EC%B9%B4%EB%93%9C%EB%89%B4%EC%8A%A4+%EB%A6%B4%EC%8A%A4&hl=ko", description: "카드뉴스와 릴스 중 어떤 포맷이 더 효과적인지 데이터 기반으로 비교 분석한 결과를 공유합니다.", thumb: "" },
+  ],
+  digital: [
+    { title: "퍼포먼스 마케팅의 종말? 브랜딩 중심으로 전환", source: "디지털마케팅리뷰", pubDate: "2026-03-29", link: "https://news.google.com/search?q=%EB%94%94%EC%A7%80%ED%84%B8+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "서드파티 쿠키 폐지 이후 퍼포먼스 마케팅의 효율이 급감하면서, 브랜딩 중심 마케팅으로 전환하는 기업이 늘고 있습니다.", thumb: "" },
+    { title: "구글 SEO 2026 핵심 업데이트 총정리", source: "서치엔진저널", pubDate: "2026-03-28", link: "https://news.google.com/search?q=%EA%B5%AC%EA%B8%80+SEO+2026&hl=ko", description: "구글의 2026년 첫 핵심 업데이트가 적용되었습니다. AI 생성 콘텐츠 평가 기준과 E-E-A-T 가중치 변화를 분석합니다.", thumb: "" },
+    { title: "이메일 마케팅 부활, 오픈율 높이는 5가지 전략", source: "마케터스", pubDate: "2026-03-27", link: "https://news.google.com/search?q=%EC%9D%B4%EB%A9%94%EC%9D%BC+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "소셜미디어 알고리즘 변경으로 이메일 마케팅이 다시 주목받고 있습니다. 오픈율을 높이는 실전 전략을 소개합니다.", thumb: "" },
+    { title: "네이버 블로그 SEO 가이드 2026년 업데이트", source: "블로그마케팅", pubDate: "2026-03-27", link: "https://news.google.com/search?q=%EB%84%A4%EC%9D%B4%EB%B2%84+%EB%B8%94%EB%A1%9C%EA%B7%B8+SEO&hl=ko", description: "네이버가 블로그 검색 알고리즘을 업데이트했습니다. C-Rank와 D.I.A. 로직의 최신 변경사항과 대응 전략을 알아봅니다.", thumb: "" },
+  ],
+  ai: [
+    { title: "ChatGPT-5 출시, 마케팅 업무에 미치는 영향은?", source: "AI타임즈", pubDate: "2026-03-29", link: "https://news.google.com/search?q=AI+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "OpenAI가 ChatGPT-5를 공개했습니다. 마케팅 카피라이팅, 데이터 분석, 고객 응대 등 실무 활용도를 분석합니다.", thumb: "" },
+    { title: "AI 이미지 생성 도구 비교: 마케터를 위한 가이드", source: "테크마케팅", pubDate: "2026-03-28", link: "https://news.google.com/search?q=AI+%EC%9D%B4%EB%AF%B8%EC%A7%80+%EC%83%9D%EC%84%B1&hl=ko", description: "Midjourney, DALL-E, Stable Diffusion 등 주요 AI 이미지 생성 도구의 마케팅 활용도를 비교합니다.", thumb: "" },
+    { title: "생성형 AI로 광고 소재 제작, ROI 200% 향상 사례", source: "광고비즈니스", pubDate: "2026-03-27", link: "https://news.google.com/search?q=%EC%83%9D%EC%84%B1%ED%98%95+AI+%EA%B4%91%EA%B3%A0&hl=ko", description: "A/B 테스트 기반으로 AI 생성 광고 소재와 기존 소재의 성과를 비교한 결과, 놀라운 ROI 차이가 나타났습니다.", thumb: "" },
+    { title: "AI 챗봇 마케팅, 전환율 3배 높이는 방법", source: "테크리뷰", pubDate: "2026-03-26", link: "https://news.google.com/search?q=AI+%EC%B1%97%EB%B4%87+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "AI 챗봇을 활용한 마케팅 자동화로 전환율을 크게 개선한 실제 사례와 구축 방법을 공유합니다.", thumb: "" },
+  ],
+  trend: [
+    { title: "2026 상반기 마케팅 트렌드 리포트", source: "트렌드코리아", pubDate: "2026-03-29", link: "https://news.google.com/search?q=%EB%A7%88%EC%BC%80%ED%8C%85+%ED%8A%B8%EB%A0%8C%EB%93%9C+2026&hl=ko", description: "2026년 상반기를 지배할 마케팅 트렌드 5가지를 선정했습니다. 숏폼, AI, 커뮤니티 마케팅 등을 분석합니다.", thumb: "" },
+    { title: "MZ세대가 떠나고 알파세대가 온다: 타겟 전환 전략", source: "마케팅인사이트", pubDate: "2026-03-28", link: "https://news.google.com/search?q=%EC%95%8C%ED%8C%8C%EC%84%B8%EB%8C%80+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "알파세대(2010년 이후 출생)가 소비 주체로 부상하면서, 마케팅 타겟 전략의 전환이 필요해지고 있습니다.", thumb: "" },
+    { title: "유튜브 쇼츠 수익화 정책 변경 안내", source: "크리에이터경제", pubDate: "2026-03-27", link: "https://news.google.com/search?q=%EC%9C%A0%ED%8A%9C%EB%B8%8C+%EC%87%BC%EC%B8%A0+%EC%88%98%EC%9D%B5%ED%99%94&hl=ko", description: "유튜브가 쇼츠 크리에이터를 위한 새로운 수익화 모델을 발표했습니다. 조회수 기반에서 참여도 기반으로 전환됩니다.", thumb: "" },
+    { title: "라이브커머스 시장 10조 돌파, 성공 전략은?", source: "이커머스트렌드", pubDate: "2026-03-26", link: "https://news.google.com/search?q=%EB%9D%BC%EC%9D%B4%EB%B8%8C%EC%BB%A4%EB%A8%B8%EC%8A%A4&hl=ko", description: "국내 라이브커머스 시장이 10조원을 돌파했습니다. 성공적인 라이브커머스 운영을 위한 핵심 전략을 알아봅니다.", thumb: "" },
+  ],
+  biz: [
+    { title: "스타트업 마케팅, 적은 예산으로 최대 효과 내는 법", source: "스타트업위클리", pubDate: "2026-03-29", link: "https://news.google.com/search?q=%EC%8A%A4%ED%83%80%ED%8A%B8%EC%97%85+%EB%A7%88%EC%BC%80%ED%8C%85&hl=ko", description: "초기 스타트업이 제한된 예산으로 효과적인 마케팅을 하기 위한 실전 가이드를 제공합니다.", thumb: "" },
+    { title: "D2C 브랜드 성공 사례, 자사몰 전환율 최적화", source: "브랜딩저널", pubDate: "2026-03-28", link: "https://news.google.com/search?q=D2C+%EB%B8%8C%EB%9E%9C%EB%93%9C&hl=ko", description: "D2C(Direct to Consumer) 브랜드들의 성공 비결과 자사몰 전환율을 높이는 구체적인 방법론을 분석합니다.", thumb: "" },
+    { title: "퍼스널 브랜딩으로 매출 5배 올린 비결", source: "비즈니스인사이더", pubDate: "2026-03-27", link: "https://news.google.com/search?q=%ED%8D%BC%EC%8A%A4%EB%84%90+%EB%B8%8C%EB%9E%9C%EB%94%A9&hl=ko", description: "1인 사업자와 프리랜서를 위한 퍼스널 브랜딩 전략. SNS를 활용해 매출을 극적으로 늘린 실제 사례를 공유합니다.", thumb: "" },
+    { title: "브랜딩 리뉴얼, 성공하는 리브랜딩의 조건", source: "디자인비즈", pubDate: "2026-03-26", link: "https://news.google.com/search?q=%EB%A6%AC%EB%B8%8C%EB%9E%9C%EB%94%A9&hl=ko", description: "기존 브랜드를 새롭게 탈바꿈하는 리브랜딩. 성공과 실패를 가르는 핵심 요소를 사례와 함께 분석합니다.", thumb: "" },
+  ],
+};
+
+async function fetchSnsNewsByCategory(categoryId) {
+  const cat = NEWS_CATEGORIES.find(c => c.id === categoryId);
+  if (!cat) return null;
   try {
-    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cat.query)}&hl=ko&gl=KR&ceid=KR:ko`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
     const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
     if (!r.ok) return null;
     const data = await r.json();
     const xml = data.contents || "";
-    // RSS XML 파싱
     const items = [];
     const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
-    for (const itemXml of itemMatches.slice(0, 20)) {
+    for (const itemXml of itemMatches.slice(0, 15)) {
       const title = (itemXml.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
       const link = (itemXml.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "";
       const pubDate = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "";
       const source = (itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/i) || [])[1] || "";
       const desc = (itemXml.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "";
-      // HTML 엔티티 및 태그 제거
+      const thumbMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
+      const thumb = thumbMatch ? thumbMatch[1] : "";
       const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
       const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
       if (cleanTitle) {
-        items.push({ title: cleanTitle, link, pubDate, source, description: cleanDesc });
+        items.push({ title: cleanTitle, link, pubDate, source, description: cleanDesc, thumb });
       }
     }
     return items.length > 0 ? items : null;
   } catch { return null; }
 }
 
-// ── SNS 뉴스 피드 페이지 ──────────────────────────────────────────────────
+// ── SNS 뉴스 피드 페이지 (네이버 뉴스 스타일) ──────────────────────────────
 function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
-  const [news, setNews] = useState([]);
+  const [activeTab, setActiveTab] = useState("sns");
+  const [newsCache, setNewsCache] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hoveredIdx, setHoveredIdx] = useState(-1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const FALLBACK_NEWS = [
-    { title: "2026 SNS 마케팅 트렌드: AI 콘텐츠 자동화가 대세", source: "마케팅타임즈", pubDate: "2026-03-29", link: "", description: "올해 SNS 마케팅의 핵심 키워드는 AI 기반 콘텐츠 자동화입니다. 인스타그램, 틱톡 등 주요 플랫폼에서 AI 도구를 활용한 콘텐츠 제작이 급증하고 있습니다." },
-    { title: "인스타그램 릴스 알고리즘 변경, 마케터가 알아야 할 것들", source: "소셜미디어투데이", pubDate: "2026-03-28", link: "", description: "인스타그램이 릴스 추천 알고리즘을 대폭 개편했습니다. 짧은 영상보다 정보성 콘텐츠에 더 높은 가중치를 부여하는 방향으로 변경되었습니다." },
-    { title: "틱톡 커머스 기능 확대, 소상공인 매출 증가 효과", source: "이커머스뉴스", pubDate: "2026-03-28", link: "", description: "틱톡의 인앱 쇼핑 기능이 확대되면서 소상공인들의 매출이 평균 35% 증가한 것으로 나타났습니다." },
-    { title: "네이버 블로그 SEO 가이드 2026년 업데이트", source: "블로그마케팅", pubDate: "2026-03-27", link: "", description: "네이버가 블로그 검색 알고리즘을 업데이트했습니다. C-Rank와 D.I.A. 로직의 최신 변경사항과 대응 전략을 알아봅니다." },
-    { title: "유튜브 쇼츠 수익화 정책 변경 안내", source: "크리에이터경제", pubDate: "2026-03-27", link: "", description: "유튜브가 쇼츠 크리에이터를 위한 새로운 수익화 모델을 발표했습니다. 조회수 기반에서 참여도 기반으로 전환됩니다." },
-    { title: "스레드(Threads) 마케팅 활용법, 브랜드 사례 분석", source: "디지털마케팅인사이트", pubDate: "2026-03-26", link: "", description: "메타의 스레드가 마케팅 채널로 주목받고 있습니다. 성공적인 브랜드 활용 사례와 전략을 분석합니다." },
-    { title: "카드뉴스 vs 릴스, 2026년 최적의 콘텐츠 포맷은?", source: "콘텐츠마케팅랩", pubDate: "2026-03-26", link: "", description: "카드뉴스와 릴스 중 어떤 포맷이 더 효과적인지 데이터 기반으로 비교 분석한 결과를 공유합니다." },
-    { title: "AI 이미지 생성 도구 비교: 마케터를 위한 가이드", source: "테크마케팅", pubDate: "2026-03-25", link: "", description: "Midjourney, DALL-E, Stable Diffusion 등 주요 AI 이미지 생성 도구의 마케팅 활용도를 비교합니다." },
-  ];
+  const currentNews = newsCache[activeTab] || [];
+
+  const loadNews = async (tab, forceRefresh = false) => {
+    setLoading(true); setError("");
+    if (!forceRefresh && newsCache[tab]) { setLoading(false); return; }
+    const items = await fetchSnsNewsByCategory(tab);
+    if (items && items.length > 0) {
+      setNewsCache(prev => ({ ...prev, [tab]: items }));
+    } else {
+      setNewsCache(prev => ({ ...prev, [tab]: FALLBACK_NEWS_BY_CATEGORY[tab] || [] }));
+      setError("fallback");
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    setLoading(true); setError("");
+    let cancelled = false;
     (async () => {
-      const items = await fetchSnsNews();
-      if (items && items.length > 0) {
-        setNews(items);
-      } else {
-        setNews(FALLBACK_NEWS);
-        setError("fallback");
-      }
-      setLoading(false);
+      await loadNews(activeTab);
+      if (cancelled) return;
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [activeTab, refreshKey]);
+
+  const handleRefresh = () => {
+    setNewsCache(prev => { const next = { ...prev }; delete next[activeTab]; return next; });
+    setRefreshKey(k => k + 1);
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
@@ -1395,45 +1620,128 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
     } catch { return dateStr; }
   };
 
+  const ThumbPlaceholder = ({ category }) => {
+    const gradients = {
+      sns: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      digital: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      ai: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+      trend: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+      biz: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    };
+    const labels = { sns: "SNS", digital: "DM", ai: "AI", trend: "T", biz: "BIZ" };
+    return (
+      <div style={{ width:80, minWidth:80, height:60, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center",
+        background: gradients[category] || "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
+        flexShrink:0, color:"#fff", fontSize:13, fontWeight:800, letterSpacing:0.5, textShadow:"0 1px 2px rgba(0,0,0,0.2)" }}>
+        {labels[category] || "NEWS"}
+      </div>
+    );
+  };
+
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth:800, margin:"0 auto" }}>
+
+        {/* ── 헤더: 탭 + 새로고침 ── */}
+        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", borderBottom:`2px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom:20 }}>
+          <div style={{ display:"flex", gap:0, overflowX:"auto", flex:1 }}>
+            {NEWS_CATEGORIES.map(cat => {
+              const isActive = activeTab === cat.id;
+              return (
+                <button key={cat.id} onClick={() => { setActiveTab(cat.id); setError(""); setHoveredIdx(-1); }}
+                  style={{
+                    padding:"12px 20px", border:"none", cursor:"pointer", fontSize:14, fontWeight: isActive ? 800 : 500,
+                    color: isActive ? accent : muted, background:"transparent", whiteSpace:"nowrap",
+                    borderBottom: isActive ? `2.5px solid ${accent}` : "2.5px solid transparent",
+                    transition:"all 0.15s", marginBottom:-2, flexShrink:0,
+                  }}>
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* 새로고침 버튼 */}
+          <button onClick={handleRefresh} disabled={loading}
+            style={{ padding:"8px 14px", marginBottom:4, border:`1px solid ${bdr}`, borderRadius:8, background:"transparent",
+              color: loading ? muted : text, fontSize:12, fontWeight:600, cursor: loading ? "not-allowed" : "pointer",
+              display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0, transition:"all 0.15s",
+              opacity: loading ? 0.5 : 1 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ animation: loading ? "spin 1s linear infinite" : "none" }}>
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2.5 11.5a10 10 0 0 1 17.56-5.5M21.5 12.5a10 10 0 0 1-17.56 5.5" />
+            </svg>
+            새로고침
+          </button>
+        </div>
+
+        {/* ── RSS 실패 알림 ── */}
         {error === "fallback" && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, padding:"8px 14px", borderRadius:10,
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14, padding:"8px 14px", borderRadius:10,
             background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#f59e0b" }} />
             <span style={{ fontSize:11, color:"#f59e0b", fontWeight:600 }}>RSS 피드 연결 실패 - 추천 뉴스를 표시합니다</span>
           </div>
         )}
 
+        {/* ── 로딩 ── */}
         {loading ? (
           <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
             <div style={{ width:40, height:40, border:`3px solid ${accent}30`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
             <div style={{ fontSize:13 }}>뉴스 불러오는 중...</div>
           </div>
         ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {news.map((item, i) => (
+          /* ── 뉴스 목록 (네이버 뉴스 스타일) ── */
+          <div style={{ background: bg, borderRadius:14, border:`1px solid ${bdr}`, overflow:"hidden" }}>
+            {currentNews.map((item, i) => (
               <a key={i} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
                 onClick={e => { if (!item.link) e.preventDefault(); }}
-                style={{ textDecoration:"none", borderRadius:14, border:`1px solid ${bdr}`, background:bg,
-                  padding:"18px 20px", cursor: item.link ? "pointer" : "default", transition:"all 0.15s", display:"block" }}
-                onMouseEnter={e => { if(item.link) { e.currentTarget.style.borderColor = accent+"60"; } e.currentTarget.style.boxShadow = `0 2px 12px ${accent}10`; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.boxShadow = "none"; }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                  {item.source && (
-                    <span style={{ fontSize:11, fontWeight:700, color:accent, padding:"2px 8px", borderRadius:6,
-                      background:isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)" }}>{item.source}</span>
+                onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(-1)}
+                style={{
+                  textDecoration:"none", display:"flex", alignItems:"flex-start", gap:14,
+                  padding:"14px 18px", cursor: item.link ? "pointer" : "default",
+                  transition:"background 0.12s",
+                  background: hoveredIdx === i ? (isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)") : "transparent",
+                  borderBottom: i < currentNews.length - 1 ? `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "#f0f0f5"}` : "none",
+                }}>
+
+                {/* 썸네일 (80x60) */}
+                {item.thumb ? (
+                  <img src={item.thumb} alt="" style={{ width:80, minWidth:80, height:60, borderRadius:8, objectFit:"cover", flexShrink:0,
+                    background: isDark ? "rgba(255,255,255,0.05)" : "#f5f5f5" }}
+                    onError={e => { e.target.style.display = "none"; if (e.target.nextSibling) e.target.nextSibling.style.display = "flex"; }} />
+                ) : null}
+                {!item.thumb && <ThumbPlaceholder category={activeTab} />}
+
+                {/* 기사 정보 */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:15, fontWeight:700, color:text, lineHeight:1.4, marginBottom:5,
+                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {item.title}
+                  </div>
+                  {item.description && (
+                    <div style={{ fontSize:13, color:muted, lineHeight:1.5, marginBottom:6,
+                      display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                      {item.description}
+                    </div>
                   )}
-                  {item.pubDate && <span style={{ fontSize:11, color:muted }}>{formatDate(item.pubDate)}</span>}
+                  <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:muted }}>
+                    {item.source && (
+                      <span style={{ display:"inline-block", padding:"2px 7px", borderRadius:4, fontWeight:700, fontSize:10,
+                        background: isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.07)",
+                        color: isDark ? "rgba(180,170,255,0.9)" : "#6c5ce7" }}>
+                        {item.source}
+                      </span>
+                    )}
+                    {item.pubDate && <span style={{ color: isDark ? "rgba(255,255,255,0.35)" : "#aaa" }}>{formatDate(item.pubDate)}</span>}
+                  </div>
                 </div>
-                <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6, lineHeight:1.5 }}>{item.title}</div>
-                {item.description && (
-                  <div style={{ fontSize:13, color:muted, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{item.description}</div>
-                )}
-                {item.link && <div style={{ marginTop:10, fontSize:11, color:accent, fontWeight:600 }}>기사 읽기 →</div>}
               </a>
             ))}
+            {currentNews.length === 0 && !loading && (
+              <div style={{ textAlign:"center", padding:"40px 0", color:muted, fontSize:13 }}>
+                이 카테고리의 뉴스를 불러올 수 없습니다.
+              </div>
+            )}
           </div>
         )}
       </div>

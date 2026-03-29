@@ -192,6 +192,7 @@ export default function CardNewsEditor({
   C: themeIn,
   onSave,
   onClose,
+  onShareTemplate,
   inline = false,
 }) {
   const C = { ...DEFAULT_THEME, ...(themeIn || {}) };
@@ -1104,6 +1105,20 @@ export default function CardNewsEditor({
     fc.renderAll();
   }
 
+  /* ── get first slide preview as base64 ──────────────────────────────── */
+  function getFirstSlidePreview() {
+    try {
+      const fc = canvasRef.current;
+      if (!fc) return null;
+      // If we're on the first slide, just capture it
+      if (currentIdx === 0) {
+        return fc.toDataURL({ format: "jpeg", quality: 0.5, multiplier: 0.5 });
+      }
+      // Otherwise return null (caller will handle)
+      return null;
+    } catch { return null; }
+  }
+
   /* ── layer type icon helper ─────────────────────────────────────────── */
   function layerIcon(type) {
     if (type === "textbox" || type === "text") return "T";
@@ -1149,6 +1164,7 @@ export default function CardNewsEditor({
             {/* Right: actions */}
             <Btn small onClick={downloadCurrentPNG} accent="#10b981" style={{ whiteSpace: "nowrap" }}>PNG 저장</Btn>
             <Btn small onClick={downloadAllPNGs} accent="#0ea5e9" style={{ whiteSpace: "nowrap" }}>전체 저장</Btn>
+            {onShareTemplate && <Btn small onClick={() => onShareTemplate(getFirstSlidePreview())} accent="#f59e0b" style={{ whiteSpace: "nowrap" }}>📤 템플릿 공유</Btn>}
             <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
           </div>
 
