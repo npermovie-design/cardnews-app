@@ -433,6 +433,16 @@ export default function SnsNewsPage({ C, user, navigate }) {
               ))}
             </div>
           </div>
+          {/* 오픈채팅 */}
+          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, background: "#FEE500", marginTop: 20, textDecoration: "none" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#191919" }}>단체카톡방에서 함께 소통하기</div>
+              <div style={{ fontSize: 11, color: "rgba(25,25,25,0.55)" }}>SNS 뉴스소식과 마케팅 인사이트를 나눠보세요</div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#191919" }}>→</span>
+          </a>
         </div>
         <div style={{ maxWidth: 760, margin: "40px auto 0" }}><Footer C={c} /></div>
       </div>
@@ -457,7 +467,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
             { id: "briefing", label: "AI 브리핑" },
             { id: "news", label: "실시간 뉴스" },
             { id: "notice", label: "공지" },
-            { id: "tips", label: "소식" },
+            { id: "tips", label: "아티클" },
           ].map(t => (
             <button key={t.id} onClick={() => setMainTab(t.id)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: mainTab === t.id ? "#fff" : "transparent", color: mainTab === t.id ? accent : muted, boxShadow: mainTab === t.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none", minHeight: 42 }}>{t.label}</button>
           ))}
@@ -511,6 +521,20 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 )}
               </div>
             </div>
+
+            {/* 오픈채팅 배너 */}
+            <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderRadius: 14, background: "#FEE500", marginBottom: 24, textDecoration: "none", transition: "opacity 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.9"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: "#191919", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#191919" }}>단체카톡방에서 SNS 뉴스 소통하기</div>
+                <div style={{ fontSize: 12, color: "rgba(25,25,25,0.6)", marginTop: 2 }}>SNS 관련 뉴스소식과 마케팅 인사이트를 함께 나눠보세요</div>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#191919", flexShrink: 0 }}>참여하기 →</span>
+            </a>
 
             {/* 지난 브리핑 */}
             {briefingHistory.length > 1 && (
