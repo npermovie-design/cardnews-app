@@ -931,8 +931,8 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
                 </div>
               ) : (lay === "two_column" || lay === "comparison") ? (
                 <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:mini?4:12 }}>
-                  <div style={{ fontSize:mini?5:12, color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, whiteSpace:"pre-line" }}>{(s.leftCol||(s.body||"").slice(0,Math.ceil((s.body||"").length/2))).replace(/\\n/g,"\n")}</div>
-                  <div style={{ fontSize:mini?5:12, color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, whiteSpace:"pre-line", borderLeft:`1px solid ${theme.accent}30`, paddingLeft:mini?4:10 }}>{(s.rightCol||(s.body||"").slice(Math.ceil((s.body||"").length/2))).replace(/\\n/g,"\n")}</div>
+                  <div style={{ color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, whiteSpace:"pre-line" }}>{(s.leftCol||(s.body||"").slice(0,Math.ceil((s.body||"").length/2))).replace(/\\n/g,"\n")}</div>
+                  <div style={{ color:sBody, lineHeight:1.6, fontSize:mini?Math.max(4,bSz*0.35):bSz*0.85, whiteSpace:"pre-line", borderLeft:`1px solid ${theme.accent}30`, paddingLeft:mini?4:10 }}>{(s.rightCol||(s.body||"").slice(Math.ceil((s.body||"").length/2))).replace(/\\n/g,"\n")}</div>
                 </div>
               ) : (
                 <div style={{ flex:1, fontSize:mini?6:14, color:theme.body, lineHeight:1.8, whiteSpace:"pre-line" }}>{(s.body||"").replace(/\\n/g,"\n")}</div>
