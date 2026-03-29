@@ -350,7 +350,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       // 리로드
       const { data: fresh } = await supabase.from("sns_news").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
       setArticles(fresh || []);
-    } catch (e) { alert("저장 실패: " + (e.message || "다시 시도해주세요.")); }
+    } catch (e) { alert("저장 실패: sns_news 테이블이 생성되지 않았을 수 있습니다. Supabase에서 테이블을 먼저 생성해주세요."); }
   };
 
   const handleDeleteArticle = async (id) => {
