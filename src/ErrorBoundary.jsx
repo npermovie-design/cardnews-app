@@ -12,6 +12,15 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("ErrorBoundary caught:", error, info);
+    // GA4 에러 리포팅
+    try {
+      if (window.gtag) {
+        window.gtag("event", "exception", {
+          description: error?.message?.slice(0, 150) || "Unknown error",
+          fatal: true,
+        });
+      }
+    } catch {}
   }
 
   render() {
