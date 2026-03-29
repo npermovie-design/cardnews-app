@@ -4728,6 +4728,10 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+  const [audioMode, setAudioMode] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [manualText, setManualText] = useState("");
   const fileRef = useRef(null);
 
   const cardStyle = { background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 12 };
@@ -4746,7 +4750,20 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
     setSelectedTemplate(null);
     try {
       const { callAI } = await import("./aiClient");
-      if (f.type.startsWith("image/")) {
+      if (f.type.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|webm|aac|flac)$/i.test(f.name)) {
+        // 음성 파일 → 브라우저 재생 + SpeechRecognition으로 자동 전사
+        const audioUrl = URL.createObjectURL(f);
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          setFileContent("🎤 음성 파일: " + f.name + "\n\n이 브라우저에서는 음성 인식이 지원되지 않습니다.\n크롬 브라우저에서 다시 시도해주세요.\n\n또는 아래에 음성 내용을 직접 입력해주세요:");
+          setAudioMode(true);
+          URL.revokeObjectURL(audioUrl);
+        } else {
+          setFileContent("🎤 음성 파일 인식 준비 완료: " + f.name + "\n\n아래 '음성 인식 시작' 버튼을 눌러 재생하면 자동으로 텍스트로 변환됩니다.\n또는 직접 내용을 입력할 수도 있습니다.");
+          setAudioUrl(audioUrl);
+          setAudioMode(true);
+        }
+      } else if (f.type.startsWith("image/")) {
         const reader = new FileReader();
         const base64 = await new Promise((resolve, reject) => {
           reader.onload = () => resolve(reader.result);
@@ -4897,7 +4914,7 @@ ${fileContent.slice(0, 4000)}
           <div style={cardStyle}>
             <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:8 }}>파일 업로드</div>
             <div style={{ fontSize:12, color:muted, marginBottom:12, lineHeight:1.6 }}>
-              이미지, PDF, TXT 파일을 업로드하면 AI가 내용을 분석하고 원하는 형식의 글로 변환해줘요
+              이미지, PDF, TXT, 음성 파일을 업로드하면 AI가 내용을 분석하고 원하는 형식의 글로 변환해줘요
             </div>
             <div onClick={() => fileRef.current?.click()}
               style={{ border:`2px dashed ${bdr}`, borderRadius:14, padding:"36px 20px", textAlign:"center", cursor:"pointer", background:ibg, transition:"border-color 0.15s" }}
@@ -4907,9 +4924,9 @@ ${fileContent.slice(0, 4000)}
                 <span style={{ fontSize:24 }}>📄</span>
               </div>
               <div style={{ fontSize:14, fontWeight:700, color:text }}>클릭하여 파일을 선택하세요</div>
-              <div style={{ fontSize:12, color:muted, marginTop:4 }}>이미지 (JPG, PNG), PDF, TXT (최대 10MB)</div>
+              <div style={{ fontSize:12, color:muted, marginTop:4 }}>이미지 (JPG, PNG), PDF, TXT, 음성 (MP3, WAV, M4A) (최대 10MB)</div>
             </div>
-            <input ref={fileRef} type="file" accept="image/*,.pdf,.txt,.doc,.docx" style={{ display:"none" }}
+            <input ref={fileRef} type="file" accept="image/*,.pdf,.txt,.doc,.docx,audio/*,.mp3,.wav,.m4a,.ogg,.webm,.aac,.flac" style={{ display:"none" }}
               onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; handleFile(f); }} />
             {file && (
               <div style={{ marginTop:10, padding:"10px 14px", borderRadius:10, background:accentBg, display:"flex", alignItems:"center", gap:8 }}>
@@ -4929,8 +4946,53 @@ ${fileContent.slice(0, 4000)}
           </div>
         )}
 
+        {/* 음성 파일 모드 → 재생+인식 또는 직접 입력 */}
+        {audioMode && !result && !analyzing && (
+          <div style={cardStyle}>
+            <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12 }}>🎤 음성 내용 입력</div>
+            {audioUrl && (
+              <div style={{ marginBottom:12 }}>
+                <audio src={audioUrl} controls style={{ width:"100%", borderRadius:10 }} />
+                <button onClick={async () => {
+                  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                  if (!SR) { setError("크롬 브라우저에서 시도해주세요."); return; }
+                  setTranscribing(true);
+                  const recognition = new SR();
+                  recognition.lang = "ko-KR"; recognition.continuous = true; recognition.interimResults = true;
+                  let finalText = "";
+                  recognition.onresult = (e) => {
+                    let t = "";
+                    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+                    finalText = t;
+                    setManualText(t);
+                  };
+                  recognition.onerror = () => { setTranscribing(false); setError("음성 인식 중 오류가 발생했습니다."); };
+                  recognition.onend = () => { setTranscribing(false); if (finalText) setFileContent(finalText); };
+                  recognition.start();
+                  // 오디오 재생
+                  const audioEl = document.querySelector("audio");
+                  if (audioEl) { audioEl.currentTime = 0; audioEl.play(); }
+                  // 60초 후 자동 정지
+                  setTimeout(() => { try { recognition.stop(); } catch {} }, 60000);
+                }} disabled={transcribing}
+                  style={{ ...btnStyle, marginTop:8, background: transcribing ? "#888" : `linear-gradient(135deg,#22c55e,#16a34a)`, opacity: transcribing ? 0.7 : 1 }}>
+                  {transcribing ? "🎧 인식 중... (재생하며 인식합니다)" : "🎙️ 음성 인식 시작 (재생하며 자동 변환)"}
+                </button>
+              </div>
+            )}
+            <div style={{ fontSize:12, color:muted, marginBottom:6 }}>또는 음성 내용을 직접 입력/붙여넣기:</div>
+            <textarea value={manualText} onChange={e => setManualText(e.target.value)}
+              placeholder="음성 파일의 내용을 여기에 입력해주세요..."
+              style={{ ...inputStyle, minHeight:120, resize:"vertical", lineHeight:1.7 }} />
+            <button onClick={() => { if (manualText.trim()) { setFileContent(manualText); setAudioMode(false); } else { setError("내용을 입력해주세요."); } }}
+              style={{ ...btnStyle, marginTop:10 }}>
+              ✓ 내용 확인 → 템플릿 선택
+            </button>
+          </div>
+        )}
+
         {/* 파일 분석 완료 → 템플릿 선택 */}
-        {fileContent && !result && !analyzing && (
+        {fileContent && !audioMode && !result && !analyzing && (
           <>
             <div style={cardStyle}>
               <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:6 }}>분석된 내용 미리보기</div>
