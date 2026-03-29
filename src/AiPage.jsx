@@ -1474,14 +1474,14 @@ function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderT
             <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{title}</div>
             <div style={{ fontSize:12, color:muted }}>{subtitle}</div>
           </div>
-          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+          <div style={{ display:"flex", gap:0, borderBottom:`1.5px solid ${bdr}` }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 style={{
-                  padding:"9px 20px", border:"none", cursor:"pointer", fontSize:13, fontWeight:activeTab===t.id?700:400,
+                  flex:1, padding:"12px 20px", border:"none", cursor:"pointer", fontSize:15, fontWeight:activeTab===t.id?800:500,
                   color:activeTab===t.id?accent:muted, background:"transparent",
-                  borderBottom:activeTab===t.id?`2px solid ${accent}`:"2px solid transparent",
-                  transition:"all 0.15s", marginBottom:-1,
+                  borderBottom:activeTab===t.id?`2.5px solid ${accent}`:"2.5px solid transparent",
+                  transition:"all 0.15s", marginBottom:-1.5,
                 }}>
                 {t.label}
               </button>
