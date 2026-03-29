@@ -1290,37 +1290,13 @@ export default function CardNewsEditor({
             <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
           </div>
 
-          {/* Compact style preset strip */}
-          <div style={S.templateStrip}>
-            {TEMPLATES.map((t, i) => (
-              <button key={i} onClick={() => applyTemplate(t)} style={S.templateChip} title={t.name}>
-                {t.bgImage ? (
-                  <span style={{
-                    display: "inline-block", width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                    backgroundImage: `url(${t.bgImage})`, backgroundSize: "cover", backgroundPosition: "center",
-                    border: "2px solid rgba(255,255,255,0.6)", boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                  }} />
-                ) : (
-                  <span style={{
-                    display: "inline-block", width: 24, height: 24, borderRadius: "50%",
-                    background: t.bgColor, border: "2px solid " + (t.accentColor || "#ccc"),
-                    flexShrink: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  }} />
-                )}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.12)", margin: "0 2px", flexShrink: 0 }} />
+          {/* 공유 템플릿 버튼만 */}
+          <div style={{ display:"flex", gap:8, padding:"4px 8px" }}>
             <button
               onClick={() => { setShowSharedTemplateModal(true); loadSharedTemplates(); }}
-              style={{
-                ...S.templateChip,
-                background: "rgba(245,158,11,0.12)",
-                border: "1px solid rgba(245,158,11,0.3)",
-                padding: "4px 10px",
-                gap: 4,
-              }}
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:"rgba(245,158,11,0.08)", cursor:"pointer", fontSize:12, fontWeight:700, color:"#d97706" }}
             >
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#d97706", whiteSpace: "nowrap" }}>공유 템플릿</span>
+              📂 공유 템플릿 불러오기
             </button>
           </div>
 
