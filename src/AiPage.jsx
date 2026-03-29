@@ -129,10 +129,9 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="hot_keyword" label="핫 키워드" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="marketing" label="마케팅" ids={["sns_analysis","insta_auto_dm","insta_auto_reply","analysis_insta","analysis_tiktok","analysis_youtube"]} />
-        <Item id="prompt_studio" label="기획" />
-        <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe"]} />
-        <Item id="blog_link" label="링크 글쓰기" ids={["blog_yt_blog","blog_news"]} />
+        <Item id="marketing" label="마케팅" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
+        <Item id="prompt_studio" label="비즈니스 문서" />
+        <Item id="blog_write" label="글쓰기" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"]} />
         <Item id="content_create" label="콘텐츠 제작" ids={["cardnews_simple","detail_simple","thumbnail_gen"]} badge="추천" badgeColor="orange" />
         <Item id="ppt_gen" label="PPT 제작" />
         <Item id="image_create" label="이미지 생성" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
@@ -2769,7 +2768,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "prompt_studio") {
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="기획" subtitle="실무 문서를 AI가 작성해드립니다" />
+        <BarHeader title="비즈니스 문서" subtitle="실무 문서를 AI가 작성해드립니다" />
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
           <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} renderFooter={() => <AiFooter />} noHeader />
         </div>
@@ -2822,8 +2821,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 홈
   if (!aiMenu || aiMenu === "home") {
     const MENUS = [
-      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드","Blog, Cafe, Insta, Threads"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)", iconImg: "/icon-naver-blog.png"  },
-      { id: "blog_link",        title: _s("링크 글쓰기","Link to Blog"),   desc: _s("유튜브·뉴스·블로그·SNS 링크","YouTube, News, Blog, SNS link"),  cr: 10, darkColor: "rgba(99,102,241,0.18)",   lightColor: "rgba(99,102,241,0.05)", iconImg: "/icon-youtube.png"   },
+      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드·링크변환","Blog, Cafe, Insta, Threads, Link"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)", iconImg: "/icon-naver-blog.png"  },
       { id: "cardnews_simple",  title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
       { id: "detail_simple",    title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "thumbnail_gen",    title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
@@ -3121,12 +3119,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     },
   };
 
-  // 링크 글쓰기 (유튜브 + 뉴스 통합)
-  if (aiMenu === "blog_link") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
-  }
-  if (aiMenu === "blog_link_intro") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
+  // 링크 글쓰기 → 통합 글쓰기의 링크 탭으로 리다이렉트
+  if (aiMenu === "blog_link" || aiMenu === "blog_link_intro") {
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform="link_youtube" />;
   }
   // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
   if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
@@ -3417,9 +3412,9 @@ const MENU_LABELS = {
   blog_youtube_intro: "글쓰기", blog_youtube: "글쓰기",
   blog_thread_intro: "글쓰기", blog_thread: "글쓰기",
   blog_cafe_intro: "글쓰기", blog_cafe: "글쓰기",
-  blog_yt_blog_intro: "링크 글쓰기", blog_yt_blog: "링크 글쓰기",
-  blog_news_intro: "링크 글쓰기", blog_news: "링크 글쓰기",
-  blog_link_intro: "링크 글쓰기", blog_link: "링크 글쓰기",
+  blog_yt_blog_intro: "글쓰기", blog_yt_blog: "글쓰기",
+  blog_news_intro: "글쓰기", blog_news: "글쓰기",
+  blog_link_intro: "글쓰기", blog_link: "글쓰기",
   cardnews_simple: "카드뉴스", cardnews_simple_make: "카드뉴스",
   detail_simple: "상세페이지", detail_simple_make: "상세페이지", detail_simple_open: "상세페이지",
   thumbnail_gen: "썸네일 생성", thumbnail_gen_make: "썸네일 생성",
@@ -3436,7 +3431,7 @@ const MENU_LABELS = {
   image_create: "이미지 생성",
   image_edit: "이미지 수정",
   hot_keyword: "핫 키워드",
-  prompt_studio: "기획",
+  prompt_studio: "비즈니스 문서",
   ppt_gen: "PPT 제작",
   marketing: "마케팅",
   insta_auto_dm: "마케팅",
@@ -3455,6 +3450,11 @@ const WRITE_PLATFORMS = [
   { id: "blog_tistory", label: "티스토리",     type: "blog_tistory", icon: "/icon-tistory.png" },
   { id: "blog_insta",   label: "인스타그램",   type: "blog_insta",   icon: "/icon-instagram.webp" },
   { id: "blog_thread",  label: "스레드",       type: "blog_thread",  icon: "/icon-threads.png" },
+  { id: "_sep_link", separator: true, label: "링크에서 변환" },
+  { id: "link_youtube", label: "유튜브",   link: true, linkTab: "youtube", icon: "/icon-youtube.png" },
+  { id: "link_news",    label: "뉴스 기사", link: true, linkTab: "news" },
+  { id: "link_blog",    label: "블로그",   link: true, linkTab: "blog", icon: "/icon-naver-blog.png" },
+  { id: "link_sns",     label: "SNS",      link: true, linkTab: "sns",  icon: "/icon-instagram.webp" },
 ];
 
 /* ── 통합 탭 헤더 (글쓰기 / 링크 글쓰기 공용) ── */
@@ -3470,8 +3470,15 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
           <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{title}</div>
           <div style={{ fontSize:12, color:muted }}>{subtitle}</div>
         </div>
-        <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}` }}>
+        <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${bdr}`, flexWrap:"wrap" }}>
           {tabs.map(t => {
+            if (t.separator) {
+              return (
+                <div key={t.id} style={{ display:"flex", alignItems:"center", gap:4, padding:"9px 8px 9px 14px", marginBottom:-1, borderLeft:`1px solid ${bdr}`, marginLeft:4 }}>
+                  <span style={{ fontSize:10, fontWeight:700, color:muted, letterSpacing:0.5, whiteSpace:"nowrap" }}>{t.label}</span>
+                </div>
+              );
+            }
             const active = activeTab === t.id;
             return (
               <button key={t.id} onClick={() => onTabChange(t.id)}
@@ -4596,75 +4603,28 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
   );
 }
 
+/* MARKETING_TABS - insta_auto_reply, insta_auto_dm 숨김 처리 (미구현) */
 const MARKETING_TABS = [
   { id: "sns_analysis",  label: "SNS 분석",      icon: "/icon-instagram.webp" },
-  { id: "insta_auto_reply", label: "스레드 자동댓글",  icon: "/icon-threads.png" },
-  { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },
+  // { id: "insta_auto_reply", label: "스레드 자동댓글",  icon: "/icon-threads.png" },  // 미구현 - 숨김
+  // { id: "insta_auto_dm", label: "인스타 자동DM", icon: "/icon-threads.png" },        // 미구현 - 숨김
 ];
 
 function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultTab }) {
-  const initTab = (defaultTab === "insta_auto_dm") ? "insta_auto_dm" : "sns_analysis";
-  const [tab, setTab] = useState(initTab);
+  /* SNS 분석만 남아있으므로 탭 없이 직접 렌더링 */
   const D = isDark;
-  const tabText = D ? "#fff" : "#1a1a2e";
-  const tabMuted = D ? "rgba(255,255,255,0.5)" : "#888";
-  const tabBdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-
-  useEffect(() => {
-    if (defaultTab === "insta_auto_dm") setTab("insta_auto_dm");
-    else setTab("sns_analysis");
-  }, [defaultTab]);
+  const text = D ? "#e8eaed" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <TabHeader title="마케팅" subtitle="경쟁사 SNS 분석과 자동 마케팅 도구를 활용해보세요"
-        tabs={MARKETING_TABS} activeTab={tab} onTabChange={setTab} isDark={isDark} />
-
-      {tab === "sns_analysis" ? (
-        <div style={{ flex:1, overflowY:"auto" }}>
-          <ViralityAnalyzer isDark={isDark} />
-        </div>
-      ) : tab === "insta_auto_reply" ? (
-        <div style={{ flex:1, overflowY:"auto", position:"relative" }}>
-          <InstaAutoReply isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
-          {/* 스레드 자동댓글 개발중 오버레이 */}
-          <div style={{ position:"absolute", inset:0, background: D ? "rgba(15,12,41,0.88)" : "rgba(255,255,255,0.88)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}>
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#000,#333)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                <img src="/icon-threads.png" alt="" style={{ width:36, height:36, filter:"brightness(10)" }} />
-              </div>
-              <div style={{ fontSize:24, fontWeight:900, color: D ? "#fff" : "#1a1a2e", marginBottom:8 }}>개발중</div>
-              <div style={{ fontSize:14, color: D ? "rgba(255,255,255,0.6)" : "#888", lineHeight:1.8, maxWidth:360 }}>
-                스레드 자동 대댓글 기능을 준비하고 있어요.<br/>
-                Meta 앱 검수 완료 후 오픈될 예정입니다.
-              </div>
-              <div style={{ marginTop:24, padding:"10px 24px", borderRadius:12, background: D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)", color: D ? "rgba(255,255,255,0.5)" : "#888", fontSize:13, fontWeight:700, display:"inline-block" }}>
-                Coming Soon
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ flex:1, overflowY:"auto", position:"relative" }}>
-          <InstaAutoDM isDark={isDark} user={user} onUserUpdate={onUserUpdate} navigate={navigate} />
-          {/* 개발중 오버레이 */}
-          <div style={{ position:"absolute", inset:0, background: D ? "rgba(15,12,41,0.88)" : "rgba(255,255,255,0.88)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}>
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", fontSize:36 }}>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              </div>
-              <div style={{ fontSize:24, fontWeight:900, color: D ? "#fff" : "#1a1a2e", marginBottom:8 }}>개발중</div>
-              <div style={{ fontSize:14, color: D ? "rgba(255,255,255,0.6)" : "#888", lineHeight:1.8, maxWidth:360 }}>
-                인스타 자동DM 기능을 더 안정적으로 개선하고 있어요.<br/>
-                빠른 시일 내에 업데이트될 예정입니다.
-              </div>
-              <div style={{ marginTop:24, padding:"10px 24px", borderRadius:12, background: D ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)", color:"#7c6aff", fontSize:13, fontWeight:700, display:"inline-block" }}>
-                Coming Soon
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", padding:"16px 24px 12px", textAlign:"center" }}>
+        <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>마케팅</div>
+        <div style={{ fontSize:12, color:muted }}>경쟁사 SNS 분석 도구를 활용해보세요</div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <ViralityAnalyzer isDark={isDark} />
+      </div>
     </div>
   );
 }
@@ -4672,13 +4632,23 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
 function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, defaultPlatform }) {
   const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
   const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
+  const isLink = info && info.link;
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <TabHeader title="글쓰기" subtitle="플랫폼을 선택하고 주제를 입력하면 AI가 글을 작성해요"
+      <TabHeader title="글쓰기" subtitle="직접 작성하거나, 링크를 블로그 글로 변환할 수 있어요"
         tabs={WRITE_PLATFORMS} activeTab={platform} onTabChange={setPlatform} isDark={isDark} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        {isLink ? (
+          info.linkTab === "youtube" ? (
+            <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          ) : (
+            <NewsBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
+              linkMode={info.linkTab === "blog" ? "blog" : info.linkTab === "sns" ? "sns" : "news"} />
+          )
+        ) : (
+          <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        )}
       </div>
     </div>
   );

@@ -87,7 +87,7 @@ function FaqItem({ q, a, C }) {
 function BeforeAfterCard({ before, after, C, lang }) {
   return (
     <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 120 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", minHeight: 120 }}>
         <div style={{ padding: "20px 18px", background: "rgba(239,68,68,0.04)", borderRight: "1px solid " + C.border }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", letterSpacing: 1, marginBottom: 8 }}>BEFORE</div>
           <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{before}</div>
@@ -434,10 +434,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </FadeIn>
           <FadeIn delay={0.1}>
             <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-              <table className="compare-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: 13, color: C.text }}>
+              <table className="compare-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "clamp(11px, 2.5vw, 13px)", color: C.text }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, fontSize: 12 }}>
+                    <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, fontSize: "clamp(10px, 2.2vw, 12px)" }}>
                       {lang === "ko" ? "기능" : "Feature"}
                     </th>
                     {[
@@ -447,7 +447,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                       { name: lang === "ko" ? "개별 도구" : "Individual", highlight: false },
                     ].map(col => (
                       <th key={col.name} style={{
-                        padding: "14px 10px", textAlign: "center", fontWeight: 800, fontSize: 12,
+                        padding: "14px 10px", textAlign: "center", fontWeight: 800, fontSize: "clamp(10px, 2.2vw, 12px)",
                         color: col.highlight ? "#fff" : C.text,
                         background: col.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "transparent",
                         borderBottom: col.highlight ? "none" : "2px solid " + C.border,
@@ -469,10 +469,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                     { feature: lang === "ko" ? "무료 체험 (카드 불필요)" : "Free (no card)", vals: ["check", "partial", "partial", "partial"] },
                   ].map((row, ri) => (
                     <tr key={row.feature} style={{ background: ri % 2 === 0 ? ("rgba(124,106,255,0.02)") : "transparent" }}>
-                      <td style={{ padding: "14px 16px", fontWeight: 600, borderBottom: "1px solid " + C.border, fontSize: 13 }}>{row.feature}</td>
+                      <td style={{ padding: "clamp(10px, 2vw, 14px) clamp(6px, 1.5vw, 16px)", fontWeight: 600, borderBottom: "1px solid " + C.border, fontSize: "clamp(11px, 2.5vw, 13px)" }}>{row.feature}</td>
                       {row.vals.map((v, ci) => (
                         <td key={ci} style={{
-                          padding: "14px 12px", textAlign: "center", borderBottom: "1px solid " + C.border,
+                          padding: "clamp(10px, 2vw, 14px) clamp(6px, 1.5vw, 12px)", textAlign: "center", borderBottom: "1px solid " + C.border,
                           background: ci === 0 ? ("rgba(124,106,255,0.04)") : "transparent",
                           fontWeight: ci === 0 ? 700 : 400,
                           color: v === "check" ? "#22c55e" : v === "cross" ? (C.muted) : v === "partial" ? "#f59e0b" : (ci === 0 ? "#7c6aff" : C.text),

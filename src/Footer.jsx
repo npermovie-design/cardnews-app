@@ -43,7 +43,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
             {[{label:t("terms")||"이용약관",tab:"terms"},{label:t("privacy")||"개인정보처리방침",tab:"privacy"},{label:t("refund")||"환불정책",tab:"refund"}].map(item => (
               <button key={item.tab} onClick={() => navigate?.("legal", item.tab)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.muted, padding: 0, fontWeight: item.tab==="privacy"?700:400, textDecoration: "underline" }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.muted, padding: "10px 8px", fontWeight: item.tab==="privacy"?700:400, textDecoration: "underline" }}
                 onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                 onMouseLeave={e => e.currentTarget.style.color = C.muted}>
                 {item.label}
@@ -61,17 +61,17 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             <div style={{ fontSize: 11, color: C.muted, opacity: 0.5 }}>{`© 2025-${new Date().getFullYear()} SNS메이킷 · All rights reserved.`}</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <a href="https://blog.naver.com/npermovie" target="_blank" rel="noopener noreferrer" title="네이버 블로그"
-                style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>B</span>
               </a>
               <a href="https://www.instagram.com/snsmakeit" target="_blank" rel="noopener noreferrer" title="인스타그램"
-                style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>IG</span>
               </a>
               <a href="https://www.youtube.com/@snsmakeit" target="_blank" rel="noopener noreferrer" title="유튜브"
-                style={{ width: 28, height: 28, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{fontSize:10,fontWeight:800,color:C.muted}}>YT</span>
               </a>

@@ -1699,11 +1699,11 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
       {/* 서브 카테고리 탭 */}
       {!loading && <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)"}}>
-        <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,overflowX:"auto"}}>
+        <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
           {(subCat==="archive"?subCats.filter(s=>s.id==="archive"):subCats.filter(s=>s.id!=="archive")).map(s=>(
             <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);setFilterTag("");setArchiveView("posts");}}
-              style={{display:"flex",alignItems:"center",gap:6,padding:"13px 18px",borderRadius:0,border:"none",cursor:"pointer",
-                fontSize:14,fontWeight:subCat===s.id?700:500,whiteSpace:"nowrap",
+              style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"13px 18px",borderRadius:0,border:"none",cursor:"pointer",
+                fontSize:isMobile?13:14,fontWeight:subCat===s.id?700:500,whiteSpace:"nowrap",
                 background:"transparent",color:subCat===s.id?s.color:C.muted,
                 borderBottom:subCat===s.id?"3px solid "+s.color:"3px solid transparent",
                 transition:"all 0.12s"}}>
