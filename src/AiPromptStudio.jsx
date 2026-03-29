@@ -378,8 +378,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
   );
 }
 
-// ── SNS 뉴스 피드 API ────────────────────────────────────────────────────
-// ── 카테고리별 뉴스 RSS 가져오기 ──────────────────────────────────────────
+
 const NEWS_CATEGORIES = [
   { id: "sns", label: "SNS 마케팅", query: "SNS+마케팅" },
   { id: "digital", label: "디지털 마케팅", query: "디지털+마케팅" },
@@ -454,5 +453,470 @@ async function fetchSnsNewsByCategory(categoryId) {
   } catch { return null; }
 }
 
+// ── SNS 뉴스 피드 페이지 (네이버 뉴스 스타일) ──────────────────────────────
+function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
+  const text = homeText, muted = homeMuted, bdr = cardBdr;
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const accent = "#7c6aff";
+  const [activeTab, setActiveTab] = useState("sns");
+  const [newsCache, setNewsCache] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [hoveredIdx, setHoveredIdx] = useState(-1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-export { PromptStudioPage };
+  /* ── 오늘의 SNS 브리핑 상태 ── */
+  const [briefing, setBriefing] = useState(null);
+  const [briefingLoading, setBriefingLoading] = useState(true);
+  const [briefingHistory, setBriefingHistory] = useState([]);
+  const [expandedHistory, setExpandedHistory] = useState(null);
+
+  const getTodayKey = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  /* 브리핑 히스토리 로드 */
+  const loadBriefingHistory = () => {
+    const items = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("nper_sns_briefing_")) {
+        const dateStr = key.replace("nper_sns_briefing_", "");
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          items.push({ date: dateStr, ...data });
+        } catch {}
+      }
+    }
+    items.sort((a, b) => b.date.localeCompare(a.date));
+    setBriefingHistory(items);
+  };
+
+  /* 브리핑 생성/로드 */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const todayKey = getTodayKey();
+      const cacheKey = `nper_sns_briefing_${todayKey}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          if (!cancelled) { setBriefing(data); setBriefingLoading(false); }
+          loadBriefingHistory();
+          return;
+        } catch {}
+      }
+      // AI로 브리핑 생성
+      setBriefingLoading(true);
+      try {
+        const { callAI } = await import("./aiClient");
+        const todayLabel = todayKey.replace(/-/g, ".");
+        const result = await callAI("claude-haiku-4-5", [
+          { role: "user", content: `오늘(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 작성해줘.
+
+형식:
+## 1. [뉴스 제목]
+[상세 내용 3~5문장. 구체적인 수치, 사례, 영향을 포함]
+📎 관련 키워드: #키워드1 #키워드2
+
+## 2. [뉴스 제목]
+...
+
+총 5~7개 항목. 각 항목마다:
+- 제목은 ##로 시작
+- 내용은 3~5문장으로 상세하게
+- 관련 키워드는 📎로 시작하고 #으로 표시
+- 가능하면 출처 언론사명 포함
+마크다운 **볼드** 사용하지 마. 순수 텍스트로.` }
+        ], 2500);
+        const content = typeof result === "string" ? result : (result?.content || result?.text || "");
+        if (!cancelled && content) {
+          const data = { title: `${todayLabel} 엔퍼SNS브리핑`, content, date: todayKey };
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          setBriefing(data);
+          // Supabase posts 테이블에도 자동 게시 시도
+          try {
+            const { supabase } = await import("./storage");
+            if (supabase) {
+              await supabase.from("posts").insert({
+                id: `briefing_${todayKey}`,
+                title: `📰 ${todayLabel} 엔퍼SNS브리핑`,
+                content: content,
+                author: "엔퍼 AI",
+                author_uid: "system_ai",
+                cat: "sns_briefing",
+                tag: "",
+                subCat: "sns_briefing",
+                views: 0, likes: 0,
+                created_at: new Date().toISOString(),
+                images: [], comments: [],
+              });
+            }
+          } catch (e) { console.log("브리핑 DB 저장 실패(이미 존재할 수 있음):", e); }
+        }
+      } catch (e) {
+        console.error("브리핑 생성 실패:", e);
+      }
+      if (!cancelled) { setBriefingLoading(false); loadBriefingHistory(); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const currentNews = newsCache[activeTab] || [];
+
+  const loadNews = async (tab, forceRefresh = false) => {
+    setLoading(true); setError("");
+    if (!forceRefresh && newsCache[tab]) { setLoading(false); return; }
+    const items = await fetchSnsNewsByCategory(tab);
+    if (items && items.length > 0) {
+      setNewsCache(prev => ({ ...prev, [tab]: items }));
+    } else {
+      setNewsCache(prev => ({ ...prev, [tab]: FALLBACK_NEWS_BY_CATEGORY[tab] || [] }));
+      setError("fallback");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await loadNews(activeTab);
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, refreshKey]);
+
+  const handleRefresh = () => {
+    setNewsCache(prev => { const next = { ...prev }; delete next[activeTab]; return next; });
+    setRefreshKey(k => k + 1);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const now = new Date();
+      const diff = now - d;
+      if (diff < 3600000) return `${Math.floor(diff/60000)}분 전`;
+      if (diff < 86400000) return `${Math.floor(diff/3600000)}시간 전`;
+      if (diff < 604800000) return `${Math.floor(diff/86400000)}일 전`;
+      return d.toLocaleDateString("ko-KR", { month:"short", day:"numeric" });
+    } catch { return dateStr; }
+  };
+
+  /* ── 브리핑 콘텐츠 파싱 렌더러 ── */
+  // 인라인 마크다운 처리 헬퍼: **bold**, #tag
+  const renderInlineMarkdown = (text, bodyColor, tagColor, tagBg) => {
+    // **bold** 처리 + #tag 처리
+    const parts = text.split(/(\*\*[^*]+\*\*|#[^\s#]+)/g).filter(Boolean);
+    return parts.map((p, j) => {
+      if (p.startsWith("**") && p.endsWith("**")) {
+        return <strong key={j} style={{ fontWeight: 800, color: bodyColor }}>{p.slice(2, -2)}</strong>;
+      }
+      if (p.startsWith("#") && p.length > 1) {
+        return (
+          <span key={j} style={{
+            display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
+            background: tagBg, borderRadius: 20, padding: "2px 8px", marginLeft: 2, marginRight: 2,
+          }}>
+            {p}
+          </span>
+        );
+      }
+      return <span key={j}>{p}</span>;
+    });
+  };
+
+  const renderBriefingContent = (content, isCard = false) => {
+    if (!content) return null;
+    const lines = content.split("\n");
+    const accentBg = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.10)";
+    const headingColor = isCard ? (isDark ? "#e0d4ff" : "#fff") : text;
+    const bodyColor = isCard ? (isDark ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.93)") : text;
+    const tagColor = isCard ? (isDark ? "#c4b5fd" : "rgba(255,255,255,0.85)") : accent;
+    const tagBg = isCard ? (isDark ? "rgba(124,106,255,0.25)" : "rgba(255,255,255,0.18)") : accentBg;
+
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={i} style={{ height: 8 }} />;
+
+      // ## 제목 또는 # 제목
+      if (trimmed.startsWith("#")) {
+        const titleText = trimmed.replace(/^#{1,3}\s*/, "");
+        return (
+          <div key={i} style={{
+            fontSize: 17, fontWeight: 800, color: headingColor, marginTop: i === 0 ? 0 : 24, marginBottom: 6,
+            letterSpacing: -0.3, lineHeight: 1.5,
+          }}>
+            {renderInlineMarkdown(titleText, headingColor, tagColor, tagBg)}
+          </div>
+        );
+      }
+
+      // 📎 키워드 줄
+      if (trimmed.startsWith("📎")) {
+        const parts = trimmed.replace(/^📎\s*/, "").split(/(#[^\s#]+)/g).filter(Boolean);
+        return (
+          <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, marginBottom: 4, alignItems: "center" }}>
+            <span style={{ fontSize: 13, marginRight: 2 }}>📎</span>
+            {parts.map((p, j) => {
+              if (p.startsWith("#")) {
+                return (
+                  <span key={j} style={{
+                    display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
+                    background: tagBg, borderRadius: 20, padding: "3px 10px",
+                  }}>
+                    {p}
+                  </span>
+                );
+              }
+              const label = p.trim().replace(/:$/, "").trim();
+              return label ? <span key={j} style={{ fontSize: 12, color: tagColor, opacity: 0.8 }}>{label}</span> : null;
+            })}
+          </div>
+        );
+      }
+
+      // 일반 텍스트 (인라인 **bold** + #키워드 처리)
+      return (
+        <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: bodyColor, marginBottom: 2 }}>
+          {renderInlineMarkdown(trimmed, bodyColor, tagColor, tagBg)}
+        </div>
+      );
+    });
+  };
+
+  const ThumbPlaceholder = ({ category }) => {
+    const gradients = {
+      sns: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      digital: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      ai: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+      trend: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+      biz: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    };
+    const labels = { sns: "SNS", digital: "DM", ai: "AI", trend: "T", biz: "BIZ" };
+    return (
+      <div style={{ width:80, minWidth:80, height:60, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center",
+        background: gradients[category] || "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
+        flexShrink:0, color:"#fff", fontSize:13, fontWeight:800, letterSpacing:0.5, textShadow:"0 1px 2px rgba(0,0,0,0.2)" }}>
+        {labels[category] || "NEWS"}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:800, margin:"0 auto" }}>
+
+        {/* ══ 오늘의 SNS 브리핑 카드 ══ */}
+        <div style={{
+          marginBottom: 24, borderRadius: 16, overflow: "hidden",
+          background: isDark
+            ? "linear-gradient(135deg, rgba(124,106,255,0.18) 0%, rgba(99,102,241,0.12) 100%)"
+            : "linear-gradient(135deg, #7c6aff 0%, #6366f1 40%, #818cf8 100%)",
+          border: isDark ? "1px solid rgba(124,106,255,0.25)" : "none",
+          boxShadow: isDark ? "none" : "0 4px 24px rgba(124,106,255,0.18)",
+        }}>
+          <div style={{ padding: "22px 24px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: 20 }}>📰</span>
+              <span style={{ fontSize: 17, fontWeight: 900, color: isDark ? "#c4b5fd" : "#fff", letterSpacing: -0.3 }}>
+                {briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} 엔퍼SNS브리핑`}
+              </span>
+            </div>
+            {briefingLoading ? (
+              <div style={{ color: isDark ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.85)", fontSize: 14, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                브리핑 작성 중...
+              </div>
+            ) : briefing ? (
+              <div style={{ wordBreak: "break-word" }}>
+                {renderBriefingContent(briefing.content, true)}
+              </div>
+            ) : (
+              <div style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.7)", fontSize: 13 }}>
+                브리핑을 불러올 수 없습니다.
+              </div>
+            )}
+            <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
+              <a href="/board" onClick={(e) => { e.preventDefault(); /* 커뮤니티 SNS브리핑 게시판으로 이동은 라우터에 따라 조정 */ }}
+                style={{ fontSize: 12.5, fontWeight: 700, color: isDark ? "#a5b4fc" : "rgba(255,255,255,0.9)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                전체 보기 <span style={{ fontSize: 14 }}>→</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 지난 브리핑 히스토리 ── */}
+        {briefingHistory.length > 1 && (
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: muted, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 14 }}>📋</span> 지난 브리핑
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {briefingHistory.filter(h => h.date !== getTodayKey()).slice(0, 7).map(h => {
+                const isExpanded = expandedHistory === h.date;
+                const dateLabel = h.date.replace(/-/g, ".");
+                return (
+                  <div key={h.date}
+                    onClick={() => setExpandedHistory(isExpanded ? null : h.date)}
+                    style={{
+                      padding: isExpanded ? "18px 20px" : "14px 18px", borderRadius: 14, cursor: "pointer", transition: "all 0.2s",
+                      background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+                      border: `1px solid ${isExpanded ? accent : bdr}`,
+                      boxShadow: isExpanded ? `0 2px 12px rgba(124,106,255,0.12)` : "0 1px 4px rgba(0,0,0,0.04)",
+                    }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          background: isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.08)",
+                          borderRadius: 10, padding: "6px 12px", textAlign: "center", minWidth: 64,
+                        }}>
+                          <div style={{ fontSize: 15, fontWeight: 900, color: accent, lineHeight: 1.2 }}>{dateLabel.split(".").slice(1).join(".")}</div>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: muted, marginTop: 1 }}>{dateLabel.split(".")[0]}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dateLabel} 엔퍼SNS브리핑`}</div>
+                          {!isExpanded && (
+                            <div style={{ fontSize: 12, color: muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 400 }}>
+                              {(h.content || "").replace(/^##\s*.*/gm, "").replace(/📎.*/gm, "").replace(/\n+/g, " ").trim().slice(0, 80)}...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 11, color: muted, transition: "transform 0.2s",
+                        transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      }}>▼</span>
+                    </div>
+                    {isExpanded && (
+                      <div style={{
+                        marginTop: 16, paddingTop: 16,
+                        borderTop: `1px solid ${bdr}`,
+                        wordBreak: "break-word",
+                      }}>
+                        {renderBriefingContent(h.content, false)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── 헤더: 탭 + 새로고침 ── */}
+        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", borderBottom:`2px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom:20 }}>
+          <div style={{ display:"flex", gap:0, overflowX:"auto", flex:1 }}>
+            {NEWS_CATEGORIES.map(cat => {
+              const isActive = activeTab === cat.id;
+              return (
+                <button key={cat.id} onClick={() => { setActiveTab(cat.id); setError(""); setHoveredIdx(-1); }}
+                  style={{
+                    padding:"12px 20px", border:"none", cursor:"pointer", fontSize:14, fontWeight: isActive ? 800 : 500,
+                    color: isActive ? accent : muted, background:"transparent", whiteSpace:"nowrap",
+                    borderBottom: isActive ? `2.5px solid ${accent}` : "2.5px solid transparent",
+                    transition:"all 0.15s", marginBottom:-2, flexShrink:0,
+                  }}>
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* 새로고침 버튼 */}
+          <button onClick={handleRefresh} disabled={loading}
+            style={{ padding:"8px 14px", marginBottom:4, border:`1px solid ${bdr}`, borderRadius:8, background:"transparent",
+              color: loading ? muted : text, fontSize:12, fontWeight:600, cursor: loading ? "not-allowed" : "pointer",
+              display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0, transition:"all 0.15s",
+              opacity: loading ? 0.5 : 1 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ animation: loading ? "spin 1s linear infinite" : "none" }}>
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2.5 11.5a10 10 0 0 1 17.56-5.5M21.5 12.5a10 10 0 0 1-17.56 5.5" />
+            </svg>
+            새로고침
+          </button>
+        </div>
+
+        {/* ── RSS 실패 알림 ── */}
+        {error === "fallback" && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14, padding:"8px 14px", borderRadius:10,
+            background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:"#f59e0b" }} />
+            <span style={{ fontSize:11, color:"#f59e0b", fontWeight:600 }}>RSS 피드 연결 실패 - 추천 뉴스를 표시합니다</span>
+          </div>
+        )}
+
+        {/* ── 로딩 ── */}
+        {loading ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+            <div style={{ width:40, height:40, border:`3px solid ${accent}30`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
+            <div style={{ fontSize:13 }}>뉴스 불러오는 중...</div>
+          </div>
+        ) : (
+          /* ── 뉴스 목록 (네이버 뉴스 스타일) ── */
+          <div style={{ background: bg, borderRadius:14, border:`1px solid ${bdr}`, overflow:"hidden" }}>
+            {currentNews.map((item, i) => (
+              <a key={i} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
+                onClick={e => { if (!item.link) e.preventDefault(); }}
+                onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(-1)}
+                style={{
+                  textDecoration:"none", display:"flex", alignItems:"flex-start", gap:14,
+                  padding:"14px 18px", cursor: item.link ? "pointer" : "default",
+                  transition:"background 0.12s",
+                  background: hoveredIdx === i ? (isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)") : "transparent",
+                  borderBottom: i < currentNews.length - 1 ? `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "#f0f0f5"}` : "none",
+                }}>
+
+                {/* 썸네일 (80x60) */}
+                {item.thumb ? (
+                  <img src={item.thumb} alt="" style={{ width:80, minWidth:80, height:60, borderRadius:8, objectFit:"cover", flexShrink:0,
+                    background: isDark ? "rgba(255,255,255,0.05)" : "#f5f5f5" }}
+                    onError={e => { e.target.style.display = "none"; if (e.target.nextSibling) e.target.nextSibling.style.display = "flex"; }} />
+                ) : null}
+                {!item.thumb && <ThumbPlaceholder category={activeTab} />}
+
+                {/* 기사 정보 */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:15, fontWeight:700, color:text, lineHeight:1.4, marginBottom:5,
+                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {item.title}
+                  </div>
+                  {item.description && (
+                    <div style={{ fontSize:13, color:muted, lineHeight:1.5, marginBottom:6,
+                      display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                      {item.description}
+                    </div>
+                  )}
+                  <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:muted }}>
+                    {item.source && (
+                      <span style={{ display:"inline-block", padding:"2px 7px", borderRadius:4, fontWeight:700, fontSize:10,
+                        background: isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.07)",
+                        color: isDark ? "rgba(180,170,255,0.9)" : "#6c5ce7" }}>
+                        {item.source}
+                      </span>
+                    )}
+                    {item.pubDate && <span style={{ color: isDark ? "rgba(255,255,255,0.35)" : "#aaa" }}>{formatDate(item.pubDate)}</span>}
+                  </div>
+                </div>
+              </a>
+            ))}
+            {currentNews.length === 0 && !loading && (
+              <div style={{ textAlign:"center", padding:"40px 0", color:muted, fontSize:13 }}>
+                이 카테고리의 뉴스를 불러올 수 없습니다.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {renderFooter && renderFooter()}
+    </div>
+  );
+}
+
+export { PromptStudioPage, SnsNewsFeed };
