@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
-// AiSidebar 분리 파일 (향후 마이그레이션용)
-// import { AiSidebar } from "./AiSidebar.jsx";
+// 이미지 생성기 분리 파일 (마이그레이션 진행중)
+// import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator } from "./AiImageGenerators.jsx";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";

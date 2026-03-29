@@ -316,14 +316,17 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const isAdmin = user?.role === "admin";
 
   // 기사 불러오기
-  const fetchArticles = useCallback(async (reset = false) => {
+  const fetchRef = useRef(0);
+  const fetchArticles = useCallback(async (reset = false, pg = 0) => {
+    const fetchId = ++fetchRef.current;
     setLoading(true);
     try {
-      const from = reset ? 0 : page * PAGE_SIZE;
+      const from = reset ? 0 : pg * PAGE_SIZE;
       let q = supabase.from("sns_news").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
       if (category !== "all") q = q.eq("category", category);
       if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
       const { data, error } = await q;
+      if (fetchId !== fetchRef.current) return; // stale request
       if (error) throw error;
       if (reset) {
         setArticles(data || []);
@@ -332,22 +335,25 @@ export default function SnsNewsPage({ C, user, navigate }) {
       }
       setHasMore((data || []).length === PAGE_SIZE);
     } catch (e) {
-      // 테이블 없는 경우 샘플 데이터 표시
-      if (articles.length === 0) setArticles(SAMPLE_NEWS);
+      if (fetchId !== fetchRef.current) return;
+      setArticles(prev => prev.length === 0 ? SAMPLE_NEWS : prev);
       setHasMore(false);
     }
-    setLoading(false);
-  }, [category, search, page]);
+    if (fetchId === fetchRef.current) setLoading(false);
+  }, [category, search]);
 
+  // 카테고리/검색 변경 시 리셋
   useEffect(() => {
     setPage(0);
     setArticles([]);
     setHasMore(true);
+    fetchArticles(true, 0);
   }, [category, search]);
 
+  // 페이지 변경 시 추가 로드 (첫 페이지 제외 - 위에서 처리)
   useEffect(() => {
-    fetchArticles(page === 0);
-  }, [page, category, search]);
+    if (page > 0) fetchArticles(false, page);
+  }, [page]);
 
   // 무한 스크롤
   useEffect(() => {
