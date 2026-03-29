@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator } from "./AiImageGenerators.jsx";
@@ -8,32 +8,23 @@ import { PromptStudioPage, SnsNewsFeed } from "./AiPromptStudio.jsx";
 import { useOnlineCount, AiSidebar } from "./AiSidebar.jsx";
 import { RepurposePage, MENU_LABELS, MarketingHub, FileTranscriber, UnifiedBlogWriter, LinkBlogCombined } from "./AiTools.jsx";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
+import BlogGenerator from "./BlogGenerator";
+import NewsBlogGenerator from "./NewsBlogGenerator";
+import YtBlogGenerator from "./YtBlogGenerator";
+import ThumbnailGenerator from "./ThumbnailGenerator";
+import SeoAnalyzer from "./SeoAnalyzer";
+import ViralityAnalyzer from "./ViralityAnalyzer";
+import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
+import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
+import LogoGenerator from "./LogoGenerator";
+import MockupGenerator from "./MockupGenerator";
+import ProductShotGenerator from "./ProductShotGenerator";
+import PptGenerator from "./PptGenerator";
+import ShortsCreator from "./ShortsCreator";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
+import SnsConnectionManager from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
-
-// 대형 생성기 - lazy import (코드 스플리팅)
-const BlogGenerator = lazy(() => import("./BlogGenerator"));
-const NewsBlogGenerator = lazy(() => import("./NewsBlogGenerator"));
-const YtBlogGenerator = lazy(() => import("./YtBlogGenerator"));
-const ThumbnailGenerator = lazy(() => import("./ThumbnailGenerator"));
-const SeoAnalyzer = lazy(() => import("./SeoAnalyzer"));
-const ViralityAnalyzer = lazy(() => import("./ViralityAnalyzer"));
-const SimpleDetailPageGenerator = lazy(() => import("./SimpleDetailPageGenerator"));
-const SimpleCardNewsGenerator = lazy(() => import("./SimpleCardNewsGenerator"));
-const LogoGenerator = lazy(() => import("./LogoGenerator"));
-const MockupGenerator = lazy(() => import("./MockupGenerator"));
-const ProductShotGenerator = lazy(() => import("./ProductShotGenerator"));
-const PptGenerator = lazy(() => import("./PptGenerator"));
-const ShortsCreator = lazy(() => import("./ShortsCreator"));
-const SnsConnectionManager = lazy(() => import("./SnsConnectionManager"));
-
-const LazyFallback = () => (
-  <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
-    <div style={{ width:32, height:32, border:"3px solid rgba(124,106,255,0.12)", borderTopColor:"#7c6aff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>
-    <div style={{ fontSize:12, color:"rgba(26,23,48,0.35)", fontWeight:600 }}>도구를 불러오는 중...</div>
-  </div>
-);
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -1006,9 +997,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <Suspense fallback={<LazyFallback />}>
-            <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-          </Suspense>
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
         </div>
       </div>
     </div>
