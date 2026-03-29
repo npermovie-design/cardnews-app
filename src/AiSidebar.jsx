@@ -332,4 +332,4 @@ const BLOG_MAP = {
   blog_cafe:    { type: "blog_cafe",    label: "네이버 카페 글쓰기" },
 };
 
-export { useOnlineCount, AiSidebar, SidebarProfile };
+export { useOnlineCount, AiSidebar, SidebarProfile, BLOG_MAP };

@@ -547,4 +547,4 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
 }
 
 
-export { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted };
+export { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS };

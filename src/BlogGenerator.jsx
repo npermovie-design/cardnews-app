@@ -8,7 +8,7 @@ import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
-import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted } from "./BlogUtils.jsx";
+import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS } from "./BlogUtils.jsx";
 
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;

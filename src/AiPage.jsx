@@ -5,7 +5,7 @@ import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerato
 import { TabHeader, DmInputField, InstaAutoReply, InstaAutoDM } from "./AiInstagram.jsx";
 import { LibraryPage } from "./AiLibrary.jsx";
 import { PromptStudioPage, SnsNewsFeed } from "./AiPromptStudio.jsx";
-import { useOnlineCount, AiSidebar } from "./AiSidebar.jsx";
+import { useOnlineCount, AiSidebar, BLOG_MAP } from "./AiSidebar.jsx";
 import { RepurposePage, MENU_LABELS, MarketingHub, FileTranscriber, UnifiedBlogWriter, LinkBlogCombined } from "./AiTools.jsx";
 import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
