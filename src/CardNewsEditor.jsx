@@ -374,7 +374,27 @@ export default function CardNewsEditor({
 
       setTimeout(fitCanvas, 50);
 
+      // ── 키보드 단축키 ──
+      const handleKey = (e) => {
+        const fc = canvasRef.current;
+        if (!fc) return;
+        // 텍스트 편집 중이면 무시
+        if (fc.getActiveObject()?.isEditing) return;
+        // Delete / Backspace → 선택 삭제
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          deleteSelected();
+        }
+        // Ctrl+Z → 되돌리기
+        if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+          e.preventDefault();
+          undo();
+        }
+      };
+      document.addEventListener("keydown", handleKey);
+
       return () => {
+        document.removeEventListener("keydown", handleKey);
         try { fc.dispose(); } catch {}
         canvasRef.current = null;
       };
