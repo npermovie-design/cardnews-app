@@ -668,7 +668,7 @@ export default function App() {
       )}
 
       {/* ── 네비게이션 ── */}
-      <div style={{
+      <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
         background: scrolled ? C.nav : (theme === "dark" ? "rgba(10,8,18,0.7)" : "rgba(255,255,255,0.92)"),
         borderBottom: "1px solid " + (scrolled ? C.border : (theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)")),
@@ -911,7 +911,7 @@ export default function App() {
         <button className="mobile-btn" onClick={() => setMobileOpen(s => !s)} aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"} aria-expanded={mobileOpen} style={{ background: "none", border: "none", cursor: "pointer", color: C.text, fontSize: 24, padding: "8px 12px", lineHeight: 1, flexShrink: 0, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {mobileOpen ? "✕" : "☰"}
         </button>
-      </div>
+      </nav>
 
       {/* ── 모바일 메뉴 ── */}
       {mobileOpen && (
