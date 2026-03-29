@@ -12,7 +12,7 @@ export const LANGUAGES = [
 const T = {
   ko: {
     // 네비게이션
-    home: "홈", about: "소개", howto: "이용방법", aiGen: "AI 생성기", community: "커뮤니티",
+    home: "홈", about: "소개", howto: "이용방법", aiGen: "AI 생성기", community: "커뮤니티", snsNews: "SNS뉴스",
     pricing: "가격정책", support: "고객센터", contact: "문의하기", translate: "번역",
     darkMode: "다크", lightMode: "라이트", online: "명 접속중", login: "로그인 / 회원가입",
     logout: "로그아웃", myPage: "내 보관함", userInfo: "회원정보", admin: "관리자 페이지",
@@ -106,7 +106,7 @@ const T = {
   },
 
   en: {
-    home: "Home", about: "About", howto: "How to Use", aiGen: "AI Generator", community: "Community",
+    home: "Home", about: "About", howto: "How to Use", aiGen: "AI Generator", community: "Community", snsNews: "SNS News",
     pricing: "Pricing", support: "Support", contact: "Contact", translate: "Lang",
     darkMode: "Dark", lightMode: "Light", online: " online", login: "Login / Sign up",
     logout: "Logout", myPage: "My Library", userInfo: "Profile", admin: "Admin",
@@ -187,7 +187,7 @@ const T = {
   },
 
   ja: {
-    home: "ホーム", about: "紹介", howto: "使い方", aiGen: "AI生成", community: "コミュニティ",
+    home: "ホーム", about: "紹介", howto: "使い方", aiGen: "AI生成", community: "コミュニティ", snsNews: "SNSニュース",
     pricing: "料金", support: "サポート", contact: "お問い合わせ", translate: "言語",
     darkMode: "ダーク", lightMode: "ライト", online: "人 接続中", login: "ログイン / 新規登録",
     logout: "ログアウト", myPage: "マイライブラリ", userInfo: "会員情報", admin: "管理者",
@@ -234,7 +234,7 @@ const T = {
   },
 
   zh: {
-    home: "首页", about: "介绍", howto: "使用方法", aiGen: "AI生成器", community: "社区",
+    home: "首页", about: "介绍", howto: "使用方法", aiGen: "AI生成器", community: "社区", snsNews: "SNS新闻",
     pricing: "价格", support: "客服", contact: "联系我们", translate: "语言",
     darkMode: "暗色", lightMode: "亮色", online: "人在线", login: "登录 / 注册",
     logout: "退出", myPage: "我的收藏", userInfo: "个人信息", admin: "管理员",

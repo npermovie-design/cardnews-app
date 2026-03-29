@@ -313,8 +313,8 @@ export default function App() {
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
       ko: { home:"SNS메이킷 - AI 카드뉴스·블로그·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
-      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
-      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
+      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", snsnews:"SNS News" },
+      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", snsnews:"SNSニュース" },
     };
     const titles = titleMap[lang] || titleMap.ko;
     const pageTitle = target === "home" ? titles.home : (titles[target] || target) + " - " + brand;
