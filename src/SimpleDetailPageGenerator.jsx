@@ -405,7 +405,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
-    } catch(e) { setSlides([]); setWizStep(1); console.error("생성 실패:", e.message); }
+    } catch(e) { setSlides([]); setWizStep(3); alert("생성에 실패했습니다: " + (e.message || "다시 시도해주세요.")); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 
