@@ -652,8 +652,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {[
             { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
             { icon: "+100P", title: lang==="ko"?"회원 가입":"Sign up", point: "100P", desc: lang==="ko"?"가입 즉시 100P 지급 + 게시글·출석 포인트 적립":"100P upon signup + earn more", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "19,900", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"텍스트 350회 · 이미지 70회 · 유효기간 없음":"350 texts · 70 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"기능 둘러보기":"Explore features", onClick: () => navigate("pricing"), highlight: true },
-            { icon: "49,900", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"텍스트 950회 · 이미지 190회 · 우선 고객지원":"950 texts · 190 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"기능 둘러보기":"Explore features", onClick: () => navigate("pricing") },
+            { icon: "₩19,900", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"텍스트 350회 · 이미지 70회 · 유효기간 없음":"350 texts · 70 images · no expiry", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "₩49,900", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"텍스트 950회 · 이미지 190회 · 우선 고객지원":"950 texts · 190 images · priority support", color: "#8b5cf6", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{

@@ -65,8 +65,9 @@ const FREE_GUEST  = 10;
 const FREE_MEMBER = 20;
 
 export default function AdminPage({ C, user: adminUser }) {
+  const isAdminRole = adminUser?.role === "admin";
   const [pw, setPw]        = useState("");
-  const [auth, setAuth]    = useState(false);
+  const [auth, setAuth]    = useState(isAdminRole);
   const [tab, setTab]      = useState("stats");
   const [onlineCount, setOnlineCount] = useState(0);
   // 게시판 관리 상태
@@ -87,6 +88,49 @@ export default function AdminPage({ C, user: adminUser }) {
   const [aiLogs, setAiLogs] = useState([]);
   const [aiLogsLoading, setAiLogsLoading] = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
+  const [postSearch, setPostSearch] = useState("");
+  const [dailySignups, setDailySignups] = useState([]);
+  const [dailyAiUsage, setDailyAiUsage] = useState([]);
+
+  // 최근 7일간 일별 신규 가입자 수
+  const loadDailySignups = async () => {
+    try {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase.from("users").select("created_at").gte("created_at", since);
+      const counts = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        counts[d] = 0;
+      }
+      (data || []).forEach(r => {
+        if (r.created_at) {
+          const d = r.created_at.slice(0, 10);
+          if (counts[d] !== undefined) counts[d]++;
+        }
+      });
+      setDailySignups(Object.entries(counts).map(([date, count]) => ({ date, count })));
+    } catch { setDailySignups([]); }
+  };
+
+  // 최근 7일간 일별 AI 사용량
+  const loadDailyAiUsage = async () => {
+    try {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase.from("point_history").select("created_at").lt("delta", 0).gte("created_at", since);
+      const counts = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        counts[d] = 0;
+      }
+      (data || []).forEach(r => {
+        if (r.created_at) {
+          const d = r.created_at.slice(0, 10);
+          if (counts[d] !== undefined) counts[d]++;
+        }
+      });
+      setDailyAiUsage(Object.entries(counts).map(([date, count]) => ({ date, count })));
+    } catch { setDailyAiUsage([]); }
+  };
 
   // Supabase에서 회원 목록 로드
   const loadMembers = async () => {
@@ -120,7 +164,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
   useEffect(() => {
     if (auth) {
-      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs();
+      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
       supabase.from("online_users").select("*",{count:"exact",head:true}).then(({count})=>setOnlineCount(count||0)).catch(()=>{});
     }
   }, [auth]);
@@ -299,21 +343,36 @@ export default function AdminPage({ C, user: adminUser }) {
     try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch { return {}; }
   };
 
-  if (!auth) return (
-    <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
-      <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
-          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900 }}>관리자 로그인</h2>
+  // 관리자 인증: role='admin' 필수 + 비밀번호 이중 체크 (role='admin'이면 비밀번호 스킵)
+  if (!auth) {
+    // role이 admin이 아닌 경우 접근 완전 차단
+    if (!isAdminRole) return (
+      <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
+        <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow, textAlign: "center" }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>🚫</div>
+          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900, marginBottom: 8 }}>접근 권한 없음</h2>
+          <p style={{ color: C.muted, fontSize: 14 }}>관리자 권한이 있는 계정으로 로그인해 주세요.</p>
         </div>
-        <Inp C={C} type="password" placeholder="관리자 비밀번호" value={pw}
-          onChange={e => setPw(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && pw === ADMIN_PW) setAuth(true); }}
-          style={{ marginBottom: 12 }} />
-        <Btn C={C} onClick={() => { if (pw === ADMIN_PW) setAuth(true); else alert("비밀번호가 틀렸습니다."); }} full>확인</Btn>
       </div>
-    </div>
-  );
+    );
+    // role='admin'인데 auth가 false인 경우 (비밀번호 이중 인증)
+    return (
+      <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
+        <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow }}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
+            <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900 }}>관리자 로그인</h2>
+            <p style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>관리자 비밀번호를 입력해 주세요.</p>
+          </div>
+          <Inp C={C} type="password" placeholder="관리자 비밀번호" value={pw}
+            onChange={e => setPw(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && ADMIN_PW && pw === ADMIN_PW) setAuth(true); }}
+            style={{ marginBottom: 12 }} />
+          <Btn C={C} onClick={() => { if (ADMIN_PW && pw === ADMIN_PW) setAuth(true); else alert("비밀번호가 틀렸습니다."); }} full>확인</Btn>
+        </div>
+      </div>
+    );
+  }
 
   const filteredMembers = search.trim()
     ? members.filter(m => (m.nick||"").toLowerCase().includes(search.toLowerCase()) || (m.email||"").toLowerCase().includes(search.toLowerCase()))
@@ -336,10 +395,10 @@ export default function AdminPage({ C, user: adminUser }) {
       </div>
 
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4, width: "fit-content" }}>
-        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"], ["ai","📊 AI 현황"]].map(([t,l]) => (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
+        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: "9px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
             color: tab === t ? C.purpleL : C.muted,
             boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.15s",
@@ -468,8 +527,67 @@ export default function AdminPage({ C, user: adminUser }) {
               GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
             </div>
           </div>
+          {/* 기간별 추이 차트 */}
+          <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginTop:24, marginBottom:24 }}>
+            {/* 최근 7일 신규 가입자 */}
+            <div style={{ ...cardStyle, minWidth:280, flex:1 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>📈 최근 7일 신규 가입자</div>
+              {dailySignups.length === 0 ? (
+                <div style={{ color:C.muted, fontSize:12 }}>데이터 없음</div>
+              ) : (() => {
+                const maxVal = Math.max(...dailySignups.map(d => d.count), 1);
+                return (
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:120 }}>
+                    {dailySignups.map(d => (
+                      <div key={d.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.purpleL||"#7c6aff" }}>{d.count}</span>
+                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"linear-gradient(180deg,#7c6aff,#8b5cf6)", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
+                        <span style={{ fontSize:9, color:C.muted, whiteSpace:"nowrap" }}>{d.date.slice(5)}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+            {/* 최근 7일 AI 사용량 */}
+            <div style={{ ...cardStyle, minWidth:280, flex:1 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🤖 최근 7일 AI 사용량</div>
+              {dailyAiUsage.length === 0 ? (
+                <div style={{ color:C.muted, fontSize:12 }}>데이터 없음</div>
+              ) : (() => {
+                const maxVal = Math.max(...dailyAiUsage.map(d => d.count), 1);
+                return (
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:120 }}>
+                    {dailyAiUsage.map(d => (
+                      <div key={d.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:"#f59e0b" }}>{d.count}</span>
+                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"linear-gradient(180deg,#f59e0b,#f97316)", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
+                        <span style={{ fontSize:9, color:C.muted, whiteSpace:"nowrap" }}>{d.date.slice(5)}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* AI 설정 현황 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14, marginBottom:24 }}>
+            {[
+              { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
+              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
+              { label: "AI 1회 비용",      value: "10P", color: "#f59e0b" },
+              { label: "글쓰기 적립",      value: "1P", color: "#34d399" },
+            ].map(r => (
+              <div key={r.label} style={{ padding:"18px 20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+                <div style={{ fontSize:22, fontWeight:900, color:r.color, marginBottom:4 }}>{r.value}</div>
+                <div style={{ fontSize:12, color:C.muted }}>{r.label}</div>
+              </div>
+            ))}
+          </div>
+
           {/* AI 사용 로그 */}
-          <div style={{ marginTop:24, ...cardStyle }}>
+          <div style={{ ...cardStyle }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
               <div style={{ fontSize:15, fontWeight:800, color:C.text }}>🤖 AI 사용 로그 (최근 200건)</div>
               <button onClick={loadAiLogs} disabled={aiLogsLoading}
@@ -725,15 +843,23 @@ export default function AdminPage({ C, user: adminUser }) {
       )}
 
       {/* ─────────────── 게시글 관리 ─────────────── */}
-      {tab === "posts" && (
+      {tab === "posts" && (() => {
+        const filteredPosts = postSearch.trim()
+          ? posts.filter(p => (p.title||"").toLowerCase().includes(postSearch.toLowerCase()))
+          : posts;
+        return (
         <div>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <div style={{ fontSize: 13, color: C.muted }}>총 <b style={{ color: C.text }}>{posts.length}개</b>의 게시글</div>
-            <button onClick={loadPosts} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:C.muted, fontSize:12, cursor:"pointer" }}>🔄 새로고침</button>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14, flexWrap:"wrap", gap:10 }}>
+            <div style={{ fontSize: 13, color: C.muted }}>총 <b style={{ color: C.text }}>{posts.length}개</b>의 게시글{postSearch.trim() ? ` (검색결과 ${filteredPosts.length}개)` : ""}</div>
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <input value={postSearch} onChange={e => setPostSearch(e.target.value)} placeholder="제목 검색..."
+                style={{ padding: "8px 14px", borderRadius: 9, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 13, outline: "none", width: 200 }} />
+              <button onClick={loadPosts} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:C.muted, fontSize:12, cursor:"pointer" }}>🔄 새로고침</button>
+            </div>
           </div>
           {loadingPosts && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 게시글 불러오는 중...</div>}
-          {!loadingPosts && posts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>게시글이 없어요</div>}
-          {!loadingPosts && posts.map(p => (
+          {!loadingPosts && filteredPosts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>{postSearch.trim() ? "검색 결과가 없어요" : "게시글이 없어요"}</div>}
+          {!loadingPosts && filteredPosts.map(p => (
             <div key={p.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 18px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, boxShadow: C.shadow }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
@@ -743,7 +869,8 @@ export default function AdminPage({ C, user: adminUser }) {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {/* ─────────────── 게시판 관리 ─────────────── */}
       {tab === "board" && (
@@ -927,54 +1054,6 @@ export default function AdminPage({ C, user: adminUser }) {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* ─────────────── AI 현황 ─────────────── */}
-      {tab === "ai" && (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14, marginBottom: 24 }}>
-            {[
-              { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
-              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
-              { label: "AI 1회 비용",      value: "10P", color: "#f59e0b" },
-              { label: "글쓰기 적립",      value: "1P", color: "#34d399" },
-            ].map(r => (
-              <div key={r.label} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 12, padding: "18px 20px", boxShadow: C.shadow }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: r.color, marginBottom: 4 }}>{r.value}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{r.label}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 14, padding: "20px 24px" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 14 }}>전체 사용 현황</div>
-            {(() => {
-              const u = getAllUsage();
-              const entries = Object.entries(u);
-              if (entries.length === 0) return <div style={{ color: C.muted, fontSize: 13 }}>사용 기록 없음</div>;
-              return entries.map(([k, v]) => {
-                const isGuest = k === "guest";
-                const uid = k.replace("member_", "");
-                const mem = !isGuest ? members.find(m => m.id === uid || m.uid === uid) : null;
-                const lim = isGuest ? FREE_GUEST : FREE_MEMBER;
-                const pct = Math.min((v / lim) * 100, 100);
-                return (
-                  <div key={k} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                      <span style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>
-                        {isGuest ? "👤 비회원" : "👤 " + (mem ? mem.nick : uid)}
-                        {mem && <span style={{ fontSize: 11, color: C.muted, marginLeft: 6 }}>{mem.email}</span>}
-                      </span>
-                      <span style={{ fontSize: 13, color: v >= lim ? "#ef4444" : C.purpleL, fontWeight: 700 }}>{v}/{lim}회</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "#e9ecef", overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 4, width: pct + "%", background: v >= lim ? "linear-gradient(90deg,#ef4444,#dc2626)" : "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
-                    </div>
-                  </div>
-                );
-              });
-            })()}
           </div>
         </div>
       )}

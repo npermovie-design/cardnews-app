@@ -59,11 +59,11 @@ const SUB_PLANS = [
 ];
 
 const ONE_OFF_PLANS = [
-  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false },
-  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false },
-  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true  },
-  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false },
-  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false },
+  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false, perPoint:"5.9" },
+  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false, perPoint:"5.95" },
+  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true,  perPoint:"5.69" },
+  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false, perPoint:"5.44" },
+  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false, perPoint:"5.25", bestValue:true },
 ];
 
 // FAQ는 컴포넌트 안에서 번역 함수로 동적 생성
@@ -83,15 +83,19 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     p("pFeatSns"), p("pFeatNewsBlog"), p("pFeatCard"), p("pFeatDetail"),
     p("pFeatCommunity"), p("pFeatPostPt"), p("pFeatLoginPt"),
   ];
-  const PLANS = SUB_PLANS.map(pl => ({
-    ...pl,
-    badge: pl.id==="pro" ? p("recommend") : pl.badge,
-    btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
-    features: [
-      pl.free ? p("pFeatSignup200") || "가입 보너스 100P 지급" : p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
-      ...COMMON_F,
-    ],
-  }));
+  const PLANS = SUB_PLANS.map(pl => {
+    // 플랜별 차별화 기능만 (공통 기능 제외)
+    const unique = pl.features.filter(f => !COMMON_FEATURES.includes(f));
+    const translatedUnique = pl.free
+      ? [p("pFeatSignup200") || "가입 보너스 100P 지급"]
+      : [p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()), ...unique.filter(f => !f.startsWith("매월"))];
+    return {
+      ...pl,
+      badge: pl.id==="pro" ? p("recommend") : pl.badge,
+      btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
+      features: translatedUnique,
+    };
+  });
   const FAQ = [
     { q: p("faqQ1"), a: p("faqA1") },
     { q: p("faqQ2"), a: p("faqA2") },
@@ -163,7 +167,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   };
 
   return (
-    <div style={{ maxWidth: 1060, margin: "0 auto", padding: "48px 20px 80px" }}>
+    <div style={{ maxWidth: 1060, margin: "0 auto", padding: "48px 20px 80px", overflowX: "hidden" }}>
 
       {/* 토스트 알림 */}
       {toast && (
@@ -273,26 +277,36 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     ))}
                   </div>
 
-                  <div style={{ position: "relative" }}>
-                    <button
-                      onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan, isYearly)}
-                      disabled={isLoading || (plan.free && !!user)}
-                      style={{ padding: "12px", borderRadius: 11, border: (plan.free && user) ? "1px solid " + C.border : "none", cursor: (plan.free && user) || isLoading ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%",
-                        background: (plan.free && user) ? (isDark?"rgba(255,255,255,0.06)":"#f0f0f5") : isLoading ? "rgba(99,102,241,0.3)" : plan.gradient,
-                        color: (plan.free && user) ? C.muted : "#fff",
-                        opacity: (!plan.free && PAYMENT_ENABLED === false) ? 0.55 : 1,
-                      }}>
-                      {!user ? p("pricingLogin") : (plan.free && user) ? p("pricingCurrent") : isLoading ? p("pricingOpening") : plan.btnLabel}
-                    </button>
-                    {!plan.free && !PAYMENT_ENABLED && (
-                      <div onClick={() => handleBuy(plan, isYearly)} style={{ position: "absolute", inset: 0, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>곧 오픈 예정</span>
-                      </div>
-                    )}
-                  </div>
+                  {!plan.free && !PAYMENT_ENABLED && (
+                    <div style={{ textAlign: "center", marginBottom: 10, padding: "6px 14px", borderRadius: 10, background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.3)" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b" }}>곧 오픈 예정</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan, isYearly)}
+                    disabled={isLoading || (plan.free && !!user)}
+                    style={{ padding: "12px", borderRadius: 11, border: (plan.free && user) ? "1px solid " + C.border : "none", cursor: (plan.free && user) || isLoading ? "default" : "pointer", fontSize: 13, fontWeight: 800, width: "100%",
+                      background: (plan.free && user) ? (isDark?"rgba(255,255,255,0.06)":"#f0f0f5") : isLoading ? "rgba(99,102,241,0.3)" : plan.gradient,
+                      color: (plan.free && user) ? C.muted : "#fff",
+                      opacity: (!plan.free && PAYMENT_ENABLED === false) ? 0.55 : 1,
+                    }}>
+                    {!user ? p("pricingLogin") : (plan.free && user) ? p("pricingCurrent") : isLoading ? p("pricingOpening") : plan.btnLabel}
+                  </button>
                 </div>
               );
             })}
+          </div>
+
+          {/* 모든 플랜 공통 기능 */}
+          <div style={{ background: isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.15)", borderRadius: 16, padding: "20px 24px", marginBottom: 56 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14, textAlign: "center" }}>모든 플랜 공통 기능</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: "8px 24px" }}>
+              {COMMON_F.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted }}>
+                  <span style={{ color: "#7c6aff", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}
@@ -308,11 +322,18 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               <div key={plan.id} style={{ borderRadius: 18, border: plan.highlight ? "2px solid #7c6aff" : "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: plan.highlight ? "0 0 24px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                {plan.highlight && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
+                {plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", marginBottom: 4 }}>최고 가성비</div>}
+                {plan.highlight && !plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
                 <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
                 <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
-                <div style={{ marginTop: 6, width: "100%", position: "relative" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: plan.bestValue ? "#f59e0b" : "#7c6aff", marginTop: 4 }}>1P당 {plan.perPoint}원</div>
+                <div style={{ marginTop: 6, width: "100%" }}>
+                  {PAYMENT_ENABLED === false && (
+                    <div style={{ textAlign: "center", marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.3)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#f59e0b" }}>곧 오픈 예정</span>
+                    </div>
+                  )}
                   <button
                     onClick={() => handleOneOff(plan)}
                     disabled={loading === plan.id}
@@ -321,11 +342,6 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     }}>
                     {!user ? p("pricingLogin") : loading === plan.id ? p("pricingOpening") : p("pricingBuy")}
                   </button>
-                  {PAYMENT_ENABLED === false && (
-                    <div onClick={() => handleOneOff(plan)} style={{ position: "absolute", inset: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(0,0,0,0.18)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "3px 10px", borderRadius: 20 }}>곧 오픈 예정</span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
