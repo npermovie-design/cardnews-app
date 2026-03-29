@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Canvas, Textbox, Rect, Circle, FabricImage, Shadow, Gradient } from "fabric";
+import { Canvas, Textbox, Rect, Circle, Line, FabricImage, Shadow, Gradient } from "fabric";
 import { supabase } from "./storage";
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -289,6 +289,61 @@ export default function CardNewsEditor({
       fc.on("text:changed", handleObjModified);
       fc.on("object:added", refreshLayerList);
       fc.on("object:removed", refreshLayerList);
+
+      // ── 스냅 가이드 (중앙/모서리 자석) ──
+      const SNAP = 8; // 스냅 거리 (px)
+      const guideLines = [];
+      const clearGuides = () => { guideLines.forEach(l => fc.remove(l)); guideLines.length = 0; };
+      const addGuideLine = (x1, y1, x2, y2) => {
+        const line = new Line([x1, y1, x2, y2], { stroke: "#7c6aff", strokeWidth: 1, strokeDashArray: [4, 4], selectable: false, evented: false, excludeFromExport: true });
+        fc.add(line); guideLines.push(line);
+      };
+
+      fc.on("object:moving", (e) => {
+        const obj = e.target;
+        if (!obj) return;
+        clearGuides();
+        const cw = fc.width, ch = fc.height;
+        const objCx = obj.left + (obj.width * obj.scaleX) / 2;
+        const objCy = obj.top + (obj.height * obj.scaleY) / 2;
+        const objR = obj.left + obj.width * obj.scaleX;
+        const objB = obj.top + obj.height * obj.scaleY;
+
+        // 수평 중앙
+        if (Math.abs(objCx - cw / 2) < SNAP) {
+          obj.set({ left: cw / 2 - (obj.width * obj.scaleX) / 2 });
+          addGuideLine(cw / 2, 0, cw / 2, ch);
+        }
+        // 수직 중앙
+        if (Math.abs(objCy - ch / 2) < SNAP) {
+          obj.set({ top: ch / 2 - (obj.height * obj.scaleY) / 2 });
+          addGuideLine(0, ch / 2, cw, ch / 2);
+        }
+        // 좌측 정렬
+        if (Math.abs(obj.left) < SNAP) {
+          obj.set({ left: 0 });
+          addGuideLine(0, 0, 0, ch);
+        }
+        // 우측 정렬
+        if (Math.abs(objR - cw) < SNAP) {
+          obj.set({ left: cw - obj.width * obj.scaleX });
+          addGuideLine(cw, 0, cw, ch);
+        }
+        // 상단 정렬
+        if (Math.abs(obj.top) < SNAP) {
+          obj.set({ top: 0 });
+          addGuideLine(0, 0, cw, 0);
+        }
+        // 하단 정렬
+        if (Math.abs(objB - ch) < SNAP) {
+          obj.set({ top: ch - obj.height * obj.scaleY });
+          addGuideLine(0, ch, cw, ch);
+        }
+        fc.renderAll();
+      });
+
+      fc.on("object:modified", () => { clearGuides(); fc.renderAll(); });
+      fc.on("mouse:up", () => { clearGuides(); fc.renderAll(); });
 
       // load first slide
       if (initialSlides.length) {
@@ -1002,7 +1057,24 @@ export default function CardNewsEditor({
           { id: "ppt", title: "프레젠테이션", preview: "/icons3d/ppt.png", url: "/icons3d/ppt.png" },
         ];
         const filtered = query ? localIcons.filter(i => i.title.toLowerCase().includes(query.toLowerCase())) : localIcons;
-        items = filtered.map(i => ({ ...i, source: "로컬 자료실" }));
+        items = filtered.map(i => ({ ...i, source: "3D 아이콘" }));
+      } else if (source === "archive") {
+        // Supabase 자료실 (커뮤니티 archive 게시물의 첨부 이미지)
+        try {
+          let q = supabase.from("posts").select("id, title, images").eq("subCat", "archive").order("created_at", { ascending: false }).range((page - 1) * 20, page * 20 - 1);
+          if (query) q = q.ilike("title", `%${query}%`);
+          const { data } = await q;
+          if (data) {
+            for (const post of data) {
+              const imgs = Array.isArray(post.images) ? post.images : [];
+              imgs.forEach((url, idx) => {
+                if (url && typeof url === "string") {
+                  items.push({ id: `${post.id}_${idx}`, title: post.title || "자료실", url, preview: url, source: "자료실" });
+                }
+              });
+            }
+          }
+        } catch {}
       }
       setImgLibResults(prev => page === 1 ? items : [...prev, ...items]);
       setImgLibPage(page);
@@ -1406,8 +1478,8 @@ export default function CardNewsEditor({
             </div>
           </div>
 
-          {/* Toolbar */}
-          <div style={S.toolbar}>
+          {/* Toolbar - 모바일에서만 표시, 데스크톱은 우측 패널 사용 */}
+          <div style={{ ...S.toolbar, display: isMobile ? "flex" : "none" }}>
             <Btn small onClick={addText}>+ 텍스트</Btn>
             <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
             <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">이미지 검색</Btn>
@@ -1483,6 +1555,7 @@ export default function CardNewsEditor({
                   {[
                     { id:"pexels", label:"Pexels" },
                     { id:"pixabay", label:"Pixabay" },
+                    { id:"archive", label:"자료실" },
                     { id:"local", label:"3D 아이콘" },
                   ].map(tab => (
                     <button key={tab.id} onClick={() => { setImgLibTab(tab.id); searchImageLib(imgLibQuery, tab.id, 1); }}
@@ -1617,7 +1690,15 @@ export default function CardNewsEditor({
 
         {/* ── RIGHT: Properties Panel ────────────────────────────────── */}
         <div style={{ ...S.panel, width: panelW }}>
-          <div style={S.panelTitle}>속성 패널</div>
+          {/* 요소 추가 버튼 (Toolbar에서 이동) */}
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <Btn small onClick={addText}>+ 텍스트</Btn>
+            <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
+            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">검색</Btn>
+            <Btn small onClick={() => addShape("rect")}>▬</Btn>
+            <Btn small onClick={() => addShape("circle")}>●</Btn>
+          </div>
+          <div style={S.panelTitle}>속성</div>
 
           {/* === Text props === */}
           {isTextSelected && (
