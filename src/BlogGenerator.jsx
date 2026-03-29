@@ -1197,7 +1197,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       <div style={{flex:1,overflowY:"auto"}}>
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
-          <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
+          <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
             {/* StepBar 제거됨 */}
 
             {/* URL 불러오기 */}
