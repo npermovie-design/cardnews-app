@@ -369,7 +369,7 @@ async function getTopicSuggestions(topic) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary , onUserUpdate}) {
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary , onUserUpdate, showPointConfirm}) {
   // 보관함에서 열기: 마운트 전 localStorage에서 항목 읽기
   const libItem = (() => {
     if (!openFromLibrary) return null;
@@ -619,9 +619,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   // Step3→Step4: 텍스트 생성
   const generate = async () => {
     if (!user && guestLimitExceeded()) return;
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage();
-    // 크레딧 체크
-    if (user && (user.points || 0) < 10) { setShowCreditPopup(true); return; }
     // 포인트 즉시 차감
     if (user?.uid) {
       changePoints(user.uid, -10, "심플 카드뉴스 생성").then(newPts => {

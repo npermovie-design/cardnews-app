@@ -196,7 +196,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
   );
 }
 
-export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate, initialType, linkMode }) {
+export default function NewsBlogGenerator({ theme, embedded, user, onLoginRequest, onUserUpdate, initialType, linkMode, showPointConfirm }) {
   const isDark = theme === "dark" || (!theme && !!embedded);
   const text    = isDark ? "#fff"                   : "#1a1a2e";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
@@ -285,6 +285,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   /* ── 블로그 글 생성 ── */
   const generate = async () => {
     if (!newsInfo) { setGenErr("먼저 기사 URL을 입력해주세요."); return; }
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
     const _aiUsed = _aiUsage[_aiKey] || 0;

@@ -126,7 +126,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label={t("home")} />
         <Item id="library" label={t("library")} />
-        <Item id="hot_keyword" label="핫 키워드" />
+        <Item id="hot_keyword" label="SNS 뉴스" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <Item id="marketing" label="마케팅" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
@@ -388,6 +388,16 @@ function getSimpleDetailSaves() { try { return JSON.parse(localStorage.getItem(S
 function deleteSimpleDetailSave(id) {
   try { localStorage.setItem(SIMPLEDETAIL_SAVES_KEY, JSON.stringify(getSimpleDetailSaves().filter(x => x.id !== id))); } catch(e) {}
 }
+const PPT_SAVES_KEY = "nper_ppt_saves_v1";
+function getPptSaves() { try { return JSON.parse(localStorage.getItem(PPT_SAVES_KEY) || "[]"); } catch(e) { return []; } }
+function savePptWork(item) {
+  const list = getPptSaves().filter(x => x.id !== item.id);
+  list.unshift(item);
+  try { localStorage.setItem(PPT_SAVES_KEY, JSON.stringify(list.slice(0, 50))); } catch(e) {}
+}
+function deletePptWork(id) {
+  try { localStorage.setItem(PPT_SAVES_KEY, JSON.stringify(getPptSaves().filter(x => x.id !== id))); } catch(e) {}
+}
 
 // ── LibraryPage 컴포넌트 ──────────────────────────────────────────────────────
 function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFooter }) {
@@ -398,8 +408,11 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const [detailList, setDetailList] = useState(getDetailSaves);
   const [imgCardList, setImgCardList] = useState(getImgCardSaves);
   const [simpleDetailList, setSimpleDetailList] = useState(getSimpleDetailSaves);
+  const [pptList, setPptList] = useState(getPptSaves);
+  const [docList, setDocList] = useState(getPlanSaves);
   const [search, setSearch] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
+  const [selectedDoc, setSelectedDoc] = useState(null);
 
   const text  = homeText;
   const muted = homeMuted;
@@ -414,7 +427,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
   );
-  const total = blogList.length + cardList.length + detailList.length + imgCardList.length + simpleDetailList.length;
+  const total = blogList.length + cardList.length + detailList.length + imgCardList.length + simpleDetailList.length + pptList.length + docList.length;
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
@@ -426,8 +439,6 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
     blog_youtube:"#ef4444", blog_thread:"#7c6aff", blog_news:"#6366f1",
     blog_yt_blog:"#6366f1", blog_link:"#6366f1"
   };
-
-  const snsImageCount = cardList.length + imgCardList.length + detailList.length + simpleDetailList.length;
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -444,13 +455,16 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
             color:text, fontSize:13, outline:"none", width:180 }} />
       </div>
 
-      {/* 탭 — 3개 폴더 */}
-      <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content" }}>
+      {/* 탭 */}
+      <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content", flexWrap:"wrap" }}>
         {[
           ["blog","글 생성", blogList.length],
-          ["snsimg","이미지 생성", snsImageCount],
+          ["cardnews","카드뉴스", cardList.length + imgCardList.length],
+          ["detail","상세페이지", detailList.length + simpleDetailList.length],
+          ["ppt","PPT", pptList.length],
+          ["doc","문서", docList.length],
         ].map(([id, label, cnt]) => (
-          <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); }}
+          <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
               background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
               color: tab===id ? (isDark?"#fff":accent) : muted,
@@ -553,9 +567,9 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
       )}
 
       {/* 카드뉴스 목록 */}
-      {tab === "card" && (
+      {tab === "cardnews" && (
         <>
-          {filteredCard.length === 0 ? (
+          {(filteredCard.length + imgCardList.length) === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
               <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="3" y="3" width="28" height="28" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
@@ -605,6 +619,28 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                           background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
                         삭제
                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {imgCardList.map(item => (
+                <div key={item.id}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:14, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                  {(item.thumb||item.thumbnail) ? (
+                    <img src={item.thumb||item.thumbnail} alt={item.topic} style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
+                  ) : (
+                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"rgba(0,0,0,0.2)"} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                    </div>
+                  )}
+                  <div style={{ padding:"12px 12px 10px" }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.topic||"제목 없음"}</div>
+                    <div style={{ fontSize:11, color:muted, marginBottom:10 }}>{item.count||item.slides?.length||0}장 · {item.date}</div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={()=>{try{localStorage.setItem("nper_open_card",JSON.stringify(item));}catch{}setAiMenu("cardnews_simple_open");}}
+                        style={{ flex:1, padding:"6px 0", borderRadius:7, border:`1px solid ${bdr}`, background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>열기</button>
+                      <button onClick={()=>{deleteImgCardSave(item.id);setImgCardList(getImgCardSaves());}}
+                        style={{ padding:"6px 10px", borderRadius:7, border:"none", background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>삭제</button>
                     </div>
                   </div>
                 </div>
@@ -691,7 +727,133 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         </>
       )}
 
-      {/* SNS 이미지 탭 (카드뉴스+상세페이지 통합) */}
+      {/* PPT 탭 */}
+      {tab === "ppt" && (
+        <>
+          {pptList.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              </div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 생성한 PPT가 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>PPT 생성 후 자동으로 여기 저장됩니다</div>
+              <button onClick={()=>setAiMenu("ppt")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                PPT 만들기 →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {pptList.map(item => (
+                <div key={item.id}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"flex-start", gap:14 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.topic||"제목 없음"}</div>
+                    <div style={{ fontSize:12, color:muted }}>{item.slideCount||0}장 · {item.date}</div>
+                  </div>
+                  <button onClick={()=>{deletePptWork(item.id);setPptList(getPptSaves());}}
+                    style={{ flexShrink:0, padding:"4px 10px", borderRadius:7, border:"none", background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
+                    삭제
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 문서 탭 */}
+      {tab === "doc" && (
+        <>
+          {docList.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+              </div>
+              <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 생성한 문서가 없어요</div>
+              <div style={{ fontSize:13, lineHeight:1.8 }}>비즈니스 문서 생성 후 자동으로 여기 저장됩니다</div>
+              <button onClick={()=>setAiMenu("prompt_studio")}
+                style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                문서 작성하기 →
+              </button>
+            </div>
+          ) : selectedDoc ? (
+            <div>
+              <button onClick={()=>setSelectedDoc(null)}
+                style={{ marginBottom:14, padding:"7px 14px", borderRadius:8, border:`1px solid ${bdr}`,
+                  background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
+                ← 목록으로
+              </button>
+              <div style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:16, padding:"24px 28px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                  <span style={{ fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:6,
+                    background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", color:accent }}>
+                    {selectedDoc.docType||"문서"}
+                  </span>
+                  <span style={{ fontSize:11, color:muted }}>{selectedDoc.date}</span>
+                </div>
+                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:20 }}>{selectedDoc.input||"제목 없음"}</div>
+                <div style={{ fontSize:14, color:isDark?"rgba(255,255,255,0.75)":"#333", lineHeight:2,
+                  whiteSpace:"pre-wrap", background: isDark?"rgba(255,255,255,0.03)":"#f9f9f9",
+                  borderRadius:12, padding:"20px 22px", border:`1px solid ${bdr}` }}>
+                  {selectedDoc.result}
+                </div>
+                <div style={{ display:"flex", gap:8, marginTop:16 }}>
+                  <button onClick={()=>{navigator.clipboard.writeText(selectedDoc.result);}}
+                    style={{ padding:"9px 18px", borderRadius:9, border:`1px solid ${bdr}`,
+                      background:"transparent", color:accent, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    복사
+                  </button>
+                  <button onClick={()=>{deletePlan(selectedDoc.id);setDocList(getPlanSaves());setSelectedDoc(null);}}
+                    style={{ padding:"9px 18px", borderRadius:9, border:"1px solid rgba(248,113,113,0.3)",
+                      background:"transparent", color:"#f87171", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {docList.map(item => (
+                <div key={item.id} onClick={()=>setSelectedDoc(item)}
+                  style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 18px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:14, transition:"opacity 0.1s" }}
+                  onMouseEnter={e=>e.currentTarget.style.opacity="0.8"}
+                  onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+                      <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:5,
+                        background: isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", color:accent }}>
+                        {item.docType||"문서"}
+                      </span>
+                      <span style={{ fontSize:11, color:muted }}>{item.date}</span>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {item.input||"제목 없음"}
+                    </div>
+                    <div style={{ fontSize:12, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1.6 }}>
+                      {item.result?.slice(0,80)}...
+                    </div>
+                  </div>
+                  <button onClick={e=>{e.stopPropagation();deletePlan(item.id);setDocList(getPlanSaves());}}
+                    style={{ flexShrink:0, padding:"4px 10px", borderRadius:7, border:"none", background:"rgba(248,113,113,0.1)", color:"#f87171", fontSize:11, cursor:"pointer" }}>
+                    삭제
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* SNS 이미지 탭 (레거시 - 숨김) */}
       {tab === "snsimg" && (
         <>
           {(cardList.length + detailList.length + simpleDetailList.length) === 0 ? (
@@ -791,7 +953,7 @@ function deletePlan(id) {
   try { localStorage.setItem(PLAN_SAVES_KEY, JSON.stringify(getPlanSaves().filter(x=>x.id!==id))); } catch {}
 }
 
-function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, renderFooter, noHeader }) {
+function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest, onUserUpdate, showPointConfirm, renderFooter, noHeader }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const ibg = isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc";
@@ -800,6 +962,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
 
   const [input, setInput] = useState("");
   const [docType, setDocType] = useState("proposal");
+  const [docCat, setDocCat] = useState(0);
   const [tone, setTone] = useState("professional");
   const [format, setFormat] = useState("structured");
   const [step, setStep] = useState("input");
@@ -860,8 +1023,10 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const generate = async () => {
     if (!input.trim()) { setErr("어떤 문서를 만들지 입력해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!(await showPointConfirm(10))) return;
     setStep("loading"); setErr(""); setResult("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_prompt_studio", type: "blog_write", message: "문서 생성 중..." } } }));
     try {
       const { callClaude } = await import("./aiClient");
       const r = await callClaude(
@@ -908,7 +1073,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
         } catch {}
       }
     } catch (e) { setErr("생성 실패: " + (e.message || "다시 시도해주세요.")); setStep("input"); }
-    finally { window.__isGenerating = false; }
+    finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_prompt_studio" } } })); }
   };
 
   const loadPlan = (p) => {
@@ -961,26 +1126,34 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           <div style={{ fontSize:14, color:muted, lineHeight:1.8 }}>실무 문서를 AI가 작성해드립니다.</div>
         </div>}
 
-        {/* 문서 유형 (그룹별) */}
+        {/* 카테고리 탭 */}
+        <div style={{ display:"flex", gap:0, marginBottom:14, borderBottom:`1.5px solid ${bdr}` }}>
+          {DOC_GROUPS.map((g,i) => {
+            const active = docCat===i;
+            return (
+              <button key={g.label} onClick={()=>{setDocCat(i);if(!g.items.some(d=>d.id===docType))setDocType(g.items[0].id);}}
+                style={{ flex:1, padding:"10px 0", background:"transparent", border:"none", borderBottom:active?`2.5px solid ${accent}`:"2.5px solid transparent",
+                  color:active?accent:muted, fontSize:13, fontWeight:active?800:500, cursor:"pointer", transition:"all 0.15s", marginBottom:-1.5 }}>
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* 문서 유형 */}
         <div style={{ marginBottom:18 }}>
-          {DOC_GROUPS.map(g => (
-            <div key={g.label} style={{ marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6, paddingLeft:2 }}>{g.label}</div>
-              <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
-                {g.items.map(d => {
-                  const sel = docType===d.id;
-                  return (
-                    <button key={d.id} onClick={()=>setDocType(d.id)}
-                      style={{ padding:"10px 6px", borderRadius:10, border:`1.5px solid ${sel?accent:bdr}`,
-                        background:sel?`${accent}10`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}>
-                      <div style={{ fontSize:12, fontWeight:sel?800:500, color:sel?accent:text, marginBottom:2 }}>{d.label}</div>
-                      <div style={{ fontSize:9, color:muted }}>{d.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+            {DOC_GROUPS[docCat].items.map(d => {
+              const sel = docType===d.id;
+              return (
+                <button key={d.id} onClick={()=>setDocType(d.id)}
+                  style={{ padding:"10px 6px", borderRadius:10, border:`1.5px solid ${sel?accent:bdr}`,
+                    background:sel?`${accent}10`:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.12s" }}>
+                  <div style={{ fontSize:12, fontWeight:sel?800:500, color:sel?accent:text, marginBottom:2 }}>{d.label}</div>
+                  <div style={{ fontSize:9, color:muted }}>{d.desc}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 입력 */}
@@ -1142,232 +1315,125 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
   );
 }
 
-// ── 핫키워드 API ────────────────────────────────────────────────────────
-async function fetchTrendsFromAPI(platform) {
-  // 서버 API (/api/trends) 호출 → 서버에서 Google/Naver/YouTube/TikTok 실시간 데이터 수집
+// ── SNS 뉴스 피드 API ────────────────────────────────────────────────────
+async function fetchSnsNews() {
+  // Google News RSS를 통해 SNS 마케팅 관련 뉴스 가져오기
+  const QUERIES = ["SNS 마케팅", "소셜미디어 마케팅", "인스타그램 마케팅"];
+  const query = QUERIES[Math.floor(Math.random() * QUERIES.length)];
   try {
-    const r = await fetch(`/api/trends?platform=${platform}`);
-    if (r.ok) {
-      const d = await r.json();
-      if (d.live && d.keywords?.length) return d.keywords;
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+    const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const xml = data.contents || "";
+    // RSS XML 파싱
+    const items = [];
+    const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
+    for (const itemXml of itemMatches.slice(0, 20)) {
+      const title = (itemXml.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
+      const link = (itemXml.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "";
+      const pubDate = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "";
+      const source = (itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/i) || [])[1] || "";
+      const desc = (itemXml.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "";
+      // HTML 엔티티 및 태그 제거
+      const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
+      const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
+      if (cleanTitle) {
+        items.push({ title: cleanTitle, link, pubDate, source, description: cleanDesc });
+      }
     }
-  } catch {}
-  return null;
+    return items.length > 0 ? items : null;
+  } catch { return null; }
 }
 
-// ── 핫키워드 페이지 ──────────────────────────────────────────────────────
-function HotKeywordPage({ isDark, homeText, homeMuted, cardBdr, renderFooter, noHeader }) {
+// ── SNS 뉴스 피드 페이지 ──────────────────────────────────────────────────
+function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
-  const [keywords, setKeywords] = useState([]);
+  const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("all");
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState(null);
+  const [error, setError] = useState("");
 
-  const PLATFORMS = [
-    { id:"all",      label:"전체",     icon:"🔥", color:"#7c6aff" },
-    { id:"naver",    label:"네이버",   icon:"N",  color:"#03C75A" },
-    { id:"google",   label:"구글",     icon:"G",  color:"#4285F4" },
-    { id:"youtube",  label:"유튜브",   icon:"▶",  color:"#FF0000" },
-    { id:"insta",    label:"인스타",   icon:"📷", color:"#E4405F" },
-    { id:"tiktok",   label:"틱톡",     icon:"♪",  color:"#000000" },
-    { id:"x",        label:"X",        icon:"𝕏",  color:isDark?"#fff":"#000" },
+  const FALLBACK_NEWS = [
+    { title: "2026 SNS 마케팅 트렌드: AI 콘텐츠 자동화가 대세", source: "마케팅타임즈", pubDate: "2026-03-29", link: "", description: "올해 SNS 마케팅의 핵심 키워드는 AI 기반 콘텐츠 자동화입니다. 인스타그램, 틱톡 등 주요 플랫폼에서 AI 도구를 활용한 콘텐츠 제작이 급증하고 있습니다." },
+    { title: "인스타그램 릴스 알고리즘 변경, 마케터가 알아야 할 것들", source: "소셜미디어투데이", pubDate: "2026-03-28", link: "", description: "인스타그램이 릴스 추천 알고리즘을 대폭 개편했습니다. 짧은 영상보다 정보성 콘텐츠에 더 높은 가중치를 부여하는 방향으로 변경되었습니다." },
+    { title: "틱톡 커머스 기능 확대, 소상공인 매출 증가 효과", source: "이커머스뉴스", pubDate: "2026-03-28", link: "", description: "틱톡의 인앱 쇼핑 기능이 확대되면서 소상공인들의 매출이 평균 35% 증가한 것으로 나타났습니다." },
+    { title: "네이버 블로그 SEO 가이드 2026년 업데이트", source: "블로그마케팅", pubDate: "2026-03-27", link: "", description: "네이버가 블로그 검색 알고리즘을 업데이트했습니다. C-Rank와 D.I.A. 로직의 최신 변경사항과 대응 전략을 알아봅니다." },
+    { title: "유튜브 쇼츠 수익화 정책 변경 안내", source: "크리에이터경제", pubDate: "2026-03-27", link: "", description: "유튜브가 쇼츠 크리에이터를 위한 새로운 수익화 모델을 발표했습니다. 조회수 기반에서 참여도 기반으로 전환됩니다." },
+    { title: "스레드(Threads) 마케팅 활용법, 브랜드 사례 분석", source: "디지털마케팅인사이트", pubDate: "2026-03-26", link: "", description: "메타의 스레드가 마케팅 채널로 주목받고 있습니다. 성공적인 브랜드 활용 사례와 전략을 분석합니다." },
+    { title: "카드뉴스 vs 릴스, 2026년 최적의 콘텐츠 포맷은?", source: "콘텐츠마케팅랩", pubDate: "2026-03-26", link: "", description: "카드뉴스와 릴스 중 어떤 포맷이 더 효과적인지 데이터 기반으로 비교 분석한 결과를 공유합니다." },
+    { title: "AI 이미지 생성 도구 비교: 마케터를 위한 가이드", source: "테크마케팅", pubDate: "2026-03-25", link: "", description: "Midjourney, DALL-E, Stable Diffusion 등 주요 AI 이미지 생성 도구의 마케팅 활용도를 비교합니다." },
   ];
 
-  const [apiStatus, setApiStatus] = useState(""); // "live" | "fallback"
-  const [lastUpdate, setLastUpdate] = useState("");
-
   useEffect(() => {
-    setLoading(true); setApiStatus("");
-    const fetchKeywords = async () => {
-      const platform = tab === "all" ? "google" : tab;
-
-      // 1) API에서 실시간 데이터 시도
-      const apiData = await fetchTrendsFromAPI(platform);
-      if (apiData && apiData.length > 0) {
-        const mkVol = (base) => ({
-          naver: Math.floor(base*0.3+Math.random()*base*0.2),
-          google: Math.floor(base+Math.random()*base*0.5),
-          youtube: Math.floor(base*0.5+Math.random()*base*0.3),
-          insta: Math.floor(base*0.25+Math.random()*base*0.2),
-          tiktok: Math.floor(base*0.6+Math.random()*base*0.3),
-          x: Math.floor(base*0.15+Math.random()*base*0.1),
-        });
-        const mapped = apiData.map((k,i) => ({
-          rank: k.rank || i+1,
-          keyword: k.keyword || k.name || "",
-          change: k.change || (i<3?"up":i<8?"same":"new"),
-          volume: k.volume ? (typeof k.volume === "object" ? k.volume : mkVol(k.volume)) : mkVol(50000-i*3000),
-          totalVolume: 0,
-        }));
-        mapped.forEach(k => { k.totalVolume = Object.values(k.volume).reduce((a,b)=>a+b,0); });
-        if (tab !== "all") mapped.sort((a,b) => (b.volume[tab]||b.totalVolume) - (a.volume[tab]||a.totalVolume));
-        else mapped.sort((a,b) => b.totalVolume - a.totalVolume);
-        mapped.forEach((k,i) => k.rank = i+1);
-        setKeywords(mapped);
-        setApiStatus("live");
-        setLastUpdate(new Date().toLocaleTimeString("ko-KR"));
-        setLoading(false);
-        return;
+    setLoading(true); setError("");
+    (async () => {
+      const items = await fetchSnsNews();
+      if (items && items.length > 0) {
+        setNews(items);
+      } else {
+        setNews(FALLBACK_NEWS);
+        setError("fallback");
       }
-
-      // 2) 폴백: 샘플 데이터
-      const mkVol = () => ({
-        naver: Math.floor(Math.random()*90000+10000), google: Math.floor(Math.random()*500000+50000),
-        youtube: Math.floor(Math.random()*200000+20000), insta: Math.floor(Math.random()*150000+10000),
-        tiktok: Math.floor(Math.random()*300000+30000), x: Math.floor(Math.random()*80000+5000),
-      });
-      const allKw = [
-        { keyword:"AI 이미지 생성", change:"up" }, { keyword:"숏폼 마케팅", change:"up" },
-        { keyword:"챗GPT 활용법", change:"up" }, { keyword:"인스타 릴스", change:"new" },
-        { keyword:"네이버 블로그 수익화", change:"same" }, { keyword:"틱톡 알고리즘", change:"new" },
-        { keyword:"브랜드 디자인", change:"same" }, { keyword:"카드뉴스 만들기", change:"same" },
-        { keyword:"유튜브 쇼츠 전략", change:"up" }, { keyword:"SEO 최적화", change:"new" },
-        { keyword:"인플루언서 마케팅", change:"same" }, { keyword:"AI 로고 디자인", change:"new" },
-        { keyword:"콘텐츠 자동화", change:"up" }, { keyword:"디지털 마케팅", change:"same" },
-        { keyword:"제품 사진 촬영", change:"same" },
-      ].map((k,i) => ({ ...k, rank:i+1, volume:mkVol(), totalVolume:0 }));
-      allKw.forEach(k => { k.totalVolume = Object.values(k.volume).reduce((a,b)=>a+b,0); });
-      if (tab==="all") allKw.sort((a,b)=>b.totalVolume-a.totalVolume);
-      else allKw.sort((a,b)=>(b.volume[tab]||0)-(a.volume[tab]||0));
-      allKw.forEach((k,i)=>k.rank=i+1);
-      setKeywords(allKw);
-      setApiStatus("fallback");
       setLoading(false);
-    };
-    fetchKeywords();
-  }, [tab]);
+    })();
+  }, []);
 
-  const fmtVol = v => v>=1000000?(v/1000000).toFixed(1)+"M":v>=1000?(v/1000).toFixed(0)+"K":String(v);
-  const maxVol = keywords.length>0?Math.max(...keywords.map(k=>tab==="all"?k.totalVolume:(k.volume?.[tab]||0)),1):1;
-
-  const filtered = search.trim()
-    ? keywords.filter(k=>k.keyword.toLowerCase().includes(search.toLowerCase()))
-    : keywords;
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const now = new Date();
+      const diff = now - d;
+      if (diff < 3600000) return `${Math.floor(diff/60000)}분 전`;
+      if (diff < 86400000) return `${Math.floor(diff/3600000)}시간 전`;
+      if (diff < 604800000) return `${Math.floor(diff/86400000)}일 전`;
+      return d.toLocaleDateString("ko-KR", { month:"short", day:"numeric" });
+    } catch { return dateStr; }
+  };
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth:800, margin:"0 auto" }}>
-        {!noHeader && <div style={{ textAlign:"center", marginBottom:20 }}>
-          <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:4 }}>핫 키워드</div>
-          <div style={{ fontSize:13, color:muted }}>플랫폼별 실시간 인기 키워드와 검색량을 확인하세요</div>
-          {apiStatus && (
-            <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:8, padding:"3px 12px", borderRadius:20,
-              background:apiStatus==="live"?"rgba(74,222,128,0.1)":"rgba(245,158,11,0.1)",
-              border:`1px solid ${apiStatus==="live"?"rgba(74,222,128,0.3)":"rgba(245,158,11,0.3)"}` }}>
-              <div style={{ width:6, height:6, borderRadius:"50%", background:apiStatus==="live"?"#4ade80":"#f59e0b" }} />
-              <span style={{ fontSize:10, color:apiStatus==="live"?"#4ade80":"#f59e0b", fontWeight:600 }}>
-                {apiStatus==="live"?`실시간 데이터 ${lastUpdate}`:"샘플 데이터 (API 서버 연결 시 실시간 전환)"}
-              </span>
-            </div>
-          )}
-        </div>}
-
-        {/* 플랫폼 탭 */}
-        <div style={{ display:"flex", gap:3, marginBottom:16, overflowX:"auto", padding:"4px 0" }}>
-          {PLATFORMS.map(p=>(
-            <button key={p.id} onClick={()=>setTab(p.id)}
-              style={{ padding:"8px 14px", borderRadius:10, border:tab===p.id?`2px solid ${p.color}`:`2px solid transparent`, cursor:"pointer",
-                background:tab===p.id?(isDark?`${p.color}25`:`${p.color}12`):"transparent",
-                color:tab===p.id?p.color:muted, fontSize:12, fontWeight:tab===p.id?800:500,
-                display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0, transition:"all 0.15s" }}>
-              <span style={{ fontSize:13 }}>{p.icon}</span>{p.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 검색 */}
-        <div style={{ position:"relative", marginBottom:16 }}>
-          <svg style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="키워드 검색..."
-            style={{ width:"100%", padding:"11px 14px 11px 38px", borderRadius:12, border:`1px solid ${bdr}`,
-              background:bg, color:text, fontSize:14, outline:"none", boxSizing:"border-box" }} />
-        </div>
+        {error === "fallback" && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, padding:"8px 14px", borderRadius:10,
+            background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:"#f59e0b" }} />
+            <span style={{ fontSize:11, color:"#f59e0b", fontWeight:600 }}>RSS 피드 연결 실패 - 추천 뉴스를 표시합니다</span>
+          </div>
+        )}
 
         {loading ? (
           <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
             <div style={{ width:40, height:40, border:`3px solid ${accent}30`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
-            <div style={{ fontSize:13 }}>키워드 불러오는 중...</div>
+            <div style={{ fontSize:13 }}>뉴스 불러오는 중...</div>
           </div>
-        ) : filtered.length===0 ? (
-          <div style={{ textAlign:"center", padding:"60px 0", color:muted, fontSize:14 }}>검색 결과가 없어요</div>
         ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            {filtered.map((k, i) => {
-              const isTop3 = k.rank <= 3;
-              const vol = tab==="all"?k.totalVolume:(k.volume?.[tab]||0);
-              const pct = Math.max(Math.round((vol/maxVol)*100),3);
-              const isOpen = expanded===i;
-              const platColors = { naver:"#03C75A", google:"#4285F4", youtube:"#FF0000", insta:"#E4405F", tiktok:"#000", x:isDark?"#fff":"#000" };
-              const platIcons  = { naver:"N", google:"G", youtube:"▶", insta:"📷", tiktok:"♪", x:"𝕏" };
-              return (
-                <div key={i} onClick={()=>setExpanded(isOpen?null:i)}
-                  style={{ borderRadius:14, border:`1px solid ${isOpen?accent+"50":bdr}`, background:bg, cursor:"pointer", transition:"all 0.15s",
-                    boxShadow:isOpen?`0 4px 20px ${accent}15`:"none" }}>
-                  {/* 메인 행 */}
-                  <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px" }}>
-                    <div style={{ width:32, height:32, borderRadius:8, flexShrink:0,
-                      background:isTop3?"linear-gradient(135deg,#7c6aff,#ec4899)":isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:14, fontWeight:900, color:isTop3?"#fff":muted }}>
-                      {k.rank}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:15, fontWeight:isTop3?800:600, color:text, marginBottom:4 }}>{k.keyword}</div>
-                      {/* 볼륨 바 */}
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <div style={{ flex:1, height:6, borderRadius:3, background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)", overflow:"hidden" }}>
-                          <div style={{ height:"100%", borderRadius:3, width:`${pct}%`, transition:"width 0.5s",
-                            background:tab==="all"?"linear-gradient(90deg,#7c6aff,#ec4899)":(PLATFORMS.find(p=>p.id===tab)?.color||accent) }} />
-                        </div>
-                        <span style={{ fontSize:11, fontWeight:700, color:accent, minWidth:48, textAlign:"right" }}>{fmtVol(vol)}</span>
-                      </div>
-                    </div>
-                    {k.change === "up" && <span style={{ fontSize:11, color:"#ef4444", fontWeight:700 }}>▲</span>}
-                    {k.change === "new" && <span style={{ fontSize:9, padding:"2px 7px", borderRadius:5, background:`${accent}15`, color:accent, fontWeight:700 }}>NEW</span>}
-                    {k.change === "same" && <span style={{ fontSize:11, color:muted }}>-</span>}
-                    <span style={{ fontSize:12, color:muted, transform:isOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}>▼</span>
-                  </div>
-
-                  {/* 펼침: 플랫폼별 상세 */}
-                  {isOpen && k.volume && (
-                    <div style={{ padding:"0 18px 16px", borderTop:`1px solid ${bdr}` }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:muted, padding:"12px 0 10px" }}>플랫폼별 검색량</div>
-                      <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
-                        {Object.entries(k.volume).map(([pid,v])=>{
-                          const pc = platColors[pid]||accent;
-                          const pi = platIcons[pid]||pid;
-                          const pName = PLATFORMS.find(p=>p.id===pid)?.label||pid;
-                          const maxP = Math.max(...Object.values(k.volume),1);
-                          const barPct = Math.max(Math.round((v/maxP)*100),5);
-                          return (
-                            <div key={pid} style={{ padding:"10px 12px", borderRadius:10, border:`1px solid ${bdr}`,
-                              background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)" }}>
-                              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-                                <span style={{ fontSize:12, width:20, textAlign:"center", color:pc, fontWeight:900 }}>{pi}</span>
-                                <span style={{ fontSize:11, fontWeight:700, color:text }}>{pName}</span>
-                              </div>
-                              <div style={{ fontSize:16, fontWeight:900, color:pc, marginBottom:6 }}>{fmtVol(v)}</div>
-                              <div style={{ height:4, borderRadius:2, background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)", overflow:"hidden" }}>
-                                <div style={{ height:"100%", borderRadius:2, background:pc, width:`${barPct}%`, transition:"width 0.3s" }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* 총 검색량 */}
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10, padding:"10px 12px",
-                        borderRadius:10, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", border:`1px solid ${accent}20` }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:muted }}>총 검색량</span>
-                        <span style={{ fontSize:18, fontWeight:900, color:accent }}>{fmtVol(k.totalVolume)}</span>
-                      </div>
-                    </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {news.map((item, i) => (
+              <a key={i} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
+                onClick={e => { if (!item.link) e.preventDefault(); }}
+                style={{ textDecoration:"none", borderRadius:14, border:`1px solid ${bdr}`, background:bg,
+                  padding:"18px 20px", cursor: item.link ? "pointer" : "default", transition:"all 0.15s", display:"block" }}
+                onMouseEnter={e => { if(item.link) { e.currentTarget.style.borderColor = accent+"60"; } e.currentTarget.style.boxShadow = `0 2px 12px ${accent}10`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.boxShadow = "none"; }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  {item.source && (
+                    <span style={{ fontSize:11, fontWeight:700, color:accent, padding:"2px 8px", borderRadius:6,
+                      background:isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)" }}>{item.source}</span>
                   )}
+                  {item.pubDate && <span style={{ fontSize:11, color:muted }}>{formatDate(item.pubDate)}</span>}
                 </div>
-              );
-            })}
+                <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6, lineHeight:1.5 }}>{item.title}</div>
+                {item.description && (
+                  <div style={{ fontSize:13, color:muted, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{item.description}</div>
+                )}
+                {item.link && <div style={{ marginTop:10, fontSize:11, color:accent, fontWeight:600 }}>기사 읽기 →</div>}
+              </a>
+            ))}
           </div>
         )}
       </div>
@@ -1472,7 +1538,7 @@ function SelectGroup({ label, options, value, onChange, cols=3, ACC, bdr, muted,
 }
 
 /* ── 모델 생성기 ─────────────────────────────────────────── */
-function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuFn }) {
+function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuFn, showPointConfirm }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted, ibg } = C;
   const [step, setStep] = useState(1);
@@ -1500,9 +1566,10 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); setStep(3); return; }
+    if (!(await showPointConfirm(10))) return;
     setStep(4); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_model", type: "product_shot", message: "모델 이미지 생성 중..." } } }));
     try {
       const body = { prompt: buildPrompt() };
       if (refImg) { body.productImageB64 = refImg.b64; body.productImageMime = refImg.mime; }
@@ -1515,7 +1582,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
       setStep(5);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch(e) { setErr(e.message||"생성 실패. 다시 시도해주세요."); setStep(3); }
-    finally { window.__isGenerating = false; }
+    finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_model" } } })); }
   };
 
   const readRef = e => {
@@ -1700,7 +1767,7 @@ function BeforeAfterSlider({ srcImg, result, bdr, ACC, muted, text, onReset, dow
 
 /* ── 얼굴 교체 ───────────────────────────────────────────── */
 /* ── 피부 보정 컴포넌트 ── */
-function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPointConfirm }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
   const [srcImg, setSrcImg] = useState(null);
@@ -1735,9 +1802,10 @@ function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("사진을 업로드해주세요."); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    if (!(await showPointConfirm(10))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_skinretouch", type: "product_shot", message: "피부 보정 중..." } } }));
 
     const moodDesc = MOODS.find(m => m.id === mood)?.desc || "자연스럽게";
     const intensityDesc = { light: "subtle and minimal", medium: "moderate", strong: "significant and dramatic" }[intensity] || "moderate";
@@ -1775,7 +1843,7 @@ This is a RETOUCH task, not a regeneration. The output must look like the SAME p
       setResult(data.image); setStep(4);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch (e) { setErr(e.message || "보정 실패"); setStep(2); }
-    finally { window.__isGenerating = false; }
+    finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_skinretouch" } } })); }
   };
 
   const W = { maxWidth: 640, margin: "0 auto" };
@@ -1867,7 +1935,7 @@ This is a RETOUCH task, not a regeneration. The output must look like the SAME p
   );
 }
 
-function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPointConfirm }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
   const [step, setStep] = useState(1);
@@ -1886,9 +1954,10 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg || !refImg) { setErr("두 이미지를 모두 업로드해주세요."); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    if (!(await showPointConfirm(10))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_faceswap", type: "product_shot", message: "얼굴 교체 중..." } } }));
     const prompt = `Face swap task: The first image is the TARGET person. The second image is the REFERENCE face. Replace ONLY the face of the person in the first image with the face from the second image. Keep everything else identical: body shape, clothing, pose, hair (except where the face overlaps), background, lighting, and skin tone transition. The result must look photorealistic and seamless, as if it were an original photo. High quality, 4K resolution.`;
     try {
       const _tok2 = await getAuthToken();
@@ -1902,7 +1971,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
       setResult(data.image); setStep(4);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
-    finally { window.__isGenerating = false; }
+    finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_faceswap" } } })); }
   };
 
   const W = { maxWidth:640, margin:"0 auto" };
@@ -1971,7 +2040,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 }
 
 /* ── 의상 교체 ───────────────────────────────────────────── */
-function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPointConfirm }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
   const OUTFIT_ACC = "#ec4899";
@@ -2001,9 +2070,10 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("원본 이미지를 업로드해주세요."); return; }
     if (outfitMode === "ref" && !refImg) { setErr("참고 의상 이미지를 업로드해주세요."); return; }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    if (!(await showPointConfirm(10))) return;
     setGenerating(true); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outfitswap", type: "product_shot", message: "의상 교체 중..." } } }));
     const outfitDesc = outfitMode === "ref"
       ? "the outfit/clothing exactly as shown in the second reference image"
       : `${presetOutfit} style outfit appropriate for the person`;
@@ -2019,7 +2089,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
       setResult(data.image);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch(e) { setErr(e.message||"생성 실패"); }
-    finally { setGenerating(false); window.__isGenerating = false; }
+    finally { setGenerating(false); window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_outfitswap" } } })); }
   };
 
   const W = { maxWidth:640, margin:"0 auto" };
@@ -2116,7 +2186,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 }
 
 /* ── 여백 늘리기 (Outpainting) ─────────────────────── */
-function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
+function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPointConfirm }) {
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted } = C;
   const [step, setStep] = useState(1);
@@ -2173,9 +2243,10 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
     if (sizeMode === "manual" && expLeft===0 && expRight===0 && expTop===0 && expBottom===0) {
       setErr("최소 한 방향의 여백 크기를 0보다 크게 설정해주세요."); return;
     }
-    if ((user.points||0) < 10) { setErr("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    if (!(await showPointConfirm(10))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outpaint", type: "product_shot", message: "이미지 확장 중..." } } }));
     try {
       const _tok4 = await getAuthToken();
       const res = await fetch("/api/generate-image", {
@@ -2188,7 +2259,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
       setResult(data.image); setStep(4);
       if (onUserUpdate && data.points !== undefined) onUserUpdate({ ...user, points: data.points });
     } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
-    finally { window.__isGenerating = false; }
+    finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_outpaint" } } })); }
   };
 
   const W = { maxWidth:640, margin:"0 auto" };
@@ -2441,7 +2512,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest }) {
 }
 
 // ── 콘텐츠 리퍼포징 (원소스 멀티유즈) ──────────────────────────────────────
-function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate }) {
+function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const [sourceType, setSourceType] = useState("text"); // "text" | "url"
   const [sourceText, setSourceText] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -2493,6 +2564,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate }) {
     if (!sourceText.trim()) { setError("원본 콘텐츠를 입력해주세요."); return; }
     if (selectedCount === 0) { setError("최소 1개 이상의 형식을 선택해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (!(await showPointConfirm(35))) return;
 
     setError(""); setLoading(true); setResults(null);
 
@@ -2733,7 +2805,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
   );
 }
 
-function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -2770,7 +2842,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <BarHeader title="비즈니스 문서" subtitle="실무 문서를 AI가 작성해드립니다" />
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} theme={theme} renderFooter={() => <AiFooter />} noHeader />
+          <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} theme={theme} renderFooter={() => <AiFooter />} noHeader />
         </div>
       </div>
     );
@@ -2782,19 +2854,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       <div key="ppt_gen" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <BarHeader title="PPT 제작" subtitle="주제를 입력하면 AI가 프레젠테이션을 생성해요" />
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
         </div>
       </div>
     );
   }
 
-  // 핫 키워드
+  // SNS 뉴스
   if (aiMenu === "hot_keyword") {
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="핫 키워드" subtitle="플랫폼별 실시간 인기 키워드를 확인하세요" />
+        <BarHeader title="SNS 뉴스" subtitle="SNS 마케팅 관련 최신 뉴스를 확인하세요" />
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <HotKeywordPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} noHeader />
+          <SnsNewsFeed isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} />
         </div>
       </div>
     );
@@ -3121,14 +3193,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 링크 글쓰기 → 통합 글쓰기의 링크 탭으로 리다이렉트
   if (aiMenu === "blog_link" || aiMenu === "blog_link_intro") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform="link_youtube" />;
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="link_youtube" />;
   }
   // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
   if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultTab="news" />;
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="news" />;
   }
   if (aiMenu === "blog_yt_blog" || aiMenu === "blog_yt_blog_intro") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultTab="youtube" />;
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="youtube" />;
   }
 
   // 블로그 계열 인트로 → 인트로 없이 직접 도구로 이동
@@ -3137,31 +3209,31 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const info = BLOG_MAP[baseId] || { type: "blog", label: "블로그 글쓰기" };
     return (
       <div key={baseId} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
 
   // 통합 글쓰기 (플랫폼 선택)
   if (aiMenu === "blog_write") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
   }
 
   // 네이버 카페 글쓰기 (하위호환)
   if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform="blog_cafe" />;
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" />;
   }
 
   // 블로그 계열 생성기 (하위호환)
   if (aiMenu.startsWith("blog_")) {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} defaultPlatform={aiMenu} />;
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} />;
   }
 
   // 보관함에서 심플 카드뉴스 열기
   if (aiMenu === "cardnews_simple_open") {
     return (
       <div key="cn_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} />
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
@@ -3170,7 +3242,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "detail_simple_open") {
     return (
       <div key="detail_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} />
+        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
@@ -3186,9 +3258,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       ]}
       defaultTab={aiMenu.startsWith("thumbnail")?"thumbnail_gen":aiMenu.startsWith("detail")?"detail_simple":"cardnews_simple"}
       renderTab={(tab) => {
-        if (tab === "cardnews_simple") return <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />;
-        if (tab === "detail_simple") return <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} />;
-        if (tab === "thumbnail_gen") return <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
+        if (tab === "cardnews_simple") return <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "detail_simple") return <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "thumbnail_gen") return <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
         return null;
       }}
     />;
@@ -3206,10 +3278,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       ]}
       defaultTab={aiMenu.startsWith("logo")?"logo_gen":aiMenu.startsWith("mockup")?"mockup_gen":aiMenu.startsWith("model")?"model_gen":"product_shot"}
       renderTab={(tab) => {
-        if (tab === "product_shot") return <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
-        if (tab === "logo_gen") return <LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
-        if (tab === "mockup_gen") return <MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />;
-        if (tab === "model_gen") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        if (tab === "product_shot") return <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "logo_gen") return <LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "mockup_gen") return <MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+        if (tab === "model_gen") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
         return null;
       }}
     />;
@@ -3227,10 +3299,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       ]}
       defaultTab={aiMenu.startsWith("skin")?"skin_retouch":aiMenu.startsWith("outfit")?"outfit_swap":aiMenu.startsWith("outpaint")?"outpaint":"face_swap"}
       renderTab={(tab) => {
-        if (tab === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
-        if (tab === "face_swap") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
-        if (tab === "outfit_swap") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
-        if (tab === "outpaint") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+        if (tab === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+        if (tab === "face_swap") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+        if (tab === "outfit_swap") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+        if (tab === "outpaint") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
         return null;
       }}
     />;
@@ -3282,7 +3354,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "product_shot") {
     return (
       <div key="product_shot" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} />
+        <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
@@ -3291,7 +3363,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "logo_gen") {
     return (
       <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <LogoGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} />
+        <LogoGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
@@ -3300,29 +3372,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "mockup_gen") {
     return (
       <div key="mockup_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <MockupGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} />
+        <MockupGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
       </div>
     );
   }
 
   // 모델 생성 (인트로 없이 직접 진입)
   if (aiMenu === "model_gen" || aiMenu === "model_gen_make") {
-    return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+    return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
   }
 
   // 얼굴 교체 (인트로 없이 직접 진입)
   if (aiMenu === "face_swap" || aiMenu === "face_swap_make") {
-    return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+    return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
   }
 
   // 의상 교체 (인트로 없이 직접 진입)
   if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") {
-    return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+    return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
   }
 
   // 여백 늘리기 (인트로 없이 직접 진입)
   if (aiMenu === "outpaint" || aiMenu === "outpaint_make") {
-    return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} />;
+    return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
   }
 
   // 회원정보
@@ -3392,12 +3464,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 콘텐츠 리퍼포징
   if (aiMenu === "repurpose") {
-    return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />;
+    return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
   }
 
   // 영상 제작
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} />;
+    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} />;
   }
 
   return null;
@@ -3430,7 +3502,7 @@ const MENU_LABELS = {
   content_create: "콘텐츠 제작",
   image_create: "이미지 생성",
   image_edit: "이미지 수정",
-  hot_keyword: "핫 키워드",
+  hot_keyword: "SNS 뉴스",
   prompt_studio: "비즈니스 문서",
   ppt_gen: "PPT 제작",
   marketing: "마케팅",
@@ -4629,25 +4701,78 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
   );
 }
 
-function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, defaultPlatform }) {
+function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, showPointConfirm, defaultPlatform }) {
+  const defaultIsLink = defaultPlatform && WRITE_PLATFORMS.find(p => p.id === defaultPlatform)?.link;
+  const [category, setCategory] = useState(defaultIsLink ? "link" : "direct");
   const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
   const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
   const isLink = info && info.link;
 
+  const directTabs = WRITE_PLATFORMS.filter(p => !p.link && !p.separator);
+  const linkTabs = WRITE_PLATFORMS.filter(p => p.link);
+  const subTabs = category === "direct" ? directTabs : linkTabs;
+
+  const handleCategoryChange = (cat) => {
+    setCategory(cat);
+    if (cat === "direct" && info?.link) setPlatform("blog_naver");
+    if (cat === "link" && !info?.link) setPlatform("link_youtube");
+  };
+
+  const _text = isDark ? "#e8eaed" : "#1a1a2e";
+  const _muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const _bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const _accent = "#7c6aff";
+
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <TabHeader title="글쓰기" subtitle="직접 작성하거나, 링크를 블로그 글로 변환할 수 있어요"
-        tabs={WRITE_PLATFORMS} activeTab={platform} onTabChange={setPlatform} isDark={isDark} />
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
+        <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
+          <div style={{ textAlign:"center", marginBottom:12 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:_text, marginBottom:3 }}>글쓰기</div>
+            <div style={{ fontSize:12, color:_muted }}>직접 작성하거나, 링크를 블로그 글로 변환할 수 있어요</div>
+          </div>
+          {/* 대분류 탭 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:4, marginBottom:10 }}>
+            {[{id:"direct",label:"직접 작성"},{id:"link",label:"링크에서 변환"}].map(c => {
+              const active = category === c.id;
+              return (
+                <button key={c.id} onClick={() => handleCategoryChange(c.id)} style={{
+                  padding:"8px 20px", borderRadius:20, border: active ? `2px solid ${_accent}` : `1.5px solid ${_bdr}`,
+                  cursor:"pointer", background: active ? (isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.08)") : "transparent",
+                  color: active ? _accent : _muted, fontSize:13, fontWeight: active ? 800 : 500, transition:"all 0.15s",
+                }}>{c.label}</button>
+              );
+            })}
+          </div>
+          {/* 세부 플랫폼 탭 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:2, borderBottom:`1px solid ${_bdr}`, flexWrap:"wrap" }}>
+            {subTabs.map(t => {
+              const active = platform === t.id;
+              return (
+                <button key={t.id} onClick={() => setPlatform(t.id)} style={{
+                  padding:"9px 16px", border:"none", cursor:"pointer", background:"transparent",
+                  color: active ? _accent : _muted, fontSize:13, fontWeight: active ? 700 : 400,
+                  borderBottom: active ? `2px solid ${_accent}` : "2px solid transparent",
+                  transition:"all 0.15s", marginBottom:-1, display:"flex", alignItems:"center", gap:5,
+                }}>
+                  {t.icon && <img src={t.icon} alt="" style={{ width:16, height:16, borderRadius:3, objectFit:"contain", opacity: active ? 1 : 0.5 }} />}
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         {isLink ? (
           info.linkTab === "youtube" ? (
-            <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+            <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
           ) : (
             <NewsBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
-              linkMode={info.linkTab === "blog" ? "blog" : info.linkTab === "sns" ? "sns" : "news"} />
+              linkMode={info.linkTab === "blog" ? "blog" : info.linkTab === "sns" ? "sns" : "news"} showPointConfirm={showPointConfirm} />
           )
         ) : (
-          <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
         )}
       </div>
     </div>
@@ -4655,7 +4780,7 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
 }
 
 /* ── 링크 글쓰기 통합 컴포넌트 ── */
-function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTab }) {
+function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, showPointConfirm, defaultTab }) {
   const [tab, setTab] = useState(defaultTab || "youtube");
   const isDark = theme === "dark";
   const tabs = [
@@ -4671,10 +4796,10 @@ function LinkBlogCombined({ theme, user, onLoginRequest, onUserUpdate, defaultTa
         tabs={tabs} activeTab={tab} onTabChange={setTab} isDark={isDark} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         {tab === "youtube" ? (
-          <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <YtBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
         ) : (
           <NewsBlogGenerator theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
-            linkMode={tab === "blog" ? "blog" : tab === "sns" ? "sns" : "news"} />
+            linkMode={tab === "blog" ? "blog" : tab === "sns" ? "sns" : "news"} showPointConfirm={showPointConfirm} />
         )}
       </div>
     </div>
@@ -4744,6 +4869,18 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   }, []);
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
   const [guardModal, setGuardModal] = useState(null);
+  const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
+
+  // 포인트 차감 확인 모달 — Promise를 반환하므로 await로 사용
+  const showPointConfirm = (cost) => {
+    return new Promise((resolve) => {
+      setPointConfirm({
+        cost,
+        onConfirm: () => { setPointConfirm(null); resolve(true); },
+        onCancel:  () => { setPointConfirm(null); resolve(false); },
+      });
+    });
+  };
 
   const setAiMenu = async (id) => {
     // 생성 중 다른 메뉴 클릭 차단 - 커스텀 모달
@@ -4817,6 +4954,40 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       overflow: "hidden", position: "relative",
     }}>
       {GuardModalInline}
+
+      {/* ── 포인트 차감 확인 모달 ── */}
+      {pointConfirm && (() => {
+        const userPts = user?.points || 0;
+        const insufficient = userPts < pointConfirm.cost;
+        return (
+          <div style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)" }} onClick={pointConfirm.onCancel}>
+            <div onClick={e => e.stopPropagation()} style={{ background: isDark ? "rgba(18,15,40,0.97)" : "#fff", border: "1px solid " + (isDark ? "rgba(124,106,255,0.25)" : "rgba(99,102,241,0.15)"), borderRadius:20, padding:"32px 28px", maxWidth:380, width:"90%", boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,106,255,0.1)" : "0 24px 64px rgba(99,102,241,0.12), 0 2px 8px rgba(0,0,0,0.08)", textAlign:"center" }}>
+              <div style={{ width:52, height:52, borderRadius:14, background: insufficient ? "rgba(239,68,68,0.1)" : "rgba(124,106,255,0.1)", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <span style={{ fontSize:24 }}>{insufficient ? "\u26A0\uFE0F" : "\uD83D\uDC8E"}</span>
+              </div>
+              <div style={{ fontSize:18, fontWeight:900, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>{insufficient ? "\uD3EC\uC778\uD2B8\uAC00 \uBD80\uC871\uD569\uB2C8\uB2E4" : "\uD3EC\uC778\uD2B8 \uCC28\uAC10 \uC548\uB0B4"}</div>
+              <div style={{ fontSize:14, lineHeight:1.8, color: isDark ? "rgba(255,255,255,0.6)" : "#666", marginBottom:6 }}>
+                {insufficient
+                  ? <span>{"\uC774 \uC791\uC5C5\uC5D0\uB294 "}<span style={{ color:"#f59e0b", fontWeight:700 }}>{pointConfirm.cost}P</span>{"\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4."}</span>
+                  : <span>{"\uC774 \uC791\uC5C5\uC744 \uC9C4\uD589\uD558\uBA74 "}<span style={{ color:"#f59e0b", fontWeight:700 }}>{pointConfirm.cost}P</span>{"\uAC00 \uCC28\uAC10\uB429\uB2C8\uB2E4."}<br/>{"\uC9C4\uD589\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?"}</span>
+                }
+              </div>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:20, marginBottom:20, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, color: insufficient ? "#f87171" : isDark ? "#a5b4fc" : "#6366f1" }}>
+                {"\uBCF4\uC720 \uD3EC\uC778\uD2B8: "}{userPts.toLocaleString()}P
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={pointConfirm.onCancel} style={{ flex:1, padding:"13px", borderRadius:12, border: "1px solid " + (isDark ? "rgba(255,255,255,0.12)" : "#ddd"), background:"transparent", color: isDark ? "rgba(255,255,255,0.6)" : "#888", fontSize:14, fontWeight:700, cursor:"pointer" }}>{"\uCDE8\uC18C"}</button>
+                {insufficient ? (
+                  <button onClick={() => { pointConfirm.onCancel(); navigate("pricing"); }} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#6366f1)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(124,106,255,0.3)" }}>{"\uCDA9\uC804\uD558\uAE30"}</button>
+                ) : (
+                  <button onClick={pointConfirm.onConfirm} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#6366f1)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(124,106,255,0.3)" }}>{"\uC9C4\uD589"}</button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 영상 생성 플로팅 배너 */}
       {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
         <div onClick={() => setAiMenu('video_create')} style={{
@@ -4930,7 +5101,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} />
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -36,7 +37,7 @@ const LENGTHS = [
   { id: "s90", label: "90~120초", desc: "아주 길게" },
 ];
 
-export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange }) {
+export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm }) {
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
@@ -59,6 +60,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [loadingMsg, setLoadingMsg] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
+  useGeneratingGuard(step === "loading", 10, "shorts_make");
 
   // 분석 결과
   const [segments, setSegments] = useState([]);
@@ -178,6 +180,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // 생성
   const handleGenerate = async () => {
+    if (showPointConfirm && user && !(await showPointConfirm(30))) return;
     setStep("generate"); setResults([]); setPreviewIdx(0);
     try {
       const d = await apiCall("/generate-async", {

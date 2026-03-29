@@ -551,7 +551,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
   );
 }
 
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
   const isDark = isDarkTheme(theme) || (!theme && !!embedded);
   const { t } = useI18n();
@@ -704,6 +704,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const generate = async () => {
     if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
     if (!user && guestLimitExceeded()) return;
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage(); // 비회원: 즉시 사용 횟수 차감
     // 사용 횟수 체크 (비회원 5회, 회원 20회)
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
@@ -1197,58 +1198,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
           <div style={{maxWidth:720,margin:"0 auto",padding:"40px 20px 24px"}}>
-            {/* ── Mirra-style 4-Step Progress Indicator ── */}
-            {(() => {
-              const STEPS = [
-                { n:1, label:"자료 조사", icon:"🔍" },
-                { n:2, label:"글 구성",   icon:"📐" },
-                { n:3, label:"본문 작성", icon:"✍️" },
-                { n:4, label:"검색 최적화", icon:"🚀" },
-              ];
-              return (
-                <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:28,padding:"16px 0"}}>
-                  {STEPS.map((s, idx) => {
-                    const completed = genStep >= s.n + 1 || genStep === 5;
-                    const current = genStep === s.n;
-                    const upcoming = genStep < s.n;
-                    const circleSize = 32;
-                    return (
-                      <div key={s.n} style={{display:"flex",alignItems:"center"}}>
-                        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:72}}>
-                          <div style={{
-                            width:circleSize,height:circleSize,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
-                            background: completed ? "#22c55e" : current ? "#7c6aff" : (isDark ? "rgba(255,255,255,0.08)" : "#e9ecef"),
-                            border: current ? "2px solid #7c6aff" : completed ? "2px solid #22c55e" : `2px solid ${isDark ? "rgba(255,255,255,0.12)" : "#d1d5db"}`,
-                            transition:"all 0.3s ease",
-                            position:"relative",
-                          }}>
-                            {completed ? (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                            ) : current ? (
-                              <div style={{width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.7)",borderTopColor:"transparent",animation:"bl-step-spin 0.8s linear infinite"}}/>
-                            ) : (
-                              <span style={{fontSize:12,color:isDark ? "rgba(255,255,255,0.3)" : "#9ca3af"}}>{s.n}</span>
-                            )}
-                          </div>
-                          <span style={{
-                            fontSize:11,fontWeight: completed || current ? 700 : 400,
-                            color: completed ? "#22c55e" : current ? "#7c6aff" : muted,
-                            transition:"all 0.3s ease",whiteSpace:"nowrap",
-                          }}>{s.label}</span>
-                        </div>
-                        {idx < STEPS.length - 1 && (
-                          <div style={{
-                            width:40,height:2,margin:"0 2px",marginBottom:20,
-                            background: (genStep >= s.n + 1 || genStep === 5) ? "#22c55e" : (isDark ? "rgba(255,255,255,0.08)" : "#e0e0e0"),
-                            borderRadius:1,transition:"all 0.3s ease",
-                          }}/>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+            {/* StepBar 제거됨 */}
 
             {/* URL 불러오기 */}
             <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>

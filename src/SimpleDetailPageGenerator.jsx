@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import CardNewsEditor from "./CardNewsEditor";
@@ -249,7 +250,7 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate }) {
+export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate, showPointConfirm }) {
   const [wizStep, setWizStep] = useState(1);
 
   // URL 불러오기
@@ -281,6 +282,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
+  useGeneratingGuard(loading, 10, "card_news");
 
   // 테마
   const D = isDark || theme === "dark";
@@ -370,6 +372,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   // Step3→Step4: 슬라이드 텍스트 생성 후 편집 모드로
   const generate = async () => {
     if (!user && guestLimitExceeded()) return;
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage();
     setLoading(true);
     try {

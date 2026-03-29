@@ -133,7 +133,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
   ].filter(Boolean).join(" ");
 }
 
-export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
+export default function ProductShotGenerator({ isDark, user, onUserUpdate, showPointConfirm }) {
   const C      = THEMES[isDark ? "dark" : "light"];
   const D      = isDarkTheme(C);
   const text   = C.text;
@@ -188,7 +188,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate }) {
       if (guestLimitExceeded()) { setError("비회원 무료 횟수를 모두 사용했어요. 회원가입 후 계속 이용하세요."); return; }
       incrementGuestUsage();
     } else {
-      if ((user.points || 0) < cost) { setError(`포인트가 부족해요. ${cost}P 필요합니다.`); return; }
+      if (showPointConfirm && !(await showPointConfirm(cost))) return;
     }
 
     setError(""); setResults([]); setGenProgress(0); setStep(2);

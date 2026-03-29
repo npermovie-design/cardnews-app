@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/naver13ff0ecd787361289eef4e82f97736a.html",

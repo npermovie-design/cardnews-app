@@ -3,6 +3,16 @@ import { callClaude } from "./aiClient";
 import PptxGenJS from "pptxgenjs";
 import CardNewsEditor from "./CardNewsEditor";
 
+// PPT 보관함 저장 헬퍼
+const PPT_SAVES_KEY = "nper_ppt_saves_v1";
+function savePptWork(item) {
+  try {
+    const list = JSON.parse(localStorage.getItem(PPT_SAVES_KEY) || "[]").filter(x => x.id !== item.id);
+    list.unshift(item);
+    localStorage.setItem(PPT_SAVES_KEY, JSON.stringify(list.slice(0, 50)));
+  } catch {}
+}
+
 /* ═══════════════════════════════════════════════════════════
    PptGenerator v2 - AI PPT 제작 (디자인 다양화 + 이미지/아이콘)
 ═══════════════════════════════════════════════════════════ */
@@ -188,7 +198,7 @@ function MiniSlidePreview({ layoutId, W=60, H=34, theme }) {
   return <div style={{...bx,padding:p}}>{bar}{tl}{ln}{bl()}</div>;
 }
 
-export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdate }) {
+export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const D = isDark;
   const accent = "#7c6aff";
   const text  = D ? "#fff" : "#1a1a2e";
@@ -260,6 +270,7 @@ JSON만: {"outline":[{"no":1,"title":"표지","layout":"title_only","desc":"주�
   const generate = async () => {
     if (!topic.trim()) { setErr("주제를 입력해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (showPointConfirm && !(await showPointConfirm(10))) return;
     setStep("loading"); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_ppt_gen", type: "ppt_gen", message: `PPT ${slideCount}장 기획 중...` } } }));
@@ -322,6 +333,8 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
       })));
       setSelIdx(0);
       setStep("edit");
+      // 보관함에 저장
+      savePptWork({ id: "ppt_" + Date.now(), topic: topic || "PPT", slideCount: parsed.length, date: new Date().toLocaleDateString("ko-KR") });
       if (user && onUserUpdate) {
         try {
           const { changePoints } = await import("./storage");
@@ -329,7 +342,15 @@ JSON만: {"slides":[...]}`, Math.max(slideCount * 400, 5000));
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}
       }
-    } catch (e) { setErr("생성 실패: " + (e.message||"")); setStep("input"); }
+    } catch (e) {
+      const msg = e.message || "";
+      if (msg.includes("504") || msg.includes("TIMEOUT") || msg.includes("timeout") || msg.includes("network") || msg.includes("Failed to fetch")) {
+        setErr("생성에 시간이 오래 걸리고 있습니다. 슬라이드 수를 줄여서 다시 시도해주세요.");
+      } else {
+        setErr("생성 실패: " + msg);
+      }
+      setStep("input");
+    }
     finally {
       window.__isGenerating = false;
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_ppt_gen" } } }));

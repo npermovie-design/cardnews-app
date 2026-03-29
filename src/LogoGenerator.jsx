@@ -52,7 +52,7 @@ async function callAPI(prompt, refB64, refMime) {
   return data.image;
 }
 
-export default function LogoGenerator({ isDark, user , onUserUpdate}) {
+export default function LogoGenerator({ isDark, user , onUserUpdate, showPointConfirm}) {
   const D = isDark;
   const C = THEMES[D ? "dark" : "light"];
   const text    = C.text;
@@ -103,6 +103,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate}) {
   const generate = async () => {
     if (!canGenerate) return;
     if (!user && guestLimitExceeded()) return;
+    if (showPointConfirm && user && !(await showPointConfirm(10 * genCount))) return;
     if (!user) incrementGuestUsage();
     setStep(2); setResults([]); setError(""); setGenIdx(0);
     const styleLabel = LOGO_STYLES.find(s => s.id === selStyle)?.label || selStyle;
