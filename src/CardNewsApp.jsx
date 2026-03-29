@@ -1158,7 +1158,7 @@ function PageHome(props) {
         <div style={{fontSize:12, color:"#f59e0b", fontWeight:700, marginBottom:3}}>기능 개선 건의 · 질문방</div>
         <div style={{fontSize:11, color:muted, lineHeight:1.7}}>
           불편한 점이나 추가 기능은{" "}
-          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" style={{color:"#f59e0b", fontWeight:700}}>카카오톡 질문방</a>에 올려주세요!
+          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer" style={{color:"#f59e0b", fontWeight:700}}>카카오톡 질문방</a>에 올려주세요!
         </div>
       </div>
     </div>
