@@ -34,11 +34,15 @@ export default function KeywordInsightPanel({ keyword, isDark, onKeywordSelect }
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: kw }),
+        signal: AbortSignal.timeout(15000),
       });
+      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
       const json = await res.json();
-      setData(json);
+      if (json && typeof json === "object") setData(json);
+      else throw new Error("응답 형식 오류");
     } catch (e) {
-      setError("분석 실패");
+      setError(e.name === "TimeoutError" ? "요청 시간 초과" : "분석 실패");
+      setData(null);
     }
     setLoading(false);
   };

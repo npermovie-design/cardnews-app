@@ -333,13 +333,12 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
     try {
       const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
       const data = await r.json();
-      if (data.error) { alert(data.error); setUrlLoading(false); return; }
+      if (data.error) { setForm(p=>({...p, productName: "[URL 오류] " + data.error})); setUrlLoading(false); return; }
       setUrlResult(data);
-      // 상품명 = 제목, 특징 = 설명+내용
       if (data.title) setForm(p=>({...p, productName: data.title.slice(0,60)}));
       const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
       if (desc) setForm(p=>({...p, features: desc}));
-    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    } catch(e) { setForm(p=>({...p, productName: "[URL 실패] " + e.message})); }
     setUrlLoading(false);
   };
 
@@ -403,7 +402,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
-    } catch(e) { alert("생성 실패: " + e.message); }
+    } catch(e) { setSlides([]); setWizStep(1); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 

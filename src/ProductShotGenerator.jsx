@@ -96,7 +96,7 @@ async function generateProductShot(prompt, productB64, productMime) {
 function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset }) {
   const atmoP  = ATMO_PROMPTS[atmosphere] || ATMO_PROMPTS.studio;
   const toneP  = TONE_PROMPTS[colorTone]  || TONE_PROMPTS.natural;
-  const nameP  = productName?.trim() ? `"${productName.trim()}" ` : "";
+  const nameP  = productName?.trim() ? `"${productName.trim().slice(0, 100)}" ` : "";
   const sizeP  = SIZE_PRESETS.find(s => s.id === sizePreset)?.prompt || SIZE_PRESETS[0].prompt;
 
   if (mode === "product") {

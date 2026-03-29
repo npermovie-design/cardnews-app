@@ -495,7 +495,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         "당신은 인스타그램 캡션 전문 작가입니다. 카드뉴스 내용을 바탕으로 인스타그램 피드 캡션을 작성하세요."
       );
       setCaption((res || "").trim());
-    } catch (e) { alert("캡션 생성 실패: " + e.message); }
+    } catch (e) { setCaption("[캡션 생성 실패] " + e.message); }
     setCaptionLoading(false);
   };
 
@@ -582,12 +582,12 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     try {
       const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
       const data = await r.json();
-      if (data.error) { alert(data.error); setUrlLoading(false); return; }
+      if (data.error) { setTopic("[URL 오류] " + data.error); setUrlLoading(false); return; }
       setUrlResult(data);
       // 주제 자동 채우기: 제목 + 설명/내용 요약
       const combined = [data.title, data.description || data.content || ""].filter(Boolean).join("\n").slice(0, 300);
       setTopic(combined);
-    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+    } catch(e) { setTopic("[URL 불러오기 실패] " + e.message); }
     setUrlLoading(false);
   };
 
@@ -657,7 +657,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       saveToCardLibrary(slidesData);
       // 포인트 차감은 생성 시작 시점에 처리됨
-    } catch(e) { alert("생성 실패: " + e.message); }
+    } catch(e) { setSlides([]); setWizStep(1); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 

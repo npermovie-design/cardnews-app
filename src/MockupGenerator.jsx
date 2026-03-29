@@ -190,23 +190,19 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
     if (!user && guestLimitExceeded()) return;
     if (!user) incrementGuestUsage();
     setStep(2); setResults({}); setError("");
-    // 포인트 즉시 차감
-    if (user?.uid) {
-      changePoints(user.uid, -(selTypes.length * 10), `목업 생성 (${selTypes.length}종)`).then(newPts => {
-        if (onUserUpdate) onUserUpdate({...user, points: newPts});
-      });
-    }
     setGenQueue([...selTypes]);
 
     const logoDesc = logoText.trim()
       ? `text logo "${logoText.trim()}", clean professional typography`
       : "the uploaded logo image (use as color/style reference, apply creatively to product)";
 
+    let successCount = 0;
     for (const typeId of selTypes) {
       setCurGen(typeId);
       try {
         const img = await generateMockup(logoDesc, typeId, logoB64, logoMime);
         setResults(prev => ({ ...prev, [typeId]: img }));
+        successCount++;
       } catch (e) {
         setResults(prev => ({ ...prev, [typeId]: null }));
         console.error(typeId, e);
@@ -214,7 +210,11 @@ export default function MockupGenerator({ isDark, user , onUserUpdate}) {
       setGenQueue(prev => prev.filter(t => t !== typeId));
     }
     setCurGen(null);
-    // 포인트 차감은 생성 시작 시점에 처리됨
+    if (successCount > 0 && user?.uid) {
+      changePoints(user.uid, -(successCount * 10), `목업 생성 (${successCount}종)`).then(newPts => {
+        if (onUserUpdate) onUserUpdate({...user, points: newPts});
+      }).catch(() => {});
+    }
     setStep(3);
   };
 
