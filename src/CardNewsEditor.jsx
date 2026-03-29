@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, FabricImage, Shadow, Gradient } from "fabric";
+import { supabase } from "./storage";
 
 /* ──────────────────────────────────────────────────────────────────────
    CardNewsEditor  –  Fabric.js v7 기반 카드뉴스 에디터
@@ -219,6 +220,9 @@ export default function CardNewsEditor({
   const [customFonts, setCustomFonts] = useState([]);
   const [canvasObjects, setCanvasObjects] = useState([]);
   const [templateCat, setTemplateCat] = useState("전체");
+  const [showSharedTemplateModal, setShowSharedTemplateModal] = useState(false);
+  const [sharedTemplates, setSharedTemplates] = useState([]);
+  const [sharedTemplatesLoading, setSharedTemplatesLoading] = useState(false);
 
   /* text effect states */
   const [textStrokeColor, setTextStrokeColor] = useState("#000000");
@@ -1064,6 +1068,58 @@ export default function CardNewsEditor({
     pushHistory();
   }
 
+  /* ── load shared templates ─────────────────────────────────────────── */
+  async function loadSharedTemplates() {
+    setSharedTemplatesLoading(true);
+    const all = [];
+    try {
+      const community = JSON.parse(localStorage.getItem("nper_shared_templates_community") || "[]");
+      community.forEach(t => all.push({ ...t, source: "community" }));
+    } catch {}
+    try {
+      const mine = JSON.parse(localStorage.getItem("nper_shared_templates_mine") || "[]");
+      mine.forEach(t => all.push({ ...t, source: "mine" }));
+    } catch {}
+    try {
+      if (supabase) {
+        const { data, error } = await supabase.from("shared_templates").select("*").order("created_at", { ascending: false }).limit(30);
+        if (!error && data) {
+          data.forEach(t => { if (!all.find(a => a.id === t.id)) all.push({ ...t, source: "supabase" }); });
+        }
+      }
+    } catch {}
+    const unique = [];
+    const seen = new Set();
+    for (const t of all) { const key = String(t.id); if (!seen.has(key)) { seen.add(key); unique.push(t); } }
+    setSharedTemplates(unique);
+    setSharedTemplatesLoading(false);
+  }
+
+  function applySharedTemplate(tpl) {
+    // Try to apply the shared template's style to the current canvas
+    const fc = canvasRef.current;
+    if (!fc) return;
+    try {
+      if (tpl.slides_data) {
+        const parsed = typeof tpl.slides_data === "string" ? JSON.parse(tpl.slides_data) : tpl.slides_data;
+        if (parsed?.[0]) {
+          const s = parsed[0];
+          if (s.bgColor || s.textColor) {
+            // Apply as simple style
+            const template = {
+              bgColor: s.bgColor || "#1a1a2e",
+              textColor: s.textColor || "#ffffff",
+              fontFamily: s.fontFamily || "Pretendard",
+              layout: "center",
+            };
+            applyTemplate(template);
+          }
+        }
+      }
+    } catch {}
+    setShowSharedTemplateModal(false);
+  }
+
   /* ── download single slide as PNG ───────────────────────────────────── */
   function downloadCurrentPNG() {
     const fc = canvasRef.current;
@@ -1133,10 +1189,10 @@ export default function CardNewsEditor({
   const canvasAreaW = isMobile ? "100%" : "62%";
 
   const overlayStyle = inline
-    ? { width: "100%", minHeight: "70vh", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 0 }
+    ? { width: "100%", flex: 1, display: "flex", alignItems: "stretch", justifyContent: "center", padding: 0, overflow: "hidden" }
     : S.overlay;
   const modalStyle = inline
-    ? { width: "100%", maxWidth: 1200, background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", flexDirection: isMobile ? "column" : "row" }
+    ? { width: "100%", flex: 1, background: "#fff", display: "flex", overflow: "hidden", flexDirection: isMobile ? "column" : "row" }
     : { ...S.modal, flexDirection: isMobile ? "column" : "row" };
 
   const isTextSelected = selectedObj && (selProps.type === "textbox" || selProps.type === "text");
@@ -1184,6 +1240,20 @@ export default function CardNewsEditor({
                 {cat}
               </button>
             ))}
+            <div style={{ width:1, height:20, background:"rgba(0,0,0,0.12)", margin:"0 4px", flexShrink:0 }} />
+            <button
+              onClick={() => { setShowSharedTemplateModal(true); loadSharedTemplates(); }}
+              style={{
+                ...S.templateCatBtn,
+                background: "rgba(245,158,11,0.12)",
+                color: "#d97706",
+                borderColor: "rgba(245,158,11,0.3)",
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              📂 공유 템플릿
+            </button>
           </div>
 
           {/* Template selector strip */}
@@ -1252,6 +1322,64 @@ export default function CardNewsEditor({
             onChange={e => { replaceImage(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={fontFileInputRef} type="file" accept=".ttf,.otf,.woff2" style={{ display: "none" }}
             onChange={handleCustomFont} />
+
+          {/* 공유 템플릿 모달 */}
+          {showSharedTemplateModal && (
+            <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+              onClick={(e) => { if(e.target===e.currentTarget) setShowSharedTemplateModal(false); }}>
+              <div style={{ background:"#fff", borderRadius:16, maxWidth:600, width:"100%", maxHeight:"80vh", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column" }}>
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>공유 템플릿 불러오기</div>
+                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>커뮤니티 및 내 템플릿을 선택하여 현재 슬라이드에 적용</div>
+                  </div>
+                  <button onClick={() => setShowSharedTemplateModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
+                    <Icon.Close />
+                  </button>
+                </div>
+                <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+                  {sharedTemplatesLoading ? (
+                    <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13 }}>
+                      <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 10px" }} />
+                      템플릿 불러오는 중...
+                    </div>
+                  ) : sharedTemplates.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13, lineHeight:1.8 }}>
+                      <div style={{ fontSize:36, marginBottom:8 }}>📭</div>
+                      아직 공유된 템플릿이 없습니다.<br/>카드뉴스를 만들고 공유해보세요!
+                    </div>
+                  ) : (
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:12 }}>
+                      {sharedTemplates.map(tpl => (
+                        <div key={tpl.id} style={{ borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", overflow:"hidden", background:"#fff", cursor:"pointer", transition:"all 0.15s" }}
+                          onClick={() => applySharedTemplate(tpl)}>
+                          <div style={{ width:"100%", paddingBottom:"75%", position:"relative", background:"#f5f5f5" }}>
+                            {tpl.preview ? (
+                              <img src={tpl.preview} alt={tpl.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                            ) : (
+                              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:"#ccc" }}>🎨</div>
+                            )}
+                            {tpl.source === "mine" && (
+                              <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>내 템플릿</div>
+                            )}
+                          </div>
+                          <div style={{ padding:"8px 10px" }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#1a1a2e", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || "제목 없음"}</div>
+                            <div style={{ fontSize:10, color:"#888", marginTop:2 }}>{tpl.author || "익명"} · {tpl.slide_count || "?"}장</div>
+                            <button onClick={(e) => { e.stopPropagation(); applySharedTemplate(tpl); }}
+                              style={{ marginTop:6, width:"100%", padding:"5px 0", borderRadius:6, border:"none", background:"rgba(99,102,241,0.15)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                              적용하기
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: Properties Panel ────────────────────────────────── */}
@@ -1522,17 +1650,7 @@ export default function CardNewsEditor({
             })}
           </CollapsibleSection>
 
-          {/* Save buttons */}
-          <div style={S.saveArea}>
-            <button style={{ ...S.saveBtn, background: `linear-gradient(135deg, ${C.purple}, ${C.pink})` }}
-              onClick={handleSave}>
-              저장
-            </button>
-            <button style={{ ...S.saveBtn, background: C.purple }}
-              onClick={handleSaveAndClose}>
-              저장 후 닫기
-            </button>
-          </div>
+          {/* Save buttons removed - PNG/전체 저장 are in the header */}
         </div>
       </div>
     </div>

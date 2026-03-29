@@ -414,6 +414,186 @@ async function getTopicSuggestions(topic) {
   return JSON.parse(txt.replace(/```json\n?/g,"").replace(/```/g,"").trim());
 }
 
+// ── 커뮤니티 템플릿 섹션 ────────────────────────────────────
+function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply }) {
+  const [templates, setTemplates] = useState([]);
+  const [loadingTpl, setLoadingTpl] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingTpl(true);
+      const all = [];
+      // localStorage
+      try {
+        const community = JSON.parse(localStorage.getItem("nper_shared_templates_community") || "[]");
+        community.forEach(t => all.push({ ...t, source: "community" }));
+      } catch {}
+      try {
+        const mine = JSON.parse(localStorage.getItem("nper_shared_templates_mine") || "[]");
+        mine.forEach(t => all.push({ ...t, source: "mine" }));
+      } catch {}
+      // Supabase
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from("shared_templates").select("*").order("created_at", { ascending: false }).limit(30);
+          if (!error && data) {
+            data.forEach(t => {
+              if (!all.find(a => a.id === t.id)) all.push({ ...t, source: "supabase" });
+            });
+          }
+        }
+      } catch {}
+      // 중복 제거 (id 기준)
+      const unique = [];
+      const seen = new Set();
+      for (const t of all) {
+        const key = String(t.id);
+        if (!seen.has(key)) { seen.add(key); unique.push(t); }
+      }
+      if (!cancelled) { setTemplates(unique); setLoadingTpl(false); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div style={{ marginBottom:28, padding:"16px 18px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:800, color:text }}>커뮤니티 템플릿</div>
+          <div style={{ fontSize:11, color:muted, marginTop:2 }}>다른 사용자가 공유한 템플릿을 바로 적용할 수 있어요</div>
+        </div>
+        {templates.length > 0 && <span style={{ fontSize:11, color:muted }}>{templates.length}개</span>}
+      </div>
+      {loadingTpl ? (
+        <div style={{ textAlign:"center", padding:"20px 0", color:muted, fontSize:12 }}>
+          <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 8px" }} />
+          템플릿 불러오는 중...
+        </div>
+      ) : templates.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"28px 12px", color:muted, fontSize:13, lineHeight:1.8 }}>
+          <div style={{ fontSize:36, marginBottom:8 }}>📭</div>
+          아직 공유된 템플릿이 없습니다.<br/>카드뉴스를 만들고 공유해보세요!
+        </div>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:10 }}>
+          {templates.map(tpl => (
+            <div key={tpl.id} style={{ borderRadius:12, border:`1px solid ${bdr}`, overflow:"hidden", background:D?"rgba(255,255,255,0.03)":"#fff", transition:"all 0.15s", cursor:"pointer" }}
+              onClick={() => onApply(tpl)}>
+              {/* 미리보기 이미지 */}
+              <div style={{ width:"100%", paddingBottom:"75%", position:"relative", background:D?"rgba(255,255,255,0.05)":"#f5f5f5" }}>
+                {tpl.preview ? (
+                  <img src={tpl.preview} alt={tpl.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                ) : (
+                  <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:muted }}>🎨</div>
+                )}
+                {tpl.source === "mine" && (
+                  <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>내 템플릿</div>
+                )}
+              </div>
+              <div style={{ padding:"8px 10px" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || "제목 없음"}</div>
+                <div style={{ fontSize:10, color:muted, marginTop:2 }}>{tpl.author || "익명"} · {tpl.slide_count || "?"}장</div>
+                <button onClick={(e) => { e.stopPropagation(); onApply(tpl); }}
+                  style={{ marginTop:6, width:"100%", padding:"5px 0", borderRadius:6, border:"none", background:"rgba(99,102,241,0.15)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                  사용하기
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 기획 중 애니메이션 컴포넌트 ─────────────────────────────
+function PlanningAnimation({ pageCount }) {
+  const [step, setStep] = useState(0);
+  const steps = [
+    { icon: "\uD83D\uDCCB", text: "주제를 분석하고 있어요" },
+    { icon: "\u270F\uFE0F", text: "슬라이드를 기획하고 있어요" },
+    { icon: "\uD83C\uDFA8", text: "디자인을 구성하고 있어요" },
+    { icon: "\u2728", text: "거의 완성됐어요!" },
+  ];
+
+  useEffect(() => {
+    const t = setInterval(() => setStep(s => (s + 1) % steps.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  const currentStep = steps[step];
+  const progress = ((step + 1) / steps.length) * 100;
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center", maxWidth:420, padding:40 }}>
+        {/* 아이콘 애니메이션 */}
+        <div style={{ fontSize:72, marginBottom:24, animation:"planFloat 2.5s ease-in-out infinite" }} key={step}>
+          <span style={{ display:"inline-block", animation:"planFadeIn 0.5s ease-out" }}>{currentStep.icon}</span>
+        </div>
+
+        {/* 메인 텍스트 */}
+        <div key={"txt"+step} style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:8, animation:"planFadeIn 0.5s ease-out" }}>
+          {currentStep.text}
+        </div>
+        <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginBottom:32, lineHeight:1.6 }}>
+          AI가 {pageCount}장의 카드뉴스를 제작하고 있어요
+        </div>
+
+        {/* 단계 인디케이터 */}
+        <div style={{ display:"flex", flexDirection:"column", gap:12, maxWidth:280, margin:"0 auto 28px", textAlign:"left" }}>
+          {steps.map((s, i) => {
+            const isDone = i < step;
+            const isActive = i === step;
+            return (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, transition:"all 0.3s ease" }}>
+                <div style={{
+                  width:24, height:24, borderRadius:"50%", flexShrink:0,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:12, fontWeight:700,
+                  background: isDone ? "rgba(99,102,241,0.3)" : isActive ? "#7c6aff" : "rgba(255,255,255,0.08)",
+                  color: isDone ? "#a5b4fc" : isActive ? "#fff" : "rgba(255,255,255,0.25)",
+                  border: isActive ? "2px solid #a5b4fc" : "2px solid transparent",
+                  transition: "all 0.3s ease",
+                }}>
+                  {isDone ? "\u2713" : isActive ? (
+                    <div style={{ width:10, height:10, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin 0.8s linear infinite" }} />
+                  ) : (i+1)}
+                </div>
+                <span style={{
+                  fontSize:13, fontWeight: isActive ? 700 : 400,
+                  color: isDone ? "rgba(255,255,255,0.5)" : isActive ? "#fff" : "rgba(255,255,255,0.25)",
+                  transition: "all 0.3s ease",
+                  textDecoration: isDone ? "line-through" : "none",
+                }}>
+                  {s.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 프로그레스 바 */}
+        <div style={{ height:6, borderRadius:4, background:"rgba(255,255,255,0.08)", overflow:"hidden", maxWidth:280, margin:"0 auto" }}>
+          <div style={{
+            height:"100%", borderRadius:4,
+            background:"linear-gradient(90deg, #7c6aff, #8b5cf6, #ec4899)",
+            width: `${progress}%`,
+            transition:"width 0.8s ease-in-out",
+          }} />
+        </div>
+
+        <style>{`
+          @keyframes planFloat { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
+          @keyframes planFadeIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+          @keyframes spin { to { transform:rotate(360deg) } }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
@@ -1118,56 +1298,33 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* WizHeader 제거 */}
         <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
-            <div style={{ fontSize:13, color:muted }}>선택 안 해도 기본 스타일로 생성돼요</div>
+            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 & 크기를 선택하세요</div>
+            <div style={{ fontSize:13, color:muted }}>커뮤니티 템플릿을 사용하거나 기본 스타일로 생성할 수 있어요</div>
           </div>
 
-          {/* 디자인 프리셋 */}
-          <div style={{ marginBottom:28 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:text }}>스타일 선택</div>
-              {selPreset&&<button onClick={()=>setSelPreset(null)} style={{ fontSize:11,color:muted,background:"transparent",border:`1px solid ${bdr}`,borderRadius:6,padding:"4px 10px",cursor:"pointer" }}>선택 해제</button>}
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))", gap:8 }}>
-              {DESIGN_PRESETS.map(dp=>{
-                const isSel=selPreset?.key===dp.key;
-                return (
-                  <button key={dp.key} onClick={()=>setSelPreset(isSel?null:dp)}
-                    style={{ border:`2px solid ${isSel?"#7c6aff":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(99,102,241,0.3)":"0 2px 8px rgba(0,0,0,0.15)" }}>
-                    {/* 시각화된 미리보기 */}
-                    <div style={{ width:"100%", paddingBottom:"130%", position:"relative", background:dp.bgColor }}>
-                      <div style={{ position:"absolute",inset:0,padding:"10px 8px",display:"flex",flexDirection:"column",justifyContent:dp.textValign==="top"?"flex-start":dp.textValign==="bottom"?"flex-end":"center",textAlign:dp.textAlign||"left" }}>
-                        <div style={{ fontSize:8,fontWeight:dp.titleWeight||700,color:dp.textColor,lineHeight:1.3,marginBottom:4 }}>
-                          {topic?.slice(0,8)||"제목 미리보기"}
-                        </div>
-                        <div style={{ fontSize:5,color:dp.textColor,opacity:0.6,lineHeight:1.5 }}>
-                          본문 텍스트가<br/>여기에 표시됩니다
-                        </div>
-                        {dp.hlMode!=="none"&&(
-                          <div style={{ marginTop:4,fontSize:5,fontWeight:700,color:dp.hlMode==="box"?"#fff":dp.textColor,
-                            background:dp.hlMode==="box"?dp.textColor+"40":dp.hlMode==="pill"?dp.textColor+"25":"transparent",
-                            borderBottom:dp.hlMode==="underline"?`1px solid ${dp.textColor}`:"none",
-                            padding:dp.hlMode==="pill"?"1px 4px":dp.hlMode==="box"?"1px 3px":"0",
-                            borderRadius:dp.hlMode==="pill"?8:dp.hlMode==="box"?2:0,display:"inline-block" }}>
-                            강조문구
-                          </div>
-                        )}
-                      </div>
-                      {isSel&&<div style={{ position:"absolute",top:4,right:4,width:16,height:16,borderRadius:"50%",background:"#7c6aff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900 }}>✓</div>}
-                    </div>
-                    <div style={{ padding:"6px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)" }}>
-                      <div style={{ fontSize:10,fontWeight:isSel?800:600,color:isSel?"#a5b4fc":text }}>{dp.label}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {selPreset&&(
-              <div style={{ marginTop:10,padding:"9px 14px",borderRadius:12,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)" }}>
-                <div style={{ fontSize:12,fontWeight:700,color:"#a5b4fc" }}>✓ {selPreset.label} 선택됨</div>
-              </div>
-            )}
-          </div>
+          {/* 커뮤니티 템플릿 */}
+          <CommunityTemplateSection
+            D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg}
+            onApply={(tpl) => {
+              try {
+                const style = {};
+                if (tpl.preset_key) {
+                  const found = DESIGN_PRESETS.find(p => p.key === tpl.preset_key);
+                  if (found) { setSelPreset(found); return; }
+                }
+                // fallback: slides_data에서 스타일 추출
+                if (tpl.slides_data) {
+                  const parsed = typeof tpl.slides_data === "string" ? JSON.parse(tpl.slides_data) : tpl.slides_data;
+                  if (parsed?.[0]) {
+                    const s = parsed[0];
+                    if (s.bgColor) style.bgColor = s.bgColor;
+                    if (s.textColor) style.textColor = s.textColor;
+                  }
+                }
+                setSelPreset({ ...DESIGN_PRESETS[0], ...style, key: "community_" + tpl.id, label: tpl.title });
+              } catch { setSelPreset(null); }
+            }}
+          />
 
           {/* 이미지 크기 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
@@ -1217,31 +1374,10 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
           </div>
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes sc-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}@keyframes sc-progress{from{width:5%}to{width:92%}}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-        {/* 생성 중 전체화면 오버레이 */}
-        {loading && (
-          <div style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-            <div style={{ textAlign:"center",maxWidth:400,padding:40 }}>
-              <div style={{ fontSize:64,marginBottom:20,animation:"sc-float 2.5s ease-in-out infinite" }}>✨🎨</div>
-              <div style={{ fontSize:22,fontWeight:900,color:"#fff",marginBottom:8 }}>카드뉴스 생성 중...</div>
-              <div style={{ fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:28,lineHeight:1.6 }}>
-                AI가 {slides.length || pageCount}장의 슬라이드를 제작하고 있어요<br/>잠시만 기다려주세요
-              </div>
-              <div style={{ display:"flex",flexDirection:"column",gap:10,maxWidth:260,margin:"0 auto 24px",textAlign:"left" }}>
-                {["텍스트 구성 중...","디자인 적용 중...","이미지 렌더링 중...","마무리 작업..."].map((l,i)=>(
-                  <div key={i} style={{ display:"flex",alignItems:"center",gap:10,opacity:0.8 }}>
-                    <div style={{ width:18,height:18,borderRadius:"50%",border:"2px solid #7c6aff",borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0 }}/>
-                    <span style={{ fontSize:13,color:"rgba(255,255,255,0.7)" }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ height:6,borderRadius:4,background:"rgba(255,255,255,0.1)",overflow:"hidden",maxWidth:260,margin:"0 auto" }}>
-                <div style={{ height:"100%",borderRadius:4,background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",animation:"sc-progress 8s ease-out forwards" }}/>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 생성 중 애니메이션 */}
+        {loading && <PlanningAnimation pageCount={slides.length || pageCount} />}
       </div>
     );
   }

@@ -224,7 +224,7 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [hoverPos, setHoverPos] = useState({ x:0, y:0 });
   const [layoutCatOpen, setLayoutCatOpen] = useState(null);
   const [mobilePanel, setMobilePanel] = useState("preview"); // "list" | "preview" | "edit"
-  const [showCanvasEditor, setShowCanvasEditor] = useState(false);
+  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const imgRef = useRef(null);
 
@@ -1461,63 +1461,45 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
     </div>
   );
 
-  // ══ EDIT ══
+  // ══ EDIT ══ (캔버스 편집기가 메인)
   return (
-    <div style={{ flex:1, display:"flex", overflow:"hidden", background:D?"transparent":"#f4f4f8" }}>
-      {/* 왼쪽: 슬라이드 목록 */}
-      <div style={{ width:isMobile?"100%":140, flexShrink:0, borderRight:isMobile?"none":`1px solid ${bdr}`, overflowY:"auto", padding:"10px 6px", background:D?"rgba(0,0,0,0.2)":"rgba(0,0,0,0.02)", display:isMobile && mobilePanel!=="list"?"none":"flex", flexDirection:"column" }}>
-        {slides.map((s,i) => (
-          <div key={i} onClick={()=>setSelIdx(i)}
-            style={{ marginBottom:6, cursor:"pointer", borderRadius:6, border:selIdx===i?`2px solid ${accent}`:`2px solid transparent`,
-              overflow:"hidden", opacity:selIdx===i?1:0.65, transition:"all 0.1s" }}>
-            {renderPreview(s, i, true)}
-            <div style={{ padding:"2px 4px", fontSize:8, fontWeight:selIdx===i?700:400, color:selIdx===i?accent:muted, textAlign:"center",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {i+1}. {s.title?.slice(0,12)||""}
-            </div>
-          </div>
-        ))}
-        <button onClick={()=>{
-          setSlides(p=>[...p,{id:p.length,title:"새 슬라이드",body:"",layout:"title_body",bullets:[],stats:[],note:"",icon:"",image:null}]);
-          setSelIdx(slides.length);
-        }} style={{ width:"100%", padding:"6px", borderRadius:6, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, fontWeight:700, cursor:"pointer" }}>
-          + 추가
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"transparent":"#f4f4f8" }}>
+      {/* 상단 도구바 */}
+      <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:8, flexShrink:0, background:D?"rgba(0,0,0,0.15)":"rgba(249,250,251,0.8)", zIndex:10 }}>
+        <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>← 돌아가기</button>
+        <div style={{ flex:1, fontSize:13, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic}</div>
+        <span style={{ fontSize:11, color:muted }}>{slides.length}장</span>
+        <button onClick={()=>setShowPropertyPanel(!showPropertyPanel)}
+          style={{ padding:"5px 14px", borderRadius:8, border:`1px solid ${showPropertyPanel?accent:bdr}`, background:showPropertyPanel?`${accent}12`:"transparent", color:showPropertyPanel?accent:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+          {showPropertyPanel?"속성 닫기":"속성 편집"}
+        </button>
+        <button onClick={exportPptx} disabled={exporting}
+          style={{ padding:"6px 16px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:11, fontWeight:800, cursor:exporting?"not-allowed":"pointer", opacity:exporting?0.6:1 }}>
+          {exporting?"내보내는 중...":"PPTX 다운로드"}
         </button>
       </div>
 
-      {/* 가운데 */}
-      <div style={{ flex:1, display:isMobile && mobilePanel!=="preview"?"none":"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:8, flexShrink:0, background:D?"rgba(0,0,0,0.15)":"rgba(249,250,251,0.8)" }}>
-          <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:10, cursor:"pointer" }}>← 처음</button>
-          <div style={{ flex:1, fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic}</div>
-          <span style={{ fontSize:10, color:muted }}>{slides.length}장</span>
-          <button onClick={()=>setShowCanvasEditor(true)}
-            style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${accent}`, background:"transparent", color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
-            캔버스 편집기로 열기
-          </button>
-          <button onClick={exportPptx} disabled={exporting}
-            style={{ padding:"6px 16px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:11, fontWeight:800, cursor:exporting?"not-allowed":"pointer", opacity:exporting?0.6:1 }}>
-            {exporting?"내보내는 중...":"PPTX 다운로드"}
-          </button>
+      {/* 메인: 캔버스 편집기 + 선택적 속성 패널 */}
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        {/* 캔버스 편집기 (메인) */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <CardNewsEditor
+            slides={slides.map(slide => ({
+              title: slide.title || "",
+              body: slide.body || slide.subtitle || "",
+              bgColor: slide.customBg || theme.bg || "#ffffff",
+              textColor: slide.customTextColor || theme.text || "#1a1a2e",
+              fontSize: 36,
+              image: slide.image || null,
+            }))}
+            width={1920}
+            height={1080}
+            inline={true}
+          />
         </div>
 
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:20, overflow:"auto" }}>
-          <div style={{ width:"100%", maxWidth:780, boxShadow:D?"0 8px 40px rgba(0,0,0,0.5)":"0 8px 40px rgba(0,0,0,0.1)", borderRadius:10, overflow:"hidden" }}>
-            {renderPreview(cur, selIdx)}
-          </div>
-        </div>
-
-        <div style={{ padding:"8px 14px", borderTop:`1px solid ${bdr}`, display:"flex", alignItems:"center", justifyContent:"center", gap:10, flexShrink:0 }}>
-          <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
-            style={{ padding:"5px 14px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:selIdx===0?muted:text, fontSize:11, cursor:selIdx===0?"not-allowed":"pointer" }}>이전</button>
-          <span style={{ fontSize:12, fontWeight:700, color:text }}>{selIdx+1} / {slides.length}</span>
-          <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx>=slides.length-1}
-            style={{ padding:"5px 14px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:selIdx>=slides.length-1?muted:text, fontSize:11, cursor:selIdx>=slides.length-1?"not-allowed":"pointer" }}>다음</button>
-        </div>
-      </div>
-
-      {/* 오른쪽: 편집 */}
-      <div style={{ width:isMobile?"100%":270, flexShrink:0, borderLeft:isMobile?"none":`1px solid ${bdr}`, display:isMobile && mobilePanel!=="edit"?"none":"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.01)" }}>
+        {/* 오른쪽: 속성 편집 패널 (토글) */}
+        {showPropertyPanel && <div style={{ width:isMobile?"100%":280, flexShrink:0, borderLeft:`1px solid ${bdr}`, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.01)" }}>
         {/* 탭 */}
         <div style={{ display:"flex", borderBottom:`1px solid ${bdr}`, flexShrink:0 }}>
           {[["content","내용"],["style","스타일"],["media","미디어"]].map(([id,label])=>(
@@ -1866,37 +1848,10 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
             </div>
           </>}
         </div>
-      </div>
+      </div>}
+      </div>{/* 메인 flex 닫기 */}
 
       {err && <div style={{ position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", padding:"10px 20px", borderRadius:10, background:"rgba(239,68,68,0.9)", color:"#fff", fontSize:13, zIndex:9999 }}>{err}</div>}
-      {isMobile && (
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)", background:"rgba(15,12,41,0.98)", zIndex:100 }}>
-          {[["list","목록"],["preview","미리보기"],["edit","편집"]].map(([id,label])=>(
-            <button key={id} onClick={()=>setMobilePanel(id)} style={{ flex:1, padding:"12px 0", border:"none", background:mobilePanel===id?"rgba(124,106,255,0.15)":"transparent", color:mobilePanel===id?"#7c6aff":"rgba(255,255,255,0.45)", fontSize:12, fontWeight:mobilePanel===id?700:400, cursor:"pointer" }}>{label}</button>
-          ))}
-        </div>
-      )}
-
-      {/* 캔버스 편집기 모달 */}
-      {showCanvasEditor && (
-        <div style={{ position:"fixed", inset:0, zIndex:10000, background:D?"rgba(0,0,0,0.92)":"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ width:"95vw", height:"95vh", borderRadius:16, overflow:"hidden", background:D?"#1a1a2e":"#fff", display:"flex", flexDirection:"column" }}>
-            <CardNewsEditor
-              slides={slides.map(slide => ({
-                title: slide.title || "",
-                body: slide.body || slide.subtitle || "",
-                bgColor: slide.customBg || theme.bg || "#ffffff",
-                textColor: slide.customTextColor || theme.text || "#1a1a2e",
-                fontSize: 36,
-                image: slide.image || null,
-              }))}
-              width={1920}
-              height={1080}
-              onClose={() => setShowCanvasEditor(false)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

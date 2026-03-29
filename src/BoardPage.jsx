@@ -11,6 +11,7 @@ const DEFAULT_CATS = [
   { id: "free",    label: "자유게시판", icon: "", color: "#10b981" },
   { id: "review",  label: "사용후기",   icon: "", color: "#ec4899" },
   { id: "archive", label: "자료실",     icon: "", color: "#3b82f6" },
+  { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];
 
 const isVideoUrl = url => /\.(mp4|mov|avi|mkv|webm|m4v)/i.test(url);

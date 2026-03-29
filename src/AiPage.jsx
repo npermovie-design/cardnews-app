@@ -1577,6 +1577,96 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   const [hoveredIdx, setHoveredIdx] = useState(-1);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  /* ── 오늘의 SNS 브리핑 상태 ── */
+  const [briefing, setBriefing] = useState(null);
+  const [briefingLoading, setBriefingLoading] = useState(true);
+  const [briefingHistory, setBriefingHistory] = useState([]);
+  const [expandedHistory, setExpandedHistory] = useState(null);
+
+  const getTodayKey = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  /* 브리핑 히스토리 로드 */
+  const loadBriefingHistory = () => {
+    const items = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("nper_sns_briefing_")) {
+        const dateStr = key.replace("nper_sns_briefing_", "");
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          items.push({ date: dateStr, ...data });
+        } catch {}
+      }
+    }
+    items.sort((a, b) => b.date.localeCompare(a.date));
+    setBriefingHistory(items);
+  };
+
+  /* 브리핑 생성/로드 */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const todayKey = getTodayKey();
+      const cacheKey = `nper_sns_briefing_${todayKey}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          if (!cancelled) { setBriefing(data); setBriefingLoading(false); }
+          loadBriefingHistory();
+          return;
+        } catch {}
+      }
+      // AI로 브리핑 생성
+      setBriefingLoading(true);
+      try {
+        const { callAI } = await import("./aiClient");
+        const todayLabel = todayKey.replace(/-/g, ".");
+        const result = await callAI("claude-haiku-4-5", [
+          { role: "user", content: `오늘 날짜(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 5~7개 항목으로 간결하게 요약해줘.
+각 항목은 "• " 으로 시작하고 한 줄로 작성해줘.
+제목: ${todayLabel} 엔퍼SNS브리핑
+마지막에 한 줄 요약 코멘트를 추가해줘.` }
+        ], 1500);
+        const content = typeof result === "string" ? result : (result?.content || result?.text || "");
+        if (!cancelled && content) {
+          const data = { title: `${todayLabel} 엔퍼SNS브리핑`, content, date: todayKey };
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          setBriefing(data);
+          // Supabase posts 테이블에도 자동 게시 시도
+          try {
+            const { supabase } = await import("./storage");
+            if (supabase) {
+              await supabase.from("posts").insert({
+                id: `briefing_${todayKey}`,
+                title: `📰 ${todayLabel} 엔퍼SNS브리핑`,
+                content: content,
+                author: "엔퍼 AI",
+                author_uid: "system_ai",
+                cat: "sns_briefing",
+                tag: "",
+                subCat: "sns_briefing",
+                views: 0, likes: 0,
+                created_at: new Date().toISOString(),
+                images: [], comments: [],
+              });
+            }
+          } catch (e) { console.log("브리핑 DB 저장 실패(이미 존재할 수 있음):", e); }
+        }
+      } catch (e) {
+        console.error("브리핑 생성 실패:", e);
+      }
+      if (!cancelled) { setBriefingLoading(false); loadBriefingHistory(); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const currentNews = newsCache[activeTab] || [];
 
   const loadNews = async (tab, forceRefresh = false) => {
@@ -1641,6 +1731,87 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 28px 60px", background: isDark ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth:800, margin:"0 auto" }}>
+
+        {/* ══ 오늘의 SNS 브리핑 카드 ══ */}
+        <div style={{
+          marginBottom: 24, borderRadius: 16, overflow: "hidden",
+          background: isDark
+            ? "linear-gradient(135deg, rgba(124,106,255,0.18) 0%, rgba(99,102,241,0.12) 100%)"
+            : "linear-gradient(135deg, #7c6aff 0%, #6366f1 40%, #818cf8 100%)",
+          border: isDark ? "1px solid rgba(124,106,255,0.25)" : "none",
+          boxShadow: isDark ? "none" : "0 4px 24px rgba(124,106,255,0.18)",
+        }}>
+          <div style={{ padding: "22px 24px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: 20 }}>📰</span>
+              <span style={{ fontSize: 17, fontWeight: 900, color: isDark ? "#c4b5fd" : "#fff", letterSpacing: -0.3 }}>
+                {briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} 엔퍼SNS브리핑`}
+              </span>
+            </div>
+            {briefingLoading ? (
+              <div style={{ color: isDark ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.85)", fontSize: 14, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                브리핑 작성 중...
+              </div>
+            ) : briefing ? (
+              <div style={{
+                fontSize: 13.5, lineHeight: 1.75, color: isDark ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.93)",
+                whiteSpace: "pre-wrap", wordBreak: "break-word",
+              }}>
+                {briefing.content}
+              </div>
+            ) : (
+              <div style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.7)", fontSize: 13 }}>
+                브리핑을 불러올 수 없습니다.
+              </div>
+            )}
+            <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
+              <a href="/board" onClick={(e) => { e.preventDefault(); /* 커뮤니티 SNS브리핑 게시판으로 이동은 라우터에 따라 조정 */ }}
+                style={{ fontSize: 12.5, fontWeight: 700, color: isDark ? "#a5b4fc" : "rgba(255,255,255,0.9)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                전체 보기 <span style={{ fontSize: 14 }}>→</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 지난 브리핑 히스토리 ── */}
+        {briefingHistory.length > 1 && (
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: muted, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 14 }}>📋</span> 지난 브리핑
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {briefingHistory.filter(h => h.date !== getTodayKey()).slice(0, 7).map(h => (
+                <div key={h.date}
+                  onClick={() => setExpandedHistory(expandedHistory === h.date ? null : h.date)}
+                  style={{
+                    padding: "12px 16px", borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
+                    background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+                    border: `1px solid ${expandedHistory === h.date ? accent : bdr}`,
+                    boxShadow: expandedHistory === h.date ? `0 0 0 1px ${accent}` : "none",
+                  }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>{h.date.replace(/-/g, ".")}</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: text, marginLeft: 8 }}>{h.title}</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: muted, transform: expandedHistory === h.date ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+                  </div>
+                  {expandedHistory !== h.date && (
+                    <div style={{ fontSize: 12, color: muted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {(h.content || "").slice(0, 80)}...
+                    </div>
+                  )}
+                  {expandedHistory === h.date && (
+                    <div style={{ fontSize: 13, lineHeight: 1.7, color: text, marginTop: 10, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                      {h.content}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── 헤더: 탭 + 새로고침 ── */}
         <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", borderBottom:`2px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom:20 }}>
