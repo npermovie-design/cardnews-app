@@ -13,6 +13,7 @@ import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import ThumbnailGenerator from "./ThumbnailGenerator";
 import SeoAnalyzer from "./SeoAnalyzer";
+import AnalyzerPage from "./AnalyzerPage";
 import ViralityAnalyzer from "./ViralityAnalyzer";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
