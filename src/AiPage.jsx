@@ -133,7 +133,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="library" label={t("library")} icon="/icons3d/search-book.png" />
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="marketing" label="마케팅" icon="/icons3d/analytics.png" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
         <Item id="prompt_studio" label="비즈니스 문서" icon="/icons3d/report.png" />
         <Item id="blog_write" label="글쓰기" icon="/icons3d/blog-write.png" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"]} />
         <Item id="content_create" label="콘텐츠 제작" icon="/icons3d/palette.png" ids={["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"]} badge="추천" badgeColor="orange" />
@@ -2063,9 +2062,9 @@ function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderT
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       {/* 헤더 + 탭 - 한 줄 컴팩트 */}
       <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1.5px solid ${bdr}` }}>
-        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 20px", display:"flex", alignItems:"center", gap:16, height:48 }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"center", gap:16, height:48 }}>
           <div style={{ fontSize:15, fontWeight:900, color:text, whiteSpace:"nowrap", flexShrink:0 }}>{title}</div>
-          <div style={{ display:"flex", gap:0, flex:1, overflow:"auto" }}>
+          <div style={{ display:"flex", gap:0, overflow:"auto" }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 style={{

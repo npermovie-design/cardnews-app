@@ -1307,22 +1307,29 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg}
             onApply={(tpl) => {
               try {
-                const style = {};
-                if (tpl.preset_key) {
-                  const found = DESIGN_PRESETS.find(p => p.key === tpl.preset_key);
-                  if (found) { setSelPreset(found); return; }
-                }
-                // fallback: slides_data에서 스타일 추출
+                // 1) 슬라이드 텍스트 적용
                 if (tpl.slides_data) {
                   const parsed = typeof tpl.slides_data === "string" ? JSON.parse(tpl.slides_data) : tpl.slides_data;
-                  if (parsed?.[0]) {
-                    const s = parsed[0];
-                    if (s.bgColor) style.bgColor = s.bgColor;
-                    if (s.textColor) style.textColor = s.textColor;
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    const newSlides = parsed.map((s, i) => ({
+                      title: s.title || "",
+                      subtitle: s.subtitle || "",
+                      body: s.body || "",
+                      highlight: s.highlight || "",
+                    }));
+                    setSlides(newSlides);
+                    setPageCount(newSlides.length);
+                    if (tpl.title) setTopic(tpl.title);
                   }
                 }
-                setSelPreset({ ...DESIGN_PRESETS[0], ...style, key: "community_" + tpl.id, label: tpl.title });
-              } catch { setSelPreset(null); }
+                // 2) 디자인 프리셋 적용
+                if (tpl.preset_key) {
+                  const found = DESIGN_PRESETS.find(p => p.key === tpl.preset_key);
+                  if (found) setSelPreset(found);
+                }
+                // 3) Step 4 (에디터)로 이동
+                setWizStep(4);
+              } catch (e) { console.warn("템플릿 적용 실패:", e); }
             }}
           />
 
