@@ -1333,6 +1333,25 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             }}
           />
 
+          {/* 디자인 프리셋 */}
+          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>디자인 스타일</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
+              {DESIGN_PRESETS.map((p) => {
+                const sel = selPreset?.key === p.key;
+                return (
+                  <button key={p.key} onClick={() => setSelPreset(p)}
+                    style={{ padding:0, borderRadius:10, border: sel ? "2px solid #7c6aff" : `1.5px solid ${bdr}`, cursor:"pointer", overflow:"hidden", background:"transparent", transition:"all 0.15s" }}>
+                    <div style={{ width:"100%", height:48, background:p.bgColor, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ color:p.textColor, fontSize:11, fontWeight:800, letterSpacing:-0.3 }}>Aa</span>
+                    </div>
+                    <div style={{ padding:"4px 6px", fontSize:10, fontWeight: sel ? 800 : 500, color: sel ? "#7c6aff" : muted, textAlign:"center", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* 이미지 크기 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
