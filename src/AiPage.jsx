@@ -131,21 +131,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
         <Item id="home" label={t("home")} icon="/icons3d/sns-heart.png" />
         <Item id="library" label={t("library")} icon="/icons3d/search-book.png" />
-        <button onClick={() => navigate && navigate("snsnews")} style={{
-          width: "100%", padding: "11px 12px",
-          borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
-          background: "transparent", color: itemText,
-          fontSize: 13, fontWeight: 500,
-          borderLeft: "3px solid transparent",
-          display: "flex", alignItems: "center", gap: 7, marginBottom: 2,
-          minHeight: 40, transition: "background 0.12s",
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.05)"}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-          <img src="/icons3d/news.png" alt="" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} />
-          <span style={{ flex: 1 }}>SNS 뉴스</span>
-          <span style={{ fontSize: 9, color: "#888" }}>↗</span>
-        </button>
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <Item id="marketing" label="마케팅" icon="/icons3d/analytics.png" ids={["sns_analysis","analysis_insta","analysis_tiktok","analysis_youtube"]} />
