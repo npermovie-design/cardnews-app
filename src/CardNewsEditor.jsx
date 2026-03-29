@@ -1712,14 +1712,40 @@ export default function CardNewsEditor({
 
         {/* ── RIGHT: Properties Panel ────────────────────────────────── */}
         <div style={{ ...S.panel, width: panelW }}>
-          {/* 요소 추가 버튼 (Toolbar에서 이동) */}
+          {/* 요소 추가 + 도구 */}
           <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexWrap: "wrap", gap: 6 }}>
             <Btn small onClick={addText}>+ 텍스트</Btn>
             <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
             <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">검색</Btn>
             <Btn small onClick={() => addShape("rect")}>▬</Btn>
             <Btn small onClick={() => addShape("circle")}>●</Btn>
+            <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.08)", margin: "0 2px", alignSelf: "center" }} />
+            <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} accent="#7c6aff">레이아웃</Btn>
+            <Btn small onClick={() => bgFileInputRef.current?.click()} accent="#10b981">배경</Btn>
+            <Btn small onClick={undo} disabled={historyIdx <= 0}><Icon.Undo /></Btn>
           </div>
+          {showLayoutPicker && (
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+              {LAYOUT_OPTIONS.map(lo => (
+                <button key={lo.key} onClick={() => { changeLayout(lo.key); setShowLayoutPicker(false); }} style={{ padding: "8px 4px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.08)", background: "#fff", cursor: "pointer", textAlign: "center" }}>
+                  <span style={{ fontSize: 16, display: "block" }}>{lo.icon}</span>
+                  <span style={{ fontSize: 9, color: "#888" }}>{lo.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {/* 선택된 오브젝트 액션 */}
+          {selectedObj && (
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: "#888", flex: 1 }}>선택됨: {selProps.type === "textbox" ? "텍스트" : selProps.type === "image" ? "이미지" : "도형"}</span>
+              {isTextSelected && <>
+                <Btn small onClick={() => alignTextHorizontal("left")} style={{ padding: "4px 6px" }}><Icon.AlignLeft /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("center")} style={{ padding: "4px 6px" }}><Icon.AlignCenter /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("right")} style={{ padding: "4px 6px" }}><Icon.AlignRight /></Btn>
+              </>}
+              <Btn small onClick={deleteSelected} style={{ color: "#e53e3e", marginLeft: "auto" }}><Icon.Trash /> 삭제</Btn>
+            </div>
+          )}
           <div style={S.panelTitle}>속성</div>
 
           {/* === Text props === */}
