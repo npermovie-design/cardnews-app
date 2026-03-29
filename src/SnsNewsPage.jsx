@@ -407,6 +407,32 @@ export default function SnsNewsPage({ C, user, navigate }) {
             <button onClick={() => handleDeleteArticle(a.id)} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>삭제</button>
           </div>}
           <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${bdr}`, padding: "clamp(20px,4vw,36px)" }}>{renderBriefing(a.content)}</div>
+          {/* 복사 + 공유 */}
+          <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+            <button onClick={() => { navigator.clipboard.writeText(a.title + "\n\n" + a.content); alert("복사되었습니다!"); }}
+              style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#fff", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
+              본문 복사
+            </button>
+            <button onClick={() => { const url = window.location.origin + "/snsnews"; navigator.clipboard.writeText(a.title + "\n\n" + a.content + "\n\n" + url); alert("링크 포함 복사되었습니다!"); }}
+              style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
+              링크 포함 복사
+            </button>
+          </div>
+          {/* 원문 기사 링크 */}
+          <div style={{ marginTop: 24, padding: "16px 20px", borderRadius: 12, background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.1)` }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 10 }}>원문 기사 링크</div>
+            <div style={{ fontSize: 12, color: muted, lineHeight: 1.8 }}>
+              이 브리핑은 AI가 수집한 최신 뉴스를 기반으로 작성되었습니다. 아래에서 관련 뉴스를 직접 확인하세요.
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              {["SNS 마케팅", "디지털 마케팅", "AI 마케팅"].map(q => (
+                <a key={q} href={`https://news.google.com/search?q=${encodeURIComponent(q)}&hl=ko`} target="_blank" rel="noopener noreferrer"
+                  style={{ padding: "8px 16px", borderRadius: 8, background: "#fff", border: `1px solid ${bdr}`, color: accent, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+                  {q} 뉴스 →
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
         <div style={{ maxWidth: 760, margin: "40px auto 0" }}><Footer C={c} /></div>
       </div>
@@ -471,6 +497,18 @@ export default function SnsNewsPage({ C, user, navigate }) {
                     })}
                   </div>
                 ) : <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>브리핑을 불러올 수 없습니다.</div>}
+                {briefing && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                    <button onClick={() => { navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content); alert("브리핑이 복사되었습니다!"); }}
+                      style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      본문 복사
+                    </button>
+                    <a href={`https://news.google.com/search?q=${encodeURIComponent("SNS 마케팅")}&hl=ko`} target="_blank" rel="noopener noreferrer"
+                      style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+                      원문 뉴스 확인 →
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
