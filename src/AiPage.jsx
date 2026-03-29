@@ -2061,21 +2061,18 @@ function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderT
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      {/* 헤더 + 탭 */}
-      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
-          <div style={{ textAlign:"center", marginBottom:12 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{title}</div>
-            <div style={{ fontSize:12, color:muted }}>{subtitle}</div>
-          </div>
-          <div style={{ display:"flex", gap:0, borderBottom:`1.5px solid ${bdr}` }}>
+      {/* 헤더 + 탭 - 한 줄 컴팩트 */}
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1.5px solid ${bdr}` }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 20px", display:"flex", alignItems:"center", gap:16, height:48 }}>
+          <div style={{ fontSize:15, fontWeight:900, color:text, whiteSpace:"nowrap", flexShrink:0 }}>{title}</div>
+          <div style={{ display:"flex", gap:0, flex:1, overflow:"auto" }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 style={{
-                  flex:1, padding:"12px 20px", border:"none", cursor:"pointer", fontSize:15, fontWeight:activeTab===t.id?800:500,
+                  padding:"12px 18px", border:"none", cursor:"pointer", fontSize:14, fontWeight:activeTab===t.id?800:500,
                   color:activeTab===t.id?accent:muted, background:"transparent",
                   borderBottom:activeTab===t.id?`2.5px solid ${accent}`:"2.5px solid transparent",
-                  transition:"all 0.15s", marginBottom:-1.5,
+                  transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0,
                 }}>
                 {t.label}
               </button>

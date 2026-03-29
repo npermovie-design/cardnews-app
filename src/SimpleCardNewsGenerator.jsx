@@ -1073,7 +1073,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:800, margin:"0 auto", padding:"16px 28px 80px", width:"100%", boxSizing:"border-box" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", padding:"16px 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>주제를 입력하세요</div>
             <div style={{ fontSize:13, color:muted }}>주제를 입력하면 AI가 카드뉴스 슬라이드를 자동 구성해줘요</div>
@@ -1222,7 +1222,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.</div>
@@ -1296,7 +1296,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:800, margin:"0 auto", padding:"0 28px 80px", width:"100%", boxSizing:"border-box" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 & 크기를 선택하세요</div>
             <div style={{ fontSize:13, color:muted }}>커뮤니티 템플릿을 사용하거나 기본 스타일로 생성할 수 있어요</div>
