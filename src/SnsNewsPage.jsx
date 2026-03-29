@@ -261,25 +261,18 @@ export default function SnsNewsPage({ C, user, navigate }) {
       try {
         const { callAI } = await import("./aiClient");
         const result = await callAI("claude-haiku-4-5", [
-          { role: "user", content: `[${todayLabel} 마케팅 뉴스클리핑] 오늘 기준 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
+          { role: "user", content: `[${todayLabel} 마케팅 뉴스클리핑] 전날~오늘 최근 24시간 내 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
 
-형식 (반드시 이 형식을 따라):
+형식:
 ## 1. [구체적인 뉴스 제목]
-[상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함. 실제 뉴스처럼 객관적으로 작성]
+[상세 내용 3~5문장. 최근 24시간 내 실제 뉴스 기반으로 작성]
 📎 출처: [언론사/플랫폼명] | 관련: #키워드1 #키워드2
 
-## 2. [뉴스 제목]
-...
-
 규칙:
-- 총 7개 항목
-- 각 항목은 ## 번호. 제목 형식
-- 내용은 3~5문장으로 구체적으로
-- 📎 출처와 관련 키워드 필수
-- 이모지 사용 금지 (📎만 허용)
-- 마크다운 볼드(**) 사용 금지
-- 카테고리: 플랫폼 업데이트, 알고리즘 변경, 마케팅 트렌드, AI/테크, 이커머스, 크리에이터 경제 등 다양하게
-- 한국 시장 뉴스 4개 + 글로벌 뉴스 3개 비율` }
+- 총 7개 (한국 4개 + 글로벌 3개)
+- 📎 출처와 키워드 필수
+- 이모지 금지(📎만), 볼드(**) 금지
+- 최근 24시간 내 발생한 뉴스 위주` }
         ], 2500);
         const content = typeof result === "string" ? result : (result?.content || result?.text || "");
         if (!cancelled && content) {
@@ -409,11 +402,11 @@ export default function SnsNewsPage({ C, user, navigate }) {
           <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${bdr}`, padding: "clamp(20px,4vw,36px)" }}>{renderBriefing(a.content)}</div>
           {/* 복사 + 공유 */}
           <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
-            <button onClick={() => { navigator.clipboard.writeText(a.title + "\n\n" + a.content); alert("복사되었습니다!"); }}
+            <button onClick={() => { const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean); alert("복사되었습니다!"); }}
               style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#fff", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
               본문 복사
             </button>
-            <button onClick={() => { const url = window.location.origin + "/snsnews"; navigator.clipboard.writeText(a.title + "\n\n" + a.content + "\n\n" + url); alert("링크 포함 복사되었습니다!"); }}
+            <button onClick={() => { const url = window.location.origin + "/snsnews"; const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean + "\n\n" + url); alert("링크 포함 복사되었습니다!"); }}
               style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
               링크 포함 복사
             </button>
@@ -509,7 +502,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 ) : <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>브리핑을 불러올 수 없습니다.</div>}
                 {briefing && (
                   <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                    <button onClick={() => { navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content); alert("브리핑이 복사되었습니다!"); }}
+                    <button onClick={() => { navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("브리핑이 복사되었습니다!"); }}
                       style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       본문 복사
                     </button>

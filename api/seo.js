@@ -214,14 +214,15 @@ async function handleCronBriefing(req, res) {
   const { data: existing } = await supabase.from("sns_news").select("id").eq("id", briefingId).single();
   if (existing) return res.status(200).json({ message: "이미 존재", date: todayKey });
 
-  const prompt = `[${todayLabel} 마케팅 뉴스클리핑] 오늘 기준 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
+  const yesterday = new Date(Date.now() + 9 * 60 * 60 * 1000 - 86400000).toISOString().slice(0, 10).replace(/-/g, ".");
+  const prompt = `[${todayLabel} 마케팅 뉴스클리핑] ${yesterday}~${todayLabel} 최근 24시간 내 SNS/디지털 마케팅 관련 주요 뉴스 7개를 뉴스클리핑 형태로 작성해줘.
 
 형식:
 ## 1. [구체적인 뉴스 제목]
-[상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함]
+[상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함. 전날~오늘 사이 발생한 실제 뉴스 기반]
 📎 출처: [언론사/플랫폼명] | 관련: #키워드1 #키워드2
 
-총 7개. 한국 뉴스 4개 + 글로벌 3개. 이모지 금지(📎만 허용). 볼드(**) 금지.`;
+총 7개. 한국 뉴스 4개 + 글로벌 3개. 이모지 금지(📎만 허용). 볼드(**) 금지. 최근 24시간 내 뉴스 위주로.`;
 
   try {
     const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
