@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
-import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator } from "./AiImageGenerators.jsx";
+import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator, TabbedGroup } from "./AiImageGenerators.jsx";
 import { TabHeader, DmInputField, InstaAutoReply, InstaAutoDM } from "./AiInstagram.jsx";
 import { LibraryPage } from "./AiLibrary.jsx";
 import { PromptStudioPage, SnsNewsFeed } from "./AiPromptStudio.jsx";

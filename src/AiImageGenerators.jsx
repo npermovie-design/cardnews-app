@@ -1077,4 +1077,4 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
   );
 }
 
-export { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator };
+export { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator, TabbedGroup };
