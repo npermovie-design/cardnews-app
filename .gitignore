@@ -28,6 +28,13 @@ release/
 .vercel
 .env*.local
 .env.vercel
+image/blog/
+image/sns/
+image/리포트문서/
+image/메모지/
+image/카메라/
+image/시계/
+image/팔레트/
 shorts-factory/venv/
 shorts-factory/uploads/
 shorts-factory/outputs/
