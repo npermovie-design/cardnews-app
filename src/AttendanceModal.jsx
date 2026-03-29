@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { changePoints } from "./storage";
 
 /* ── 출석체크 포인트 구조 ──────────────────────────────
@@ -71,8 +71,10 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
   const firstDay = new Date(year, month, 1).getDay(); // 0=일
   const todayNum = now.getDate();
 
+  const checkingRef = useRef(false);
   const doCheckIn = async () => {
-    if (checkedToday || checking || !user?.uid) return;
+    if (checkedToday || checking || checkingRef.current || !user?.uid) return;
+    checkingRef.current = true;
     setChecking(true);
     const todayStr = today();
     const newDates = [...(data.dates || []), todayStr];
@@ -119,6 +121,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
       setResult({ pts: totalPts, bonuses });
     } catch {}
     setChecking(false);
+    checkingRef.current = false;
   };
 
   if (!data) return null;

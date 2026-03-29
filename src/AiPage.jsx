@@ -3587,10 +3587,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12 }}>
                 {group.items.map(m => (
-                  <div key={m.id} onClick={() => setAiMenu(m.id)} style={{
+                  <div key={m.id} onClick={() => setAiMenu(m.id)} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && setAiMenu(m.id)} style={{
                     padding: "18px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`,
                     background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
                     cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14,
+                    minHeight: 48,
                   }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = isDark ? "0 6px 20px rgba(0,0,0,0.3)" : "0 6px 20px rgba(0,0,0,0.05)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>

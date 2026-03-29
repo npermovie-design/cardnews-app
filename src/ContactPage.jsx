@@ -11,10 +11,13 @@ export function ContactPage({ C }) {
   const [submitting, setSubmitting] = useState(false);
   const f = k => e => setForm(p2 => ({ ...p2, [k]: e.target.value }));
 
-  const fs = { background: C.inputBg, border: "1px solid " + C.inputBorder, borderRadius: 10, padding: "10px 14px", color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" };
+  const fs = { background: C.inputBg, border: "1px solid " + C.inputBorder, borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box", minHeight: 44 };
+  const [err, setErr] = useState("");
 
   const submit = async () => {
-    if (!form.name || !form.email || !form.msg) { alert(p("contactRequired")); return; }
+    setErr("");
+    if (!form.name || !form.email || !form.msg) { setErr("이름, 이메일, 문의 내용을 모두 입력해주세요."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setErr("올바른 이메일 주소를 입력해주세요."); return; }
     setSubmitting(true);
     try {
       await supabase.from("inquiries").insert({
@@ -65,8 +68,9 @@ export function ContactPage({ C }) {
               <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700 }}>{p("contactMsg")}</div>
               <textarea placeholder={p("contactMsgPh")} rows={5} value={form.msg} style={{ ...fs, resize: "vertical" }} onChange={f("msg")} />
             </div>
+            {err && <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444", fontSize: 13 }}>{err}</div>}
             <button onClick={submit} disabled={submitting}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1 }}>
+              style={{ padding: "14px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1, minHeight: 44 }}>
               {submitting ? "전송 중..." : p("contactSubmit")}
             </button>
           </div>
