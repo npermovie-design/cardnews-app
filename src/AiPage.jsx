@@ -29,8 +29,9 @@ const ShortsCreator = lazy(() => import("./ShortsCreator"));
 const SnsConnectionManager = lazy(() => import("./SnsConnectionManager"));
 
 const LazyFallback = () => (
-  <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
-    <div style={{ width:28, height:28, border:"3px solid rgba(124,106,255,0.15)", borderTopColor:"#7c6aff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>
+  <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+    <div style={{ width:32, height:32, border:"3px solid rgba(124,106,255,0.12)", borderTopColor:"#7c6aff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>
+    <div style={{ fontSize:12, color:"rgba(26,23,48,0.35)", fontWeight:600 }}>도구를 불러오는 중...</div>
   </div>
 );
 
