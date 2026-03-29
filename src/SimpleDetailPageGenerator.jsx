@@ -471,7 +471,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         <WizHeader/>
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px" }}>
           <div style={{ marginBottom:28 }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>상품 정보를 입력하세요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>상품 정보를 입력하세요</div>
             <div style={{ fontSize:13, color:muted }}>입력한 내용을 바탕으로 AI가 상세페이지 슬라이드를 구성해요</div>
           </div>
 
@@ -591,7 +591,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         <WizHeader/>
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px" }}>
           <div style={{ marginBottom:20 }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>슬라이드 내용을 기획하세요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>슬라이드 내용을 기획하세요</div>
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.</div>
           </div>
           {urlResult && (
@@ -665,7 +665,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         <WizHeader/>
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px" }}>
           <div style={{ marginBottom:28 }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4 }}>디자인 스타일을 선택하세요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>디자인 스타일을 선택하세요</div>
             <div style={{ fontSize:13, color:muted }}>선택 안 해도 기본 스타일로 생성돼요</div>
           </div>
 

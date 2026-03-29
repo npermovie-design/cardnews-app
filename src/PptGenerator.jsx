@@ -1338,7 +1338,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
     <div style={{ flex:1, overflowY:"auto", padding:"20px 24px 40px", background:D?"transparent":"#f4f4f8" }}>
       <div style={{ maxWidth:960, margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>PPT 제작</div>
+          <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>PPT 제작</div>
           <div style={{ fontSize:14, color:muted }}>주제와 요구사항을 입력하면 AI가 슬라이드를 기획합니다.</div>
         </div>
 
