@@ -91,7 +91,19 @@ const TEMPLATES = [
   { name: "유튜브 썸네일", category: "소셜미디어", bgColor: "#ff0000", textColor: "#ffffff", accentColor: "#fbbf24", fontFamily: "BMDOHYEON", layout: "stripe" },
 ];
 
-const TEMPLATE_CATEGORIES = ["전체", "솔리드", "실사", "카드뉴스", "프레젠테이션", "상세페이지", "소셜미디어"];
+const LAYOUT_OPTIONS = [
+  { key: "center", label: "중앙", icon: "⊞" },
+  { key: "bottom-card", label: "하단카드", icon: "▄" },
+  { key: "split-left", label: "좌분할", icon: "◧" },
+  { key: "split-right", label: "우분할", icon: "◨" },
+  { key: "corner-accent", label: "코너", icon: "◜" },
+  { key: "top-bold", label: "상단강조", icon: "▀" },
+  { key: "left-bar", label: "좌측바", icon: "▌" },
+  { key: "minimal", label: "미니멀", icon: "─" },
+  { key: "quote", label: "인용", icon: "❝" },
+  { key: "magazine", label: "매거진", icon: "▊" },
+  { key: "stripe", label: "스트라이프", icon: "≡" },
+];
 
 const DEFAULT_THEME = {
   purple: "#7c6aff",
@@ -219,7 +231,7 @@ export default function CardNewsEditor({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [customFonts, setCustomFonts] = useState([]);
   const [canvasObjects, setCanvasObjects] = useState([]);
-  const [templateCat, setTemplateCat] = useState("전체");
+  const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [showSharedTemplateModal, setShowSharedTemplateModal] = useState(false);
   const [sharedTemplates, setSharedTemplates] = useState([]);
   const [sharedTemplatesLoading, setSharedTemplatesLoading] = useState(false);
@@ -479,6 +491,13 @@ export default function CardNewsEditor({
         body: { left: width * 0.2, top: height * 0.58, originX: "center", originY: "top", textAlign: "center", width: width * 0.32, fontSize: Math.round(fs * 0.42), fill: "rgba(255,255,255,0.85)", lineHeight: 1.6 },
         decos: [
           { type: "rect", props: { left: 0, top: 0, width: width * 0.4, height: height, fill: ac, selectable: false, evented: false, name: "deco_splitpanel" } },
+        ],
+      },
+      "split-right": {
+        title: { left: width * 0.8, top: height * 0.35, originX: "center", originY: "center", textAlign: "center", width: width * 0.32, fontSize: Math.round(fs * 1.0), fontWeight: "bold", fill: "#ffffff", lineHeight: 1.3 },
+        body: { left: width * 0.8, top: height * 0.58, originX: "center", originY: "top", textAlign: "center", width: width * 0.32, fontSize: Math.round(fs * 0.42), fill: "rgba(255,255,255,0.85)", lineHeight: 1.6 },
+        decos: [
+          { type: "rect", props: { left: width * 0.6, top: 0, width: width * 0.4, height: height, fill: ac, selectable: false, evented: false, name: "deco_splitpanel" } },
         ],
       },
       "stripe": {
@@ -1120,6 +1139,53 @@ export default function CardNewsEditor({
     setShowSharedTemplateModal(false);
   }
 
+  /* ── change layout of current slide ──────────────────────────────────── */
+  function changeLayout(layoutKey) {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    const bgColor = fc.backgroundColor || "#ffffff";
+    // Try to detect accent/text colors from existing title
+    const titleObj = fc.getObjects().find(o => o.name === "title");
+    const textColor = titleObj ? (typeof titleObj.fill === "string" ? titleObj.fill : "#ffffff") : "#ffffff";
+    const accentColor = "#7c6aff";
+    applyLayoutToCanvas(fc, layoutKey, 56, textColor, accentColor, bgColor);
+    setShowLayoutPicker(false);
+    pushHistory();
+  }
+
+  /* ── text position helpers ─────────────────────────────────────────── */
+  function alignTextHorizontal(align) {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (!obj || (obj.type !== "textbox" && obj.type !== "text")) return;
+    const pad = 80;
+    if (align === "left") {
+      obj.set({ left: pad, originX: "left" });
+    } else if (align === "center") {
+      obj.set({ left: width / 2, originX: "center" });
+    } else if (align === "right") {
+      obj.set({ left: width - pad, originX: "right" });
+    }
+    fc.renderAll();
+    pushHistory();
+  }
+
+  function alignTextVertical(pos) {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (!obj || (obj.type !== "textbox" && obj.type !== "text")) return;
+    const pad = 80;
+    if (pos === "top") {
+      obj.set({ top: pad, originY: "top" });
+    } else if (pos === "middle") {
+      obj.set({ top: height / 2, originY: "center" });
+    } else if (pos === "bottom") {
+      obj.set({ top: height - pad, originY: "bottom" });
+    }
+    fc.renderAll();
+    pushHistory();
+  }
+
   /* ── download single slide as PNG ───────────────────────────────────── */
   function downloadCurrentPNG() {
     const fc = canvasRef.current;
@@ -1224,60 +1290,38 @@ export default function CardNewsEditor({
             <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
           </div>
 
-          {/* Template category tabs */}
-          <div style={S.templateCatStrip}>
-            {TEMPLATE_CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setTemplateCat(cat)}
-                style={{
-                  ...S.templateCatBtn,
-                  background: templateCat === cat ? "#7c6aff" : "#f3f4f6",
-                  color: templateCat === cat ? "#fff" : "#555",
-                  borderColor: templateCat === cat ? "#7c6aff" : "rgba(0,0,0,0.08)",
-                }}
-              >
-                {cat}
-              </button>
-            ))}
-            <div style={{ width:1, height:20, background:"rgba(0,0,0,0.12)", margin:"0 4px", flexShrink:0 }} />
-            <button
-              onClick={() => { setShowSharedTemplateModal(true); loadSharedTemplates(); }}
-              style={{
-                ...S.templateCatBtn,
-                background: "rgba(245,158,11,0.12)",
-                color: "#d97706",
-                borderColor: "rgba(245,158,11,0.3)",
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              📂 공유 템플릿
-            </button>
-          </div>
-
-          {/* Template selector strip */}
+          {/* Compact style preset strip */}
           <div style={S.templateStrip}>
-            {TEMPLATES
-              .filter(t => templateCat === "전체" || t.category === templateCat)
-              .map((t, i) => (
-              <button key={i} onClick={() => applyTemplate(t)} style={S.templateBtn} title={t.name}>
+            {TEMPLATES.map((t, i) => (
+              <button key={i} onClick={() => applyTemplate(t)} style={S.templateChip} title={t.name}>
                 {t.bgImage ? (
                   <span style={{
-                    display: "inline-block", width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                    display: "inline-block", width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                     backgroundImage: `url(${t.bgImage})`, backgroundSize: "cover", backgroundPosition: "center",
-                    border: "2px solid rgba(255,255,255,0.6)", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                    border: "2px solid rgba(255,255,255,0.6)", boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
                   }} />
                 ) : (
                   <span style={{
-                    display: "inline-block", width: 20, height: 20, borderRadius: "50%",
+                    display: "inline-block", width: 24, height: 24, borderRadius: "50%",
                     background: t.bgColor, border: "2px solid " + (t.accentColor || "#ccc"),
-                    flexShrink: 0,
+                    flexShrink: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                   }} />
                 )}
-                <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: "#444" }}>{t.name}</span>
               </button>
             ))}
+            <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.12)", margin: "0 2px", flexShrink: 0 }} />
+            <button
+              onClick={() => { setShowSharedTemplateModal(true); loadSharedTemplates(); }}
+              style={{
+                ...S.templateChip,
+                background: "rgba(245,158,11,0.12)",
+                border: "1px solid rgba(245,158,11,0.3)",
+                padding: "4px 10px",
+                gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#d97706", whiteSpace: "nowrap" }}>공유 템플릿</span>
+            </button>
           </div>
 
           {/* Canvas container */}
@@ -1300,6 +1344,31 @@ export default function CardNewsEditor({
             <Btn small onClick={() => addShape("rect")}>▬ 사각형</Btn>
             <Btn small onClick={() => addShape("circle")}>● 원</Btn>
             <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
+            <div style={{ position: "relative" }}>
+              <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} active={showLayoutPicker} accent="#7c6aff">레이아웃</Btn>
+              {showLayoutPicker && (
+                <div style={S.layoutPicker}>
+                  {LAYOUT_OPTIONS.map(lo => (
+                    <button key={lo.key} onClick={() => changeLayout(lo.key)} style={S.layoutOption} title={lo.label}>
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>{lo.icon}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#555" }}>{lo.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
+            {isTextSelected && (
+              <>
+                <Btn small onClick={() => alignTextHorizontal("left")} style={{ padding: "6px 8px" }} title="좌측 배치"><Icon.AlignLeft /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("center")} style={{ padding: "6px 8px" }} title="중앙 배치"><Icon.AlignCenter /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("right")} style={{ padding: "6px 8px" }} title="우측 배치"><Icon.AlignRight /></Btn>
+                <Btn small onClick={() => alignTextVertical("top")} accent="#6366f1" style={{ fontSize: 11 }}>상단</Btn>
+                <Btn small onClick={() => alignTextVertical("middle")} accent="#6366f1" style={{ fontSize: 11 }}>중앙</Btn>
+                <Btn small onClick={() => alignTextVertical("bottom")} accent="#6366f1" style={{ fontSize: 11 }}>하단</Btn>
+                <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
+              </>
+            )}
             <Btn small onClick={deleteSelected} style={{ color: "#e53e3e" }}><Icon.Trash /> 삭제</Btn>
             <Btn small onClick={undo} disabled={historyIdx <= 0}><Icon.Undo /></Btn>
             <Btn small onClick={redo} disabled={historyIdx >= history.length - 1}><Icon.Redo /></Btn>
@@ -1687,38 +1756,36 @@ const S = {
     borderRadius: 6, padding: "4px 8px", cursor: "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
   },
-  templateCatStrip: {
-    display: "flex", alignItems: "center", gap: 6,
-    padding: "8px 16px 4px",
-    background: "#fff",
-    overflowX: "auto",
-    whiteSpace: "nowrap",
-    scrollbarWidth: "thin",
-  },
-  templateCatBtn: {
-    display: "inline-flex", alignItems: "center",
-    padding: "4px 12px", borderRadius: 20,
-    border: "1px solid rgba(0,0,0,0.08)",
-    fontSize: 11, fontWeight: 600,
-    cursor: "pointer", transition: "all 0.15s",
-    flexShrink: 0,
-  },
   templateStrip: {
-    display: "flex", alignItems: "center", gap: 8,
-    padding: "6px 16px",
+    display: "flex", alignItems: "center", gap: 4,
+    padding: "6px 12px",
     background: "#fff",
     borderBottom: "1px solid rgba(0,0,0,0.06)",
     overflowX: "auto",
     whiteSpace: "nowrap",
     scrollbarWidth: "thin",
   },
-  templateBtn: {
-    display: "inline-flex", alignItems: "center", gap: 5,
-    padding: "4px 10px", borderRadius: 20,
-    border: "1px solid rgba(0,0,0,0.1)",
-    background: "#f9f9fb", cursor: "pointer",
+  templateChip: {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    padding: 3, borderRadius: "50%",
+    border: "1px solid transparent",
+    background: "transparent", cursor: "pointer",
     transition: "all 0.15s",
     flexShrink: 0,
+  },
+  layoutPicker: {
+    position: "absolute", bottom: "110%", left: "50%", transform: "translateX(-50%)",
+    background: "#fff", borderRadius: 12, padding: 10,
+    boxShadow: "0 4px 24px rgba(0,0,0,0.18)", border: "1px solid rgba(0,0,0,0.08)",
+    display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6,
+    zIndex: 100, minWidth: 220,
+  },
+  layoutOption: {
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    gap: 2, padding: "8px 4px", borderRadius: 8,
+    border: "1px solid rgba(0,0,0,0.08)", background: "#f9f9fb",
+    cursor: "pointer", transition: "all 0.15s",
+    minWidth: 48,
   },
   canvasContainer: {
     flex: 1, display: "flex", alignItems: "center", justifyContent: "center",

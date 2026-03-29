@@ -1629,11 +1629,23 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
         const { callAI } = await import("./aiClient");
         const todayLabel = todayKey.replace(/-/g, ".");
         const result = await callAI("claude-haiku-4-5", [
-          { role: "user", content: `오늘 날짜(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 5~7개 항목으로 간결하게 요약해줘.
-각 항목은 "• " 으로 시작하고 한 줄로 작성해줘.
-제목: ${todayLabel} 엔퍼SNS브리핑
-마지막에 한 줄 요약 코멘트를 추가해줘.` }
-        ], 1500);
+          { role: "user", content: `오늘(${todayLabel}) 기준 SNS 마케팅 관련 주요 뉴스와 트렌드를 작성해줘.
+
+형식:
+## 1. [뉴스 제목]
+[상세 내용 3~5문장. 구체적인 수치, 사례, 영향을 포함]
+📎 관련 키워드: #키워드1 #키워드2
+
+## 2. [뉴스 제목]
+...
+
+총 5~7개 항목. 각 항목마다:
+- 제목은 ##로 시작
+- 내용은 3~5문장으로 상세하게
+- 관련 키워드는 📎로 시작하고 #으로 표시
+- 가능하면 출처 언론사명 포함
+마크다운 **볼드** 사용하지 마. 순수 텍스트로.` }
+        ], 2500);
         const content = typeof result === "string" ? result : (result?.content || result?.text || "");
         if (!cancelled && content) {
           const data = { title: `${todayLabel} 엔퍼SNS브리핑`, content, date: todayKey };
@@ -1710,6 +1722,77 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
     } catch { return dateStr; }
   };
 
+  /* ── 브리핑 콘텐츠 파싱 렌더러 ── */
+  const renderBriefingContent = (content, isCard = false) => {
+    if (!content) return null;
+    const lines = content.split("\n");
+    const accentBg = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.10)";
+    const headingColor = isCard ? (isDark ? "#e0d4ff" : "#fff") : text;
+    const bodyColor = isCard ? (isDark ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.93)") : text;
+    const tagColor = isCard ? (isDark ? "#c4b5fd" : "rgba(255,255,255,0.85)") : accent;
+    const tagBg = isCard ? (isDark ? "rgba(124,106,255,0.25)" : "rgba(255,255,255,0.18)") : accentBg;
+
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={i} style={{ height: 8 }} />;
+
+      // ## 제목
+      if (trimmed.startsWith("##")) {
+        const titleText = trimmed.replace(/^##\s*/, "");
+        return (
+          <div key={i} style={{
+            fontSize: 17, fontWeight: 800, color: headingColor, marginTop: i === 0 ? 0 : 24, marginBottom: 6,
+            letterSpacing: -0.3, lineHeight: 1.5,
+          }}>
+            {titleText}
+          </div>
+        );
+      }
+
+      // 📎 키워드 줄
+      if (trimmed.startsWith("📎")) {
+        const parts = trimmed.replace(/^📎\s*/, "").split(/(#[^\s#]+)/g).filter(Boolean);
+        return (
+          <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, marginBottom: 4, alignItems: "center" }}>
+            <span style={{ fontSize: 13, marginRight: 2 }}>📎</span>
+            {parts.map((p, j) => {
+              if (p.startsWith("#")) {
+                return (
+                  <span key={j} style={{
+                    display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
+                    background: tagBg, borderRadius: 20, padding: "3px 10px",
+                  }}>
+                    {p}
+                  </span>
+                );
+              }
+              const label = p.trim().replace(/:$/, "").trim();
+              return label ? <span key={j} style={{ fontSize: 12, color: tagColor, opacity: 0.8 }}>{label}</span> : null;
+            })}
+          </div>
+        );
+      }
+
+      // 일반 텍스트 (인라인 #키워드 처리)
+      const inlineParts = trimmed.split(/(#[^\s#]+)/g).filter(Boolean);
+      const hasHash = inlineParts.some(p => p.startsWith("#"));
+      return (
+        <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: bodyColor, marginBottom: 2 }}>
+          {hasHash ? inlineParts.map((p, j) =>
+            p.startsWith("#") ? (
+              <span key={j} style={{
+                display: "inline-block", fontSize: 12, fontWeight: 700, color: tagColor,
+                background: tagBg, borderRadius: 20, padding: "2px 8px", marginLeft: 2, marginRight: 2,
+              }}>
+                {p}
+              </span>
+            ) : <span key={j}>{p}</span>
+          ) : trimmed}
+        </div>
+      );
+    });
+  };
+
   const ThumbPlaceholder = ({ category }) => {
     const gradients = {
       sns: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -1754,11 +1837,8 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
                 브리핑 작성 중...
               </div>
             ) : briefing ? (
-              <div style={{
-                fontSize: 13.5, lineHeight: 1.75, color: isDark ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.93)",
-                whiteSpace: "pre-wrap", wordBreak: "break-word",
-              }}>
-                {briefing.content}
+              <div style={{ wordBreak: "break-word" }}>
+                {renderBriefingContent(briefing.content, true)}
               </div>
             ) : (
               <div style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.7)", fontSize: 13 }}>
@@ -1780,35 +1860,54 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
             <div style={{ fontSize: 13, fontWeight: 800, color: muted, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 14 }}>📋</span> 지난 브리핑
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {briefingHistory.filter(h => h.date !== getTodayKey()).slice(0, 7).map(h => (
-                <div key={h.date}
-                  onClick={() => setExpandedHistory(expandedHistory === h.date ? null : h.date)}
-                  style={{
-                    padding: "12px 16px", borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
-                    background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
-                    border: `1px solid ${expandedHistory === h.date ? accent : bdr}`,
-                    boxShadow: expandedHistory === h.date ? `0 0 0 1px ${accent}` : "none",
-                  }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>{h.date.replace(/-/g, ".")}</span>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: text, marginLeft: 8 }}>{h.title}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {briefingHistory.filter(h => h.date !== getTodayKey()).slice(0, 7).map(h => {
+                const isExpanded = expandedHistory === h.date;
+                const dateLabel = h.date.replace(/-/g, ".");
+                return (
+                  <div key={h.date}
+                    onClick={() => setExpandedHistory(isExpanded ? null : h.date)}
+                    style={{
+                      padding: isExpanded ? "18px 20px" : "14px 18px", borderRadius: 14, cursor: "pointer", transition: "all 0.2s",
+                      background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+                      border: `1px solid ${isExpanded ? accent : bdr}`,
+                      boxShadow: isExpanded ? `0 2px 12px rgba(124,106,255,0.12)` : "0 1px 4px rgba(0,0,0,0.04)",
+                    }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          background: isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.08)",
+                          borderRadius: 10, padding: "6px 12px", textAlign: "center", minWidth: 64,
+                        }}>
+                          <div style={{ fontSize: 15, fontWeight: 900, color: accent, lineHeight: 1.2 }}>{dateLabel.split(".").slice(1).join(".")}</div>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: muted, marginTop: 1 }}>{dateLabel.split(".")[0]}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dateLabel} 엔퍼SNS브리핑`}</div>
+                          {!isExpanded && (
+                            <div style={{ fontSize: 12, color: muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 400 }}>
+                              {(h.content || "").replace(/^##\s*.*/gm, "").replace(/📎.*/gm, "").replace(/\n+/g, " ").trim().slice(0, 80)}...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 11, color: muted, transition: "transform 0.2s",
+                        transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      }}>▼</span>
                     </div>
-                    <span style={{ fontSize: 11, color: muted, transform: expandedHistory === h.date ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+                    {isExpanded && (
+                      <div style={{
+                        marginTop: 16, paddingTop: 16,
+                        borderTop: `1px solid ${bdr}`,
+                        wordBreak: "break-word",
+                      }}>
+                        {renderBriefingContent(h.content, false)}
+                      </div>
+                    )}
                   </div>
-                  {expandedHistory !== h.date && (
-                    <div style={{ fontSize: 12, color: muted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {(h.content || "").slice(0, 80)}...
-                    </div>
-                  )}
-                  {expandedHistory === h.date && (
-                    <div style={{ fontSize: 13, lineHeight: 1.7, color: text, marginTop: 10, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                      {h.content}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

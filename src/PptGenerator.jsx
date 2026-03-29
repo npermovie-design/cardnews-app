@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { callClaude } from "./aiClient";
 import PptxGenJS from "pptxgenjs";
-import CardNewsEditor from "./CardNewsEditor";
+// CardNewsEditor import removed - using native 3-panel editor
 
 // PPT 보관함 저장 헬퍼
 const PPT_SAVES_KEY = "nper_ppt_saves_v1";
@@ -1418,6 +1418,31 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
           </div>
         )}
 
+        {/* 공유 템플릿 불러오기 */}
+        {(()=>{
+          try {
+            const tpls = JSON.parse(localStorage.getItem("nper_ppt_templates_v1")||"[]");
+            if(!tpls.length) return null;
+            return (
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>저장된 템플릿</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {tpls.slice(0,6).map((tpl,i)=>(
+                    <button key={i} onClick={()=>{
+                      setTopic(tpl.topic||""); setThemeId(tpl.themeId||"dark");
+                      setSlides(tpl.slides||[]); setSelIdx(0); setStep("edit");
+                    }}
+                      style={{ padding:"8px 14px", borderRadius:8, border:`1px solid ${accent}30`, background:`${accent}06`, color:text, fontSize:11, cursor:"pointer", textAlign:"left", maxWidth:200 }}>
+                      <div style={{ fontWeight:700, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.topic||"템플릿"}</div>
+                      <div style={{ fontSize:9, color:muted }}>{tpl.date} / {(tpl.slides||[]).length}장</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          } catch { return null; }
+        })()}
+
         {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", color:"#f87171", fontSize:13, marginBottom:14 }}>{err}</div>}
 
         <button onClick={generate} disabled={!topic.trim()}
@@ -1461,395 +1486,545 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
     </div>
   );
 
-  // ══ EDIT ══ (캔버스 편집기가 메인)
+  // ── 템플릿 공유/불러오기 ──
+  const PPT_TPL_KEY = "nper_ppt_templates_v1";
+  const shareTemplate = () => {
+    try {
+      const tpl = { id:"tpl_"+Date.now(), topic, themeId, slides:slides.map(s=>({...s, image:null})), date:new Date().toLocaleDateString("ko-KR") };
+      const list = JSON.parse(localStorage.getItem(PPT_TPL_KEY)||"[]");
+      list.unshift(tpl);
+      localStorage.setItem(PPT_TPL_KEY, JSON.stringify(list.slice(0,20)));
+      alert("템플릿이 저장되었습니다! 새 PPT 만들 때 불러올 수 있습니다.");
+    } catch { alert("저장 실패"); }
+  };
+
+  // ── 텍스트 정렬 ──
+  const ALIGN_OPTIONS = [
+    { id:"left", label:"좌측", icon:"◁" },
+    { id:"center", label:"중앙", icon:"◇" },
+    { id:"right", label:"우측", icon:"▷" },
+  ];
+  const TITLE_POS_OPTIONS = [
+    { id:"top-center", label:"상단 중앙" },
+    { id:"top-left", label:"좌상단" },
+    { id:"center", label:"중앙" },
+  ];
+  const BODY_POS_OPTIONS = [
+    { id:"center", label:"중앙" },
+    { id:"left", label:"좌측 정렬" },
+    { id:"bottom", label:"하단" },
+  ];
+
+  // ══ EDIT ══ (3패널 레이아웃: 좌측 썸네일 | 중앙 미리보기 | 우측 속성)
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"transparent":"#f4f4f8" }}>
-      {/* 상단 도구바 */}
+      {/* 상단 도구바 - 간결하게: 돌아가기, PPTX 다운로드, 템플릿 공유 */}
       <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:8, flexShrink:0, background:D?"rgba(0,0,0,0.15)":"rgba(249,250,251,0.8)", zIndex:10 }}>
-        <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>← 돌아가기</button>
-        <div style={{ flex:1, fontSize:13, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic}</div>
-        <span style={{ fontSize:11, color:muted }}>{slides.length}장</span>
-        <button onClick={()=>setShowPropertyPanel(!showPropertyPanel)}
-          style={{ padding:"5px 14px", borderRadius:8, border:`1px solid ${showPropertyPanel?accent:bdr}`, background:showPropertyPanel?`${accent}12`:"transparent", color:showPropertyPanel?accent:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>
-          {showPropertyPanel?"속성 닫기":"속성 편집"}
+        <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>← 돌아가기</button>
+        <div style={{ flex:1, fontSize:14, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic} <span style={{ fontSize:11, fontWeight:400, color:muted }}>({slides.length}장)</span></div>
+        <button onClick={shareTemplate}
+          style={{ padding:"6px 16px", borderRadius:8, border:`1px solid ${accent}40`, background:`${accent}08`, color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+          템플릿 공유
         </button>
         <button onClick={exportPptx} disabled={exporting}
-          style={{ padding:"6px 16px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:11, fontWeight:800, cursor:exporting?"not-allowed":"pointer", opacity:exporting?0.6:1 }}>
+          style={{ padding:"6px 18px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:12, fontWeight:800, cursor:exporting?"not-allowed":"pointer", opacity:exporting?0.6:1 }}>
           {exporting?"내보내는 중...":"PPTX 다운로드"}
         </button>
       </div>
 
-      {/* 메인: 캔버스 편집기 + 선택적 속성 패널 */}
+      {/* 메인 3패널: 좌측 썸네일 | 중앙 미리보기 | 우측 속성 */}
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        {/* 캔버스 편집기 (메인) */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-          <CardNewsEditor
-            slides={slides.map(slide => ({
-              title: slide.title || "",
-              body: slide.body || slide.subtitle || "",
-              bgColor: slide.customBg || theme.bg || "#ffffff",
-              textColor: slide.customTextColor || theme.text || "#1a1a2e",
-              fontSize: 36,
-              image: slide.image || null,
-            }))}
-            width={1920}
-            height={1080}
-            inline={true}
-          />
-        </div>
 
-        {/* 오른쪽: 속성 편집 패널 (토글) */}
-        {showPropertyPanel && <div style={{ width:isMobile?"100%":280, flexShrink:0, borderLeft:`1px solid ${bdr}`, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.01)" }}>
-        {/* 탭 */}
-        <div style={{ display:"flex", borderBottom:`1px solid ${bdr}`, flexShrink:0 }}>
-          {[["content","내용"],["style","스타일"],["media","미디어"]].map(([id,label])=>(
-            <button key={id} onClick={()=>setEditTab(id)}
-              style={{ flex:1, padding:"9px 0", border:"none", cursor:"pointer", fontSize:11, fontWeight:editTab===id?700:400,
-                color:editTab===id?accent:muted, background:"transparent",
-                borderBottom:editTab===id?`2px solid ${accent}`:"2px solid transparent" }}>
-              {label}
-            </button>
+        {/* ── 좌측: 슬라이드 썸네일 리스트 (세로) ── */}
+        {(!isMobile || mobilePanel==="list") && <div style={{ width:isMobile?"100%":140, flexShrink:0, borderRight:`1px solid ${bdr}`, overflowY:"auto", padding:"8px 6px", background:D?"rgba(0,0,0,0.08)":"rgba(0,0,0,0.02)" }}>
+          {slides.map((s,i)=>(
+            <div key={i} onClick={()=>{setSelIdx(i);if(isMobile)setMobilePanel("preview");}}
+              style={{ marginBottom:6, cursor:"pointer", borderRadius:8, border:`2px solid ${selIdx===i?accent:"transparent"}`,
+                background:selIdx===i?`${accent}12`:"transparent", padding:4, transition:"all 0.15s" }}>
+              <div style={{ fontSize:9, fontWeight:700, color:selIdx===i?accent:muted, marginBottom:3, textAlign:"center" }}>{i+1}</div>
+              <div style={{ borderRadius:4, overflow:"hidden" }}>
+                {renderPreview(s, i, true)}
+              </div>
+              <div style={{ fontSize:8, color:selIdx===i?text:muted, textAlign:"center", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {s.title?.slice(0,12)||(LAYOUTS.find(l=>l.id===s.layout)?.label||"")}
+              </div>
+            </div>
           ))}
-        </div>
+          {/* 슬라이드 추가 버튼 */}
+          <button onClick={()=>{
+            const newSlide = { id:slides.length, layout:"title_body", title:"", body:"", subtitle:"", bullets:[], stats:[], bars:[], segments:[], leftCol:"", rightCol:"", rows:[], swot:null, orgItems:[], icon:"", image:null, titleSize:28, bodySize:16, showPageNum:true, note:"" };
+            setSlides(p=>[...p, newSlide]);
+            setSelIdx(slides.length);
+          }} style={{ width:"100%", padding:"10px 4px", borderRadius:8, border:`2px dashed ${bdr}`, background:"transparent", cursor:"pointer", textAlign:"center", color:muted, fontSize:11, fontWeight:700, marginTop:4 }}>
+            + 추가
+          </button>
+        </div>}
 
-        <div style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
-          {/* ── 내용 탭 ── */}
-          {editTab === "content" && <>
-            {/* 레이아웃 (시각 미니프리뷰 + 호버 확대) */}
-            <div style={{ marginBottom:10, position:"relative" }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>레이아웃 ({LAYOUTS.length}종)</div>
-              {/* 호버시 확대 프리뷰 */}
-              {hoveredLayout && (()=>{
-                const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
-                if(!hl) return null;
-                const pw=480, ph=300;
-                const left = Math.max(8, hoverPos.x - pw - 30);
-                const top = Math.min(Math.max(8, hoverPos.y - ph/2), window.innerHeight - ph - 8);
-                return <div style={{ position:"fixed", zIndex:99999, pointerEvents:"none",
-                  left, top, width:pw,
-                  background:D?"rgba(10,8,30,0.98)":"rgba(255,255,255,0.98)",
-                  borderRadius:14, border:`1px solid ${accent}40`, padding:14,
-                  boxShadow:D?"0 16px 60px rgba(0,0,0,0.7)":"0 16px 60px rgba(0,0,0,0.18)", backdropFilter:"blur(16px)" }}>
-                  <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>{hl.label} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>/ {hl.cat}</span></div>
-                  <MiniSlidePreview layoutId={hoveredLayout} W={pw-28} H={Math.round((pw-28)*9/16)} theme={theme} />
-                </div>;
-              })()}
-              {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
-                const isOpen = layoutCatOpen===cat || layoutCatOpen===null;
-                const items = LAYOUTS.filter(l=>l.cat===cat);
-                return (
-                  <div key={cat} style={{ marginBottom:4 }}>
-                    <button onClick={()=>setLayoutCatOpen(layoutCatOpen===cat?null:cat)}
-                      style={{ display:"flex", alignItems:"center", gap:4, width:"100%", padding:"3px 2px", border:"none", background:"transparent", cursor:"pointer", fontSize:9, fontWeight:700, color:muted }}>
-                      <span style={{ transform:isOpen?"rotate(90deg)":"none", transition:"transform 0.15s", fontSize:8 }}>▶</span>
-                      {cat} <span style={{ fontSize:8, opacity:0.6 }}>({items.length})</span>
-                    </button>
-                    {isOpen && (
-                      <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:3, marginTop:2 }}>
-                        {items.map(l=>{
-                          const sel = cur.layout===l.id;
-                          return (
-                            <button key={l.id} onClick={()=>changeLayout(l.id)}
-                              onMouseEnter={(e)=>{setHoveredLayout(l.id);setHoverPos({x:e.clientX,y:e.clientY});}}
-                              onMouseMove={(e)=>setHoverPos({x:e.clientX,y:e.clientY})}
-                              onMouseLeave={()=>setHoveredLayout(null)}
-                              style={{ padding:"3px", borderRadius:5, border:`1.5px solid ${sel?accent:"transparent"}`,
-                                background:sel?`${accent}12`:"transparent", cursor:"pointer", textAlign:"center",
-                                transition:"all 0.1s" }}>
-                              <MiniSlidePreview layoutId={l.id} W={52} H={30} theme={theme} />
-                              <div style={{ fontSize:7, fontWeight:sel?700:400, color:sel?accent:muted, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.label}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ marginBottom:8 }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:muted }}>제목</div>
-                <button onClick={aiSuggestSlide} disabled={aiSlideLoading || !cur.title?.trim()}
-                  style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${accent}40`, background:`${accent}10`,
-                    color:accent, fontSize:9, fontWeight:700, cursor:aiSlideLoading||!cur.title?.trim()?"not-allowed":"pointer",
-                    opacity:aiSlideLoading||!cur.title?.trim()?0.5:1, display:"flex", alignItems:"center", gap:4 }}>
-                  {aiSlideLoading ? (
-                    <><div style={{ width:8, height:8, border:`1.5px solid ${accent}40`, borderTopColor:accent, borderRadius:"50%", animation:"spin 0.7s linear infinite" }} /> 기획 중...</>
-                  ) : "AI 자동기획"}
-                </button>
-              </div>
-              <input value={cur.title||""} onChange={e=>upd("title",e.target.value)} style={{ ...inp, fontSize:12 }}
-                placeholder="제목 입력 후 'AI 자동기획' 클릭" />
-            </div>
-            {cur.layout !== "stats" && <>
-              <div style={{ marginBottom:8 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>본문</div>
-                <textarea value={(cur.body||"").replace(/\\n/g,"\n")} onChange={e=>upd("body",e.target.value)}
-                  rows={3} style={{ ...inp, fontSize:11, resize:"vertical", lineHeight:1.6 }} />
-              </div>
-            </>}
-            {(cur.layout==="bullets"||cur.layout==="timeline") && <>
-              <div style={{ marginBottom:8 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>{cur.layout==="timeline"?"단계":"항목"}</div>
-                {(cur.bullets||[]).map((b,j)=>(
-                  <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                    <span style={{ fontSize:9, color:accent, fontWeight:700, marginTop:7, flexShrink:0 }}>{j+1}</span>
-                    <input value={b} onChange={e=>{const n=[...(cur.bullets||[])];n[j]=e.target.value;upd("bullets",n);}} style={{ ...inp, fontSize:10, padding:"5px 8px", flex:1 }} />
-                    <button onClick={()=>upd("bullets",(cur.bullets||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:12, cursor:"pointer" }}>x</button>
-                  </div>
-                ))}
-                <button onClick={()=>upd("bullets",[...(cur.bullets||[]),""])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
-              </div>
-            </>}
-            {cur.layout === "stats" && <>
-              <div style={{ marginBottom:8 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>통계 항목</div>
-                {(cur.stats||[]).map((st,j)=>(
-                  <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                    <input value={st.value||""} onChange={e=>{const n=[...(cur.stats||[])];n[j]={...n[j],value:e.target.value};upd("stats",n);}} placeholder="85%" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
-                    <input value={st.label||""} onChange={e=>{const n=[...(cur.stats||[])];n[j]={...n[j],label:e.target.value};upd("stats",n);}} placeholder="항목명" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
-                    <button onClick={()=>upd("stats",(cur.stats||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:12, cursor:"pointer" }}>x</button>
-                  </div>
-                ))}
-                <button onClick={()=>upd("stats",[...(cur.stats||[]),{value:"",label:""}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
-              </div>
-            </>}
-            {(cur.layout==="two_column"||cur.layout==="comparison") && <>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
-                <div>
-                  <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>왼쪽</div>
-                  <textarea value={(cur.leftCol||"").replace(/\\n/g,"\n")} onChange={e=>upd("leftCol",e.target.value)} rows={3} style={{ ...inp, fontSize:10, resize:"vertical" }} />
-                </div>
-                <div>
-                  <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>오른쪽</div>
-                  <textarea value={(cur.rightCol||"").replace(/\\n/g,"\n")} onChange={e=>upd("rightCol",e.target.value)} rows={3} style={{ ...inp, fontSize:10, resize:"vertical" }} />
-                </div>
-              </div>
-            </>}
-            {/* 표/테이블 */}
-            {cur.layout==="table" && <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>표 데이터 (행별로)</div>
-              {(cur.rows||[]).map((row,j)=>(
-                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                  {row.map((cell,k)=>(
-                    <input key={k} value={cell} onChange={e=>{const n=(cur.rows||[]).map(r=>[...r]);n[j][k]=e.target.value;upd("rows",n);}} style={{ ...inp, fontSize:9, padding:"4px 6px", flex:1 }} />
-                  ))}
-                  <button onClick={()=>upd("rows",(cur.rows||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
-                </div>
-              ))}
-              <div style={{ display:"flex", gap:3 }}>
-                <button onClick={()=>{const cols=(cur.rows?.[0]?.length)||3;upd("rows",[...(cur.rows||[]),Array(cols).fill("")]);}} style={{ flex:1, padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 행 추가</button>
-                <button onClick={()=>upd("rows",(cur.rows||[]).map(r=>[...r,""]))} style={{ flex:1, padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 열 추가</button>
-              </div>
-            </div>}
-            {/* 차트 bars */}
-            {(cur.layout==="chart_bar"||cur.layout==="progress") && <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>데이터 항목</div>
-              {(cur.bars||[]).map((b,j)=>(
-                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                  <input value={b.label||""} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],label:e.target.value};upd("bars",n);}} placeholder="항목명" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
-                  <input type="number" value={b.value||0} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],value:Number(e.target.value)};upd("bars",n);}} style={{ ...inp, fontSize:10, padding:"4px 8px", width:50 }} />
-                  <button onClick={()=>upd("bars",(cur.bars||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
-                </div>
-              ))}
-              <button onClick={()=>upd("bars",[...(cur.bars||[]),{label:"",value:50}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
-            </div>}
-            {/* 원형 차트 */}
-            {cur.layout==="chart_pie" && <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>비율 항목 (%)</div>
-              {(cur.segments||[]).map((s,j)=>(
-                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                  <input value={s.label||""} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],label:e.target.value};upd("segments",n);}} placeholder="항목" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
-                  <input type="number" value={s.value||0} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],value:Number(e.target.value)};upd("segments",n);}} style={{ ...inp, fontSize:10, padding:"4px 8px", width:50 }} />
-                  <button onClick={()=>upd("segments",(cur.segments||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
-                </div>
-              ))}
-              <button onClick={()=>upd("segments",[...(cur.segments||[]),{label:"",value:25}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
-            </div>}
-            {/* SWOT */}
-            {cur.layout==="swot" && <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>SWOT 분석</div>
-              {[["s","S (강점)","#22c55e"],["w","W (약점)","#f59e0b"],["o","O (기회)","#3b82f6"],["t","T (위협)","#ef4444"]].map(([k,l,c])=>(
-                <div key={k} style={{ marginBottom:4 }}>
-                  <div style={{ fontSize:9, color:c, fontWeight:700, marginBottom:2 }}>{l}</div>
-                  <textarea value={(cur.swot||{})[k]||""} onChange={e=>upd("swot",{...(cur.swot||{}), [k]:e.target.value})} rows={2} style={{ ...inp, fontSize:10, resize:"vertical" }} />
-                </div>
-              ))}
-            </div>}
-            {/* 조직도 */}
-            {cur.layout==="org_chart" && <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>조직 구성원</div>
-              {(cur.orgItems||[]).map((o,j)=>(
-                <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
-                  <input value={o.role||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],role:e.target.value};upd("orgItems",n);}} placeholder="직책" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
-                  <input value={o.name||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],name:e.target.value};upd("orgItems",n);}} placeholder="이름" style={{ ...inp, fontSize:10, padding:"4px 8px", flex:1 }} />
-                  <button onClick={()=>upd("orgItems",(cur.orgItems||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>x</button>
-                </div>
-              ))}
-              <button onClick={()=>upd("orgItems",[...(cur.orgItems||[]),{role:"",name:""}])} style={{ width:"100%", padding:"4px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:9, cursor:"pointer" }}>+ 추가</button>
-            </div>}
-            {/* 글꼴 크기 + 페이지번호 */}
-            <div style={{ borderTop:`1px solid ${bdr}`, paddingTop:8, marginTop:4, marginBottom:8 }}>
-              <div style={{ display:"flex", gap:8, marginBottom:6 }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:9, color:muted, marginBottom:3 }}>제목 크기 ({cur.titleSize||28}px)</div>
-                  <input type="range" min={16} max={52} value={cur.titleSize||28} onChange={e=>upd("titleSize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
-                </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:9, color:muted, marginBottom:3 }}>본문 크기 ({cur.bodySize||16}px)</div>
-                  <input type="range" min={10} max={28} value={cur.bodySize||16} onChange={e=>upd("bodySize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
-                </div>
-              </div>
-              <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:muted, cursor:"pointer" }}>
-                <input type="checkbox" checked={cur.showPageNum!==false} onChange={e=>upd("showPageNum",e.target.checked)} style={{ accentColor:accent }} />
-                페이지 번호 표시
-              </label>
-            </div>
-            <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:3 }}>발표 노트</div>
-              <textarea value={cur.note||""} onChange={e=>upd("note",e.target.value)} rows={2} style={{ ...inp, fontSize:10, resize:"vertical" }} placeholder="발표자 참고 메모" />
-            </div>
-          </>}
+        {/* ── 중앙: 선택된 슬라이드 미리보기 (큰 사이즈) ── */}
+        {(!isMobile || mobilePanel==="preview") && <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", overflow:"auto", padding:isMobile?"12px":"24px", background:D?"rgba(0,0,0,0.04)":"rgba(0,0,0,0.02)" }}>
+          {/* 모바일 네비게이션 */}
+          {isMobile && <div style={{ display:"flex", gap:8, marginBottom:12, width:"100%" }}>
+            <button onClick={()=>setMobilePanel("list")} style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>목록</button>
+            <div style={{ flex:1 }} />
+            <button onClick={()=>setMobilePanel("edit")} style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${accent}`, background:`${accent}12`, color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>편집</button>
+          </div>}
 
-          {/* ── 스타일 탭 ── */}
-          {editTab === "style" && <>
-            {/* 테마 프리셋 */}
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>테마 프리셋</div>
-              <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
-                {THEMES.map(t=>(
-                  <button key={t.id} onClick={()=>setThemeId(t.id)}
-                    style={{ padding:"6px 3px", borderRadius:6, border:`1.5px solid ${themeId===t.id?accent:"transparent"}`, cursor:"pointer", textAlign:"center", background:themeId===t.id?`${accent}10`:"transparent" }}>
-                    <div style={{ display:"flex", gap:2, justifyContent:"center", marginBottom:2 }}>
-                      <div style={{ width:10, height:10, borderRadius:2, background:t.bg, border:"1px solid rgba(128,128,128,0.3)" }} />
-                      <div style={{ width:10, height:10, borderRadius:2, background:t.accent }} />
-                    </div>
-                    <div style={{ fontSize:9, fontWeight:themeId===t.id?700:400, color:themeId===t.id?accent:muted }}>{t.label}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 슬라이드별 커스텀 색상 */}
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>이 슬라이드 색상 커스텀</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                {[
-                  ["customBg","배경색",cur.customBg||theme.bg],
-                  ["customTextColor","제목색",cur.customTextColor||theme.text],
-                  ["customAccent","강조색",cur.customAccent||theme.accent],
-                  ["customBodyColor","본문색",cur.customBodyColor||theme.body],
-                ].map(([k,label,val])=>(
-                  <div key={k}>
-                    <div style={{ fontSize:9, color:muted, marginBottom:3 }}>{label}</div>
-                    <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                      <input type="color" value={val} onChange={e=>upd(k,e.target.value)}
-                        style={{ width:28, height:24, borderRadius:4, border:`1px solid ${bdr}`, cursor:"pointer", padding:1 }} />
-                      <span style={{ fontSize:9, color:muted }}>{val}</span>
-                      {cur[k] && <button onClick={()=>upd(k,undefined)} style={{ fontSize:8, padding:"1px 4px", borderRadius:3, border:`1px solid ${bdr}`, background:"transparent", color:muted, cursor:"pointer" }}>x</button>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 그라데이션 */}
-            <div style={{ marginBottom:10 }}>
-              <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:muted, cursor:"pointer", marginBottom:4 }}>
-                <input type="checkbox" checked={!!cur.gradient} onChange={e=>upd("gradient",e.target.checked)} style={{ accentColor:accent }} />
-                배경 그라데이션
-              </label>
-              {cur.gradient && (
-                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                  <input type="color" value={cur.gradientEnd||theme.accent} onChange={e=>upd("gradientEnd",e.target.value)}
-                    style={{ width:28, height:24, borderRadius:4, border:`1px solid ${bdr}`, cursor:"pointer" }} />
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:8, color:muted, marginBottom:2 }}>각도 {cur.gradientAngle||135}</div>
-                    <input type="range" min={0} max={360} value={cur.gradientAngle||135} onChange={e=>upd("gradientAngle",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 로고/워터마크 텍스트 */}
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>로고/워터마크 텍스트</div>
-              <input value={cur.logoText||""} onChange={e=>upd("logoText",e.target.value)}
-                style={{ ...inp, fontSize:11, padding:"7px 10px" }} placeholder="회사명, 브랜드명 등" />
-            </div>
-
-            {/* 하이라이트 */}
-            <div style={{ marginBottom:10 }}>
-              <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:muted, cursor:"pointer" }}>
-                <input type="checkbox" checked={!!cur.highlight} onChange={e=>upd("highlight",e.target.checked)} style={{ accentColor:accent }} />
-                제목 하이라이트 효과
-              </label>
-            </div>
-
-            {/* 전체 슬라이드 스타일 일괄 적용 */}
-            <button onClick={()=>{
-              const keys=["customBg","customTextColor","customAccent","customBodyColor","gradient","gradientEnd","gradientAngle","logoText","highlight","titleSize","bodySize","showPageNum"];
-              setSlides(p=>p.map((sl,i)=>{
-                if(i===selIdx) return sl;
-                const n={...sl};
-                keys.forEach(k=>{ if(cur[k]!==undefined) n[k]=cur[k]; else delete n[k]; });
-                return n;
-              }));
-            }} style={{ width:"100%", padding:"8px", borderRadius:7, border:`1px solid rgba(74,222,128,0.3)`, background:"rgba(74,222,128,0.06)", color:"#4ade80", fontSize:10, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
-              현재 스타일 전체 적용
+          {/* 슬라이드 번호 및 네비 */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+            <button onClick={()=>setSelIdx(Math.max(0,selIdx-1))} disabled={selIdx===0}
+              style={{ width:32, height:32, borderRadius:"50%", border:`1px solid ${bdr}`, background:"transparent", color:selIdx===0?`${muted}40`:text, fontSize:16, cursor:selIdx===0?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              ←
             </button>
+            <span style={{ fontSize:13, fontWeight:700, color:text }}>{selIdx+1} / {slides.length}</span>
+            <button onClick={()=>setSelIdx(Math.min(slides.length-1,selIdx+1))} disabled={selIdx===slides.length-1}
+              style={{ width:32, height:32, borderRadius:"50%", border:`1px solid ${bdr}`, background:"transparent", color:selIdx===slides.length-1?`${muted}40`:text, fontSize:16, cursor:selIdx===slides.length-1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              →
+            </button>
+          </div>
 
-            {slides.length>1 && <button onClick={()=>{
-              setSlides(p=>p.filter((_,i)=>i!==selIdx));
-              setSelIdx(Math.max(0,selIdx-1));
-            }} style={{ width:"100%", padding:"8px", borderRadius:7, border:"1px solid rgba(239,68,68,0.15)", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>
-              이 슬라이드 삭제
-            </button>}
-          </>}
+          {/* 큰 미리보기 (카드뉴스 크기와 유사 - maxWidth:700) */}
+          <div style={{ width:"100%", maxWidth:700, borderRadius:12, overflow:"hidden", boxShadow:D?"0 8px 40px rgba(0,0,0,0.4)":"0 8px 40px rgba(0,0,0,0.12)", border:`1px solid ${bdr}` }}>
+            {renderPreview(cur, selIdx, false)}
+          </div>
 
-          {/* ── 미디어 탭 ── */}
-          {editTab === "media" && <>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>이미지 삽입</div>
-              <input ref={imgRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImage} />
-              {cur.image ? (
-                <div>
-                  <div style={{ borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:8 }}>
-                    <img src={cur.image} alt="" style={{ width:"100%", maxHeight:140, objectFit:"cover", display:"block" }} />
+          {/* 현재 레이아웃 표시 */}
+          <div style={{ marginTop:10, fontSize:11, color:muted }}>
+            레이아웃: <span style={{ color:accent, fontWeight:700 }}>{LAYOUTS.find(l=>l.id===cur.layout)?.label || cur.layout}</span>
+            <span style={{ margin:"0 6px", opacity:0.3 }}>|</span>
+            테마: <span style={{ color:accent, fontWeight:700 }}>{theme.label}</span>
+          </div>
+        </div>}
+
+        {/* ── 우측: 속성 패널 (항상 표시) ── */}
+        {(!isMobile || mobilePanel==="edit") && <div style={{ width:isMobile?"100%":320, flexShrink:0, borderLeft:`1px solid ${bdr}`, display:"flex", flexDirection:"column", overflow:"hidden", background:D?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.95)" }}>
+          {/* 모바일 뒤로가기 */}
+          {isMobile && <div style={{ padding:"8px 10px", borderBottom:`1px solid ${bdr}` }}>
+            <button onClick={()=>setMobilePanel("preview")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>← 미리보기</button>
+          </div>}
+
+          {/* 탭 */}
+          <div style={{ display:"flex", borderBottom:`1px solid ${bdr}`, flexShrink:0 }}>
+            {[["layout","레이아웃"],["content","내용"],["style","스타일"],["media","미디어"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setEditTab(id)}
+                style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:11, fontWeight:editTab===id?700:400,
+                  color:editTab===id?accent:muted, background:"transparent",
+                  borderBottom:editTab===id?`2.5px solid ${accent}`:"2.5px solid transparent" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
+
+            {/* ── 레이아웃 탭 ── */}
+            {editTab === "layout" && <>
+              {/* 레이아웃 변경 (카테고리별 아이콘+이름 그리드) */}
+              <div style={{ marginBottom:10, position:"relative" }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:8 }}>레이아웃 변경 ({LAYOUTS.length}종)</div>
+                {/* 호버시 확대 프리뷰 */}
+                {hoveredLayout && (()=>{
+                  const hl = LAYOUTS.find(l=>l.id===hoveredLayout);
+                  if(!hl) return null;
+                  const pw=420, ph=260;
+                  const left = Math.max(8, hoverPos.x - pw - 30);
+                  const top = Math.min(Math.max(8, hoverPos.y - ph/2), window.innerHeight - ph - 8);
+                  return <div style={{ position:"fixed", zIndex:99999, pointerEvents:"none",
+                    left, top, width:pw,
+                    background:D?"rgba(10,8,30,0.98)":"rgba(255,255,255,0.98)",
+                    borderRadius:14, border:`1px solid ${accent}40`, padding:14,
+                    boxShadow:D?"0 16px 60px rgba(0,0,0,0.7)":"0 16px 60px rgba(0,0,0,0.18)", backdropFilter:"blur(16px)" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:8 }}>{hl.label} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>/ {hl.cat}</span></div>
+                    <MiniSlidePreview layoutId={hoveredLayout} W={pw-28} H={Math.round((pw-28)*9/16)} theme={theme} />
+                  </div>;
+                })()}
+                {[...new Set(LAYOUTS.map(l=>l.cat))].map(cat=>{
+                  const isOpen = layoutCatOpen===cat || layoutCatOpen===null;
+                  const items = LAYOUTS.filter(l=>l.cat===cat);
+                  return (
+                    <div key={cat} style={{ marginBottom:6 }}>
+                      <button onClick={()=>setLayoutCatOpen(layoutCatOpen===cat?null:cat)}
+                        style={{ display:"flex", alignItems:"center", gap:5, width:"100%", padding:"4px 2px", border:"none", background:"transparent", cursor:"pointer", fontSize:10, fontWeight:700, color:muted }}>
+                        <span style={{ transform:isOpen?"rotate(90deg)":"none", transition:"transform 0.15s", fontSize:9 }}>▶</span>
+                        {cat} <span style={{ fontSize:9, opacity:0.6 }}>({items.length})</span>
+                      </button>
+                      {isOpen && (
+                        <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, marginTop:3 }}>
+                          {items.map(l=>{
+                            const sel = cur.layout===l.id;
+                            return (
+                              <button key={l.id} onClick={()=>changeLayout(l.id)}
+                                onMouseEnter={(e)=>{setHoveredLayout(l.id);setHoverPos({x:e.clientX,y:e.clientY});}}
+                                onMouseMove={(e)=>setHoverPos({x:e.clientX,y:e.clientY})}
+                                onMouseLeave={()=>setHoveredLayout(null)}
+                                style={{ padding:"4px", borderRadius:6, border:`1.5px solid ${sel?accent:"transparent"}`,
+                                  background:sel?`${accent}15`:"transparent", cursor:"pointer", textAlign:"center",
+                                  transition:"all 0.15s" }}>
+                                <MiniSlidePreview layoutId={l.id} W={72} H={42} theme={theme} />
+                                <div style={{ fontSize:8, fontWeight:sel?700:400, color:sel?accent:muted, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.label}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>}
+
+            {/* ── 내용 탭 ── */}
+            {editTab === "content" && <>
+              {/* 제목 */}
+              <div style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:text }}>제목</div>
+                  <button onClick={aiSuggestSlide} disabled={aiSlideLoading || !cur.title?.trim()}
+                    style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${accent}40`, background:`${accent}10`,
+                      color:accent, fontSize:10, fontWeight:700, cursor:aiSlideLoading||!cur.title?.trim()?"not-allowed":"pointer",
+                      opacity:aiSlideLoading||!cur.title?.trim()?0.5:1, display:"flex", alignItems:"center", gap:4 }}>
+                    {aiSlideLoading ? (
+                      <><div style={{ width:8, height:8, border:`1.5px solid ${accent}40`, borderTopColor:accent, borderRadius:"50%", animation:"spin 0.7s linear infinite" }} /> 기획 중...</>
+                    ) : "AI 자동기획"}
+                  </button>
+                </div>
+                <input value={cur.title||""} onChange={e=>upd("title",e.target.value)} style={{ ...inp, fontSize:13, fontWeight:600 }}
+                  placeholder="제목 입력 후 'AI 자동기획' 클릭" />
+                {/* 제목 위치 가이드 */}
+                <div style={{ display:"flex", gap:4, marginTop:4 }}>
+                  <span style={{ fontSize:9, color:muted }}>위치:</span>
+                  {TITLE_POS_OPTIONS.map(p=>(
+                    <button key={p.id} onClick={()=>upd("titlePos",p.id)}
+                      style={{ padding:"2px 8px", borderRadius:4, border:`1px solid ${(cur.titlePos||"top-center")===p.id?accent:bdr}`,
+                        background:(cur.titlePos||"top-center")===p.id?`${accent}15`:"transparent",
+                        color:(cur.titlePos||"top-center")===p.id?accent:muted, fontSize:9, cursor:"pointer" }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                {/* 정렬 버튼 */}
+                <div style={{ display:"flex", gap:3, marginTop:4 }}>
+                  <span style={{ fontSize:9, color:muted, marginRight:2 }}>정렬:</span>
+                  {ALIGN_OPTIONS.map(a=>(
+                    <button key={a.id} onClick={()=>upd("titleAlign",a.id)}
+                      style={{ width:28, height:24, borderRadius:4, border:`1px solid ${(cur.titleAlign||"center")===a.id?accent:bdr}`,
+                        background:(cur.titleAlign||"center")===a.id?`${accent}15`:"transparent",
+                        color:(cur.titleAlign||"center")===a.id?accent:muted, fontSize:11, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {a.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 부제목 */}
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>부제목</div>
+                <input value={cur.subtitle||""} onChange={e=>upd("subtitle",e.target.value)} style={{ ...inp, fontSize:12 }}
+                  placeholder="부제목 (선택)" />
+              </div>
+
+              {/* 본문 */}
+              {cur.layout !== "stats" && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>본문</div>
+                <textarea value={(cur.body||"").replace(/\\n/g,"\n")} onChange={e=>upd("body",e.target.value)}
+                  rows={4} style={{ ...inp, fontSize:12, resize:"vertical", lineHeight:1.7 }} />
+                {/* 본문 위치 가이드 */}
+                <div style={{ display:"flex", gap:4, marginTop:4 }}>
+                  <span style={{ fontSize:9, color:muted }}>위치:</span>
+                  {BODY_POS_OPTIONS.map(p=>(
+                    <button key={p.id} onClick={()=>upd("bodyPos",p.id)}
+                      style={{ padding:"2px 8px", borderRadius:4, border:`1px solid ${(cur.bodyPos||"center")===p.id?accent:bdr}`,
+                        background:(cur.bodyPos||"center")===p.id?`${accent}15`:"transparent",
+                        color:(cur.bodyPos||"center")===p.id?accent:muted, fontSize:9, cursor:"pointer" }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:3, marginTop:4 }}>
+                  <span style={{ fontSize:9, color:muted, marginRight:2 }}>정렬:</span>
+                  {ALIGN_OPTIONS.map(a=>(
+                    <button key={a.id} onClick={()=>upd("bodyAlign",a.id)}
+                      style={{ width:28, height:24, borderRadius:4, border:`1px solid ${(cur.bodyAlign||"left")===a.id?accent:bdr}`,
+                        background:(cur.bodyAlign||"left")===a.id?`${accent}15`:"transparent",
+                        color:(cur.bodyAlign||"left")===a.id?accent:muted, fontSize:11, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {a.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>}
+
+              {/* 불릿/타임라인 항목 */}
+              {["bullets","numbered","timeline","steps","checklist","icon_grid","pyramid","funnel","faq","references","ranking"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>
+                  {cur.layout==="timeline"||cur.layout==="steps"?"단계":cur.layout==="faq"?"질문":"항목"}
+                </div>
+                {(cur.bullets||[]).map((b,j)=>(
+                  <div key={j} style={{ display:"flex", gap:4, marginBottom:4 }}>
+                    <span style={{ fontSize:10, color:accent, fontWeight:700, marginTop:8, flexShrink:0, width:16, textAlign:"center" }}>{j+1}</span>
+                    <input value={b} onChange={e=>{const n=[...(cur.bullets||[])];n[j]=e.target.value;upd("bullets",n);}} style={{ ...inp, fontSize:11, padding:"6px 10px", flex:1 }} />
+                    <button onClick={()=>upd("bullets",(cur.bullets||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:14, cursor:"pointer", padding:"0 4px" }}>x</button>
                   </div>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <button onClick={()=>imgRef.current?.click()} style={{ flex:1, padding:"6px", borderRadius:6, border:`1px solid ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>변경</button>
-                    <button onClick={()=>upd("image",null)} style={{ flex:1, padding:"6px", borderRadius:6, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"#f87171", fontSize:10, cursor:"pointer" }}>제거</button>
+                ))}
+                <button onClick={()=>upd("bullets",[...(cur.bullets||[]),""])} style={{ width:"100%", padding:"6px", borderRadius:6, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, fontWeight:600, cursor:"pointer" }}>+ 항목 추가</button>
+              </div>}
+
+              {/* 통계 항목 */}
+              {["stats","stats_4","big_number","kpi_card"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>통계 항목</div>
+                {(cur.stats||[]).map((st,j)=>(
+                  <div key={j} style={{ display:"flex", gap:4, marginBottom:4 }}>
+                    <input value={st.value||""} onChange={e=>{const n=[...(cur.stats||[])];n[j]={...n[j],value:e.target.value};upd("stats",n);}} placeholder="85%" style={{ ...inp, fontSize:11, padding:"6px 10px", flex:1 }} />
+                    <input value={st.label||""} onChange={e=>{const n=[...(cur.stats||[])];n[j]={...n[j],label:e.target.value};upd("stats",n);}} placeholder="항목명" style={{ ...inp, fontSize:11, padding:"6px 10px", flex:1 }} />
+                    <button onClick={()=>upd("stats",(cur.stats||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:14, cursor:"pointer" }}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>upd("stats",[...(cur.stats||[]),{value:"",label:""}])} style={{ width:"100%", padding:"6px", borderRadius:6, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, fontWeight:600, cursor:"pointer" }}>+ 추가</button>
+              </div>}
+
+              {/* 2단/비교 */}
+              {["two_column","comparison","three_column","pros_cons","before_after"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>왼쪽</div>
+                    <textarea value={(cur.leftCol||"").replace(/\\n/g,"\n")} onChange={e=>upd("leftCol",e.target.value)} rows={3} style={{ ...inp, fontSize:11, resize:"vertical" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:4 }}>오른쪽</div>
+                    <textarea value={(cur.rightCol||"").replace(/\\n/g,"\n")} onChange={e=>upd("rightCol",e.target.value)} rows={3} style={{ ...inp, fontSize:11, resize:"vertical" }} />
                   </div>
                 </div>
-              ) : (
-                <button onClick={()=>imgRef.current?.click()}
-                  style={{ width:"100%", padding:"20px 12px", borderRadius:10, border:`2px dashed ${bdr}`, background:"transparent", cursor:"pointer", textAlign:"center", color:muted, fontSize:12 }}>
-                  클릭하여 이미지 업로드<br/><span style={{ fontSize:10 }}>JPG, PNG, WEBP</span>
-                </button>
-              )}
-              {cur.image && <div style={{ marginTop:8, fontSize:10, color:muted }}>
-                이미지가 적용되려면 레이아웃을 "이미지 오른쪽", "이미지 왼쪽", 또는 "전체 이미지"로 설정하세요.
               </div>}
-            </div>
-            <div style={{ padding:"10px 12px", borderRadius:8, background:ibg, border:`1px solid ${bdr}` }}>
-              <div style={{ fontSize:10, fontWeight:700, color:text, marginBottom:6 }}>이미지 레이아웃 바로가기</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                {[["image_right","이미지 오른쪽"],["image_left","이미지 왼쪽"],["image_full","전체 이미지 배경"]].map(([id,label])=>(
-                  <button key={id} onClick={()=>{changeLayout(id);setEditTab("content");}}
-                    style={{ padding:"7px 10px", borderRadius:6, border:`1px solid ${cur.layout===id?accent:bdr}`,
-                      background:cur.layout===id?`${accent}12`:"transparent", color:cur.layout===id?accent:muted,
-                      fontSize:11, fontWeight:cur.layout===id?700:400, cursor:"pointer", textAlign:"left" }}>
-                    {label}
-                  </button>
+
+              {/* 표/테이블 */}
+              {cur.layout==="table" && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>표 데이터</div>
+                {(cur.rows||[]).map((row,j)=>(
+                  <div key={j} style={{ display:"flex", gap:3, marginBottom:3 }}>
+                    {row.map((cell,k)=>(
+                      <input key={k} value={cell} onChange={e=>{const n=(cur.rows||[]).map(r=>[...r]);n[j][k]=e.target.value;upd("rows",n);}} style={{ ...inp, fontSize:10, padding:"5px 7px", flex:1 }} />
+                    ))}
+                    <button onClick={()=>upd("rows",(cur.rows||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>x</button>
+                  </div>
                 ))}
+                <div style={{ display:"flex", gap:4 }}>
+                  <button onClick={()=>{const cols=(cur.rows?.[0]?.length)||3;upd("rows",[...(cur.rows||[]),Array(cols).fill("")]);}} style={{ flex:1, padding:"5px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>+ 행</button>
+                  <button onClick={()=>upd("rows",(cur.rows||[]).map(r=>[...r,""]))} style={{ flex:1, padding:"5px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>+ 열</button>
+                </div>
+              </div>}
+
+              {/* 차트 bars */}
+              {["chart_bar","chart_bar_h","progress"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>데이터 항목</div>
+                {(cur.bars||[]).map((b,j)=>(
+                  <div key={j} style={{ display:"flex", gap:4, marginBottom:3 }}>
+                    <input value={b.label||""} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],label:e.target.value};upd("bars",n);}} placeholder="항목명" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
+                    <input type="number" value={b.value||0} onChange={e=>{const n=[...(cur.bars||[])];n[j]={...n[j],value:Number(e.target.value)};upd("bars",n);}} style={{ ...inp, fontSize:11, padding:"5px 8px", width:55 }} />
+                    <button onClick={()=>upd("bars",(cur.bars||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>upd("bars",[...(cur.bars||[]),{label:"",value:50}])} style={{ width:"100%", padding:"5px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>+ 추가</button>
+              </div>}
+
+              {/* 원형 차트 */}
+              {["chart_pie","chart_donut"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>비율 항목 (%)</div>
+                {(cur.segments||[]).map((sg,j)=>(
+                  <div key={j} style={{ display:"flex", gap:4, marginBottom:3 }}>
+                    <input value={sg.label||""} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],label:e.target.value};upd("segments",n);}} placeholder="항목" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
+                    <input type="number" value={sg.value||0} onChange={e=>{const n=[...(cur.segments||[])];n[j]={...n[j],value:Number(e.target.value)};upd("segments",n);}} style={{ ...inp, fontSize:11, padding:"5px 8px", width:55 }} />
+                    <button onClick={()=>upd("segments",(cur.segments||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>upd("segments",[...(cur.segments||[]),{label:"",value:25}])} style={{ width:"100%", padding:"5px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>+ 추가</button>
+              </div>}
+
+              {/* SWOT */}
+              {["swot","matrix"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>SWOT 분석</div>
+                {[["s","S (강점)","#22c55e"],["w","W (약점)","#f59e0b"],["o","O (기회)","#3b82f6"],["t","T (위협)","#ef4444"]].map(([k,l,c])=>(
+                  <div key={k} style={{ marginBottom:5 }}>
+                    <div style={{ fontSize:10, color:c, fontWeight:700, marginBottom:3 }}>{l}</div>
+                    <textarea value={(cur.swot||{})[k]||""} onChange={e=>upd("swot",{...(cur.swot||{}), [k]:e.target.value})} rows={2} style={{ ...inp, fontSize:11, resize:"vertical" }} />
+                  </div>
+                ))}
+              </div>}
+
+              {/* 조직도 */}
+              {["org_chart","team"].includes(cur.layout) && <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>구성원</div>
+                {(cur.orgItems||[]).map((o,j)=>(
+                  <div key={j} style={{ display:"flex", gap:4, marginBottom:3 }}>
+                    <input value={o.role||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],role:e.target.value};upd("orgItems",n);}} placeholder="직책" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
+                    <input value={o.name||""} onChange={e=>{const n=[...(cur.orgItems||[])];n[j]={...n[j],name:e.target.value};upd("orgItems",n);}} placeholder="이름" style={{ ...inp, fontSize:11, padding:"5px 8px", flex:1 }} />
+                    <button onClick={()=>upd("orgItems",(cur.orgItems||[]).filter((_,k)=>k!==j))} style={{ border:"none", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>upd("orgItems",[...(cur.orgItems||[]),{role:"",name:""}])} style={{ width:"100%", padding:"5px", borderRadius:5, border:`1px dashed ${bdr}`, background:"transparent", color:accent, fontSize:10, cursor:"pointer" }}>+ 추가</button>
+              </div>}
+
+              {/* 글꼴 크기 + 페이지번호 */}
+              <div style={{ borderTop:`1px solid ${bdr}`, paddingTop:10, marginTop:6, marginBottom:10 }}>
+                <div style={{ display:"flex", gap:10, marginBottom:8 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:muted, marginBottom:4 }}>제목 크기 ({cur.titleSize||28}px)</div>
+                    <input type="range" min={16} max={52} value={cur.titleSize||28} onChange={e=>upd("titleSize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:muted, marginBottom:4 }}>본문 크기 ({cur.bodySize||16}px)</div>
+                    <input type="range" min={10} max={28} value={cur.bodySize||16} onChange={e=>upd("bodySize",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
+                  </div>
+                </div>
+                <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:muted, cursor:"pointer" }}>
+                  <input type="checkbox" checked={cur.showPageNum!==false} onChange={e=>upd("showPageNum",e.target.checked)} style={{ accentColor:accent }} />
+                  페이지 번호 표시
+                </label>
               </div>
-            </div>
-          </>}
-        </div>
-      </div>}
-      </div>{/* 메인 flex 닫기 */}
+
+              {/* 발표 노트 */}
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>발표 노트</div>
+                <textarea value={cur.note||""} onChange={e=>upd("note",e.target.value)} rows={2} style={{ ...inp, fontSize:11, resize:"vertical" }} placeholder="발표자 참고 메모" />
+              </div>
+
+              {/* 슬라이드 삭제 */}
+              {slides.length>1 && <button onClick={()=>{
+                setSlides(p=>p.filter((_,i)=>i!==selIdx));
+                setSelIdx(Math.max(0,selIdx-1));
+              }} style={{ width:"100%", padding:"8px", borderRadius:7, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.04)", color:"#f87171", fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                이 슬라이드 삭제
+              </button>}
+            </>}
+
+            {/* ── 스타일 탭 ── */}
+            {editTab === "style" && <>
+              {/* 테마 프리셋 */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:6 }}>테마 프리셋</div>
+                <div className="ai-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4 }}>
+                  {THEMES.map(t=>(
+                    <button key={t.id} onClick={()=>setThemeId(t.id)}
+                      style={{ padding:"8px 4px", borderRadius:8, border:`1.5px solid ${themeId===t.id?accent:"transparent"}`, cursor:"pointer", textAlign:"center", background:themeId===t.id?`${accent}10`:"transparent" }}>
+                      <div style={{ display:"flex", gap:3, justifyContent:"center", marginBottom:3 }}>
+                        <div style={{ width:12, height:12, borderRadius:3, background:t.bg, border:"1px solid rgba(128,128,128,0.3)" }} />
+                        <div style={{ width:12, height:12, borderRadius:3, background:t.accent }} />
+                      </div>
+                      <div style={{ fontSize:10, fontWeight:themeId===t.id?700:400, color:themeId===t.id?accent:muted }}>{t.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 슬라이드별 커스텀 색상 */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:6 }}>이 슬라이드 색상</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  {[
+                    ["customBg","배경색",cur.customBg||theme.bg],
+                    ["customTextColor","제목색",cur.customTextColor||theme.text],
+                    ["customAccent","강조색",cur.customAccent||theme.accent],
+                    ["customBodyColor","본문색",cur.customBodyColor||theme.body],
+                  ].map(([k,label,val])=>(
+                    <div key={k}>
+                      <div style={{ fontSize:10, color:muted, marginBottom:3 }}>{label}</div>
+                      <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                        <input type="color" value={val} onChange={e=>upd(k,e.target.value)}
+                          style={{ width:30, height:26, borderRadius:4, border:`1px solid ${bdr}`, cursor:"pointer", padding:1 }} />
+                        <span style={{ fontSize:9, color:muted }}>{val}</span>
+                        {cur[k] && <button onClick={()=>upd(k,undefined)} style={{ fontSize:9, padding:"2px 5px", borderRadius:3, border:`1px solid ${bdr}`, background:"transparent", color:muted, cursor:"pointer" }}>x</button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 그라데이션 */}
+              <div style={{ marginBottom:12 }}>
+                <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:muted, cursor:"pointer", marginBottom:4 }}>
+                  <input type="checkbox" checked={!!cur.gradient} onChange={e=>upd("gradient",e.target.checked)} style={{ accentColor:accent }} />
+                  배경 그라데이션
+                </label>
+                {cur.gradient && (
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <input type="color" value={cur.gradientEnd||theme.accent} onChange={e=>upd("gradientEnd",e.target.value)}
+                      style={{ width:30, height:26, borderRadius:4, border:`1px solid ${bdr}`, cursor:"pointer" }} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:9, color:muted, marginBottom:3 }}>각도 {cur.gradientAngle||135}</div>
+                      <input type="range" min={0} max={360} value={cur.gradientAngle||135} onChange={e=>upd("gradientAngle",Number(e.target.value))} style={{ width:"100%", accentColor:accent }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 로고/워터마크 */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:4 }}>로고/워터마크 텍스트</div>
+                <input value={cur.logoText||""} onChange={e=>upd("logoText",e.target.value)}
+                  style={{ ...inp, fontSize:12, padding:"8px 12px" }} placeholder="회사명, 브랜드명 등" />
+              </div>
+
+              {/* 하이라이트 */}
+              <div style={{ marginBottom:12 }}>
+                <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:muted, cursor:"pointer" }}>
+                  <input type="checkbox" checked={!!cur.highlight} onChange={e=>upd("highlight",e.target.checked)} style={{ accentColor:accent }} />
+                  제목 하이라이트 효과
+                </label>
+              </div>
+
+              {/* 전체 적용 */}
+              <button onClick={()=>{
+                const keys=["customBg","customTextColor","customAccent","customBodyColor","gradient","gradientEnd","gradientAngle","logoText","highlight","titleSize","bodySize","showPageNum"];
+                setSlides(p=>p.map((sl,i)=>{
+                  if(i===selIdx) return sl;
+                  const n={...sl};
+                  keys.forEach(k=>{ if(cur[k]!==undefined) n[k]=cur[k]; else delete n[k]; });
+                  return n;
+                }));
+              }} style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid rgba(74,222,128,0.3)`, background:"rgba(74,222,128,0.06)", color:"#4ade80", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                현재 스타일 전체 슬라이드에 적용
+              </button>
+            </>}
+
+            {/* ── 미디어 탭 ── */}
+            {editTab === "media" && <>
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:6 }}>이미지 삽입</div>
+                <input ref={imgRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImage} />
+                {cur.image ? (
+                  <div>
+                    <div style={{ borderRadius:10, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:8 }}>
+                      <img src={cur.image} alt="" style={{ width:"100%", maxHeight:160, objectFit:"cover", display:"block" }} />
+                    </div>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <button onClick={()=>imgRef.current?.click()} style={{ flex:1, padding:"8px", borderRadius:7, border:`1px solid ${bdr}`, background:"transparent", color:accent, fontSize:11, cursor:"pointer", fontWeight:600 }}>변경</button>
+                      <button onClick={()=>upd("image",null)} style={{ flex:1, padding:"8px", borderRadius:7, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer", fontWeight:600 }}>제거</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={()=>imgRef.current?.click()}
+                    style={{ width:"100%", padding:"24px 12px", borderRadius:12, border:`2px dashed ${bdr}`, background:"transparent", cursor:"pointer", textAlign:"center", color:muted, fontSize:13 }}>
+                    클릭하여 이미지 업로드<br/><span style={{ fontSize:11 }}>JPG, PNG, WEBP</span>
+                  </button>
+                )}
+                {cur.image && <div style={{ marginTop:8, fontSize:10, color:muted }}>
+                  이미지 레이아웃을 선택하세요:
+                </div>}
+              </div>
+              <div style={{ padding:"12px 14px", borderRadius:10, background:ibg, border:`1px solid ${bdr}` }}>
+                <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:8 }}>이미지 레이아웃</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                  {[["image_right","이미지 오른쪽"],["image_left","이미지 왼쪽"],["image_full","전체 이미지 배경"],["image_top","이미지 상단"]].map(([id,label])=>(
+                    <button key={id} onClick={()=>{changeLayout(id);setEditTab("content");}}
+                      style={{ padding:"8px 12px", borderRadius:7, border:`1px solid ${cur.layout===id?accent:bdr}`,
+                        background:cur.layout===id?`${accent}12`:"transparent", color:cur.layout===id?accent:muted,
+                        fontSize:12, fontWeight:cur.layout===id?700:400, cursor:"pointer", textAlign:"left" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>}
+          </div>
+        </div>}
+      </div>{/* 메인 3패널 flex 닫기 */}
 
       {err && <div style={{ position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", padding:"10px 20px", borderRadius:10, background:"rgba(239,68,68,0.9)", color:"#fff", fontSize:13, zIndex:9999 }}>{err}</div>}
     </div>
