@@ -6,7 +6,7 @@
   "start_url": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#0f0c29",
+  "background_color": "#ffffff",
   "theme_color": "#7c6aff",
   "orientation": "any",
   "scope": "/",
@@ -76,14 +76,14 @@
     {
       "name": "글쓰기",
       "short_name": "글쓰기",
-      "url": "/#ai",
+      "url": "/ai",
       "description": "AI 글쓰기 시작",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "카드뉴스",
       "short_name": "카드뉴스",
-      "url": "/#ai",
+      "url": "/ai",
       "description": "AI 카드뉴스 생성",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
