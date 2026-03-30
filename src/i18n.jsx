@@ -118,7 +118,7 @@ const T = {
     newsBlog: "News to Blog", naverCafe: "Naver Cafe",
     simpleCard: "Simple Card News", imageCard: "Image Card News",
     simpleDetail: "Simple Detail Page", imageDetail: "Image Detail Page",
-    shortsGen: "Shorts Generator",
+    shortsGen: "Shorts Generator", videoCreate: "Video Creator", shortsMake: "Create Shorts",
     productShot: "Product Shot", logoGen: "Logo Gen", mockupGen: "Mockup Gen",
     modelGen: "Model Gen", faceSwap: "Face Swap", outfitSwap: "Outfit Swap", outpaint: "Outpaint",
     info: "Info", qna: "Q&A", free: "General", review: "Reviews", archive: "Resources",
@@ -199,9 +199,9 @@ const T = {
     newsBlog: "ニュースからブログ", naverCafe: "Naverカフェ",
     simpleCard: "シンプルカードニュース", imageCard: "画像カードニュース",
     simpleDetail: "シンプル詳細ページ", imageDetail: "画像詳細ページ",
-    shortsGen: "ショート動画生成",
+    shortsGen: "ショート動画生成", videoCreate: "動画制作", shortsMake: "ショート動画作成",
     productShot: "商品写真", logoGen: "ロゴ生成", mockupGen: "モックアップ", modelGen: "モデル生成",
-    faceSwap: "顔·衣装交換", outpaint: "余白拡張",
+    faceSwap: "顔交換", outfitSwap: "衣装交換", outpaint: "余白拡張",
     info: "情報共有", qna: "Q&A", free: "自由掲示板", review: "レビュー", archive: "資料室",
     companyName: "NPERGROS", ceo: "代表: キム·ソンボン",
     bizNo: "事業者番号: 598-09-02769", commsNo: "通信販売: 2024-Seoul-1997",
@@ -231,6 +231,32 @@ const T = {
     guideHover: "拡大プレビュー+詳細情報",
     library: "マイライブラリ", totalSaved: "件保存", autoSaved: "自動保存",
     blogSns: "ブログ・SNS", detailPage: "詳細ページ",
+    // 추가 번역
+    aiWelcome: "AIコンテンツを作成しましょう", aiWelcomeSub: "テーマを入力するだけでAIが自動生成します",
+    analyzing: "ファイル分析中...", archivePosts: "資料室の投稿",
+    charNoSpace: "空白除外", charTotal: "合計", charWithSpace: "空白含む",
+    colAuthor: "作成者", colDate: "日付", colDownload: "DL", colImage: "画像", colLikes: "いいね", colNo: "No", colTitle: "タイトル", colViews: "閲覧",
+    copyBtn: "コピー", copyDone: "コピー完了",
+    example: "例", exampleTopics: "例題トピック",
+    extraLabel: "追加要望", fileImport: "ファイル取り込み", fileImportDesc: "ファイルからテーマを自動入力",
+    fileLimit: "画像, PDF, TXT (最大10MB)", fileSelect: "ファイル選択",
+    filterAll: "全て", firstPostBonus: "初投稿ボーナス", freeMediaSearch: "無料メディア検索",
+    genBtnLabel: "生成する", genResult: "生成結果", genStep: "AI生成中",
+    importBtnLabel: "取り込み", inputStep: "内容入力",
+    introFeatures: "主要機能", introGuide: "使い方ガイド", introSteps: "ステップ",
+    itemsUnit: "件",
+    keywordLabel: "キーワード / テーマ",
+    loadingPosts: "読み込み中...", manageCategories: "カテゴリ管理",
+    noPosts: "投稿がありません", noSearchResult: "検索結果がありません",
+    pointsNotice: "ポイントが不足しています",
+    regenBtn: "再生成", regenDesc: "もう一度AIに生成させます", regenTitle: "再生成",
+    relatedImages: "関連画像", resultStep: "結果確認",
+    searchKw: "キーワード検索", selectLength: "文量", selectTone: "トーン", selectType: "文章タイプ",
+    sortLatest: "最新順", sortLikes: "いいね順", sortViews: "閲覧順",
+    targetLabel: "対象読者", toneLabel: "トーン", totalN: "全体",
+    urlImportLabel: "URL取り込み", volumeLabel: "文量",
+    viewCompact: "コンパクト", viewGallery: "ギャラリー", viewList: "リスト",
+    withAttach: "添付あり", writePost: "投稿する",
   },
 
   zh: {
@@ -246,9 +272,9 @@ const T = {
     newsBlog: "新闻转博客", naverCafe: "Naver咖啡",
     simpleCard: "简约卡片", imageCard: "图片卡片",
     simpleDetail: "简约详情页", imageDetail: "图片详情页",
-    shortsGen: "短视频生成",
+    shortsGen: "短视频生成", videoCreate: "视频制作", shortsMake: "制作短视频",
     productShot: "产品图", logoGen: "Logo生成", mockupGen: "模型生成", modelGen: "模特生成",
-    faceSwap: "换脸·换装", outpaint: "扩展边距",
+    faceSwap: "换脸", outfitSwap: "换装", outpaint: "扩展边距",
     info: "信息分享", qna: "问答", free: "自由讨论", review: "使用评价", archive: "资料室",
     companyName: "NPERGROS", ceo: "代表: 金善奉",
     bizNo: "营业号: 598-09-02769", commsNo: "通信销售: 2024-Seoul-1997",
@@ -278,6 +304,32 @@ const T = {
     guideHover: "悬停查看放大预览+详细信息",
     library: "我的收藏", totalSaved: "个已保存", autoSaved: "自动保存",
     blogSns: "博客·SNS", detailPage: "详情页",
+    // 추가 번역
+    aiWelcome: "来创建AI内容吧", aiWelcomeSub: "只需输入主题，AI自动生成",
+    analyzing: "文件分析中...", archivePosts: "资料室帖子",
+    charNoSpace: "不含空格", charTotal: "总计", charWithSpace: "含空格",
+    colAuthor: "作者", colDate: "日期", colDownload: "下载", colImage: "图片", colLikes: "点赞", colNo: "序号", colTitle: "标题", colViews: "浏览",
+    copyBtn: "复制", copyDone: "复制成功",
+    example: "示例", exampleTopics: "示例主题",
+    extraLabel: "附加要求", fileImport: "文件导入", fileImportDesc: "从文件自动导入主题",
+    fileLimit: "图片, PDF, TXT (最大10MB)", fileSelect: "选择文件",
+    filterAll: "全部", firstPostBonus: "首次发帖奖励", freeMediaSearch: "免费媒体搜索",
+    genBtnLabel: "生成", genResult: "生成结果", genStep: "AI生成中",
+    importBtnLabel: "导入", inputStep: "输入内容",
+    introFeatures: "主要功能", introGuide: "使用指南", introSteps: "步骤",
+    itemsUnit: "个",
+    keywordLabel: "关键词 / 主题",
+    loadingPosts: "加载中...", manageCategories: "管理分类",
+    noPosts: "暂无帖子", noSearchResult: "没有搜索结果",
+    pointsNotice: "积分不足",
+    regenBtn: "重新生成", regenDesc: "让AI重新生成", regenTitle: "重新生成",
+    relatedImages: "相关图片", resultStep: "查看结果",
+    searchKw: "搜索关键词", selectLength: "篇幅", selectTone: "语气", selectType: "文章类型",
+    sortLatest: "最新", sortLikes: "点赞", sortViews: "浏览",
+    targetLabel: "目标读者", toneLabel: "语气", totalN: "全部",
+    urlImportLabel: "URL导入", volumeLabel: "篇幅",
+    viewCompact: "紧凑", viewGallery: "画廊", viewList: "列表",
+    withAttach: "有附件", writePost: "发帖",
   },
 };
 
@@ -295,7 +347,12 @@ export function I18nProvider({ children }) {
       // URL ?lang= 파라미터 우선
       const urlLang = new URLSearchParams(window.location.search).get("lang");
       if (urlLang && T[urlLang]) { localStorage.setItem(LANG_KEY, urlLang); return urlLang; }
-      return localStorage.getItem(LANG_KEY) || "ko";
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved && T[saved]) return saved;
+      // 브라우저 언어 자동 감지
+      const browserLang = (navigator.language || "").split("-")[0];
+      if (browserLang && T[browserLang]) { localStorage.setItem(LANG_KEY, browserLang); return browserLang; }
+      return "ko";
     } catch { return "ko"; }
   });
 
