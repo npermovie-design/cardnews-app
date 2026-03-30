@@ -130,7 +130,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { id: "face_swap",    title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
       { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
       { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)", iconImg: "/icon-youtube.png" },
+      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)", iconImg: "/icon-youtube.png", adminOnly: true },
       { id: "repurpose",    title: _s("원소스 멀티유즈","Content Repurposing"), desc: _s("한 콘텐츠 → 다채널 변환","One content → multi-channel"), cr: 35, darkColor: "rgba(16,185,129,0.18)", lightColor: "rgba(16,185,129,0.07)" },
     ];
     // 카테고리별 그룹
@@ -141,7 +141,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
       { label: _s("이미지 생성","Image Generation"), color: "#f59e0b",
         items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"].includes(m.id)) },
-      { label: _s("영상 제작","Video Production"), color: "#ef4444",
+      { label: _s("영상 제작","Video Production"), color: "#ef4444", devBadge: true,
         items: MENUS.filter(m => m.id === "shorts_make") },
       { label: _s("리퍼포징","Repurposing"), color: "#10b981",
         items: MENUS.filter(m => m.id === "repurpose") },
@@ -221,15 +221,35 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           </div>
 
           {/* 카테고리별 그리드 */}
-          {GROUPS.map(group => (
+          {GROUPS.map(group => {
+            const isAdmin = user?.role === "admin";
+            const visibleItems = group.items.filter(m => !m.adminOnly || isAdmin);
+            if (visibleItems.length === 0 && !group.devBadge) return null;
+            if (group.devBadge && !isAdmin) {
+              // 비관리자에게는 "개발중" 안내만 표시
+              return (
+                <div key={group.label} style={{ marginBottom: 32 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: group.color }}>{group.label}</div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 6, padding: "2px 8px" }}>개발중</span>
+                    <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
+                  </div>
+                  <div style={{ padding: "24px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", textAlign: "center" }}>
+                    <div style={{ fontSize: 13, color: homeMuted }}>곧 만나볼 수 있어요! 열심히 준비하고 있습니다.</div>
+                  </div>
+                </div>
+              );
+            }
+            return (
             <div key={group.label} style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: group.color }}>{group.label}</div>
+                {group.devBadge && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 6, padding: "2px 8px" }}>개발중</span>}
                 <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
-                <div style={{ fontSize: 11, color: homeMuted }}>{group.items.length}{_s("개","")}</div>
+                <div style={{ fontSize: 11, color: homeMuted }}>{visibleItems.length}{_s("개","")}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12 }}>
-                {group.items.map(m => (
+                {visibleItems.map(m => (
                   <div key={m.id} onClick={() => setAiMenu(m.id)} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && setAiMenu(m.id)} style={{
                     padding: "18px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`,
                     background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
@@ -250,7 +270,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -695,8 +716,18 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
   }
 
-  // 영상 제작
+  // 영상 제작 (관리자 전용 - 개발중)
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
+    if (user?.role !== "admin") {
+      return (
+        <div style={{ textAlign: "center", padding: "80px 20px" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 8 }}>영상 제작 기능 개발중</div>
+          <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.5)" : "#888" }}>곧 만나볼 수 있어요! 열심히 준비하고 있습니다.</div>
+          <button onClick={() => setAiMenu("home")} style={{ marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "none", background: "#7c6aff", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>홈으로</button>
+        </div>
+      );
+    }
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} />;
   }
 

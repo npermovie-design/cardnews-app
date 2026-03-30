@@ -112,7 +112,15 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         <Item id="content_create" label="콘텐츠 제작" icon="/icons3d/palette.png" ids={["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"]} badge="추천" badgeColor="orange" />
         <Item id="image_create" label="이미지 생성" icon="/icons3d/instagram-cam.png" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
         <Item id="image_edit" label="이미지 수정" icon="/icons3d/camera.png" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
-        <Item id="video_create" label="영상 제작" icon="/icons3d/sns-app.png" ids={["shorts_make"]} badge="Beta" badgeColor="blue" />
+        {user?.role === "admin" ? (
+          <Item id="video_create" label="영상 제작" icon="/icons3d/sns-app.png" ids={["shorts_make"]} badge="개발중" badgeColor="orange" />
+        ) : (
+          <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 8, opacity: 0.5 }}>
+            <img src="/icons3d/sns-app.png" alt="" style={{ width: 20, height: 20 }} />
+            <span style={{ fontSize: 13, color: isDark ? "#aaa" : "#999" }}>영상 제작</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 4, padding: "1px 6px", marginLeft: "auto" }}>개발중</span>
+          </div>
+        )}
 
         <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
         <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>리퍼포징</div>
