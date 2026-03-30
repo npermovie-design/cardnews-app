@@ -335,15 +335,15 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 16, textAlign: "center" }}>{p("recTitle")}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
               {[
-                { label: p("recPersonal"), plans: "Free / Basic", desc: p("recPersonalDesc"), icon: "👤", badge: null, color: "#888" },
-                { label: p("recTeam"), plans: "Pro", desc: p("recTeamDesc"), icon: "👥", badge: p("recTeamBadge"), color: "#7c6aff" },
-                { label: p("recAgency"), plans: "Premium", desc: p("recAgencyDesc"), icon: "🏢", badge: null, color: "#f59e0b" },
+                { label: p("recPersonal"), plans: "Free / Basic", desc: p("recPersonalDesc"), icon3d: "/icons3d/char-standing.png", badge: null, color: "#888" },
+                { label: p("recTeam"), plans: "Pro", desc: p("recTeamDesc"), icon3d: "/icons3d/char-headphone.png", badge: p("recTeamBadge"), color: "#7c6aff" },
+                { label: p("recAgency"), plans: "Premium", desc: p("recAgencyDesc"), icon3d: "/icons3d/char-backpack.png", badge: null, color: "#f59e0b" },
               ].map((seg, i) => (
                 <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #7c6aff" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(124,106,255,0.15)" : C.shadow }}>
                   {seg.badge && (
                     <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{seg.badge}</div>
                   )}
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{seg.icon}</div>
+                  <img src={seg.icon3d} alt="" style={{ width: 44, height: 44, objectFit: "contain", marginBottom: 8 }} />
                   <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>{seg.label}</div>
                   <div style={{ fontSize: 18, fontWeight: 900, color: seg.color, marginBottom: 6 }}>{seg.plans}</div>
                   <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{seg.desc}</div>

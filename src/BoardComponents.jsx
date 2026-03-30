@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase, uploadFileToStorage } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
+import { searchGifs as klipySearch, trendingGifs as klipyTrending, getMediaUrl as klipyMediaUrl } from "./klipyClient";
 
 /* ════════════════════════════════════════════════════════════
    BoardComponents - 게시판 하위 컴포넌트
@@ -127,6 +128,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
   // 탭별 소스 목록
   const tabSources = {
     gif: [
+      { id:"klipy", label:"Klipy" },
       { id:"giphy", label:"Giphy" },
       ...(TENOR_KEY ? [{ id:"tenor", label:"Tenor" }] : []),
     ],
@@ -148,6 +150,13 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
   const fetchSource = async (sourceId, q) => {
     const fns = {
+      klipy:    async ()=>{
+        try {
+          const data = q ? await klipySearch(q, 20) : await klipyTrending(20);
+          const items = (data?.results || data?.data || []).map(g => ({ thumb: klipyMediaUrl(g, "tinygif") || g.media?.[0]?.tinygif?.url || g.url, full: klipyMediaUrl(g, "gif") || g.media?.[0]?.gif?.url || g.url, title: g.title || "", type: "gif", source: "Klipy" }));
+          return { items, next: "" };
+        } catch { return { items: [], next: "" }; }
+      },
       giphy:    ()=>fetchGiphyData(q, 0),
       tenor:    ()=>fetchTenorData(q, ""),
       pixphoto: ()=>fetchPixabayPhotos(q||"nature", 1),

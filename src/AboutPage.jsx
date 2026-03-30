@@ -114,13 +114,13 @@ export function AboutPage({ navigate, C }) {
         {/* 회사 개요 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,100%),1fr))", gap: 14, marginBottom: 28 }}>
           {[
-            { value: lang === "ko" ? "2024.10" : "Oct 2024", label: lang === "ko" ? "서비스 런칭" : "Launched", icon: "🚀" },
-            { value: "20+", label: lang === "ko" ? "AI 도구" : "AI Tools", icon: "🛠️" },
-            { value: lang === "ko" ? "4개국어" : "4 Languages", label: lang === "ko" ? "다국어 지원" : "Multilingual", icon: "🌐" },
-            { value: "2,000+", label: lang === "ko" ? "월 사용자" : "Monthly Users", icon: "👥" },
+            { value: lang === "ko" ? "2024.10" : "Oct 2024", label: lang === "ko" ? "서비스 런칭" : "Launched", icon3d: "/icons3d/sns-heart.png" },
+            { value: "20+", label: lang === "ko" ? "AI 도구" : "AI Tools", icon3d: "/icons3d/keyboard.png" },
+            { value: lang === "ko" ? "4개국어" : "4 Languages", label: lang === "ko" ? "다국어 지원" : "Multilingual", icon3d: "/icons3d/sns-content.png" },
+            { value: "2,000+", label: lang === "ko" ? "월 사용자" : "Monthly Users", icon3d: "/icons3d/char-headphone.png" },
           ].map((stat, i) => (
             <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: C.shadow }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{stat.icon}</div>
+              <img src={stat.icon3d} alt="" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />
               <div style={{ fontSize: 22, fontWeight: 900, color: "#7c6aff", marginBottom: 4 }}>{stat.value}</div>
               <div style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{stat.label}</div>
             </div>

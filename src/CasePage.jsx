@@ -163,7 +163,7 @@ export default function CasePage({ C, isDark, user }) {
               display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
               {c.thumb
                 ? <img src={c.thumb} alt={c.brand} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <div style={{ fontSize: 40 }}>🏆</div>}
+                : <img src="/icons3d/thumbsup.png" alt="" style={{ width: 56, height: 56, objectFit: "contain" }} />}
               <div style={{ position: "absolute", top: 12, left: 12, display: "flex", gap: 6 }}>
                 <span style={{ padding: "3px 10px", borderRadius: 6, background: `${accent}dd`, color: "#fff", fontSize: 11, fontWeight: 700 }}>{c.feature}</span>
               </div>
@@ -211,7 +211,7 @@ export default function CasePage({ C, isDark, user }) {
             display: "flex", alignItems: "center", justifyContent: "center", minHeight: 280, cursor: "pointer" }}
             onClick={() => window.location.hash = "#contact"}>
             <div style={{ textAlign: "center", padding: 30 }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📢</div>
+              <img src="/icons3d/sns-share.png" alt="" style={{ width: 56, height: 56, objectFit: "contain", marginBottom: 12 }} />
               <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>{lang === "ko" ? "고객사례 등록하기" : "Submit Case"}</div>
               <div style={{ fontSize: 13, color: muted, lineHeight: 1.6 }}>
                 {lang === "ko" ? (<>SNS메이킷을 활용한 사례가 있다면<br />문의하기를 통해 등록해주세요!</>) : (<>Have a case using SNS Makeit?<br />Contact us to register!</>)}
