@@ -47,9 +47,8 @@ function useOnlineCount() {
     async function hb() {
       if (cancelled) return;
       try {
+        // upsert + count를 한 번에 (delete는 서버 cron으로 처리)
         await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
-        const cutoff = new Date(Date.now() - 20000).toISOString();
-        await supabase.from("online_users").delete().lt("last_seen", cutoff);
         const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
         if (!cancelled && cnt != null) setCount(cnt);
       } catch(e) {
@@ -59,14 +58,14 @@ function useOnlineCount() {
           const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
           const now = Date.now();
           raw[myId] = now;
-          Object.keys(raw).forEach(k => { if (now - raw[k] > 15000) delete raw[k]; });
+          Object.keys(raw).forEach(k => { if (now - raw[k] > 60000) delete raw[k]; });
           localStorage.setItem(KEY, JSON.stringify(raw));
           if (!cancelled) setCount(Object.keys(raw).length);
         } catch(e2) {}
       }
     }
     hb();
-    const t = setInterval(hb, 8000);
+    const t = setInterval(hb, 60000); // 8초 → 60초
     return () => {
       cancelled = true;
       clearInterval(t);
@@ -151,7 +150,7 @@ export default function App() {
   const [scrolled,   setScrolled]   = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    const onScroll = () => { setShowScrollTop(window.scrollY > 400); setScrolled(window.scrollY > 10); };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -219,12 +218,6 @@ export default function App() {
       }
     );
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
   }, []);
 
   useEffect(() => {
