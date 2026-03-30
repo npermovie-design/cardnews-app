@@ -1,4 +1,4 @@
-const CACHE_NAME = "snsmakeit-v3";
+const CACHE_NAME = "snsmakeit-v4";
 const PRECACHE = ["/", "/index.html"];
 
 self.addEventListener("install", (e) => {
