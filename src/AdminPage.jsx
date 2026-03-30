@@ -92,16 +92,18 @@ export default function AdminPage({ C, user: adminUser }) {
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
 
+  // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
+  const adminApi = async (action, extra = "") => {
+    const uid = adminUser?.uid || "";
+    const r = await fetch(`/api/admin?action=${action}&uid=${encodeURIComponent(uid)}${extra}`);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
+    return r.json();
+  };
+
   // 최근 7일간 일별 신규 가입자 수
   const loadDailySignups = async () => {
     try {
-      const since = new Date(Date.now() - 7 * 86400000).toISOString();
-      // join_date 우선, 없으면 created_at 폴백
-      let { data } = await supabase.from("users").select("join_date,created_at").gte("join_date", since);
-      if (!data || data.length === 0) {
-        const res = await supabase.from("users").select("join_date,created_at").gte("created_at", since);
-        data = res.data;
-      }
+      const { data } = await adminApi("daily_signups");
       const counts = {};
       for (let i = 6; i >= 0; i--) {
         const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
@@ -109,10 +111,7 @@ export default function AdminPage({ C, user: adminUser }) {
       }
       (data || []).forEach(r => {
         const dt = r.join_date || r.created_at;
-        if (dt) {
-          const d = dt.slice(0, 10);
-          if (counts[d] !== undefined) counts[d]++;
-        }
+        if (dt) { const d = dt.slice(0, 10); if (counts[d] !== undefined) counts[d]++; }
       });
       setDailySignups(Object.entries(counts).map(([date, count]) => ({ date, count })));
     } catch { setDailySignups([]); }
@@ -121,46 +120,31 @@ export default function AdminPage({ C, user: adminUser }) {
   // 최근 7일간 일별 AI 사용량
   const loadDailyAiUsage = async () => {
     try {
-      const since = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { data } = await supabase.from("point_history").select("created_at").lt("delta", 0).gte("created_at", since);
+      const { data } = await adminApi("daily_ai");
       const counts = {};
       for (let i = 6; i >= 0; i--) {
         const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
         counts[d] = 0;
       }
       (data || []).forEach(r => {
-        if (r.created_at) {
-          const d = r.created_at.slice(0, 10);
-          if (counts[d] !== undefined) counts[d]++;
-        }
+        if (r.created_at) { const d = r.created_at.slice(0, 10); if (counts[d] !== undefined) counts[d]++; }
       });
       setDailyAiUsage(Object.entries(counts).map(([date, count]) => ({ date, count })));
     } catch { setDailyAiUsage([]); }
   };
 
-  // Supabase에서 회원 목록 로드
+  // 회원 목록 로드 (API 경유 — RLS 우회)
   const loadMembers = async () => {
     setLoadingMembers(true);
     try {
-      // 정렬 없이 전체 가져오기 (join_date 컬럼 미존재 대비)
-      let allMembers = [];
-      let from = 0;
-      const PAGE = 1000;
-      while (true) {
-        const { data, error } = await supabase.from("users").select("*").range(from, from + PAGE - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allMembers = allMembers.concat(data);
-        if (data.length < PAGE) break;
-        from += PAGE;
-      }
+      const { members: allMembers } = await adminApi("members");
       // 클라이언트에서 정렬 (join_date 우선, 없으면 created_at)
-      allMembers.sort((a, b) => {
+      (allMembers || []).sort((a, b) => {
         const da = new Date(a.join_date || a.created_at || 0);
         const db = new Date(b.join_date || b.created_at || 0);
         return db - da;
       });
-      setMembers2(allMembers);
+      setMembers2(allMembers || []);
     } catch(e) { console.error("회원 로드 실패:", e); showToast("회원 로드 실패: " + (e.message || e)); }
     setLoadingMembers(false);
   };
@@ -178,8 +162,8 @@ export default function AdminPage({ C, user: adminUser }) {
   const loadAiLogs = async () => {
     setAiLogsLoading(true);
     try {
-      const { data } = await supabase.from("point_history").select("*").order("created_at",{ascending:false}).limit(200);
-      setAiLogs(data || []);
+      const { logs } = await adminApi("ai_logs");
+      setAiLogs(logs || []);
     } catch {}
     setAiLogsLoading(false);
   };
@@ -187,7 +171,7 @@ export default function AdminPage({ C, user: adminUser }) {
   useEffect(() => {
     if (auth) {
       loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
-      supabase.from("online_users").select("*",{count:"exact",head:true}).then(({count})=>setOnlineCount(count||0)).catch(()=>{});
+      adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     }
   }, [auth]);
 
@@ -282,45 +266,45 @@ export default function AdminPage({ C, user: adminUser }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // ── 포인트 지급 (Supabase)
+  // ── 포인트 지급 (API 경유)
   const grantPoints = async (uid, pts) => {
     if (!pts || isNaN(pts)) { showToast("포인트를 입력하세요"); return; }
     try {
       const member = members.find(m => m.uid === uid);
       const next = (member?.points || 0) + Number(pts);
-      await supabase.from("users").update({ points: next }).eq("uid", uid);
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${next}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
       showToast("+" + pts + "P 지급 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 초기화 (Supabase)
+  // ── 포인트 초기화 (API 경유)
   const resetPoints = async (uid) => {
     if (!window.confirm("이 회원의 포인트를 0으로 초기화할까요?")) return;
     try {
-      await supabase.from("users").update({ points: 0 }).eq("uid", uid);
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=0`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: 0 } : m));
       showToast("포인트 초기화 완료");
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 직접 설정 (Supabase)
+  // ── 포인트 직접 설정 (API 경유)
   const setPoints = async (uid, pts) => {
     if (!pts || isNaN(pts)) return;
     try {
-      await supabase.from("users").update({ points: Number(pts) }).eq("uid", uid);
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${Number(pts)}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: Number(pts) } : m));
       showToast(pts + "P 설정 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 회원 탈퇴 (Supabase)
+  // ── 회원 탈퇴 (API 경유)
   const deleteMember = async (uid, nick) => {
     if (!window.confirm(`"${nick}" 회원을 탈퇴 처리하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
     try {
-      await supabase.from("users").delete().eq("uid", uid);
+      await adminApi("delete_member", `&target_uid=${encodeURIComponent(uid)}`);
       setMembers2(prev => prev.filter(m => m.uid !== uid));
       showToast(`"${nick}" 회원 탈퇴 처리 완료`);
     } catch(e) { showToast("오류: " + e.message); }
