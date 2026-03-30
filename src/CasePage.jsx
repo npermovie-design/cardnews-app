@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useI18n } from "./i18n.jsx";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
@@ -54,6 +55,7 @@ async function sbFetch(path, options = {}) {
 }
 
 export default function CasePage({ C, isDark, user }) {
+  const { lang } = useI18n();
   const text = isDark ? "#e8eaed" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
@@ -92,7 +94,7 @@ export default function CasePage({ C, isDark, user }) {
 
   // 사례 저장
   const saveCase = async () => {
-    if (!form.brand || !form.title) return alert("브랜드명과 제목은 필수입니다.");
+    if (!form.brand || !form.title) return alert(lang === "ko" ? "브랜드명과 제목은 필수입니다." : "Brand name and title are required.");
     setSaving(true);
     try {
       const payload = {
@@ -115,13 +117,13 @@ export default function CasePage({ C, isDark, user }) {
       }
       setForm({ brand: "", field: "", feature: "", title: "", desc: "", link: "", thumb: "", tags: "" });
       setShowForm(false);
-    } catch (e) { alert("저장 실패: " + e.message); }
+    } catch (e) { alert((lang === "ko" ? "저장 실패: " : "Save failed: ") + e.message); }
     setSaving(false);
   };
 
   // 사례 삭제 (관리자)
   const deleteCase = async (id) => {
-    if (!confirm("이 사례를 삭제하시겠습니까?")) return;
+    if (!confirm(lang === "ko" ? "이 사례를 삭제하시겠습니까?" : "Delete this case?")) return;
     await sbFetch(`customer_cases?id=eq.${id}`, { method: "DELETE" });
     setCases(prev => prev.filter(c => c.id !== id));
   };
@@ -130,13 +132,13 @@ export default function CasePage({ C, isDark, user }) {
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 20px 80px" }}>
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <div style={{ display: "inline-block", padding: "6px 16px", borderRadius: 20, background: `${accent}15`, color: accent, fontSize: 13, fontWeight: 700, marginBottom: 16 }}>
-          고객사례
+          {lang === "ko" ? "고객사례" : "Customer Cases"}
         </div>
         <h1 style={{ fontSize: 32, fontWeight: 900, color: text, margin: "0 0 12px", letterSpacing: -1 }}>
-          SNS메이킷으로 만든<br />성공 사례를 확인하세요
+          {lang === "ko" ? (<>SNS메이킷으로 만든<br />성공 사례를 확인하세요</>) : (<>Success stories made<br />with SNS Makeit</>)}
         </h1>
         <p style={{ fontSize: 15, color: muted, lineHeight: 1.7, maxWidth: 500, margin: "0 auto" }}>
-          다양한 브랜드와 크리에이터들이 SNS메이킷을 활용하여 콘텐츠를 제작하고 있습니다.
+          {lang === "ko" ? "다양한 브랜드와 크리에이터들이 SNS메이킷을 활용하여 콘텐츠를 제작하고 있습니다." : "Various brands and creators are producing content with SNS Makeit."}
         </p>
       </div>
 
@@ -198,9 +200,9 @@ export default function CasePage({ C, isDark, user }) {
             onClick={() => setShowForm(true)}>
             <div style={{ textAlign: "center", padding: 30 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>+</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: accent, marginBottom: 6 }}>고객사례 등록하기</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: accent, marginBottom: 6 }}>{lang === "ko" ? "고객사례 등록하기" : "Submit Case"}</div>
               <div style={{ fontSize: 13, color: muted, lineHeight: 1.6 }}>
-                새로운 고객 사례를 직접 등록하세요
+                {lang === "ko" ? "새로운 고객 사례를 직접 등록하세요" : "Register a new customer case"}
               </div>
             </div>
           </div>
@@ -210,9 +212,9 @@ export default function CasePage({ C, isDark, user }) {
             onClick={() => window.location.hash = "#contact"}>
             <div style={{ textAlign: "center", padding: 30 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📢</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>고객사례 등록하기</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 6 }}>{lang === "ko" ? "고객사례 등록하기" : "Submit Case"}</div>
               <div style={{ fontSize: 13, color: muted, lineHeight: 1.6 }}>
-                SNS메이킷을 활용한 사례가 있다면<br />문의하기를 통해 등록해주세요!
+                {lang === "ko" ? (<>SNS메이킷을 활용한 사례가 있다면<br />문의하기를 통해 등록해주세요!</>) : (<>Have a case using SNS Makeit?<br />Contact us to register!</>)}
               </div>
             </div>
           </div>
@@ -226,14 +228,14 @@ export default function CasePage({ C, isDark, user }) {
           <div onClick={e => e.stopPropagation()} style={{ width: "min(560px,95vw)", maxHeight: "85vh", overflowY: "auto",
             background: isDark ? "#1a1730" : "#fff", borderRadius: 20, padding: "28px 24px", boxShadow: "0 24px 64px rgba(0,0,0,0.4)", border: `1px solid ${bdr}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: text }}>고객사례 등록</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: text }}>{lang === "ko" ? "고객사례 등록" : "Register Case"}</div>
               <button onClick={() => setShowForm(false)}
                 style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
 
             {/* 썸네일 업로드 */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>썸네일 이미지</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>{lang === "ko" ? "썸네일 이미지" : "Thumbnail Image"}</div>
               {form.thumb && (
                 <div style={{ marginBottom: 8, borderRadius: 12, overflow: "hidden", border: `1px solid ${bdr}` }}>
                   <img src={form.thumb} alt="" style={{ width: "100%", height: 160, objectFit: "cover" }} />
@@ -241,10 +243,10 @@ export default function CasePage({ C, isDark, user }) {
               )}
               <label style={{ display: "inline-block", padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`,
                 background: inputBg, color: text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                이미지 선택
+                {lang === "ko" ? "이미지 선택" : "Choose Image"}
                 <input type="file" accept="image/*" onChange={handleThumbUpload} style={{ display: "none" }} />
               </label>
-              <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>또는 URL 직접 입력:</span>
+              <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>{lang === "ko" ? "또는 URL 직접 입력:" : "Or enter URL:"}</span>
               <input type="text" value={form.thumb} onChange={e => setForm(f => ({ ...f, thumb: e.target.value }))}
                 placeholder="https://example.com/image.jpg"
                 style={{ width: "100%", marginTop: 6, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
@@ -252,12 +254,12 @@ export default function CasePage({ C, isDark, user }) {
 
             {/* 폼 필드 */}
             {[
-              { key: "brand", label: "브랜드명 *", placeholder: "예: 두컴퍼니" },
-              { key: "field", label: "업종/분야", placeholder: "예: 커스텀 주얼리" },
-              { key: "feature", label: "사용 기능", placeholder: "예: 네이버 블로그 글쓰기" },
-              { key: "title", label: "사례 제목 *", placeholder: "성과를 포함한 제목" },
-              { key: "link", label: "연결 링크", placeholder: "https://example.com" },
-              { key: "tags", label: "태그 (쉼표 구분)", placeholder: "네이버 블로그, SEO, 마케팅" },
+              { key: "brand", label: lang === "ko" ? "브랜드명 *" : "Brand Name *", placeholder: lang === "ko" ? "예: 두컴퍼니" : "e.g. Acme Corp" },
+              { key: "field", label: lang === "ko" ? "업종/분야" : "Industry", placeholder: lang === "ko" ? "예: 커스텀 주얼리" : "e.g. Custom Jewelry" },
+              { key: "feature", label: lang === "ko" ? "사용 기능" : "Feature Used", placeholder: lang === "ko" ? "예: 네이버 블로그 글쓰기" : "e.g. Blog Writing" },
+              { key: "title", label: lang === "ko" ? "사례 제목 *" : "Case Title *", placeholder: lang === "ko" ? "성과를 포함한 제목" : "Title with results" },
+              { key: "link", label: lang === "ko" ? "연결 링크" : "Link", placeholder: "https://example.com" },
+              { key: "tags", label: lang === "ko" ? "태그 (쉼표 구분)" : "Tags (comma-separated)", placeholder: lang === "ko" ? "네이버 블로그, SEO, 마케팅" : "Blog, SEO, Marketing" },
             ].map(f => (
               <div key={f.key} style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{f.label}</div>
@@ -269,9 +271,9 @@ export default function CasePage({ C, isDark, user }) {
 
             {/* 설명 */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>설명</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{lang === "ko" ? "설명" : "Description"}</div>
               <textarea value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
-                placeholder="고객 사례에 대한 상세 설명을 입력해주세요"
+                placeholder={lang === "ko" ? "고객 사례에 대한 상세 설명을 입력해주세요" : "Enter a detailed description of the case"}
                 style={{ width: "100%", minHeight: 80, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
             </div>
 
@@ -279,7 +281,7 @@ export default function CasePage({ C, isDark, user }) {
               style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none",
                 background: `linear-gradient(135deg,${accent},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800,
                 cursor: saving ? "wait" : "pointer", opacity: saving ? 0.6 : 1 }}>
-              {saving ? "저장 중..." : "고객사례 등록"}
+              {saving ? (lang === "ko" ? "저장 중..." : "Saving...") : (lang === "ko" ? "고객사례 등록" : "Submit")}
             </button>
           </div>
         </div>
