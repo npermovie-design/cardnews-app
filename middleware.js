@@ -73,6 +73,11 @@ const PAGE_META = {
     desc: "내 계정, 포인트, 생성 히스토리를 관리하세요.",
     keywords: "마이페이지, 계정관리",
   },
+  "/snsnews": {
+    title: "SNS뉴스 - 오늘의 SNS 마케팅 브리핑 | SNS메이킷",
+    desc: "AI가 매일 분석하는 SNS 마케팅 뉴스. 인스타그램, 틱톡, 유튜브, 네이버 최신 트렌드와 알고리즘 변경 소식을 확인하세요.",
+    keywords: "SNS 뉴스, SNS 마케팅 브리핑, 인스타그램 뉴스, 틱톡 뉴스, 마케팅 트렌드",
+  },
 };
 
 // 카테고리별 이름
@@ -80,9 +85,12 @@ const COMMUNITY_CATS = {
   info: "정보공유",
   qna: "질문답변",
   free: "자유게시판",
+  review: "사용후기",
+  archive: "자료실",
   resource: "자료실",
   tip: "꿀팁",
   showcase: "작품공유",
+  sns_briefing: "SNS 브리핑",
 };
 
 // 검색엔진 + 소셜 크롤러 (Googlebot 포함 — SPA 색인 문제 해결)
