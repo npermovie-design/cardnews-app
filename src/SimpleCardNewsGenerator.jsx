@@ -5,6 +5,7 @@ import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import { isDarkTheme } from "./theme";
 import CardNewsEditor from "./CardNewsEditor";
+import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
    SimpleCardNewsGenerator.jsx
@@ -28,55 +29,55 @@ function loadGFont(family) {
 }
 
 // ── 예시 주제 (주제 + 상세내용) ────────────────────────────────
-const TOPIC_EXAMPLES = [
-  { label:"직장인 번아웃", text:"직장인 번아웃 극복법 5가지",
+const getTopicExamples = (ko) => [
+  { label:ko?"직장인 번아웃":"Burnout", text:"직장인 번아웃 극복법 5가지",
     detail:"1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법 (퇴근 후 메일 차단)\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)\n4. 주말 디지털 디톡스 루틴\n5. 번아웃 예방을 위한 취미 활동 추천" },
-  { label:"주식 입문", text:"주식 투자 완전 초보 가이드",
+  { label:ko?"주식 입문":"Stock Basics", text:"주식 투자 완전 초보 가이드",
     detail:"1. 증권계좌 개설 방법 (MTS 추천)\n2. 주식 용어 정리 (PER, PBR, 시가총액)\n3. ETF vs 개별주 차이점\n4. 초보자 추천 투자 전략 (적립식)\n5. 절대 하면 안 되는 투자 실수 3가지" },
-  { label:"다이어트", text:"다이어트 식단 추천",
+  { label:ko?"다이어트":"Diet", text:"다이어트 식단 추천",
     detail:"1. 칼로리 계산 없이 하는 간헐적 단식\n2. 아침/점심/저녁 식단 예시\n3. 다이어트 중 먹어도 되는 간식 5가지\n4. 운동 없이 체중 감량하는 생활습관\n5. 요요 없이 유지하는 방법" },
-  { label:"마음 챙김", text:"하루 10분 마음 챙김 루틴",
+  { label:ko?"마음 챙김":"Mindfulness", text:"하루 10분 마음 챙김 루틴",
     detail:"1. 아침 5분 감사일기 쓰기\n2. 호흡 명상 기초 (4-7-8 호흡법)\n3. 걷기 명상으로 스트레스 해소\n4. 자기 전 바디스캔 명상\n5. 일주일 마음 챙김 플래너 예시" },
-  { label:"재테크", text:"2030 재테크 필수 습관",
+  { label:ko?"재테크":"Finance", text:"2030 재테크 필수 습관",
     detail:"1. 월급 관리 50-30-20 법칙\n2. 비상금 통장 만들기 (6개월치)\n3. 청약통장 가입 꿀팁\n4. 소액으로 시작하는 투자 (로보어드바이저)\n5. 연말정산 절세 체크리스트" },
-  { label:"홈트", text:"집에서 할 수 있는 홈트 루틴",
+  { label:ko?"홈트":"Home Workout", text:"집에서 할 수 있는 홈트 루틴",
     detail:"1. 장비 없이 하는 전신 운동 5가지\n2. 초보자 주 3회 홈트 스케줄\n3. 코어 강화 플랭크 챌린지 (30일)\n4. 스트레칭으로 거북목 교정\n5. 홈트 효과를 높이는 식단 팁" },
-  { label:"SNS 성장", text:"인스타그램 팔로워 늘리는 방법",
+  { label:ko?"SNS 성장":"SNS Growth", text:"인스타그램 팔로워 늘리는 방법",
     detail:"1. 프로필 최적화 (바이오, 하이라이트)\n2. 릴스 알고리즘 공략법\n3. 해시태그 전략 (대형+중형+소형 조합)\n4. 게시 최적 시간대와 빈도\n5. 참여율을 높이는 캡션 작성법" },
-  { label:"독서법", text:"성인 자기계발 독서법",
+  { label:ko?"독서법":"Reading Tips", text:"성인 자기계발 독서법",
     detail:"1. 한 달에 책 4권 읽는 시간 관리법\n2. 밑줄 치기 vs 메모 독서법 비교\n3. 읽은 책 정리하는 노션 템플릿\n4. 분야별 입문서 추천 5권\n5. 독서 모임 참여로 꾸준히 읽기" },
-  { label:"카페 창업", text:"소자본 카페 창업 가이드",
+  { label:ko?"카페 창업":"Cafe Startup", text:"소자본 카페 창업 가이드",
     detail:"1. 창업 비용 항목별 정리 (3천만원~1억)\n2. 상권 분석 체크리스트\n3. 메뉴 구성 전략 (시그니처 메뉴 만들기)\n4. SNS 마케팅으로 단골 만들기\n5. 실패하는 카페의 공통점 3가지" },
-  { label:"여행 팁", text:"해외여행 준비 완벽 가이드",
+  { label:ko?"여행 팁":"Travel Tips", text:"해외여행 준비 완벽 가이드",
     detail:"1. 항공권 최저가 예약 시기와 방법\n2. 여행자 보험 가입 꿀팁\n3. 짐 싸기 체크리스트 (캐리어 정리법)\n4. 현지에서 쓸 유용한 앱 5개\n5. 환전 vs 카드 결제 비교" },
 ];
 
 // ── 슬라이드 타입 ────────────────────────────────────────────
-const SLIDE_TYPES = [
-  { id:"cover",     label:"표지"          },
-  { id:"intro",     label:"소개"          },
-  { id:"point1",    label:"핵심 포인트 1" },
-  { id:"point2",    label:"핵심 포인트 2" },
-  { id:"point3",    label:"핵심 포인트 3" },
-  { id:"point4",    label:"핵심 포인트 4" },
-  { id:"point5",    label:"핵심 포인트 5" },
-  { id:"detail",    label:"상세 설명"     },
-  { id:"compare",   label:"비교표"        },
-  { id:"stats",     label:"수치/지표"     },
-  { id:"checklist", label:"체크리스트"    },
-  { id:"tip",       label:"꿀팁"          },
-  { id:"summary",   label:"요약 정리"     },
-  { id:"quote",     label:"명언/인용구"   },
-  { id:"cta",       label:"마무리/CTA"    },
+const getSlideTypes = (ko) => [
+  { id:"cover",     label:ko?"표지":"Cover"                },
+  { id:"intro",     label:ko?"소개":"Intro"                },
+  { id:"point1",    label:ko?"핵심 포인트 1":"Key Point 1" },
+  { id:"point2",    label:ko?"핵심 포인트 2":"Key Point 2" },
+  { id:"point3",    label:ko?"핵심 포인트 3":"Key Point 3" },
+  { id:"point4",    label:ko?"핵심 포인트 4":"Key Point 4" },
+  { id:"point5",    label:ko?"핵심 포인트 5":"Key Point 5" },
+  { id:"detail",    label:ko?"상세 설명":"Detail"          },
+  { id:"compare",   label:ko?"비교표":"Comparison"         },
+  { id:"stats",     label:ko?"수치/지표":"Stats"           },
+  { id:"checklist", label:ko?"체크리스트":"Checklist"      },
+  { id:"tip",       label:ko?"꿀팁":"Tips"                 },
+  { id:"summary",   label:ko?"요약 정리":"Summary"         },
+  { id:"quote",     label:ko?"명언/인용구":"Quote"         },
+  { id:"cta",       label:ko?"마무리/CTA":"CTA"            },
 ];
 
 // ── 사이즈 프리셋 ────────────────────────────────────────────
-const SIZE_PRESETS = [
-  { label:"정사각형",  w:1080, h:1080, icon:"1:1", desc:"SNS / 인스타그램" },
-  { label:"세로 9:16", w:1080, h:1920, icon:"9:16", desc:"쇼츠 / 릴스" },
-  { label:"세로 4:5",  w:1080, h:1350, icon:"4:5", desc:"인스타 피드" },
-  { label:"가로형",    w:1200, h:628,  icon:"16:9", desc:"배너 / 블로그" },
-  { label:"직접 입력", w:null, h:null, icon:"W×H", desc:"직접 설정" },
+const getSizePresets = (ko) => [
+  { label:ko?"정사각형":"Square",        w:1080, h:1080, icon:"1:1",  desc:ko?"SNS / 인스타그램":"SNS / Instagram" },
+  { label:ko?"세로 9:16":"Vertical 9:16",w:1080, h:1920, icon:"9:16", desc:ko?"쇼츠 / 릴스":"Shorts / Reels" },
+  { label:ko?"세로 4:5":"Vertical 4:5",  w:1080, h:1350, icon:"4:5",  desc:ko?"인스타 피드":"Instagram Feed" },
+  { label:ko?"가로형":"Horizontal",      w:1200, h:628,  icon:"16:9", desc:ko?"배너 / 블로그":"Banner / Blog" },
+  { label:ko?"직접 입력":"Custom",       w:null, h:null, icon:"W×H",  desc:ko?"직접 설정":"Custom Size" },
 ];
 
 // ── 디자인 프리셋 (CardNewsApp 스타일) ───────────────────────
@@ -379,8 +380,8 @@ function SlideCanvas({ slide, style, CW, CH, displayW, bgImageSrc }) {
 }
 
 // ── API 호출 ─────────────────────────────────────────────────
-async function generateSlideTexts({ topic, pageCount, sourceContent, topicDetail }) {
-  const types = SLIDE_TYPES.slice(0, pageCount);
+async function generateSlideTexts({ topic, pageCount, sourceContent, topicDetail, slideTypes }) {
+  const types = (slideTypes || getSlideTypes(true)).slice(0, pageCount);
   const srcCtx = sourceContent ? `\n\n[참고할 원본 내용]\n${sourceContent.slice(0, 700)}` : "";
   const detailCtx = topicDetail ? `\n\n[상세 내용 — 각 슬라이드에 반드시 이 내용을 반영하세요]\n${topicDetail}` : "";
   const prompt = `한국 SNS 카드뉴스 카피라이터입니다.
@@ -415,7 +416,7 @@ async function getTopicSuggestions(topic) {
 }
 
 // ── 커뮤니티 템플릿 섹션 ────────────────────────────────────
-function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply }) {
+function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=true }) {
   const [templates, setTemplates] = useState([]);
   const [loadingTpl, setLoadingTpl] = useState(true);
 
@@ -460,20 +461,20 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply }) {
     <div style={{ marginBottom:28, padding:"16px 18px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:800, color:text }}>커뮤니티 템플릿</div>
-          <div style={{ fontSize:11, color:muted, marginTop:2 }}>다른 사용자가 공유한 템플릿을 바로 적용할 수 있어요</div>
+          <div style={{ fontSize:14, fontWeight:800, color:text }}>{ko?"커뮤니티 템플릿":"Community Templates"}</div>
+          <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"다른 사용자가 공유한 템플릿을 바로 적용할 수 있어요":"Apply templates shared by other users"}</div>
         </div>
         {templates.length > 0 && <span style={{ fontSize:11, color:muted }}>{templates.length}개</span>}
       </div>
       {loadingTpl ? (
         <div style={{ textAlign:"center", padding:"20px 0", color:muted, fontSize:12 }}>
           <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 8px" }} />
-          템플릿 불러오는 중...
+          {ko?"템플릿 불러오는 중...":"Loading templates..."}
         </div>
       ) : templates.length === 0 ? (
         <div style={{ textAlign:"center", padding:"28px 12px", color:muted, fontSize:13, lineHeight:1.8 }}>
           <div style={{ fontSize:36, marginBottom:8 }}>📭</div>
-          아직 공유된 템플릿이 없습니다.<br/>카드뉴스를 만들고 공유해보세요!
+          {ko?"아직 공유된 템플릿이 없습니다.":"No shared templates yet."}<br/>{ko?"카드뉴스를 만들고 공유해보세요!":"Create and share your card news!"}
         </div>
       ) : (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:10 }}>
@@ -488,15 +489,15 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply }) {
                   <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:muted }}>🎨</div>
                 )}
                 {tpl.source === "mine" && (
-                  <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>내 템플릿</div>
+                  <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>{ko?"내 템플릿":"My Template"}</div>
                 )}
               </div>
               <div style={{ padding:"8px 10px" }}>
-                <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || "제목 없음"}</div>
-                <div style={{ fontSize:10, color:muted, marginTop:2 }}>{tpl.author || "익명"} · {tpl.slide_count || "?"}장</div>
+                <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || (ko?"제목 없음":"Untitled")}</div>
+                <div style={{ fontSize:10, color:muted, marginTop:2 }}>{tpl.author || (ko?"익명":"Anonymous")} · {tpl.slide_count || "?"}{ko?"장":""}</div>
                 <button onClick={(e) => { e.stopPropagation(); onApply(tpl); }}
                   style={{ marginTop:6, width:"100%", padding:"5px 0", borderRadius:6, border:"none", background:"rgba(99,102,241,0.15)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
-                  사용하기
+                  {ko?"사용하기":"Use"}
                 </button>
               </div>
             </div>
@@ -508,13 +509,13 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply }) {
 }
 
 // ── 기획 중 애니메이션 컴포넌트 ─────────────────────────────
-function PlanningAnimation({ pageCount }) {
+function PlanningAnimation({ pageCount, ko=true }) {
   const [step, setStep] = useState(0);
   const steps = [
-    { icon: "\uD83D\uDCCB", text: "주제를 분석하고 있어요" },
-    { icon: "\u270F\uFE0F", text: "슬라이드를 기획하고 있어요" },
-    { icon: "\uD83C\uDFA8", text: "디자인을 구성하고 있어요" },
-    { icon: "\u2728", text: "거의 완성됐어요!" },
+    { icon: "\uD83D\uDCCB", text: ko?"주제를 분석하고 있어요":"Analyzing your topic" },
+    { icon: "\u270F\uFE0F", text: ko?"슬라이드를 기획하고 있어요":"Planning slides" },
+    { icon: "\uD83C\uDFA8", text: ko?"디자인을 구성하고 있어요":"Designing layout" },
+    { icon: "\u2728", text: ko?"거의 완성됐어요!":"Almost done!" },
   ];
 
   useEffect(() => {
@@ -538,7 +539,7 @@ function PlanningAnimation({ pageCount }) {
           {currentStep.text}
         </div>
         <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginBottom:32, lineHeight:1.6 }}>
-          AI가 {pageCount}장의 카드뉴스를 제작하고 있어요
+          {ko?`AI가 ${pageCount}장의 카드뉴스를 제작하고 있어요`:`AI is creating ${pageCount} card news slides`}
         </div>
 
         {/* 단계 인디케이터 */}
@@ -598,6 +599,12 @@ function PlanningAnimation({ pageCount }) {
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
 export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary , onUserUpdate, showPointConfirm}) {
+  const { lang } = useI18n();
+  const ko = lang === "ko";
+  const TOPIC_EXAMPLES = getTopicExamples(ko);
+  const SLIDE_TYPES = getSlideTypes(ko);
+  const SIZE_PRESETS = getSizePresets(ko);
+
   // 보관함에서 열기: 마운트 전 localStorage에서 항목 읽기
   const libItem = (() => {
     if (!openFromLibrary) return null;
@@ -782,7 +789,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const WizHeader = () => (
     <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
-        {[["1","주제 입력"],["2","슬라이드 기획"],["3","디자인 선택"],["4","편집"]].map(([n,label],i)=>{
+        {[["1",ko?"주제 입력":"Topic"],["2",ko?"슬라이드 기획":"Plan"],["3",ko?"디자인 선택":"Design"],["4",ko?"편집":"Edit"]].map(([n,label],i)=>{
           const step=parseInt(n); const done=wizStep>step; const active=wizStep===step;
           return (
             <div key={n} style={{ display:"flex", alignItems:"center", flex:i<3?1:"auto" }}>
@@ -870,7 +877,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
         const empty = slidesData.filter(s=>!s.title);
         if (empty.length>0) {
-          const fill = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail});
+          const fill = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail, slideTypes: SLIDE_TYPES});
           fill.slides?.forEach(fs=>{
             const idx=slidesData.findIndex(s=>s.id===fs.id&&!s.title);
             if(idx>=0) slidesData[idx]={...slidesData[idx],title:fs.headline,subtitle:fs.subheadline,body:fs.body,highlight:fs.badge,headline:fs.headline};
@@ -878,7 +885,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         }
       } else {
         const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
-        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail});
+        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail, slideTypes: SLIDE_TYPES});
         slidesData = (textData.slides||[]).map(s=>({
           ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge
         }));
@@ -886,7 +893,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       saveToCardLibrary(slidesData);
       // 포인트 차감은 생성 시작 시점에 처리됨
-    } catch(e) { setSlides([]); setWizStep(3); setGenError("생성에 실패했습니다: " + (e.message || "다시 시도해주세요.")); console.error("생성 실패:", e.message); }
+    } catch(e) { setSlides([]); setWizStep(3); setGenError((ko?"생성에 실패했습니다: ":"Generation failed: ") + (e.message || (ko?"다시 시도해주세요.":"Please try again."))); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 
@@ -956,7 +963,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   // 전체 ZIP
   const saveAll = async () => {
     if(!slides.length) return;
-    setDlSt({busy:true,msg:"ZIP 생성 중..."});
+    setDlSt({busy:true,msg:ko?"ZIP 생성 중...":"Creating ZIP..."});
     if(!window.JSZip) await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
     const zip=new window.JSZip();
     for(let i=0;i<slides.length;i++){
@@ -1003,7 +1010,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // ── 템플릿 공유 ──────────────────────────────────────────
   const shareAsTemplate = (previewImage) => {
-    const title = window.prompt("공유할 템플릿 제목을 입력하세요:", topic || "");
+    const title = window.prompt(ko?"공유할 템플릿 제목을 입력하세요:":"Enter a title for the shared template:", topic || "");
     if (!title) return;
 
     // 첫 슬라이드 미리보기 생성 (previewImage가 없으면 직접 그리기)
@@ -1058,7 +1065,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         } catch {}
       }
 
-      alert("템플릿이 공유되었습니다!");
+      alert(ko?"템플릿이 공유되었습니다!":"Template shared!");
     })();
   };
 
@@ -1077,22 +1084,22 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* WizHeader 제거 */}
         <div style={{ maxWidth:960, margin:"0 auto", padding:"16px 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>주제를 입력하세요</div>
-            <div style={{ fontSize:12, color:muted }}>주제를 입력하면 AI가 슬라이드를 자동 구성해줘요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"주제를 입력하세요":"Enter a Topic"}</div>
+            <div style={{ fontSize:12, color:muted }}>{ko?"주제를 입력하면 AI가 슬라이드를 자동 구성해줘요":"Enter a topic and AI will auto-generate your slides"}</div>
           </div>
 
           {/* URL 불러오기 */}
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>🔗 URL로 내용 불러오기</div>
-            <div style={{ fontSize:11, color:muted, marginBottom:10 }}>뉴스 기사, 유튜브 링크, 블로그 URL을 붙여넣으면 자동으로 주제를 불러와요</div>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>{ko?"🔗 URL로 내용 불러오기":"🔗 Import from URL"}</div>
+            <div style={{ fontSize:11, color:muted, marginBottom:10 }}>{ko?"뉴스 기사, 유튜브 링크, 블로그 URL을 붙여넣으면 자동으로 주제를 불러와요":"Paste a news article, YouTube, or blog URL to auto-import content"}</div>
             <div style={{ display:"flex", gap:8 }}>
               <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
                 onKeyDown={e=>{ if(e.key==="Enter") fetchFromUrl(); }}
-                placeholder="https://... 뉴스/유튜브/블로그 URL 붙여넣기"
+                placeholder={ko?"https://... 뉴스/유튜브/블로그 URL 붙여넣기":"https://... Paste news/YouTube/blog URL"}
                 style={{ flex:1, padding:"11px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
                 style={{ padding:"11px 18px", borderRadius:12, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
-                {urlLoading?"불러오는 중...":"불러오기"}
+                {urlLoading?(ko?"불러오는 중...":"Loading..."):(ko?"불러오기":"Import")}
               </button>
             </div>
             {urlResult && (
@@ -1100,7 +1107,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                 {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:56, height:40, objectFit:"cover", borderRadius:5, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{urlResult.title}</div>
-                  <div style={{ fontSize:11, color:muted, marginTop:2 }}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스 기사":"블로그"} · 내용이 주제에 자동 입력됐어요</div>
+                  <div style={{ fontSize:11, color:muted, marginTop:2 }}>{urlResult.type==="youtube"?"YouTube":urlResult.type==="news"?(ko?"뉴스 기사":"News"):(ko?"블로그":"Blog")} · {ko?"내용이 주제에 자동 입력됐어요":"Content auto-filled into topic"}</div>
                 </div>
               </div>
             )}
@@ -1108,7 +1115,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
           {/* 예시 주제 */}
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>예시 주제</div>
+            <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>{ko?"예시 주제":"Example Topics"}</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
               {TOPIC_EXAMPLES.map(ex=>{
                 const isC = topic === ex.text;
@@ -1122,25 +1129,25 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             </div>
 
             {/* 주제 입력 */}
-            <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:5 }}>주제</div>
+            <div style={{ fontSize:11, fontWeight:700, color:text, marginBottom:5 }}>{ko?"주제":"Topic"}</div>
             <input value={topic} onChange={e=>setTopic(e.target.value)}
-              placeholder="주제를 직접 입력하세요... 예) 직장인 번아웃 극복법 5가지"
+              placeholder={ko?"주제를 직접 입력하세요... ��) 직장인 번아웃 극복법 5가지":"Enter your topic... e.g. 5 Ways to Overcome Burnout"}
               style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:12, padding:"11px 14px", color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
 
             {/* 상세 내용 */}
             <div style={{ fontSize:11, fontWeight:700, color:text, marginTop:12, marginBottom:5 }}>
-              상세 내용 <span style={{ fontWeight:400, color:muted }}>(선택) — 각 슬라이드에 들어갈 핵심 내용</span>
+              {ko?"상세 내용":"Details"} <span style={{ fontWeight:400, color:muted }}>{ko?"(선택) — 각 슬라이드에 들어갈 핵심 내용":"(optional) — key content for each slide"}</span>
             </div>
             <textarea value={topicDetail} onChange={e=>setTopicDetail(e.target.value)}
-              placeholder={"각 슬라이드에 넣고 싶은 내용을 줄바꿈으로 구분해 입력하세요\n예)\n1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)"} rows={5}
+              placeholder={ko?"각 슬라이드에 넣고 싶은 내용을 줄바꿈으로 구분해 입력하세요\n예)\n1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)":"Enter content for each slide, separated by line breaks\ne.g.\n1. Burnout self-check\n2. Setting work boundaries\n3. Micro breaks (work 50min, rest 10min)"} rows={5}
               style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:12, padding:"11px 14px", color:text, fontSize:12, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.8 }}/>
           </div>
 
           {/* 슬라이드 수 */}
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:text }}>슬라이드 수</div>
-              <div style={{ fontSize:22, fontWeight:900, color:accentColor }}>{pageCount}장</div>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"슬라이드 수":"Slide Count"}</div>
+              <div style={{ fontSize:22, fontWeight:900, color:accentColor }}>{pageCount}{ko?"장":""}</div>
             </div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {[3,4,5,6,7,8,10,12].map(n=>{
@@ -1162,17 +1169,17 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:aiSugg?14:0 }}>
               <div>
-                <div style={{ fontSize:13, fontWeight:700, color:text }}>AI 주제 추천</div>
-                <div style={{ fontSize:11, color:muted, marginTop:2 }}>주제를 입력하면 더 구체적인 방향을 추천해줘요</div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"AI 주제 추천":"AI Topic Suggestions"}</div>
+                <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"주제를 입력하면 더 구체적인 방향을 추천해줘요":"Enter a topic to get more specific suggestions"}</div>
               </div>
               <button onClick={getSugg} disabled={suggesting||!topic.trim()}
                 style={{ padding:"8px 16px", borderRadius:12, border:"none", cursor:suggesting||!topic.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:suggesting||!topic.trim()?0.5:1, flexShrink:0 }}>
-                {suggesting?"추천 중...":"✨ AI 추천"}
+                {suggesting?(ko?"추천 중...":"Suggesting..."):(ko?"✨ AI 추천":"✨ AI Suggest")}
               </button>
             </div>
             {aiSugg && (
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                {[{key:"topics",items:aiSugg.topics,label:"주제 방향"},{key:"subtopics",items:aiSugg.subtopics,label:"세부 내용 방향"}]
+                {[{key:"topics",items:aiSugg.topics,label:ko?"주제 방향":"Topic Directions"},{key:"subtopics",items:aiSugg.subtopics,label:ko?"세부 내용 방향":"Detail Directions"}]
                   .filter(r=>r.items?.length>0).map(({key,items,label})=>(
                   <div key={key}>
                     <div style={{ fontSize:10, fontWeight:700, color:muted, letterSpacing:1, marginBottom:5 }}>{label}</div>
@@ -1181,7 +1188,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     </div>
                   </div>
                 ))}
-                <div style={{ fontSize:10, color:muted }}>클릭하면 주제에 바로 적용돼요</div>
+                <div style={{ fontSize:10, color:muted }}>{ko?"클릭하면 주제에 바로 적용돼요":"Click to apply to your topic"}</div>
               </div>
             )}
           </div>
@@ -1194,7 +1201,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
               style={{ padding:"14px 28px", borderRadius:12, border:`1px solid ${canNext?"rgba(124,106,255,0.4)":"rgba(124,106,255,0.15)"}`, cursor:canNext?"pointer":"not-allowed", background:"transparent", color:canNext?"#7c6aff":"rgba(99,102,241,0.3)", fontSize:14, fontWeight:700 }}>
-              직접 기획
+              {ko?"직접 기획":"Manual Plan"}
             </button>
             <button onClick={async()=>{
               if(!canNext) return;
@@ -1202,7 +1209,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               const initSlides = SLIDE_TYPES.slice(0,pageCount).map(t=>({id:t.id,label:t.label,headline:"",subheadline:"",body:"",badge:"",aiLoading:false}));
               setSlideContents(initSlides);
               try {
-                const result = await generateSlideTexts({ topic, pageCount, sourceContent:urlResult?.content, topicDetail });
+                const result = await generateSlideTexts({ topic, pageCount, sourceContent:urlResult?.content, topicDetail, slideTypes: SLIDE_TYPES });
                 if(result?.slides?.length) {
                   setSlideContents(result.slides.map((s,i)=>({...initSlides[i],...s, aiLoading:false})));
                 }
@@ -1211,7 +1218,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               setWizStep(2);
             }} disabled={!canNext||planLoading}
               style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext&&!planLoading?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8, opacity:planLoading?0.7:1 }}>
-              {planLoading?"AI 기획 중...":"AI 자동 기획 →"}
+              {planLoading?(ko?"AI 기획 중...":"AI Planning..."):(ko?"AI 자동 기획 →":"AI Auto-Plan →")}
             </button>
           </div>
         </div>
@@ -1226,30 +1233,30 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* WizHeader 제거 */}
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>슬라이드 기획</div>
-            <div style={{ fontSize:12, color:muted }}>문구를 직접 입력하거나 비워두면 AI가 자동 채워줘요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"슬라이드 기획":"Slide Planning"}</div>
+            <div style={{ fontSize:12, color:muted }}>{ko?"문구를 직접 입력하거나 비워두면 AI가 자동 채워줘요":"Enter text manually or leave blank for AI to auto-fill"}</div>
           </div>
           {urlResult && (
             <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", display:"flex", alignItems:"center", gap:12 }}>
               {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:44, height:32, objectFit:"cover", borderRadius:6, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
-                <div style={{ fontSize:11, color:muted, marginTop:2 }}>불러온 내용을 기반으로 슬라이드가 자동 구성돼요</div>
+                <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"불러온 내용을 기반으로 슬라이드가 자동 구성돼요":"Slides auto-generated from imported content"}</div>
               </div>
               <button onClick={suggestAll} disabled={planLoading}
                 style={{ padding:"7px 14px", borderRadius:12, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
-                {planLoading?"구성 중...":"재구성"}
+                {planLoading?(ko?"구성 중...":"Loading..."):(ko?"재구성":"Regenerate")}
               </button>
             </div>
           )}
           <div style={{ display:"flex", gap:8, marginBottom:20, padding:"12px 16px", borderRadius:12, background:cardBg, border:`1px solid ${bdr}`, alignItems:"center", justifyContent:"space-between" }}>
             <div>
-              <div style={{ fontSize:13, fontWeight:700, color:text }}>전체 AI 추천</div>
-              <div style={{ fontSize:11, color:muted, marginTop:2 }}>모든 슬라이드 내용을 AI가 한 번에 추천</div>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"전체 AI 추천":"AI Suggest All"}</div>
+              <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"모든 슬라이드 내용을 AI가 한 번에 추천":"AI suggests content for all slides at once"}</div>
             </div>
             <button onClick={suggestAll} disabled={planLoading}
               style={{ padding:"9px 20px", borderRadius:12, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
-              {planLoading?"추천 중...":"✨ 전체 자동 추천"}
+              {planLoading?(ko?"추천 중...":"Suggesting..."):(ko?"✨ 전체 자동 추천":"✨ Auto-Suggest All")}
             </button>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -1259,22 +1266,22 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:24, height:24, borderRadius:7, background:"rgba(99,102,241,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:"#7c6aff" }}>{i+1}</div>
                     <span style={{ fontSize:13, fontWeight:800, color:text }}>{sc.label}</span>
-                    {sc.headline&&<span style={{ fontSize:11, color:"#7c6aff", fontWeight:600 }}>✓ 입력됨</span>}
+                    {sc.headline&&<span style={{ fontSize:11, color:"#7c6aff", fontWeight:600 }}>{ko?"✓ 입력됨":"✓ Filled"}</span>}
                   </div>
                   <button onClick={()=>suggestOne(i)} disabled={sc.aiLoading||planLoading}
                     style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:sc.aiLoading||planLoading?"wait":"pointer", opacity:sc.aiLoading||planLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
-                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#7c6aff",animation:"spin 0.8s linear infinite" }}/>추천 중</>:"✦ AI 추천"}
+                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#7c6aff",animation:"spin 0.8s linear infinite" }}/>{ko?"추천 중":"Loading"}</>:(ko?"✦ AI 추천":"✦ AI Suggest")}
                   </button>
                 </div>
                 <div style={{ padding:"10px 14px", display:"grid", gap:8 }}>
                   <div>
-                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>헤드라인 <span style={{ fontWeight:400 }}>(14자 이내)</span></div>
-                    <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))} placeholder="비워두면 AI가 자동 생성"
+                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>{ko?"헤드라인":"Headline"} <span style={{ fontWeight:400 }}>{ko?"(14자 이내)":"(max 14 chars)"}</span></div>
+                    <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))} placeholder={ko?"비워두면 AI가 자동 생성":"Leave blank for AI auto-fill"}
                       style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${sc.headline?"rgba(99,102,241,0.5)":bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                   <div>
-                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>본문 <span style={{ fontWeight:400 }}>(50자 이내, 선택)</span></div>
-                    <input value={sc.body||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,body:e.target.value}:s))} placeholder="비워두면 AI가 자동 생성"
+                    <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>{ko?"본문":"Body"} <span style={{ fontWeight:400 }}>{ko?"(50자 이내, 선택)":"(max 50 chars, optional)"}</span></div>
+                    <input value={sc.body||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,body:e.target.value}:s))} placeholder={ko?"비워두면 AI가 자동 생성":"Leave blank for AI auto-fill"}
                       style={{ width:"100%",padding:"11px 14px",borderRadius:12,border:`1px solid ${bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:12,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                 </div>
@@ -1282,9 +1289,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             ))}
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-            <button onClick={()=>setWizStep(1)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
+            <button onClick={()=>setWizStep(1)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
             <button onClick={()=>setWizStep(3)} style={{ padding:"14px 40px",borderRadius:12,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
-              다음 → <span style={{ fontSize:12,opacity:0.8 }}>디자인 선택</span>
+              {ko?"다음 →":"Next →"} <span style={{ fontSize:12,opacity:0.8 }}>{ko?"디자인 선택":"Design"}</span>
             </button>
           </div>
         </div>
@@ -1300,13 +1307,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* WizHeader 제거 */}
         <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>디자인 & 크기</div>
-            <div style={{ fontSize:12, color:muted }}>템플릿을 사용하거나 스타일을 선택하세요</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"디자인 & 크기":"Design & Size"}</div>
+            <div style={{ fontSize:12, color:muted }}>{ko?"템플릿을 사용하거나 스타일을 선택하세요":"Use a template or choose a style"}</div>
           </div>
 
           {/* 커뮤니티 템플릿 */}
           <CommunityTemplateSection
-            D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg}
+            D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg} ko={ko}
             onApply={(tpl) => {
               try {
                 // 1) 슬라이드 텍스트 적용
@@ -1337,7 +1344,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
           {/* 디자인 프리셋 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>디자인 스타일</div>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>{ko?"디자인 스타일":"Design Style"}</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
               {DESIGN_PRESETS.map((p) => {
                 const sel = selPreset?.key === p.key;
@@ -1357,7 +1364,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           {/* 이미지 크기 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:text }}>이미지 크기</div>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"이미지 크기":"Image Size"}</div>
               <div style={{ fontSize:14, fontWeight:900, color:"#7c6aff" }}>{imgW} × {imgH} px</div>
             </div>
             <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
@@ -1373,33 +1380,33 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             {preset.w==null&&(
               <div style={{ display:"flex",gap:8,alignItems:"center" }}>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>가로 (px)</div>
+                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>{ko?"가로":"Width"} (px)</div>
                   <input type="number" value={customW} onChange={e=>setCustomW(Number(e.target.value))} min={100} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
                 </div>
                 <div style={{ fontSize:18,color:muted,paddingTop:18 }}>×</div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>세로 (px)</div>
+                  <div style={{ fontSize:11,color:muted,marginBottom:4 }}>{ko?"세로":"Height"} (px)</div>
                   <input type="number" value={customH} onChange={e=>setCustomH(Number(e.target.value))} min={100} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
                 </div>
               </div>
             )}
             {preset.w&&<div style={{ fontSize:11,color:muted,textAlign:"center",marginTop:4 }}>{preset.desc} · {preset.w}×{preset.h}px</div>}
             <div style={{ marginTop:12,display:"flex",alignItems:"center",gap:10 }}>
-              <div style={{ fontSize:10,color:muted }}>비율</div>
+              <div style={{ fontSize:10,color:muted }}>{ko?"비율":"Ratio"}</div>
               <div style={{ width:Math.min(56,56*imgRatio),height:Math.min(56,56/imgRatio),background:"rgba(99,102,241,0.25)",border:"1.5px solid rgba(99,102,241,0.5)",borderRadius:3 }}/>
-              <div style={{ fontSize:11,color:muted }}>{imgW>imgH?"가로형":imgW<imgH?"세로형":"정사각형"} · {(imgW/imgH).toFixed(2)}:1</div>
+              <div style={{ fontSize:11,color:muted }}>{imgW>imgH?(ko?"가로형":"Horizontal"):imgW<imgH?(ko?"세로형":"Vertical"):(ko?"정사각형":"Square")} · {(imgW/imgH).toFixed(2)}:1</div>
             </div>
           </div>
 
           {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:13 }}>{genError}</div>}
 
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>← 이전</button>
+            <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>예상 차감: <b style={{ color:"#7c6aff" }}>10P</b></div>
+              <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감":"Est. cost"}: <b style={{ color:"#7c6aff" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
                 style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
-                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>생성 중...</>:user?"카드뉴스 만들기 →":"✦ 1회 생성하기"}
+                {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</>:user?(ko?"카드뉴스 만들기 →":"Generate →"):(ko?"✦ 1회 생성하기":"✦ Generate Once")}
               </button>
             </div>
           </div>
@@ -1407,7 +1414,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
         {/* 생성 중 애니메이션 */}
-        {loading && <PlanningAnimation pageCount={slides.length || pageCount} />}
+        {loading && <PlanningAnimation pageCount={slides.length || pageCount} ko={ko} />}
       </div>
     );
   }
