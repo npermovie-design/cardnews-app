@@ -15,6 +15,27 @@ const DEFAULT_CATS = [
   { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];
 
+/* ─── SEO: 게시글 메타태그 업데이트 헬퍼 ──────────────────── */
+function updatePostSeoMeta(post, catId) {
+  if (!post) return;
+  const plainBody = (post.body || "").replace(/<[^>]*>/g, "").slice(0, 155);
+  document.title = `${post.title} - SNS메이킷 커뮤니티`;
+  const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.content = val; };
+  setMeta('meta[name="description"]', plainBody);
+  setMeta('meta[property="og:title"]', `${post.title} - SNS메이킷`);
+  setMeta('meta[property="og:description"]', plainBody);
+  setMeta('meta[property="og:url"]', `https://snsmakeit.com/community/${catId}/post-${post.id}`);
+  const thumb = extractThumb(post.body || "") || (post.images && post.images[0]) || "";
+  if (thumb) setMeta('meta[property="og:image"]', thumb);
+}
+function resetBoardSeoMeta() {
+  document.title = "SNS메이킷 - 커뮤니티";
+  const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.content = val; };
+  setMeta('meta[name="description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 자유게시판");
+  setMeta('meta[property="og:title"]', "SNS메이킷 - 커뮤니티");
+  setMeta('meta[property="og:description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 자유게시판");
+}
+
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost, onUserUpdate }) {
   const { t } = useI18n();
@@ -202,10 +223,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       const found = posts.find(p=>String(p.id)===String(pendingPostId));
       if(found){
         const updated = {...found, views:(found.views||0)+1};
+        const cat = found.subCat||found.cat||subCat;
         setPostsS(prev => prev.map(pp=>pp.id===found.id ? updated : pp));
         updatePostInDB(found.id, {views: updated.views});
         setView(updated);
         if(found.subCat||found.cat) setSubCat(found.subCat||found.cat);
+        updatePostSeoMeta(updated, cat);
         // body가 없으면 Supabase에서 full post 로드
         if(!found.body){
           getPostByIdFromDB(found.id).then(full=>{
@@ -213,6 +236,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               const withBody={...updated, body:full.body, images:full.images||updated.images};
               setView(withBody);
               setPostsS(prev=>prev.map(pp=>pp.id===found.id?{...pp,body:full.body}:pp));
+              updatePostSeoMeta(withBody, cat);
             }
           });
         }
@@ -221,9 +245,11 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         getPostByIdFromDB(Number(pendingPostId)).then(full=>{
           if(full){
             const updated={...full, views:(full.views||0)+1};
+            const cat = full.subCat||full.cat||subCat;
             setView(updated);
             if(full.subCat||full.cat) setSubCat(full.subCat||full.cat);
             updatePostInDB(full.id, {views: updated.views}).catch(()=>{});
+            updatePostSeoMeta(updated, cat);
           }
         });
       }
@@ -352,16 +378,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     syncLocal(next); setView(updated);
     const cat = p.subCat||p.cat||subCat;
     window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
-    // SEO: 동적 title + meta description
-    document.title = `${p.title} - SNS메이킷 커뮤니티`;
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.content = (p.body||"").replace(/<[^>]*>/g,"").slice(0,155);
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.content = `${p.title} - SNS메이킷`;
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.content = (p.body||"").replace(/<[^>]*>/g,"").slice(0,155);
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.content = `https://snsmakeit.com/community/${cat}/post-${p.id}`;
+    // SEO: 동적 title + meta description + og tags
+    updatePostSeoMeta(updated, cat);
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
     // body가 없으면 Supabase에서 full post 로드
     if (!p.body) {
@@ -370,6 +388,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         const withBody = {...updated, body: full.body, images: full.images||updated.images};
         setView(withBody);
         setPostsS(prev => prev.map(pp => pp.id===p.id ? {...pp, body: full.body} : pp));
+        updatePostSeoMeta(withBody, cat); // body 로드 후 meta 갱신
       }
     }
   };
@@ -464,7 +483,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#7c6aff",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
       <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
-        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);document.title="SNS메이킷 - 커뮤니티";}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
+        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
           <div style={{padding:"24px 28px 20px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
@@ -573,7 +592,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         })()}
         {/* 목록으로 버튼 (하단) */}
         <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
-          <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);}}
+          <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}}
             style={{padding:"10px 32px",borderRadius:10,border:"1px solid "+bdr,background:C.card,color:C.muted,fontSize:14,fontWeight:700,cursor:"pointer"}}>
             ≡ 목록으로
           </button>
