@@ -3,11 +3,7 @@
 
 // ── Shared constants & helpers ───────────────────────────────────────────
 
-const ALLOWED_ORIGINS = [
-  "https://www.snsmakeit.com",
-  "https://snsmakeit.com",
-  "http://localhost:5173",
-];
+function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 function isBlockedUrl(urlStr) {
   try {
@@ -32,7 +28,7 @@ function setCors(req, res, { methods = "POST,OPTIONS", useWildcard = false } = {
     res.setHeader("Access-Control-Allow-Origin", "*");
   } else {
     const origin = req.headers.origin || "";
-    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+    res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   }
   res.setHeader("Access-Control-Allow-Methods", methods);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -606,7 +602,7 @@ export default async function handler(req, res) {
 
   if (!action || !ACTION_HANDLERS[action]) {
     const origin = req.headers.origin || "";
-    res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+    res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
     return res.status(400).json({
       error: "action 파라미터 필요",
       validActions: Object.keys(ACTION_HANDLERS),

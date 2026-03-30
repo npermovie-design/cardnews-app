@@ -15,11 +15,7 @@ import ytdlCore from "ytdl-core";
 import ytdlDistube from "@distube/ytdl-core";
 
 // ── 공통 ──────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://www.snsmakeit.com",
-  "https://snsmakeit.com",
-  "http://localhost:5173",
-];
+function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 const INVIDIOUS = [
   "https://invidious.io.lol",
@@ -35,7 +31,7 @@ function extractId(url) {
 
 function setCors(req, res, { methods = "GET,OPTIONS", headers, exposeHeaders } = {}) {
   const origin = req.headers.origin || "";
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", methods);
   if (headers) res.setHeader("Access-Control-Allow-Headers", headers);
   if (exposeHeaders) res.setHeader("Access-Control-Expose-Headers", exposeHeaders);

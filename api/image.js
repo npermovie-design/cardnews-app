@@ -3,12 +3,11 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 function setCors(req, res, methods) {
   const origin = req.headers.origin || req.headers.referer || "";
-  const allowedOrigin = ALLOWED_ORIGINS.find(o => origin.startsWith(o));
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin || ALLOWED_ORIGINS[0]);
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", methods);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }

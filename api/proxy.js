@@ -1,12 +1,11 @@
 // api/proxy.js — Klipy / Pexels / Pixabay API 프록시 통합
 // ?action=klipy|pexels|pixabay
 
-const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
-
 function setCors(req, res) {
   const origin = req.headers.origin || req.headers.referer || "";
-  const allowedOrigin = ALLOWED_ORIGINS.find(o => origin.startsWith(o));
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin || ALLOWED_ORIGINS[0]);
+  // snsmakeit.com + 모든 vercel preview URL 허용
+  const isAllowed = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
+  res.setHeader("Access-Control-Allow-Origin", isAllowed ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }

@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const VERIFY_TOKEN = process.env.INSTA_WEBHOOK_VERIFY_TOKEN || "snsmakeit_webhook_2026";
-const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 export const config = { maxDuration: 15 };
 
@@ -1068,7 +1068,7 @@ async function sendDM(accessToken, igAccountId, recipientId, message) {
 // ============================================================
 async function handleFetch(req, res) {
   const origin = req.headers.origin || "";
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();

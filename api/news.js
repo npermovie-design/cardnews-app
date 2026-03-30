@@ -3,10 +3,10 @@
 
 export const config = { runtime: "edge" };
 
-const ALLOWED_ORIGINS = ["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173"];
+function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 function getAllowedOrigin(req) {
   const origin = req.headers.get("origin") || "";
-  return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return isAllowedOrigin(origin) ? origin : "https://snsmakeit.com";
 }
 
 function isBlockedUrl(urlStr) {
