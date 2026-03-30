@@ -174,9 +174,18 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               ? "주제만 입력하면 AI가 카드뉴스, 블로그, 상세페이지를 3분 만에 완성합니다"
               : "Just enter a topic and AI completes card news, blogs, and detail pages in 3 minutes"}
           </p>
-          <p style={{ fontSize: 13, color: C.muted, opacity: 0.7, marginBottom: 36 }}>
-            {lang === "ko" ? "매월 2,000명 이상의 마케터와 크리에이터가 사용 중" : "Used by 2,000+ marketers and creators every month"}
-          </p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
+            {[
+              { icon: "🔒", text: lang === "ko" ? "SSL 보안" : "SSL Secure" },
+              { icon: "👥", text: lang === "ko" ? "2,000+ 사용자" : "2,000+ Users" },
+              { icon: "⚡", text: lang === "ko" ? "평균 3분 제작" : "3min Avg" },
+              { icon: "🌏", text: lang === "ko" ? "4개국어 지원" : "4 Languages" },
+            ].map(b => (
+              <span key={b.text} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: C.muted, opacity: 0.8 }}>
+                <span style={{ fontSize: 11 }}>{b.icon}</span> {b.text}
+              </span>
+            ))}
+          </div>
 
           <div className="cta-row" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 52 }}>
             <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
@@ -444,8 +453,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                     </th>
                     {[
                       { name: "SNS메이킷", highlight: true },
-                      { name: "ChatGPT", highlight: false },
-                      { name: "Canva", highlight: false },
+                      { name: lang === "ko" ? "AI 챗봇" : "AI Chatbot", highlight: false },
+                      { name: lang === "ko" ? "디자인 도구" : "Design Tool", highlight: false },
                       { name: lang === "ko" ? "개별 도구" : "Individual", highlight: false },
                     ].map(col => (
                       <th key={col.name} style={{
@@ -610,6 +619,37 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           ))}
         </div>
       </SecWrap>
+
+      {/* ══ 이런 분들이 사용 중 ══ */}
+      <section style={{ padding: "clamp(40px,6vw,60px) clamp(16px,4vw,24px)", background: "linear-gradient(180deg,#f8f8fb,#f5f4ff)" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 20, letterSpacing: 1 }}>
+            {lang === "ko" ? "다양한 분야에서 활용 중" : "Used across industries"}
+          </div>
+          <div style={{ display: "flex", gap: "clamp(16px,3vw,32px)", justifyContent: "center", flexWrap: "wrap" }}>
+            {(lang === "ko" ? [
+              { icon: "🛍️", label: "쇼핑몰 운영자" },
+              { icon: "📊", label: "마케팅 대행사" },
+              { icon: "🎬", label: "1인 크리에이터" },
+              { icon: "🏢", label: "스타트업" },
+              { icon: "📝", label: "블로거" },
+              { icon: "🎓", label: "프리랜서" },
+            ] : [
+              { icon: "🛍️", label: "E-commerce" },
+              { icon: "📊", label: "Agencies" },
+              { icon: "🎬", label: "Creators" },
+              { icon: "🏢", label: "Startups" },
+              { icon: "📝", label: "Bloggers" },
+              { icon: "🎓", label: "Freelancers" },
+            ]).map(s => (
+              <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 80 }}>
+                <div style={{ fontSize: 28 }}>{s.icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ══ 포인트 적립 시스템 ══ */}
       <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
