@@ -25,10 +25,9 @@
       ]
     }
   ],
-  "redirects": [
-    { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/naver-verify", "statusCode": 200 }
-  ],
+  "redirects": [],
   "rewrites": [
+    { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/naver-verify" },
     { "source": "/sitemap.xml", "destination": "/api/seo?action=sitemap" },
     { "source": "/rss.xml", "destination": "/api/seo?action=rss" },
     { "source": "/feed", "destination": "/api/seo?action=rss" },
