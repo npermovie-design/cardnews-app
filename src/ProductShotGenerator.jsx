@@ -135,7 +135,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
 
 export default function ProductShotGenerator({ isDark, user, onUserUpdate, showPointConfirm }) {
   const C      = THEMES[isDark ? "dark" : "light"];
-  const D      = isDarkTheme(C);
+  const D      = isDark;
   const text   = C.text;
   const muted  = C.muted;
   const cardBg = C.card;

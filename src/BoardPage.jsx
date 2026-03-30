@@ -289,7 +289,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts,subCat]);
   const hotPostsAll = useMemo(()=>
-    [...posts].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
+    [...posts].filter(p=>p.cat!=="sns_briefing"&&p.subCat!=="sns_briefing").sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts]);
 
   // 자료실 탭: 첨부파일 있는 전체 게시물 + 필터태그 적용

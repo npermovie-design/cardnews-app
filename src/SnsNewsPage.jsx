@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./storage";
+import { RichEditor, RichBody } from "./BoardComponents.jsx";
 // Footer는 App.jsx에서 렌더링
 
 /* ════════════════════════════════════════════════════════════
@@ -123,7 +124,7 @@ function renderBriefing(content) {
   });
 }
 
-/* ── 관리자 글 작성 모달 ── */
+/* ── 관리자 글 작성 (전체 화면 + 리치 에디터) ── */
 function NewsEditorModal({ article, onSave, onClose }) {
   const [title, setTitle] = useState(article?.title || "");
   const [content, setContent] = useState(article?.content || "");
@@ -143,36 +144,68 @@ function NewsEditorModal({ article, onSave, onClose }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "90vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
-        <div style={{ padding: "24px 28px", borderBottom: `1px solid ${bdr}` }}>
-          <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730", marginBottom: 4 }}>{article ? "뉴스 수정" : "새 뉴스 작성"}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>SNS 플랫폼 소식을 작성하세요</div>
+    <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "#fff", overflow: "auto" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 60px" }}>
+        {/* 상단 바 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: "#888", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 돌아가기</button>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730" }}>{article ? "아티클 수정" : "새 아티클 작성"}</div>
+          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "10px 28px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "저장 중..." : article ? "수정" : "발행"}</button>
         </div>
-        <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>제목</div><input value={title} onChange={e => setTitle(e.target.value)} placeholder="뉴스 제목" style={inp} /></div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>카테고리</div>
+
+        {/* 제목 */}
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요" style={{ ...inp, fontSize: 20, fontWeight: 800, padding: "16px 18px", marginBottom: 16, background: "#fff", border: `1.5px solid ${bdr}` }} />
+
+        {/* 카테고리 + 플랫폼 */}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>카테고리</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {ARTICLE_CATS.filter(c => c.id !== "all").map(c => (
                 <button key={c.id} onClick={() => setCategory(c.id)} style={{ padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${category === c.id ? c.color : bdr}`, background: category === c.id ? c.color + "15" : "transparent", color: category === c.id ? c.color : "#888", fontSize: 12, fontWeight: category === c.id ? 700 : 400, cursor: "pointer" }}>{c.label}</button>
               ))}
             </div>
           </div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>관련 플랫폼</div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>관련 플랫폼</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {PLATFORM_TAGS.map(p => (
                 <button key={p.id} onClick={() => setPlatforms(pr => pr.includes(p.id) ? pr.filter(x => x !== p.id) : [...pr, p.id])} style={{ padding: "5px 12px", borderRadius: 7, border: `1.5px solid ${platforms.includes(p.id) ? p.color : bdr}`, background: platforms.includes(p.id) ? p.color + "15" : "transparent", color: platforms.includes(p.id) ? p.color : "#888", fontSize: 11, fontWeight: platforms.includes(p.id) ? 700 : 400, cursor: "pointer" }}>{p.label}</button>
               ))}
             </div>
           </div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>썸네일 URL (선택)</div><input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://..." style={inp} /></div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>요약 (선택)</div><textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="2~3줄 요약" style={{ ...inp, minHeight: 60, resize: "vertical" }} /></div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>본문 (마크다운 지원)</div><textarea value={content} onChange={e => setContent(e.target.value)} placeholder="# 제목\n내용을 작성하세요..." style={{ ...inp, minHeight: 200, resize: "vertical", lineHeight: 1.8 }} /></div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /><span style={{ fontSize: 13, color: "#1a1730" }}>상단 고정</span></label>
         </div>
-        <div style={{ padding: "16px 28px 24px", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: "#888", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>취소</button>
-          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "10px 28px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "저장 중..." : article ? "수정" : "발행"}</button>
+
+        {/* 썸네일 + 요약 */}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>썸네일 이미지 (선택)</div>
+            {thumbnail && <div style={{ marginBottom: 6 }}><img src={thumbnail} alt="" style={{ maxWidth: 160, maxHeight: 90, borderRadius: 8, objectFit: "cover", border: `1px solid ${bdr}` }} /></div>}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <label style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#f5f5f8", color: "#1a1730", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                📁 파일
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  try { const ext = file.name.split(".").pop(); const path = `news-thumbnails/${Date.now()}.${ext}`; const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true }); if (error) throw error; const { data: u } = supabase.storage.from("images").getPublicUrl(path); setThumbnail(u.publicUrl); } catch { alert("업로드 실패"); }
+                }} />
+              </label>
+              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="또는 URL 입력" style={{ ...inp, flex: 1, padding: "8px 12px", fontSize: 12 }} />
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>요약 (선택)</div>
+            <textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="2~3줄 요약" style={{ ...inp, minHeight: 80, resize: "vertical" }} />
+          </div>
+        </div>
+
+        {/* 본문 - RichEditor (게시판과 동일한 리치 에디터) */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>본문</div>
+        <RichEditor value={content} onChange={setContent} placeholder="내용을 작성하세요... (서식, 링크, 이미지 삽입 가능)" minHeight={400} />
+
+        {/* 하단 옵션 */}
+        <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /><span style={{ fontSize: 13, color: "#1a1730" }}>상단 고정</span></label>
+          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "12px 36px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "저장 중..." : article ? "수정 완료" : "발행하기"}</button>
         </div>
       </div>
     </div>
@@ -413,7 +446,9 @@ export default function SnsNewsPage({ C, user, navigate }) {
             <button onClick={() => { setEditTarget(a); setEditorOpen(true); }} style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: accent, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>수정</button>
             <button onClick={() => handleDeleteArticle(a.id)} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>삭제</button>
           </div>}
-          <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${bdr}`, padding: "clamp(20px,4vw,36px)" }}>{renderBriefing(a.content)}</div>
+          <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${bdr}`, padding: "clamp(20px,4vw,36px)" }}>
+            {a.content?.includes("<") ? <RichBody html={a.content} /> : renderBriefing(a.content)}
+          </div>
           {/* 복사 + 공유 */}
           <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
             <button onClick={() => { const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean); alert("복사되었습니다!"); }}
