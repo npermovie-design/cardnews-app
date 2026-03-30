@@ -3,7 +3,6 @@ import { Canvas, Textbox, Rect, Circle, Line, FabricImage, Shadow, Gradient } fr
 import { supabase } from "./storage";
 import { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection, DEFAULT_THEME } from "./CardNewsEditorUtils.jsx";
 import { useI18n } from "./i18n.jsx";
-import { editorStyles } from "./editorStyles.js";
 
 /* ──────────────────────────────────────────────────────────────────────
    CardNewsEditor  –  Fabric.js v7 기반 카드뉴스 에디터
@@ -1275,10 +1274,10 @@ export default function CardNewsEditor({
 
   const overlayStyle = inline
     ? { width: "100%", flex: 1, display: "flex", alignItems: "stretch", justifyContent: "center", padding: 0, overflow: "hidden" }
-    : editorStyles.overlay;
+    : { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 };
   const modalStyle = inline
     ? { width: "100%", flex: 1, background: "#fff", display: "flex", overflow: "hidden", flexDirection: isMobile ? "column" : "row" }
-    : { ...editorStyles.modal, flexDirection: isMobile ? "column" : "row" };
+    : { ...{ width: "100%", maxWidth: 1400, height: "95vh", background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", boxShadow: "0 8px 60px rgba(0,0,0,0.25)" }, flexDirection: isMobile ? "column" : "row" };
 
   const isTextSelected = selectedObj && (selProps.type === "textbox" || selProps.type === "text");
 
@@ -1287,18 +1286,18 @@ export default function CardNewsEditor({
       <div style={modalStyle}>
 
         {/* ── LEFT: Canvas Area ──────────────────────────────────────── */}
-        <div style={{ ...editorStyles.canvasArea, width: canvasAreaW }}>
+        <div style={{ ...{ display: "flex", flexDirection: "column", background: "#f0f0f5", padding: 0, overflow: "hidden" }, width: canvasAreaW }}>
 
           {/* Header */}
-          <div style={editorStyles.slideNav}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
             {/* Left: page nav */}
-            <button style={editorStyles.navBtn} onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}>
+            <button style={{ background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}>
               <Icon.Left />
             </button>
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>
               {currentIdx + 1} / {totalSlides} {ko ? "페이지 편집" : "Page Edit"}
             </span>
-            <button style={editorStyles.navBtn} onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx >= totalSlides - 1}>
+            <button style={{ background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx >= totalSlides - 1}>
               <Icon.Right />
             </button>
             <div style={{ flex: 1 }} />
@@ -1320,7 +1319,7 @@ export default function CardNewsEditor({
           </div>
 
           {/* Canvas container */}
-          <div ref={containerRef} style={editorStyles.canvasContainer}>
+          <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8, background: "#e8e8ee" }}>
             <div style={{
               width: width * canvasScale,
               height: height * canvasScale,
@@ -1333,7 +1332,7 @@ export default function CardNewsEditor({
           </div>
 
           {/* Toolbar - 모바일에서만 표시, 데스크톱은 우측 패널 사용 */}
-          <div style={{ ...editorStyles.toolbar, display: isMobile ? "flex" : "none" }}>
+          <div style={{ ...{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 12px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)" }, display: isMobile ? "flex" : "none" }}>
             <Btn small onClick={addText}>{ko ? "+ 텍스트" : "+ Text"}</Btn>
             <Btn small onClick={() => fileInputRef.current?.click()}>{ko ? "+ 이미지" : "+ Image"}</Btn>
             <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">{ko ? "이미지 검색" : "Image Search"}</Btn>
@@ -1343,9 +1342,9 @@ export default function CardNewsEditor({
             <div style={{ position: "relative" }}>
               <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} active={showLayoutPicker} accent="#7c6aff">{ko ? "레이아웃" : "Layout"}</Btn>
               {showLayoutPicker && (
-                <div style={editorStyles.layoutPicker}>
+                <div style={{ position: "absolute", bottom: "110%", left: "50%", transform: "translateX(-50%)", background: "#fff", borderRadius: 12, padding: 10, boxShadow: "0 4px 24px rgba(0,0,0,0.18)", border: "1px solid rgba(0,0,0,0.08)", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, zIndex: 100, minWidth: 220 }}>
                   {LAYOUT_OPTIONS.map(lo => (
-                    <button key={lo.key} onClick={() => changeLayout(lo.key)} style={editorStyles.layoutOption} title={lo.label}>
+                    <button key={lo.key} onClick={() => changeLayout(lo.key)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "8px 4px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.08)", background: "#f9f9fb", cursor: "pointer", transition: "all 0.15s", minWidth: 48 }} title={lo.label}>
                       <span style={{ fontSize: 18, lineHeight: 1 }}>{lo.icon}</span>
                       <span style={{ fontSize: 10, fontWeight: 600, color: "#555" }}>{lo.label}</span>
                     </button>
@@ -1371,7 +1370,7 @@ export default function CardNewsEditor({
           </div>
 
           {/* Quick actions */}
-          <div style={editorStyles.quickActions}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "6px 12px 10px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
             <Btn small onClick={quickBrighter} accent="#f6ad55">{ko ? "더 밝게" : "Brighter"}</Btn>
             <Btn small onClick={quickDarker} accent="#4a5568">{ko ? "더 어둡게" : "Darker"}</Btn>
             <Btn small onClick={quickFontBigger} accent={C.purple}>{ko ? "폰트 크게" : "Font +"}</Btn>
@@ -1543,7 +1542,7 @@ export default function CardNewsEditor({
         </div>
 
         {/* ── RIGHT: Properties Panel ────────────────────────────────── */}
-        <div style={{ ...editorStyles.panel, width: panelW }}>
+        <div style={{ ...{ display: "flex", flexDirection: "column", background: "#fafafe", borderLeft: "1px solid rgba(0,0,0,0.08)", overflowY: "auto", padding: "0 0 16px" }, width: panelW }}>
           {/* 요소 추가 + 도구 */}
           <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexWrap: "wrap", gap: 6 }}>
             <Btn small onClick={addText}>{ko ? "+ 텍스트" : "+ Text"}</Btn>
@@ -1578,14 +1577,14 @@ export default function CardNewsEditor({
               <Btn small onClick={deleteSelected} style={{ color: "#e53e3e", marginLeft: "auto" }}><Icon.Trash /> {ko ? "삭제" : "Delete"}</Btn>
             </div>
           )}
-          <div style={editorStyles.panelTitle}>{ko ? "속성" : "Properties"}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, padding: "14px 18px", borderBottom: "1px solid rgba(0,0,0,0.06)", position: "sticky", top: 0, background: "#fafafe", zIndex: 2 }}>{ko ? "속성" : "Properties"}</div>
 
           {/* === Text props === */}
           {isTextSelected && (
             <CollapsibleSection title={ko ? "텍스트" : "Text"} defaultOpen={true} C={C}>
               {/* Font family */}
-              <label style={editorStyles.label}>{ko ? "폰트" : "Font"}</label>
-              <select style={editorStyles.select} value={selProps.fontFamily}
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "폰트" : "Font"}</label>
+              <select style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", fontSize: 13, background: "#fff", outline: "none" }} value={selProps.fontFamily}
                 onChange={e => {
                   const fam = e.target.value;
                   loadGFont(fam);
@@ -1600,14 +1599,14 @@ export default function CardNewsEditor({
               </Btn>
 
               {/* Font size */}
-              <label style={editorStyles.label}>{ko ? "크기" : "Size"}: {selProps.fontSize}px</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "크기" : "Size"}: {selProps.fontSize}px</label>
               <input type="range" min={10} max={200} step={1} value={selProps.fontSize}
-                style={editorStyles.range} onChange={e => setProp("fontSize", +e.target.value)} />
+                style={{ width: "100%", accentColor: "#7c6aff" }} onChange={e => setProp("fontSize", +e.target.value)} />
 
               {/* Color */}
-              <label style={editorStyles.label}>{ko ? "색상" : "Color"}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "색상" : "Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" value={typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "#000000"} style={editorStyles.colorInput}
+                <input type="color" value={typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "#000000"} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                   onChange={e => { setGradientEnabled(false); setProp("fill", e.target.value); }} />
                 <span style={{ fontSize: 12, color: "#888" }}>{typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : (ko ? "그라데이션" : "Gradient")}</span>
               </div>
@@ -1623,7 +1622,7 @@ export default function CardNewsEditor({
               </div>
 
               {/* Alignment */}
-              <label style={{ ...editorStyles.label, marginTop: 10 }}>{ko ? "정렬" : "Align"}</label>
+              <label style={{ ...{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }, marginTop: 10 }}>{ko ? "정렬" : "Align"}</label>
               <div style={{ display: "flex", gap: 6 }}>
                 <Btn small active={selProps.textAlign === "left"}
                   onClick={() => setProp("textAlign", "left")} accent={C.purple}><Icon.AlignLeft /></Btn>
@@ -1634,10 +1633,10 @@ export default function CardNewsEditor({
               </div>
 
               {/* Opacity */}
-              <label style={editorStyles.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => setProp("opacity", +e.target.value / 100)} />
             </CollapsibleSection>
           )}
@@ -1645,18 +1644,18 @@ export default function CardNewsEditor({
           {/* === Text Stroke === */}
           {isTextSelected && (
             <CollapsibleSection title={ko ? "테두리" : "Stroke"} defaultOpen={false} C={C}>
-              <label style={editorStyles.label}>{ko ? "테두리 색상" : "Stroke Color"}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "테두리 색상" : "Stroke Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" value={textStrokeColor} style={editorStyles.colorInput}
+                <input type="color" value={textStrokeColor} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                   onChange={e => {
                     setTextStrokeColor(e.target.value);
                     applyTextStroke(e.target.value, textStrokeWidth);
                   }} />
                 <span style={{ fontSize: 12, color: "#888" }}>{textStrokeColor}</span>
               </div>
-              <label style={editorStyles.label}>{ko ? "테두리 두께" : "Stroke Width"}: {textStrokeWidth}px</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "테두리 두께" : "Stroke Width"}: {textStrokeWidth}px</label>
               <input type="range" min={0} max={10} step={0.5} value={textStrokeWidth}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => {
                   const w = +e.target.value;
                   setTextStrokeWidth(w);
@@ -1668,34 +1667,34 @@ export default function CardNewsEditor({
           {/* === Text Shadow === */}
           {isTextSelected && (
             <CollapsibleSection title={ko ? "그림자" : "Shadow"} defaultOpen={false} C={C}>
-              <label style={editorStyles.label}>{ko ? "그림자 색상" : "Shadow Color"}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "그림자 색상" : "Shadow Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" value={shadowColor} style={editorStyles.colorInput}
+                <input type="color" value={shadowColor} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                   onChange={e => {
                     setShadowColor(e.target.value);
                     applyTextShadow(e.target.value, shadowBlur, shadowOffsetX, shadowOffsetY);
                   }} />
                 <span style={{ fontSize: 12, color: "#888" }}>{shadowColor}</span>
               </div>
-              <label style={editorStyles.label}>{ko ? "블러" : "Blur"}: {shadowBlur}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "블러" : "Blur"}: {shadowBlur}</label>
               <input type="range" min={0} max={20} step={1} value={shadowBlur}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => {
                   const v = +e.target.value;
                   setShadowBlur(v);
                   applyTextShadow(shadowColor, v, shadowOffsetX, shadowOffsetY);
                 }} />
-              <label style={editorStyles.label}>{ko ? "X 오프셋" : "X Offset"}: {shadowOffsetX}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "X 오프셋" : "X Offset"}: {shadowOffsetX}</label>
               <input type="range" min={-20} max={20} step={1} value={shadowOffsetX}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => {
                   const v = +e.target.value;
                   setShadowOffsetX(v);
                   applyTextShadow(shadowColor, shadowBlur, v, shadowOffsetY);
                 }} />
-              <label style={editorStyles.label}>{ko ? "Y 오프셋" : "Y Offset"}: {shadowOffsetY}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "Y 오프셋" : "Y Offset"}: {shadowOffsetY}</label>
               <input type="range" min={-20} max={20} step={1} value={shadowOffsetY}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => {
                   const v = +e.target.value;
                   setShadowOffsetY(v);
@@ -1718,25 +1717,25 @@ export default function CardNewsEditor({
               </div>
               {gradientEnabled && (
                 <>
-                  <label style={editorStyles.label}>{ko ? "시작색" : "Start Color"}</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "시작색" : "Start Color"}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="color" value={gradColor1} style={editorStyles.colorInput}
+                    <input type="color" value={gradColor1} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                       onChange={e => {
                         setGradColor1(e.target.value);
                         applyGradient(true, e.target.value, gradColor2, gradDirection);
                       }} />
                     <span style={{ fontSize: 12, color: "#888" }}>{gradColor1}</span>
                   </div>
-                  <label style={editorStyles.label}>{ko ? "끝색" : "End Color"}</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "끝색" : "End Color"}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="color" value={gradColor2} style={editorStyles.colorInput}
+                    <input type="color" value={gradColor2} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                       onChange={e => {
                         setGradColor2(e.target.value);
                         applyGradient(true, gradColor1, e.target.value, gradDirection);
                       }} />
                     <span style={{ fontSize: 12, color: "#888" }}>{gradColor2}</span>
                   </div>
-                  <label style={editorStyles.label}>{ko ? "방향" : "Direction"}</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "방향" : "Direction"}</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     <Btn small active={gradDirection === "horizontal"}
                       onClick={() => {
@@ -1761,10 +1760,10 @@ export default function CardNewsEditor({
                 {ko ? "이미지 교체" : "Replace Image"}
               </Btn>
 
-              <label style={editorStyles.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => setProp("opacity", +e.target.value / 100)} />
             </CollapsibleSection>
           )}
@@ -1772,31 +1771,31 @@ export default function CardNewsEditor({
           {/* === Shape props === */}
           {selectedObj && (selProps.type === "rect" || selProps.type === "circle") && (
             <CollapsibleSection title={ko ? "도형 속성" : "Shape Properties"} defaultOpen={true} C={C}>
-              <label style={editorStyles.label}>{ko ? "채우기 색상" : "Fill Color"}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "채우기 색상" : "Fill Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" value={hexFromAny(selProps.fill)} style={editorStyles.colorInput}
+                <input type="color" value={hexFromAny(selProps.fill)} style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                   onChange={e => setProp("fill", e.target.value)} />
                 <span style={{ fontSize: 12, color: "#888" }}>{hexFromAny(selProps.fill)}</span>
               </div>
 
-              <label style={editorStyles.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
-                style={editorStyles.range}
+                style={{ width: "100%", accentColor: "#7c6aff" }}
                 onChange={e => setProp("opacity", +e.target.value / 100)} />
             </CollapsibleSection>
           )}
 
           {/* === No selection === */}
           {!selectedObj && (
-            <div style={editorStyles.section}>
-              <div style={editorStyles.sectionLabel}>{ko ? "배경" : "Background"}</div>
+            <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#333" }}>{ko ? "배경" : "Background"}</div>
 
-              <label style={editorStyles.label}>{ko ? "배경색" : "BG Color"}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginTop: 8, marginBottom: 4 }}>{ko ? "배경색" : "BG Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color"
                   value={hexFromAny(canvasRef.current?.backgroundColor || "#ffffff")}
-                  style={editorStyles.colorInput}
+                  style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }}
                   onChange={e => setBgColor(e.target.value)} />
               </div>
 
@@ -1833,10 +1832,10 @@ export default function CardNewsEditor({
                   <span style={{ fontSize: 12, fontWeight: 500, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {item.name}
                   </span>
-                  <button style={editorStyles.layerBtn} title={ko ? "앞으로" : "Bring Forward"} onClick={e => { e.stopPropagation(); bringForward(item.obj); }}>
+                  <button style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 4, padding: "2px 4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title={ko ? "앞으로" : "Bring Forward"} onClick={e => { e.stopPropagation(); bringForward(item.obj); }}>
                     <Icon.Up />
                   </button>
-                  <button style={editorStyles.layerBtn} title={ko ? "뒤로" : "Send Backward"} onClick={e => { e.stopPropagation(); sendBackward(item.obj); }}>
+                  <button style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 4, padding: "2px 4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title={ko ? "뒤로" : "Send Backward"} onClick={e => { e.stopPropagation(); sendBackward(item.obj); }}>
                     <Icon.Down />
                   </button>
                 </div>

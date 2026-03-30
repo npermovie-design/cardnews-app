@@ -1,4 +1,4 @@
-export const editorStyles = {
+export function getEditorStyles() { return {
   overlay: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 },
   modal: { width: "100%", maxWidth: 1400, height: "95vh", background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", boxShadow: "0 8px 60px rgba(0,0,0,0.25)" },
   canvasArea: { display: "flex", flexDirection: "column", background: "#f0f0f5", padding: 0, overflow: "hidden" },
@@ -22,4 +22,4 @@ export const editorStyles = {
   saveArea: { marginTop: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 },
   saveBtn: { width: "100%", padding: "12px 0", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "opacity 0.15s" },
   layerBtn: { background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 4, padding: "2px 4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
-};
+}; }
