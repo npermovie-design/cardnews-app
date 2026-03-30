@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Canvas, Textbox, Rect, Circle, FabricImage, Line } from "fabric";
+import { Canvas, Textbox, Rect, Circle, Triangle, Polygon, FabricImage, Line, Gradient } from "fabric";
 import { callAI } from "./aiClient";
 
 /* ══════════════════════════════════════════════════════════════
@@ -72,27 +72,40 @@ export default function UnifiedCanvasEditor({
         clearGuides();
         const obj = e.target;
         if (!obj || obj.name === "bg" || obj.name === "guide") return;
-        const cx = obj.left + (obj.width * (obj.scaleX||1)) / 2;
-        const cy = obj.top + (obj.height * (obj.scaleY||1)) / 2;
+        // 바운딩박스 기준 좌표 계산
+        const bound = obj.getBoundingRect();
+        const bCx = bound.left + bound.width / 2;
+        const bCy = bound.top + bound.height / 2;
+        const bR = bound.left + bound.width;
+        const bB = bound.top + bound.height;
         // 가로 중앙
-        if (Math.abs(cx - width/2) < SNAP) {
-          obj.set("left", width/2 - (obj.width*(obj.scaleX||1))/2);
+        if (Math.abs(bCx - width/2) < SNAP) {
+          obj.set("left", obj.left + (width/2 - bCx));
           addGuide(width/2, 0, width/2, height);
         }
         // 세로 중앙
-        if (Math.abs(cy - height/2) < SNAP) {
-          obj.set("top", height/2 - (obj.height*(obj.scaleY||1))/2);
+        if (Math.abs(bCy - height/2) < SNAP) {
+          obj.set("top", obj.top + (height/2 - bCy));
           addGuide(0, height/2, width, height/2);
         }
         // 좌우 여백 (8%)
         const margin = width * 0.08;
-        if (Math.abs(obj.left - margin) < SNAP) {
-          obj.set("left", margin);
+        if (Math.abs(bound.left - margin) < SNAP) {
+          obj.set("left", obj.left + (margin - bound.left));
           addGuide(margin, 0, margin, height);
         }
-        if (Math.abs(obj.left + (obj.width*(obj.scaleX||1)) - (width-margin)) < SNAP) {
-          obj.set("left", width - margin - obj.width*(obj.scaleX||1));
+        if (Math.abs(bR - (width-margin)) < SNAP) {
+          obj.set("left", obj.left + (width - margin - bR));
           addGuide(width-margin, 0, width-margin, height);
+        }
+        // 상하 여백
+        if (Math.abs(bound.top - margin) < SNAP) {
+          obj.set("top", obj.top + (margin - bound.top));
+          addGuide(0, margin, width, margin);
+        }
+        if (Math.abs(bB - (height-margin)) < SNAP) {
+          obj.set("top", obj.top + (height - margin - bB));
+          addGuide(0, height-margin, width, height-margin);
         }
         fc.renderAll();
       });
@@ -214,8 +227,32 @@ export default function UnifiedCanvasEditor({
     let obj;
     if(type==="rect") obj=new Rect({width:200,height:140,fill:"#7c6aff33",left:width/2-100,top:height/2-70,rx:12,ry:12});
     else if(type==="circle") obj=new Circle({radius:80,fill:"#ec489933",left:width/2-80,top:height/2-80});
+    else if(type==="triangle") obj=new Triangle({width:160,height:140,fill:"#f59e0b33",left:width/2-80,top:height/2-70});
     else if(type==="line") obj=new Line([width*0.2,height/2,width*0.8,height/2],{stroke:"#ffffff",strokeWidth:3});
     else if(type==="filled-rect") obj=new Rect({width:width,height:height*0.3,fill:"#7c6aff",left:0,top:height*0.7,rx:0,ry:0});
+    else if(type==="rounded-rect") obj=new Rect({width:280,height:60,fill:"#ffffff",left:width/2-140,top:height/2-30,rx:30,ry:30,stroke:"#333",strokeWidth:2});
+    else if(type==="badge") obj=new Rect({width:180,height:44,fill:"#ffffff",left:width/2-90,top:height*0.15,rx:22,ry:22,stroke:"#e5e7eb",strokeWidth:1.5});
+    // 그라데이션 오버레이 (상하좌우 → 검은색 투명)
+    else if(type==="grad-bottom") {
+      obj=new Rect({width,height:height*0.5,left:0,top:height*0.5,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height*0.5},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
+    }
+    else if(type==="grad-top") {
+      obj=new Rect({width,height:height*0.5,left:0,top:0,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height*0.5},colorStops:[{offset:0,color:"rgba(0,0,0,0.85)"},{offset:1,color:"rgba(0,0,0,0)"}]}));
+    }
+    else if(type==="grad-left") {
+      obj=new Rect({width:width*0.5,height,left:0,top:0,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:width*0.5,y2:0},colorStops:[{offset:0,color:"rgba(0,0,0,0.85)"},{offset:1,color:"rgba(0,0,0,0)"}]}));
+    }
+    else if(type==="grad-right") {
+      obj=new Rect({width:width*0.5,height,left:width*0.5,top:0,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:width*0.5,y2:0},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
+    }
+    else if(type==="grad-full") {
+      obj=new Rect({width,height,left:0,top:0,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.4,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.7)"}]}));
+    }
     if(obj){fc.add(obj);fc.setActiveObject(obj);fc.renderAll();}
   };
 
@@ -335,23 +372,27 @@ export default function UnifiedCanvasEditor({
               <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
             </>}
             <div style={{flex:1}}/>
-            {onClose&&<button onClick={onClose} style={{...B,fontSize:12}}>← 돌아가기</button>}
-          </div>
-          {/* 캔버스 */}
-          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e5e5ea",overflow:"hidden",padding:10}}/>
-          {/* 하단: 내보내기만 */}
-          <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
-            {sel&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:12}}>선택 삭제</button>}
+            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
+            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
             {onShareTemplate&&<button onClick={()=>{
               const fc=fcRef.current; if(!fc) return;
               if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;
               const preview=fc.toDataURL({format:"png",multiplier:0.3});
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:12}}>공유</button>}
-            <div style={{flex:1}}/>
-            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>PNG</button>
-            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>ZIP</button>}
+            {onClose&&<button onClick={onClose} style={{...B,fontSize:12}}>← 돌아가기</button>}
           </div>
+          {/* 캔버스 */}
+          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e5e5ea",overflow:"hidden",padding:10}}/>
+          {/* 하단: 내보내기만 */}
+          {/* 하단: 선택 삭제만 */}
+          {sel&&sel.name!=="bg"&&(
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
+              <button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:12}}>선택 삭제</button>
+              <div style={{flex:1}}/>
+              <span style={{fontSize:11,color:"#aaa"}}>Delete 키로도 삭제 가능</span>
+            </div>
+          )}
         </div>
 
         {/* 우측 패널 */}
@@ -514,17 +555,36 @@ export default function UnifiedCanvasEditor({
             {panel==="shapes"&&(
               <div style={{padding:"12px 16px"}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>도형 추가</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
                   {[
                     {type:"rect",label:"사각형",icon:"□"},
                     {type:"circle",label:"원",icon:"○"},
+                    {type:"triangle",label:"삼각형",icon:"△"},
                     {type:"line",label:"선",icon:"—"},
+                    {type:"rounded-rect",label:"둥근태그",icon:"⬭"},
+                    {type:"badge",label:"뱃지",icon:"⬬"},
                     {type:"filled-rect",label:"배경바",icon:"▬"},
                   ].map(s=>(
                     <button key={s.type} onClick={()=>addShape(s.type)}
-                      style={{padding:"14px 8px",borderRadius:10,border:"1px solid #eee",background:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:22}}>{s.icon}</span>
+                      style={{padding:"12px 6px",borderRadius:10,border:"1px solid #eee",background:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                      <span style={{fontSize:18}}>{s.icon}</span>
                       <span style={{fontSize:10,color:"#888"}}>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>그라데이션 오버레이</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                  {[
+                    {type:"grad-bottom",label:"하단→"},
+                    {type:"grad-top",label:"상단→"},
+                    {type:"grad-left",label:"좌측→"},
+                    {type:"grad-right",label:"우측→"},
+                    {type:"grad-full",label:"전체"},
+                  ].map(g=>(
+                    <button key={g.type} onClick={()=>addShape(g.type)}
+                      style={{padding:"10px 6px",borderRadius:8,border:"1px solid #eee",background:"linear-gradient(180deg,transparent,rgba(0,0,0,0.6))",cursor:"pointer",fontSize:10,fontWeight:600,color:"#fff"}}>
+                      {g.label}
                     </button>
                   ))}
                 </div>
@@ -544,11 +604,11 @@ export default function UnifiedCanvasEditor({
                   ))}
                 </div>
 
-                <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>폰트 미리보기</div>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>폰트 {sel&&sel.type==="textbox"?"(클릭 시 적용)":"미리보기"}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:4}}>
                   {FONTS.slice(0,12).map(f=>(
-                    <button key={f} onClick={()=>{loadFont(f);addText("가나다 ABC",{fontFamily:f,fontSize:28});}}
-                      style={{padding:"8px 12px",borderRadius:8,border:"1px solid #eee",background:"#fff",cursor:"pointer",fontFamily:f,fontSize:14,textAlign:"left"}}>
+                    <button key={f} onClick={()=>{loadFont(f);if(sel&&sel.type==="textbox"){set("fontFamily",f);}else{addText("가나다 ABC",{fontFamily:f,fontSize:28});}}}
+                      style={{padding:"8px 12px",borderRadius:8,border:sel?.fontFamily===f?"2px solid #7c6aff":"1px solid #eee",background:sel?.fontFamily===f?"rgba(124,106,255,0.06)":"#fff",cursor:"pointer",fontFamily:f,fontSize:14,textAlign:"left"}}>
                       {f}
                     </button>
                   ))}
