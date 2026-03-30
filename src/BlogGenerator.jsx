@@ -689,41 +689,63 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
               <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("fileImport")}</div>
               <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
+              {/* 첨부된 파일 목록 */}
+              {fields._files && fields._files.length > 0 && (
+                <div style={{marginBottom:8,display:"flex",flexWrap:"wrap",gap:4}}>
+                  {fields._files.map((f,i) => (
+                    <span key={i} style={{fontSize:11,padding:"3px 8px",borderRadius:6,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)",color:accent,display:"inline-flex",alignItems:"center",gap:4}}>
+                      {f.name}
+                      <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:12,padding:0,lineHeight:1}}>x</button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <input type="file" accept="image/*,.pdf,.txt,.doc,.docx" style={{display:"none"}} id="blog-file-input"
+                <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
+                    const fileList = Array.from(e.target.files || []);
+                    if (!fileList.length) return;
                     e.target.value = "";
-                    if (file.size > 10 * 1024 * 1024) { alert("파일은 10MB 이하만 가능합니다."); return; }
-                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + "파일 분석 중...");
-                    try {
-                      if (file.type.startsWith("image/")) {
-                        // 이미지: base64로 변환 후 AI 분석
-                        const reader = new FileReader();
-                        reader.onload = async () => {
-                          const base64 = reader.result;
+                    const maxSize = 10 * 1024 * 1024;
+                    const valid = fileList.filter(f => f.size <= maxSize);
+                    if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
+                    if (!valid.length) return;
+
+                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
+                    const prevFiles = fields._files || [];
+                    const newFiles = [...prevFiles];
+                    let allResults = "";
+
+                    for (const file of valid) {
+                      try {
+                        if (file.type.startsWith("image/")) {
+                          const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
                           const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
-                          setField("keyword", txt.split("\n")[0]?.slice(0,80) || file.name);
-                          setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "이미지 분석 결과:" + txt.slice(0, 200));
-                        };
-                        reader.readAsDataURL(file);
-                      } else {
-                        // 텍스트/PDF: 텍스트 추출
-                        const text2 = await file.text();
-                        const summary = text2.slice(0, 2000);
-                        setField("keyword", summary.split("\n").find(l => l.trim().length > 5)?.trim()?.slice(0,80) || file.name);
-                        setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "파일 내용:" + summary.slice(0, 300));
+                          allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
+                          newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
+                        } else {
+                          const text2 = await file.text().catch(() => "");
+                          const summary = text2.slice(0, 2000);
+                          allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
+                          newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
+                        }
+                      } catch(err) {
+                        allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
                       }
-                    } catch(err) {
-                      setField("extra", (fields.extra?.replace("파일 분석 중...", "") || "") + "파일 분석 실패:" + err.message);
                     }
+
+                    if (!fields.keyword && allResults) {
+                      const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
+                      if (firstLine) setField("keyword", firstLine);
+                    }
+                    setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
+                    setField("_files", newFiles);
                   }}/>
                 <button onClick={() => document.getElementById("blog-file-input")?.click()}
                   style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
                   {t("fileSelect")}
                 </button>
-                <span style={{fontSize:11,color:muted}}>{t("fileLimit")}</span>
+                <span style={{fontSize:11,color:muted}}>여러 파일 선택 가능 · 10MB 이하</span>
               </div>
             </div>
 
