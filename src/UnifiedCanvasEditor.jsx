@@ -54,8 +54,17 @@ export default function UnifiedCanvasEditor({
 
   /* ── 캔버스 초기화 ── */
   useEffect(() => {
-    if (!canvasElRef.current) return;
-    const fc = new Canvas(canvasElRef.current, {
+    const container = containerRef.current;
+    if (!container) return;
+    // canvas 엘리먼트를 직접 생성 (React 충돌 방지)
+    const el = document.createElement("canvas");
+    el.width = width;
+    el.height = height;
+    container.innerHTML = "";
+    container.appendChild(el);
+    canvasElRef.current = el;
+
+    const fc = new Canvas(el, {
       width, height,
       backgroundColor: "#ffffff",
       preserveObjectStacking: true,
@@ -78,7 +87,7 @@ export default function UnifiedCanvasEditor({
     pushHistory();
     fitCanvas();
 
-    return () => { fc.dispose(); canvasRef.current = null; };
+    return () => { try { fc.dispose(); } catch {} canvasRef.current = null; canvasElRef.current = null; };
   }, []);
 
   /* ── 캔버스를 컨테이너에 맞추기 ── */
@@ -381,9 +390,7 @@ export default function UnifiedCanvasEditor({
           )}
 
           {/* 캔버스 컨테이너 */}
-          <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8, background: "#e8e8ee" }}>
-            <canvas ref={canvasElRef} width={width} height={height} />
-          </div>
+          <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8, background: "#e8e8ee" }} />
 
           {/* 툴바 */}
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 12px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
