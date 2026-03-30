@@ -750,9 +750,10 @@ export default function App() {
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           {/* 실시간 접속자 수 */}
           {onlineCount > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 14, flexShrink: 0 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite", flexShrink: 0 }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>{onlineCount}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, border: `1px solid ${theme==="dark" ? "rgba(34,197,94,0.2)" : "rgba(34,197,94,0.15)"}`, flexShrink: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#22c55e", letterSpacing: -0.3 }}>{onlineCount}</span>
+              <span style={{ fontSize: 10, fontWeight: 500, color: C.muted, letterSpacing: -0.2 }}>접속중</span>
             </div>
           )}
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
