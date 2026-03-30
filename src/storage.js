@@ -540,9 +540,9 @@ export async function getPostsFromDB() {
   try {
     const { data, error } = await supabase
       .from("posts")
-      .select("id,title,author,author_uid,cat,subCat,tag,views,likes,created_at,images,comments")
+      .select("id,title,author,author_uid,cat,subCat,tag,views,likes,created_at,images")
       .order("id", { ascending: false })
-      .limit(1000);
+      .limit(500);
     if (error) throw error;
     return (data || []).map(rowToPost);
   } catch (e) {

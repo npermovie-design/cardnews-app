@@ -175,12 +175,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   useEffect(()=>{ if(initialCat) setSubCat(initialCat); },[initialCat]);
 
-  // 카테고리 + 태그 로드
-  useEffect(()=>{
-    fetchBoardCats().then(cats => setSubCats(cats));
-    fetchAllTags().then(tags => setAllTags(tags));
-  }, []);
-
   // 반응형 감지
   useEffect(()=>{
     const fn = () => setIsMobile(window.innerWidth < 768);
@@ -188,28 +182,33 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     return () => window.removeEventListener("resize", fn);
   }, []);
 
-  // 게시글 로드 - localStorage 즉시 표시 후 Supabase 백그라운드 갱신
+  // 카테고리 + 태그 + 게시글 모두 병렬 로드
   useEffect(()=>{
     // 1) localStorage 즉시 표시 (로딩 스피너 없음)
     const cached = getPosts();
     if (cached.length > 0) { setPostsS(cached); setLoading(false); }
 
-    // 2) Supabase 백그라운드 조용히 갱신 — localStorage 포스트와 merge
+    // 2) Supabase 병렬 로드 (카테고리 + 태그 + 게시글 동시)
     (async () => {
       try {
         const migrated = localStorage.getItem("nper_migrated_v1");
         if (!migrated) {
           try { await migrateLocalPostsToDB(); localStorage.setItem("nper_migrated_v1", "1"); } catch(e) {}
         }
-        const dbData = await getPostsFromDB();
+        // 병렬 실행
+        const [dbData, cats, tags] = await Promise.all([
+          getPostsFromDB(),
+          fetchBoardCats(),
+          fetchAllTags(),
+        ]);
+        if (cats) setSubCats(cats);
+        if (tags) setAllTags(tags);
         if (dbData && dbData.length > 0) {
-          // localStorage에만 있는 포스트(DB 저장 실패분)도 함께 표시
           const localPosts = getPosts();
           const dbIds = new Set(dbData.map(p => String(p.id)));
           const localOnly = localPosts.filter(p => !dbIds.has(String(p.id)));
           const merged = [...localOnly, ...dbData].sort((a, b) => b.id - a.id);
           setPostsS(merged);
-          // localStorage도 merge 결과로 갱신
           setPosts(merged);
         }
       } catch(e) {}
