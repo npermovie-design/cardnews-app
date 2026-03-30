@@ -567,9 +567,19 @@ export async function getPostByIdFromDB(postId) {
 }
 
 /** 게시글 저장 (신규) */
+// 검색엔진 sitemap ping (게시글 작성/수정 시 호출)
+function pingSitemapAsync() {
+  try {
+    const sm = encodeURIComponent("https://snsmakeit.com/sitemap.xml");
+    fetch(`https://www.google.com/ping?sitemap=${sm}`).catch(() => {});
+    fetch(`https://www.bing.com/ping?sitemap=${sm}`).catch(() => {});
+  } catch {}
+}
+
 export async function savePostToDB(post) {
   const { error } = await supabase.from("posts").insert(postToRow(post));
   if (error) throw error;
+  pingSitemapAsync();
 }
 
 /** 게시글 업데이트 (부분) */

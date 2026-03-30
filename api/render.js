@@ -32,11 +32,13 @@ export default async function handler(req) {
     title = `${catNames[segments[1]] || "커뮤니티"} - SNS메이킷 커뮤니티`;
   }
 
+  let fullBody = "";
   if (segments[2] && segments[2].startsWith("post-")) {
     const postId = segments[2].replace("post-", "");
-    const post = await sbQuery("posts", `select=title,content,images&id=eq.${postId}`);
+    const post = await sbQuery("posts", `select=title,content,images,author,created_at&id=eq.${postId}`);
     if (post) {
-      const bodyText = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 160);
+      const bodyText = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 300);
+      fullBody = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 2000);
       title = `${post.title} - SNS메이킷`;
       description = bodyText || description;
       const imgs = Array.isArray(post.images) ? post.images : [];
@@ -75,6 +77,7 @@ export default async function handler(req) {
 <body>
 <h1>${esc(title)}</h1>
 <p>${esc(description)}</p>
+${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
 <a href="${esc(canonicalUrl)}">SNS메이킷에서 보기</a>
 </body>
 </html>`;
