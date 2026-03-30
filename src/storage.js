@@ -596,23 +596,24 @@ export async function deletePostFromDB(postId) {
   if (error) throw error;
 }
 
-/** localStorage → Supabase 마이그레이션 (1회 실행용) */
+/** localStorage → Supabase 마이그레이션 (1회 실행용) — 배치 insert */
 export async function migrateLocalPostsToDB() {
   try {
     const localPosts = getPosts();
     if (!localPosts.length) return 0;
 
     const { data: existing } = await supabase.from("posts").select("id");
-    const existingIds = new Set((existing || []).map(p => p.id));
+    const existingIds = new Set((existing || []).map(p => String(p.id)));
 
-    let count = 0;
-    for (const post of localPosts) {
-      if (!existingIds.has(post.id)) {
-        await supabase.from("posts").insert(post);
-        count++;
-      }
+    const toInsert = localPosts.filter(p => !existingIds.has(String(p.id)));
+    if (!toInsert.length) return 0;
+
+    // 배치 insert (50개씩)
+    for (let i = 0; i < toInsert.length; i += 50) {
+      const batch = toInsert.slice(i, i + 50);
+      await supabase.from("posts").insert(batch);
     }
-    return count;
+    return toInsert.length;
   } catch (e) {
     console.error("migration error:", e);
     return 0;

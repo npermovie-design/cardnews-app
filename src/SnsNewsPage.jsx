@@ -211,7 +211,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     }
     // Supabase sns_news 테이블에서 브리핑 로드
     try {
-      const { data } = await supabase.from("sns_news").select("*").eq("category", "briefing").order("created_at", { ascending: false }).limit(60);
+      const { data } = await supabase.from("sns_news").select("id,title,content,created_at").eq("category", "briefing").order("created_at", { ascending: false }).limit(30);
       if (data) {
         for (const item of data) {
           const dateKey = item.id?.replace("briefing_", "") || "";
@@ -258,7 +258,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     // 2단계: Supabase에서 빠르게 로드 (0.5~2초)
     (async () => {
       try {
-        const { data } = await supabase.from("sns_news").select("*").eq("id", `briefing_${todayKey}`).single();
+        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").eq("id", `briefing_${todayKey}`).single();
         if (!cancelled && data?.content) {
           const br = { title: data.title, content: data.content, date: todayKey };
           setBriefing(br); setBriefingLoading(false);
@@ -360,7 +360,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     const cats = mainTab === "notice" ? NOTICE_CATS : TIPS_CATS;
     (async () => {
       try {
-        const { data } = await supabase.from("sns_news").select("*").in("category", cats).order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
+        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").in("category", cats).order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
         if (!cancelled) setArticles(data || []);
       } catch {
         if (!cancelled) setArticles([]);
@@ -379,7 +379,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       }
       setEditorOpen(false); setEditTarget(null);
       // 리로드
-      const { data: fresh } = await supabase.from("sns_news").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
+      const { data: fresh } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
       setArticles(fresh || []);
     } catch (e) { alert("저장 실패: sns_news 테이블이 생성되지 않았을 수 있습니다. Supabase에서 테이블을 먼저 생성해주세요."); }
   };
