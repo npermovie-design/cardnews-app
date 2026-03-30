@@ -197,40 +197,38 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const [briefingLoading, setBriefingLoading] = useState(true);
   const [briefingHistory, setBriefingHistory] = useState([]);
   const [expandedHistory, setExpandedHistory] = useState(null);
+  const [historyPage, setHistoryPage] = useState(0);
+  const HISTORY_PER_PAGE = 7;
 
   const loadBriefingHistory = async () => {
-    // localStorage에서 로드
     const localItems = [];
+    // localStorage에서 로드
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith("nper_sns_briefing_")) {
         try { localItems.push({ date: key.replace("nper_sns_briefing_", ""), ...JSON.parse(localStorage.getItem(key)) }); } catch {}
       }
     }
-    // 시드 데이터: localStorage에 브리핑이 3개 미만이면 샘플 삽입
-    if (localItems.length < 3) {
-      const SEED = [
-        { date:"2026-03-29", title:"[2026.03.29] 인스타 릴스 알고리즘 개편, 오리지널 콘텐츠 우대 외", content:"## 1. 인스타그램 릴스 알고리즘 개편, 오리지널 콘텐츠 우대\n인스타그램이 릴스 추천 알고리즘을 개편하여 오리지널 콘텐츠에 더 높은 가중치를 부여한다. 리포스트보다 직접 제작한 콘텐츠가 더 많이 노출되며, 소규모 크리에이터에게 유리한 변화다.\n📎 출처: Instagram Blog | 관련: #인스타그램 #릴스\n\n## 2. 네이버 AI 검색 '큐' 업데이트\n네이버 AI 검색 서비스 큐가 대화형 검색을 강화했다. 블로그·카페 콘텐츠 노출 방식이 변화하면서 마케터들의 새로운 SEO 전략이 필요해졌다.\n📎 출처: 네이버 | 관련: #네이버 #AI검색\n\n## 3. 틱톡 검색 광고 한국 베타 확대\n틱톡 검색 광고가 한국에서 본격 테스트에 들어갔다. 키워드 기반 광고가 가능해지면서 틱톡의 검색 엔진화가 가속되고 있다.\n📎 출처: TikTok Business | 관련: #틱톡 #검색광고\n\n## 4. 유튜브 쇼츠 3분 확대 성과 분석\n유튜브 쇼츠 3분 확대 이후 정보성 콘텐츠의 조회수가 평균 40% 증가한 것으로 나타났다. 튜토리얼과 리뷰 콘텐츠가 특히 수혜를 받고 있다.\n📎 출처: YouTube Creators | 관련: #유튜브쇼츠 #숏폼\n\n## 5. Meta Threads 광고 CPM 인스타 대비 35% 저렴\n스레드 광고 베타 결과, CPM이 인스타 대비 35% 낮은 것으로 확인됐다. 텍스트 기반 광고라 제작 비용도 적어 초기 진입에 유리하다.\n📎 출처: Meta Newsroom | 관련: #스레드 #광고\n\n## 6. 구글 SGE 한국어 AI 답변 노출 50% 증가\n구글 AI 검색 답변 노출이 한국에서 50% 증가했다. 기존 SEO 전략의 변화가 불가피하며, 구조화된 데이터와 전문성이 더욱 중요해졌다.\n📎 출처: Google Korea | 관련: #구글 #SGE\n\n## 7. 글로벌 크리에이터 이코노미 500조원 전망\n크리에이터 이코노미 시장이 2027년 500조원 규모로 성장할 전망이다. 숏폼, 라이브커머스, AI 도구가 주요 성장 동력이다.\n📎 출처: Goldman Sachs | 관련: #크리에이터이코노미 #글로벌" },
-        { date:"2026-03-28", title:"[2026.03.28] 카카오톡 채널 AI 챗봇, 소상공인 문의 응대 85% 단축 외", content:"## 1. 카카오톡 채널 AI 자동 응답 본격 확산\n카카오톡 채널 AI 챗봇 도입 소상공인이 10만명을 돌파했다. 고객 문의 응대 시간이 평균 85% 단축되었으며, 주문·예약 자동화로 매출도 증가하는 추세다.\n📎 출처: 카카오 비즈니스 | 관련: #카카오톡 #AI챗봇\n\n## 2. 인스타그램 스토리 60초 영상, 참여율 2배 상승\n인스타 스토리 60초 영상 지원 이후 브랜드 계정의 스토리 참여율이 평균 2배 상승했다. 분할 업로드 불필요로 완성도 높은 스토리 제작이 가능해졌다.\n📎 출처: Hootsuite | 관련: #인스타스토리 #60초\n\n## 3. 네이버 블로그 AI 콘텐츠 가이드라인 첫 제재 사례\n네이버가 AI 생성 콘텐츠 가이드라인 위반 블로그에 대해 첫 노출 제한 조치를 시행했다. 순수 AI 생성글 대량 발행 계정이 대상이며, 경험 기반 콘텐츠 작성이 더욱 강조되고 있다.\n📎 출처: 네이버 서치어드바이저 | 관련: #네이버블로그 #AI콘텐츠\n\n## 4. 틱톡 라이브 쇼핑 한국 첫 달 거래액 500억 돌파\n틱톡 라이브 쇼핑 한국 출시 첫 달 거래액이 500억원을 돌파했다. 뷰티·패션 카테고리가 전체의 70%를 차지하며, 라이브커머스 시장 경쟁이 격화되고 있다.\n📎 출처: 이커머스뉴스 | 관련: #틱톡 #라이브쇼핑\n\n## 5. 링크드인 AI 포스트 추천, B2B 마케터 73% 활용\nB2B 마케터의 73%가 링크드인 AI 포스트 추천을 활용하고 있다는 조사 결과가 나왔다. 콘텐츠 아이디어 발굴 시간이 평균 60% 단축되었다.\n📎 출처: LinkedIn | 관련: #링크드인 #B2B\n\n## 6. 국내 숏폼 광고 시장 1분기 5천억 돌파\n국내 숏폼 광고 시장이 1분기에만 5천억원을 돌파했다. 연간 2조원 전망이 현실화되고 있으며, Z세대 타겟 브랜드의 집행 비중이 65%에 달한다.\n📎 출처: 한국광고주협회 | 관련: #숏폼광고 #Z세대\n\n## 7. OpenAI 마케팅 GPT, 카피라이팅 A/B 테스트 자동화\nOpenAI 마케팅 특화 GPT의 A/B 테스트 카피 생성 기능이 주목받고 있다. 도입 기업의 광고 전환율이 평균 28% 향상된 것으로 보고되었다.\n📎 출처: OpenAI Blog | 관련: #OpenAI #마케팅AI" },
-        { date:"2026-03-27", title:"[2026.03.27] 구글 SEO 핵심 업데이트, E-E-A-T 가중치 대폭 상향 외", content:"## 1. 구글 SEO 핵심 업데이트, E-E-A-T 가중치 상향\n구글 2026년 핵심 업데이트에서 E-E-A-T 가중치가 대폭 상향되었다. 실제 전문가의 경험이 담긴 콘텐츠가 AI 생성 콘텐츠보다 상위 노출되는 추세가 더욱 뚜렷해졌다.\n📎 출처: Search Engine Journal | 관련: #구글SEO #EEAT\n\n## 2. 카카오 선물하기 라이브 방송 연동 매출 3배\n카카오 선물하기와 라이브 방송 연동 후 관련 상품 매출이 3배 증가했다. 실시간 소통과 즉시 구매의 시너지 효과가 입증되었다.\n📎 출처: 카카오커머스 | 관련: #카카오 #라이브커머스\n\n## 3. Canva AI 영상 편집, 마케터 80% 만족\nCanva AI 영상 편집 도구 출시 후 마케터 만족도가 80%에 달하는 것으로 조사됐다. 특히 숏폼 콘텐츠 제작 시간이 평균 75% 단축되었다.\n📎 출처: Canva Blog | 관련: #Canva #AI영상\n\n## 4. 네이버 스마트스토어 AI 상품설명, 등록 시간 70% 단축\n네이버 스마트스토어 AI 상품 설명 기능 도입 후 셀러의 상품 등록 시간이 70% 단축되었다. SEO 최적화된 설명이 자동 생성되어 검색 노출도 개선되고 있다.\n📎 출처: 네이버 커머스 | 관련: #스마트스토어 #AI\n\n## 5. X 크리에이터 수익 분배, 참여도 기반으로 전환\nX의 크리에이터 수익 분배가 조회수에서 참여도 기반으로 전환되었다. 양질의 콘텐츠를 꾸준히 생산하는 크리에이터에게 더 많은 수익이 돌아가는 구조다.\n📎 출처: X Business | 관련: #X #크리에이터\n\n## 6. 인스타그램 DM 자동화 API, 브랜드 도입 급증\n인스타 DM 자동화 API 공개 후 브랜드 도입이 급증하고 있다. 키워드 기반 자동 응답으로 고객 상담 효율이 크게 개선되었다.\n📎 출처: Meta Developers | 관련: #인스타 #DM자동화\n\n## 7. 글로벌 인플루언서 마케팅 마이크로 전환 가속\n마이크로 인플루언서(1만~10만) 활용이 가속화되고 있다. 전환율이 메가 인플루언서 대비 3.2배 높으며, 브랜드의 65%가 마이크로 중심으로 전략을 전환했다.\n📎 출처: Influencer Marketing Hub | 관련: #마이크로인플루언서 #전환율" },
-      ];
-      SEED.forEach(s => {
-        if (!localItems.find(l => l.date === s.date)) {
-          localItems.push(s);
-          try { localStorage.setItem(`nper_sns_briefing_${s.date}`, JSON.stringify(s)); } catch {}
-        }
-      });
-    }
-    // Supabase에서도 과거 브리핑 로드
+    // Supabase sns_news 테이블에서 브리핑 로드
     try {
-      const { data } = await supabase.from("sns_news").select("*").eq("category", "briefing").order("created_at", { ascending: false }).limit(30);
+      const { data } = await supabase.from("sns_news").select("*").eq("category", "briefing").order("created_at", { ascending: false }).limit(60);
       if (data) {
         for (const item of data) {
           const dateKey = item.id?.replace("briefing_", "") || "";
           if (dateKey && !localItems.find(l => l.date === dateKey)) {
             localItems.push({ date: dateKey, title: item.title, content: item.content });
-            // localStorage에도 캐싱
-            try { localStorage.setItem(`nper_sns_briefing_${dateKey}`, JSON.stringify({ title: item.title, content: item.content, date: dateKey })); } catch {}
+          }
+        }
+      }
+    } catch {}
+    // Supabase posts 테이블에서도 브리핑 로드 (시드 데이터)
+    try {
+      const { data } = await supabase.from("posts").select("id,title,content,created_at").eq("cat", "sns_briefing").order("created_at", { ascending: false }).limit(60);
+      if (data) {
+        for (const item of data) {
+          const dateKey = item.id?.replace("briefing_", "") || "";
+          if (dateKey && !localItems.find(l => l.date === dateKey)) {
+            localItems.push({ date: dateKey, title: item.title, content: item.content });
           }
         }
       }
@@ -483,28 +481,34 @@ export default function SnsNewsPage({ C, user, navigate }) {
         {/* ═══ 탭 1: AI 브리핑 ═══ */}
         {mainTab === "briefing" && (
           <div>
-            {/* 오늘의 브리핑 카드 */}
-            <div style={{ marginBottom: 24, borderRadius: 16, overflow: "hidden", background: "linear-gradient(135deg, #7c6aff 0%, #6366f1 40%, #818cf8 100%)", boxShadow: "0 4px 24px rgba(124,106,255,0.18)" }}>
-              <div style={{ padding: "22px 24px 18px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                  <span style={{ fontSize: 20 }}>📰</span>
-                  <span style={{ fontSize: 17, fontWeight: 900, color: "#fff", letterSpacing: -0.3 }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} SNS브리핑`}</span>
-                </div>
-                {briefingLoading ? (
-                  <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                    브리핑 불러오는 중...
+            {/* 오늘의 브리핑 - 컴팩트 카드 */}
+            <div style={{ marginBottom: 20, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg, #7c6aff 0%, #6366f1 40%, #818cf8 100%)", boxShadow: "0 4px 24px rgba(124,106,255,0.18)" }}>
+              <div style={{ padding: "18px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>📰</span>
+                    <span style={{ fontSize: 15, fontWeight: 900, color: "#fff", letterSpacing: -0.3 }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} SNS브리핑`}</span>
                   </div>
-                ) : briefingGenerating ? (
-                  <div style={{ padding: "20px 0" }}>
-                    <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                      오늘의 브리핑을 AI가 작성하고 있어요...
+                  {briefingLoading ? (
+                    <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", flexShrink: 0 }} />
+                  ) : briefingGenerating ? (
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", flexShrink: 0, whiteSpace: "nowrap" }}>AI 작성 중...</span>
+                  ) : briefing ? (
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={(e) => { e.stopPropagation(); setExpandedHistory(expandedHistory === "today" ? null : "today"); }}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        {expandedHistory === "today" ? "접기" : "자세히 보기"}
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("복사됨!"); }}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        복사
+                      </button>
                     </div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>첫 방문 시 10~20초 정도 소요됩니다. 아래 탭에서 실시간 뉴스를 먼저 확인해보세요.</div>
-                  </div>
-                ) : briefing ? (
-                  <div style={{ wordBreak: "break-word" }}>
+                  ) : null}
+                </div>
+                {/* 오늘 브리핑 펼치기 */}
+                {expandedHistory === "today" && briefing && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.15)", wordBreak: "break-word" }}>
                     {briefing.content.split("\n").map((line, i) => {
                       const t = line.trim();
                       if (!t) return <div key={i} style={{ height: 6 }} />;
@@ -513,25 +517,79 @@ export default function SnsNewsPage({ C, user, navigate }) {
                       return <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: "rgba(255,255,255,0.93)", marginBottom: 2 }}>{t}</div>;
                     })}
                   </div>
-                ) : <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>브리핑을 불러올 수 없습니다.</div>}
-                {briefing && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                    <button onClick={() => { navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("브리핑이 복사되었습니다!"); }}
-                      style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      본문 복사
-                    </button>
-                    <a href={`https://news.google.com/search?q=${encodeURIComponent("SNS 마케팅")}&hl=ko`} target="_blank" rel="noopener noreferrer"
-                      style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
-                      원문 뉴스 확인 →
-                    </a>
-                  </div>
                 )}
               </div>
             </div>
 
+            {/* 지난 브리핑 리스트 */}
+            {(() => {
+              const pastItems = briefingHistory.filter(h => h.date !== getTodayKey());
+              const totalPages = Math.ceil(pastItems.length / HISTORY_PER_PAGE);
+              const pageItems = pastItems.slice(historyPage * HISTORY_PER_PAGE, (historyPage + 1) * HISTORY_PER_PAGE);
+              if (pastItems.length === 0) return (
+                <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>지난 브리핑이 없습니다.</div>
+              );
+              return (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: text }}>지난 브리핑 <span style={{ fontSize: 12, fontWeight: 500, color: muted }}>({pastItems.length}개)</span></div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {pageItems.map(h => {
+                      const isExp = expandedHistory === h.date;
+                      const dl = h.date.replace(/-/g, ".");
+                      return (
+                        <div key={h.date} onClick={() => setExpandedHistory(isExp ? null : h.date)} style={{ padding: isExp ? "18px 20px" : "14px 18px", borderRadius: 14, cursor: "pointer", background: "#fff", border: `1px solid ${isExp ? accent : bdr}`, boxShadow: isExp ? "0 2px 12px rgba(124,106,255,0.12)" : "0 1px 4px rgba(0,0,0,0.04)", transition: "border-color 0.15s, box-shadow 0.15s" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ background: "rgba(124,106,255,0.08)", borderRadius: 10, padding: "6px 12px", textAlign: "center", minWidth: 64 }}>
+                                <div style={{ fontSize: 15, fontWeight: 900, color: accent, lineHeight: 1.2 }}>{dl.split(".").slice(1).join(".")}</div>
+                              </div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dl} SNS브리핑`}</div>
+                            </div>
+                            <span style={{ fontSize: 11, color: muted, transform: isExp ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
+                          </div>
+                          {isExp && (
+                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${bdr}`, wordBreak: "break-word" }}>
+                              {renderBriefing(h.content)}
+                              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText((h.title || `${dl} SNS브리핑`) + "\n\n" + (h.content || "").replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("복사됨!"); }}
+                                  style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#f8f8fb", color: text, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                  본문 복사
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* 페이지네이션 */}
+                  {totalPages > 1 && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 20 }}>
+                      <button onClick={() => setHistoryPage(Math.max(0, historyPage - 1))} disabled={historyPage === 0}
+                        style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#fff", color: historyPage === 0 ? "#ccc" : text, fontSize: 12, fontWeight: 700, cursor: historyPage === 0 ? "default" : "pointer", minHeight: 38 }}>
+                        ← 이전
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => (
+                        <button key={i} onClick={() => setHistoryPage(i)}
+                          style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${historyPage === i ? accent : bdr}`, background: historyPage === i ? accent : "#fff", color: historyPage === i ? "#fff" : text, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                          {i + 1}
+                        </button>
+                      ))}
+                      <button onClick={() => setHistoryPage(Math.min(totalPages - 1, historyPage + 1))} disabled={historyPage === totalPages - 1}
+                        style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#fff", color: historyPage === totalPages - 1 ? "#ccc" : text, fontSize: 12, fontWeight: 700, cursor: historyPage === totalPages - 1 ? "default" : "pointer", minHeight: 38 }}>
+                        다음 →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* 오픈채팅 배너 */}
             <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderRadius: 14, background: "#FEE500", marginBottom: 24, textDecoration: "none", transition: "opacity 0.15s" }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderRadius: 14, background: "#FEE500", marginTop: 24, textDecoration: "none", transition: "opacity 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.9"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: "#191919", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
@@ -542,33 +600,6 @@ export default function SnsNewsPage({ C, user, navigate }) {
               </div>
               <span style={{ fontSize: 13, fontWeight: 800, color: "#191919", flexShrink: 0 }}>참여하기 →</span>
             </a>
-
-            {/* 지난 브리핑 */}
-            {briefingHistory.length > 1 && (
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>지난 브리핑</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {briefingHistory.filter(h => h.date !== getTodayKey()).slice(0, 7).map(h => {
-                    const isExp = expandedHistory === h.date;
-                    const dl = h.date.replace(/-/g, ".");
-                    return (
-                      <div key={h.date} onClick={() => setExpandedHistory(isExp ? null : h.date)} style={{ padding: isExp ? "18px 20px" : "14px 18px", borderRadius: 14, cursor: "pointer", background: "#fff", border: `1px solid ${isExp ? accent : bdr}`, boxShadow: isExp ? "0 2px 12px rgba(124,106,255,0.12)" : "0 1px 4px rgba(0,0,0,0.04)" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ background: "rgba(124,106,255,0.08)", borderRadius: 10, padding: "6px 12px", textAlign: "center", minWidth: 64 }}>
-                              <div style={{ fontSize: 15, fontWeight: 900, color: accent, lineHeight: 1.2 }}>{dl.split(".").slice(1).join(".")}</div>
-                            </div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dl} SNS브리핑`}</div>
-                          </div>
-                          <span style={{ fontSize: 11, color: muted, transform: isExp ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
-                        </div>
-                        {isExp && <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${bdr}`, wordBreak: "break-word" }}>{renderBriefing(h.content)}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
