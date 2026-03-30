@@ -4,7 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import { lazy, Suspense } from "react";
-const CardNewsEditor = lazy(() => import("./CardNewsEditor"));
+const UnifiedCanvasEditor = lazy(() => import("./UnifiedCanvasEditor"));
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -773,7 +773,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
-          <CardNewsEditor
+          <UnifiedCanvasEditor
             slides={slides.map((s, i) => {
               const st = sted[i] || {};
               const ss = getSlideStyle(i);
@@ -788,7 +788,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
             })}
             width={imgW}
             height={imgH}
-            C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
+            mode="detailpage"
             onSave={() => {}}
             onClose={() => setWizStep(3)}
             inline
