@@ -196,8 +196,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {!PAYMENT_ENABLED && (
         <div style={{ textAlign:"center", marginBottom:20, padding:"12px 20px", borderRadius:12, background:"rgba(249,115,22,0.1)", border:"1px solid rgba(249,115,22,0.25)", maxWidth:500, margin:"0 auto 20px" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b" }}>결제 서비스 준비 중입니다</div>
-          <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>현재 포인트 충전은 관리자에게 문의해주세요.</div>
+          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b" }}>{p("paymentPreparing")}</div>
+          <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>{p("paymentPreparingDesc")}</div>
         </div>
       )}
 
@@ -262,7 +262,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                       </div>
                       <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
-                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>연 ₩{plan.yearlyPrice.toLocaleString()} 청구</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{lang === "ko" ? `연 ₩${plan.yearlyPrice.toLocaleString()} 청구` : `₩${plan.yearlyPrice.toLocaleString()}/year`}</div>
                       )}
                     </>
                   )}
@@ -279,7 +279,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
                   {!plan.free && !PAYMENT_ENABLED && (
                     <div style={{ textAlign: "center", marginBottom: 10, padding: "6px 14px", borderRadius: 10, background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.3)" }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b" }}>곧 오픈 예정</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b" }}>{p("comingSoon")}</span>
                     </div>
                   )}
                   <button
@@ -297,9 +297,64 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             })}
           </div>
 
+          {/* 플랜별 기능 비교 테이블 */}
+          <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", marginBottom: 32, overflowX: "auto" }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20, textAlign: "center" }}>{p("compTitle")}</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, fontWeight: 700, color: C.muted, borderBottom: "1px solid " + C.border }}></th>
+                  {["Free", "Basic", "Pro", "Premium"].map(name => (
+                    <th key={name} style={{ textAlign: "center", padding: "10px 8px", fontSize: 13, fontWeight: 800, color: name === "Pro" ? "#7c6aff" : C.text, borderBottom: "1px solid " + C.border }}>{name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { key: "compSnsWrite", vals: [true, true, true, true] },
+                  { key: "compCardNews", vals: [true, true, true, true] },
+                  { key: "compAiImage", vals: [true, true, true, true] },
+                  { key: "compAutoPublish", vals: [true, true, true, true] },
+                  { key: "compPrioritySupport", vals: [false, false, true, true] },
+                ].map((row, i) => (
+                  <tr key={i} style={{ background: i % 2 === 0 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)") : "transparent" }}>
+                    <td style={{ padding: "12px", fontSize: 13, fontWeight: 600, color: C.text, borderBottom: "1px solid " + C.border }}>{p(row.key)}</td>
+                    {row.vals.map((v, j) => (
+                      <td key={j} style={{ textAlign: "center", padding: "12px 8px", fontSize: 16, borderBottom: "1px solid " + C.border, color: v ? "#22c55e" : (isDark ? "rgba(255,255,255,0.2)" : "#ccc") }}>
+                        {v ? "✓" : "✗"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 어떤 플랜을 선택할까요? */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 16, textAlign: "center" }}>{p("recTitle")}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
+              {[
+                { label: p("recPersonal"), plans: "Free / Basic", desc: p("recPersonalDesc"), icon: "👤", badge: null, color: "#888" },
+                { label: p("recTeam"), plans: "Pro", desc: p("recTeamDesc"), icon: "👥", badge: p("recTeamBadge"), color: "#7c6aff" },
+                { label: p("recAgency"), plans: "Premium", desc: p("recAgencyDesc"), icon: "🏢", badge: null, color: "#f59e0b" },
+              ].map((seg, i) => (
+                <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #7c6aff" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(124,106,255,0.15)" : C.shadow }}>
+                  {seg.badge && (
+                    <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{seg.badge}</div>
+                  )}
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{seg.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>{seg.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: seg.color, marginBottom: 6 }}>{seg.plans}</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{seg.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* 모든 플랜 공통 기능 */}
           <div style={{ background: isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.15)", borderRadius: 16, padding: "20px 24px", marginBottom: 56 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14, textAlign: "center" }}>모든 플랜 공통 기능</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 14, textAlign: "center" }}>{p("commonFeatTitle")}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: "8px 24px" }}>
               {COMMON_F.map((f, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted }}>
@@ -322,7 +377,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               <div key={plan.id} style={{ borderRadius: 18, border: plan.highlight ? "2px solid #7c6aff" : "1px solid " + C.border, background: C.card, padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: plan.highlight ? "0 0 24px rgba(99,102,241,0.2)" : C.shadow, transition: "transform 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                {plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", marginBottom: 4 }}>최고 가성비</div>}
+                {plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", marginBottom: 4 }}>{p("bestValue")}</div>}
                 {plan.highlight && !plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
                 <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
@@ -331,7 +386,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 <div style={{ marginTop: 6, width: "100%" }}>
                   {PAYMENT_ENABLED === false && (
                     <div style={{ textAlign: "center", marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.3)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#f59e0b" }}>곧 오픈 예정</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#f59e0b" }}>{p("comingSoon")}</span>
                     </div>
                   )}
                   <button
@@ -351,16 +406,16 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 포인트 소모 기준 안내 */}
       <div style={{ background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 20, padding: "28px", marginBottom: 24 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>포인트 소모 기준 (API 비용 반영)</div>
-        <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>실제 AI 모델 사용량에 따라 포인트가 차감됩니다.</div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{p("pointCostTitle")}</div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>{p("pointCostDesc")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
           {[
-            { label: "텍스트 생성 (Claude Haiku)", cost: "10P", desc: "빠른 글쓰기·요약" },
-            { label: "텍스트 생성 (Claude Sonnet)", cost: "35P", desc: "고품질 글쓰기·분석" },
-            { label: "이미지 생성 (AI 이미지)", cost: "80P", desc: "1장 기준" },
-            { label: "PPT 생성", cost: "25P", desc: "1덱 기준" },
-            { label: "영상 분석 (Shorts)", cost: "35P", desc: "1건 분석" },
-            { label: "영상 생성", cost: "15~40P", desc: "길이에 따라 변동" },
+            { label: p("ptTextHaiku"), cost: "10P", desc: p("ptTextHaikuD") },
+            { label: p("ptTextSonnet"), cost: "35P", desc: p("ptTextSonnetD") },
+            { label: p("ptImage"), cost: "80P", desc: p("ptImageD") },
+            { label: p("ptPpt"), cost: "25P", desc: p("ptPptD") },
+            { label: p("ptVideoAnalysis"), cost: "35P", desc: p("ptVideoAnalysisD") },
+            { label: p("ptVideoGen"), cost: "15~40P", desc: p("ptVideoGenD") },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
               <div>
