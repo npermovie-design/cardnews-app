@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, FabricImage, Line } from "fabric";
+import { callAI } from "./aiClient";
 
 /* ══════════════════════════════════════════════════════════════
    UnifiedCanvasEditor v2 — 통합 캔버스 에디터
@@ -41,6 +42,9 @@ export default function UnifiedCanvasEditor({
   const [imgResults, setImgResults] = useState([]);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgSource, setImgSource] = useState("pexels"); // pexels | pixabay | unsplash | upload
+  const [layerTick, setLayerTick] = useState(0);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   /* ── 캔버스 초기화 ── */
   useEffect(() => {
@@ -338,6 +342,12 @@ export default function UnifiedCanvasEditor({
           {/* 하단: 내보내기만 */}
           <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
             {sel&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:12}}>선택 삭제</button>}
+            {onShareTemplate&&<button onClick={()=>{
+              const fc=fcRef.current; if(!fc) return;
+              if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;
+              const preview=fc.toDataURL({format:"png",multiplier:0.3});
+              onShareTemplate(preview);
+            }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:12}}>공유</button>}
             <div style={{flex:1}}/>
             <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>PNG</button>
             {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>ZIP</button>}
@@ -348,7 +358,7 @@ export default function UnifiedCanvasEditor({
         <div style={{width:280,background:"#fafafa",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
           {/* 패널 탭 */}
           <div style={{display:"flex",borderBottom:"1px solid #eee",flexShrink:0}}>
-            {[{id:"props",label:"속성"},{id:"images",label:"이미지"},{id:"shapes",label:"도형/폰트"}].map(t=>(
+            {[{id:"props",label:"속성"},{id:"layers",label:"레이어"},{id:"images",label:"이미지"},{id:"shapes",label:"도형/폰트"}].map(t=>(
               <button key={t.id} onClick={()=>setPanel(t.id)} style={{flex:1,padding:"10px 0",border:"none",borderBottom:panel===t.id?"2px solid #7c6aff":"2px solid transparent",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:panel===t.id?800:500,color:panel===t.id?"#7c6aff":"#888"}}>{t.label}</button>
             ))}
           </div>
@@ -425,6 +435,49 @@ export default function UnifiedCanvasEditor({
               )}
             </>}
 
+            {/* ─── 레이어 패널 ─── */}
+            {panel==="layers"&&(
+              <div style={{padding:"12px 16px"}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>레이어 순서</div>
+                <div style={{fontSize:11,color:"#888",marginBottom:10}}>위에 있을수록 앞에 표시됩니다. 드래그 또는 버튼으로 순서 변경</div>
+                {(()=>{
+                  const fc=fcRef.current; if(!fc) return null;
+                  const objs=fc.getObjects().filter(o=>o.name!=="guide");
+                  const list=[...objs].reverse(); // 위에 있을수록 앞
+                  return list.length===0 ? (
+                    <div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>오브젝트가 없습니다</div>
+                  ) : list.map((obj,i)=>{
+                    const isActive = sel === obj;
+                    const label = obj.name==="bg"?"배경 이미지" : obj.name==="title"?"제목" : obj.name==="body"?"본문" : obj.name==="highlight"?"부제목" : obj.type==="textbox"?`텍스트: ${(obj.text||"").slice(0,10)}` : obj.type==="rect"?"사각형" : obj.type==="circle"?"원" : obj.type==="line"?"선" : obj.type==="image"?"이미지" : "오브젝트";
+                    const isBg = obj.name==="bg";
+                    return (
+                      <div key={i} onClick={()=>{if(!isBg){fc.setActiveObject(obj);fc.renderAll();syncSel(obj);}}}
+                        style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,marginBottom:4,cursor:isBg?"default":"pointer",
+                          background:isActive?"rgba(124,106,255,0.12)":"transparent",border:`1.5px solid ${isActive?"#7c6aff":"transparent"}`,
+                          opacity:isBg?0.5:1}}>
+                        <span style={{fontSize:14,width:20,textAlign:"center"}}>{obj.type==="textbox"?"T":obj.type==="rect"?"□":obj.type==="circle"?"○":obj.type==="line"?"—":obj.type==="image"?"🖼":"◆"}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#7c6aff":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</span>
+                        {!isBg&&(
+                          <div style={{display:"flex",gap:2}}>
+                            <button onClick={e=>{e.stopPropagation();fc.bringObjectForward(obj);fc.renderAll();setLayerTick(t=>t+1);}}
+                              title="앞으로" style={{width:22,height:22,borderRadius:4,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
+                            <button onClick={e=>{e.stopPropagation();fc.sendObjectBackwards(obj);fc.renderAll();setLayerTick(t=>t+1);}}
+                              title="뒤로" style={{width:22,height:22,borderRadius:4,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+                {sel&&sel.name!=="bg"&&(
+                  <div style={{borderTop:"1px solid #eee",paddingTop:10,marginTop:10,display:"flex",gap:6}}>
+                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.bringObjectToFront(sel);fc.renderAll();}}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 앞으로</button>
+                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.sendObjectToBack(sel);fc.renderAll();}}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 뒤로</button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ─── 이미지 패널 ─── */}
             {panel==="images"&&(
               <div style={{padding:"12px 16px"}}>
@@ -499,6 +552,24 @@ export default function UnifiedCanvasEditor({
                       {f}
                     </button>
                   ))}
+                </div>
+
+                {/* AI 텍스트 생성 */}
+                <div style={{borderTop:"1px solid #eee",paddingTop:14,marginTop:14}}>
+                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>AI 글쓰기</div>
+                  <textarea value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)}
+                    placeholder="예: 직장인 번아웃 극복법 카드뉴스 제목 써줘&#10;예: 이 슬라이드에 맞는 본문 3줄 작성해줘"
+                    rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #ddd",fontSize:12,resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                  <button disabled={aiLoading||!aiPrompt.trim()} onClick={async()=>{
+                    setAiLoading(true);
+                    try {
+                      const txt = await callAI("claude-haiku-4-5",[{role:"user",content:`카드뉴스/콘텐츠 디자인용 텍스트를 작성해주세요. 짧고 임팩트있게.\n\n요청: ${aiPrompt}\n\n결과만 출력 (설명 없이 텍스트만)`}],300);
+                      if(txt) addText(txt.trim(),{fontSize:24});
+                    } catch(e) { alert("AI 오류: "+e.message); }
+                    setAiLoading(false);
+                  }} style={{width:"100%",marginTop:6,padding:"10px",borderRadius:8,border:"none",cursor:aiLoading||!aiPrompt.trim()?"not-allowed":"pointer",background:aiLoading?"#ccc":"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:13,fontWeight:700,opacity:aiLoading||!aiPrompt.trim()?0.6:1}}>
+                    {aiLoading?"생성 중...":"AI 텍스트 생성"}
+                  </button>
                 </div>
               </div>
             )}
