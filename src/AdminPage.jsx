@@ -96,15 +96,21 @@ export default function AdminPage({ C, user: adminUser }) {
   const loadDailySignups = async () => {
     try {
       const since = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { data } = await supabase.from("users").select("created_at").gte("created_at", since);
+      // join_date 우선, 없으면 created_at 폴백
+      let { data } = await supabase.from("users").select("join_date,created_at").gte("join_date", since);
+      if (!data || data.length === 0) {
+        const res = await supabase.from("users").select("join_date,created_at").gte("created_at", since);
+        data = res.data;
+      }
       const counts = {};
       for (let i = 6; i >= 0; i--) {
         const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
         counts[d] = 0;
       }
       (data || []).forEach(r => {
-        if (r.created_at) {
-          const d = r.created_at.slice(0, 10);
+        const dt = r.join_date || r.created_at;
+        if (dt) {
+          const d = dt.slice(0, 10);
           if (counts[d] !== undefined) counts[d]++;
         }
       });
@@ -136,10 +142,16 @@ export default function AdminPage({ C, user: adminUser }) {
   const loadMembers = async () => {
     setLoadingMembers(true);
     try {
-      const { data, error } = await supabase.from("users").select("*").order("join_date", { ascending: false });
-      if (error) throw error;
-      setMembers2(data || []);
-    } catch(e) { console.error("회원 로드 실패:", e); }
+      const { data, error } = await supabase.from("users").select("*").order("join_date", { ascending: false, nullsFirst: false });
+      if (error) {
+        // join_date 컬럼 정렬 실패 시 created_at으로 폴백
+        const { data: data2, error: error2 } = await supabase.from("users").select("*").order("created_at", { ascending: false });
+        if (error2) throw error2;
+        setMembers2(data2 || []);
+      } else {
+        setMembers2(data || []);
+      }
+    } catch(e) { console.error("회원 로드 실패:", e); showToast("회원 로드 실패: " + (e.message || e)); }
     setLoadingMembers(false);
   };
 
@@ -419,8 +431,9 @@ export default function AdminPage({ C, user: adminUser }) {
           return d.includes(todayStr) || d.includes(new Date().toLocaleDateString("ko-KR"));
         }).length;
         const recentMembers = members.filter(m => {
-          if (!m.created_at) return false;
-          return Date.now() - new Date(m.created_at).getTime() < 7*86400000;
+          const d = m.join_date || m.created_at;
+          if (!d) return false;
+          return Date.now() - new Date(d).getTime() < 7*86400000;
         }).length;
         const catStats = {};
         posts.forEach(p => { const c = p.subCat||p.cat||"기타"; catStats[c] = (catStats[c]||0)+1; });
@@ -713,7 +726,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       </div>
                       <div style={{ fontSize: 12, color: C.muted }}>{m.email}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                        가입 {m.joinDate ? new Date(m.joinDate).toLocaleDateString("ko-KR") : "-"} · AI 사용 {mUsed}회
+                        가입 {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR") : "-"} · AI 사용 {mUsed}회
                       </div>
                     </div>
                   </div>
