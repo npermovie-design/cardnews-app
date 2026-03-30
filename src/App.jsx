@@ -660,7 +660,7 @@ export default function App() {
       {/* 생성 중 이탈 방지 모달 */}
       {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} />}
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
-      {showAttendance && <AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} />}
+      {showAttendance && <Suspense fallback={null}><AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} /></Suspense>}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
