@@ -50,9 +50,18 @@ export function AboutPage({ navigate, C }) {
           {p("aboutTitle1")}<br/>
           <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{p("aboutTitle2")}</span>
         </h2>
-        <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.9, marginBottom: 48, maxWidth: 620 }}>
+        <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.9, marginBottom: 20, maxWidth: 620 }}>
           {p("aboutIntro")}
         </p>
+
+        {/* 미션 스테이트먼트 */}
+        <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: 24, background: "rgba(124,106,255,0.08)", marginBottom: 48 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#7c6aff" }}>
+            {lang === "ko"
+              ? "우리의 미션: 모든 콘텐츠 크리에이터의 시간을 되돌려주는 것"
+              : "Our mission: Giving every content creator their time back"}
+          </span>
+        </div>
 
         {/* 공감 섹션 */}
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", marginBottom: 28, boxShadow: C.shadow }}>
@@ -100,6 +109,22 @@ export function AboutPage({ navigate, C }) {
               SNS 콘텐츠 제작 키트 · SNS 콘텐츠 자동 생성 플랫폼 · SNS 콘텐츠 올인원 툴
             </p>
           </div>
+        </div>
+
+        {/* 회사 개요 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,100%),1fr))", gap: 14, marginBottom: 28 }}>
+          {[
+            { value: lang === "ko" ? "2024.10" : "Oct 2024", label: lang === "ko" ? "서비스 런칭" : "Launched", icon: "🚀" },
+            { value: "20+", label: lang === "ko" ? "AI 도구" : "AI Tools", icon: "🛠️" },
+            { value: lang === "ko" ? "4개국어" : "4 Languages", label: lang === "ko" ? "다국어 지원" : "Multilingual", icon: "🌐" },
+            { value: "2,000+", label: lang === "ko" ? "월 사용자" : "Monthly Users", icon: "👥" },
+          ].map((stat, i) => (
+            <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: C.shadow }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>{stat.icon}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#7c6aff", marginBottom: 4 }}>{stat.value}</div>
+              <div style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{stat.label}</div>
+            </div>
+          ))}
         </div>
 
         {/* 만들어진 이유 */}
