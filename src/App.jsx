@@ -269,7 +269,7 @@ export default function App() {
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
   }, []);
 
-  // popstate - 뒤로가기 가드
+  // popstate - 뒤로가기: URL에서 상태 복원
   useEffect(() => {
     const fn = async (e) => {
       if (window.__isGenerating) {
@@ -284,17 +284,28 @@ export default function App() {
         });
         if (!ok) return;
       }
+      // URL 파싱으로 이전 페이지 상태 정확히 복원
       const rawPath = window.location.pathname.replace(/^\//, "") || "home";
       const segments = rawPath.split("/");
       const mainSeg = segments[0] || "home";
+
+      // 커뮤니티 하위 카테고리 복원
       if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
         setBoardCat(segments[1]);
       }
+      // AI 메뉴 복원
       if (mainSeg === "ai" && segments[1]) {
         setAiMenu(segments[1]);
+      } else if (mainSeg === "ai") {
+        setAiMenu("home");
       }
+      // 게시글 뷰 복원 (post-ID)
+      if (segments.some(s => s.startsWith("post-"))) {
+        const pid = rawPath.split("/post-")[1];
+        if (pid) setPendingPostId(pid);
+      }
+
       setPage(mainSeg); setOpenMenu(null); setMobileOpen(false);
-      window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", fn);
     return () => window.removeEventListener("popstate", fn);
