@@ -458,8 +458,23 @@ export default function SnsNewsPage({ C, user, navigate }) {
 
   return (
     <div style={{ minHeight: "80vh", background: "#f8f8fb" }}>
+      <style>{`
+        @media(max-width:768px){
+          .snsnews-tab-bar{width:100%!important}
+          .snsnews-tab-bar button{padding:10px 14px!important;font-size:12px!important;flex:1!important;white-space:nowrap!important}
+          .snsnews-news-item{gap:10px!important;padding:12px 14px!important}
+          .snsnews-news-thumb{width:64px!important;min-width:64px!important;height:48px!important}
+          .snsnews-news-title{white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;font-size:14px!important}
+          .snsnews-pagination{flex-wrap:wrap!important}
+          .snsnews-briefing-header{flex-direction:column!important;align-items:flex-start!important;gap:8px!important}
+        }
+        @media(max-width:480px){
+          .snsnews-tab-bar button{padding:10px 8px!important;font-size:11px!important}
+          .snsnews-news-thumb{width:56px!important;min-width:56px!important;height:42px!important}
+        }
+      `}</style>
       {/* 헤더 */}
-      <div style={{ background: "linear-gradient(165deg,#f5f4ff 0%,#fdf2ff 100%)", padding: "clamp(40px,6vw,70px) 24px clamp(24px,4vw,40px)", textAlign: "center", borderBottom: `1px solid ${bdr}` }}>
+      <div style={{ background: "linear-gradient(165deg,#f5f4ff 0%,#fdf2ff 100%)", padding: "clamp(40px,6vw,70px) clamp(16px,4vw,24px) clamp(24px,4vw,40px)", textAlign: "center", borderBottom: `1px solid ${bdr}` }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <div style={{ fontSize: "clamp(24px,5vw,36px)", fontWeight: 900, color: text, letterSpacing: -0.5, marginBottom: 12, lineHeight: 1.3 }}>SNS뉴스</div>
           <div style={{ fontSize: "clamp(14px,2.5vw,16px)", color: muted, lineHeight: 1.8 }}>SNS 플랫폼 소식, AI 브리핑, 마케팅 트렌드를 한곳에서</div>
@@ -469,7 +484,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "clamp(20px,3vw,32px) clamp(16px,3vw,24px) 60px" }}>
 
         {/* 메인 탭 */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "#e9e9ef", borderRadius: 12, padding: 4, width: "fit-content" }}>
+        <div className="snsnews-tab-bar" style={{ display: "flex", gap: 4, marginBottom: 24, background: "#e9e9ef", borderRadius: 12, padding: 4, width: "fit-content", maxWidth: "100%" }}>
           {[
             { id: "briefing", label: "AI 브리핑" },
             { id: "news", label: "실시간 뉴스" },
@@ -486,10 +501,10 @@ export default function SnsNewsPage({ C, user, navigate }) {
             {/* 오늘의 브리핑 - 컴팩트 카드 */}
             <div style={{ marginBottom: 20, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg, #7c6aff 0%, #6366f1 40%, #818cf8 100%)", boxShadow: "0 4px 24px rgba(124,106,255,0.18)" }}>
               <div style={{ padding: "18px 22px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>📰</span>
-                    <span style={{ fontSize: 15, fontWeight: 900, color: "#fff", letterSpacing: -0.3 }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} SNS브리핑`}</span>
+                <div className="snsnews-briefing-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>📰</span>
+                    <span style={{ fontSize: "clamp(13px,3vw,15px)", fontWeight: 900, color: "#fff", letterSpacing: -0.3, wordBreak: "keep-all" }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} SNS브리핑`}</span>
                   </div>
                   {briefingLoading ? (
                     <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", flexShrink: 0 }} />
@@ -564,7 +579,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                   </div>
                   {/* 페이지네이션 */}
                   {totalPages > 1 && (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 20 }}>
+                    <div className="snsnews-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 20 }}>
                       <button onClick={() => setHistoryPage(Math.max(0, historyPage - 1))} disabled={historyPage === 0}
                         style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#fff", color: historyPage === 0 ? "#ccc" : text, fontSize: 12, fontWeight: 700, cursor: historyPage === 0 ? "default" : "pointer", minHeight: 38 }}>
                         ← 이전
@@ -623,13 +638,13 @@ export default function SnsNewsPage({ C, user, navigate }) {
             ) : (
               <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${bdr}`, overflow: "hidden" }}>
                 {newsItems.map((item, i) => (
-                  <a key={i} href={item.link || undefined} target="_blank" rel="noopener noreferrer" onClick={e => { if (!item.link) e.preventDefault(); }} style={{ textDecoration: "none", display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 18px", borderBottom: i < newsItems.length - 1 ? `1px solid #f0f0f5` : "none", transition: "background 0.12s" }}
+                  <a key={i} href={item.link || undefined} target="_blank" rel="noopener noreferrer" onClick={e => { if (!item.link) e.preventDefault(); }} className="snsnews-news-item" style={{ textDecoration: "none", display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 18px", borderBottom: i < newsItems.length - 1 ? `1px solid #f0f0f5` : "none", transition: "background 0.12s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.03)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    {item.thumb ? <img src={item.thumb} alt="" style={{ width: 80, minWidth: 80, height: 60, borderRadius: 8, objectFit: "cover", flexShrink: 0, background: "#f5f5f5" }} onError={e => e.target.style.display = "none"} /> : (
-                      <div style={{ width: 80, minWidth: 80, height: 60, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${accent} 0%, #818cf8 100%)`, color: "#fff", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{NEWS_CATS.find(c => c.id === newsCat)?.label?.slice(0, 3) || "NEWS"}</div>
+                    {item.thumb ? <img src={item.thumb} alt="" className="snsnews-news-thumb" style={{ width: 80, minWidth: 80, height: 60, borderRadius: 8, objectFit: "cover", flexShrink: 0, background: "#f5f5f5" }} onError={e => e.target.style.display = "none"} /> : (
+                      <div className="snsnews-news-thumb" style={{ width: 80, minWidth: 80, height: 60, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${accent} 0%, #818cf8 100%)`, color: "#fff", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{NEWS_CATS.find(c => c.id === newsCat)?.label?.slice(0, 3) || "NEWS"}</div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: text, lineHeight: 1.4, marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+                      <div className="snsnews-news-title" style={{ fontSize: 15, fontWeight: 700, color: text, lineHeight: 1.4, marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
                       {item.description && <div style={{ fontSize: 13, color: muted, lineHeight: 1.5, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.description}</div>}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: muted }}>
                         {item.lang === "en" && <span style={{ padding: "1px 5px", borderRadius: 3, fontWeight: 800, fontSize: 9, background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>EN</span>}

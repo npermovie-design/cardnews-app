@@ -128,6 +128,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           .pain-grid{grid-template-columns:1fr!important}
           .compare-table{font-size:11px!important}
           .compare-table th,.compare-table td{padding:10px 6px!important}
+          .point-grid{grid-template-columns:1fr 1fr!important}
         }
         @media(max-width:480px){
           section{padding-left:12px!important;padding-right:12px!important}
@@ -325,14 +326,14 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             </div>
           </FadeIn>
           <FadeIn delay={0.3}>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <div className="cta-row" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 36px" }}>
                 {lang === "ko" ? "무료로 시작하기" : "Start free"} →
               </Btn>
               <button onClick={() => { if (!user) { if (onLoginRequest) onLoginRequest(); } else { navigate("mypage"); } }}
                 style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid ${"rgba(124,106,255,0.3)"}`,
                   background: "transparent", color: "#7c6aff", fontSize: 16, fontWeight: 700, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 8 }}>
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
                   <img key={i} src={ic} alt="" loading="lazy" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
                 )}
@@ -509,13 +510,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   ? "AI가 초안을 만들고, 직접 검토한 뒤 발행하세요. 콘텐츠의 품질과 톤을 완벽하게 컨트롤할 수 있습니다."
                   : "AI drafts the content, you review and publish. Full control over quality and tone."}
               </p>
-              <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "clamp(12px,3vw,24px)", justifyContent: "center", flexWrap: "wrap" }}>
                 {[
                   { icon: "&#9989;", text: lang === "ko" ? "AI 초안 → 내가 검토" : "AI draft → You review" },
                   { icon: "&#9989;", text: lang === "ko" ? "톤·스타일 완벽 제어" : "Full tone control" },
                   { icon: "&#9989;", text: lang === "ko" ? "원클릭 발행 또는 수정" : "One-click publish or edit" },
                 ].map(item => (
-                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: "#22c55e" }}>
+                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "clamp(12px,2.5vw,14px)", fontWeight: 600, color: "#22c55e" }}>
                     <span dangerouslySetInnerHTML={{ __html: item.icon }} />
                     <span style={{ color: C.text }}>{item.text}</span>
                   </div>

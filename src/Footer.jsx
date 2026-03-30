@@ -4,10 +4,17 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
   const { t } = useI18n();
 
   return (
-    <footer style={{ borderTop: "1px solid " + C.border, padding: "48px 24px 32px", background: C.footerBg }}>
+    <footer style={{ borderTop: "1px solid " + C.border, padding: "clamp(32px,6vw,48px) clamp(16px,4vw,24px) 32px", background: C.footerBg }}>
+      <style>{`
+        @media(max-width:768px){
+          .footer-top-row{flex-direction:column!important;gap:24px!important}
+          .footer-links-row{gap:32px!important}
+          .footer-bottom-row{flex-direction:column!important;align-items:flex-start!important;gap:12px!important}
+        }
+      `}</style>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         {/* Company info */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36, marginBottom: 24 }}>
+        <div className="footer-top-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 36, marginBottom: 24 }}>
           <div style={{ maxWidth: 280 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <img src="/logo.png" alt="SNS메이킷" style={{ width: 32, height: 32, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
@@ -15,7 +22,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             </div>
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.85, margin: 0, whiteSpace: "pre-line" }}>{t("footerDesc") || "비즈니스를 위한 SNS 성장 파트너.\nAI를 활용해 더 빠르게, 더 스마트하게"}</p>
           </div>
-          <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+          <div className="footer-links-row" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5 }}>{t("community") || "커뮤니티"}</div>
               {[{id:"info",label:t("info")||"정보공유"},{id:"qna",label:t("qna")||"질문답변"},{id:"free",label:t("free")||"자유게시판"},{id:"review",label:t("review")||"사용후기"},{id:"archive",label:t("archive")||"자료실"}].map(cc => (
@@ -57,7 +64,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             {t("address")||"주소: 서울특별시 서초구 서초대로77길 39, 1112호 (서초동, MK빌딩)"}<br/>
             {t("email")||"고객센터: npermovie@naver.com"}
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, flexWrap: "wrap", gap: 12 }}>
+          <div className="footer-bottom-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, flexWrap: "wrap", gap: 12 }}>
             <div style={{ fontSize: 11, color: C.muted, opacity: 0.5 }}>{`© 2025-${new Date().getFullYear()} SNS메이킷 · All rights reserved.`}</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <a href="https://blog.naver.com/npermovie" target="_blank" rel="noopener noreferrer" title="네이버 블로그"
