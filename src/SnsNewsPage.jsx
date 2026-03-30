@@ -196,7 +196,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
   const [briefing, setBriefing] = useState(null);
   const [briefingLoading, setBriefingLoading] = useState(true);
   const [briefingHistory, setBriefingHistory] = useState([]);
-  const [expandedHistory, setExpandedHistory] = useState(null);
+  const [expandedHistory, setExpandedHistory] = useState("today");
   const [historyPage, setHistoryPage] = useState(0);
   const HISTORY_PER_PAGE = 7;
 
@@ -237,6 +237,9 @@ export default function SnsNewsPage({ C, user, navigate }) {
     setBriefingHistory(localItems);
   };
 
+  // 지난 브리핑 즉시 로드 (AI 생성과 무관하게)
+  useEffect(() => { loadBriefingHistory(); }, []);
+
   // 브리핑 로드: 1) localStorage 즉시 → 2) Supabase 빠르게 → 3) AI 생성 백그라운드
   const [briefingGenerating, setBriefingGenerating] = useState(false);
   useEffect(() => {
@@ -249,7 +252,6 @@ export default function SnsNewsPage({ C, user, navigate }) {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try { setBriefing(JSON.parse(cached)); setBriefingLoading(false); } catch {}
-      loadBriefingHistory();
       return () => { cancelled = true; };
     }
 
