@@ -1,193 +1,168 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, FabricImage } from "fabric";
-import { supabase } from "./storage";
-import { useI18n } from "./i18n.jsx";
-import { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS } from "./CardNewsEditorUtils.jsx";
 
-/* ══════════════════════════════════════════════════════════════════════
-   UnifiedCanvasEditor — 통합 캔버스 에디터
-   카드뉴스 / 상세페이지 / 썸네일 / PPT 공통
-   모든 스타일 인라인 — 외부 스타일 객체 없음
-   ══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   UnifiedCanvasEditor — 완전 독립 캔버스 에디터
+   외부 의존성 없음 (storage, i18n, CardNewsEditorUtils 등 미사용)
+   ══════════════════════════════════════════════════════════════ */
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+const FONT_LIST = [
+  "Pretendard", "Noto Sans KR", "Nanum Gothic", "Nanum Myeongjo",
+  "Black Han Sans", "Do Hyeon", "Jua", "Gothic A1",
+  "IBM Plex Sans KR", "Gmarket Sans", "Spoqa Han Sans Neo",
+  "Arial", "Georgia", "Impact", "Courier New",
+];
+
+const BG_COLORS = ["#1c1c1e","#ffffff","#0f172a","#fef3c7","#052e16","#831843","#f5ebe0","#e0f7fa","#1a1a2e","#f8fafc"];
+const TEXT_COLORS = ["#ffffff","#000000","#333333","#7c6aff","#ef4444","#f59e0b","#10b981","#ec4899"];
+
+function loadFont(name) {
+  if (!name || name === "sans-serif") return;
+  const id = "gf_" + name.replace(/\s/g, "_");
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;700;900&display=swap`;
+  document.head.appendChild(link);
+}
 
 export default function UnifiedCanvasEditor({
   slides: initialSlides = [],
   width = 1080,
   height = 1080,
-  mode = "cardnews", // "cardnews" | "detailpage" | "thumbnail" | "ppt"
-  C: themeIn,
+  mode = "cardnews",
   onSave,
   onClose,
   onShareTemplate,
   inline = false,
 }) {
-  /* ── 테마 ── */
-  const C = { purple: "#7c6aff", purpleL: "#6357e0", pink: "#ec4899", text: "#1a1730", muted: "rgba(26,23,48,0.5)", border: "rgba(0,0,0,0.08)", bg: "#ffffff", bg2: "#f5f4ff", ...(themeIn || {}) };
-  const { lang } = useI18n();
-  const ko = lang === "ko";
-
-  /* ── refs ── */
-  const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const canvasElRef = useRef(null);
-  const slidesDataRef = useRef([]);
-  const historyRef = useRef([]);
-  const historyIdxRef = useRef(-1);
-
-  /* ── state ── */
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [totalSlides, setTotalSlides] = useState(initialSlides.length || 1);
-  const [selObj, setSelObj] = useState(null);
+  const canvasRef = useRef(null);
+  const slidesRef = useRef([]);
+  const [idx, setIdx] = useState(0);
+  const [total] = useState(Math.max(initialSlides.length, 1));
+  const [sel, setSel] = useState(null);
   const [selProps, setSelProps] = useState({});
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [showImageLib, setShowImageLib] = useState(false);
-  const [scale, setScale] = useState(1);
-
-  /* ── 반응형 ── */
-  useEffect(() => {
-    const fn = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
-  }, []);
+  const [ready, setReady] = useState(false);
 
   /* ── 캔버스 초기화 ── */
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    // canvas 엘리먼트를 직접 생성 (React 충돌 방지)
+    const box = containerRef.current;
+    if (!box || canvasRef.current) return;
+
     const el = document.createElement("canvas");
     el.width = width;
     el.height = height;
-    container.innerHTML = "";
-    container.appendChild(el);
-    canvasElRef.current = el;
+    box.appendChild(el);
 
-    const fc = new Canvas(el, {
-      width, height,
-      backgroundColor: "#ffffff",
-      preserveObjectStacking: true,
-      selection: true,
-    });
-    canvasRef.current = fc;
+    try {
+      const fc = new Canvas(el, {
+        width, height,
+        backgroundColor: "#ffffff",
+        preserveObjectStacking: true,
+      });
+      canvasRef.current = fc;
 
-    // 선택 이벤트
-    fc.on("selection:created", (e) => syncSelection(e.selected?.[0]));
-    fc.on("selection:updated", (e) => syncSelection(e.selected?.[0]));
-    fc.on("selection:cleared", () => { setSelObj(null); setSelProps({}); });
-    fc.on("object:modified", () => pushHistory());
+      fc.on("selection:created", (e) => onSelect(e.selected?.[0]));
+      fc.on("selection:updated", (e) => onSelect(e.selected?.[0]));
+      fc.on("selection:cleared", () => { setSel(null); setSelProps({}); });
 
-    // 초기 슬라이드 로드
-    if (initialSlides.length > 0) {
-      buildSlideOnCanvas(fc, initialSlides[0]);
-      // 모든 슬라이드 데이터 저장
-      slidesDataRef.current = initialSlides.map(() => null);
+      // 초기 슬라이드
+      slidesRef.current = new Array(total).fill(null);
+      if (initialSlides[0]) {
+        applySlide(fc, initialSlides[0]);
+      }
+
+      // 컨테이너에 맞추기
+      requestAnimationFrame(() => fitToContainer(fc, box));
+      setReady(true);
+    } catch (err) {
+      console.error("Canvas init error:", err);
     }
-    pushHistory();
-    fitCanvas();
 
-    return () => { try { fc.dispose(); } catch {} canvasRef.current = null; canvasElRef.current = null; };
+    return () => {
+      try { canvasRef.current?.dispose(); } catch {}
+      canvasRef.current = null;
+      if (box) box.innerHTML = "";
+    };
   }, []);
 
-  /* ── 캔버스를 컨테이너에 맞추기 ── */
-  const fitCanvas = useCallback(() => {
-    const cont = containerRef.current;
-    const fc = canvasRef.current;
-    if (!cont || !fc) return;
-    const cw = cont.clientWidth - 16;
-    const ch = cont.clientHeight - 16;
-    const s = Math.min(cw / width, ch / height, 1);
-    setScale(s);
-    const el = fc.getElement()?.parentNode;
-    if (el) {
-      el.style.transform = `scale(${s})`;
-      el.style.transformOrigin = "center center";
-    }
-  }, [width, height]);
-
-  useEffect(() => {
-    fitCanvas();
-    window.addEventListener("resize", fitCanvas);
-    return () => window.removeEventListener("resize", fitCanvas);
-  }, [fitCanvas]);
-
-  /* ── 슬라이드를 캔버스에 빌드 ── */
-  const buildSlideOnCanvas = (fc, slide) => {
+  /* ── 슬라이드 적용 ── */
+  const applySlide = (fc, slide) => {
+    if (!fc || !slide) return;
     fc.clear();
-    fc.backgroundColor = slide.bgColor || "#ffffff";
+    fc.backgroundColor = slide.bgColor || "#1c1c1e";
 
-    // 배경 이미지
+    if (slide.title) {
+      const t = new Textbox(slide.title, {
+        left: width * 0.08, top: height * 0.12, width: width * 0.84,
+        fontSize: slide.fontSize || 42, fontWeight: "bold",
+        fill: slide.textColor || "#ffffff",
+        fontFamily: slide.fontFamily || "Pretendard",
+      });
+      fc.add(t);
+    }
+
+    if (slide.body) {
+      const b = new Textbox(slide.body, {
+        left: width * 0.08, top: height * 0.42, width: width * 0.84,
+        fontSize: Math.round((slide.fontSize || 42) * 0.38),
+        fill: slide.textColor || "#ffffff",
+        fontFamily: slide.fontFamily || "Pretendard",
+        opacity: 0.85,
+      });
+      fc.add(b);
+    }
+
     if (slide.image) {
       FabricImage.fromURL(slide.image, { crossOrigin: "anonymous" }).then(img => {
-        if (!img) return;
+        if (!img || !canvasRef.current) return;
         const s = Math.max(width / img.width, height / img.height);
-        img.set({ scaleX: s, scaleY: s, left: width / 2, top: height / 2, originX: "center", originY: "center", selectable: false, evented: false, name: "bgImage" });
+        img.set({ scaleX: s, scaleY: s, left: width / 2, top: height / 2, originX: "center", originY: "center", selectable: false, evented: false });
         fc.insertAt(0, img);
         fc.renderAll();
       }).catch(() => {});
     }
 
-    // 제목
-    if (slide.title) {
-      const tb = new Textbox(slide.title, {
-        left: width * 0.08, top: height * 0.15, width: width * 0.84,
-        fontSize: slide.fontSize || 42, fontWeight: "bold",
-        fill: slide.textColor || "#ffffff",
-        fontFamily: slide.fontFamily || "'Pretendard', sans-serif",
-        name: "title",
-      });
-      fc.add(tb);
-    }
-
-    // 본문
-    if (slide.body) {
-      const tb = new Textbox(slide.body, {
-        left: width * 0.08, top: height * 0.45, width: width * 0.84,
-        fontSize: Math.round((slide.fontSize || 42) * 0.4),
-        fill: slide.textColor || "#ffffff",
-        fontFamily: slide.fontFamily || "'Pretendard', sans-serif",
-        name: "body", opacity: 0.85,
-      });
-      fc.add(tb);
-    }
-
     fc.renderAll();
   };
 
-  /* ── 슬라이드 전환 ── */
-  const saveCurrentSlide = () => {
-    const fc = canvasRef.current;
-    if (!fc) return;
-    slidesDataRef.current[currentIdx] = fc.toJSON();
-  };
-
-  const goToSlide = (idx) => {
-    if (idx < 0 || idx >= totalSlides) return;
-    saveCurrentSlide();
-    setCurrentIdx(idx);
-    const fc = canvasRef.current;
-    if (!fc) return;
-    const saved = slidesDataRef.current[idx];
-    if (saved) {
-      fc.loadFromJSON(saved).then(() => fc.renderAll());
-    } else if (initialSlides[idx]) {
-      buildSlideOnCanvas(fc, initialSlides[idx]);
+  /* ── 컨테이너 맞추기 ── */
+  const fitToContainer = (fc, box) => {
+    if (!fc || !box) return;
+    const cw = box.clientWidth - 20;
+    const ch = box.clientHeight - 20;
+    if (cw <= 0 || ch <= 0) return;
+    const s = Math.min(cw / width, ch / height, 1);
+    const wrapper = box.querySelector(".canvas-container") || box.firstChild;
+    if (wrapper) {
+      wrapper.style.transform = `scale(${s})`;
+      wrapper.style.transformOrigin = "center center";
     }
   };
 
-  /* ── 선택 객체 속성 동기화 ── */
-  const syncSelection = (obj) => {
+  useEffect(() => {
+    const fn = () => {
+      const fc = canvasRef.current;
+      const box = containerRef.current;
+      if (fc && box) fitToContainer(fc, box);
+    };
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+
+  /* ── 선택 ── */
+  const onSelect = (obj) => {
     if (!obj) return;
-    setSelObj(obj);
+    setSel(obj);
     setSelProps({
       fontFamily: obj.fontFamily || "Pretendard",
       fontSize: obj.fontSize || 24,
-      fill: obj.fill || "#000000",
+      fill: typeof obj.fill === "string" ? obj.fill : "#000000",
       fontWeight: obj.fontWeight || "normal",
       fontStyle: obj.fontStyle || "normal",
       textAlign: obj.textAlign || "left",
-      opacity: obj.opacity ?? 1,
     });
   };
 
@@ -197,82 +172,67 @@ export default function UnifiedCanvasEditor({
     if (!obj) return;
     obj.set(key, val);
     fc.renderAll();
-    syncSelection(obj);
-    pushHistory();
+    onSelect(obj);
   };
 
-  /* ── Undo/Redo ── */
-  const pushHistory = () => {
+  /* ── 슬라이드 전환 ── */
+  const saveSlide = () => {
+    const fc = canvasRef.current;
+    if (fc) slidesRef.current[idx] = fc.toJSON();
+  };
+
+  const goTo = (i) => {
+    if (i < 0 || i >= total) return;
+    saveSlide();
+    setIdx(i);
     const fc = canvasRef.current;
     if (!fc) return;
-    const json = JSON.stringify(fc.toJSON());
-    const h = historyRef.current;
-    const i = historyIdxRef.current;
-    h.splice(i + 1);
-    h.push(json);
-    if (h.length > 30) h.shift();
-    historyIdxRef.current = h.length - 1;
+    const saved = slidesRef.current[i];
+    if (saved) {
+      fc.loadFromJSON(saved).then(() => fc.renderAll());
+    } else if (initialSlides[i]) {
+      applySlide(fc, initialSlides[i]);
+    }
   };
-
-  const undo = () => {
-    const h = historyRef.current;
-    const i = historyIdxRef.current;
-    if (i <= 0) return;
-    historyIdxRef.current = i - 1;
-    canvasRef.current?.loadFromJSON(JSON.parse(h[i - 1])).then(() => canvasRef.current?.renderAll());
-  };
-
-  const redo = () => {
-    const h = historyRef.current;
-    const i = historyIdxRef.current;
-    if (i >= h.length - 1) return;
-    historyIdxRef.current = i + 1;
-    canvasRef.current?.loadFromJSON(JSON.parse(h[i + 1])).then(() => canvasRef.current?.renderAll());
-  };
-
-  /* ── 키보드 단축키 ── */
-  useEffect(() => {
-    const fn = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable) return;
-      if (e.key === "Delete" || e.key === "Backspace") {
-        const fc = canvasRef.current;
-        const obj = fc?.getActiveObject();
-        if (obj && obj.name !== "bgImage") { fc.remove(obj); fc.renderAll(); pushHistory(); }
-      }
-      if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); }
-      if (e.ctrlKey && e.key === "y") { e.preventDefault(); redo(); }
-    };
-    window.addEventListener("keydown", fn);
-    return () => window.removeEventListener("keydown", fn);
-  }, []);
 
   /* ── 오브젝트 추가 ── */
   const addText = () => {
     const fc = canvasRef.current;
     if (!fc) return;
-    const tb = new Textbox(ko ? "텍스트를 입력하세요" : "Enter text", {
-      left: width * 0.1, top: height * 0.4, width: width * 0.8,
-      fontSize: 32, fill: "#333333", fontFamily: "'Pretendard', sans-serif",
-    });
-    fc.add(tb);
-    fc.setActiveObject(tb);
-    fc.renderAll();
-    pushHistory();
+    try {
+      const t = new Textbox("텍스트 입력", {
+        left: width * 0.15, top: height * 0.4, width: width * 0.7,
+        fontSize: 32, fill: "#333333", fontFamily: "Pretendard",
+      });
+      fc.add(t);
+      fc.setActiveObject(t);
+      fc.renderAll();
+    } catch (err) { console.error("addText error:", err); }
   };
 
-  const addShape = (type) => {
+  const addRect = () => {
     const fc = canvasRef.current;
     if (!fc) return;
-    const obj = type === "circle"
-      ? new Circle({ radius: 60, fill: C.purple + "33", left: width / 2 - 60, top: height / 2 - 60 })
-      : new Rect({ width: 150, height: 100, fill: C.purple + "33", left: width / 2 - 75, top: height / 2 - 50, rx: 8, ry: 8 });
-    fc.add(obj);
-    fc.setActiveObject(obj);
-    fc.renderAll();
-    pushHistory();
+    try {
+      const r = new Rect({ width: 150, height: 100, fill: "#7c6aff33", left: width / 2 - 75, top: height / 2 - 50, rx: 8, ry: 8 });
+      fc.add(r);
+      fc.setActiveObject(r);
+      fc.renderAll();
+    } catch (err) { console.error("addRect error:", err); }
   };
 
-  const addImageFromFile = () => {
+  const addCircle = () => {
+    const fc = canvasRef.current;
+    if (!fc) return;
+    try {
+      const c = new Circle({ radius: 60, fill: "#ec489933", left: width / 2 - 60, top: height / 2 - 60 });
+      fc.add(c);
+      fc.setActiveObject(c);
+      fc.renderAll();
+    } catch (err) { console.error("addCircle error:", err); }
+  };
+
+  const addImage = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -281,264 +241,157 @@ export default function UnifiedCanvasEditor({
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
+        const fc = canvasRef.current;
+        if (!fc) return;
         FabricImage.fromURL(ev.target.result).then(img => {
           if (!img) return;
-          const fc = canvasRef.current;
-          const maxW = width * 0.6;
-          const s = maxW / img.width;
-          img.set({ scaleX: s, scaleY: s, left: width * 0.2, top: height * 0.2 });
+          const s = (width * 0.5) / img.width;
+          img.set({ scaleX: s, scaleY: s, left: width * 0.25, top: height * 0.25 });
           fc.add(img);
           fc.setActiveObject(img);
           fc.renderAll();
-          pushHistory();
-        });
+        }).catch(() => {});
       };
       reader.readAsDataURL(file);
     };
     input.click();
   };
 
-  const setBgColor = (color) => {
+  const deleteSelected = () => {
+    const fc = canvasRef.current;
+    const obj = fc?.getActiveObject();
+    if (obj) { fc.remove(obj); fc.renderAll(); setSel(null); }
+  };
+
+  const setBg = (color) => {
     const fc = canvasRef.current;
     if (!fc) return;
     fc.backgroundColor = color;
     fc.renderAll();
-    pushHistory();
   };
 
   /* ── 내보내기 ── */
-  const exportPng = () => {
+  const downloadPng = () => {
     const fc = canvasRef.current;
     if (!fc) return;
-    const dataUrl = fc.toDataURL({ format: "png", multiplier: 1 });
+    const url = fc.toDataURL({ format: "png", multiplier: 1 });
     const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `slide_${currentIdx + 1}.png`;
+    a.href = url;
+    a.download = `slide_${idx + 1}.png`;
     a.click();
   };
 
-  const exportAll = async () => {
-    saveCurrentSlide();
-    const fc = canvasRef.current;
-    if (!fc) return;
-    if (!window.JSZip) {
-      await new Promise((res, rej) => {
-        const s = document.createElement("script");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
-        s.onload = res; s.onerror = rej; document.head.appendChild(s);
-      });
-    }
-    const zip = new window.JSZip();
-    for (let i = 0; i < totalSlides; i++) {
-      const saved = slidesDataRef.current[i];
-      if (saved) {
-        await fc.loadFromJSON(saved);
-        fc.renderAll();
-      } else if (initialSlides[i]) {
-        buildSlideOnCanvas(fc, initialSlides[i]);
-      }
-      const b64 = fc.toDataURL({ format: "png" }).split(",")[1];
-      zip.file(`slide_${String(i + 1).padStart(2, "0")}.png`, b64, { base64: true });
-    }
-    // 현재 슬라이드 복원
-    const curSaved = slidesDataRef.current[currentIdx];
-    if (curSaved) await fc.loadFromJSON(curSaved);
-    fc.renderAll();
+  /* ── 키보드 ── */
+  useEffect(() => {
+    const fn = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.key === "Delete" || e.key === "Backspace") deleteSelected();
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, []);
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "slides.zip";
-    a.click();
-  };
+  /* ── 버튼 스타일 ── */
+  const btnS = { background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" };
 
-  /* ── 패널 너비 ── */
-  const canvasAreaW = isMobile ? "100%" : "calc(100% - 280px)";
-  const panelW = 280;
-
-  /* ── 래퍼 스타일 (인라인) ── */
-  const wrapperStyle = inline
-    ? { width: "100%", flex: 1, display: "flex", alignItems: "stretch", justifyContent: "center", padding: 0, overflow: "hidden" }
-    : { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 };
-
-  const modalStyle = inline
-    ? { width: "100%", height: "100%", display: "flex", overflow: "hidden", background: "#fff" }
-    : { width: "100%", maxWidth: 1400, height: "95vh", background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", boxShadow: "0 8px 60px rgba(0,0,0,0.25)" };
-
-  /* ═══════════════════════ RENDER ═══════════════════════ */
+  /* ═══════ RENDER ═══════ */
   return (
-    <div style={wrapperStyle}>
-      <div style={{ ...modalStyle, flexDirection: isMobile ? "column" : "row" }}>
+    <div style={inline ? { width: "100%", flex: 1, display: "flex", overflow: "hidden" } : { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
+      <div style={inline ? { width: "100%", height: "100%", display: "flex", background: "#fff" } : { width: "100%", maxWidth: 1400, height: "95vh", background: "#fff", borderRadius: 16, display: "flex", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.25)" }}>
 
-        {/* ── 캔버스 영역 ── */}
-        <div style={{ display: "flex", flexDirection: "column", background: "#f0f0f5", padding: 0, overflow: "hidden", width: canvasAreaW }}>
+        {/* 캔버스 영역 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-          {/* 슬라이드 네비게이션 */}
-          {totalSlides > 1 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-              <button onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}
-                style={{ background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>{currentIdx + 1} / {totalSlides}</span>
-              <button onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx >= totalSlides - 1}
-                style={{ background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-              {onClose && <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, color: "#666" }}>{ko ? "닫기" : "Close"}</button>}
-            </div>
-          )}
+          {/* 상단 바 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#fff", borderBottom: "1px solid #eee" }}>
+            {total > 1 && (
+              <>
+                <button onClick={() => goTo(idx - 1)} disabled={idx === 0} style={btnS}>◀</button>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{idx + 1} / {total}</span>
+                <button onClick={() => goTo(idx + 1)} disabled={idx >= total - 1} style={btnS}>▶</button>
+              </>
+            )}
+            <div style={{ flex: 1 }} />
+            {onClose && <button onClick={onClose} style={{ ...btnS, fontSize: 12 }}>← 돌아가기</button>}
+          </div>
 
-          {/* 캔버스 컨테이너 */}
-          <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8, background: "#e8e8ee" }} />
+          {/* 캔버스 */}
+          <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#e5e5ea", overflow: "hidden", padding: 10 }} />
 
           {/* 툴바 */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 12px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
-            <button onClick={addText} title={ko ? "텍스트 추가" : "Add Text"}
-              style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>T</button>
-            <button onClick={() => addShape("rect")} title={ko ? "사각형" : "Rectangle"}
-              style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-            </button>
-            <button onClick={() => addShape("circle")} title={ko ? "원형" : "Circle"}
-              style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
-            </button>
-            <button onClick={addImageFromFile} title={ko ? "이미지 추가" : "Add Image"}
-              style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            </button>
-            <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.08)", margin: "0 2px" }} />
-            <button onClick={undo} title="Undo" style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            </button>
-            <button onClick={redo} title="Redo" style={{ background: "none", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, padding: "5px 10px", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-            </button>
-            <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-              <button onClick={exportPng} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                {ko ? "PNG 저장" : "Save PNG"}
-              </button>
-              {totalSlides > 1 && (
-                <button onClick={exportAll} style={{ background: "#333", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                  {ko ? "전체 ZIP" : "All ZIP"}
-                </button>
-              )}
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 14px", background: "#fff", borderTop: "1px solid #eee" }}>
+            <button onClick={addText} style={btnS} title="텍스트">T</button>
+            <button onClick={addRect} style={btnS} title="사각형">□</button>
+            <button onClick={addCircle} style={btnS} title="원">○</button>
+            <button onClick={addImage} style={btnS} title="이미지">🖼</button>
+            {sel && <button onClick={deleteSelected} style={{ ...btnS, color: "#ef4444", borderColor: "#fca5a5" }}>삭제</button>}
+            <div style={{ flex: 1 }} />
+            <button onClick={downloadPng} style={{ background: "#7c6aff", color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>PNG 저장</button>
           </div>
         </div>
 
-        {/* ── 속성 패널 (데스크톱) ── */}
-        {!isMobile && (
-          <div style={{ display: "flex", flexDirection: "column", background: "#fafafe", borderLeft: "1px solid rgba(0,0,0,0.08)", overflowY: "auto", padding: "0 0 16px", width: panelW }}>
-            <div style={{ fontSize: 15, fontWeight: 700, padding: "14px 18px", borderBottom: "1px solid rgba(0,0,0,0.06)", position: "sticky", top: 0, background: "#fafafe", zIndex: 2 }}>
-              {ko ? "속성" : "Properties"}
-            </div>
+        {/* 속성 패널 */}
+        <div style={{ width: 260, background: "#fafafa", borderLeft: "1px solid #eee", overflowY: "auto", flexShrink: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, padding: "14px 16px", borderBottom: "1px solid #eee" }}>속성</div>
 
-            {/* 배경 섹션 */}
-            <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#333" }}>{ko ? "배경" : "Background"}</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {["#1c1c1e", "#ffffff", "#0f172a", "#fef3c7", "#052e16", "#831843", "#f5ebe0", "#e0f7fa"].map(c => (
-                  <button key={c} onClick={() => setBgColor(c)}
-                    style={{ width: 28, height: 28, borderRadius: 6, background: c, border: "2px solid rgba(0,0,0,0.1)", cursor: "pointer" }} />
-                ))}
-                <input type="color" onChange={e => setBgColor(e.target.value)}
-                  style={{ width: 28, height: 28, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 6, cursor: "pointer", background: "none" }} />
-              </div>
-            </div>
-
-            {/* 텍스트 속성 (선택된 객체가 있을 때) */}
-            {selObj && selObj.type === "textbox" && (
-              <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#333" }}>{ko ? "텍스트" : "Text"}</div>
-
-                {/* 폰트 */}
-                <div style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 4 }}>{ko ? "폰트" : "Font"}</div>
-                <select value={selProps.fontFamily} onChange={e => { loadGFont(e.target.value); setProp("fontFamily", e.target.value); }}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", fontSize: 13, background: "#fff", outline: "none", marginBottom: 8 }}>
-                  {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-
-                {/* 크기 */}
-                <div style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 4 }}>{ko ? "크기" : "Size"}: {selProps.fontSize}px</div>
-                <input type="range" min={10} max={120} value={selProps.fontSize || 24}
-                  onChange={e => setProp("fontSize", +e.target.value)}
-                  style={{ width: "100%", accentColor: "#7c6aff", marginBottom: 8 }} />
-
-                {/* 색상 */}
-                <div style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 4 }}>{ko ? "색상" : "Color"}</div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
-                  <input type="color" value={typeof selProps.fill === "string" ? selProps.fill : "#000000"}
-                    onChange={e => setProp("fill", e.target.value)}
-                    style={{ width: 36, height: 36, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 8, cursor: "pointer", background: "none" }} />
-                  {["#ffffff", "#000000", "#333333", "#7c6aff", "#ef4444", "#f59e0b", "#10b981"].map(c => (
-                    <button key={c} onClick={() => setProp("fill", c)}
-                      style={{ width: 24, height: 24, borderRadius: 4, background: c, border: "1.5px solid rgba(0,0,0,0.15)", cursor: "pointer" }} />
-                  ))}
-                </div>
-
-                {/* 굵기/기울임/정렬 */}
-                <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-                  <button onClick={() => setProp("fontWeight", selProps.fontWeight === "bold" ? "normal" : "bold")}
-                    style={{ padding: "4px 10px", borderRadius: 6, border: `1.5px solid ${selProps.fontWeight === "bold" ? C.purple : "rgba(0,0,0,0.1)"}`, background: selProps.fontWeight === "bold" ? C.purple + "15" : "transparent", cursor: "pointer", fontWeight: 900, fontSize: 13 }}>B</button>
-                  <button onClick={() => setProp("fontStyle", selProps.fontStyle === "italic" ? "normal" : "italic")}
-                    style={{ padding: "4px 10px", borderRadius: 6, border: `1.5px solid ${selProps.fontStyle === "italic" ? C.purple : "rgba(0,0,0,0.1)"}`, background: selProps.fontStyle === "italic" ? C.purple + "15" : "transparent", cursor: "pointer", fontStyle: "italic", fontSize: 13 }}>I</button>
-                  <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.08)", margin: "0 2px" }} />
-                  {["left", "center", "right"].map(a => (
-                    <button key={a} onClick={() => setProp("textAlign", a)}
-                      style={{ padding: "4px 8px", borderRadius: 6, border: `1.5px solid ${selProps.textAlign === a ? C.purple : "rgba(0,0,0,0.1)"}`, background: selProps.textAlign === a ? C.purple + "15" : "transparent", cursor: "pointer", fontSize: 11 }}>
-                      {a === "left" ? "◧" : a === "center" ? "◫" : "◨"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 선택된 객체 삭제 */}
-            {selObj && (
-              <div style={{ padding: "14px 18px" }}>
-                <button onClick={() => { const fc = canvasRef.current; if (fc && selObj) { fc.remove(selObj); fc.renderAll(); setSelObj(null); pushHistory(); } }}
-                  style={{ width: "100%", padding: "10px 0", border: "none", borderRadius: 10, background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {ko ? "선택 삭제" : "Delete Selected"}
-                </button>
-              </div>
-            )}
-
-            {/* 하단 버튼 */}
-            <div style={{ marginTop: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-              {onShareTemplate && (
-                <button onClick={() => {
-                  saveCurrentSlide();
-                  const fc = canvasRef.current;
-                  if (!fc) return;
-                  const preview = fc.toDataURL({ format: "jpeg", quality: 0.6, multiplier: 0.3 });
-                  onShareTemplate({ slidesJson: slidesDataRef.current, preview });
-                }}
-                  style={{ width: "100%", padding: "12px 0", border: "none", borderRadius: 10, background: "#10b981", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                  {ko ? "템플릿 공유" : "Share Template"}
-                </button>
-              )}
-              {onSave && (
-                <button onClick={() => {
-                  saveCurrentSlide();
-                  const fc = canvasRef.current;
-                  if (!fc) return;
-                  const results = [];
-                  // 모든 슬라이드 내보내기
-                  for (let i = 0; i < totalSlides; i++) {
-                    const s = slidesDataRef.current[i];
-                    if (s) results.push({ json: s });
-                  }
-                  onSave(results);
-                }}
-                  style={{ width: "100%", padding: "12px 0", border: "none", borderRadius: 10, background: `linear-gradient(135deg, ${C.purple}, ${C.pink})`, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                  {ko ? "저장" : "Save"}
-                </button>
-              )}
+          {/* 배경 */}
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>배경색</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {BG_COLORS.map(c => (
+                <button key={c} onClick={() => setBg(c)} style={{ width: 26, height: 26, borderRadius: 5, background: c, border: "2px solid rgba(0,0,0,0.1)", cursor: "pointer", padding: 0 }} />
+              ))}
+              <input type="color" onChange={e => setBg(e.target.value)} style={{ width: 26, height: 26, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 5, cursor: "pointer" }} />
             </div>
           </div>
-        )}
+
+          {/* 텍스트 속성 */}
+          {sel && sel.type === "textbox" && (
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>텍스트</div>
+
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 3 }}>폰트</div>
+              <select value={selProps.fontFamily} onChange={e => { loadFont(e.target.value); setProp("fontFamily", e.target.value); }}
+                style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #ddd", fontSize: 12, marginBottom: 8 }}>
+                {FONT_LIST.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 3 }}>크기: {selProps.fontSize}px</div>
+              <input type="range" min={10} max={120} value={selProps.fontSize} onChange={e => setProp("fontSize", +e.target.value)}
+                style={{ width: "100%", accentColor: "#7c6aff", marginBottom: 8 }} />
+
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 3 }}>색상</div>
+              <div style={{ display: "flex", gap: 5, alignItems: "center", marginBottom: 8 }}>
+                <input type="color" value={selProps.fill} onChange={e => setProp("fill", e.target.value)}
+                  style={{ width: 30, height: 30, padding: 0, border: "2px solid rgba(0,0,0,0.1)", borderRadius: 6, cursor: "pointer" }} />
+                {TEXT_COLORS.map(c => (
+                  <button key={c} onClick={() => setProp("fill", c)} style={{ width: 22, height: 22, borderRadius: 4, background: c, border: "1.5px solid rgba(0,0,0,0.15)", cursor: "pointer", padding: 0 }} />
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: 4 }}>
+                <button onClick={() => setProp("fontWeight", selProps.fontWeight === "bold" ? "normal" : "bold")}
+                  style={{ ...btnS, fontWeight: 900, fontSize: 13, background: selProps.fontWeight === "bold" ? "#7c6aff15" : "transparent", borderColor: selProps.fontWeight === "bold" ? "#7c6aff" : "rgba(0,0,0,0.12)" }}>B</button>
+                <button onClick={() => setProp("fontStyle", selProps.fontStyle === "italic" ? "normal" : "italic")}
+                  style={{ ...btnS, fontStyle: "italic", fontSize: 13, background: selProps.fontStyle === "italic" ? "#7c6aff15" : "transparent", borderColor: selProps.fontStyle === "italic" ? "#7c6aff" : "rgba(0,0,0,0.12)" }}>I</button>
+                <div style={{ width: 1, height: 24, background: "#eee", margin: "0 2px" }} />
+                {["left","center","right"].map(a => (
+                  <button key={a} onClick={() => setProp("textAlign", a)}
+                    style={{ ...btnS, fontSize: 11, background: selProps.textAlign === a ? "#7c6aff15" : "transparent", borderColor: selProps.textAlign === a ? "#7c6aff" : "rgba(0,0,0,0.12)" }}>
+                    {a === "left" ? "≡←" : a === "center" ? "≡" : "≡→"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 선택 삭제 */}
+          {sel && (
+            <div style={{ padding: "12px 16px" }}>
+              <button onClick={deleteSelected} style={{ width: "100%", padding: "10px", border: "none", borderRadius: 8, background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>선택 삭제</button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
