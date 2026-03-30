@@ -37,35 +37,41 @@ const PageLoader = () => (
   </div>
 );
 
-// 접속자 카운트 훅 (Supabase online_users 테이블 + localStorage 폴백)
+// 접속자 카운트 훅 (Supabase online_users 테이블)
 function useOnlineCount() {
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    const myId = "u_" + Math.random().toString(36).slice(2, 8);
+    // 브라우저 세션 기반 고정 ID (탭 단위)
+    const myId = sessionStorage.getItem("nper_oid") || (() => { const id = "u_" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("nper_oid", id); return id; })();
     const device = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
     async function hb() {
       if (cancelled) return;
       try {
-        // upsert + count를 한 번에 (delete는 서버 cron으로 처리)
+        // 내 heartbeat 업데이트
         await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
+        // 3분 이상 지난 오래된 레코드 삭제
+        const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+        await supabase.from("online_users").delete().lt("last_seen", cutoff);
+        // 현재 접속자 카운트
         const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
         if (!cancelled && cnt != null) setCount(cnt);
       } catch(e) {
+        // 폴백: localStorage
         if (cancelled) return;
         try {
           const KEY = "nper_online_users";
           const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
           const now = Date.now();
           raw[myId] = now;
-          Object.keys(raw).forEach(k => { if (now - raw[k] > 60000) delete raw[k]; });
+          Object.keys(raw).forEach(k => { if (now - raw[k] > 180000) delete raw[k]; });
           localStorage.setItem(KEY, JSON.stringify(raw));
           if (!cancelled) setCount(Object.keys(raw).length);
-        } catch(e2) {}
+        } catch {}
       }
     }
     hb();
-    const t = setInterval(hb, 60000); // 8초 → 60초
+    const t = setInterval(hb, 45000);
     return () => {
       cancelled = true;
       clearInterval(t);
@@ -743,11 +749,12 @@ export default function App() {
         {/* 오른쪽: 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           {/* 실시간 접속자 수 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: theme==="dark" ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.06)", flexShrink: 0 }}>
-            <span className="online-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#22c55e" }}>{onlineCount || 1}</span>
-            <span style={{ fontSize: 10, color: C.muted }}>접속중</span>
-          </div>
+          {onlineCount > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 14, flexShrink: 0 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite", flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>{onlineCount}</span>
+            </div>
+          )}
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
           {/* 다국어 선택 */}
           <div ref={langRef} style={{ position: "relative" }}>
