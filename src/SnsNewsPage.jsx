@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./storage";
-import Footer from "./Footer.jsx";
+// Footer는 App.jsx에서 렌더링
 
 /* ════════════════════════════════════════════════════════════
    SNS뉴스 페이지 – AI 브리핑 + 실시간 뉴스 + 관리자 직접 작성
@@ -437,7 +437,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
             <span style={{ fontSize: 12, fontWeight: 800, color: "#191919" }}>→</span>
           </a>
         </div>
-        <div style={{ maxWidth: 760, margin: "40px auto 0" }}><Footer C={c} /></div>
+        {/* Footer는 App.jsx에서 렌더링 */}
       </div>
     );
   }
@@ -648,7 +648,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       </div>
 
       {editorOpen && <NewsEditorModal article={editTarget} onSave={handleSaveArticle} onClose={() => { setEditorOpen(false); setEditTarget(null); }} />}
-      <Footer C={c} />
+      {/* Footer는 App.jsx에서 렌더링 */}
     </div>
   );
 }
