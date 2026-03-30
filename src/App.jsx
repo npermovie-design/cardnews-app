@@ -743,7 +743,7 @@ export default function App() {
         {/* 오른쪽: 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           {/* 실시간 접속자 수 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: isDark ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.06)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: theme==="dark" ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.06)", flexShrink: 0 }}>
             <span className="online-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite" }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: "#22c55e" }}>{onlineCount || 1}</span>
             <span style={{ fontSize: 10, color: C.muted }}>접속중</span>

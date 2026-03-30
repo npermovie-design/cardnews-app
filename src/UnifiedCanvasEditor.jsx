@@ -476,34 +476,51 @@ export default function UnifiedCanvasEditor({
               )}
             </>}
 
-            {/* ─── 레이어 패널 ─── */}
+            {/* ─── 레이어 패널 (드래그 지원) ─── */}
             {panel==="layers"&&(
               <div style={{padding:"12px 16px"}}>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>레이어 순서</div>
-                <div style={{fontSize:11,color:"#888",marginBottom:10}}>위에 있을수록 앞에 표시됩니다. 드래그 또는 버튼으로 순서 변경</div>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>레이어 순서</div>
+                <div style={{fontSize:11,color:"#888",marginBottom:10}}>드래그로 순서 변경 · 위가 앞</div>
                 {(()=>{
                   const fc=fcRef.current; if(!fc) return null;
                   const objs=fc.getObjects().filter(o=>o.name!=="guide");
-                  const list=[...objs].reverse(); // 위에 있을수록 앞
-                  return list.length===0 ? (
-                    <div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>오브젝트가 없습니다</div>
-                  ) : list.map((obj,i)=>{
-                    const isActive = sel === obj;
-                    const label = obj.name==="bg"?"배경 이미지" : obj.name==="title"?"제목" : obj.name==="body"?"본문" : obj.name==="highlight"?"부제목" : obj.type==="textbox"?`텍스트: ${(obj.text||"").slice(0,10)}` : obj.type==="rect"?"사각형" : obj.type==="circle"?"원" : obj.type==="line"?"선" : obj.type==="image"?"이미지" : "오브젝트";
-                    const isBg = obj.name==="bg";
+                  const list=[...objs].reverse();
+                  if(list.length===0) return <div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>오브젝트가 없습니다</div>;
+                  const getLabel=(obj)=>obj.name==="bg"?"배경 이미지":obj.name==="title"?"제목":obj.name==="body"?"본문":obj.name==="highlight"?"부제목":obj.name==="gradient"?"그라데이션":obj.type==="textbox"?`텍스트: ${(obj.text||"").slice(0,10)}`:obj.type==="rect"?"사각형":obj.type==="circle"?"원":obj.type==="triangle"?"삼각형":obj.type==="line"?"선":obj.type==="image"?"이미지":"오브젝트";
+                  const getIcon=(obj)=>obj.type==="textbox"?"T":obj.type==="rect"?"□":obj.type==="circle"?"○":obj.type==="triangle"?"△":obj.type==="line"?"—":obj.type==="image"?"🖼":"◆";
+                  return list.map((obj,i)=>{
+                    const isActive=sel===obj, isBg=obj.name==="bg";
                     return (
-                      <div key={i} onClick={()=>{if(!isBg){fc.setActiveObject(obj);fc.renderAll();syncSel(obj);}}}
-                        style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,marginBottom:4,cursor:isBg?"default":"pointer",
+                      <div key={i}
+                        draggable={!isBg}
+                        onDragStart={e=>{if(isBg){e.preventDefault();return;}e.dataTransfer.setData("layerIdx",String(i));}}
+                        onDragOver={e=>{if(!isBg)e.preventDefault();}}
+                        onDrop={e=>{
+                          e.preventDefault();
+                          const fromIdx=parseInt(e.dataTransfer.getData("layerIdx"));
+                          if(isNaN(fromIdx)||fromIdx===i) return;
+                          const fromObj=list[fromIdx], toObj=list[i];
+                          if(!fromObj||!toObj||fromObj.name==="bg"||toObj.name==="bg") return;
+                          // list는 reverse 순서이므로 실제 fabric index는 objs 기준
+                          const fromFabricIdx=objs.indexOf(fromObj), toFabricIdx=objs.indexOf(toObj);
+                          if(fromFabricIdx<0||toFabricIdx<0) return;
+                          fc.moveTo(fromObj,toFabricIdx);
+                          fc.renderAll(); setLayerTick(t=>t+1);
+                        }}
+                        onClick={()=>{if(!isBg){fc.setActiveObject(obj);fc.renderAll();syncSel(obj);}}}
+                        style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:8,marginBottom:3,
+                          cursor:isBg?"default":"grab",userSelect:"none",
                           background:isActive?"rgba(124,106,255,0.12)":"transparent",border:`1.5px solid ${isActive?"#7c6aff":"transparent"}`,
-                          opacity:isBg?0.5:1}}>
-                        <span style={{fontSize:14,width:20,textAlign:"center"}}>{obj.type==="textbox"?"T":obj.type==="rect"?"□":obj.type==="circle"?"○":obj.type==="line"?"—":obj.type==="image"?"🖼":"◆"}</span>
-                        <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#7c6aff":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</span>
+                          opacity:isBg?0.4:1,transition:"background 0.1s"}}>
+                        <span style={{fontSize:10,color:"#bbb",cursor:"grab"}}>☰</span>
+                        <span style={{fontSize:14,width:18,textAlign:"center"}}>{getIcon(obj)}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#7c6aff":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLabel(obj)}</span>
                         {!isBg&&(
                           <div style={{display:"flex",gap:2}}>
                             <button onClick={e=>{e.stopPropagation();fc.bringObjectForward(obj);fc.renderAll();setLayerTick(t=>t+1);}}
-                              title="앞으로" style={{width:22,height:22,borderRadius:4,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
+                              style={{width:20,height:20,borderRadius:3,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
                             <button onClick={e=>{e.stopPropagation();fc.sendObjectBackwards(obj);fc.renderAll();setLayerTick(t=>t+1);}}
-                              title="뒤로" style={{width:22,height:22,borderRadius:4,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
+                              style={{width:20,height:20,borderRadius:3,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
                           </div>
                         )}
                       </div>
@@ -511,9 +528,9 @@ export default function UnifiedCanvasEditor({
                   });
                 })()}
                 {sel&&sel.name!=="bg"&&(
-                  <div style={{borderTop:"1px solid #eee",paddingTop:10,marginTop:10,display:"flex",gap:6}}>
-                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.bringObjectToFront(sel);fc.renderAll();}}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 앞으로</button>
-                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.sendObjectToBack(sel);fc.renderAll();}}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 뒤로</button>
+                  <div style={{borderTop:"1px solid #eee",paddingTop:8,marginTop:8,display:"flex",gap:6}}>
+                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.bringObjectToFront(sel);fc.renderAll();setLayerTick(t=>t+1);}}} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 앞</button>
+                    <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.sendObjectToBack(sel);fc.renderAll();setLayerTick(t=>t+1);}}} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 뒤</button>
                   </div>
                 )}
               </div>
@@ -522,6 +539,22 @@ export default function UnifiedCanvasEditor({
             {/* ─── 이미지 패널 ─── */}
             {panel==="images"&&(
               <div style={{padding:"12px 16px"}}>
+                {/* AI 이미지 추천 */}
+                <button onClick={async()=>{
+                  const fc=fcRef.current; if(!fc) return;
+                  const texts=fc.getObjects().filter(o=>o.type==="textbox").map(o=>o.text).join(" ").trim();
+                  if(!texts){alert("캔버스에 텍스트를 먼저 추가하세요");return;}
+                  setImgLoading(true);
+                  try{
+                    const kw=await callAI("claude-haiku-4-5",[{role:"user",content:`다음 텍스트에 어울리는 이미지 검색 키워드를 영어로 3개 추천. 쉼표 구분으로만 출력:\n${texts.slice(0,200)}`}],100);
+                    const first=kw.split(",")[0]?.trim()||texts.slice(0,20);
+                    setImgQuery(first);
+                    await searchImages(first);
+                  }catch{}
+                  setImgLoading(false);
+                }} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:12,fontWeight:700,marginBottom:10}}>
+                  AI 이미지 추천
+                </button>
                 <div style={{fontSize:11,color:"#888",marginBottom:8}}>Pexels + Unsplash + Pixabay 통합 검색</div>
                 {/* 검색 */}
                 <div style={{display:"flex",gap:6,marginBottom:10}}>
