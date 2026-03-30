@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, Triangle, Polygon, FabricImage, Line, Gradient } from "fabric";
 import { callAI } from "./aiClient";
+import { supabase } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    UnifiedCanvasEditor v2 — 통합 캔버스 에디터
@@ -45,6 +46,34 @@ export default function UnifiedCanvasEditor({
   const [layerTick, setLayerTick] = useState(0);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  // Undo/Redo
+  const historyRef = useRef([]);
+  const historyIdxRef = useRef(-1);
+  const isUndoRedoRef = useRef(false);
+  const pushHistory = () => {
+    const fc = fcRef.current; if (!fc || isUndoRedoRef.current) return;
+    const json = JSON.stringify(fc.toJSON());
+    const h = historyRef.current;
+    // 현재 위치 이후 기록 제거
+    historyRef.current = h.slice(0, historyIdxRef.current + 1);
+    historyRef.current.push(json);
+    if (historyRef.current.length > 30) historyRef.current.shift();
+    historyIdxRef.current = historyRef.current.length - 1;
+  };
+  const undo = () => {
+    const fc = fcRef.current; if (!fc) return;
+    if (historyIdxRef.current <= 0) return;
+    historyIdxRef.current--;
+    isUndoRedoRef.current = true;
+    fc.loadFromJSON(JSON.parse(historyRef.current[historyIdxRef.current])).then(() => { fc.renderAll(); isUndoRedoRef.current = false; });
+  };
+  const redo = () => {
+    const fc = fcRef.current; if (!fc) return;
+    if (historyIdxRef.current >= historyRef.current.length - 1) return;
+    historyIdxRef.current++;
+    isUndoRedoRef.current = true;
+    fc.loadFromJSON(JSON.parse(historyRef.current[historyIdxRef.current])).then(() => { fc.renderAll(); isUndoRedoRef.current = false; });
+  };
 
   /* ── 캔버스 초기화 ── */
   useEffect(() => {
@@ -109,11 +138,13 @@ export default function UnifiedCanvasEditor({
         }
         fc.renderAll();
       });
-      fc.on("object:modified", () => clearGuides());
+      fc.on("object:modified", () => { clearGuides(); pushHistory(); });
+      fc.on("object:added", () => pushHistory());
+      fc.on("object:removed", () => pushHistory());
 
       slidesRef.current = new Array(total).fill(null);
       if (initSlides[0]) buildSlide(fc, initSlides[0], 0);
-      requestAnimationFrame(() => fit(fc, box));
+      requestAnimationFrame(() => { fit(fc, box); pushHistory(); });
     } catch(e) { console.error("Canvas init:", e); }
     return () => { try { fcRef.current?.dispose(); } catch{} fcRef.current=null; if(box) box.innerHTML=""; };
   }, []);
@@ -351,6 +382,8 @@ export default function UnifiedCanvasEditor({
     const fn=e=>{
       if(["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)||e.target.isContentEditable) return;
       if(e.key==="Delete"||e.key==="Backspace") del();
+      if((e.ctrlKey||e.metaKey)&&e.key==="z"&&!e.shiftKey){e.preventDefault();undo();}
+      if((e.ctrlKey||e.metaKey)&&(e.key==="y"||(e.key==="z"&&e.shiftKey))){e.preventDefault();redo();}
     };
     window.addEventListener("keydown",fn); return()=>window.removeEventListener("keydown",fn);
   },[]);
@@ -371,6 +404,8 @@ export default function UnifiedCanvasEditor({
               <span style={{fontSize:13,fontWeight:700}}>{idx+1}/{total}</span>
               <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
             </>}
+            <button onClick={undo} title="되돌리기 (Ctrl+Z)" style={{...B,fontSize:14,padding:"4px 8px"}}>↩</button>
+            <button onClick={redo} title="다시실행 (Ctrl+Y)" style={{...B,fontSize:14,padding:"4px 8px"}}>↪</button>
             <div style={{flex:1}}/>
             <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
             {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
@@ -639,6 +674,27 @@ export default function UnifiedCanvasEditor({
                   ))}
                 </div>
                 {imgResults.length===0&&!imgLoading&&<div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>키워드로 검색하세요</div>}
+
+                {/* 자료실 이미지 */}
+                <div style={{borderTop:"1px solid #eee",marginTop:12,paddingTop:12}}>
+                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>커뮤니티 자료실</div>
+                  <button onClick={async()=>{
+                    setImgLoading(true);
+                    try{
+                      const {data}=await supabase.from("posts").select("id,title,images").eq("subCat","archive").order("created_at",{ascending:false}).limit(12);
+                      const imgs=[];
+                      (data||[]).forEach(p=>{
+                        try{const arr=typeof p.images==="string"?JSON.parse(p.images):p.images;
+                          if(Array.isArray(arr)) arr.forEach(u=>{if(typeof u==="string"&&u.startsWith("http")) imgs.push({thumb:u,full:u,source:"자료실: "+(p.title||"").slice(0,15)});});
+                        }catch{}
+                      });
+                      setImgResults(prev=>[...prev,...imgs]);
+                    }catch{}
+                    setImgLoading(false);
+                  }} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px dashed #ccc",background:"transparent",cursor:"pointer",fontSize:12,color:"#666"}}>
+                    자료실 이미지 불러오기
+                  </button>
+                </div>
               </div>
             )}
 
