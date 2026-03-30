@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 import { callClaude } from "./aiClient";
 import PptxGenJS from "pptxgenjs";
-// CardNewsEditor import removed - using native 3-panel editor
+const UnifiedCanvasEditor = lazy(() => import("./UnifiedCanvasEditor"));
 
 // PPT 보관함 저장 헬퍼
 const PPT_SAVES_KEY = "nper_ppt_saves_v1";
@@ -225,6 +225,7 @@ export default function PptGenerator({ isDark, user, onLoginRequest, onUserUpdat
   const [layoutCatOpen, setLayoutCatOpen] = useState(null);
   const [mobilePanel, setMobilePanel] = useState("preview"); // "list" | "preview" | "edit"
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
+  const [canvasEditMode, setCanvasEditMode] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const imgRef = useRef(null);
 
@@ -1522,6 +1523,10 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
       <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, display:"flex", alignItems:"center", gap:8, flexShrink:0, background:D?"rgba(0,0,0,0.15)":"rgba(249,250,251,0.8)", zIndex:10 }}>
         <button onClick={()=>{setStep("input");setSlides([]);}} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer", fontWeight:600 }}>← 돌아가기</button>
         <div style={{ flex:1, fontSize:14, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{topic} <span style={{ fontSize:11, fontWeight:400, color:muted }}>({slides.length}장)</span></div>
+        <button onClick={()=>setCanvasEditMode(true)}
+          style={{ padding:"6px 16px", borderRadius:8, border:`1px solid #10b98140`, background:"#10b98108", color:"#10b981", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+          캔버스 편집
+        </button>
         <button onClick={shareTemplate}
           style={{ padding:"6px 16px", borderRadius:8, border:`1px solid ${accent}40`, background:`${accent}08`, color:accent, fontSize:11, fontWeight:700, cursor:"pointer" }}>
           템플릿 공유
@@ -2027,6 +2032,28 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
       </div>{/* 메인 3패널 flex 닫기 */}
 
       {err && <div style={{ position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", padding:"10px 20px", borderRadius:10, background:"rgba(239,68,68,0.9)", color:"#fff", fontSize:13, zIndex:9999 }}>{err}</div>}
+
+      {/* 캔버스 편집 모달 */}
+      {canvasEditMode && (
+        <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditor
+            slides={slides.map((s,i) => ({
+              title: s.title || "",
+              body: s.body || (s.bullets||[]).join("\n") || "",
+              subtitle: s.subtitle || "",
+              bgColor: THEMES[themeId]?.bg || "#1c1c1e",
+              textColor: THEMES[themeId]?.text || "#ffffff",
+              fontSize: 36,
+              image: s.image || null,
+            }))}
+            width={1280}
+            height={720}
+            mode="ppt"
+            onClose={() => setCanvasEditMode(false)}
+            onSave={() => setCanvasEditMode(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

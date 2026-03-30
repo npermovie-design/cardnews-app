@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import SimpleThumbnailEditor from "./SimpleThumbnailEditor";
+import { lazy, Suspense } from "react";
+const UnifiedCanvasEditor = lazy(() => import("./UnifiedCanvasEditor"));
 
 /* ── Google Fonts 로더 ── */
 const _loaded = new Set();
@@ -710,20 +711,26 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
         </div>
       </div>
 
-      {/* fabric.js 라이브 편집 모달 */}
-      {editMode && editImageUrl && (
-        <SimpleThumbnailEditor
-          imageDataUrl={editImageUrl}
-          width={canvasW}
-          height={canvasH}
-          isDark={D}
-          onClose={() => setEditMode(false)}
-          onSave={(dataUrl) => {
-            // 저장된 이미지를 배경으로 설정
-            setBgImg(dataUrl);
-            setEditMode(false);
-          }}
-        />
+      {/* 통합 캔버스 에디터 */}
+      {editMode && (
+        <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditor
+            slides={[{
+              title: texts[0]?.text || "",
+              body: texts[1]?.text || "",
+              bgColor: bgColor,
+              textColor: texts[0]?.color || "#ffffff",
+              fontSize: texts[0]?.size || 42,
+              fontFamily: texts[0]?.font || "Pretendard",
+              image: bgImg || null,
+            }]}
+            width={canvasW}
+            height={canvasH}
+            mode="thumbnail"
+            onClose={() => setEditMode(false)}
+            onSave={() => setEditMode(false)}
+          />
+        </Suspense>
       )}
     </div>
   );
