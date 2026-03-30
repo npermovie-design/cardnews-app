@@ -197,4 +197,4 @@ function CollapsibleSection({ title, defaultOpen = true, children, C }) {
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════ */
 
-export { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection };
+export { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection, DEFAULT_THEME };
