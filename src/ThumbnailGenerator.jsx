@@ -432,8 +432,14 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
         <div style={{ display:"flex", gap:20, alignItems:"flex-start", flexWrap:"wrap" }}>
           {/* 왼쪽: 미리보기 */}
           <div style={{ flex:1, minWidth:320 }}>
-            <div style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, boxShadow:"0 8px 32px rgba(0,0,0,0.2)", marginBottom:12 }}>
+            <div onClick={openEditor} title="클릭하여 라이브 편집" style={{ borderRadius:14, overflow:"hidden", border:`1px solid ${bdr}`, boxShadow:"0 8px 32px rgba(0,0,0,0.2)", marginBottom:12, cursor:"pointer", position:"relative" }}>
               <canvas ref={canvasRef} style={{ width:"100%", height:"auto", display:"block" }}/>
+              <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0)", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,0.3)"}
+                onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0)"}>
+                <span style={{ color:"#fff", fontSize:14, fontWeight:700, opacity:0, transition:"opacity 0.2s" }}
+                  ref={el=>{if(el){el.parentElement.onmouseenter=()=>el.style.opacity="1";el.parentElement.onmouseleave=()=>el.style.opacity="0";}}}>클릭하여 라이브 편집</span>
+              </div>
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
               <button onClick={download} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>PNG 다운로드</button>

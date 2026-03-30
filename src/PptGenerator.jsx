@@ -1587,9 +1587,15 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
             </button>
           </div>
 
-          {/* 큰 미리보기 (카드뉴스 크기와 유사 - maxWidth:700) */}
-          <div style={{ width:"100%", maxWidth:700, borderRadius:12, overflow:"hidden", boxShadow:D?"0 8px 40px rgba(0,0,0,0.4)":"0 8px 40px rgba(0,0,0,0.12)", border:`1px solid ${bdr}` }}>
+          {/* 큰 미리보기 (클릭 시 라이브 편집) */}
+          <div onClick={()=>setCanvasEditMode(true)} title="클릭하여 라이브 편집"
+            style={{ width:"100%", maxWidth:700, borderRadius:12, overflow:"hidden", boxShadow:D?"0 8px 40px rgba(0,0,0,0.4)":"0 8px 40px rgba(0,0,0,0.12)", border:`1px solid ${bdr}`, cursor:"pointer", position:"relative" }}
+            onMouseEnter={e=>{const ov=e.currentTarget.querySelector(".ppt-edit-overlay");if(ov)ov.style.opacity="1";}}
+            onMouseLeave={e=>{const ov=e.currentTarget.querySelector(".ppt-edit-overlay");if(ov)ov.style.opacity="0";}}>
             {renderPreview(cur, selIdx, false)}
+            <div className="ppt-edit-overlay" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center", opacity:0, transition:"opacity 0.2s", pointerEvents:"none" }}>
+              <span style={{ color:"#fff", fontSize:15, fontWeight:700, background:"rgba(124,106,255,0.9)", padding:"8px 20px", borderRadius:10 }}>클릭하여 라이브 편집</span>
+            </div>
           </div>
 
           {/* 현재 레이아웃 표시 */}

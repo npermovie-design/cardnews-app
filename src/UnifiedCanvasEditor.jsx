@@ -419,6 +419,50 @@ export default function UnifiedCanvasEditor({
                 </div>
               </div>
 
+              {/* 디자인 템플릿 */}
+              <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>디자인 템플릿</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+                  {[
+                    {label:"뉴스 하단",bg:"#1a1a2e",text:"#fff",layout:"bottom",grad:"grad-bottom"},
+                    {label:"뉴스 상단",bg:"#0f172a",text:"#fff",layout:"top",grad:"grad-top"},
+                    {label:"밝은 중앙",bg:"#ffffff",text:"#1a1a2e",layout:"center",grad:null},
+                    {label:"어두운 중앙",bg:"#1c1c1e",text:"#ffffff",layout:"center",grad:null},
+                    {label:"좌측 그라데이션",bg:"#0a0a0a",text:"#fff",layout:"left",grad:"grad-left"},
+                    {label:"전체 오버레이",bg:"#111",text:"#fff",layout:"overlay",grad:"grad-full"},
+                  ].map(tmpl=>(
+                    <button key={tmpl.label} onClick={()=>{
+                      const fc=fcRef.current; if(!fc) return;
+                      setBg(tmpl.bg);
+                      // 기존 텍스트 색상 일괄 변경
+                      fc.getObjects().forEach(o=>{
+                        if(o.type==="textbox"&&o.name!=="bg") o.set("fill",tmpl.text);
+                      });
+                      // 기존 그라데이션 제거
+                      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
+                      // 그라데이션 추가
+                      if(tmpl.grad) addShape(tmpl.grad);
+                      // 레이아웃 재배치
+                      const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
+                      if(tmpl.layout==="bottom"&&texts.length>0){
+                        texts.forEach((t,i)=>t.set("top",height*0.55+i*height*0.12));
+                      } else if(tmpl.layout==="top"&&texts.length>0){
+                        texts.forEach((t,i)=>t.set("top",height*0.08+i*height*0.12));
+                      } else if(tmpl.layout==="center"&&texts.length>0){
+                        const totalH=texts.length*height*0.12;
+                        texts.forEach((t,i)=>t.set("top",(height-totalH)/2+i*height*0.12));
+                      } else if(tmpl.layout==="left"&&texts.length>0){
+                        texts.forEach(t=>{t.set("textAlign","left");t.set("left",width*0.06);t.set("width",width*0.5);});
+                      }
+                      fc.renderAll();
+                    }} style={{padding:"10px 6px",borderRadius:8,border:"1px solid #eee",cursor:"pointer",fontSize:11,fontWeight:600,
+                      background:tmpl.bg,color:tmpl.text,textAlign:"center"}}>
+                      {tmpl.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* 텍스트 속성 */}
               {sel&&sel.type==="textbox"&&(
                 <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
@@ -527,12 +571,26 @@ export default function UnifiedCanvasEditor({
                     );
                   });
                 })()}
-                {sel&&sel.name!=="bg"&&(
+                {sel&&sel.name!=="bg"&&(<>
                   <div style={{borderTop:"1px solid #eee",paddingTop:8,marginTop:8,display:"flex",gap:6}}>
                     <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.bringObjectToFront(sel);fc.renderAll();setLayerTick(t=>t+1);}}} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 앞</button>
                     <button onClick={()=>{const fc=fcRef.current;if(fc&&sel){fc.sendObjectToBack(sel);fc.renderAll();setLayerTick(t=>t+1);}}} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>맨 뒤</button>
                   </div>
-                )}
+                  <div style={{fontSize:11,fontWeight:700,color:"#888",marginTop:10,marginBottom:6}}>위치 정렬</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+                    {[
+                      {label:"좌측",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left-b.left+width*0.08);}},
+                      {label:"가로중앙",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width/2-b.left-b.width/2));}},
+                      {label:"우측",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width*0.92-b.left-b.width));}},
+                      {label:"상단",fn:()=>{const b=sel.getBoundingRect();sel.set("top",sel.top-b.top+height*0.08);}},
+                      {label:"정중앙",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width/2-b.left-b.width/2));sel.set("top",sel.top+(height/2-b.top-b.height/2));}},
+                      {label:"하단",fn:()=>{const b=sel.getBoundingRect();sel.set("top",sel.top+(height*0.92-b.top-b.height));}},
+                    ].map(a=>(
+                      <button key={a.label} onClick={()=>{const fc=fcRef.current;if(!fc||!sel)return;a.fn();fc.renderAll();syncSel(sel);}}
+                        style={{padding:"7px 4px",borderRadius:6,border:"1px solid #e5e7eb",background:"#fff",cursor:"pointer",fontSize:10,fontWeight:600,color:"#555"}}>{a.label}</button>
+                    ))}
+                  </div>
+                </>)}
               </div>
             )}
 
