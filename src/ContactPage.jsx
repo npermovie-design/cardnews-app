@@ -16,8 +16,8 @@ export function ContactPage({ C }) {
 
   const submit = async () => {
     setErr("");
-    if (!form.name || !form.email || !form.msg) { setErr("이름, 이메일, 문의 내용을 모두 입력해주세요."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setErr("올바른 이메일 주소를 입력해주세요."); return; }
+    if (!form.name || !form.email || !form.msg) { setErr(lang === "ko" ? "이름, 이메일, 문의 내용을 모두 입력해주세요." : "Please fill in name, email, and message."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setErr(lang === "ko" ? "올바른 이메일 주소를 입력해주세요." : "Please enter a valid email address."); return; }
     setSubmitting(true);
     try {
       await supabase.from("inquiries").insert({

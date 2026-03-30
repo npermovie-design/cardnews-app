@@ -1,37 +1,56 @@
 import { useState } from "react";
-
-const EVENTS = [
-  {
-    id: 1,
-    status: "active",
-    badge: "진행중",
-    title: "메이킷 인플루언서 모집!",
-    icon: "",
-    color: "#7c6aff",
-    period: "2025.01.01 ~ 상시 모집",
-    desc: "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\n4,500 포인트(약 만원 상당)를 지급해드립니다!",
-    details: [
-      "대상: SNS(블로그, 유튜브, 인스타그램 등)를 운영하는 모든 분",
-      "방법: SNS메이킷을 이용한 후 본인 SNS 채널에 후기 작성",
-      "보상: 후기 작성 확인 시 4,500P 지급 (약 만원 상당)",
-      "후기 작성 후 문의하기에서 후기 링크와 함께 신청해주세요",
-    ],
-    howTo: "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 카드뉴스, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 4,500P 지급!",
-  },
-  {
-    id: 2,
-    status: "ended",
-    badge: "마감",
-    title: "오픈 기념 가입 보너스 이벤트",
-    icon: "",
-    color: "#888",
-    period: "2024.12.01 ~ 2025.01.31",
-    desc: "SNS메이킷 오픈을 기념하여 가입 즉시 추가 포인트를 지급했던 이벤트입니다.",
-    details: ["가입 즉시 추가 300P 보너스 지급 (종료)"],
-  },
-];
+import { useI18n } from "./i18n.jsx";
 
 export default function EventPage({ C, navigate }) {
+  const { lang } = useI18n();
+  const ko = lang === "ko";
+
+  const EVENTS = [
+    {
+      id: 1,
+      status: "active",
+      badge: ko ? "진행중" : "Active",
+      title: ko ? "메이킷 인플루언서 모집!" : "MakeIt Influencer Recruitment!",
+      icon: "",
+      color: "#7c6aff",
+      period: "2026.01.01 ~ " + (ko ? "상시 모집" : "Always Open"),
+      desc: ko
+        ? "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\n4,500 포인트(약 만원 상당)를 지급해드립니다!"
+        : "Anyone who runs social media — bloggers, YouTubers, Instagrammers — can participate!\n\nJust use SNS MakeIt and leave a review.\nWe'll reward you with 4,500 points (approx. $8)!",
+      details: ko
+        ? [
+            "대상: SNS(블로그, 유튜브, 인스타그램 등)를 운영하는 모든 분",
+            "방법: SNS메이킷을 이용한 후 본인 SNS 채널에 후기 작성",
+            "보상: 후기 작성 확인 시 4,500P 지급 (약 만원 상당)",
+            "후기 작성 후 문의하기에서 후기 링크와 함께 신청해주세요",
+          ]
+        : [
+            "Who: Anyone running social media (blog, YouTube, Instagram, etc.)",
+            "How: Use SNS MakeIt, then post a review on your channel",
+            "Reward: 4,500P upon review verification (approx. $8)",
+            "After posting, submit your review link via Contact Us",
+          ],
+      howTo: ko
+        ? "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 카드뉴스, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 4,500P 지급!"
+        : "1. Sign up for SNS MakeIt\n2. Use AI features (blog, card news, images, etc.)\n3. Post a review on your social media\n4. Submit review link via Contact Us\n5. Get 4,500P after verification!",
+    },
+    {
+      id: 2,
+      status: "active",
+      badge: ko ? "진행중" : "Active",
+      title: ko ? "오픈 기념 가입 보너스 이벤트" : "Launch Bonus Sign-up Event",
+      icon: "",
+      color: "#7c6aff",
+      period: "2026.01.01 ~ " + (ko ? "상시 진행" : "Ongoing"),
+      desc: ko
+        ? "SNS메이킷 오픈을 기념하여 가입 즉시 추가 포인트를 지급하는 이벤트입니다."
+        : "Celebrate the launch of SNS MakeIt — get bonus points instantly upon sign-up!",
+      details: ko
+        ? ["가입 즉시 추가 300P 보너스 지급"]
+        : ["Instant 300P bonus upon registration"],
+    },
+  ];
+
   const isDark = C?.border?.includes("255");
   const [tab, setTab] = useState("active");
   const [selected, setSelected] = useState(null);
@@ -49,7 +68,7 @@ export default function EventPage({ C, navigate }) {
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
         <button onClick={() => setSelected(null)}
           style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 13, marginBottom: 20, padding: "10px 0", minHeight: 44 }}>
-          ← 이벤트 목록
+          {ko ? "← 이벤트 목록" : "← Event List"}
         </button>
         <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 20, overflow: "hidden" }}>
           <div style={{ padding: "36px 32px", background: ev.status === "active" ? "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(236,72,153,0.05))" : "transparent" }}>
@@ -72,7 +91,7 @@ export default function EventPage({ C, navigate }) {
             )}
             {ev.howTo && (
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 10 }}>참여 방법</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 10 }}>{ko ? "참여 방법" : "How to Participate"}</div>
                 <div style={{ fontSize: 14, color: muted, lineHeight: 2, whiteSpace: "pre-line" }}>{ev.howTo}</div>
               </div>
             )}
@@ -80,7 +99,7 @@ export default function EventPage({ C, navigate }) {
               <button onClick={() => navigate?.("contact")}
                 style={{ marginTop: 24, padding: "14px 32px", borderRadius: 12, border: "none",
                   background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
-                후기 제출하기 (문의하기)
+                {ko ? "후기 제출하기 (문의하기)" : "Submit Review (Contact Us)"}
               </button>
             )}
           </div>
@@ -92,15 +111,15 @@ export default function EventPage({ C, navigate }) {
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>이벤트</div>
-        <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>진행중인 이벤트</h2>
-        <p style={{ fontSize: 14, color: muted }}>SNS메이킷의 다양한 이벤트에 참여하세요!</p>
+        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{ko ? "이벤트" : "Events"}</div>
+        <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>{ko ? "진행중인 이벤트" : "Current Events"}</h2>
+        <p style={{ fontSize: 14, color: muted }}>{ko ? "SNS메이킷의 다양한 이벤트에 참여하세요!" : "Join various events at SNS MakeIt!"}</p>
       </div>
 
       {/* 탭 */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e9e9ef", borderRadius: 10, padding: 4 }}>
-          {[["active", "진행중"], ["ended", "마감"]].map(([id, label]) => (
+          {[["active", ko ? "진행중" : "Active"], ["ended", ko ? "마감" : "Ended"]].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: "8px 24px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
                 background: tab === id ? (isDark ? "rgba(99,102,241,0.5)" : "#fff") : "transparent",
@@ -114,7 +133,7 @@ export default function EventPage({ C, navigate }) {
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
           <div style={{ fontSize: 16, fontWeight: 900, color: muted, marginBottom: 12 }}>—</div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{tab === "active" ? "진행중인 이벤트가 없어요" : "마감된 이벤트가 없어요"}</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{tab === "active" ? (ko ? "진행중인 이벤트가 없어요" : "No active events") : (ko ? "마감된 이벤트가 없어요" : "No ended events")}</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
