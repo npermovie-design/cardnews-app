@@ -17,7 +17,7 @@ export default function CardNewsEditor({
   onShareTemplate,
   inline = false,
 }) {
-  const C = { ...DEFAULT_THEME, ...(themeIn || {}) };
+  const C = { purple:"#7c6aff", purpleL:"#6357e0", pink:"#ec4899", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff", ...(themeIn || {}) };
   const { lang } = useI18n();
   const ko = lang === "ko";
 
