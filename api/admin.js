@@ -25,12 +25,11 @@ export default async function handler(req, res) {
   if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
 
   // ── 인증: 요청자가 admin인지 확인 ──
-  const authUid = req.query.uid || req.headers["x-admin-uid"] || "";
-  if (authUid) {
-    const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
-    if (!adminCheck || adminCheck.role !== "admin") {
-      return res.status(403).json({ error: "관리자 권한 필요" });
-    }
+  const authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
+  if (!authUid) return res.status(403).json({ error: "관리자 인증 필요" });
+  const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
+  if (!adminCheck || adminCheck.role !== "admin") {
+    return res.status(403).json({ error: "관리자 권한 필요" });
   }
 
   try {

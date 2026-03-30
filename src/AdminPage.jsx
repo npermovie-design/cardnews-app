@@ -95,7 +95,7 @@ export default function AdminPage({ C, user: adminUser }) {
   // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
   const adminApi = async (action, extra = "") => {
     const uid = adminUser?.uid || "";
-    const r = await fetch(`/api/admin?action=${action}&uid=${encodeURIComponent(uid)}${extra}`);
+    const r = await fetch(`/api/admin?action=${action}&admin_uid=${encodeURIComponent(uid)}${extra}`);
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
     return r.json();
   };
