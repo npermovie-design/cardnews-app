@@ -3,7 +3,8 @@ import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
-import CardNewsEditor from "./CardNewsEditor";
+import { lazy, Suspense } from "react";
+const CardNewsEditor = lazy(() => import("./CardNewsEditor"));
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -771,26 +772,28 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   if (wizStep === 4) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <CardNewsEditor
-          slides={slides.map((s, i) => {
-            const st = sted[i] || {};
-            const ss = getSlideStyle(i);
-            return {
-              title: st.title ?? s.title ?? "",
-              body: st.body ?? s.body ?? "",
-              bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
-              textColor: st.textColor || ss.textColor || "#fff",
-              fontSize: ss.titleSize || 34,
-              image: st.bgImage || s.bgImage || null,
-            };
-          })}
-          width={imgW}
-          height={imgH}
-          C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
-          onSave={() => {}}
-          onClose={() => setWizStep(3)}
-          inline
-        />
+        <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
+          <CardNewsEditor
+            slides={slides.map((s, i) => {
+              const st = sted[i] || {};
+              const ss = getSlideStyle(i);
+              return {
+                title: st.title ?? s.title ?? "",
+                body: st.body ?? s.body ?? "",
+                bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
+                textColor: st.textColor || ss.textColor || "#fff",
+                fontSize: ss.titleSize || 34,
+                image: st.bgImage || s.bgImage || null,
+              };
+            })}
+            width={imgW}
+            height={imgH}
+            C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
+            onSave={() => {}}
+            onClose={() => setWizStep(3)}
+            inline
+          />
+        </Suspense>
       </div>
     );
   }

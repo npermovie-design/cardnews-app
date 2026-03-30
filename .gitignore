@@ -40,3 +40,6 @@ shorts-factory/uploads/
 shorts-factory/outputs/
 shorts-factory/__pycache__/
 shorts-factory/*.pyc
+
+.vercel
+.env*.local

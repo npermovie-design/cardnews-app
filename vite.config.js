@@ -19,8 +19,6 @@ export default defineConfig({
         manualChunks: {
           'fabric': ['fabric'],
           'vendor': ['react', 'react-dom'],
-          'editor-styles': ['./src/editorStyles.js'],
-          'card-editor': ['./src/CardNewsEditor.jsx', './src/CardNewsEditorUtils.jsx'],
         },
       },
     },
