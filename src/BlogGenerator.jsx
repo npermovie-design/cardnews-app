@@ -8,7 +8,7 @@ import { isDarkTheme } from "./theme";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
-import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS } from "./BlogUtils.jsx";
+import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS, SPEECH_STYLES } from "./BlogUtils.jsx";
 
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
@@ -18,6 +18,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [subtype,    setSubtype]    = useState(cfg.subtypes[0].id);
   const [fields,     setFields]     = useState({});
   const [tone,       setTone]       = useState(cfg.tones[0].id);
+  const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
   const [result,     setResult]     = useState("");
   const [htmlResult, setHtmlResult] = useState("");
@@ -204,7 +205,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (advWordCount !== 2000) advPromptExtra += `\n[원하는 분량] 약 ${advWordCount}자`;
     if (advExtra) advPromptExtra += `\n[추가 지시사항] ${advExtra}`;
 
-    const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount);
+    const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
     const prompt = advPromptExtra ? basePrompt + advPromptExtra : basePrompt;
     var _savedFull = "";
     try {
@@ -820,6 +821,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+              </div>
+            </div>
+
+            {/* 말투 선택 */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>말투 선택</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{s.label}</button>;})}
               </div>
             </div>
 

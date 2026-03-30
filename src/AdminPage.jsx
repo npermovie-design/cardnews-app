@@ -142,15 +142,25 @@ export default function AdminPage({ C, user: adminUser }) {
   const loadMembers = async () => {
     setLoadingMembers(true);
     try {
-      const { data, error } = await supabase.from("users").select("*").order("join_date", { ascending: false, nullsFirst: false });
-      if (error) {
-        // join_date 컬럼 정렬 실패 시 created_at으로 폴백
-        const { data: data2, error: error2 } = await supabase.from("users").select("*").order("created_at", { ascending: false });
-        if (error2) throw error2;
-        setMembers2(data2 || []);
-      } else {
-        setMembers2(data || []);
+      // 정렬 없이 전체 가져오기 (join_date 컬럼 미존재 대비)
+      let allMembers = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase.from("users").select("*").range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allMembers = allMembers.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
       }
+      // 클라이언트에서 정렬 (join_date 우선, 없으면 created_at)
+      allMembers.sort((a, b) => {
+        const da = new Date(a.join_date || a.created_at || 0);
+        const db = new Date(b.join_date || b.created_at || 0);
+        return db - da;
+      });
+      setMembers2(allMembers);
     } catch(e) { console.error("회원 로드 실패:", e); showToast("회원 로드 실패: " + (e.message || e)); }
     setLoadingMembers(false);
   };
