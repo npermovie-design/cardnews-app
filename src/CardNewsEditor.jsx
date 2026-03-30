@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, Line, FabricImage, Shadow, Gradient } from "fabric";
 import { supabase } from "./storage";
 import { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection } from "./CardNewsEditorUtils.jsx";
+import { useI18n } from "./i18n.jsx";
 
 /* ──────────────────────────────────────────────────────────────────────
    CardNewsEditor  –  Fabric.js v7 기반 카드뉴스 에디터
@@ -17,6 +18,8 @@ export default function CardNewsEditor({
   inline = false,
 }) {
   const C = { ...DEFAULT_THEME, ...(themeIn || {}) };
+  const { lang } = useI18n();
+  const ko = lang === "ko";
 
   /* refs */
   const canvasRef = useRef(null);       // fabric Canvas instance
@@ -749,7 +752,7 @@ export default function CardNewsEditor({
   function addText() {
     const fc = canvasRef.current;
     if (!fc) return;
-    const t = new Textbox("텍스트를 입력하세요", {
+    const t = new Textbox(ko ? "텍스트를 입력하세요" : "Enter text here", {
       left: width * 0.1, top: height * 0.4,
       width: width * 0.8,
       fontSize: 48, fontFamily: "Pretendard",
@@ -1292,17 +1295,17 @@ export default function CardNewsEditor({
               <Icon.Left />
             </button>
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>
-              {currentIdx + 1} / {totalSlides} 페이지 편집
+              {currentIdx + 1} / {totalSlides} {ko ? "페이지 편집" : "Page Edit"}
             </span>
             <button style={S.navBtn} onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx >= totalSlides - 1}>
               <Icon.Right />
             </button>
             <div style={{ flex: 1 }} />
             {/* Right: actions */}
-            <Btn small onClick={downloadCurrentPNG} accent="#10b981" style={{ whiteSpace: "nowrap" }}>PNG 저장</Btn>
-            <Btn small onClick={downloadAllPNGs} accent="#0ea5e9" style={{ whiteSpace: "nowrap" }}>전체 저장</Btn>
-            {onShareTemplate && <Btn small onClick={() => onShareTemplate(getFirstSlidePreview())} accent="#f59e0b" style={{ whiteSpace: "nowrap" }}>📤 템플릿 공유</Btn>}
-            <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>← 돌아가기</Btn>
+            <Btn small onClick={downloadCurrentPNG} accent="#10b981" style={{ whiteSpace: "nowrap" }}>{ko ? "PNG 저장" : "Save PNG"}</Btn>
+            <Btn small onClick={downloadAllPNGs} accent="#0ea5e9" style={{ whiteSpace: "nowrap" }}>{ko ? "전체 저장" : "Save All"}</Btn>
+            {onShareTemplate && <Btn small onClick={() => onShareTemplate(getFirstSlidePreview())} accent="#f59e0b" style={{ whiteSpace: "nowrap" }}>{ko ? "📤 템플릿 공유" : "📤 Share Template"}</Btn>}
+            <Btn small onClick={onClose} style={{ whiteSpace: "nowrap" }}>{ko ? "← 돌아가기" : "← Back"}</Btn>
           </div>
 
           {/* 공유 템플릿 버튼만 */}
@@ -1311,7 +1314,7 @@ export default function CardNewsEditor({
               onClick={() => { setShowSharedTemplateModal(true); loadSharedTemplates(); }}
               style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:"rgba(245,158,11,0.08)", cursor:"pointer", fontSize:12, fontWeight:700, color:"#d97706" }}
             >
-              📂 공유 템플릿 불러오기
+              {ko ? "📂 공유 템플릿 불러오기" : "📂 Load Shared Templates"}
             </button>
           </div>
 
@@ -1330,14 +1333,14 @@ export default function CardNewsEditor({
 
           {/* Toolbar - 모바일에서만 표시, 데스크톱은 우측 패널 사용 */}
           <div style={{ ...S.toolbar, display: isMobile ? "flex" : "none" }}>
-            <Btn small onClick={addText}>+ 텍스트</Btn>
-            <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
-            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">이미지 검색</Btn>
-            <Btn small onClick={() => addShape("rect")}>▬ 사각형</Btn>
-            <Btn small onClick={() => addShape("circle")}>● 원</Btn>
+            <Btn small onClick={addText}>{ko ? "+ 텍스트" : "+ Text"}</Btn>
+            <Btn small onClick={() => fileInputRef.current?.click()}>{ko ? "+ 이미지" : "+ Image"}</Btn>
+            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">{ko ? "이미지 검색" : "Image Search"}</Btn>
+            <Btn small onClick={() => addShape("rect")}>{ko ? "▬ 사각형" : "▬ Rect"}</Btn>
+            <Btn small onClick={() => addShape("circle")}>{ko ? "● 원" : "● Circle"}</Btn>
             <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
             <div style={{ position: "relative" }}>
-              <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} active={showLayoutPicker} accent="#7c6aff">레이아웃</Btn>
+              <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} active={showLayoutPicker} accent="#7c6aff">{ko ? "레이아웃" : "Layout"}</Btn>
               {showLayoutPicker && (
                 <div style={S.layoutPicker}>
                   {LAYOUT_OPTIONS.map(lo => (
@@ -1352,26 +1355,26 @@ export default function CardNewsEditor({
             <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
             {isTextSelected && (
               <>
-                <Btn small onClick={() => alignTextHorizontal("left")} style={{ padding: "6px 8px" }} title="좌측 배치"><Icon.AlignLeft /></Btn>
-                <Btn small onClick={() => alignTextHorizontal("center")} style={{ padding: "6px 8px" }} title="중앙 배치"><Icon.AlignCenter /></Btn>
-                <Btn small onClick={() => alignTextHorizontal("right")} style={{ padding: "6px 8px" }} title="우측 배치"><Icon.AlignRight /></Btn>
-                <Btn small onClick={() => alignTextVertical("top")} accent="#6366f1" style={{ fontSize: 11 }}>상단</Btn>
-                <Btn small onClick={() => alignTextVertical("middle")} accent="#6366f1" style={{ fontSize: 11 }}>중앙</Btn>
-                <Btn small onClick={() => alignTextVertical("bottom")} accent="#6366f1" style={{ fontSize: 11 }}>하단</Btn>
+                <Btn small onClick={() => alignTextHorizontal("left")} style={{ padding: "6px 8px" }} title={ko ? "좌측 배치" : "Align Left"}><Icon.AlignLeft /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("center")} style={{ padding: "6px 8px" }} title={ko ? "중앙 배치" : "Align Center"}><Icon.AlignCenter /></Btn>
+                <Btn small onClick={() => alignTextHorizontal("right")} style={{ padding: "6px 8px" }} title={ko ? "우측 배치" : "Align Right"}><Icon.AlignRight /></Btn>
+                <Btn small onClick={() => alignTextVertical("top")} accent="#6366f1" style={{ fontSize: 11 }}>{ko ? "상단" : "Top"}</Btn>
+                <Btn small onClick={() => alignTextVertical("middle")} accent="#6366f1" style={{ fontSize: 11 }}>{ko ? "중앙" : "Mid"}</Btn>
+                <Btn small onClick={() => alignTextVertical("bottom")} accent="#6366f1" style={{ fontSize: 11 }}>{ko ? "하단" : "Bot"}</Btn>
                 <div style={{ width: 1, height: 24, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
               </>
             )}
-            <Btn small onClick={deleteSelected} style={{ color: "#e53e3e" }}><Icon.Trash /> 삭제</Btn>
+            <Btn small onClick={deleteSelected} style={{ color: "#e53e3e" }}><Icon.Trash /> {ko ? "삭제" : "Delete"}</Btn>
             <Btn small onClick={undo} disabled={historyIdx <= 0}><Icon.Undo /></Btn>
             <Btn small onClick={redo} disabled={historyIdx >= history.length - 1}><Icon.Redo /></Btn>
           </div>
 
           {/* Quick actions */}
           <div style={S.quickActions}>
-            <Btn small onClick={quickBrighter} accent="#f6ad55">더 밝게</Btn>
-            <Btn small onClick={quickDarker} accent="#4a5568">더 어둡게</Btn>
-            <Btn small onClick={quickFontBigger} accent={C.purple}>폰트 크게</Btn>
-            <Btn small onClick={quickFontSmaller} accent={C.purpleL}>폰트 작게</Btn>
+            <Btn small onClick={quickBrighter} accent="#f6ad55">{ko ? "더 밝게" : "Brighter"}</Btn>
+            <Btn small onClick={quickDarker} accent="#4a5568">{ko ? "더 어둡게" : "Darker"}</Btn>
+            <Btn small onClick={quickFontBigger} accent={C.purple}>{ko ? "폰트 크게" : "Font +"}</Btn>
+            <Btn small onClick={quickFontSmaller} accent={C.purpleL}>{ko ? "폰트 작게" : "Font −"}</Btn>
           </div>
 
           {/* Hidden file inputs */}
@@ -1392,8 +1395,8 @@ export default function CardNewsEditor({
                 {/* Header */}
                 <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>이미지 라이브러리</div>
-                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>검색 후 클릭하면 캔버스에 추가됩니다</div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>{ko ? "이미지 라이브러리" : "Image Library"}</div>
+                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>{ko ? "검색 후 클릭하면 캔버스에 추가됩니다" : "Search and click to add to canvas"}</div>
                   </div>
                   <button onClick={() => setShowImageLib(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
                     <Icon.Close />
@@ -1405,8 +1408,8 @@ export default function CardNewsEditor({
                   {[
                     { id:"pexels", label:"Pexels" },
                     { id:"pixabay", label:"Pixabay" },
-                    { id:"archive", label:"자료실" },
-                    { id:"local", label:"3D 아이콘" },
+                    { id:"archive", label:ko ? "자료실" : "Archive" },
+                    { id:"local", label:ko ? "3D 아이콘" : "3D Icons" },
                   ].map(tab => (
                     <button key={tab.id} onClick={() => { setImgLibTab(tab.id); searchImageLib(imgLibQuery, tab.id, 1); }}
                       style={{ padding:"8px 16px", borderRadius:"8px 8px 0 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:imgLibTab===tab.id?700:500,
@@ -1421,14 +1424,14 @@ export default function CardNewsEditor({
 
                 {/* Search */}
                 <div style={{ padding:"12px 20px", display:"flex", gap:8 }}>
-                  <input type="text" placeholder="이미지 검색어 입력..." value={imgLibQuery}
+                  <input type="text" placeholder={ko ? "이미지 검색어 입력..." : "Search images..."} value={imgLibQuery}
                     onChange={e => setImgLibQuery(e.target.value)}
                     onKeyDown={e => { if(e.key==="Enter") searchImageLib(imgLibQuery, imgLibTab, 1); }}
                     style={{ flex:1, padding:"10px 14px", borderRadius:10, border:"1px solid rgba(0,0,0,0.12)", fontSize:13, outline:"none" }}
                   />
                   <button onClick={() => searchImageLib(imgLibQuery, imgLibTab, 1)}
                     style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
-                    검색
+                    {ko ? "검색" : "Search"}
                   </button>
                 </div>
 
@@ -1437,11 +1440,11 @@ export default function CardNewsEditor({
                   {imgLibLoading && imgLibResults.length === 0 ? (
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13 }}>
                       <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 10px" }} />
-                      이미지 검색 중...
+                      {ko ? "이미지 검색 중..." : "Searching images..."}
                     </div>
                   ) : imgLibResults.length === 0 ? (
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13, lineHeight:1.8 }}>
-                      검색어를 입력하고 검색 버튼을 눌러주세요
+                      {ko ? "검색어를 입력하고 검색 버튼을 눌러주세요" : "Enter a keyword and press Search"}
                     </div>
                   ) : (
                     <>
@@ -1467,7 +1470,7 @@ export default function CardNewsEditor({
                           <button onClick={() => searchImageLib(imgLibQuery, imgLibTab, imgLibPage + 1)}
                             disabled={imgLibLoading}
                             style={{ padding:"10px 28px", borderRadius:10, border:"1px solid rgba(124,106,255,0.3)", background:"rgba(124,106,255,0.08)", color:"#7c6aff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                            {imgLibLoading ? "로딩 중..." : "더 보기"}
+                            {imgLibLoading ? (ko ? "로딩 중..." : "Loading...") : (ko ? "더 보기" : "Load More")}
                           </button>
                         </div>
                       )}
@@ -1486,8 +1489,8 @@ export default function CardNewsEditor({
               <div style={{ background:"#fff", borderRadius:16, maxWidth:600, width:"100%", maxHeight:"80vh", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column" }}>
                 <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>공유 템플릿 불러오기</div>
-                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>커뮤니티 및 내 템플릿을 선택하여 현재 슬라이드에 적용</div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1a1a2e" }}>{ko ? "공유 템플릿 불러오기" : "Load Shared Templates"}</div>
+                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>{ko ? "커뮤니티 및 내 템플릿을 선택하여 현재 슬라이드에 적용" : "Select a community or personal template to apply"}</div>
                   </div>
                   <button onClick={() => setShowSharedTemplateModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
                     <Icon.Close />
@@ -1497,12 +1500,12 @@ export default function CardNewsEditor({
                   {sharedTemplatesLoading ? (
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13 }}>
                       <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 10px" }} />
-                      템플릿 불러오는 중...
+                      {ko ? "템플릿 불러오는 중..." : "Loading templates..."}
                     </div>
                   ) : sharedTemplates.length === 0 ? (
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#888", fontSize:13, lineHeight:1.8 }}>
                       <div style={{ fontSize:36, marginBottom:8 }}>📭</div>
-                      아직 공유된 템플릿이 없습니다.<br/>카드뉴스를 만들고 공유해보세요!
+                      {ko ? <>아직 공유된 템플릿이 없습니다.<br/>카드뉴스를 만들고 공유해보세요!</> : <>No shared templates yet.<br/>Create card news and share them!</>}
                     </div>
                   ) : (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:12 }}>
@@ -1516,15 +1519,15 @@ export default function CardNewsEditor({
                               <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:"#ccc" }}>🎨</div>
                             )}
                             {tpl.source === "mine" && (
-                              <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>내 템플릿</div>
+                              <div style={{ position:"absolute", top:4, left:4, padding:"2px 6px", borderRadius:4, background:"rgba(99,102,241,0.85)", color:"#fff", fontSize:9, fontWeight:700 }}>{ko ? "내 템플릿" : "My Template"}</div>
                             )}
                           </div>
                           <div style={{ padding:"8px 10px" }}>
-                            <div style={{ fontSize:12, fontWeight:700, color:"#1a1a2e", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || "제목 없음"}</div>
-                            <div style={{ fontSize:10, color:"#888", marginTop:2 }}>{tpl.author || "익명"} · {tpl.slide_count || "?"}장</div>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#1a1a2e", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || (ko ? "제목 없음" : "Untitled")}</div>
+                            <div style={{ fontSize:10, color:"#888", marginTop:2 }}>{tpl.author || (ko ? "익명" : "Anonymous")} · {tpl.slide_count || "?"}{ko ? "장" : " slides"}</div>
                             <button onClick={(e) => { e.stopPropagation(); applySharedTemplate(tpl); }}
                               style={{ marginTop:6, width:"100%", padding:"5px 0", borderRadius:6, border:"none", background:"rgba(99,102,241,0.15)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
-                              적용하기
+                              {ko ? "적용하기" : "Apply"}
                             </button>
                           </div>
                         </div>
@@ -1542,14 +1545,14 @@ export default function CardNewsEditor({
         <div style={{ ...S.panel, width: panelW }}>
           {/* 요소 추가 + 도구 */}
           <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexWrap: "wrap", gap: 6 }}>
-            <Btn small onClick={addText}>+ 텍스트</Btn>
-            <Btn small onClick={() => fileInputRef.current?.click()}>+ 이미지</Btn>
-            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">검색</Btn>
+            <Btn small onClick={addText}>{ko ? "+ 텍스트" : "+ Text"}</Btn>
+            <Btn small onClick={() => fileInputRef.current?.click()}>{ko ? "+ 이미지" : "+ Image"}</Btn>
+            <Btn small onClick={() => { setShowImageLib(true); if (imgLibResults.length === 0) searchImageLib("", "pexels", 1); }} accent="#8b5cf6">{ko ? "검색" : "Search"}</Btn>
             <Btn small onClick={() => addShape("rect")}>▬</Btn>
             <Btn small onClick={() => addShape("circle")}>●</Btn>
             <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.08)", margin: "0 2px", alignSelf: "center" }} />
-            <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} accent="#7c6aff">레이아웃</Btn>
-            <Btn small onClick={() => bgFileInputRef.current?.click()} accent="#10b981">배경</Btn>
+            <Btn small onClick={() => setShowLayoutPicker(!showLayoutPicker)} accent="#7c6aff">{ko ? "레이아웃" : "Layout"}</Btn>
+            <Btn small onClick={() => bgFileInputRef.current?.click()} accent="#10b981">{ko ? "배경" : "BG"}</Btn>
             <Btn small onClick={undo} disabled={historyIdx <= 0}><Icon.Undo /></Btn>
           </div>
           {showLayoutPicker && (
@@ -1565,22 +1568,22 @@ export default function CardNewsEditor({
           {/* 선택된 오브젝트 액션 */}
           {selectedObj && (
             <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#888", flex: 1 }}>선택됨: {selProps.type === "textbox" ? "텍스트" : selProps.type === "image" ? "이미지" : "도형"}</span>
+              <span style={{ fontSize: 11, color: "#888", flex: 1 }}>{ko ? "선택됨" : "Selected"}: {selProps.type === "textbox" ? (ko ? "텍스트" : "Text") : selProps.type === "image" ? (ko ? "이미지" : "Image") : (ko ? "도형" : "Shape")}</span>
               {isTextSelected && <>
                 <Btn small onClick={() => alignTextHorizontal("left")} style={{ padding: "4px 6px" }}><Icon.AlignLeft /></Btn>
                 <Btn small onClick={() => alignTextHorizontal("center")} style={{ padding: "4px 6px" }}><Icon.AlignCenter /></Btn>
                 <Btn small onClick={() => alignTextHorizontal("right")} style={{ padding: "4px 6px" }}><Icon.AlignRight /></Btn>
               </>}
-              <Btn small onClick={deleteSelected} style={{ color: "#e53e3e", marginLeft: "auto" }}><Icon.Trash /> 삭제</Btn>
+              <Btn small onClick={deleteSelected} style={{ color: "#e53e3e", marginLeft: "auto" }}><Icon.Trash /> {ko ? "삭제" : "Delete"}</Btn>
             </div>
           )}
-          <div style={S.panelTitle}>속성</div>
+          <div style={S.panelTitle}>{ko ? "속성" : "Properties"}</div>
 
           {/* === Text props === */}
           {isTextSelected && (
-            <CollapsibleSection title="텍스트" defaultOpen={true} C={C}>
+            <CollapsibleSection title={ko ? "텍스트" : "Text"} defaultOpen={true} C={C}>
               {/* Font family */}
-              <label style={S.label}>폰트</label>
+              <label style={S.label}>{ko ? "폰트" : "Font"}</label>
               <select style={S.select} value={selProps.fontFamily}
                 onChange={e => {
                   const fam = e.target.value;
@@ -1592,34 +1595,34 @@ export default function CardNewsEditor({
 
               {/* Custom font upload button */}
               <Btn small onClick={() => fontFileInputRef.current?.click()} style={{ marginTop: 8, width: "100%", justifyContent: "center" }}>
-                내 폰트 업로드
+                {ko ? "내 폰트 업로드" : "Upload Font"}
               </Btn>
 
               {/* Font size */}
-              <label style={S.label}>크기: {selProps.fontSize}px</label>
+              <label style={S.label}>{ko ? "크기" : "Size"}: {selProps.fontSize}px</label>
               <input type="range" min={10} max={200} step={1} value={selProps.fontSize}
                 style={S.range} onChange={e => setProp("fontSize", +e.target.value)} />
 
               {/* Color */}
-              <label style={S.label}>색상</label>
+              <label style={S.label}>{ko ? "색상" : "Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" value={typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "#000000"} style={S.colorInput}
                   onChange={e => { setGradientEnabled(false); setProp("fill", e.target.value); }} />
-                <span style={{ fontSize: 12, color: "#888" }}>{typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : "그라데이션"}</span>
+                <span style={{ fontSize: 12, color: "#888" }}>{typeof selProps.fill === "string" ? hexFromAny(selProps.fill) : (ko ? "그라데이션" : "Gradient")}</span>
               </div>
 
               {/* Bold / Italic */}
               <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                 <Btn small active={selProps.fontWeight === "bold"}
                   onClick={() => setProp("fontWeight", selProps.fontWeight === "bold" ? "normal" : "bold")}
-                  accent={C.purple}><Icon.Bold /> 굵게</Btn>
+                  accent={C.purple}><Icon.Bold /> {ko ? "굵게" : "Bold"}</Btn>
                 <Btn small active={selProps.fontStyle === "italic"}
                   onClick={() => setProp("fontStyle", selProps.fontStyle === "italic" ? "normal" : "italic")}
-                  accent={C.purple}><Icon.Italic /> 기울임</Btn>
+                  accent={C.purple}><Icon.Italic /> {ko ? "기울임" : "Italic"}</Btn>
               </div>
 
               {/* Alignment */}
-              <label style={{ ...S.label, marginTop: 10 }}>정렬</label>
+              <label style={{ ...S.label, marginTop: 10 }}>{ko ? "정렬" : "Align"}</label>
               <div style={{ display: "flex", gap: 6 }}>
                 <Btn small active={selProps.textAlign === "left"}
                   onClick={() => setProp("textAlign", "left")} accent={C.purple}><Icon.AlignLeft /></Btn>
@@ -1630,7 +1633,7 @@ export default function CardNewsEditor({
               </div>
 
               {/* Opacity */}
-              <label style={S.label}>투명도: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={S.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
                 style={S.range}
@@ -1640,8 +1643,8 @@ export default function CardNewsEditor({
 
           {/* === Text Stroke === */}
           {isTextSelected && (
-            <CollapsibleSection title="테두리" defaultOpen={false} C={C}>
-              <label style={S.label}>테두리 색상</label>
+            <CollapsibleSection title={ko ? "테두리" : "Stroke"} defaultOpen={false} C={C}>
+              <label style={S.label}>{ko ? "테두리 색상" : "Stroke Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" value={textStrokeColor} style={S.colorInput}
                   onChange={e => {
@@ -1650,7 +1653,7 @@ export default function CardNewsEditor({
                   }} />
                 <span style={{ fontSize: 12, color: "#888" }}>{textStrokeColor}</span>
               </div>
-              <label style={S.label}>테두리 두께: {textStrokeWidth}px</label>
+              <label style={S.label}>{ko ? "테두리 두께" : "Stroke Width"}: {textStrokeWidth}px</label>
               <input type="range" min={0} max={10} step={0.5} value={textStrokeWidth}
                 style={S.range}
                 onChange={e => {
@@ -1663,8 +1666,8 @@ export default function CardNewsEditor({
 
           {/* === Text Shadow === */}
           {isTextSelected && (
-            <CollapsibleSection title="그림자" defaultOpen={false} C={C}>
-              <label style={S.label}>그림자 색상</label>
+            <CollapsibleSection title={ko ? "그림자" : "Shadow"} defaultOpen={false} C={C}>
+              <label style={S.label}>{ko ? "그림자 색상" : "Shadow Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" value={shadowColor} style={S.colorInput}
                   onChange={e => {
@@ -1673,7 +1676,7 @@ export default function CardNewsEditor({
                   }} />
                 <span style={{ fontSize: 12, color: "#888" }}>{shadowColor}</span>
               </div>
-              <label style={S.label}>블러: {shadowBlur}</label>
+              <label style={S.label}>{ko ? "블러" : "Blur"}: {shadowBlur}</label>
               <input type="range" min={0} max={20} step={1} value={shadowBlur}
                 style={S.range}
                 onChange={e => {
@@ -1681,7 +1684,7 @@ export default function CardNewsEditor({
                   setShadowBlur(v);
                   applyTextShadow(shadowColor, v, shadowOffsetX, shadowOffsetY);
                 }} />
-              <label style={S.label}>X 오프셋: {shadowOffsetX}</label>
+              <label style={S.label}>{ko ? "X 오프셋" : "X Offset"}: {shadowOffsetX}</label>
               <input type="range" min={-20} max={20} step={1} value={shadowOffsetX}
                 style={S.range}
                 onChange={e => {
@@ -1689,7 +1692,7 @@ export default function CardNewsEditor({
                   setShadowOffsetX(v);
                   applyTextShadow(shadowColor, shadowBlur, v, shadowOffsetY);
                 }} />
-              <label style={S.label}>Y 오프셋: {shadowOffsetY}</label>
+              <label style={S.label}>{ko ? "Y 오프셋" : "Y Offset"}: {shadowOffsetY}</label>
               <input type="range" min={-20} max={20} step={1} value={shadowOffsetY}
                 style={S.range}
                 onChange={e => {
@@ -1702,9 +1705,9 @@ export default function CardNewsEditor({
 
           {/* === Text Gradient === */}
           {isTextSelected && (
-            <CollapsibleSection title="그라데이션" defaultOpen={false} C={C}>
+            <CollapsibleSection title={ko ? "그라데이션" : "Gradient"} defaultOpen={false} C={C}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>그라데이션 적용</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>{ko ? "그라데이션 적용" : "Enable Gradient"}</label>
                 <input type="checkbox" checked={gradientEnabled}
                   onChange={e => {
                     const enabled = e.target.checked;
@@ -1714,7 +1717,7 @@ export default function CardNewsEditor({
               </div>
               {gradientEnabled && (
                 <>
-                  <label style={S.label}>시작색</label>
+                  <label style={S.label}>{ko ? "시작색" : "Start Color"}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <input type="color" value={gradColor1} style={S.colorInput}
                       onChange={e => {
@@ -1723,7 +1726,7 @@ export default function CardNewsEditor({
                       }} />
                     <span style={{ fontSize: 12, color: "#888" }}>{gradColor1}</span>
                   </div>
-                  <label style={S.label}>끝색</label>
+                  <label style={S.label}>{ko ? "끝색" : "End Color"}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <input type="color" value={gradColor2} style={S.colorInput}
                       onChange={e => {
@@ -1732,18 +1735,18 @@ export default function CardNewsEditor({
                       }} />
                     <span style={{ fontSize: 12, color: "#888" }}>{gradColor2}</span>
                   </div>
-                  <label style={S.label}>방향</label>
+                  <label style={S.label}>{ko ? "방향" : "Direction"}</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     <Btn small active={gradDirection === "horizontal"}
                       onClick={() => {
                         setGradDirection("horizontal");
                         applyGradient(true, gradColor1, gradColor2, "horizontal");
-                      }} accent={C.purple}>가로</Btn>
+                      }} accent={C.purple}>{ko ? "가로" : "H"}</Btn>
                     <Btn small active={gradDirection === "vertical"}
                       onClick={() => {
                         setGradDirection("vertical");
                         applyGradient(true, gradColor1, gradColor2, "vertical");
-                      }} accent={C.purple}>세로</Btn>
+                      }} accent={C.purple}>{ko ? "세로" : "V"}</Btn>
                   </div>
                 </>
               )}
@@ -1752,12 +1755,12 @@ export default function CardNewsEditor({
 
           {/* === Image props === */}
           {selectedObj && selProps.type === "image" && (
-            <CollapsibleSection title="이미지 속성" defaultOpen={true} C={C}>
+            <CollapsibleSection title={ko ? "이미지 속성" : "Image Properties"} defaultOpen={true} C={C}>
               <Btn small onClick={() => replaceFileInputRef.current?.click()} style={{ marginBottom: 10 }}>
-                이미지 교체
+                {ko ? "이미지 교체" : "Replace Image"}
               </Btn>
 
-              <label style={S.label}>투명도: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={S.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
                 style={S.range}
@@ -1767,15 +1770,15 @@ export default function CardNewsEditor({
 
           {/* === Shape props === */}
           {selectedObj && (selProps.type === "rect" || selProps.type === "circle") && (
-            <CollapsibleSection title="도형 속성" defaultOpen={true} C={C}>
-              <label style={S.label}>채우기 색상</label>
+            <CollapsibleSection title={ko ? "도형 속성" : "Shape Properties"} defaultOpen={true} C={C}>
+              <label style={S.label}>{ko ? "채우기 색상" : "Fill Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" value={hexFromAny(selProps.fill)} style={S.colorInput}
                   onChange={e => setProp("fill", e.target.value)} />
                 <span style={{ fontSize: 12, color: "#888" }}>{hexFromAny(selProps.fill)}</span>
               </div>
 
-              <label style={S.label}>투명도: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
+              <label style={S.label}>{ko ? "투명도" : "Opacity"}: {Math.round((selProps.opacity ?? 1) * 100)}%</label>
               <input type="range" min={0} max={100} step={1}
                 value={Math.round((selProps.opacity ?? 1) * 100)}
                 style={S.range}
@@ -1786,9 +1789,9 @@ export default function CardNewsEditor({
           {/* === No selection === */}
           {!selectedObj && (
             <div style={S.section}>
-              <div style={S.sectionLabel}>배경</div>
+              <div style={S.sectionLabel}>{ko ? "배경" : "Background"}</div>
 
-              <label style={S.label}>배경색</label>
+              <label style={S.label}>{ko ? "배경색" : "BG Color"}</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color"
                   value={hexFromAny(canvasRef.current?.backgroundColor || "#ffffff")}
@@ -1797,19 +1800,19 @@ export default function CardNewsEditor({
               </div>
 
               <Btn small onClick={() => bgFileInputRef.current?.click()} style={{ marginTop: 10 }}>
-                배경 이미지 업로드
+                {ko ? "배경 이미지 업로드" : "Upload BG Image"}
               </Btn>
 
               <div style={{ marginTop: 20, padding: 14, background: "#f9f9fb", borderRadius: 10, fontSize: 13, color: "#888", lineHeight: 1.6 }}>
-                캔버스의 오브젝트를 클릭하면<br />속성을 편집할 수 있습니다.
+                {ko ? <>캔버스의 오브젝트를 클릭하면<br />속성을 편집할 수 있습니다.</> : <>Click an object on the canvas<br />to edit its properties.</>}
               </div>
             </div>
           )}
 
           {/* === Layer Panel === */}
-          <CollapsibleSection title="레이어" defaultOpen={true} C={C}>
+          <CollapsibleSection title={ko ? "레이어" : "Layers"} defaultOpen={true} C={C}>
             {canvasObjects.length === 0 && (
-              <div style={{ fontSize: 12, color: "#999", padding: "4px 0" }}>오브젝트가 없습니다</div>
+              <div style={{ fontSize: 12, color: "#999", padding: "4px 0" }}>{ko ? "오브젝트가 없습니다" : "No objects"}</div>
             )}
             {canvasObjects.map((item, i) => {
               const isActive = selectedObj === item.obj;
@@ -1829,10 +1832,10 @@ export default function CardNewsEditor({
                   <span style={{ fontSize: 12, fontWeight: 500, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {item.name}
                   </span>
-                  <button style={S.layerBtn} title="앞으로" onClick={e => { e.stopPropagation(); bringForward(item.obj); }}>
+                  <button style={S.layerBtn} title={ko ? "앞으로" : "Bring Forward"} onClick={e => { e.stopPropagation(); bringForward(item.obj); }}>
                     <Icon.Up />
                   </button>
-                  <button style={S.layerBtn} title="뒤로" onClick={e => { e.stopPropagation(); sendBackward(item.obj); }}>
+                  <button style={S.layerBtn} title={ko ? "뒤로" : "Send Backward"} onClick={e => { e.stopPropagation(); sendBackward(item.obj); }}>
                     <Icon.Down />
                   </button>
                 </div>
