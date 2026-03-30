@@ -54,7 +54,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             {t("companyName")||"엔퍼그로스"} | {t("ceo")||"대표자: 김선봉"}<br/>
             {t("bizNo")||"사업자등록번호: 598-09-02769"}<br/>
             {t("commsNo")||"통신판매업 신고번호: 2024-서울금천-1997호"}<br/>
-            {t("address")||"주소: 서울특별시 금천구 디지털로9길 68"}<br/>
+            {t("address")||"주소: 서울특별시 서초구 서초대로77길 39, 1112호 (서초동, MK빌딩)"}<br/>
             {t("email")||"고객센터: npermovie@naver.com"}
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, flexWrap: "wrap", gap: 12 }}>

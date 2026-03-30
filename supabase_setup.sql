@@ -316,5 +316,63 @@ ALTER TABLE customer_cases ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "customer_cases_all" ON customer_cases;
 CREATE POLICY "customer_cases_all" ON customer_cases FOR ALL USING (true);
 
+-- ── shared_templates 테이블 (카드뉴스 공유 템플릿) ──────────────
+CREATE TABLE IF NOT EXISTS shared_templates (
+  id          BIGINT PRIMARY KEY,
+  title       TEXT NOT NULL DEFAULT '',
+  author      TEXT DEFAULT '익명',
+  user_id     TEXT,
+  preset_key  TEXT DEFAULT 'bold_dark',
+  preset_label TEXT DEFAULT '',
+  slide_count INTEGER DEFAULT 1,
+  slides_data TEXT DEFAULT '[]',
+  preview     TEXT,
+  use_count   INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE shared_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "shared_templates_select_all" ON shared_templates;
+CREATE POLICY "shared_templates_select_all"
+  ON shared_templates FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "shared_templates_insert_all" ON shared_templates;
+CREATE POLICY "shared_templates_insert_all"
+  ON shared_templates FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "shared_templates_update_all" ON shared_templates;
+CREATE POLICY "shared_templates_update_all"
+  ON shared_templates FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "shared_templates_delete_all" ON shared_templates;
+CREATE POLICY "shared_templates_delete_all"
+  ON shared_templates FOR DELETE USING (true);
+
+-- ── sns_news 테이블 (SNS 뉴스 캐시) ───────────────────────────
+CREATE TABLE IF NOT EXISTS sns_news (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  category    TEXT NOT NULL DEFAULT 'sns',
+  title       TEXT NOT NULL,
+  source      TEXT DEFAULT '',
+  pub_date    TEXT DEFAULT '',
+  link        TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  thumb       TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE sns_news ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "sns_news_select_all" ON sns_news;
+CREATE POLICY "sns_news_select_all"
+  ON sns_news FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "sns_news_insert_all" ON sns_news;
+CREATE POLICY "sns_news_insert_all"
+  ON sns_news FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "sns_news_delete_all" ON sns_news;
+CREATE POLICY "sns_news_delete_all"
+  ON sns_news FOR DELETE USING (true);
+
 -- ── 완료 ────────────────────────────────────────────────────────
 -- 위 SQL 실행 후 사이트를 새로고침하면 적용됩니다.
