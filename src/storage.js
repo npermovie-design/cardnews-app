@@ -542,7 +542,7 @@ export async function getPostsFromDB() {
       .from("posts")
       .select("id,title,content,author,author_uid,cat,subCat,tag,views,likes,created_at,images,comments")
       .order("id", { ascending: false })
-      .limit(1000);
+      .limit(300);
     if (error) throw error;
     return (data || []).map(rowToPost);
   } catch (e) {

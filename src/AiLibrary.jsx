@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useI18n } from "./i18n.jsx";
 import { supabase } from "./storage";
 

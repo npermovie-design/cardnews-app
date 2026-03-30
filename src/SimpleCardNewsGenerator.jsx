@@ -5,7 +5,6 @@ import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import { isDarkTheme } from "./theme";
 import CardNewsEditor from "./CardNewsEditor";
-import LoadingAnimation from "./LoadingAnimation";
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -446,14 +445,13 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=tru
           }
         }
       } catch {}
-      // 중복 제거 (id 기준) + 사용횟수 많은 순 정렬
+      // 중복 제거 (id 기준)
       const unique = [];
       const seen = new Set();
       for (const t of all) {
         const key = String(t.id);
         if (!seen.has(key)) { seen.add(key); unique.push(t); }
       }
-      unique.sort((a, b) => (b.use_count || 0) - (a.use_count || 0));
       if (!cancelled) { setTemplates(unique); setLoadingTpl(false); }
     })();
     return () => { cancelled = true; };
@@ -497,8 +495,7 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=tru
               <div style={{ padding:"8px 10px" }}>
                 <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tpl.title || (ko?"제목 없음":"Untitled")}</div>
                 <div style={{ fontSize:10, color:muted, marginTop:2 }}>{tpl.author || (ko?"익명":"Anonymous")} · {tpl.slide_count || "?"}{ko?"장":""}</div>
-                {(tpl.use_count > 0) && <div style={{ fontSize:9, color:"#7c6aff", marginTop:2, fontWeight:600 }}>🔥 {tpl.use_count}{ko?"회 사용":" uses"}</div>}
-                <button onClick={(e) => { e.stopPropagation(); if (tpl.source === "supabase" && supabase) { supabase.rpc("increment_template_use", { template_id: tpl.id }).catch(() => {}); } onApply(tpl); }}
+                <button onClick={(e) => { e.stopPropagation(); onApply(tpl); }}
                   style={{ marginTop:6, width:"100%", padding:"5px 0", borderRadius:6, border:"none", background:"rgba(99,102,241,0.15)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
                   {ko?"사용하기":"Use"}
                 </button>
@@ -1345,7 +1342,24 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             }}
           />
 
-          {/* 디자인 스타일 제거됨 — 커뮤니티 템플릿에서 선택 */}
+          {/* 디자인 프리셋 */}
+          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>{ko?"디자인 스타일":"Design Style"}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
+              {DESIGN_PRESETS.map((p) => {
+                const sel = selPreset?.key === p.key;
+                return (
+                  <button key={p.key} onClick={() => setSelPreset(p)}
+                    style={{ padding:0, borderRadius:10, border: sel ? "2px solid #7c6aff" : `1.5px solid ${bdr}`, cursor:"pointer", overflow:"hidden", background:"transparent", transition:"all 0.15s" }}>
+                    <div style={{ width:"100%", height:48, background:p.bgColor, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ color:p.textColor, fontSize:11, fontWeight:800, letterSpacing:-0.3 }}>Aa</span>
+                    </div>
+                    <div style={{ padding:"4px 6px", fontSize:10, fontWeight: sel ? 800 : 500, color: sel ? "#7c6aff" : muted, textAlign:"center", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* 이미지 크기 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
@@ -1399,19 +1413,8 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-        {/* 생성 중 애니메이션 — 공통 LoadingAnimation 사용 */}
-        {loading && (
-          <div style={{ position:"fixed", inset:0, zIndex:9999, background: isDark ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.92)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={{ maxWidth:400 }}>
-              <LoadingAnimation
-                featureType="card_news"
-                title={ko ? `AI가 ${slides.length || pageCount}장의 카드뉴스를 제작하고 있어요` : `AI is creating ${slides.length || pageCount} card news slides`}
-                subtitle={ko ? "잠시만 기다려주세요" : "Please wait a moment"}
-                isDark={isDark}
-              />
-            </div>
-          </div>
-        )}
+        {/* 생성 중 애니메이션 */}
+        {loading && <PlanningAnimation pageCount={slides.length || pageCount} ko={ko} />}
       </div>
     );
   }

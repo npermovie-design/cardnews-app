@@ -148,9 +148,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     ];
 
     const quickStartCards = [
-      { icon3d: "/icons3d/blog-write.png", title: "블로그 글쓰기", desc: "AI가 SEO 최적화 글을 자동 작성해요", menu: "blog_naver", tag: "인기", tagColor: "#ef4444", tagBg: "rgba(239,68,68,0.1)" },
-      { icon3d: "/icons3d/palette.png", title: "카드뉴스 만들기", desc: "주제만 입력하면 슬라이드 완성", menu: "cardnews_simple", tag: "추천", tagColor: "#f97316", tagBg: "rgba(249,115,22,0.1)" },
-      { icon3d: "/icons3d/sns-share.png", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
+      { icon: "📝", title: "블로그 글쓰기", desc: "AI가 SEO 최적화 글을 자동 작성해요", menu: "blog_naver", tag: "인기", tagColor: "#ef4444", tagBg: "rgba(239,68,68,0.1)" },
+      { icon: "🎨", title: "카드뉴스 만들기", desc: "주제만 입력하면 슬라이드 완성", menu: "cardnews_simple", tag: "추천", tagColor: "#f97316", tagBg: "rgba(249,115,22,0.1)" },
+      { icon: "🔄", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
     ];
 
     return (
@@ -181,7 +181,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <img src={card.icon3d} alt="" style={{ width: 36, height: 36, objectFit: "contain" }} />
+                  <span style={{ fontSize: 28 }}>{card.icon}</span>
                   <span style={{
                     fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
                     background: card.tagBg, color: card.tagColor,

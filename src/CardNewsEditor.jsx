@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, Textbox, Rect, Circle, Line, FabricImage, Shadow, Gradient } from "fabric";
 import { supabase } from "./storage";
-import { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection, DEFAULT_THEME } from "./CardNewsEditorUtils.jsx";
+import { FONTS, loadGFont, TEMPLATES, LAYOUT_OPTIONS, clamp, lightenColor, darkenColor, hexFromAny, Icon, Btn, CollapsibleSection } from "./CardNewsEditorUtils.jsx";
 import { useI18n } from "./i18n.jsx";
 
 /* ──────────────────────────────────────────────────────────────────────
