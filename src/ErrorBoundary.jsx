@@ -12,6 +12,13 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("ErrorBoundary caught:", error, info);
+    // OAuth 에러 URL 자동 정리
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("error") || params.has("error_code")) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    } catch {}
     // GA4 에러 리포팅
     try {
       if (window.gtag) {
@@ -38,14 +45,14 @@ export default class ErrorBoundary extends Component {
             일시적인 오류가 발생했어요.<br/>
             페이지를 새로고침하거나 다시 시도해주세요.
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
             <button onClick={() => this.setState({ hasError: false, error: null })}
               style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid #ddd", background: "transparent", color: "#666", fontSize: 14, cursor: "pointer", fontWeight: 600 }}>
               다시 시도
             </button>
-            <button onClick={() => window.location.reload()}
+            <button onClick={() => { window.history.replaceState({}, "", "/"); window.location.reload(); }}
               style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 700 }}>
-              새로고침
+              홈으로
             </button>
           </div>
           {this.state.error && (

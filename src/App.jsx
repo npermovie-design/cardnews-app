@@ -236,6 +236,16 @@ export default function App() {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
+  // OAuth 에러 콜백 처리 — URL에 error 파라미터가 있으면 정리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("error") || params.has("error_code")) {
+      console.warn("OAuth error:", params.get("error"), params.get("error_description"));
+      // 에러 파라미터 제거하여 URL 정리
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     const rawPath = window.location.pathname.replace(/^\//, "") || "home";
     const segments = rawPath.split("/");
