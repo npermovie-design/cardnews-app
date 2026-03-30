@@ -497,10 +497,6 @@ export default function SnsNewsPage({ C, user, navigate }) {
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", flexShrink: 0, whiteSpace: "nowrap" }}>AI 작성 중...</span>
                   ) : briefing ? (
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={(e) => { e.stopPropagation(); setExpandedHistory(expandedHistory === "today" ? null : "today"); }}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                        {expandedHistory === "today" ? "접기" : "자세히 보기"}
-                      </button>
                       <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("복사됨!"); }}
                         style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         복사
@@ -508,8 +504,8 @@ export default function SnsNewsPage({ C, user, navigate }) {
                     </div>
                   ) : null}
                 </div>
-                {/* 오늘 브리핑 펼치기 */}
-                {expandedHistory === "today" && briefing && (
+                {/* 오늘 브리핑 본문 (항상 표시) */}
+                {briefing && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.15)", wordBreak: "break-word" }}>
                     {briefing.content.split("\n").map((line, i) => {
                       const t = line.trim();
