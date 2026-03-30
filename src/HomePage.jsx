@@ -246,22 +246,22 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           <div className="pain-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             {[
               {
-                icon: "&#9200;",
+                icon3d: "/icons3d/clock.png",
                 title: lang === "ko" ? "카드뉴스 만드는 데 2시간" : "2 hours for card news",
                 quote: lang === "ko" ? "디자인 감각이 없어 매번 외주를 맡기고 있어요" : "I have no design skills and always outsource",
               },
               {
-                icon: "&#128221;",
+                icon3d: "/icons3d/blog-write.png",
                 title: lang === "ko" ? "블로그 글 하나에 반나절" : "Half a day for one blog post",
                 quote: lang === "ko" ? "SEO 최적화까지 신경 쓰면 하루가 다 갑니다" : "Add SEO optimization and a whole day is gone",
               },
               {
-                icon: "&#128247;",
+                icon3d: "/icons3d/sns-content.png",
                 title: lang === "ko" ? "SNS 채널마다 따로 제작" : "Separate content per channel",
                 quote: lang === "ko" ? "같은 내용을 인스타, 블로그, 스레드에 각각 올리느라 지쳐요" : "Exhausted posting the same content to Instagram, blog, and Threads separately",
               },
               {
-                icon: "&#127912;",
+                icon3d: "/icons3d/camera.png",
                 title: lang === "ko" ? "전문가 수준의 이미지 필요" : "Need professional images",
                 quote: lang === "ko" ? "제품 사진, 로고, 목업을 직접 만들 수가 없어요" : "I can't create product photos, logos, or mockups myself",
               },
@@ -271,7 +271,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   background: "#fff", border: "1px solid " + C.border, borderRadius: 16,
                   padding: "28px 24px", height: "100%",
                 }}>
-                  <div style={{ fontSize: 28, marginBottom: 14 }} dangerouslySetInnerHTML={{ __html: pain.icon }} />
+                  <img src={pain.icon3d} alt="" style={{ width: 40, height: 40, objectFit: "contain", marginBottom: 14 }} />
                   <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 10, lineHeight: 1.4 }}>{pain.title}</div>
                   <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, margin: 0, fontStyle: "italic" }}>
                     &ldquo;{pain.quote}&rdquo;
@@ -628,22 +628,22 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </div>
           <div style={{ display: "flex", gap: "clamp(16px,3vw,32px)", justifyContent: "center", flexWrap: "wrap" }}>
             {(lang === "ko" ? [
-              { icon: "🛍️", label: "쇼핑몰 운영자" },
-              { icon: "📊", label: "마케팅 대행사" },
-              { icon: "🎬", label: "1인 크리에이터" },
-              { icon: "🏢", label: "스타트업" },
-              { icon: "📝", label: "블로거" },
-              { icon: "🎓", label: "프리랜서" },
+              { icon3d: "/icons3d/sns-app.png", label: "쇼핑몰 운영자" },
+              { icon3d: "/icons3d/analytics.png", label: "마케팅 대행사" },
+              { icon3d: "/icons3d/camera.png", label: "1인 크리에이터" },
+              { icon3d: "/icons3d/report.png", label: "스타트업" },
+              { icon3d: "/icons3d/blog-write.png", label: "블로거" },
+              { icon3d: "/icons3d/palette.png", label: "프리랜서" },
             ] : [
-              { icon: "🛍️", label: "E-commerce" },
-              { icon: "📊", label: "Agencies" },
-              { icon: "🎬", label: "Creators" },
-              { icon: "🏢", label: "Startups" },
-              { icon: "📝", label: "Bloggers" },
-              { icon: "🎓", label: "Freelancers" },
+              { icon3d: "/icons3d/sns-app.png", label: "E-commerce" },
+              { icon3d: "/icons3d/analytics.png", label: "Agencies" },
+              { icon3d: "/icons3d/camera.png", label: "Creators" },
+              { icon3d: "/icons3d/report.png", label: "Startups" },
+              { icon3d: "/icons3d/blog-write.png", label: "Bloggers" },
+              { icon3d: "/icons3d/palette.png", label: "Freelancers" },
             ]).map(s => (
               <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 80 }}>
-                <div style={{ fontSize: 28 }}>{s.icon}</div>
+                <img src={s.icon3d} alt="" style={{ width: 36, height: 36, objectFit: "contain" }} />
                 <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{s.label}</div>
               </div>
             ))}

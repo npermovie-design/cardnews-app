@@ -4,6 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import CardNewsEditor from "./CardNewsEditor";
+import LoadingAnimation from "./LoadingAnimation";
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -289,6 +290,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const [sted,      setSted]      = useState({}); // per-slide overrides
   const [selIdx,    setSelIdx]    = useState(0);
   const [loading,   setLoading]   = useState(false);
+  const [genError,  setGenError]  = useState("");
   const [dlSt,      setDlSt]      = useState({ busy:false, msg:"" });
   useGeneratingGuard(loading, 10, "card_news");
 
@@ -414,7 +416,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
-    } catch(e) { setSlides([]); setWizStep(3); alert(ko ? "생성에 실패했습니다: " + (e.message || "다시 시도해주세요.") : "Generation failed: " + (e.message || "Please try again.")); console.error("생성 실패:", e.message); }
+    } catch(e) { setSlides([]); setWizStep(3); setGenError((ko?"생성에 실패했습니다: ":"Generation failed: ") + (e.message || (ko?"다시 시도해주세요.":"Please try again."))); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
 
@@ -763,6 +765,21 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
           </div>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+        {genError && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:13 }}>{genError}</div>}
+
+        {loading && (
+          <div style={{ position:"fixed", inset:0, zIndex:9999, background: D ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.92)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ maxWidth:400 }}>
+              <LoadingAnimation
+                featureType="card_news"
+                title={ko ? `AI가 ${pageCount}장의 상세페이지를 제작하고 있어요` : `AI is creating ${pageCount} detail page slides`}
+                subtitle={ko ? "잠시만 기다려주세요" : "Please wait a moment"}
+                isDark={D}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }

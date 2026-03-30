@@ -165,7 +165,28 @@ function NewsEditorModal({ article, onSave, onClose }) {
               ))}
             </div>
           </div>
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>썸네일 URL (선택)</div><input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://..." style={inp} /></div>
+          <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>썸네일 이미지 (선택)</div>
+            {thumbnail && <div style={{ marginBottom: 8 }}><img src={thumbnail} alt="썸네일 미리보기" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(0,0,0,0.08)" }} /></div>}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#f5f5f8", color: "#1a1730", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                📁 파일 선택
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const ext = file.name.split(".").pop();
+                    const path = `news-thumbnails/${Date.now()}.${ext}`;
+                    const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true });
+                    if (error) throw error;
+                    const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+                    setThumbnail(urlData.publicUrl);
+                  } catch (err) { console.error("썸네일 업로드 실패:", err); alert("이미지 업로드에 실패했습니다."); }
+                }} />
+              </label>
+              <span style={{ fontSize: 12, color: "#999" }}>또는</span>
+              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="URL 직접 입력" style={{ ...inp, flex: 1, minWidth: 180 }} />
+            </div>
+          </div>
           <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>요약 (선택)</div><textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="2~3줄 요약" style={{ ...inp, minHeight: 60, resize: "vertical" }} /></div>
           <div><div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>본문 (마크다운 지원)</div><textarea value={content} onChange={e => setContent(e.target.value)} placeholder="# 제목\n내용을 작성하세요..." style={{ ...inp, minHeight: 200, resize: "vertical", lineHeight: 1.8 }} /></div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /><span style={{ fontSize: 13, color: "#1a1730" }}>상단 고정</span></label>
@@ -488,7 +509,6 @@ export default function SnsNewsPage({ C, user, navigate }) {
           {[
             { id: "briefing", label: "AI 브리핑" },
             { id: "news", label: "실시간 뉴스" },
-            { id: "notice", label: "공지" },
             { id: "tips", label: "아티클" },
           ].map(t => (
             <button key={t.id} onClick={() => setMainTab(t.id)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: mainTab === t.id ? "#fff" : "transparent", color: mainTab === t.id ? accent : muted, boxShadow: mainTab === t.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none", minHeight: 42 }}>{t.label}</button>
