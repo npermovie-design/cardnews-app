@@ -222,7 +222,10 @@ async function handleCronBriefing(req, res) {
 [상세 내용 3~5문장. 구체적인 수치, 변경 내용, 영향을 포함. 전날~오늘 사이 발생한 실제 뉴스 기반]
 📎 출처: [언론사/플랫폼명] | 관련: #키워드1 #키워드2
 
-총 7개. 한국 뉴스 4개 + 글로벌 3개. 이모지 금지(📎만 허용). 볼드(**) 금지. 최근 24시간 내 뉴스 위주로.`;
+총 7개. 한국 뉴스 4개 + 글로벌 3개. 이모지 금지(📎만 허용). 볼드(**) 금지. 최근 24시간 내 뉴스 위주로.
+
+마지막 줄에 아래 형식으로 대표 제목을 추가:
+HEADLINE: [7개 중 검색량/관심도 가장 높은 핵심 이슈를 SEO 친화적으로 가다듬어 30자 이내 제목]`;
 
   try {
     const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -234,10 +237,17 @@ async function handleCronBriefing(req, res) {
     const content = aiData.choices?.[0]?.message?.content || "";
     if (!content || content.length < 100) throw new Error("AI 응답 부족");
 
+    // AI가 생성한 대표 제목 추출 (HEADLINE: 패턴)
+    const headlineMatch = content.match(/HEADLINE:\s*(.+)/);
+    const headline = headlineMatch ? headlineMatch[1].trim() : ((content.match(/^##\s*\d+\.\s*(.+)/m) || [])[1] || "SNS 마케팅 뉴스클리핑");
+    const briefingTitle = `[${todayLabel}] ${headline}`;
+    // HEADLINE 줄은 본문에서 제거
+    const cleanContent = content.replace(/\n?HEADLINE:.*$/m, "").trim();
+
     await supabase.from("sns_news").upsert({
       id: briefingId,
-      title: `[${todayLabel}] SNS 마케팅 뉴스클리핑`,
-      content,
+      title: briefingTitle,
+      content: cleanContent,
       category: "briefing",
       platforms: ["instagram", "youtube", "tiktok", "naver"],
       author_uid: "system_cron",
