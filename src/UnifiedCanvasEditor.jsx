@@ -50,7 +50,7 @@ export default function UnifiedCanvasEditor({
     el.width = width; el.height = height;
     box.appendChild(el);
     try {
-      const fc = new Canvas(el, { width, height, backgroundColor:"#1c1c1e", preserveObjectStacking:true });
+      const fc = new Canvas(el, { width, height, backgroundColor:"#ffffff", preserveObjectStacking:true });
       fcRef.current = fc;
       fc.on("selection:created", e => syncSel(e.selected?.[0]));
       fc.on("selection:updated", e => syncSel(e.selected?.[0]));
@@ -61,7 +61,7 @@ export default function UnifiedCanvasEditor({
       let guides = [];
       const clearGuides = () => { guides.forEach(g => fc.remove(g)); guides = []; };
       const addGuide = (x1,y1,x2,y2) => {
-        const g = new Line([x1,y1,x2,y2], { stroke:"#7c6aff", strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false, name:"guide" });
+        const g = new Line([x1,y1,x2,y2], { stroke:"#00aaff", strokeWidth:1, strokeDashArray:[4,4], selectable:false, evented:false, name:"guide" });
         fc.add(g); guides.push(g);
       };
       fc.on("object:moving", (e) => {
@@ -105,7 +105,7 @@ export default function UnifiedCanvasEditor({
   const buildSlide = (fc, s, i) => {
     if (!fc||!s) return;
     fc.clear();
-    fc.backgroundColor = s.bgColor || "#1c1c1e";
+    fc.backgroundColor = s.bgColor || "#ffffff";
 
     // 배경 이미지
     if (s.image) {
@@ -117,54 +117,37 @@ export default function UnifiedCanvasEditor({
       }).catch(()=>{});
     }
 
-    // 슬라이드 번호 뱃지
-    const badge = new Textbox(`${(i||0)+1}`, {
-      left:width*0.04, top:height*0.04, width:60,
-      fontSize:18, fontWeight:"900", fill:"#7c6aff",
-      fontFamily:"Pretendard", textAlign:"center",
-      backgroundColor:"rgba(124,106,255,0.15)",
-      name:"badge", selectable:false, evented:false,
-    });
-    fc.add(badge);
-
     // 하이라이트/뱃지 텍스트
     if (s.highlight || s.subtitle) {
       const hl = new Textbox(s.highlight || s.subtitle || "", {
-        left:width*0.08, top:height*0.08, width:width*0.5,
-        fontSize:16, fontWeight:"700", fill:s.textColor||"#ffffff",
-        fontFamily:s.fontFamily||"Pretendard", opacity:0.7,
-        name:"highlight",
+        left:width*0.08, top:height*0.12, width:width*0.84,
+        fontSize:16, fontWeight:"700", fill:s.textColor||"#000000",
+        fontFamily:s.fontFamily||"Pretendard", opacity:0.6,
+        textAlign:"center", name:"highlight",
       });
       fc.add(hl);
     }
 
-    // 제목
+    // 제목 — 정중앙 배치
     if (s.title) {
       const t = new Textbox(s.title, {
-        left:width*0.08, top:height*0.18, width:width*0.84,
+        left:width*0.08, top:height*0.3, width:width*0.84,
         fontSize:s.fontSize||42, fontWeight:"bold",
-        fill:s.textColor||"#ffffff",
+        fill:s.textColor||"#000000",
         fontFamily:s.fontFamily||"Pretendard",
-        lineHeight:1.3, name:"title",
+        lineHeight:1.3, textAlign:"center", name:"title",
       });
       fc.add(t);
     }
 
-    // 구분선
-    const line = new Line([width*0.08, height*0.55, width*0.35, height*0.55], {
-      stroke:s.textColor||"#ffffff", strokeWidth:3, opacity:0.3,
-      selectable:false, evented:false, name:"divider",
-    });
-    fc.add(line);
-
-    // 본문
+    // 본문 — 제목 아래 중앙 배치
     if (s.body) {
       const b = new Textbox(s.body, {
-        left:width*0.08, top:height*0.58, width:width*0.84,
+        left:width*0.08, top:height*0.52, width:width*0.84,
         fontSize:Math.round((s.fontSize||42)*0.38),
-        fill:s.textColor||"#ffffff", opacity:0.85,
+        fill:s.textColor||"#000000", opacity:0.85,
         fontFamily:s.fontFamily||"Pretendard",
-        lineHeight:1.7, name:"body",
+        lineHeight:1.7, textAlign:"center", name:"body",
       });
       fc.add(b);
     }
@@ -216,8 +199,8 @@ export default function UnifiedCanvasEditor({
     const fc=fcRef.current; if(!fc) return;
     const t=new Textbox(text||"텍스트 입력",{
       left:width*0.1, top:height*0.35, width:width*0.8,
-      fontSize:opts.fontSize||32, fill:opts.fill||"#ffffff", fontWeight:opts.fontWeight||"normal",
-      fontFamily:opts.fontFamily||"Pretendard", ...opts,
+      fontSize:opts.fontSize||32, fill:opts.fill||"#000000", fontWeight:opts.fontWeight||"normal",
+      fontFamily:opts.fontFamily||"Pretendard", textAlign:"center", ...opts,
     });
     fc.add(t); fc.setActiveObject(t); fc.renderAll();
   };
@@ -268,26 +251,31 @@ export default function UnifiedCanvasEditor({
   const setBg = (c) => { const fc=fcRef.current; if(fc){fc.backgroundColor=c;fc.renderAll();} };
   const del = () => { const fc=fcRef.current; const o=fc?.getActiveObject(); if(o&&o.name!=="bg"){fc.remove(o);fc.renderAll();setSel(null);} };
 
-  /* ── 이미지 검색 ── */
+  /* ── 이미지 검색 (통합: Pexels+Unsplash+Pixabay 동시) ── */
   const searchImages = async (q) => {
     if(!q.trim()) return;
     setImgLoading(true); setImgResults([]);
     try {
-      let results = [];
-      if(imgSource==="pexels") {
-        const r = await fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(q)}&per_page=12`);
-        const d = await r.json();
-        results = (d.photos||[]).map(p=>({thumb:p.src?.small,full:p.src?.large,source:"Pexels"}));
-      } else if(imgSource==="unsplash") {
-        const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(q)}&per_page=12`);
-        const d = await r.json();
-        results = (d.results||[]).map(p=>({thumb:p.urls?.thumb,full:p.urls?.regular,source:"Unsplash"}));
-      } else if(imgSource==="pixabay") {
-        const r = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(q)}&per_page=12`);
-        const d = await r.json();
-        results = (d.hits||[]).map(p=>({thumb:p.previewURL,full:p.largeImageURL,source:"Pixabay"}));
+      const [pexRes, unsRes, pixRes] = await Promise.allSettled([
+        fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(q)}&per_page=8`).then(r=>r.json()),
+        fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(q)}&per_page=8`).then(r=>r.json()),
+        fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(q)}&per_page=8`).then(r=>r.json()),
+      ]);
+      let all = [];
+      if(pexRes.status==="fulfilled") all.push(...(pexRes.value.photos||[]).map(p=>({thumb:p.src?.small,full:p.src?.large,source:"Pexels"})));
+      if(unsRes.status==="fulfilled") all.push(...(unsRes.value.results||[]).map(p=>({thumb:p.urls?.thumb,full:p.urls?.regular,source:"Unsplash"})));
+      if(pixRes.status==="fulfilled") all.push(...(pixRes.value.hits||[]).map(p=>({thumb:p.previewURL,full:p.largeImageURL,source:"Pixabay"})));
+      // 소스별 번갈아 섞기
+      const bySource = {Pexels:[],Unsplash:[],Pixabay:[]};
+      all.forEach(r => { if(bySource[r.source]) bySource[r.source].push(r); });
+      const mixed = [];
+      const max = Math.max(bySource.Pexels.length, bySource.Unsplash.length, bySource.Pixabay.length);
+      for(let i=0;i<max;i++) {
+        if(bySource.Pexels[i]) mixed.push(bySource.Pexels[i]);
+        if(bySource.Unsplash[i]) mixed.push(bySource.Unsplash[i]);
+        if(bySource.Pixabay[i]) mixed.push(bySource.Pixabay[i]);
       }
-      setImgResults(results);
+      setImgResults(mixed);
     } catch(e) { console.error("Image search:", e); }
     setImgLoading(false);
   };
@@ -347,17 +335,9 @@ export default function UnifiedCanvasEditor({
           </div>
           {/* 캔버스 */}
           <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e5e5ea",overflow:"hidden",padding:10}}/>
-          {/* 하단 툴바 */}
-          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
-            <button onClick={()=>addText()} style={B} title="텍스트">T+</button>
-            <button onClick={()=>addText("제목",{fontSize:48,fontWeight:"bold"})} style={B} title="제목">H1</button>
-            <button onClick={()=>addText("소제목",{fontSize:28,fontWeight:"700"})} style={B} title="소제목">H2</button>
-            <button onClick={()=>addShape("rect")} style={B}>□</button>
-            <button onClick={()=>addShape("circle")} style={B}>○</button>
-            <button onClick={()=>addShape("line")} style={B}>—</button>
-            <button onClick={()=>addShape("filled-rect")} style={B} title="배경 바">▬</button>
-            <button onClick={addImageFile} style={B}>📁</button>
-            {sel&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5"}}>삭제</button>}
+          {/* 하단: 내보내기만 */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
+            {sel&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:12}}>선택 삭제</button>}
             <div style={{flex:1}}/>
             <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>PNG</button>
             {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>ZIP</button>}
@@ -381,7 +361,7 @@ export default function UnifiedCanvasEditor({
               <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>배경색</div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                  {["#1c1c1e","#ffffff","#0f172a","#fef3c7","#052e16","#831843","#f5ebe0","#0c1445","#27272a","#ede9fe"].map(c=>(
+                  {["#ffffff","#f5f5f5","#1c1c1e","#0f172a","#fef3c7","#052e16","#831843","#f5ebe0","#0c1445","#ede9fe"].map(c=>(
                     <button key={c} onClick={()=>setBg(c)} style={{width:24,height:24,borderRadius:5,background:c,border:"2px solid rgba(0,0,0,0.1)",cursor:"pointer",padding:0}}/>
                   ))}
                   <input type="color" onChange={e=>setBg(e.target.value)} style={{width:24,height:24,padding:0,border:"2px solid rgba(0,0,0,0.1)",borderRadius:5,cursor:"pointer"}}/>
@@ -415,7 +395,11 @@ export default function UnifiedCanvasEditor({
                     {["left","center","right"].map(a=>(
                       <button key={a} onClick={()=>set("textAlign",a)}
                         style={{...B,background:props.textAlign===a?"#7c6aff15":"transparent",borderColor:props.textAlign===a?"#7c6aff":"#ddd"}}>
-                        {a==="left"?"⬱":a==="center"?"☰":"⬲"}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          {a==="left"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="1" y1="7" x2="9" y2="7"/><line x1="1" y1="11" x2="11" y2="11"/></>}
+                          {a==="center"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="3" y1="7" x2="11" y2="7"/><line x1="2" y1="11" x2="12" y2="11"/></>}
+                          {a==="right"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="5" y1="7" x2="13" y2="7"/><line x1="3" y1="11" x2="13" y2="11"/></>}
+                        </svg>
                       </button>
                     ))}
                   </div>
@@ -444,15 +428,7 @@ export default function UnifiedCanvasEditor({
             {/* ─── 이미지 패널 ─── */}
             {panel==="images"&&(
               <div style={{padding:"12px 16px"}}>
-                {/* 소스 선택 */}
-                <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {["pexels","unsplash","pixabay"].map(s=>(
-                    <button key={s} onClick={()=>setImgSource(s)}
-                      style={{flex:1,padding:"6px 0",borderRadius:6,border:"none",background:imgSource===s?"#7c6aff":"#eee",color:imgSource===s?"#fff":"#666",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                      {s==="pexels"?"Pexels":s==="unsplash"?"Unsplash":"Pixabay"}
-                    </button>
-                  ))}
-                </div>
+                <div style={{fontSize:11,color:"#888",marginBottom:8}}>Pexels + Unsplash + Pixabay 통합 검색</div>
                 {/* 검색 */}
                 <div style={{display:"flex",gap:6,marginBottom:10}}>
                   <input value={imgQuery} onChange={e=>setImgQuery(e.target.value)} placeholder="검색어 입력..."
