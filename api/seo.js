@@ -207,7 +207,7 @@ async function handleCronBriefing(req, res) {
 
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+    process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
   );
 
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
