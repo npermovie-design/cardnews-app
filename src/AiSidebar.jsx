@@ -105,7 +105,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
   return (
     <div style={{
-      width: 168, flexShrink: 0, background: isDark ? "rgba(0,0,0,0.35)" : "#fff",
+      width: 180, flexShrink: 0, background: isDark ? "rgba(0,0,0,0.35)" : "#fff",
       borderRight: `1px solid ${sideBdr}`,
       display: "flex", flexDirection: "column", height: "100%",
     }}>

@@ -777,33 +777,15 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
   const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
   const isLink = info && info.link;
 
-  const _text = isDark ? "#e8eaed" : "#1a1a2e";
-  const _muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
-  const _bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-
-  return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${_bdr}` }}>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"12px 24px", display:"flex", alignItems:"center", gap:12 }}>
-          {info.icon && <img src={info.icon} alt="" style={{ width:22, height:22, borderRadius:4, objectFit:"contain" }} />}
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:15, fontWeight:800, color:_text }}>{info.label || "글쓰기"}</div>
-          </div>
-        </div>
-      </div>
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        {isLink ? (
-          info.linkTab === "youtube" ? (
-            <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-          ) : (
-            <NewsBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
-              linkMode={info.linkTab === "blog" ? "blog" : info.linkTab === "sns" ? "sns" : "news"} showPointConfirm={showPointConfirm} />
-          )
-        ) : (
-          <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-        )}
-      </div>
-    </div>
+  return isLink ? (
+    info.linkTab === "youtube" ? (
+      <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+    ) : (
+      <NewsBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate}
+        linkMode={info.linkTab === "blog" ? "blog" : info.linkTab === "sns" ? "sns" : "news"} showPointConfirm={showPointConfirm} />
+    )
+  ) : (
+    <BlogGenerator key={platform} initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
   );
 }
 

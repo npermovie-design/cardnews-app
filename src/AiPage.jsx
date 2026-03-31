@@ -293,10 +293,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 바형 헤더 공용
   const BarHeader = ({ title, subtitle }) => (
     <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
-      <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px" }}>
-        <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:18, fontWeight:900, color:homeText, marginBottom:3 }}>{title}</div>
-          <div style={{ fontSize:12, color:homeMuted }}>{subtitle}</div>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"12px 24px", display:"flex", alignItems:"center", gap:10 }}>
+        <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
+          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px", color: isDark?"#a5b4fc":"#7c6aff", display:"none", alignItems:"center", flexShrink:0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div style={{ flex:1, textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:900, color:homeText, marginBottom:2 }}>{title}</div>
+          <div style={{ fontSize:11, color:homeMuted }}>{subtitle}</div>
         </div>
       </div>
     </div>
@@ -500,8 +504,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const features_ = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
       { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
-      { icon:"/icons3d/instagram-cam.png", title:_s("이미지 생성","Image Gen"), menu:"image_create" },
-      { icon:"/icons3d/camera.png", title:_s("이미지 수정","Image Edit"), menu:"image_edit" },
+      { icon:"/icons3d/instagram-cam.png", title:_s("이미지","Image"), menu:"image_tools" },
       { icon:"/icons3d/report.png", title:_s("비즈니스 문서","Biz Docs"), menu:"prompt_studio" },
       { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
     ];
