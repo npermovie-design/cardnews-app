@@ -1034,22 +1034,30 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
     // 이미지 바로 생성 실행
     const generateImageOnly = async () => {
-      if (!user && guestLimitExceeded()) return;
-      if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+      // 게스트 제한 체크
+      if (!user && guestLimitExceeded()) { setGenError(ko?"게스트 생성 횟수를 초과했습니다. 로그인해주세요.":"Guest limit exceeded."); return; }
+      // 포인트 확인
+      if (showPointConfirm && user) {
+        const ok = await showPointConfirm(10);
+        if (!ok) return;
+      }
       if (!user) incrementGuestUsage();
+      setLoading(true); setGenError("");
+      // 포인트 차감
       if (user?.uid) {
         changePoints(user.uid, -10, "이미지 바로 생성").then(newPts => {
           if (onUserUpdate) onUserUpdate({...user, points: newPts});
         }).catch(()=>{});
       }
-      setLoading(true); setGenError("");
       try {
-        const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
-        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail, slideTypes: SLIDE_TYPES});
-        const slidesData = (textData.slides||[]).map(s=>({ ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge }));
+        const textData = await generateSlideTexts({topic, pageCount, sourceContent: undefined, topicDetail:"", slideTypes: SLIDE_TYPES});
+        if (!textData || !textData.slides || textData.slides.length === 0) {
+          throw new Error(ko?"AI 응답이 비어있습니다. 다시 시도해주세요.":"Empty AI response.");
+        }
+        const slidesData = (textData.slides).map(s=>({ ...s, title:s.headline||"", subtitle:s.subheadline||"", highlight:s.badge||"" }));
         // 업로드 이미지를 배경으로 적용
         const newSted = {};
-        if (hasImages) {
+        if (userImages.length > 0) {
           slidesData.forEach((_, i) => {
             if (userImages[i]) {
               newSted[i] = { bgImage: userImages[i].preview };
@@ -1057,8 +1065,10 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           });
         }
         setSlides(slidesData); setSted(newSted); setSelIdx(0); setWizStep(4);
-        saveToCardLibrary(slidesData);
-      } catch(e) { setGenError((ko?"생성 실패: ":"Failed: ") + (e.message||"")); console.error(e); }
+      } catch(e) {
+        setGenError((ko?"생성 실패: ":"Failed: ") + (e.message || ko?"다시 시도해주세요.":"Please try again."));
+        console.error("이미지 바로 생성 실패:", e);
+      }
       setLoading(false);
     };
 
