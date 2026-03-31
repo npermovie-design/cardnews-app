@@ -136,6 +136,61 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
               style={{ width:"100%", padding:"12px 14px 12px 40px", borderRadius:12, border:`1.5px solid ${bdr}`, background:bg, color:homeText, fontSize:13, outline:"none", boxSizing:"border-box" }} />
           </div>
 
+          {/* 최근 작업 (프리셋) */}
+          {(() => {
+            const recentItems = [];
+            try {
+              const cards = JSON.parse(localStorage.getItem("nper_saved_works_v2")||"[]").slice(0,6);
+              cards.forEach(c => recentItems.push({ ...c, type:"cardnews", icon:"🎴", typeLabel:"카드뉴스" }));
+            } catch {}
+            try {
+              const details = JSON.parse(localStorage.getItem("nper_simpledetail_saves_v1")||"[]").slice(0,4);
+              details.forEach(d => recentItems.push({ ...d, type:"detail", icon:"📄", typeLabel:"상세페이지" }));
+            } catch {}
+            try {
+              const ppts = JSON.parse(localStorage.getItem("nper_ppt_saves_v1")||"[]").slice(0,4);
+              ppts.forEach(p => recentItems.push({ ...p, type:"ppt", icon:"📊", typeLabel:"PPT" }));
+            } catch {}
+            // 날짜순 정렬
+            recentItems.sort((a,b) => (b.id||"").localeCompare(a.id||""));
+            const items = recentItems.slice(0,8);
+            if (items.length === 0) return null;
+            return (
+              <div style={{ marginBottom:28 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:12 }}>최근 작업</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+                  {items.map((item, idx) => (
+                    <button key={idx} onClick={() => {
+                      if (item.type === "cardnews") {
+                        try { localStorage.setItem("nper_open_card", JSON.stringify(item)); } catch {}
+                        setAiMenu("cardnews_simple_open");
+                      } else if (item.type === "detail") {
+                        try { localStorage.setItem("nper_open_detail", JSON.stringify(item)); } catch {}
+                        setAiMenu("detail_simple_open");
+                      } else if (item.type === "ppt") {
+                        setAiMenu("ppt_gen");
+                      }
+                    }}
+                      style={{ padding:"12px 10px", borderRadius:12, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer",
+                        display:"flex", alignItems:"center", gap:10, transition:"all 0.12s", textAlign:"left", overflow:"hidden" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor=accent; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; }}>
+                      {item.thumb ? (
+                        <img src={item.thumb} alt="" style={{ width:40, height:40, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+                      ) : (
+                        <span style={{ fontSize:24, flexShrink:0 }}>{item.icon}</span>
+                      )}
+                      <div style={{ minWidth:0, flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.topic || item.title || "제목 없음"}</div>
+                        <div style={{ fontSize:10, color:homeMuted }}>{item.typeLabel} · {item.count || item.slide_count || "?"}장 · {item.date || ""}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* AI 자동 생성 */}
           <div style={{ marginBottom:28 }}>
             <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:12 }}>AI로 시작하기</div>
@@ -347,6 +402,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>어떤 문서를 작성할까요?</div>
               <div style={{ fontSize:13, color:homeMuted }}>문서 유형을 선택하면 AI가 작성해드려요</div>
             </div>
+            {/* 최근 문서 */}
+            {(() => {
+              try {
+                const plans = JSON.parse(localStorage.getItem("nper_plans_v1")||"[]").slice(0,4);
+                if (plans.length === 0) return null;
+                return (
+                  <div style={{ marginBottom:28 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>최근 작성한 문서</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
+                      {plans.map((p, i) => (
+                        <button key={i} onClick={() => setAiMenu("prompt_studio_make")}
+                          style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
+                          onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
+                          <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title || p.topic || "제목 없음"}</div>
+                          <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{p.docType || "문서"} · {p.date || ""}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              } catch { return null; }
+            })()}
             {docItems.map(cat => (
               <div key={cat.category} style={{ marginBottom:28 }}>
                 <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
@@ -700,6 +778,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 작성할까요?</div>
               <div style={{ fontSize:13, color:homeMuted }}>플랫폼을 선택하면 AI가 글을 작성해드려요</div>
             </div>
+            {/* 최근 글 */}
+            {(() => {
+              try {
+                const blogs = JSON.parse(localStorage.getItem("sns_blog_saves_v1")||"[]").slice(0,4);
+                if (blogs.length === 0) return null;
+                return (
+                  <div style={{ marginBottom:28 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>최근 작성한 글</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
+                      {blogs.map((b, i) => (
+                        <button key={i} onClick={() => setAiMenu(b.platform || "blog_naver")}
+                          style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
+                          onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
+                          <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || "제목 없음"}</div>
+                          <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{b.platform_label || b.type || ""} · {b.date || ""}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              } catch { return null; }
+            })()}
             {writeItems.map(cat => (
               <div key={cat.category} style={{ marginBottom:28 }}>
                 <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
