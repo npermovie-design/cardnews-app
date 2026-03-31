@@ -1142,11 +1142,15 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
           {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:12 }}>{genError}</div>}
 
+          {/* 필수 입력 안내 */}
+          {!topic.trim() && <div style={{ marginBottom:8, fontSize:12, color:"#f97316", fontWeight:600 }}>* 주제를 입력해주세요</div>}
+          {topic.trim() && !hasImages && !imgWarnAck && <div style={{ marginBottom:8, fontSize:12, color:"#f97316", fontWeight:600 }}>* 이미지를 업로드하거나 "이미지 없이 진행"을 체크해주세요</div>}
+
           <button onClick={generateImageOnly} disabled={loading || !topic.trim() || (!hasImages && !imgWarnAck)}
             style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
               cursor: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?"not-allowed":"pointer",
-              background:"#7c6aff", color:"#fff", fontSize:15, fontWeight:900,
-              opacity: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?0.5:1,
+              background: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?"#ccc":"#7c6aff",
+              color:"#fff", fontSize:15, fontWeight:900,
               display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
             {loading ? <><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</> : (ko?"이미지 바로 생성":"Generate Images")}
           </button>
