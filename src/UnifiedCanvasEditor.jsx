@@ -23,6 +23,14 @@ function loadFont(n) {
   const l=document.createElement("link"); l.id=id; l.rel="stylesheet";
   l.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(n)}:wght@400;700;900&display=swap`;
   document.head.appendChild(l);
+  // 폰트 로드 대기 후 캔버스 다시 렌더
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      document.querySelectorAll("canvas").forEach(c => {
+        try { c.__fabric?.renderAll?.(); } catch {}
+      });
+    });
+  }
 }
 
 export default function UnifiedCanvasEditor({
@@ -234,7 +242,7 @@ export default function UnifiedCanvasEditor({
     if(!obj) return;
     setSel(obj);
     // 텍스트 선택 시 자동으로 속성 패널 열기
-    if(obj.type==="textbox") { setPanel("props"); setPanelOpen(true); }
+    if(obj.type==="textbox"||obj.type==="text") { setPanel("props"); setPanelOpen(true); }
     setProps({
       fontFamily:obj.fontFamily||"Pretendard", fontSize:obj.fontSize||24,
       fill:typeof obj.fill==="string"?obj.fill:"#000", fontWeight:obj.fontWeight||"normal",
@@ -505,7 +513,7 @@ export default function UnifiedCanvasEditor({
               </div>
 
               {/* 텍스트 속성 */}
-              {sel&&sel.type==="textbox"&&(
+              {sel&&(sel.type==="textbox"||sel.type==="text"||sel.isType?.("textbox"))&&(
                 <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
                   <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>텍스트</div>
                   <select value={props.fontFamily} onChange={e=>{loadFont(e.target.value);set("fontFamily",e.target.value);}}
@@ -816,6 +824,7 @@ export default function UnifiedCanvasEditor({
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
             {inline&&<button onClick={()=>setIsFullscreen(!isFullscreen)} title={isFullscreen?"축소":"전체화면"} style={{...B,fontSize:13,padding:"4px 8px"}}>{isFullscreen?"⊡":"⊞"}</button>}
+            {isFullscreen&&<button onClick={()=>setIsFullscreen(false)} style={{...B,fontSize:11,color:"#7c6aff"}}>← 돌아가기</button>}
             {onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
           </div>
           {/* 캔버스 */}
