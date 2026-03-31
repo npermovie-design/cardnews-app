@@ -394,58 +394,43 @@ export default function UnifiedCanvasEditor({
 
   const B = {background:"none",border:"1px solid #ddd",borderRadius:6,padding:"5px 10px",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12};
 
+  // 왼쪽 도구 아이콘 (미리캔버스 스타일)
+  const leftTools = [
+    {id:"props",   icon:"🎨", label:"속성"},
+    {id:"shapes",  icon:"✦",  label:"요소"},
+    {id:"images",  icon:"🖼", label:"사진"},
+    {id:"layers",  icon:"☰",  label:"레이어"},
+  ];
+
   /* ═══ RENDER ═══ */
   return (
     <div style={inline?{width:"100%",flex:1,display:"flex",overflow:"hidden"}:{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
-      <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1400,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
+      <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
-        {/* 캔버스 영역 */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
-          {/* 상단 */}
-          <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:"#fff",borderBottom:"1px solid #eee",flexShrink:0}}>
-            {total>1&&<>
-              <button onClick={()=>go(idx-1)} disabled={idx===0} style={B}>◀</button>
-              <span style={{fontSize:13,fontWeight:700}}>{idx+1}/{total}</span>
-              <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
-            </>}
-            <button onClick={undo} title="되돌리기 (Ctrl+Z)" style={{...B,fontSize:14,padding:"4px 8px"}}>↩</button>
-            <button onClick={redo} title="다시실행 (Ctrl+Y)" style={{...B,fontSize:14,padding:"4px 8px"}}>↪</button>
-            <div style={{flex:1}}/>
-            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
-            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
-            {onShareTemplate&&<button onClick={()=>{
-              const fc=fcRef.current; if(!fc) return;
-              if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;
-              const preview=fc.toDataURL({format:"png",multiplier:0.3});
-              onShareTemplate(preview);
-            }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:12}}>공유</button>}
-            {onClose&&<button onClick={onClose} style={{...B,fontSize:12}}>← 돌아가기</button>}
-          </div>
-          {/* 캔버스 */}
-          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e5e5ea",overflow:"hidden",padding:10}}/>
-          {/* 하단: 내보내기만 */}
-          {/* 하단: 선택 삭제만 */}
-          {sel&&sel.name!=="bg"&&(
-            <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:"#fff",borderTop:"1px solid #eee",flexShrink:0}}>
-              <button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:12}}>선택 삭제</button>
-              <div style={{flex:1}}/>
-              <span style={{fontSize:11,color:"#aaa"}}>Delete 키로도 삭제 가능</span>
-            </div>
-          )}
+        {/* ── 왼쪽 아이콘 바 (미리캔버스 스타일) ── */}
+        <div style={{width:56,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:6,flexShrink:0}}>
+          {leftTools.map(t=>(
+            <button key={t.id} onClick={()=>setPanel(panel===t.id&&panelOpen?null:t.id)||setPanelOpen(true)}
+              style={{width:48,height:48,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,
+                background:panel===t.id&&panelOpen?"rgba(124,106,255,0.12)":"transparent",
+                borderLeft:panel===t.id&&panelOpen?"3px solid #7c6aff":"3px solid transparent",
+                color:panel===t.id&&panelOpen?"#7c6aff":"#888",transition:"all 0.12s"}}>
+              <span style={{fontSize:16,lineHeight:1}}>{t.icon}</span>
+              <span style={{fontSize:8,fontWeight:600}}>{t.label}</span>
+            </button>
+          ))}
+          <div style={{flex:1}}/>
+          <button onClick={undo} title="되돌리기" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:2}}>↩</button>
+          <button onClick={redo} title="다시실행" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>↪</button>
         </div>
 
-        {/* 우측 패널 (접기/펼치기 가능) */}
-        <button onClick={()=>setPanelOpen(!panelOpen)} style={{position:"absolute",right:panelOpen?276:0,top:"50%",transform:"translateY(-50%)",zIndex:10,width:20,height:40,borderRadius:"4px 0 0 4px",border:"1px solid #eee",borderRight:"none",background:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#888",boxShadow:"-2px 0 8px rgba(0,0,0,0.05)"}}>
-          {panelOpen?"▶":"◀"}
-        </button>
-        <div style={{width:panelOpen?280:0,background:"#fafafa",borderLeft:panelOpen?"1px solid #eee":"none",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden",transition:"width 0.2s ease"}}>
-          {/* 패널 탭 */}
-          <div style={{display:"flex",borderBottom:"1px solid #eee",flexShrink:0}}>
-            {[{id:"props",label:"속성"},{id:"layers",label:"레이어"},{id:"images",label:"이미지"},{id:"shapes",label:"도형/폰트"}].map(t=>(
-              <button key={t.id} onClick={()=>setPanel(t.id)} style={{flex:1,padding:"10px 0",border:"none",borderBottom:panel===t.id?"2px solid #7c6aff":"2px solid transparent",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:panel===t.id?800:500,color:panel===t.id?"#7c6aff":"#888"}}>{t.label}</button>
-            ))}
+        {/* ── 왼쪽 확장 패널 (클릭 시 열림) ── */}
+        {panelOpen&&panel&&(
+        <div style={{width:300,background:"#fafafa",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #eee",flexShrink:0}}>
+            <span style={{fontSize:13,fontWeight:700,color:"#333"}}>{leftTools.find(t=>t.id===panel)?.label}</span>
+            <button onClick={()=>setPanelOpen(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:"#aaa"}}>✕</button>
           </div>
-
           <div style={{flex:1,overflowY:"auto",padding:0}}>
 
             {/* ─── 속성 패널 ─── */}
@@ -789,6 +774,70 @@ export default function UnifiedCanvasEditor({
             )}
           </div>
         </div>
+        )}
+
+        {/* ── 캔버스 영역 (중앙, flex:1) ── */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
+          {/* 상단 바 */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:"#fff",borderBottom:"1px solid #eee",flexShrink:0}}>
+            {total>1&&<>
+              <button onClick={()=>go(idx-1)} disabled={idx===0} style={B}>◀</button>
+              <span style={{fontSize:13,fontWeight:700}}>{idx+1}/{total}</span>
+              <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
+              <div style={{width:1,height:16,background:"#eee"}}/>
+            </>}
+            <span style={{fontSize:12,color:"#aaa"}}>{width}×{height}px</span>
+            <div style={{flex:1}}/>
+            {sel&&sel.name!=="bg"&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:11}}>삭제</button>}
+            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
+            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
+            {onShareTemplate&&<button onClick={()=>{
+              const fc=fcRef.current; if(!fc) return;
+              if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;
+              const preview=fc.toDataURL({format:"png",multiplier:0.3});
+              onShareTemplate(preview);
+            }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
+            {onClose&&<button onClick={onClose} style={{...B,fontSize:11}}>← 돌아가기</button>}
+          </div>
+          {/* 캔버스 */}
+          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e8e8ee",overflow:"hidden",padding:10}}/>
+        </div>
+
+        {/* ── 우측: 선택 오브젝트 속성 (텍스트 선택 시만) ── */}
+        {sel&&sel.type==="textbox"&&(
+          <div style={{width:220,background:"#fff",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflowY:"auto",padding:"12px 14px"}}>
+            <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>텍스트 속성</div>
+            <select value={props.fontFamily} onChange={e=>{loadFont(e.target.value);set("fontFamily",e.target.value);}}
+              style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #ddd",fontSize:11,marginBottom:6}}>
+              {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
+            </select>
+            <div style={{fontSize:10,color:"#888",marginBottom:2}}>크기: {props.fontSize}px</div>
+            <input type="range" min={10} max={120} value={props.fontSize} onChange={e=>set("fontSize",+e.target.value)}
+              style={{width:"100%",accentColor:"#7c6aff",marginBottom:6}}/>
+            <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
+              <input type="color" value={props.fill} onChange={e=>set("fill",e.target.value)}
+                style={{width:24,height:24,padding:0,border:"1.5px solid rgba(0,0,0,0.1)",borderRadius:4,cursor:"pointer"}}/>
+              {["#fff","#000","#7c6aff","#ef4444","#f59e0b","#10b981"].map(c=>(
+                <button key={c} onClick={()=>set("fill",c)} style={{width:18,height:18,borderRadius:3,background:c,border:"1.5px solid rgba(0,0,0,0.12)",cursor:"pointer",padding:0}}/>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:3,marginBottom:6}}>
+              <button onClick={()=>set("fontWeight",props.fontWeight==="bold"?"normal":"bold")}
+                style={{...B,fontWeight:900,fontSize:11,padding:"3px 8px",background:props.fontWeight==="bold"?"#7c6aff15":"transparent"}}>B</button>
+              <button onClick={()=>set("fontStyle",props.fontStyle==="italic"?"normal":"italic")}
+                style={{...B,fontStyle:"italic",fontSize:11,padding:"3px 8px",background:props.fontStyle==="italic"?"#7c6aff15":"transparent"}}>I</button>
+              {["left","center","right"].map(a=>(
+                <button key={a} onClick={()=>set("textAlign",a)}
+                  style={{...B,fontSize:10,padding:"3px 6px",background:props.textAlign===a?"#7c6aff15":"transparent"}}>
+                  {a==="left"?"◧":a==="center"?"◫":"◨"}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:10,color:"#888",marginBottom:2}}>투명도: {Math.round(props.opacity)}%</div>
+            <input type="range" min={0} max={100} value={props.opacity} onChange={e=>set("opacity",+e.target.value/100)}
+              style={{width:"100%",accentColor:"#7c6aff"}}/>
+          </div>
+        )}
       </div>
     </div>
   );
