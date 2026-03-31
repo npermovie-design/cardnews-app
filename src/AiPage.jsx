@@ -105,10 +105,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     outpaint:      { emoji:"🖼", label:"여백 늘리기", parent:"image_tools" },
     // 비즈니스 문서
     prompt_studio_make: { emoji:"📋", label:"비즈니스 문서", parent:"prompt_studio" },
+    // 직접 디자인
+    canvas_direct_: { emoji:"✏️", label:"직접 디자인", parent:"content_create" },
   };
 
   const ToolHeader = ({ menuId }) => {
-    const info = TOOL_INFO[menuId?.replace("_make","")?.replace("_intro","")] || TOOL_INFO[menuId];
+    const info = TOOL_INFO[menuId?.replace("_make","")?.replace("_intro","")] || TOOL_INFO[menuId] || (menuId?.startsWith("canvas_direct_") ? TOOL_INFO["canvas_direct_"] : null);
     if (!info) return null;
     const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
     return (
@@ -575,7 +577,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
+  // ── 콘텐츠 제작: 하위 도구 직접 진입 (AI 자동 생성) ──
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
@@ -589,48 +591,104 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <ToolWrap menuId="ppt_gen"><PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
 
-  // ── 콘텐츠 제작: 선택 화면 (무엇을 만들어야 하나요?) ──
+  // ── 콘텐츠 제작: 직접 디자인 (빈 캔버스 바로 진입) ──
+  if (aiMenu.startsWith("canvas_direct_")) {
+    const sizeMap = {
+      "canvas_direct_1080x1080": [1080,1080], "canvas_direct_1080x1920": [1080,1920],
+      "canvas_direct_1080x1350": [1080,1350], "canvas_direct_1200x628": [1200,628],
+      "canvas_direct_860x1100": [860,1100], "canvas_direct_1280x720": [1280,720],
+      "canvas_direct_1920x1080": [1920,1080], "canvas_direct_800x2000": [800,2000],
+    };
+    const [cw, ch] = sizeMap[aiMenu] || [1080, 1080];
+    const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
+    return (
+      <ToolWrap menuId="cardnews_simple">
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditorLazy
+            slides={[{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
+            width={cw} height={ch} mode="cardnews"
+            onSave={() => {}} onClose={() => setAiMenu("content_create")}
+            inline
+          />
+        </React.Suspense>
+      </ToolWrap>
+    );
+  }
+
+  // ── 콘텐츠 제작: 선택 화면 (미리캔버스 스타일) ──
   if (aiMenu === "content_create") {
-    const contentItems = [
-      { category: "홍보 · 마케팅", items: [
-        { id:"cardnews_simple", icon:"🎴", label:"카드뉴스", size:"1080 × 1080 px", desc:"SNS용 카드뉴스" },
-        { id:"detail_simple", icon:"📄", label:"상세페이지", size:"860 × 1100 px", desc:"제품 상세 설명" },
-        { id:"thumbnail_gen", icon:"🖼", label:"썸네일", size:"1280 × 720 px", desc:"유튜브/블로그 썸네일" },
-      ]},
-      { category: "문서 · 발표", items: [
-        { id:"ppt_gen", icon:"📊", label:"PPT 슬라이드", size:"1920 × 1080 px", desc:"프레젠테이션 자료" },
-      ]},
+    const bdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
+    const cardBg2 = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+    const hoverBdr = "#7c6aff";
+
+    const CardBtn = ({ onClick, icon, label, sub, style: extraStyle }) => (
+      <button onClick={onClick}
+        style={{ padding:"16px 12px", borderRadius:12, border:`1.5px solid ${bdr}`, background:cardBg2, cursor:"pointer",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", textAlign:"center", ...extraStyle }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor=hoverBdr; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; e.currentTarget.style.boxShadow="none"; }}>
+        {icon}
+        <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{label}</span>
+        {sub && <span style={{ fontSize:10, color:homeMuted }}>{sub}</span>}
+      </button>
+    );
+
+    const sizePresets = [
+      { id:"canvas_direct_1080x1080", label:"카드뉴스", size:"1080 × 1080", icon:"🎴", ratio:"1:1" },
+      { id:"canvas_direct_1080x1920", label:"세로형", size:"1080 × 1920", icon:"📱", ratio:"9:16" },
+      { id:"canvas_direct_1080x1350", label:"인스타 피드", size:"1080 × 1350", icon:"📷", ratio:"4:5" },
+      { id:"canvas_direct_1200x628", label:"가로 배너", size:"1200 × 628", icon:"🖥", ratio:"16:9" },
+      { id:"canvas_direct_860x1100", label:"상세페이지", size:"860 × 1100", icon:"📄", ratio:"세로" },
+      { id:"canvas_direct_1280x720", label:"썸네일", size:"1280 × 720", icon:"🖼", ratio:"16:9" },
+      { id:"canvas_direct_1920x1080", label:"프레젠테이션", size:"1920 × 1080", icon:"📊", ratio:"16:9" },
+      { id:"canvas_direct_800x2000", label:"긴 상세페이지", size:"800 × 2000", icon:"📃", ratio:"세로" },
     ];
+
+    const aiTools = [
+      { id:"cardnews_simple", icon:"🎴", label:"AI 카드뉴스", desc:"주제 입력 → AI 자동 생성" },
+      { id:"detail_simple", icon:"📄", label:"AI 상세페이지", desc:"제품 설명 자동 생성" },
+      { id:"thumbnail_gen", icon:"🖼", label:"AI 썸네일", desc:"썸네일 자동 생성" },
+      { id:"ppt_gen", icon:"📊", label:"AI PPT", desc:"발표 자료 자동 생성" },
+    ];
+
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
-          <div style={{ maxWidth:800, margin:"0 auto", padding:"40px 24px 60px" }}>
-            <div style={{ textAlign:"center", marginBottom:36 }}>
+          <div style={{ maxWidth:860, margin:"0 auto", padding:"36px 24px 60px" }}>
+            <div style={{ textAlign:"center", marginBottom:32 }}>
               <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 만들어야 하나요?</div>
-              <div style={{ fontSize:13, color:homeMuted }}>만들고 싶은 콘텐츠를 선택하세요</div>
+              <div style={{ fontSize:13, color:homeMuted }}>크기를 선택해 직접 디자인하거나, AI로 자동 생성하세요</div>
             </div>
-            {contentItems.map(cat => (
-              <div key={cat.category} style={{ marginBottom:28 }}>
-                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
-                  {cat.items.map(item => (
-                    <button key={item.id} onClick={() => setAiMenu(item.id)}
-                      style={{
-                        padding:"24px 16px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
-                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
-                        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
-                        transition:"all 0.15s", textAlign:"center",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
-                      <span style={{ fontSize:36 }}>{item.icon}</span>
-                      <span style={{ fontSize:14, fontWeight:700, color:homeText }}>{item.label}</span>
-                      <span style={{ fontSize:11, color:homeMuted }}>{item.size}</span>
-                    </button>
-                  ))}
-                </div>
+
+            {/* 직접 디자인 - 크기 선택 */}
+            <div style={{ marginBottom:32 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:14, paddingLeft:4, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>✏️</span> 직접 디자인
+                <span style={{ fontSize:11, fontWeight:500, color:homeMuted }}>빈 캔버스에서 자유롭게</span>
               </div>
-            ))}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:10 }}>
+                {sizePresets.map(p => (
+                  <CardBtn key={p.id} onClick={() => setAiMenu(p.id)}
+                    icon={<span style={{ fontSize:28 }}>{p.icon}</span>}
+                    label={p.label} sub={p.size + " px"} />
+                ))}
+              </div>
+            </div>
+
+            {/* AI 자동 생성 */}
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:14, paddingLeft:4, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>✨</span> AI 자동 생성
+                <span style={{ fontSize:11, fontWeight:500, color:homeMuted }}>주제만 입력하면 AI가 완성</span>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:10 }}>
+                {aiTools.map(item => (
+                  <CardBtn key={item.id} onClick={() => setAiMenu(item.id)}
+                    icon={<span style={{ fontSize:28 }}>{item.icon}</span>}
+                    label={item.label} sub={item.desc} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

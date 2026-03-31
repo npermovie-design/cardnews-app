@@ -92,7 +92,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { sep:true },
     { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png", ids:["prompt_studio_make"] },
     { id:"blog_write", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"] },
-    { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen"] },
+    { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","canvas_direct_"] },
     { id:"image_tools", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
     { sep:true },
     { id:"repurpose", label:"리퍼포징", icon:"/icons3d/sns-share.png" },
