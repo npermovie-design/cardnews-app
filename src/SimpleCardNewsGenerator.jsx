@@ -1036,11 +1036,13 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     const generateImageOnly = async () => {
       // 게스트 제한 체크
       if (!user && guestLimitExceeded()) { setGenError(ko?"게스트 생성 횟수를 초과했습니다. 로그인해주세요.":"Guest limit exceeded."); return; }
-      // 포인트 확인
-      if (showPointConfirm && user) {
-        const ok = await showPointConfirm(10);
-        if (!ok) return;
-      }
+      // 포인트 확인 (있을 경우)
+      try {
+        if (showPointConfirm && user) {
+          const ok = await showPointConfirm(10);
+          if (!ok) return;
+        }
+      } catch(e) { console.warn("포인트 확인 스킵:", e); }
       if (!user) incrementGuestUsage();
       setLoading(true); setGenError("");
       // 포인트 차감
