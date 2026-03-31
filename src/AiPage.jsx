@@ -157,11 +157,19 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           {/* AI 입력창 */}
           <div style={{ margin:"24px auto 0", maxWidth:540, borderRadius:16, padding:"16px 20px", border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", boxShadow:"0 2px 16px rgba(0,0,0,0.04)" }}>
             <textarea ref={homeRef_} placeholder={_s("어떤 작업을 도와드릴까요?","What can I help you with?")} rows={2}
-              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); setAiMenu("ai_chat"); } }}}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); sessionStorage.setItem("nper_chat_model",modelRef_.current||"claude-haiku-4-5"); setAiMenu("ai_chat"); } }}}
               style={{ width:"100%", border:"none", outline:"none", fontSize:15, color:homeText, background:"transparent", resize:"none", fontFamily:"inherit", lineHeight:1.6, boxSizing:"border-box" }} />
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8 }}>
-              <div style={{ fontSize:11, color:homeMuted }}>Enter{_s("로 AI에게 질문","to ask AI")}</div>
-              <button onClick={()=>{ const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); setAiMenu("ai_chat"); } }}
+              <select defaultValue="claude-haiku-4-5" onChange={e=>{ if(modelRef_) modelRef_.current=e.target.value; }}
+                style={{ fontSize:12, fontWeight:600, color:isDark?"#a5b4fc":"#7c6aff", border:`1px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`, borderRadius:8, padding:"4px 8px", background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", outline:"none" }}>
+                <option value="claude-haiku-4-5">Claude Haiku (5P)</option>
+                <option value="claude-sonnet-4-5">Claude Sonnet (15P)</option>
+                <option value="gpt-4o-mini">GPT-4o Mini (5P)</option>
+                <option value="gpt-4o">GPT-4o (20P)</option>
+                <option value="gemini-2.5-flash">Gemini Flash (3P)</option>
+                <option value="gemini-2.5-pro">Gemini Pro (15P)</option>
+              </select>
+              <button onClick={()=>{ const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); sessionStorage.setItem("nper_chat_model",modelRef_.current||"claude-haiku-4-5"); setAiMenu("ai_chat"); } }}
                 style={{ width:32, height:32, borderRadius:"50%", border:"none", background:"#7c6aff", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
               </button>

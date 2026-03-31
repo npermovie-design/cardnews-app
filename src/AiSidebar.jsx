@@ -87,6 +87,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   // 메뉴 정의
   const menuItems = [
     { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png" },
+    { id:"ai_chat", label:"AI 대화", icon:"/icons3d/sns-heart.png" },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
     { sep:true },
     { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png" },

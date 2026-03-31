@@ -40,6 +40,8 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
   // 홈에서 전달된 초기 질문 자동 전송
   useEffect(() => {
     const initQ = sessionStorage.getItem("nper_chat_init");
+    const initModel = sessionStorage.getItem("nper_chat_model");
+    if (initModel) { setModel(initModel); sessionStorage.removeItem("nper_chat_model"); }
     if (initQ) {
       sessionStorage.removeItem("nper_chat_init");
       setInput(initQ);
