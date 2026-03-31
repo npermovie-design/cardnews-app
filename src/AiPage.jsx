@@ -54,10 +54,10 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const go = (w, h) => setAiMenu(`canvas_direct_${w}x${h}`);
 
   const aiTools = [
-    { id:"cardnews_simple", label:"AI 카드뉴스", icon:"🎴", desc:"SNS 카드뉴스 자동 생성", size:"1080×1080" },
-    { id:"detail_simple", label:"AI 상세페이지", icon:"📄", desc:"제품 상세 설명 자동 생성", size:"860×1100" },
-    { id:"thumbnail_gen", label:"AI 썸네일", icon:"🖼", desc:"유튜브/블로그 썸네일", size:"1280×720" },
-    { id:"ppt_gen", label:"AI PPT", icon:"📊", desc:"프레젠테이션 자동 생성", size:"1920×1080" },
+    { id:"cardnews_simple", label:"AI 카드뉴스", img:"/icons3d/sns-content.png", desc:"SNS 카드뉴스 자동 생성", size:"1080×1080" },
+    { id:"detail_simple", label:"AI 상세페이지", img:"/icons3d/memo.png", desc:"제품 상세 설명 자동 생성", size:"860×1100" },
+    { id:"thumbnail_gen", label:"AI 썸네일", img:"/icons3d/instagram-cam.png", desc:"유튜브/블로그 썸네일", size:"1280×720" },
+    { id:"ppt_gen", label:"AI PPT", img:"/icons3d/ppt.png", desc:"프레젠테이션 자동 생성", size:"1920×1080" },
   ];
 
   const sizeGroups = {
@@ -201,7 +201,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
                     display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor=accent; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.1)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; e.currentTarget.style.boxShadow="none"; }}>
-                  <span style={{ fontSize:28, flexShrink:0 }}>{t.icon}</span>
+                  <img src={t.img} alt="" style={{ width:36, height:36, objectFit:"contain", flexShrink:0 }} />
                   <div>
                     <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{t.label}</div>
                     <div style={{ fontSize:11, color:homeMuted, marginTop:2 }}>{t.desc}</div>
@@ -311,26 +311,26 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     blog_insta:   { icon:"/icon-instagram.webp", label:"인스타그램", parent:"blog_write" },
     blog_thread:  { icon:"/icon-threads.png", label:"스레드", parent:"blog_write" },
     blog_link:    { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
-    blog_news:    { emoji:"📰", label:"뉴스 → 블로그", parent:"blog_write" },
+    blog_news:    { icon:"/icons3d/news.png", label:"뉴스 → 블로그", parent:"blog_write" },
     blog_yt_blog: { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
     // 콘텐츠 제작
-    cardnews_simple: { emoji:"🎴", label:"카드뉴스", parent:"content_create" },
-    detail_simple:   { emoji:"📄", label:"상세페이지", parent:"content_create" },
-    thumbnail_gen:   { emoji:"🖼", label:"썸네일", parent:"content_create" },
-    ppt_gen:         { emoji:"📊", label:"PPT 슬라이드", parent:"content_create" },
+    cardnews_simple: { icon:"/icons3d/sns-content.png", label:"카드뉴스", parent:"content_create" },
+    detail_simple:   { icon:"/icons3d/memo.png", label:"상세페이지", parent:"content_create" },
+    thumbnail_gen:   { icon:"/icons3d/instagram-cam.png", label:"썸네일", parent:"content_create" },
+    ppt_gen:         { icon:"/icons3d/ppt.png", label:"PPT 슬라이드", parent:"content_create" },
     // 이미지
-    product_shot:  { emoji:"📸", label:"제품컷", parent:"image_tools" },
-    logo_gen:      { emoji:"⭐", label:"로고", parent:"image_tools" },
-    mockup_gen:    { emoji:"🖥", label:"목업", parent:"image_tools" },
-    model_gen:     { emoji:"👤", label:"모델", parent:"image_tools" },
-    skin_retouch:  { emoji:"✨", label:"피부 보정", parent:"image_tools" },
-    face_swap:     { emoji:"🔄", label:"얼굴 교체", parent:"image_tools" },
-    outfit_swap:   { emoji:"👗", label:"의상 교체", parent:"image_tools" },
-    outpaint:      { emoji:"🖼", label:"여백 늘리기", parent:"image_tools" },
+    product_shot:  { icon:"/icons3d/camera.png", label:"제품컷", parent:"image_tools" },
+    logo_gen:      { icon:"/icons3d/palette.png", label:"로고", parent:"image_tools" },
+    mockup_gen:    { icon:"/icons3d/sns-app.png", label:"목업", parent:"image_tools" },
+    model_gen:     { icon:"/icons3d/char-standing.png", label:"모델", parent:"image_tools" },
+    skin_retouch:  { icon:"/icons3d/thumbsup.png", label:"피부 보정", parent:"image_tools" },
+    face_swap:     { icon:"/icons3d/char-headphone.png", label:"얼굴 교체", parent:"image_tools" },
+    outfit_swap:   { icon:"/icons3d/char-scarf.png", label:"의상 교체", parent:"image_tools" },
+    outpaint:      { icon:"/icons3d/cloud-upload.png", label:"여백 늘리기", parent:"image_tools" },
     // 비즈니스 문서
-    prompt_studio_make: { emoji:"📋", label:"비즈니스 문서", parent:"prompt_studio" },
+    prompt_studio_make: { icon:"/icons3d/report.png", label:"비즈니스 문서", parent:"prompt_studio" },
     // 직접 디자인
-    canvas_direct_: { emoji:"✏️", label:"직접 디자인", parent:"content_create" },
+    canvas_direct_: { icon:"/icons3d/palette.png", label:"직접 디자인", parent:"content_create" },
   };
 
   const ToolHeader = ({ menuId }) => {
@@ -352,7 +352,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           <span>뒤로</span>
         </button>
         <div style={{ width:1, height:18, background:bdr, flexShrink:0 }} />
-        {info.icon ? <img src={info.icon} alt="" style={{ width:20, height:20, borderRadius:4, objectFit:"contain", flexShrink:0 }} /> : <span style={{ fontSize:18, flexShrink:0 }}>{info.emoji}</span>}
+        <img src={info.icon} alt="" style={{ width:22, height:22, borderRadius:4, objectFit:"contain", flexShrink:0 }} />
         <span style={{ fontSize:13, fontWeight:800, color: homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{info.label}</span>
       </div>
     );
@@ -772,7 +772,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       ]},
       { category: "링크에서 변환", items: [
         { id:"blog_link", icon:"/icon-youtube.png", label:"유튜브 → 블로그", desc:"유튜브 영상을 글로 변환" },
-        { id:"blog_news", emoji:"📰", label:"뉴스 → 블로그", desc:"뉴스 기사를 글로 변환" },
+        { id:"blog_news", icon:"/icons3d/news.png", label:"뉴스 → 블로그", desc:"뉴스 기사를 글로 변환" },
       ]},
     ];
     return (
@@ -904,16 +904,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "image_tools" || aiMenu === "image_create" || aiMenu === "image_edit") {
     const imgItems = [
       { category: "이미지 생성", items: [
-        { id:"product_shot", icon:"📸", label:"제품컷", desc:"AI 제품 사진 생성" },
-        { id:"logo_gen", icon:"⭐", label:"로고", desc:"브랜드 로고 생성" },
-        { id:"mockup_gen", icon:"🖥", label:"목업", desc:"제품 목업 생성" },
-        { id:"model_gen", icon:"👤", label:"모델", desc:"AI 모델 이미지" },
+        { id:"product_shot", img:"/icons3d/camera.png", label:"제품컷", desc:"AI 제품 사진 생성" },
+        { id:"logo_gen", img:"/icons3d/palette.png", label:"로고", desc:"브랜드 로고 생성" },
+        { id:"mockup_gen", img:"/icons3d/sns-app.png", label:"목업", desc:"제품 목업 생성" },
+        { id:"model_gen", img:"/icons3d/char-standing.png", label:"모델", desc:"AI 모델 이미지" },
       ]},
       { category: "이미지 수정", items: [
-        { id:"skin_retouch", icon:"✨", label:"피부 보정", desc:"AI 피부 리터칭" },
-        { id:"face_swap", icon:"🔄", label:"얼굴 교체", desc:"얼굴 합성·교체" },
-        { id:"outfit_swap", icon:"👗", label:"의상 교체", desc:"가상 피팅" },
-        { id:"outpaint", icon:"🖼", label:"여백 늘리기", desc:"이미지 확장" },
+        { id:"skin_retouch", img:"/icons3d/thumbsup.png", label:"피부 보정", desc:"AI 피부 리터칭" },
+        { id:"face_swap", img:"/icons3d/char-headphone.png", label:"얼굴 교체", desc:"얼굴 합성·교체" },
+        { id:"outfit_swap", img:"/icons3d/char-scarf.png", label:"의상 교체", desc:"가상 피팅" },
+        { id:"outpaint", img:"/icons3d/cloud-upload.png", label:"여백 늘리기", desc:"이미지 확장" },
       ]},
     ];
     return (
@@ -938,7 +938,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                       }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
-                      <span style={{ fontSize:32 }}>{item.icon}</span>
+                      <img src={item.img} alt="" style={{ width:40, height:40, objectFit:"contain" }} />
                       <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
                       <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
                     </button>
