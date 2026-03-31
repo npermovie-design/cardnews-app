@@ -406,9 +406,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         {/* 하단 3열 소형 카드 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16, marginTop: 16 }}>
           {[
-            { title: lang === "ko" ? "AI 이미지 생성" : "AI Image Generation", desc: lang === "ko" ? "제품컷, 로고, 목업, AI 모델 생성" : "Product shots, logos, mockups, AI models", color: "#ec4899", items: "7" },
-            { title: lang === "ko" ? "이미지 수정" : "Image Editing", desc: lang === "ko" ? "얼굴 교체, 의상 교체, 여백 확장" : "Face swap, outfit change, outpainting", color: "#f59e0b", items: "3" },
-            { title: lang === "ko" ? "영상 편집" : "Video Editing", desc: lang === "ko" ? "숏폼 자동 편집, 자막 추가" : "Auto shorts editing, subtitles", color: "#ef4444", items: "1" },
+            { title: lang === "ko" ? "AI 이미지" : "AI Image", desc: lang === "ko" ? "제품컷, 로고, 목업, 모델 생성 · 얼굴·의상 교체, 여백 확장" : "Product shots, logos, mockups, models · Face/outfit swap, outpainting", color: "#ec4899", items: "10" },
+            { title: lang === "ko" ? "비즈니스 문서" : "Business Docs", desc: lang === "ko" ? "보도자료, 제안서, 사업계획서 AI 작성" : "Press releases, proposals, business plans", color: "#f59e0b", items: "5" },
+            { title: lang === "ko" ? "리퍼포징" : "Repurpose", desc: lang === "ko" ? "유튜브·뉴스·파일을 블로그·SNS로 변환" : "Convert YouTube, news, files to blog & SNS", color: "#ef4444", items: "3" },
             { title: lang === "ko" ? "SEO 분석기" : "SEO Analyzer", desc: lang === "ko" ? "실시간 검색어, 인플루언서 랭킹" : "Trending keywords, influencer rankings", color: "#22c55e", items: "4" },
           ].map((f, i) => (
             <FadeIn key={f.title} delay={i * 0.08}>

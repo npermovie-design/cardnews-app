@@ -265,7 +265,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
 }
 
 // ── 콘텐츠 리퍼포징 (원소스 멀티유즈) ──────────────────────────────────────
-function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, showPointConfirm }) {
+function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, showPointConfirm, setSideOpen }) {
   const isDark = theme === "dark";
   const homeText  = isDark ? "#fff"                   : "#1a1a2e";
   const homeMuted = isDark ? "rgba(255,255,255,0.4)"  : "#888";
@@ -561,10 +561,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             ))}
           </div>
 
-          {/* 하단 버튼 */}
-          <div style={{ display:"flex", justifyContent:"center", gap:10 }}>
-            <button onClick={()=>setAiMenu("library")} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:12, fontWeight:600, color:homeText }}>📁 {_s("내 보관함","Library")}</button>
-            <button onClick={()=>navigate("mypage")} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:12, fontWeight:600, color:"#7c6aff" }}>🔗 {_s("SNS 연동","SNS")}</button>
+          {/* 하단 카드 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, maxWidth:480, margin:"0 auto" }}>
+            {[
+              { icon:"💬", label:_s("AI 대화","AI Chat"), action:()=>setAiMenu("ai_chat"), color:"#7c6aff" },
+              { icon:"📁", label:_s("내 보관함","Library"), action:()=>setAiMenu("library"), color:homeText },
+              { icon:"🔗", label:_s("SNS 연동","SNS Connect"), action:()=>navigate("mypage"), color:"#7c6aff" },
+            ].map(b => (
+              <button key={b.label} onClick={b.action}
+                style={{ padding:"14px 12px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                <span style={{ fontSize:22 }}>{b.icon}</span>
+                <span style={{ fontSize:12, fontWeight:600, color:b.color }}>{b.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -1371,7 +1381,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
         </div>
       </div>
     </div>
