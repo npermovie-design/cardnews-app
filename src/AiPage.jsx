@@ -47,7 +47,6 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const [customW, setCustomW] = useState("1080");
   const [customH, setCustomH] = useState("1080");
   const [showCustom, setShowCustom] = useState(false);
-  const [aiModal, setAiModal] = useState(null); // {id, label} for mode selection
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
@@ -142,7 +141,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
             <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:12 }}>AI로 시작하기</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:10 }}>
               {aiTools.map(t => (
-                <button key={t.id} onClick={() => setAiModal(t)}
+                <button key={t.id} onClick={() => setAiMenu(t.id)}
                   style={{ padding:"18px 14px", borderRadius:14, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer",
                     display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor=accent; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.1)"; }}
@@ -206,48 +205,6 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
         </div>
       </div>
 
-      {/* AI 모드 선택 모달 */}
-      {aiModal && (
-        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-          onClick={e => { if(e.target===e.currentTarget) setAiModal(null); }}>
-          <div style={{ background:isDark?"#1a1a2e":"#fff", borderRadius:20, maxWidth:440, width:"100%", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,0.25)" }}>
-            <div style={{ padding:"28px 28px 20px", textAlign:"center" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>{aiModal.icon}</div>
-              <div style={{ fontSize:20, fontWeight:900, color:homeText, marginBottom:4 }}>{aiModal.label}</div>
-              <div style={{ fontSize:12, color:homeMuted }}>생성 모드를 선택하세요</div>
-            </div>
-            <div style={{ padding:"0 20px 24px", display:"flex", flexDirection:"column", gap:10 }}>
-              {/* 편집 가능 모드 */}
-              <button onClick={() => { setAiModal(null); setAiMenu(aiModal.id); }}
-                style={{ padding:"18px 20px", borderRadius:14, border:`2px solid ${accent}`, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", cursor:"pointer", textAlign:"left" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                  <span style={{ fontSize:20 }}>✏️</span>
-                  <span style={{ fontSize:15, fontWeight:800, color:accent }}>편집 가능 모드</span>
-                </div>
-                <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6, paddingLeft:30 }}>
-                  AI가 생성한 후 텍스트, 이미지, 레이아웃을 자유롭게 수정할 수 있어요.
-                </div>
-              </button>
-              {/* 편집 불가능 모드 */}
-              <button onClick={() => { setAiModal(null); setAiMenu(aiModal.id + "_image"); }}
-                style={{ padding:"18px 20px", borderRadius:14, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer", textAlign:"left" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor=accent}
-                onMouseLeave={e => e.currentTarget.style.borderColor=bdr}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                  <span style={{ fontSize:20 }}>🖼</span>
-                  <span style={{ fontSize:15, fontWeight:800, color:homeText }}>이미지 바로 생성</span>
-                </div>
-                <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6, paddingLeft:30 }}>
-                  AI가 완성된 이미지를 바로 만들어줘요. 내 사진을 넣으면 더 좋은 결과물!
-                </div>
-              </button>
-            </div>
-            <div style={{ padding:"0 20px 20px", textAlign:"center" }}>
-              <button onClick={() => setAiModal(null)} style={{ border:"none", background:"transparent", cursor:"pointer", color:homeMuted, fontSize:12 }}>취소</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -789,18 +746,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작: 이미지 바로 생성 모드 (_image 접미사) ──
-  if (aiMenu.endsWith("_image") && ["cardnews_simple_image","detail_simple_image","thumbnail_gen_image","ppt_gen_image"].includes(aiMenu)) {
-    const baseId = aiMenu.replace("_image","");
-    const baseInfo = { cardnews_simple:{label:"AI 카드뉴스",icon:"🎴"}, detail_simple:{label:"AI 상세페이지",icon:"📄"}, thumbnail_gen:{label:"AI 썸네일",icon:"🖼"}, ppt_gen:{label:"AI PPT",icon:"📊"} }[baseId] || {label:"AI 생성",icon:"✨"};
-    return (
-      <ToolWrap menuId={baseId}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageOnlyMode imageOnlyLabel={baseInfo.label} />
-      </ToolWrap>
-    );
-  }
-
-  // ── 콘텐츠 제작: 하위 도구 직접 진입 (편집 가능 AI 모드) ──
+  // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }

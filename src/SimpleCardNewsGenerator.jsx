@@ -535,7 +535,7 @@ function PlanningAnimation({ pageCount, ko=true }) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary, onUserUpdate, showPointConfirm, imageOnlyMode, imageOnlyLabel }) {
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary, onUserUpdate, showPointConfirm }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
   const TOPIC_EXAMPLES = getTopicExamples(ko);
@@ -585,10 +585,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [genError,  setGenError]  = useState("");
-  // 이미지 바로 생성 모드
-  const [userImages, setUserImages] = useState([]); // [{file, preview}]
-  const [imgWarnAck, setImgWarnAck] = useState(false);
-  const imgInputRef2 = useRef(null);
   const [showMediaSearch, setShowMediaSearch] = useState(false);
   const [mediaQuery, setMediaQuery] = useState("");
   const [mediaResults, setMediaResults] = useState([]);
@@ -1018,152 +1014,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     setSlides([]); setSted({});
   };
 
-  // ═══ 이미지 바로 생성 모드: 이미지 업로드 (Step1 전) ═══
-  if (imageOnlyMode && wizStep === 1) {
-    const handleImgAdd = (files) => {
-      const newImgs = [...userImages];
-      Array.from(files).forEach(f => {
-        if (f.type.startsWith("image/") && newImgs.length < 20) {
-          newImgs.push({ file:f, preview:URL.createObjectURL(f) });
-        }
-      });
-      setUserImages(newImgs);
-    };
-    const removeImg = (idx) => setUserImages(prev => prev.filter((_,i) => i !== idx));
-    const hasImages = userImages.length > 0;
-
-    // 이미지 바로 생성 실행
-    const generateImageOnly = async () => {
-      // 게스트 제한 체크
-      if (!user && guestLimitExceeded()) { setGenError(ko?"게스트 생성 횟수를 초과했습니다. 로그인해주세요.":"Guest limit exceeded."); return; }
-      // 포인트 확인 (있을 경우)
-      try {
-        if (showPointConfirm && user) {
-          const ok = await showPointConfirm(10);
-          if (!ok) return;
-        }
-      } catch(e) { console.warn("포인트 확인 스킵:", e); }
-      if (!user) incrementGuestUsage();
-      setLoading(true); setGenError("");
-      // 포인트 차감
-      if (user?.uid) {
-        changePoints(user.uid, -10, "이미지 바로 생성").then(newPts => {
-          if (onUserUpdate) onUserUpdate({...user, points: newPts});
-        }).catch(()=>{});
-      }
-      try {
-        const textData = await generateSlideTexts({topic, pageCount, sourceContent: undefined, topicDetail:"", slideTypes: SLIDE_TYPES});
-        if (!textData || !textData.slides || textData.slides.length === 0) {
-          throw new Error(ko?"AI 응답이 비어있습니다. 다시 시도해주세요.":"Empty AI response.");
-        }
-        const slidesData = (textData.slides).map(s=>({ ...s, title:s.headline||"", subtitle:s.subheadline||"", highlight:s.badge||"" }));
-        // 업로드 이미지를 배경으로 적용
-        const newSted = {};
-        if (userImages.length > 0) {
-          slidesData.forEach((_, i) => {
-            if (userImages[i]) {
-              newSted[i] = { bgImage: userImages[i].preview };
-            }
-          });
-        }
-        setSlides(slidesData); setSted(newSted); setSelIdx(0); setWizStep(4);
-      } catch(e) {
-        setGenError((ko?"생성 실패: ":"Failed: ") + (e.message || ko?"다시 시도해주세요.":"Please try again."));
-        console.error("이미지 바로 생성 실패:", e);
-      }
-      setLoading(false);
-    };
-
-    return (
-      <div style={{ flex:1, overflowY:"auto" }}>
-        <div style={{ maxWidth:700, margin:"0 auto", padding:"24px 24px 40px", width:"100%", boxSizing:"border-box" }}>
-          <div style={{ marginBottom:20 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{imageOnlyLabel || "이미지 바로 생성"}</div>
-            <div style={{ fontSize:12, color:muted }}>주제와 이미지를 넣으면 AI가 바로 완성해줘요</div>
-          </div>
-
-          {/* 주제 입력 */}
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>{ko?"주제":"Topic"}</div>
-            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={ko?"예: 직장인 번아웃 극복법 5가지":"e.g. 5 Tips for Burnout"}
-              style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
-          </div>
-
-          {/* 페이지 수 */}
-          <div style={{ marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"페이지 수":"Pages"}</div>
-            <div style={{ display:"flex", gap:4 }}>
-              {[3,4,5,6,8,10].map(n => (
-                <button key={n} onClick={() => setPageCount(n)}
-                  style={{ width:36, height:36, borderRadius:8, border: pageCount===n?`2px solid #7c6aff`:`1.5px solid ${bdr}`,
-                    background: pageCount===n?"rgba(124,106,255,0.12)":"transparent", color: pageCount===n?"#7c6aff":text,
-                    fontSize:13, fontWeight:700, cursor:"pointer" }}>{n}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* 이미지 업로드 */}
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>{ko?"이미지 업로드":"Upload Images"} <span style={{ fontWeight:400, color:muted }}>(선택)</span></div>
-            <div style={{ padding:"24px 16px", borderRadius:12, border:`2px dashed ${bdr}`, background:cardBg, textAlign:"center", cursor:"pointer" }}
-              onClick={() => imgInputRef2.current?.click()}
-              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#7c6aff"; }}
-              onDragLeave={e => e.currentTarget.style.borderColor=bdr}
-              onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor=bdr; handleImgAdd(e.dataTransfer.files); }}>
-              <div style={{ fontSize:28, marginBottom:4 }}>📂</div>
-              <div style={{ fontSize:12, fontWeight:600, color:text }}>클릭 또는 드래그하여 업로드</div>
-              <div style={{ fontSize:10, color:muted }}>JPG, PNG · 최대 20장</div>
-            </div>
-            <input ref={imgInputRef2} type="file" accept="image/*" multiple style={{ display:"none" }}
-              onChange={e => { handleImgAdd(e.target.files); e.target.value=""; }} />
-          </div>
-
-          {/* 업로드된 이미지 */}
-          {hasImages && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6, marginBottom:16 }}>
-              {userImages.map((img,i) => (
-                <div key={i} style={{ position:"relative", paddingBottom:"100%", borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}` }}>
-                  <img src={img.preview} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
-                  <button onClick={() => removeImg(i)} style={{ position:"absolute", top:2, right:2, width:18, height:18, borderRadius:"50%", border:"none", background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 경고 */}
-          {!hasImages && (
-            <div style={{ padding:"12px 14px", borderRadius:10, background:"rgba(249,115,22,0.08)", border:"1px solid rgba(249,115,22,0.2)", marginBottom:16 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:"#f97316", marginBottom:3 }}>이미지를 넣지 않으면 AI가 임의로 배경을 생성합니다</div>
-              <div style={{ fontSize:11, color:"#fb923c" }}>원하는 결과를 위해 직접 이미지를 업로드하는 것을 권장해요.</div>
-              <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, cursor:"pointer" }}>
-                <input type="checkbox" checked={imgWarnAck} onChange={e => setImgWarnAck(e.target.checked)} />
-                <span style={{ fontSize:11, color:"#f97316", fontWeight:600 }}>이미지 없이 진행</span>
-              </label>
-            </div>
-          )}
-
-          {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:12 }}>{genError}</div>}
-
-          {/* 필수 입력 안내 */}
-          {!topic.trim() && <div style={{ marginBottom:8, fontSize:12, color:"#f97316", fontWeight:600 }}>* 주제를 입력해주세요</div>}
-          {topic.trim() && !hasImages && !imgWarnAck && <div style={{ marginBottom:8, fontSize:12, color:"#f97316", fontWeight:600 }}>* 이미지를 업로드하거나 "이미지 없이 진행"을 체크해주세요</div>}
-
-          <button onClick={generateImageOnly} disabled={loading || !topic.trim() || (!hasImages && !imgWarnAck)}
-            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
-              cursor: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?"not-allowed":"pointer",
-              background: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?"#ccc":"#7c6aff",
-              color:"#fff", fontSize:15, fontWeight:900,
-              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {loading ? <><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</> : (ko?"이미지 바로 생성":"Generate Images")}
-          </button>
-        </div>
-        {loading && <PlanningAnimation pageCount={pageCount} ko={ko} />}
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
-
-  // ═══ STEP 1 (일반 모드) ═══════════════════════════════════
+  // ═══ STEP 1 ═══════════════════════════════════════════════
   if (wizStep === 1) {
     const canNext = topic.trim().length > 0;
     return (
@@ -1554,7 +1405,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:13 }}>{genError}</div>}
 
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <button onClick={()=>setWizStep(imageOnlyMode ? 1 : 2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
+            <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감":"Est. cost"}: <b style={{ color:"#7c6aff" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
@@ -1574,54 +1425,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
 
   // ── 크레딧 소진 팝업 ──────────────────────────────────────
-
-  // ═══ STEP 4 (이미지 바로 생성 모드): 결과 미리보기 + 다운로드 ═══
-  if (wizStep === 4 && imageOnlyMode) {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: D ? "#0f0c29" : "#f4f4f8" }}>
-        <div style={{ maxWidth:900, margin:"0 auto", padding:"24px 20px 60px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-            <div>
-              <div style={{ fontSize:18, fontWeight:900, color:text }}>{ko?"생성 완료!":"Generated!"}</div>
-              <div style={{ fontSize:12, color:muted }}>{slides.length}{ko?"장의 이미지가 생성되었습니다":"images created"}</div>
-            </div>
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={saveAll} disabled={dlSt.busy}
-                style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                {dlSt.busy ? dlSt.msg : (ko?"ZIP 다운로드":"Download ZIP")}
-              </button>
-              <button onClick={() => { setWizStep(1); setSlides([]); setSted({}); }}
-                style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                {ko?"다시 만들기":"New"}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:16 }}>
-            {slides.map((s, i) => {
-              const slideStyle = getSlideStyle(i);
-              const cur = getCurSlide(i);
-              return (
-                <div key={i} style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
-                  <div style={{ position:"relative" }}>
-                    <SlideCanvas slide={cur} style={slideStyle} CW={imgW} CH={imgH} displayW={Math.min(400, imgW)} bgImageSrc={(sted[i]||{}).bgImage} />
-                  </div>
-                  <div style={{ padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:text }}>{i+1}/{slides.length}</span>
-                    <button onClick={() => saveOne(i)}
-                      style={{ padding:"5px 14px", borderRadius:6, border:"none", background:"rgba(99,102,241,0.12)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
-                      PNG
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {dlSt.msg && !dlSt.busy && <div style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#10b981", fontWeight:700 }}>{dlSt.msg}</div>}
-        </div>
-      </div>
-    );
-  }
 
   // ═══ STEP 4: 캔버스 편집기 — 콘텐츠 영역만 차지 (사이드바 유지) ═══
   if (wizStep === 4) {
