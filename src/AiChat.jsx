@@ -5,10 +5,17 @@ import { callAI } from "./aiClient";
    AiChat — 다글로식 AI 채팅 인터페이스
 ═══════════════════════════════════════════════════════ */
 
-export default function AiChat({ isDark, user, theme }) {
+const MODELS = [
+  { id:"claude-haiku-4-5", label:"Claude Haiku", desc:"빠르고 효율적인 모델", badge:"기본" },
+  { id:"claude-sonnet-4-5", label:"Claude Sonnet", desc:"정확하고 균형 잡힌 모델", badge:"추천" },
+];
+
+export default function AiChat({ isDark, user, theme, setAiMenu }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [model, setModel] = useState("claude-haiku-4-5");
+  const [showModelPicker, setShowModelPicker] = useState(false);
   const [chats, setChats] = useState(() => {
     try { return JSON.parse(localStorage.getItem("nper_ai_chats") || "[]"); } catch { return []; }
   });
@@ -64,7 +71,7 @@ export default function AiChat({ isDark, user, theme }) {
       // 대화 컨텍스트 (최근 10개)
       const ctx = newMsgs.slice(-10).map(m => ({ role: m.role, content: m.content }));
       const systemPrompt = "당신은 SNS메이킷의 AI 어시스턴트입니다. SNS 콘텐츠 제작, 마케팅, 블로그 글쓰기, 디자인, 비즈니스에 대해 전문적이고 친절하게 답변합니다. 한국어로 답변하세요. 마크다운 형식으로 깔끔하게 정리해주세요.";
-      const response = await callAI("claude-haiku-4-5", [
+      const response = await callAI(model, [
         { role: "user", content: systemPrompt },
         ...ctx,
       ], 2000);
@@ -149,34 +156,81 @@ export default function AiChat({ isDark, user, theme }) {
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px" }}>
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
-            {/* 빈 상태 */}
+            {/* 빈 상태 — 다글로식 모델선택 + 프롬프트 카드 */}
             {messages.length === 0 && (
-              <div style={{ textAlign: "center", paddingTop: 80 }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: text, marginBottom: 8 }}>무엇이든 물어보세요</div>
-                <div style={{ fontSize: 14, color: muted, lineHeight: 1.7, marginBottom: 32 }}>
-                  SNS 마케팅, 콘텐츠 전략, 블로그 글쓰기,<br />디자인 팁 등 무엇이든 도와드려요
+              <div style={{ textAlign: "center", paddingTop: 60, maxWidth: 600, margin: "0 auto" }}>
+
+                {/* 모델 선택 */}
+                <div style={{ position: "relative", display: "inline-block", marginBottom: 20 }}>
+                  <button onClick={() => setShowModelPicker(!showModelPicker)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 20, border: `1.5px solid ${bdr}`, background: cardBg, cursor: "pointer", fontSize: 13, fontWeight: 600, color: text }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+                    {MODELS.find(m => m.id === model)?.label}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                  </button>
+                  {showModelPicker && (
+                    <div style={{ position: "absolute", top: "110%", left: "50%", transform: "translateX(-50%)", background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", border: `1px solid ${bdr}`, padding: 8, zIndex: 10, minWidth: 240 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: muted, padding: "6px 10px" }}>AI 모델 선택</div>
+                      {MODELS.map(m => (
+                        <button key={m.id} onClick={() => { setModel(m.id); setShowModelPicker(false); }}
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: model === m.id ? "rgba(124,106,255,0.08)" : "transparent", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: model === m.id ? "#10b981" : "#ddd", flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{m.label} {m.badge && <span style={{ fontSize: 10, fontWeight: 600, color: accent, background: "rgba(124,106,255,0.1)", padding: "1px 6px", borderRadius: 6, marginLeft: 4 }}>{m.badge}</span>}</div>
+                            <div style={{ fontSize: 11, color: muted }}>{m.desc}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
+
+                {/* 타이틀 */}
+                <div style={{ fontSize: 20, fontWeight: 800, color: text, marginBottom: 4, lineHeight: 1.5 }}>
+                  SNS 콘텐츠, 무엇이든 도와드려요
+                </div>
+                <div style={{ fontSize: 13, color: muted, marginBottom: 28 }}>
+                  마케팅 전략부터 글쓰기, 디자인 팁까지
+                </div>
+
+                {/* 프롬프트 카드 — 다글로 스타일 */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, textAlign: "left" }}>
                   {[
-                    "인스타그램 팔로워 늘리는 방법 알려줘",
-                    "네이버 블로그 SEO 최적화 팁",
-                    "카드뉴스 제목 잘 짓는 법",
-                    "SNS 마케팅 월별 계획 세워줘",
-                    "블로그 글쓰기 구조 잡는 법",
-                    "제품 상세페이지 카피라이팅 팁",
-                  ].map((q, i) => (
-                    <button key={i} onClick={() => { setInput(q); setTimeout(() => send(), 50); }}
-                      style={{
-                        padding: "14px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
-                        background: cardBg, cursor: "pointer", fontSize: 13, color: text,
-                        textAlign: "left", lineHeight: 1.5, transition: "all 0.15s",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = accent}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
-                      {q}
+                    { icon: "📊", title: "마케팅 전략", desc: "인스타그램 팔로워 늘리는 전략을 세워줘" },
+                    { icon: "📝", title: "블로그 SEO", desc: "네이버 블로그 상위 노출 최적화 팁 알려줘" },
+                    { icon: "🎨", title: "카드뉴스 기획", desc: "직장인 타겟 카드뉴스 주제 추천해줘" },
+                    { icon: "💡", title: "콘텐츠 아이디어", desc: "이번 주 SNS 콘텐츠 계획 세워줘" },
+                    { icon: "✍️", title: "카피라이팅", desc: "제품 상세페이지 매력적인 카피 써줘" },
+                    { icon: "📈", title: "성과 분석", desc: "SNS 마케팅 KPI 지표 정리해줘" },
+                  ].map((card, i) => (
+                    <button key={i} onClick={() => { setInput(card.desc); }}
+                      style={{ padding: "16px 14px", borderRadius: 12, border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 6 }}>{card.icon} {card.title}</div>
+                      <div style={{ fontSize: 12, color: muted, lineHeight: 1.5 }}>{card.desc}</div>
                     </button>
                   ))}
                 </div>
+
+                {/* 도구 바로가기 */}
+                {setAiMenu && (
+                  <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
+                    {[
+                      { icon: "/icons3d/blog-write.png", label: "글쓰기", menu: "blog_write" },
+                      { icon: "/icons3d/palette.png", label: "콘텐츠 제작", menu: "content_create" },
+                      { icon: "/icons3d/instagram-cam.png", label: "이미지 생성", menu: "image_create" },
+                      { icon: "/icons3d/report.png", label: "비즈니스 문서", menu: "prompt_studio" },
+                    ].map(t => (
+                      <button key={t.menu} onClick={() => setAiMenu(t.menu)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", fontSize: 12, fontWeight: 600, color: text, transition: "all 0.12s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "#f5f5ff"}
+                        onMouseLeave={e => e.currentTarget.style.background = cardBg}>
+                        <img src={t.icon} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} /> {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

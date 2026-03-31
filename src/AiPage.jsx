@@ -123,136 +123,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 홈
   if (!aiMenu || aiMenu === "home") {
-    const MENUS = [
-      { id: "blog_write",       title: _s("글쓰기","SNS Writing"),      desc: _s("블로그·카페·인스타·스레드·링크변환","Blog, Cafe, Insta, Threads, Link"), cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)", iconImg: "/icon-naver-blog.png"  },
-      { id: "cardnews_simple",  title: _s("카드뉴스","Card News"),    desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(99,102,241,0.18)",  lightColor: "rgba(99,102,241,0.07)"  },
-      { id: "detail_simple",    title: _s("상세페이지","Detail Page"),  desc: _s("텍스트 편집 방식","Text editing style"),         cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "thumbnail_gen",    title: _s("썸네일 생성","Thumbnail Generator"),  desc: _s("유튜브·인스타 썸네일","YouTube & Instagram Thumbnail"), cr: 0, darkColor: "rgba(239,68,68,0.18)",  lightColor: "rgba(239,68,68,0.07)"  },
-      { id: "product_shot", title: _s("제품컷 생성","Product Shot"),       desc: _s("AI 광고용 제품 이미지","AI product image for ads"),    cr: 10, darkColor: "rgba(249,115,22,0.18)",  lightColor: "rgba(249,115,22,0.07)"  },
-      { id: "logo_gen",     title: _s("로고 생성","Logo Generator"),         desc: _s("AI 맞춤 로고 제작","AI custom logo creation"),        cr: 10, darkColor: "rgba(6,182,212,0.18)",   lightColor: "rgba(6,182,212,0.07)"   },
-      { id: "mockup_gen",   title: _s("목업 생성","Mockup Generator"),         desc: _s("제품·브랜드 목업 제작","Product & brand mockup"),    cr: 10, darkColor: "rgba(124,58,237,0.18)",  lightColor: "rgba(124,58,237,0.07)"  },
-      { id: "model_gen",    title: _s("모델 생성","Model Generator"),         desc: _s("AI 광고 모델 생성","AI ad model generation"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "skin_retouch", title: _s("피부 보정","Skin Retouch"),       desc: _s("AI 피부 보정 · 분위기 변환","AI skin retouching & mood"), cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "face_swap",    title: _s("얼굴 교체","Face Swap"),         desc: _s("얼굴만 교체 · 비교 슬라이더","Face swap with comparison slider"), cr: 10, darkColor: "rgba(16,185,129,0.18)",  lightColor: "rgba(16,185,129,0.07)"  },
-      { id: "outfit_swap",  title: _s("의상 교체","Outfit Swap"),         desc: _s("옷·스타일 교체","Clothing & style swap"),           cr: 10, darkColor: "rgba(236,72,153,0.18)",  lightColor: "rgba(236,72,153,0.07)"  },
-      { id: "outpaint",     title: _s("여백 늘리기","Outpaint"),      desc: _s("수동 크기 조절 + AI 채우기","Manual resize + AI fill"), cr: 10, darkColor: "rgba(245,158,11,0.18)",  lightColor: "rgba(245,158,11,0.07)"  },
-      { id: "shorts_make",  title: _s("쇼츠 영상 만들기","Shorts Video Maker"), desc: _s("AI 분석 + 자동 편집","AI analysis + auto editing"), cr: 10, darkColor: "rgba(239,68,68,0.18)", lightColor: "rgba(239,68,68,0.07)", iconImg: "/icon-youtube.png", adminOnly: true },
-      { id: "repurpose",    title: _s("원소스 멀티유즈","Content Repurposing"), desc: _s("한 콘텐츠 → 다채널 변환","One content → multi-channel"), cr: 35, darkColor: "rgba(16,185,129,0.18)", lightColor: "rgba(16,185,129,0.07)" },
-    ];
-    // 카테고리별 그룹
-    const GROUPS = [
-      { label: _s("SNS 글쓰기","SNS Writing"), color: "#7c6aff",
-        items: MENUS.filter(m => m.id.startsWith("blog_")) },
-      { label: _s("SNS 이미지","SNS Image"), color: "#ec4899",
-        items: MENUS.filter(m => ["cardnews_simple","detail_simple","thumbnail_gen"].includes(m.id)) },
-      { label: _s("이미지 생성","Image Generation"), color: "#f59e0b",
-        items: MENUS.filter(m => ["product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"].includes(m.id)) },
-      { label: _s("영상 제작","Video Production"), color: "#ef4444", devBadge: true,
-        items: MENUS.filter(m => m.id === "shorts_make") },
-      { label: _s("리퍼포징","Repurposing"), color: "#10b981",
-        items: MENUS.filter(m => m.id === "repurpose") },
-    ];
-
-    const quickStartCards = [
-      { icon: "📝", title: "블로그 글쓰기", desc: "AI가 SEO 최적화 글을 자동 작성해요", menu: "blog_naver", tag: "인기", tagColor: "#ef4444", tagBg: "rgba(239,68,68,0.1)" },
-      { icon: "🎨", title: "카드뉴스 만들기", desc: "주제만 입력하면 슬라이드 완성", menu: "cardnews_simple", tag: "추천", tagColor: "#f97316", tagBg: "rgba(249,115,22,0.1)" },
-      { icon: "🔄", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
-    ];
-
-    // 다글로 스타일 홈
-    const homeRef = useRef(null);
-    const features = [
-      { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
-      { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
-      { icon:"/icons3d/instagram-cam.png", title:_s("이미지 생성","Image Gen"), menu:"image_create" },
-      { icon:"/icons3d/camera.png", title:_s("이미지 수정","Image Edit"), menu:"image_edit" },
-      { icon:"/icons3d/report.png", title:_s("비즈니스 문서","Biz Docs"), menu:"prompt_studio" },
-      { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
-      { icon:"/icons3d/sns-heart.png", title:_s("AI 채팅","AI Chat"), menu:"ai_chat" },
-    ];
-
-    const handleHomeSubmit = () => {
-      const val = homeRef.current?.value?.trim();
-      if (!val) return;
-      setAiMenu("blog_write");
-    };
-
+    // 홈 = AI 어시스턴트 (다글로 스타일)
+    const AiChat = React.lazy(() => import("./AiChat"));
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
-        <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
-
-          {/* 메인 타이틀 */}
-          <h1 style={{ fontSize:32, fontWeight:900, color:homeText, marginBottom:12, letterSpacing:-1, lineHeight:1.3 }}>
-            {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
-          </h1>
-
-          {/* AI 입력창 */}
-          <div style={{
-            margin:"28px auto 12px", maxWidth:560, borderRadius:16, padding:"16px 20px",
-            border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`,
-            background:isDark?"rgba(255,255,255,0.04)":"#fff",
-            boxShadow:"0 2px 16px rgba(0,0,0,0.04)",
-          }}>
-            <textarea
-              ref={homeRef}
-              placeholder={_s("어떤 작업을 도와드릴까요?","What can I help you with?")}
-              rows={2}
-              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleHomeSubmit(); }}}
-              style={{ width:"100%", border:"none", outline:"none", fontSize:15, color:homeText, background:"transparent", resize:"none", fontFamily:"inherit", lineHeight:1.6, boxSizing:"border-box" }}
-            />
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8 }}>
-              <div style={{ fontSize:11, color:homeMuted }}>{_s("Enter로 시작","Press Enter to start")}</div>
-              <button onClick={handleHomeSubmit}
-                style={{ width:32, height:32, borderRadius:"50%", border:"none", background:"#7c6aff", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-              </button>
-            </div>
-          </div>
-
-          {/* 기능 아이콘 한줄 */}
-          <div style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
-            {features.map(f => (
-              <div key={f.menu} onClick={() => setAiMenu(f.menu)}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"}
-                onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <img src={f.icon} alt="" style={{ width:28, height:28, objectFit:"contain" }} />
-                </div>
-                <span style={{ fontSize:12, fontWeight:600, color:homeText }}>{f.title}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* 최근 작업 / 보관함 */}
-          <div style={{ textAlign:"left", maxWidth:560, margin:"0 auto" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{_s("최근 작업","Recent Work")}</span>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
-              {[
-                { title:_s("내 보관함","My Library"), desc:_s("저장한 콘텐츠 확인","View saved content"), menu:"library", icon:"📁" },
-                { title:_s("SNS 연동","SNS Connect"), desc:_s("계정 연동·자동 발행","Auto publish"), menu:null, icon:"🔗", action:()=>navigate("mypage") },
-              ].map((item,i) => (
-                <div key={i} onClick={item.action || (() => setAiMenu(item.menu))}
-                  style={{ padding:"14px 16px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", transition:"all 0.15s" }}
-                  onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.06)"}
-                  onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:16 }}>{item.icon}</span>
-                    <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.title}</div>
-                      <div style={{ fontSize:11, color:homeMuted, marginTop:1 }}>{item.desc}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      </div>
+      <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}>
+        <AiChat isDark={isDark} user={user} theme={theme} setAiMenu={setAiMenu} />
+      </React.Suspense>
     );
   }
 
@@ -986,13 +862,15 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           borderBottom: "1px solid " + topBdr, background: topBg,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* 모바일 햄버거 */}
-            <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22,
-                color: isDark ? "#fff" : "#333", padding: "8px 10px", marginRight: 2, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              ☰
-            </button>
-            <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>{MENU_LABELS[aiMenu] || "AI 생성기"}</span>
+            {/* 모바일 햄버거 — 홈이 아닐 때만 */}
+            {aiMenu && aiMenu !== "home" && (
+              <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22,
+                  color: isDark ? "#fff" : "#333", padding: "8px 10px", marginRight: 2, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                ☰
+              </button>
+            )}
+            {aiMenu && aiMenu !== "home" && <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>{MENU_LABELS[aiMenu] || ""}</span>}
             {isGenerating && (
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 10px", borderRadius: 12,
                 background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)",
