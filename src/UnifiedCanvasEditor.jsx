@@ -417,30 +417,30 @@ export default function UnifiedCanvasEditor({
     <div style={inline?(isFullscreen?{position:"fixed",inset:0,zIndex:200,display:"flex",overflow:"hidden",background:"#fff"}:{width:"100%",flex:1,display:"flex",overflow:"hidden"}):{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
       <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
-        {/* ── 왼쪽 아이콘 바 (미리캔버스 스타일) ── */}
-        <div style={{width:56,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:6,flexShrink:0}}>
+        {/* ── 왼쪽 아이콘 바 ── */}
+        <div style={{width:48,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:4,paddingBottom:4,flexShrink:0,overflowY:"auto",overflowX:"hidden"}}>
           {leftTools.map(t=>(
             <button key={t.id} onClick={()=>setPanel(panel===t.id&&panelOpen?null:t.id)||setPanelOpen(true)}
-              style={{width:48,height:48,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,
+              style={{width:42,height:42,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,border:"none",borderRadius:6,cursor:"pointer",marginBottom:1,flexShrink:0,
                 background:panel===t.id&&panelOpen?"rgba(124,106,255,0.12)":"transparent",
                 borderLeft:panel===t.id&&panelOpen?"3px solid #7c6aff":"3px solid transparent",
                 color:panel===t.id&&panelOpen?"#7c6aff":"#888",transition:"all 0.12s"}}>
-              <span style={{fontSize:16,lineHeight:1}}>{t.icon}</span>
-              <span style={{fontSize:8,fontWeight:600}}>{t.label}</span>
+              <span style={{fontSize:14,lineHeight:1}}>{t.icon}</span>
+              <span style={{fontSize:7,fontWeight:600}}>{t.label}</span>
             </button>
           ))}
-          <div style={{flex:1}}/>
-          <button onClick={undo} title="되돌리기" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:2}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          <div style={{flex:1,minHeight:4}}/>
+          <button onClick={undo} title="되돌리기" style={{width:32,height:32,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
           </button>
-          <button onClick={redo} title="다시실행" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          <button onClick={redo} title="다시실행" style={{width:32,height:32,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
           </button>
         </div>
 
         {/* ── 왼쪽 확장 패널 (클릭 시 열림) ── */}
         {panelOpen&&panel&&(
-        <div style={{width:300,background:"#fafafa",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+        <div style={{width:260,background:"#fafafa",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #eee",flexShrink:0}}>
             <span style={{fontSize:13,fontWeight:700,color:"#333"}}>{leftTools.find(t=>t.id===panel)?.label}</span>
             <button onClick={()=>setPanelOpen(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:"#aaa"}}>✕</button>
