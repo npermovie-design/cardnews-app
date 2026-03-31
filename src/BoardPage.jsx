@@ -92,39 +92,60 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     return "file";
   };
 
-  // AI로 파일명에서 제목/설명 자동 생성
-  const generateAiMeta = async (fileName, mediaType) => {
+  // AI로 파일 분석 → 제목/설명 자동 생성 (이미지는 비전 분석)
+  const generateAiMeta = async (fileName, mediaType, file) => {
     const typeLabel = { video: "영상", gif: "GIF/짤", photo: "사진/이미지", music: "음악", file: "파일" }[mediaType] || "자료";
     const cleanName = fileName.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ").replace(/\d{8,}/g, "").trim();
     try {
+      // 이미지 파일이면 비전 분석으로 내용 파악
+      let messages;
+      if ((mediaType === "photo" || mediaType === "gif") && file && file.size < 5 * 1024 * 1024) {
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(file);
+        });
+        const mimeType = file.type || "image/png";
+        messages = [{ role: "user", content: [
+          { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } },
+          { type: "text", text: `이 이미지를 분석해서 자료실 등록용 제목과 한줄 설명을 한국어로 만들어줘.\n- 제목: 이미지의 핵심 내용을 반영한 간결한 제목 (파일명 "${cleanName}" 참고하되, 이미지 내용 우선)\n- 설명: 이미지가 어떤 용도로 활용할 수 있는지 한 줄로\nJSON만 출력: {"title":"제목","desc":"설명"}` }
+        ]}];
+      } else {
+        messages = [{ role: "user", content: `파일명: "${cleanName}" (${typeLabel} 파일)\n이 파일의 자료실 등록용 제목과 한줄 설명을 한국어로 만들어줘. JSON만 출력: {"title":"제목","desc":"설명"}` }];
+      }
       const r = await fetch("/api/ai-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5", max_tokens: 200,
-          messages: [{ role: "user", content: `파일명: "${cleanName}" (${typeLabel} 파일)\n이 파일의 자료실 등록용 제목과 한줄 설명을 한국어로 만들어줘. JSON만 출력: {"title":"제목","desc":"설명"}` }],
-        }),
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 300, messages }),
       });
       const data = await r.json();
-      const txt = (data.choices?.[0]?.message?.content || "").replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+      const txt = (data.choices?.[0]?.message?.content || data.content?.[0]?.text || "").replace(/```json?\s*/g, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(txt);
       return { title: parsed.title || cleanName, desc: parsed.desc || `${typeLabel} 자료` };
-    } catch { return { title: cleanName || fileName, desc: `${typeLabel} 자료` }; }
+    } catch(e) { console.warn("AI 메타 생성 실패:", e); return { title: cleanName || fileName, desc: `${typeLabel} 자료` }; }
   };
 
   const handleArchiveUpload = async (files) => {
     if (!files || files.length === 0 || !user || user.role !== "admin") return;
     const fileArr = Array.from(files);
 
-    // 단일 파일: 모달 방식 + 자동 태그
+    // 단일 파일: 모달 방식 + AI 이미지 분석으로 제목/설명 자동 생성
     if (fileArr.length === 1) {
       const file = fileArr[0];
       setArchiveUploadFile(file);
-      const cleanName = file.name.replace(/\.[^.]+$/, "");
       const autoTag = detectMediaType(file);
       const tagLabel = { video: "영상", gif: "GIF", photo: "사진", music: "음악" }[autoTag] || "";
-      setArchiveForm({ title: cleanName, desc: "", priceType: "free", price: "", visibility: "all", tag: tagLabel });
+      // 먼저 파일명으로 임시 표시 후 AI 분석
+      const cleanName = file.name.replace(/\.[^.]+$/, "");
+      setArchiveForm({ title: "분석 중...", desc: "AI가 이미지를 분석하고 있어요", priceType: "free", price: "", visibility: "all", tag: tagLabel });
       setShowArchiveModal(true);
+      // AI 이미지 분석 실행
+      try {
+        const meta = await generateAiMeta(file.name, autoTag, file);
+        setArchiveForm(prev => ({ ...prev, title: meta.title, desc: meta.desc }));
+      } catch {
+        setArchiveForm(prev => ({ ...prev, title: cleanName, desc: "" }));
+      }
       return;
     }
 
@@ -137,7 +158,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 50MB 초과`); uploaded++; setBulkProgress(p => ({ ...p, done: uploaded })); continue; }
       try {
         const mediaType = detectMediaType(file);
-        const meta = await generateAiMeta(file.name, mediaType);
+        const meta = await generateAiMeta(file.name, mediaType, file);
         const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const url = await uploadFileToStorage(file, path);
         const tagLabel = { video: "영상", gif: "GIF", photo: "사진", music: "음악" }[mediaType] || "";
