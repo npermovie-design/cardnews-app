@@ -78,13 +78,70 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     </div>
   );
 
-  // 기획 스튜디오
-  if (aiMenu === "prompt_studio") {
+  // 비즈니스 문서: 하위 도구 직접 진입
+  if (aiMenu === "prompt_studio_make") {
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="비즈니스 문서" subtitle="실무 문서를 AI가 작성해드립니다" />
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
           <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} theme={theme} renderFooter={() => <AiFooter />} noHeader />
+        </div>
+      </div>
+    );
+  }
+
+  // 비즈니스 문서: 선택 화면
+  if (aiMenu === "prompt_studio") {
+    const docItems = [
+      { category: "비즈니스", items: [
+        { id:"prompt_studio_make", icon:"📋", label:"사업 제안서", desc:"투자·파트너 제안" },
+        { id:"prompt_studio_make", icon:"📊", label:"사업계획서", desc:"창업·투자유치용" },
+        { id:"prompt_studio_make", icon:"📑", label:"PPT 구성안", desc:"발표 슬라이드 기획" },
+        { id:"prompt_studio_make", icon:"📝", label:"보고서", desc:"업무·분석 보고서" },
+      ]},
+      { category: "업무", items: [
+        { id:"prompt_studio_make", icon:"📅", label:"플래너·일정표", desc:"프로젝트·업무 계획" },
+        { id:"prompt_studio_make", icon:"📃", label:"회의록", desc:"회의 안건·결과 정리" },
+        { id:"prompt_studio_make", icon:"✉️", label:"비즈니스 메일", desc:"공식 이메일·레터" },
+        { id:"prompt_studio_make", icon:"📜", label:"계약서 초안", desc:"계약·합의서 템플릿" },
+      ]},
+      { category: "메시지·인사", items: [
+        { id:"prompt_studio_make", icon:"🎉", label:"축하 메시지", desc:"결혼·승진·생일·개업" },
+        { id:"prompt_studio_make", icon:"💐", label:"위로·감사", desc:"조의·병문안·감사" },
+        { id:"prompt_studio_make", icon:"🎤", label:"인사말·축사", desc:"행사·연설·건배사" },
+        { id:"prompt_studio_make", icon:"💌", label:"초대장·안내문", desc:"행사·모임·공지" },
+      ]},
+    ];
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
+          <div style={{ maxWidth:800, margin:"0 auto", padding:"40px 24px 60px" }}>
+            <div style={{ textAlign:"center", marginBottom:36 }}>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>어떤 문서를 작성할까요?</div>
+              <div style={{ fontSize:13, color:homeMuted }}>문서 유형을 선택하면 AI가 작성해드려요</div>
+            </div>
+            {docItems.map(cat => (
+              <div key={cat.category} style={{ marginBottom:28 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+                  {cat.items.map((item, idx) => (
+                    <button key={idx} onClick={() => setAiMenu(item.id)}
+                      style={{
+                        padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
+                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
+                        display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+                        transition:"all 0.15s", textAlign:"center",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
+                      <span style={{ fontSize:32 }}>{item.icon}</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
+                      <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -539,46 +596,66 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 이미지 생성 (제품컷 + 로고 + 목업 + 모델) ──
-  if (["product_shot","logo_gen","mockup_gen","model_gen","image_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
-    return <TabbedGroup key="imggen" isDark={isDark} theme={theme}
-      title="이미지 생성" subtitle="AI로 제품컷, 로고, 목업, 모델 이미지를 생성하세요"
-      tabs={[
-        { id:"product_shot", label:"제품컷" },
-        { id:"logo_gen", label:"로고" },
-        { id:"mockup_gen", label:"목업" },
-        { id:"model_gen", label:"모델" },
-      ]}
-      defaultTab={aiMenu.startsWith("logo")?"logo_gen":aiMenu.startsWith("mockup")?"mockup_gen":aiMenu.startsWith("model")?"model_gen":"product_shot"}
-      renderTab={(tab) => {
-        if (tab === "product_shot") return <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "logo_gen") return <LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "mockup_gen") return <MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "model_gen") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-        return null;
-      }}
-    />;
-  }
+  // ── 이미지: 하위 도구 직접 진입 ──
+  if (aiMenu === "product_shot") return <div key="product_shot" style={{ flex:1, display:"flex", overflow:"hidden" }}><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
+  if (aiMenu === "logo_gen") return <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
+  if (aiMenu === "mockup_gen") return <div key="mockup_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
+  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+  if (aiMenu === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
 
-  // ── 이미지 수정 (얼굴교체 + 의상교체 + 여백늘리기) ──
-  if (["skin_retouch","face_swap","outfit_swap","outpaint","image_edit"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
-    return <TabbedGroup key="imgedit" isDark={isDark} theme={theme}
-      title="이미지 수정" subtitle="AI로 피부 보정, 얼굴 교체, 의상 교체, 여백 확장을 할 수 있어요"
-      tabs={[
-        { id:"skin_retouch", label:"피부 보정" },
-        { id:"face_swap", label:"얼굴 교체" },
-        { id:"outfit_swap", label:"의상 교체" },
-        { id:"outpaint", label:"여백 늘리기" },
-      ]}
-      defaultTab={aiMenu.startsWith("skin")?"skin_retouch":aiMenu.startsWith("outfit")?"outfit_swap":aiMenu.startsWith("outpaint")?"outpaint":"face_swap"}
-      renderTab={(tab) => {
-        if (tab === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-        if (tab === "face_swap") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-        if (tab === "outfit_swap") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-        if (tab === "outpaint") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-        return null;
-      }}
-    />;
+  // ── 이미지: 선택 화면 (이미지 생성 + 수정 통합) ──
+  if (aiMenu === "image_tools" || aiMenu === "image_create" || aiMenu === "image_edit") {
+    const imgItems = [
+      { category: "이미지 생성", items: [
+        { id:"product_shot", icon:"📸", label:"제품컷", desc:"AI 제품 사진 생성" },
+        { id:"logo_gen", icon:"⭐", label:"로고", desc:"브랜드 로고 생성" },
+        { id:"mockup_gen", icon:"🖥", label:"목업", desc:"제품 목업 생성" },
+        { id:"model_gen", icon:"👤", label:"모델", desc:"AI 모델 이미지" },
+      ]},
+      { category: "이미지 수정", items: [
+        { id:"skin_retouch", icon:"✨", label:"피부 보정", desc:"AI 피부 리터칭" },
+        { id:"face_swap", icon:"🔄", label:"얼굴 교체", desc:"얼굴 합성·교체" },
+        { id:"outfit_swap", icon:"👗", label:"의상 교체", desc:"가상 피팅" },
+        { id:"outpaint", icon:"🖼", label:"여백 늘리기", desc:"이미지 확장" },
+      ]},
+    ];
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
+          <div style={{ maxWidth:800, margin:"0 auto", padding:"40px 24px 60px" }}>
+            <div style={{ textAlign:"center", marginBottom:36 }}>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>어떤 이미지 작업을 할까요?</div>
+              <div style={{ fontSize:13, color:homeMuted }}>AI로 이미지를 생성하거나 수정하세요</div>
+            </div>
+            {imgItems.map(cat => (
+              <div key={cat.category} style={{ marginBottom:28 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+                  {cat.items.map(item => (
+                    <button key={item.id} onClick={() => setAiMenu(item.id)}
+                      style={{
+                        padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
+                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
+                        display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+                        transition:"all 0.15s", textAlign:"center",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
+                      <span style={{ fontSize:32 }}>{item.icon}</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
+                      <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── 마케팅 (SNS 분석 + 인스타 자동DM) ──
@@ -608,66 +685,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         />
       </div>
     );
-  }
-
-  // 이미지 생성
-  if (aiMenu === "image_gen") {
-    return (
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:18, padding:40, textAlign:"center", background: isDark?"transparent":"#f4f4f8" }}>
-        <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="3" y="3" width="28" height="28" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-        </div>
-        <div style={{ fontSize:22, fontWeight:900, color: isDark?"#fff":"#1a1a2e" }}>이미지 생성</div>
-        <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.45)":"#888", lineHeight:2 }}>AI 이미지 자유 생성 기능<br/>곧 업데이트될 예정이에요.</div>
-      </div>
-    );
-  }
-
-  // 제품컷 생성
-  if (aiMenu === "product_shot") {
-    return (
-      <div key="product_shot" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
-  }
-
-  // 로고 생성
-  if (aiMenu === "logo_gen") {
-    return (
-      <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <LogoGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
-  }
-
-  // 목업 생성
-  if (aiMenu === "mockup_gen") {
-    return (
-      <div key="mockup_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <MockupGenerator isDark={isDark} user={user}  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
-  }
-
-  // 모델 생성 (인트로 없이 직접 진입)
-  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") {
-    return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  }
-
-  // 얼굴 교체 (인트로 없이 직접 진입)
-  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") {
-    return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  }
-
-  // 의상 교체 (인트로 없이 직접 진입)
-  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") {
-    return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  }
-
-  // 여백 늘리기 (인트로 없이 직접 진입)
-  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") {
-    return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
   }
 
   // 회원정보

@@ -90,11 +90,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"ai_chat", label:"AI 대화", icon:"/icons3d/sns-heart.png" },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
     { sep:true },
-    { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png" },
+    { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png", ids:["prompt_studio_make"] },
     { id:"blog_write", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"] },
     { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen"] },
-    { id:"image_create", label:"이미지 생성", icon:"/icons3d/instagram-cam.png", ids:["product_shot","logo_gen","mockup_gen","model_gen"] },
-    { id:"image_edit", label:"이미지 수정", icon:"/icons3d/camera.png", ids:["skin_retouch","face_swap","outfit_swap","outpaint"] },
+    { id:"image_tools", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
     { sep:true },
     { id:"repurpose", label:"리퍼포징", icon:"/icons3d/sns-share.png" },
   ];
