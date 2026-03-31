@@ -573,7 +573,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [planLoading,   setPlanLoading]   = useState(false);
 
   // Step3
-  const [selPreset, setSelPreset] = useState(null);
+  const [selPreset, setSelPreset] = useState(DESIGN_PRESETS.find(p => p.key === "pure_white") || DESIGN_PRESETS[2]);
   const [selSize,   setSelSize]   = useState(0);     // 0 = 정사각형 1080×1080
   const [customW,   setCustomW]   = useState(1080);
   const [customH,   setCustomH]   = useState(1080);
@@ -1302,19 +1302,37 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg} ko={ko}
             onApply={(tpl) => {
               try {
-                // 1) 슬라이드 텍스트 적용
+                // 1) 슬라이드 텍스트 + 이미지 적용
                 if (tpl.slides_data) {
                   const parsed = typeof tpl.slides_data === "string" ? JSON.parse(tpl.slides_data) : tpl.slides_data;
                   if (Array.isArray(parsed) && parsed.length > 0) {
                     const newSlides = parsed.map((s, i) => ({
-                      title: s.title || "",
-                      subtitle: s.subtitle || "",
+                      id: s.id || `slide_${i}`,
+                      label: s.label || "",
+                      title: s.title || s.headline || "",
+                      subtitle: s.subtitle || s.subheadline || "",
                       body: s.body || "",
-                      highlight: s.highlight || "",
+                      highlight: s.highlight || s.badge || "",
+                      headline: s.headline || s.title || "",
+                      subheadline: s.subheadline || s.subtitle || "",
+                      badge: s.badge || s.highlight || "",
                     }));
                     setSlides(newSlides);
                     setPageCount(newSlides.length);
                     if (tpl.title) setTopic(tpl.title);
+                    // 배경 이미지/스타일 오버라이드 복원
+                    const newSted = {};
+                    parsed.forEach((s, i) => {
+                      const overrides = {};
+                      if (s.bgImage) overrides.bgImage = s.bgImage;
+                      if (s.bgColor) overrides.bgColor = s.bgColor;
+                      if (s.textColor) overrides.textColor = s.textColor;
+                      if (s.overlayColor) overrides.overlayColor = s.overlayColor;
+                      if (s.overlayOpacity !== undefined) overrides.overlayOpacity = s.overlayOpacity;
+                      if (s.imgLayout) overrides.imgLayout = s.imgLayout;
+                      if (Object.keys(overrides).length > 0) newSted[i] = overrides;
+                    });
+                    if (Object.keys(newSted).length > 0) setSted(newSted);
                   }
                 }
                 // 2) 디자인 프리셋 적용

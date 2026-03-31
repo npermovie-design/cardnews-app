@@ -92,7 +92,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { sep:true },
     { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png" },
     { id:"blog_write", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"] },
-    { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"] },
+    { id:"content_create", label:"카드뉴스", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make"] },
+    { id:"detail_simple", label:"상세페이지", icon:"/icons3d/report.png", ids:["detail_simple_make"] },
+    { id:"thumbnail_gen", label:"썸네일", icon:"/icons3d/camera.png", ids:["thumbnail_gen_make"] },
+    { id:"ppt_gen", label:"PPT", icon:"/icons3d/report.png" },
     { id:"image_create", label:"이미지 생성", icon:"/icons3d/instagram-cam.png", ids:["product_shot","logo_gen","mockup_gen","model_gen"] },
     { id:"image_edit", label:"이미지 수정", icon:"/icons3d/camera.png", ids:["skin_retouch","face_swap","outfit_swap","outpaint"] },
     { sep:true },
@@ -136,7 +139,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
               }}
               onMouseEnter={e => { if(!active) e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(99,102,241,0.05)"; }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>
-              <img src={item.icon} alt="" style={{ width:20, height:20, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
+              <img src={item.icon} alt="" style={{ width:26, height:26, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
               <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</span>
             </button>
           );

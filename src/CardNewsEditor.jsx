@@ -1324,15 +1324,15 @@ export default function CardNewsEditor({
 
         {/* ── LEFT ICON TOOLBAR (미리캔버스 스타일) ──────────────── */}
         {!isMobile && (
-          <div style={{ width: 56, background: "#fafaff", borderRight: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 8, flexShrink: 0 }}>
+          <div style={{ width: 64, background: "#fafaff", borderRight: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 8, flexShrink: 0 }}>
             {leftTools.map(tool => (
               <button key={tool.id} onClick={() => toggleLeftTool(tool.id)}
-                style={{ width: 48, height: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, border: "none", borderRadius: 8, cursor: "pointer", marginBottom: 2, transition: "all 0.15s",
+                style={{ width: 54, height: 54, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: "none", borderRadius: 8, cursor: "pointer", marginBottom: 2, transition: "all 0.15s",
                   background: activeLeftTool === tool.id ? "rgba(124,106,255,0.15)" : "transparent",
                   color: activeLeftTool === tool.id ? "#7c6aff" : "#666",
                 }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>{tool.icon}</span>
-                <span style={{ fontSize: 8, fontWeight: 600, whiteSpace: "nowrap" }}>{tool.label}</span>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>{tool.icon}</span>
+                <span style={{ fontSize: 9, fontWeight: 600, whiteSpace: "nowrap" }}>{tool.label}</span>
               </button>
             ))}
             <div style={{ flex: 1 }} />
@@ -1559,7 +1559,7 @@ export default function CardNewsEditor({
             <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.08)" }} />
             <Btn small onClick={downloadCurrentPNG} accent="#10b981" style={{ whiteSpace: "nowrap", fontSize: 11 }}>PNG</Btn>
             <Btn small onClick={downloadAllPNGs} accent="#0ea5e9" style={{ whiteSpace: "nowrap", fontSize: 11 }}>ZIP</Btn>
-            <Btn small onClick={onClose} style={{ whiteSpace: "nowrap", fontSize: 11 }}>{ko ? "← 돌아가기" : "← Back"}</Btn>
+            <Btn small onClick={onClose} accent="#6366f1" style={{ whiteSpace: "nowrap", fontSize: 12, fontWeight: 700, padding: "6px 14px" }}>{ko ? "← 돌아가기" : "← Back"}</Btn>
           </div>
 
           {/* Canvas container - 스크롤 없이 화면에 맞춤 */}

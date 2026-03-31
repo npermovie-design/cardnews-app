@@ -422,19 +422,19 @@ export default function UnifiedCanvasEditor({
 
   /* ═══ RENDER ═══ */
   return (
-    <div style={inline?(isFullscreen?{position:"fixed",inset:0,zIndex:200,display:"flex",overflow:"hidden",background:"#fff"}:{width:"100%",flex:1,display:"flex",overflow:"hidden"}):{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
-      <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
+    <div style={inline?(isFullscreen?{position:"fixed",inset:0,zIndex:200,display:"flex",flexDirection:"row",overflow:"hidden",background:"#fff"}:{width:"100%",flex:1,display:"flex",overflow:"hidden"}):{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
+      <div style={inline?{width:"100%",height:"100%",display:"flex",flexDirection:"row",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",flexDirection:"row",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
         {/* ── 왼쪽 아이콘 바 ── */}
-        <div style={{width:48,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:4,paddingBottom:4,flexShrink:0,overflowY:"auto",overflowX:"hidden"}}>
+        <div style={{width:60,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:4,paddingBottom:4,flexShrink:0,overflowY:"auto",overflowX:"hidden"}}>
           {leftTools.map(t=>(
             <button key={t.id} onClick={()=>setPanel(panel===t.id&&panelOpen?null:t.id)||setPanelOpen(true)}
-              style={{width:42,height:42,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,border:"none",borderRadius:6,cursor:"pointer",marginBottom:1,flexShrink:0,
+              style={{width:52,height:52,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,border:"none",borderRadius:6,cursor:"pointer",marginBottom:1,flexShrink:0,
                 background:panel===t.id&&panelOpen?"rgba(124,106,255,0.12)":"transparent",
                 borderLeft:panel===t.id&&panelOpen?"3px solid #7c6aff":"3px solid transparent",
                 color:panel===t.id&&panelOpen?"#7c6aff":"#888",transition:"all 0.12s"}}>
-              <span style={{fontSize:14,lineHeight:1}}>{t.icon}</span>
-              <span style={{fontSize:7,fontWeight:600}}>{t.label}</span>
+              <span style={{fontSize:18,lineHeight:1}}>{t.icon}</span>
+              <span style={{fontSize:9,fontWeight:600}}>{t.label}</span>
             </button>
           ))}
           <div style={{flex:1,minHeight:4}}/>
@@ -841,8 +841,8 @@ export default function UnifiedCanvasEditor({
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
             {inline&&<button onClick={()=>setIsFullscreen(!isFullscreen)} title={isFullscreen?"축소":"전체화면"} style={{...B,fontSize:13,padding:"4px 8px"}}>{isFullscreen?"⊡":"⊞"}</button>}
-            {isFullscreen&&<button onClick={()=>setIsFullscreen(false)} style={{...B,fontSize:11,color:"#7c6aff"}}>← 돌아가기</button>}
-            {onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
+            {isFullscreen&&<button onClick={()=>setIsFullscreen(false)} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 16px",cursor:"pointer",fontSize:12,fontWeight:700}}>← 돌아가기</button>}
+            {!isFullscreen&&onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
           </div>
           {/* 캔버스 */}
           <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e8e8ee",overflow:"hidden",padding:10}}/>

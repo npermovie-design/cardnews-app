@@ -417,25 +417,34 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작기 (카드뉴스 + 상세페이지 + 썸네일 + PPT) ──
-  if (["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","content_create"].some(x => aiMenu === x || aiMenu?.startsWith(x))) {
-    return <TabbedGroup key="content" isDark={isDark} theme={theme}
-      title="콘텐츠 제작" subtitle="카드뉴스, 상세페이지, 썸네일, PPT를 제작하세요"
-      tabs={[
-        { id:"cardnews_simple", label:"카드뉴스" },
-        { id:"detail_simple", label:"상세페이지" },
-        { id:"thumbnail_gen", label:"썸네일" },
-        { id:"ppt_gen", label:"PPT" },
-      ]}
-      defaultTab={aiMenu.startsWith("ppt")?"ppt_gen":aiMenu.startsWith("thumbnail")?"thumbnail_gen":aiMenu.startsWith("detail")?"detail_simple":"cardnews_simple"}
-      renderTab={(tab) => {
-        if (tab === "cardnews_simple") return <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "detail_simple") return <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "thumbnail_gen") return <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        if (tab === "ppt_gen") return <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-        return null;
-      }}
-    />;
+  // ── 콘텐츠 제작기 (탭 없이 각 도구 직접 진입) ──
+  if (aiMenu === "content_create" || aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
+    return (
+      <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </div>
+    );
+  }
+  if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
+    return (
+      <div key="detail_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </div>
+    );
+  }
+  if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
+    return (
+      <div key="thumb_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </div>
+    );
+  }
+  if (aiMenu === "ppt_gen") {
+    return (
+      <div key="ppt_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </div>
+    );
   }
 
   // ── 이미지 생성 (제품컷 + 로고 + 목업 + 모델) ──
