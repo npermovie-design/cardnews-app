@@ -4,7 +4,8 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
 import { isDarkTheme } from "./theme";
-import CardNewsEditor from "./CardNewsEditor";
+import { lazy, Suspense } from "react";
+const UnifiedCanvasEditor = lazy(() => import("./UnifiedCanvasEditor"));
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -562,6 +563,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   // Step1 - 카드뉴스용
   const [topic,     setTopic]     = useState(libItem?.topic || "");
   const [topicDetail, setTopicDetail] = useState("");
+  const [refFiles, setRefFiles] = useState([]); // 참고 파일 목록
   const [pageCount, setPageCount] = useState(libItem?.count || 6);
   const [aiSugg,    setAiSugg]    = useState(null);
   const [suggesting,setSuggesting]= useState(false);
@@ -1077,6 +1079,54 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <textarea value={topicDetail} onChange={e=>setTopicDetail(e.target.value)}
               placeholder={ko?"각 슬라이드에 넣고 싶은 내용을 줄바꿈으로 구분해 입력하세요\n예)\n1. 번아웃 자가진단 체크리스트\n2. 업무 경계 설정법\n3. 마이크로 휴식 (50분 일하고 10분 쉬기)":"Enter content for each slide, separated by line breaks\ne.g.\n1. Burnout self-check\n2. Setting work boundaries\n3. Micro breaks (work 50min, rest 10min)"} rows={5}
               style={{ width:"100%", background:D?"rgba(255,255,255,0.05)":"#f5f5f5", border:`1px solid ${bdr}`, borderRadius:12, padding:"11px 14px", color:text, fontSize:12, fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.8 }}/>
+
+            {/* 참고 파일 첨부 */}
+            <div style={{ fontSize:11, fontWeight:700, color:text, marginTop:12, marginBottom:5 }}>
+              {ko?"참고 파일":"Reference Files"} <span style={{ fontWeight:400, color:muted }}>{ko?"(선택) — 파일 내용을 AI가 참고합니다":"(optional) — AI will reference these files"}</span>
+            </div>
+            {refFiles.length > 0 && (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
+                {refFiles.map((f,i) => (
+                  <span key={i} style={{ fontSize:11, padding:"3px 8px", borderRadius:6, background:D?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", color:accentColor, display:"inline-flex", alignItems:"center", gap:4 }}>
+                    {f.name}
+                    <button onClick={()=>setRefFiles(prev=>{const n=[...prev];n.splice(i,1);return n;})} style={{ background:"none", border:"none", cursor:"pointer", color:"#ef4444", fontSize:12, padding:0, lineHeight:1 }}>x</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{ display:"none" }} id="cardnews-ref-file"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  e.target.value = "";
+                  const valid = files.filter(f => f.size <= 10*1024*1024);
+                  if (valid.length < files.length) alert(`${files.length-valid.length}개 파일이 10MB 초과로 제외`);
+                  if (!valid.length) return;
+                  const newRefs = [...refFiles];
+                  let allContent = topicDetail;
+                  for (const file of valid) {
+                    try {
+                      if (file.type.startsWith("image/")) {
+                        const base64 = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(file); });
+                        const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 핵심 내용을 카드뉴스 슬라이드에 쓸 수 있게 짧게 설명해주세요."}]}], 300);
+                        newRefs.push({ name: file.name, summary: txt.slice(0,200) });
+                        allContent += `\n[${file.name}] ${txt.slice(0,200)}`;
+                      } else {
+                        const t2 = await file.text().catch(()=>"");
+                        newRefs.push({ name: file.name, summary: t2.slice(0,300) });
+                        allContent += `\n[${file.name}] ${t2.slice(0,300)}`;
+                      }
+                    } catch {}
+                  }
+                  setRefFiles(newRefs);
+                  setTopicDetail(allContent);
+                }}/>
+              <button onClick={() => document.getElementById("cardnews-ref-file")?.click()}
+                style={{ padding:"7px 14px", borderRadius:10, border:`1px dashed ${bdr}`, cursor:"pointer", background:"transparent", color:muted, fontSize:12, fontWeight:600 }}>
+                {ko?"📎 파일 첨부":"📎 Attach Files"}
+              </button>
+              <span style={{ fontSize:11, color:muted }}>{ko?"여러 파일 선택 가능":"Multiple files supported"}</span>
+            </div>
           </div>
 
           {/* 슬라이드 수 */}
@@ -1362,28 +1412,30 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   if (wizStep === 4) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
-        <CardNewsEditor
-          slides={slides.map((s, i) => {
-            const st = sted[i] || {};
-            const ss = getSlideStyle(i);
-            return {
-              title: st.title ?? s.title ?? "",
-              body: st.body ?? s.body ?? "",
-              bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
-              textColor: st.textColor || ss.textColor || "#fff",
-              fontSize: ss.titleSize || ss.fontSize || 42,
-              fontFamily: st.fontFamily || ss.fontFamily || "Pretendard",
-              image: st.bgImage || ss.bgImage || null,
-            };
-          })}
-          width={imgW}
-          height={imgH}
-          C={{ purple:"#7c6aff", text:"#1a1730", muted:"rgba(26,23,48,0.5)", border:"rgba(0,0,0,0.08)", bg:"#ffffff", bg2:"#f5f4ff" }}
-          onSave={() => {}}
-          onClose={() => setWizStep(3)}
-          onShareTemplate={shareAsTemplate}
-          inline
-        />
+        <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditor
+            slides={slides.map((s, i) => {
+              const st = sted[i] || {};
+              const ss = getSlideStyle(i);
+              return {
+                title: st.title ?? s.title ?? "",
+                body: st.body ?? s.body ?? "",
+                bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
+                textColor: st.textColor || ss.textColor || "#fff",
+                fontSize: ss.titleSize || ss.fontSize || 42,
+                fontFamily: st.fontFamily || ss.fontFamily || "Pretendard",
+                image: st.bgImage || ss.bgImage || null,
+              };
+            })}
+            width={imgW}
+            height={imgH}
+            mode="cardnews"
+            onSave={() => {}}
+            onClose={() => setWizStep(3)}
+            onShareTemplate={shareAsTemplate}
+            inline
+          />
+        </Suspense>
       </div>
     );
   }

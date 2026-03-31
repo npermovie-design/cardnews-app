@@ -535,8 +535,22 @@ function postToRow(post) {
   };
 }
 
-/** 전체 게시글 목록 가져오기 (content 제외 — 빠른 로딩) */
+/** 전체 게시글 목록 가져오기 (content 제외 — 빠른 로딩 + 캐시) */
+const POSTS_CACHE_KEY = "nper_posts_cache";
+const POSTS_CACHE_TTL = 60000; // 1분 캐시
+
 export async function getPostsFromDB() {
+  // sessionStorage 캐시 확인 (1분 유효)
+  try {
+    const cached = sessionStorage.getItem(POSTS_CACHE_KEY);
+    if (cached) {
+      const { data: cachedData, ts } = JSON.parse(cached);
+      if (Date.now() - ts < POSTS_CACHE_TTL && cachedData?.length > 0) {
+        return cachedData;
+      }
+    }
+  } catch {}
+
   try {
     const { data, error } = await supabase
       .from("posts")
@@ -544,7 +558,10 @@ export async function getPostsFromDB() {
       .order("id", { ascending: false })
       .limit(500);
     if (error) throw error;
-    return (data || []).map(rowToPost);
+    const result = (data || []).map(rowToPost);
+    // 캐시 저장
+    try { sessionStorage.setItem(POSTS_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch {}
+    return result;
   } catch (e) {
     console.error("getPostsFromDB error:", e);
     return [];
@@ -579,6 +596,7 @@ function pingSitemapAsync() {
 export async function savePostToDB(post) {
   const { error } = await supabase.from("posts").insert(postToRow(post));
   if (error) throw error;
+  try { sessionStorage.removeItem(POSTS_CACHE_KEY); } catch {} // 캐시 무효화
   pingSitemapAsync();
 }
 

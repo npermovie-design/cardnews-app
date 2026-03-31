@@ -37,36 +37,41 @@ const PageLoader = () => (
   </div>
 );
 
-// 접속자 카운트 훅 (Supabase online_users 테이블 + localStorage 폴백)
+// 접속자 카운트 훅 (Supabase online_users 테이블)
 function useOnlineCount() {
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    const myId = "u_" + Math.random().toString(36).slice(2, 8);
+    // 브라우저 세션 기반 고정 ID (탭 단위)
+    const myId = sessionStorage.getItem("nper_oid") || (() => { const id = "u_" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("nper_oid", id); return id; })();
     const device = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
     async function hb() {
       if (cancelled) return;
       try {
+        // 내 heartbeat 업데이트
         await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
-        const cutoff = new Date(Date.now() - 20000).toISOString();
+        // 3분 이상 지난 오래된 레코드 삭제
+        const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
         await supabase.from("online_users").delete().lt("last_seen", cutoff);
+        // 현재 접속자 카운트
         const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
         if (!cancelled && cnt != null) setCount(cnt);
       } catch(e) {
+        // 폴백: localStorage
         if (cancelled) return;
         try {
           const KEY = "nper_online_users";
           const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
           const now = Date.now();
           raw[myId] = now;
-          Object.keys(raw).forEach(k => { if (now - raw[k] > 15000) delete raw[k]; });
+          Object.keys(raw).forEach(k => { if (now - raw[k] > 180000) delete raw[k]; });
           localStorage.setItem(KEY, JSON.stringify(raw));
           if (!cancelled) setCount(Object.keys(raw).length);
-        } catch(e2) {}
+        } catch {}
       }
     }
     hb();
-    const t = setInterval(hb, 8000);
+    const t = setInterval(hb, 45000);
     return () => {
       cancelled = true;
       clearInterval(t);
@@ -151,7 +156,7 @@ export default function App() {
   const [scrolled,   setScrolled]   = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    const onScroll = () => { setShowScrollTop(window.scrollY > 400); setScrolled(window.scrollY > 10); };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -219,12 +224,6 @@ export default function App() {
       }
     );
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
   }, []);
 
   useEffect(() => {
@@ -532,6 +531,7 @@ export default function App() {
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        @keyframes onlinePulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:0.6;box-shadow:0 0 0 4px rgba(34,197,94,0)}}
         .page-anim{animation:fadeIn 0.2s ease}
         textarea{resize:vertical}
         .desktop-nav{display:flex!important}
@@ -748,6 +748,14 @@ export default function App() {
 
         {/* 오른쪽: 테마 + 로그인 */}
         <div className="nav-right" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+          {/* 실시간 접속자 수 */}
+          {onlineCount > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, border: `1px solid ${theme==="dark" ? "rgba(34,197,94,0.2)" : "rgba(34,197,94,0.15)"}`, flexShrink: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "onlinePulse 2s ease-in-out infinite", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#22c55e", letterSpacing: -0.3 }}>{onlineCount}</span>
+              <span style={{ fontSize: 10, fontWeight: 500, color: C.muted, letterSpacing: -0.2 }}>접속중</span>
+            </div>
+          )}
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 2px" }} />
           {/* 다국어 선택 */}
           <div ref={langRef} style={{ position: "relative" }}>

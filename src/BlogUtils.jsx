@@ -170,18 +170,21 @@ const PLATFORMS = {
       column:  ["AI 시대 블로거의 생존 전략","MZ세대 소비 트렌드 변화 분석","1인 미디어가 바꾸는 마케팅 판도"],
       article: ["네이버 블로그 수익화 가이드 총정리","2026년 부동산 시장 전망 분석","프리랜서 세금 신고 완벽 가이드"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
       const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 해당 단락 내용을 구체적으로 묘사하는 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입 (반드시 해당 단락의 실제 내용과 직결되는 영문 2~4단어)\n   예시: 혈당 관련 글이면 [image: blood sugar monitor], 카페 후기면 [image: cozy cafe latte art], 여행이면 [image: jeju island ocean view]\n3. 절대 추상적/일반적 키워드 금지 (technology, business, nature 같은 단어 금지). 글의 구체적 소재를 반영할 것\n4. 소제목은 3~5개 정도`;
+      const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
+      const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
       const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주\n- 마무리 단락 포함${noSpecial}`;
-      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${noSpecial}`;
-      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${noSpecial}`;
-      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}${custom}${imgRule}\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함${noSpecial}`;
-      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (SEO 최적화된 제목)\n부제목: (핵심 내용 요약)${imgRule}\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용${noSpecial}`;
-      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (뉴스 기사 스타일 제목)\n부제목: (핵심 내용 한 줄 요약)${imgRule}\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H 포함\n- 객관적 사실 기반${noSpecial}`;
+      const tail = speechRule + noEnding + noSpecial;
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주${tail}`;
+      if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${tail}`;
+      if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${tail}`;
+      if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}${custom}${imgRule}\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함${tail}`;
+      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (SEO 최적화된 제목)\n부제목: (핵심 내용 요약)${imgRule}\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용${tail}`;
+      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (뉴스 기사 스타일 제목)\n부제목: (핵심 내용 한 줄 요약)${imgRule}\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H 포함\n- 객관적 사실 기반${tail}`;
       return "";
     },
   },
@@ -224,15 +227,19 @@ const PLATFORMS = {
       column:  ["생성형 AI가 SEO를 바꾸는 방식","구독 경제의 성장과 한계","1인 창업 시대의 마케팅 전략"],
       article: ["구글 AI 검색 업데이트 분석","국내 SaaS 시장 현황 리포트","2026년 디지털 마케팅 트렌드"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const w={short:"1,500~2,000자",medium:"2,500~3,500자",long:"4,000자 이상"}[wc];
       const t={professional:"전문적이고 신뢰감 있는",friendly:"친근하고 쉬운",analytical:"분석적이고 논리적인"}[tone];
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임\n\n[필수] 이모티콘·이모지·특수기호(★●■)·마크다운(##·###·**·~~) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도\n\n[필수] 이모티콘·이모지·특수기호·마크다운(##·**) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (SEO 키워드 포함 제목)\n부제목: (핵심 한 줄 요약)\n\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용\n\n[필수] 이모티콘·특수기호·마크다운 금지. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반\n\n[필수] 이모티콘·특수기호·마크다운 금지. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
+      const noEnd = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 금지. 자연스럽게 끝낼 것`;
+      const noSp = `\n\n[필수] 이모티콘·이모지·특수기호(★●■)·마크다운(##·###·**·~~) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      const tail = sp + noEnd + noSp;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임${tail}`;
+      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공${tail}`;
+      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함${tail}`;
+      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도${tail}`;
+      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (SEO 키워드 포함 제목)\n부제목: (핵심 한 줄 요약)\n\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용${tail}`;
+      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반${tail}`;
       return "";
     },
   },
@@ -277,16 +284,17 @@ const PLATFORMS = {
       column:  ["브랜딩에 대한 오해와 진실","콘텐츠 마케팅 실전 인사이트","크리에이터 수익 구조 분석"],
       article: ["인스타 알고리즘 변경 요약","Z세대 소비 트렌드 분석","2026 SNS 마케팅 핵심 정리"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const w={micro:"50자 이내 2~3줄",short:"120자 내외 5~6줄",medium:"250자 내외 10줄",long:"400자 내외 15줄 이상"}[wc];
       const t={emotional:"감성적이고 시적인",friendly:"친근하고 활발한",trendy:"트렌디하고 세련된",luxurious:"고급스럽고 우아한"}[tone];
+      const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const htag="줄바꿈 후 관련 해시태그 15~20개";
-      if(sub==="daily")   return `인스타그램 일상 피드 캡션 (${w}, ${t})\n상황: ${f.keyword} / 분위기: ${f.mood||""}\n${f.extra||""}\n\n- 첫 줄 강력한 훅 (이모지 없이 텍스트로)\n- 줄바꿈으로 가독성 확보\n- ${htag}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
-      if(sub==="product") return `인스타그램 제품 홍보 캡션 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n${f.extra||""}\n\n- 제품 매력 훅, 핵심 특징 3가지 이내\n- 구매 유도 CTA 포함\n- ${htag}`;
-      if(sub==="info")    return `인스타그램 정보 피드 캡션 (${w}, ${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}\n\n- "저장 필수" 유도 첫 문장\n- 번호 매긴 핵심 포인트\n- ${htag}`;
-      if(sub==="event")   return `인스타그램 이벤트/공지 캡션 (${w}, ${t})\n이벤트: ${f.keyword} / 날짜: ${f.eventDate||""}\n${f.extra||""}\n\n- 강렬한 첫 줄 (이모지 없이 텍스트로), 참여 방법 명확히\n- ${htag}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
-      if(sub==="column")  return `인스타그램 칼럼 캡션 (${w}, 전문적이고 통찰력 있는)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 전문 인사이트 공유, 깊이 있는 분석\n- 저장 유도 첫 문장\n- ${htag}`;
-      if(sub==="article") return `인스타그램 기사 정리 캡션 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 핵심 뉴스/정보를 짧고 명확하게 정리\n- 팩트 중심, 출처 언급 형식\n- ${htag}`;
+      if(sub==="daily")   return `인스타그램 일상 피드 캡션 (${w}, ${t})\n상황: ${f.keyword} / 분위기: ${f.mood||""}\n${f.extra||""}\n\n- 첫 줄 강력한 훅 (이모지 없이 텍스트로)\n- 줄바꿈으로 가독성 확보\n- ${htag}${sp}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
+      if(sub==="product") return `인스타그램 제품 홍보 캡션 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n${f.extra||""}\n\n- 제품 매력 훅, 핵심 특징 3가지 이내\n- 구매 유도 CTA 포함\n- ${htag}${sp}`;
+      if(sub==="info")    return `인스타그램 정보 피드 캡션 (${w}, ${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}\n\n- "저장 필수" 유도 첫 문장\n- 번호 매긴 핵심 포인트\n- ${htag}${sp}`;
+      if(sub==="event")   return `인스타그램 이벤트/공지 캡션 (${w}, ${t})\n이벤트: ${f.keyword} / 날짜: ${f.eventDate||""}\n${f.extra||""}\n\n- 강렬한 첫 줄 (이모지 없이 텍스트로), 참여 방법 명확히\n- ${htag}${sp}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
+      if(sub==="column")  return `인스타그램 칼럼 캡션 (${w}, 전문적이고 통찰력 있는)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 전문 인사이트 공유, 깊이 있는 분석\n- 저장 유도 첫 문장\n- ${htag}${sp}`;
+      if(sub==="article") return `인스타그램 기사 정리 캡션 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 핵심 뉴스/정보를 짧고 명확하게 정리\n- 팩트 중심, 출처 언급 형식\n- ${htag}${sp}`;
       return "";
     },
   },
@@ -333,15 +341,16 @@ const PLATFORMS = {
       column:  ["AI가 미래 직업에 미치는 영향","콘텐츠 시장의 구조적 변화","크리에이터 이코노미 심층 분석"],
       article: ["최신 테크 뉴스 리뷰","시장 동향 분석 영상","주요 업계 이슈 정리"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const w={"30s":"30초 분량(~150자)","1m":"1분 분량(~300자)","5m":"5분 분량(~700자)","10m":"10분 분량(~1,500자)","20m":"20분 분량(~3,000자)","1h":"1시간 분량(~9,000자, 섹션별)"}[wc];
       const t={energetic:"에너지틱하고 빠른 템포",calm:"차분하고 신뢰감 있는",educational:"교육적이고 체계적인",entertaining:"재미있고 친근한"}[tone];
-      if(sub==="script") return `유튜브 영상 대본 (${w}, ${t})\n주제: ${f.keyword} / 타깃: ${f.target||"일반 시청자"}\n핵심 내용: ${f.mainPoints||""}\n${f.extra||""}\n\n[인트로-훅+예고] → [본론-핵심 단계별] → [아웃트로-구독유도]\n자연스러운 구어체, 화면 지시 포함`;
-      if(sub==="desc")   return `유튜브 영상 설명란\n영상: ${f.keyword} / 길이: ${f.duration||"10분"}\n${f.extra||""}\n\n- 요약 2~3문장\n- 타임스탬프 (예시 시간 포함)\n- 관련 링크 섹션\n- 해시태그 10개\n- 채널 소개 문구`;
-      if(sub==="shorts") return `유튜브 쇼츠 대본 (60초, ${t})\n주제: ${f.keyword} / 훅 아이디어: ${f.hook||""}\n${f.extra||""}\n\n[0~3초: 강력한 훅] → [3~50초: 핵심 임팩트] → [50~60초: 마무리·구독유도]\n짧고 강한 문장, 자막 가능하도록`;
-      if(sub==="title")  return `유튜브 제목 5가지 + 썸네일 문구 제안\n영상 주제: ${f.keyword} / 각도: ${f.angle||""}\n\n- 클릭률 높은 제목 5가지 (숫자/궁금증/혜택 활용)\n- 각 제목별 썸네일 메인 문구\n- SEO 태그 10개`;
-      if(sub==="column")  return `유튜브 칼럼 영상 대본 (${w}, 전문적이고 분석적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 대본 맨 처음에 추천 영상 제목과 부제목:\n제목: (클릭률 높은 칼럼 제목)\n부제목: (핵심 한 줄)\n\n[인트로-문제제기] → [본론-분석·근거] → [아웃트로-결론·구독유도]`;
-      if(sub==="article") return `유튜브 뉴스 리뷰 대본 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 대본 맨 처음에 추천 영상 제목과 부제목:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n[인트로-이슈 소개] → [본론-팩트 정리] → [아웃트로-시사점·구독유도]`;
+      const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
+      if(sub==="script") return `유튜브 영상 대본 (${w}, ${t})\n주제: ${f.keyword} / 타깃: ${f.target||"일반 시청자"}\n핵심 내용: ${f.mainPoints||""}\n${f.extra||""}\n\n[인트로-훅+예고] → [본론-핵심 단계별] → [아웃트로-구독유도]\n자연스러운 구어체, 화면 지시 포함${sp}`;
+      if(sub==="desc")   return `유튜브 영상 설명란\n영상: ${f.keyword} / 길이: ${f.duration||"10분"}\n${f.extra||""}\n\n- 요약 2~3문장\n- 타임스탬프 (예시 시간 포함)\n- 관련 링크 섹션\n- 해시태그 10개\n- 채널 소개 문구${sp}`;
+      if(sub==="shorts") return `유튜브 쇼츠 대본 (60초, ${t})\n주제: ${f.keyword} / 훅 아이디어: ${f.hook||""}\n${f.extra||""}\n\n[0~3초: 강력한 훅] → [3~50초: 핵심 임팩트] → [50~60초: 마무리·구독유도]\n짧고 강한 문장, 자막 가능하도록${sp}`;
+      if(sub==="title")  return `유튜브 제목 5가지 + 썸네일 문구 제안\n영상 주제: ${f.keyword} / 각도: ${f.angle||""}\n\n- 클릭률 높은 제목 5가지 (숫자/궁금증/혜택 활용)\n- 각 제목별 썸네일 메인 문구\n- SEO 태그 10개${sp}`;
+      if(sub==="column")  return `유튜브 칼럼 영상 대본 (${w}, 전문적이고 분석적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 대본 맨 처음에 추천 영상 제목과 부제목:\n제목: (클릭률 높은 칼럼 제목)\n부제목: (핵심 한 줄)\n\n[인트로-문제제기] → [본론-분석·근거] → [아웃트로-결론·구독유도]${sp}`;
+      if(sub==="article") return `유튜브 뉴스 리뷰 대본 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 대본 맨 처음에 추천 영상 제목과 부제목:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n[인트로-이슈 소개] → [본론-팩트 정리] → [아웃트로-시사점·구독유도]${sp}`;
       return "";
     },
   },
@@ -385,10 +394,11 @@ const PLATFORMS = {
       column:   ["퍼스널 브랜딩의 진짜 의미","콘텐츠 시장의 미래","디지털 노마드 현실"],
       article:  ["AI 업계 주요 뉴스 정리","SNS 알고리즘 변경 요약","2026 마케팅 트렌드"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const cnt={single:"짧게 (1~3문장)",medium:"보통 (200~400자)",long:"길게 (400~500자)"}[wc];
       const t={casual:"친근한 일상 대화체",thoughtful:"사려 깊고 진지한",provocative:"강렬하고 도발적인",humorous:"유머러스하고 가볍게"}[tone];
-      const fmt=`\n\n[필수]\n- 스레드 1개 게시물용 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 절대 금지\n- 제목 없이 바로 본문 시작\n- 마크다운·이모지 금지\n- 줄바꿈으로 문단 구분\n- 마지막에 질문이나 공감 유도\n- 분량: ${cnt}`;
+      const sp = speech ? `\n- 말투: ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
+      const fmt=`\n\n[필수]\n- 스레드 1개 게시물용 텍스트만 작성 (500자 이내)\n- [1/3] 같은 번호 절대 금지\n- 제목 없이 바로 본문 시작\n- 마크다운·이모지 금지\n- 줄바꿈으로 문단 구분\n- 마지막에 질문이나 공감 유도\n- 분량: ${cnt}${sp}`;
       if(sub==="opinion")  return `스레드 의견·인사이트 (${t})\n주제: ${f.keyword} / 입장: ${f.stance||""}\n${f.extra||""}${fmt}`;
       if(sub==="story")    return `스레드 경험 이야기 (${t})\n경험: ${f.keyword} / 교훈: ${f.lesson||""}\n${f.extra||""}${fmt}`;
       if(sub==="tip")      return `스레드 꿀팁 공유 (${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}${fmt}`;
@@ -435,19 +445,31 @@ const PLATFORMS = {
       column:   ["자취생 절약의 기술과 철학","운동을 습관으로 만드는 과학적 방법","소비 습관이 인생을 바꾸는 이유"],
       article:  ["올해 인기 가전제품 총정리","건강 트렌드 변화 분석","카페 창업 시장 현황 리포트"],
     },
-    buildPrompt(sub, f, tone, wc) {
+    buildPrompt(sub, f, tone, wc, speech) {
       const w={short:"300~500자",medium:"600~900자",long:"1,000자 이상"}[wc];
       const t={friendly:"친근하고 자연스러운 일상체",informative:"유익하고 친절한",review:"솔직하고 공감 가는 후기체"}[tone];
-      if(sub==="info")     return `네이버 카페 정보 게시글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"카페 회원"}\n${f.extra||""}\n\n- 핵심 정보를 친근하게 전달\n- 소제목 없이 자연스러운 문단 구성\n- 마무리에 "도움이 됐으면 해요" 류 인사\n\n[필수] 이모티콘·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만`;
-      if(sub==="review")   return `네이버 카페 후기 게시글 (${w}, ${t})\n대상: ${f.keyword} / 제품명: ${f.productName||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매/방문 동기부터 솔직 후기까지\n- 장단점 균형 있게\n- 추천 대상 언급으로 마무리\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
-      if(sub==="question") return `네이버 카페 질문 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 상황 설명 후 궁금한 점 명확히\n- 카페 회원들에게 도움 요청하는 자연스러운 글\n- 마지막에 감사 인사\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
-      if(sub==="free")     return `네이버 카페 자유 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 가볍고 친근한 일상 공유\n- 카페 분위기에 맞는 짧고 자연스러운 글\n\n[필수] 이모티콘·마크다운 절대 사용 금지. 순수 한글 문장만`;
-      if(sub==="column")  return `네이버 카페 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (카페에 적합한 전문 제목)\n부제목: (핵심 한 줄)\n\n- 주장→근거→결론 구조\n- 카페 회원 눈높이에 맞춘 전문 글\n\n[필수] 이모티콘·마크다운 금지. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="article") return `네이버 카페 기사 스타일 글 (${w}, 객관적 정리체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 팩트 기반 정리, 수치/통계 활용\n- 카페 회원이 이해하기 쉬운 언어\n\n[필수] 이모티콘·마크다운 금지. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
+      const noEnd = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며" 같은 진부한 마무리 표현 금지. 자연스럽게 끝낼 것`;
+      const noSp = `\n\n[필수] 이모티콘·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만`;
+      const tail = sp + noEnd + noSp;
+      if(sub==="info")     return `네이버 카페 정보 게시글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"카페 회원"}\n${f.extra||""}\n\n- 핵심 정보를 친근하게 전달\n- 소제목 없이 자연스러운 문단 구성${tail}`;
+      if(sub==="review")   return `네이버 카페 후기 게시글 (${w}, ${t})\n대상: ${f.keyword} / 제품명: ${f.productName||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매/방문 동기부터 솔직 후기까지\n- 장단점 균형 있게\n- 추천 대상 언급${tail}`;
+      if(sub==="question") return `네이버 카페 질문 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 상황 설명 후 궁금한 점 명확히\n- 카페 회원들에게 도움 요청하는 자연스러운 글${tail}`;
+      if(sub==="free")     return `네이버 카페 자유 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 가볍고 친근한 일상 공유\n- 카페 분위기에 맞는 짧고 자연스러운 글${tail}`;
+      if(sub==="column")  return `네이버 카페 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (카페에 적합한 전문 제목)\n부제목: (핵심 한 줄)\n\n- 주장→근거→결론 구조\n- 카페 회원 눈높이에 맞춘 전문 글${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      if(sub==="article") return `네이버 카페 기사 스타일 글 (${w}, 객관적 정리체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 팩트 기반 정리, 수치/통계 활용\n- 카페 회원이 이해하기 쉬운 언어${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
       return "";
     },
   },
 };
+
+// ── 말투(문체) 옵션 — 모든 플랫폼 공통 ──
+const SPEECH_STYLES = [
+  { id:"polite_yo",  label:"~요 체", desc:"해요체 (친근한 존댓말)", prompt:"해요체(~요, ~이에요, ~했어요)로 작성" },
+  { id:"formal",     label:"~합니다 체", desc:"합니다체 (격식 존댓말)", prompt:"합니다체(~입니다, ~했습니다, ~됩니다)로 작성" },
+  { id:"casual",     label:"반말 체", desc:"반말 (친구 대화체)", prompt:"반말(~야, ~거든, ~했어, ~인데)로 작성. 자연스러운 구어체" },
+  { id:"mixed",      label:"혼합 체", desc:"상황에 맞게 자유롭게", prompt:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서 작성" },
+];
 
 const FIELD_LABELS = {
   keyword:     {label:"키워드 / 주제",        placeholder:"핵심 키워드를 입력하세요", required:true},
@@ -547,4 +569,4 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
 }
 
 
-export { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS };
+export { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS, SPEECH_STYLES };

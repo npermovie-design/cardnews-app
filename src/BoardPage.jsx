@@ -67,6 +67,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [archiveEditPost, setArchiveEditPost] = useState(null);
   const [archiveEditForm, setArchiveEditForm] = useState({ title: "", desc: "", tag: "" });
 
+  // 뒤로가기 시 게시글 상세→목록으로 복원
+  useEffect(() => {
+    const handlePop = () => {
+      const path = window.location.pathname;
+      if (view && !path.includes("/post-")) {
+        // 게시글 상세에서 목록으로 돌아가기
+        setView(null);
+        setMode("list");
+      }
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [view]);
+
   // 파일 타입 자동 감지
   const detectMediaType = (file) => {
     const name = file.name.toLowerCase();

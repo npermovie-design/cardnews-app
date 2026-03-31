@@ -152,10 +152,15 @@ function FreeMediaSearch({ C, isDark, bdr }) {
     const fns = {
       klipy:    async ()=>{
         try {
-          const data = q ? await klipySearch(q, 20) : await klipyTrending(20);
-          const items = (data?.results || data?.data || []).map(g => ({ thumb: klipyMediaUrl(g, "tinygif") || g.media?.[0]?.tinygif?.url || g.url, full: klipyMediaUrl(g, "gif") || g.media?.[0]?.gif?.url || g.url, title: g.title || "", type: "gif", source: "Klipy" }));
+          const raw = q ? await klipySearch(q, 1) : await klipyTrending(1);
+          const list = Array.isArray(raw) ? raw : (raw?.results || raw?.data || []);
+          const items = list.map(g => {
+            const thumb = klipyMediaUrl(g, "sm") || klipyMediaUrl(g, "xs") || g.url || "";
+            const full = klipyMediaUrl(g, "md") || klipyMediaUrl(g, "sm") || g.url || "";
+            return { thumb, full, title: g.title || "", type: "gif", source: "Klipy" };
+          }).filter(x => x.thumb);
           return { items, next: "" };
-        } catch { return { items: [], next: "" }; }
+        } catch(e) { console.warn("Klipy fetch error:", e); return { items: [], next: "" }; }
       },
       giphy:    ()=>fetchGiphyData(q, 0),
       tenor:    ()=>fetchTenorData(q, ""),
