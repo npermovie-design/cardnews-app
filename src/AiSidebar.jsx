@@ -120,7 +120,9 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         {/* 확장 토글 */}
         <button onClick={() => setExpanded(!expanded)} title={expanded ? "접기" : "메뉴 펼치기"}
           style={{ width:36, height:28, borderRadius:6, border:"none", cursor:"pointer", background:expanded ? (isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)") : "transparent", color:isDark?"#a5b4fc":"#7c6aff", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:8 }}>
-          {expanded ? "◁" : "☰"}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            {expanded ? <polyline points="15 18 9 12 15 6"/> : <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>}
+          </svg>
         </button>
 
         {/* 아이콘 메뉴 */}
@@ -149,7 +151,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         {/* 하단: 프로필/설정 */}
         <button onClick={() => navigate && navigate("mypage")} title="마이페이지"
           style={{ width:36, height:36, borderRadius:8, border:"none", cursor:"pointer", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", color:isDark?"#a5b4fc":"#7c6aff", fontSize:16 }}>
-          👤
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </button>
       </div>
 

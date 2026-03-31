@@ -2041,7 +2041,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
 
       {/* 캔버스 편집 모달 */}
       {canvasEditMode && (
-        <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>에디터 로딩 중...</div>}>
+        <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
           <UnifiedCanvasEditor
             slides={slides.map((s,i) => ({
               title: s.title || "",
@@ -2057,6 +2057,7 @@ JSON: {"body":"...","subtitle":"...","bullets":[],"stats":[],"bars":[],"segments
             mode="ppt"
             onClose={() => setCanvasEditMode(false)}
             onSave={() => setCanvasEditMode(false)}
+            inline
           />
         </Suspense>
       )}

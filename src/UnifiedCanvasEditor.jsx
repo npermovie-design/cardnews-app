@@ -394,12 +394,13 @@ export default function UnifiedCanvasEditor({
 
   const B = {background:"none",border:"1px solid #ddd",borderRadius:6,padding:"5px 10px",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12};
 
-  // 왼쪽 도구 아이콘 (미리캔버스 스타일)
+  // 왼쪽 도구 아이콘 (미리캔버스 스타일 — SVG 아이콘)
+  const SvgIcon = ({d, size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
   const leftTools = [
-    {id:"props",   icon:"🎨", label:"속성"},
-    {id:"shapes",  icon:"✦",  label:"요소"},
-    {id:"images",  icon:"🖼", label:"사진"},
-    {id:"layers",  icon:"☰",  label:"레이어"},
+    {id:"props",   icon:<SvgIcon d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>, label:"속성"},
+    {id:"shapes",  icon:<SvgIcon d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>, label:"요소"},
+    {id:"images",  icon:<SvgIcon d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a5 5 0 100-10 5 5 0 000 10z"/>, label:"사진"},
+    {id:"layers",  icon:<SvgIcon d="M3 12h18M3 6h18M3 18h18"/>, label:"레이어"},
   ];
 
   /* ═══ RENDER ═══ */
@@ -420,8 +421,12 @@ export default function UnifiedCanvasEditor({
             </button>
           ))}
           <div style={{flex:1}}/>
-          <button onClick={undo} title="되돌리기" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:2}}>↩</button>
-          <button onClick={redo} title="다시실행" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>↪</button>
+          <button onClick={undo} title="되돌리기" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:2}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          </button>
+          <button onClick={redo} title="다시실행" style={{width:36,height:36,borderRadius:6,border:"none",cursor:"pointer",background:"transparent",color:"#888",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          </button>
         </div>
 
         {/* ── 왼쪽 확장 패널 (클릭 시 열림) ── */}

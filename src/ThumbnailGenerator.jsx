@@ -203,7 +203,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
     try { return JSON.parse(localStorage.getItem("nper_custom_fonts")||"[]").map(f=>f.name); } catch { return []; }
   });
   const [activeTab, setActiveTab] = useState("design"); // design | bg | text
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(true); // 기본 라이브 편집 모드
   const [editImageUrl, setEditImageUrl] = useState(null);
   const canvasRef = useRef(null);
   const bgInputRef = useRef(null);
@@ -420,6 +420,33 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
       <span style={{ fontSize:11, color:text, minWidth:35, textAlign:"right" }}>{val}{suffix}</span>
     </div>
   );
+
+  // editMode가 true면 바로 에디터만 표시
+  if (editMode) {
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"100%" }}>
+        <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditor
+            slides={[{
+              title: texts[0]?.text || "",
+              body: texts[1]?.text || "",
+              bgColor: bgColor,
+              textColor: texts[0]?.color || "#ffffff",
+              fontSize: texts[0]?.size || 42,
+              fontFamily: texts[0]?.font || "Pretendard",
+              image: bgImg || null,
+            }]}
+            width={canvasW}
+            height={canvasH}
+            mode="thumbnail"
+            onClose={() => setEditMode(false)}
+            onSave={() => setEditMode(false)}
+            inline
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px" }}>
@@ -719,7 +746,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
 
       {/* 통합 캔버스 에디터 */}
       {editMode && (
-        <Suspense fallback={<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>에디터 로딩 중...</div>}>
+        <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
           <UnifiedCanvasEditor
             slides={[{
               title: texts[0]?.text || "",
@@ -735,6 +762,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
             mode="thumbnail"
             onClose={() => setEditMode(false)}
             onSave={() => setEditMode(false)}
+            inline
           />
         </Suspense>
       )}
