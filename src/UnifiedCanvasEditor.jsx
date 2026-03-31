@@ -47,6 +47,7 @@ export default function UnifiedCanvasEditor({
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [showExitWarn, setShowExitWarn] = useState(false);
   // Undo/Redo
   const historyRef = useRef([]);
   const historyIdxRef = useRef(-1);
@@ -226,6 +227,8 @@ export default function UnifiedCanvasEditor({
   const syncSel = (obj) => {
     if(!obj) return;
     setSel(obj);
+    // 텍스트 선택 시 자동으로 속성 패널 열기
+    if(obj.type==="textbox") { setPanel("props"); setPanelOpen(true); }
     setProps({
       fontFamily:obj.fontFamily||"Pretendard", fontSize:obj.fontSize||24,
       fill:typeof obj.fill==="string"?obj.fill:"#000", fontWeight:obj.fontWeight||"normal",
@@ -802,45 +805,33 @@ export default function UnifiedCanvasEditor({
               const preview=fc.toDataURL({format:"png",multiplier:0.3});
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
-            {onClose&&<button onClick={onClose} style={{...B,fontSize:11}}>← 돌아가기</button>}
+            {onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
           </div>
           {/* 캔버스 */}
           <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e8e8ee",overflow:"hidden",padding:10}}/>
         </div>
 
-        {/* ── 우측: 선택 오브젝트 속성 (텍스트 선택 시만) ── */}
-        {sel&&sel.type==="textbox"&&(
-          <div style={{width:220,background:"#fff",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflowY:"auto",padding:"12px 14px"}}>
-            <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>텍스트 속성</div>
-            <select value={props.fontFamily} onChange={e=>{loadFont(e.target.value);set("fontFamily",e.target.value);}}
-              style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #ddd",fontSize:11,marginBottom:6}}>
-              {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
-            </select>
-            <div style={{fontSize:10,color:"#888",marginBottom:2}}>크기: {props.fontSize}px</div>
-            <input type="range" min={10} max={120} value={props.fontSize} onChange={e=>set("fontSize",+e.target.value)}
-              style={{width:"100%",accentColor:"#7c6aff",marginBottom:6}}/>
-            <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
-              <input type="color" value={props.fill} onChange={e=>set("fill",e.target.value)}
-                style={{width:24,height:24,padding:0,border:"1.5px solid rgba(0,0,0,0.1)",borderRadius:4,cursor:"pointer"}}/>
-              {["#fff","#000","#7c6aff","#ef4444","#f59e0b","#10b981"].map(c=>(
-                <button key={c} onClick={()=>set("fill",c)} style={{width:18,height:18,borderRadius:3,background:c,border:"1.5px solid rgba(0,0,0,0.12)",cursor:"pointer",padding:0}}/>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:3,marginBottom:6}}>
-              <button onClick={()=>set("fontWeight",props.fontWeight==="bold"?"normal":"bold")}
-                style={{...B,fontWeight:900,fontSize:11,padding:"3px 8px",background:props.fontWeight==="bold"?"#7c6aff15":"transparent"}}>B</button>
-              <button onClick={()=>set("fontStyle",props.fontStyle==="italic"?"normal":"italic")}
-                style={{...B,fontStyle:"italic",fontSize:11,padding:"3px 8px",background:props.fontStyle==="italic"?"#7c6aff15":"transparent"}}>I</button>
-              {["left","center","right"].map(a=>(
-                <button key={a} onClick={()=>set("textAlign",a)}
-                  style={{...B,fontSize:10,padding:"3px 6px",background:props.textAlign===a?"#7c6aff15":"transparent"}}>
-                  {a==="left"?"◧":a==="center"?"◫":"◨"}
+        {/* 나가기 경고 팝업 */}
+        {showExitWarn&&(
+          <div style={{position:"absolute",inset:0,zIndex:100,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{background:"#fff",borderRadius:16,padding:"32px 28px",maxWidth:360,width:"90%",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+              <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+              <div style={{fontSize:16,fontWeight:800,color:"#1a1a2e",marginBottom:8}}>정말 나가시겠습니까?</div>
+              <div style={{fontSize:13,color:"#666",lineHeight:1.7,marginBottom:20}}>
+                저장하지 않은 작업은 사라지며,<br/>
+                <b style={{color:"#ef4444"}}>사용한 포인트는 복구되지 않습니다.</b>
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setShowExitWarn(false)}
+                  style={{flex:1,padding:"12px",borderRadius:10,border:"1px solid #ddd",background:"#fff",color:"#333",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                  계속 작업하기
                 </button>
-              ))}
+                <button onClick={()=>{setShowExitWarn(false);onClose();}}
+                  style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                  나가기
+                </button>
+              </div>
             </div>
-            <div style={{fontSize:10,color:"#888",marginBottom:2}}>투명도: {Math.round(props.opacity)}%</div>
-            <input type="range" min={0} max={100} value={props.opacity} onChange={e=>set("opacity",+e.target.value/100)}
-              style={{width:"100%",accentColor:"#7c6aff"}}/>
           </div>
         )}
       </div>
