@@ -56,7 +56,7 @@ function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderT
         </div>
       </div>
       {/* 콘텐츠 */}
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+      <div style={{ flex:1, display:"flex", overflow:"hidden", position:"relative" }}>
         {renderTab(activeTab)}
       </div>
     </div>

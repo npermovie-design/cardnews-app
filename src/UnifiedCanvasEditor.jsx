@@ -179,12 +179,15 @@ export default function UnifiedCanvasEditor({
       fc.add(hl);
     }
 
-    // 제목 — 정중앙 배치
+    // 제목 — 정중앙 배치, 글씨에 맞는 너비
     if (s.title) {
+      const titleFontSize = s.fontSize||42;
+      // 글자 수 기반 너비 계산 (최소 40%, 최대 90%)
+      const estW = Math.min(width*0.9, Math.max(width*0.4, s.title.length * titleFontSize * 0.7));
       const t = new Textbox(s.title, {
-        left:width/2, top:height*0.38, width:width*0.84,
+        left:width/2, top:height*0.38, width:estW,
         originX:"center", originY:"center",
-        fontSize:s.fontSize||42, fontWeight:"bold",
+        fontSize:titleFontSize, fontWeight:"bold",
         fill:s.textColor||"#000000",
         fontFamily:s.fontFamily||"Pretendard",
         lineHeight:1.3, textAlign:"center", name:"title",
@@ -192,12 +195,14 @@ export default function UnifiedCanvasEditor({
       fc.add(t);
     }
 
-    // 본문 — 제목 아래 중앙 배치
+    // 본문 — 제목 아래 중앙 배치, 글씨에 맞는 너비
     if (s.body) {
+      const bodyFontSize = Math.round((s.fontSize||42)*0.38);
+      const estW = Math.min(width*0.9, Math.max(width*0.35, s.body.length * bodyFontSize * 0.65));
       const b = new Textbox(s.body, {
-        left:width/2, top:height*0.58, width:width*0.84,
+        left:width/2, top:height*0.58, width:estW,
         originX:"center", originY:"center",
-        fontSize:Math.round((s.fontSize||42)*0.38),
+        fontSize:bodyFontSize,
         fill:s.textColor||"#000000", opacity:0.85,
         fontFamily:s.fontFamily||"Pretendard",
         lineHeight:1.7, textAlign:"center", name:"body",
