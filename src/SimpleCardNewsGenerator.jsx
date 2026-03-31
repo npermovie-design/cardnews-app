@@ -588,6 +588,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   // 이미지 바로 생성 모드
   const [userImages, setUserImages] = useState([]); // [{file, preview}]
   const [imgWarnAck, setImgWarnAck] = useState(false);
+  const imgInputRef2 = useRef(null);
   const [showMediaSearch, setShowMediaSearch] = useState(false);
   const [mediaQuery, setMediaQuery] = useState("");
   const [mediaResults, setMediaResults] = useState([]);
@@ -1019,7 +1020,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // ═══ 이미지 바로 생성 모드: 이미지 업로드 (Step1 전) ═══
   if (imageOnlyMode && wizStep === 1) {
-    const imgInputRef2 = useRef(null);
     const handleImgAdd = (files) => {
       const newImgs = [...userImages];
       Array.from(files).forEach(f => {
