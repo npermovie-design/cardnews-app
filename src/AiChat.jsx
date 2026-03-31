@@ -6,8 +6,12 @@ import { callAI } from "./aiClient";
 ═══════════════════════════════════════════════════════ */
 
 const MODELS = [
-  { id:"claude-haiku-4-5", label:"Claude Haiku", desc:"빠르고 효율적인 모델", badge:"기본" },
-  { id:"claude-sonnet-4-5", label:"Claude Sonnet", desc:"정확하고 균형 잡힌 모델", badge:"추천" },
+  { id:"claude-haiku-4-5", label:"Claude Haiku", desc:"빠르고 효율적인 응답", badge:"기본", color:"#7c6aff" },
+  { id:"claude-sonnet-4-5", label:"Claude Sonnet", desc:"깊이 있는 분석과 창작", badge:"추천", color:"#7c6aff" },
+  { id:"gpt-4o-mini", label:"GPT-4o Mini", desc:"빠르고 가성비 좋은 모델", badge:"", color:"#10a37f" },
+  { id:"gpt-4o", label:"GPT-4o", desc:"OpenAI 최신 멀티모달 모델", badge:"고급", color:"#10a37f" },
+  { id:"gemini-2.5-flash", label:"Gemini 2.5 Flash", desc:"Google 초고속 응답 모델", badge:"", color:"#4285f4" },
+  { id:"gemini-2.5-pro", label:"Gemini 2.5 Pro", desc:"Google 고성능 추론 모델", badge:"고급", color:"#4285f4" },
 ];
 
 export default function AiChat({ isDark, user, theme, setAiMenu }) {
@@ -31,6 +35,27 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
 
   // 스크롤 하단 유지
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // 홈에서 전달된 초기 질문 자동 전송
+  useEffect(() => {
+    const initQ = sessionStorage.getItem("nper_chat_init");
+    if (initQ) {
+      sessionStorage.removeItem("nper_chat_init");
+      setInput(initQ);
+      // 약간 딜레이 후 자동 전송
+      setTimeout(() => {
+        setInput("");
+        const userMsg = { role: "user", content: initQ };
+        setMessages([userMsg]);
+        setLoading(true);
+        const systemPrompt = "당신은 SNS메이킷의 AI 어시스턴트입니다. SNS 콘텐츠 제작, 마케팅, 블로그 글쓰기, 디자인, 비즈니스에 대해 전문적이고 친절하게 답변합니다. 한국어로 답변하세요. 마크다운 형식으로 깔끔하게 정리해주세요.";
+        callAI(model, [{ role: "user", content: systemPrompt }, { role: "user", content: initQ }], 2000)
+          .then(response => { setMessages([userMsg, { role: "assistant", content: response }]); })
+          .catch(e => { setMessages([userMsg, { role: "assistant", content: "오류: " + (e.message || "다시 시도해주세요") }]); })
+          .finally(() => setLoading(false));
+      }, 100);
+    }
+  }, []); // eslint-disable-line
 
   // 채팅 저장
   const saveChats = (list) => {
@@ -80,9 +105,16 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
       const finalMsgs = [...newMsgs, aiMsg];
       setMessages(finalMsgs);
 
-      // 자동 저장
+      // 항상 자동 저장
+      const title = newMsgs[0]?.content?.slice(0, 30) || "채팅";
       if (chatId) {
-        const updated = chats.map(c => c.id === chatId ? { ...c, messages: finalMsgs } : c);
+        const updated = chats.map(c => c.id === chatId ? { ...c, messages: finalMsgs, title } : c);
+        setChats(updated);
+        saveChats(updated);
+      } else {
+        const newId = Date.now();
+        setChatId(newId);
+        const updated = [{ id: newId, title, messages: finalMsgs, date: new Date().toLocaleDateString(), model }, ...chats];
         setChats(updated);
         saveChats(updated);
       }
@@ -164,7 +196,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                 <div style={{ position: "relative", display: "inline-block", marginBottom: 20 }}>
                   <button onClick={() => setShowModelPicker(!showModelPicker)}
                     style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 20, border: `1.5px solid ${bdr}`, background: cardBg, cursor: "pointer", fontSize: 13, fontWeight: 600, color: text }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: MODELS.find(m=>m.id===model)?.color||"#10b981" }} />
                     {MODELS.find(m => m.id === model)?.label}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
                   </button>
@@ -174,7 +206,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                       {MODELS.map(m => (
                         <button key={m.id} onClick={() => { setModel(m.id); setShowModelPicker(false); }}
                           style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: model === m.id ? "rgba(124,106,255,0.08)" : "transparent", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: model === m.id ? "#10b981" : "#ddd", flexShrink: 0 }} />
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: model === m.id ? m.color : "#ddd", flexShrink: 0 }} />
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{m.label} {m.badge && <span style={{ fontSize: 10, fontWeight: 600, color: accent, background: "rgba(124,106,255,0.1)", padding: "1px 6px", borderRadius: 6, marginLeft: 4 }}>{m.badge}</span>}</div>
                             <div style={{ fontSize: 11, color: muted }}>{m.desc}</div>
@@ -253,12 +285,37 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                       fontSize: 14, color: "#fff", fontWeight: 800,
                     }}>AI</div>
-                    <div style={{
-                      flex: 1, padding: "14px 18px", borderRadius: "4px 16px 16px 16px",
-                      background: isDark ? "rgba(255,255,255,0.06)" : "#f8f8fb",
-                      fontSize: 14, color: text, lineHeight: 1.8,
-                    }}>
-                      {renderMd(msg.content)}
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        padding: "14px 18px", borderRadius: "4px 16px 16px 16px",
+                        background: isDark ? "rgba(255,255,255,0.06)" : "#f8f8fb",
+                        fontSize: 14, color: text, lineHeight: 1.8,
+                      }}>
+                        {renderMd(msg.content)}
+                      </div>
+                      {/* 다른 기능으로 넘기기 */}
+                      {i === messages.length - 1 && !loading && setAiMenu && (
+                        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                          {[
+                            { label: "블로그 글쓰기", menu: "blog_write", icon: "📝" },
+                            { label: "카드뉴스 만들기", menu: "content_create", icon: "🎨" },
+                            { label: "복사", action: "copy", icon: "📋" },
+                          ].map(btn => (
+                            <button key={btn.label} onClick={() => {
+                              if (btn.action === "copy") {
+                                try { navigator.clipboard.writeText(msg.content); } catch {}
+                                return;
+                              }
+                              // 내용을 sessionStorage에 저장하고 해당 기능으로 이동
+                              sessionStorage.setItem("nper_ai_content", msg.content);
+                              setAiMenu(btn.menu);
+                            }}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: text, display: "flex", alignItems: "center", gap: 4 }}>
+                              {btn.icon} {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

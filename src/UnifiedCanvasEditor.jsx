@@ -689,9 +689,26 @@ export default function UnifiedCanvasEditor({
                 </div>
                 {imgResults.length===0&&!imgLoading&&<div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>키워드로 검색하세요</div>}
 
-                {/* 자료실 이미지 */}
+                {/* 자료실 이미지 + 검색 */}
                 <div style={{borderTop:"1px solid #eee",marginTop:12,paddingTop:12}}>
                   <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>커뮤니티 자료실</div>
+                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                    <input placeholder="자료실 검색..." style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #ddd",fontSize:12,outline:"none"}}
+                      onKeyDown={async e=>{
+                        if(e.key!=="Enter") return;
+                        const kw=e.target.value.trim();
+                        setImgLoading(true);
+                        try{
+                          let q=supabase.from("posts").select("id,title,images").eq("subCat","archive").order("created_at",{ascending:false}).limit(20);
+                          if(kw) q=q.ilike("title",`%${kw}%`);
+                          const {data}=await q;
+                          const imgs=[];
+                          (data||[]).forEach(p=>{try{const arr=typeof p.images==="string"?JSON.parse(p.images):p.images;if(Array.isArray(arr)) arr.forEach(u=>{if(typeof u==="string"&&u.startsWith("http")) imgs.push({thumb:u,full:u,source:"자료실: "+(p.title||"").slice(0,15)});});}catch{}});
+                          setImgResults(prev=>[...imgs,...prev.filter(x=>!x.source?.startsWith("자료실"))]);
+                        }catch{}
+                        setImgLoading(false);
+                      }}/>
+                  </div>
                   <button onClick={async()=>{
                     setImgLoading(true);
                     try{

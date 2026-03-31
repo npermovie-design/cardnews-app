@@ -122,13 +122,73 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   };
 
   // 홈
-  if (!aiMenu || aiMenu === "home") {
-    // 홈 = AI 어시스턴트 (다글로 스타일)
+  if (!aiMenu || aiMenu === "home" || aiMenu === "ai_chat") {
+    // 홈에서 질문하면 채팅으로 전환
     const AiChat = React.lazy(() => import("./AiChat"));
+    const isChat = aiMenu === "ai_chat";
+    const homeRef_ = useRef(null);
+    const modelRef_ = useRef("claude-haiku-4-5");
+
+    const features_ = [
+      { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
+      { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
+      { icon:"/icons3d/instagram-cam.png", title:_s("이미지 생성","Image Gen"), menu:"image_create" },
+      { icon:"/icons3d/camera.png", title:_s("이미지 수정","Image Edit"), menu:"image_edit" },
+      { icon:"/icons3d/report.png", title:_s("비즈니스 문서","Biz Docs"), menu:"prompt_studio" },
+      { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
+    ];
+
+    if (isChat) {
+      return (
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}>
+          <AiChat isDark={isDark} user={user} theme={theme} setAiMenu={setAiMenu} />
+        </React.Suspense>
+      );
+    }
+
+    // 홈 화면
     return (
-      <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}>
-        <AiChat isDark={isDark} user={user} theme={theme} setAiMenu={setAiMenu} />
-      </React.Suspense>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
+        <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
+          <h1 style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:10, letterSpacing:-0.8, lineHeight:1.3 }}>
+            {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
+          </h1>
+
+          {/* AI 입력창 */}
+          <div style={{ margin:"24px auto 0", maxWidth:540, borderRadius:16, padding:"16px 20px", border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", boxShadow:"0 2px 16px rgba(0,0,0,0.04)" }}>
+            <textarea ref={homeRef_} placeholder={_s("어떤 작업을 도와드릴까요?","What can I help you with?")} rows={2}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); setAiMenu("ai_chat"); } }}}
+              style={{ width:"100%", border:"none", outline:"none", fontSize:15, color:homeText, background:"transparent", resize:"none", fontFamily:"inherit", lineHeight:1.6, boxSizing:"border-box" }} />
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8 }}>
+              <div style={{ fontSize:11, color:homeMuted }}>Enter{_s("로 AI에게 질문","to ask AI")}</div>
+              <button onClick={()=>{ const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); setAiMenu("ai_chat"); } }}
+                style={{ width:32, height:32, borderRadius:"50%", border:"none", background:"#7c6aff", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* 기능 아이콘 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
+            {features_.map(f => (
+              <div key={f.menu} onClick={() => setAiMenu(f.menu)}
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <img src={f.icon} alt="" style={{ width:28, height:28, objectFit:"contain" }} />
+                </div>
+                <span style={{ fontSize:12, fontWeight:600, color:homeText }}>{f.title}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 하단 버튼 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:10 }}>
+            <button onClick={()=>setAiMenu("library")} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:12, fontWeight:600, color:homeText }}>📁 {_s("내 보관함","Library")}</button>
+            <button onClick={()=>navigate("mypage")} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:12, fontWeight:600, color:"#7c6aff" }}>🔗 {_s("SNS 연동","SNS")}</button>
+          </div>
+        </div>
+      </div>
     );
   }
 

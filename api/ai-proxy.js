@@ -5,11 +5,18 @@ const OR_KEY = process.env.OPENROUTER_API_KEY;
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const MODEL_MAP = {
+  // Claude
   "claude-haiku-4-5": "anthropic/claude-haiku-4-5",
   "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4-5",
   "claude-sonnet-4-5": "anthropic/claude-sonnet-4-5",
   "claude-sonnet-4-20250514": "anthropic/claude-sonnet-4-5",
   "claude-3-5-sonnet-20241022": "anthropic/claude-sonnet-4-5",
+  // GPT
+  "gpt-4o": "openai/gpt-4o",
+  "gpt-4o-mini": "openai/gpt-4o-mini",
+  // Gemini
+  "gemini-2.5-flash": "google/gemini-2.5-flash-preview",
+  "gemini-2.5-pro": "google/gemini-2.5-pro-preview",
 };
 
 function orModel(m) {
