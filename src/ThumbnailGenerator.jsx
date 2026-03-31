@@ -395,6 +395,16 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
     a.href = c.toDataURL("image/png");
     a.download = `thumbnail_${canvasW}x${canvasH}.png`;
     a.click();
+    // 프리셋 저장
+    try {
+      const KEY = "nper_thumbnail_saves_v1";
+      const list = JSON.parse(localStorage.getItem(KEY) || "[]");
+      const now = new Date();
+      const ds = now.getFullYear() + "." + String(now.getMonth()+1).padStart(2,"0") + "." + String(now.getDate()).padStart(2,"0");
+      const thumb = c.toDataURL("image/jpeg", 0.4);
+      list.unshift({ id:"th_"+Date.now(), title:title||"썸네일", topic:title, date:ds, thumb, count:1 });
+      localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
+    } catch {}
   };
 
   const openEditor = () => {

@@ -415,6 +415,15 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
+      // 프리셋 저장
+      try {
+        const KEY = "nper_simpledetail_saves_v1";
+        const list = JSON.parse(localStorage.getItem(KEY) || "[]");
+        const now = new Date();
+        const ds = now.getFullYear() + "." + String(now.getMonth()+1).padStart(2,"0") + "." + String(now.getDate()).padStart(2,"0");
+        list.unshift({ id:"sd_"+Date.now(), topic:form.productName, title:form.productName, count:slidesData.length, date:ds, slides:slidesData, category:selCat?.key });
+        localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
+      } catch {}
     } catch(e) { setSlides([]); setWizStep(3); alert(ko ? "생성에 실패했습니다: " + (e.message || "다시 시도해주세요.") : "Generation failed: " + (e.message || "Please try again.")); console.error("생성 실패:", e.message); }
     setLoading(false);
   };
