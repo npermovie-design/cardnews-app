@@ -154,7 +154,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     ];
 
     // 다글로 스타일 홈
-    const homeRef = React.useRef(null);
+    const homeRef = useRef(null);
     const features = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
       { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
