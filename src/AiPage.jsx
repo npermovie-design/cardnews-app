@@ -78,14 +78,71 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     </div>
   );
 
+  // ── 공통 도구 헤더 (아이콘 + 제목 + 뒤로가기) ──
+  const TOOL_INFO = {
+    // 글쓰기
+    blog_naver:   { icon:"/icon-naver-blog.png", label:"네이버 블로그", parent:"blog_write" },
+    blog_cafe:    { icon:"/icon-naver-cafe.webp", label:"네이버 카페", parent:"blog_write" },
+    blog_tistory: { icon:"/icon-tistory.png", label:"티스토리", parent:"blog_write" },
+    blog_insta:   { icon:"/icon-instagram.webp", label:"인스타그램", parent:"blog_write" },
+    blog_thread:  { icon:"/icon-threads.png", label:"스레드", parent:"blog_write" },
+    blog_link:    { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
+    blog_news:    { emoji:"📰", label:"뉴스 → 블로그", parent:"blog_write" },
+    blog_yt_blog: { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
+    // 콘텐츠 제작
+    cardnews_simple: { emoji:"🎴", label:"카드뉴스", parent:"content_create" },
+    detail_simple:   { emoji:"📄", label:"상세페이지", parent:"content_create" },
+    thumbnail_gen:   { emoji:"🖼", label:"썸네일", parent:"content_create" },
+    ppt_gen:         { emoji:"📊", label:"PPT 슬라이드", parent:"content_create" },
+    // 이미지
+    product_shot:  { emoji:"📸", label:"제품컷", parent:"image_tools" },
+    logo_gen:      { emoji:"⭐", label:"로고", parent:"image_tools" },
+    mockup_gen:    { emoji:"🖥", label:"목업", parent:"image_tools" },
+    model_gen:     { emoji:"👤", label:"모델", parent:"image_tools" },
+    skin_retouch:  { emoji:"✨", label:"피부 보정", parent:"image_tools" },
+    face_swap:     { emoji:"🔄", label:"얼굴 교체", parent:"image_tools" },
+    outfit_swap:   { emoji:"👗", label:"의상 교체", parent:"image_tools" },
+    outpaint:      { emoji:"🖼", label:"여백 늘리기", parent:"image_tools" },
+    // 비즈니스 문서
+    prompt_studio_make: { emoji:"📋", label:"비즈니스 문서", parent:"prompt_studio" },
+  };
+
+  const ToolHeader = ({ menuId }) => {
+    const info = TOOL_INFO[menuId?.replace("_make","")?.replace("_intro","")] || TOOL_INFO[menuId];
+    if (!info) return null;
+    const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+    return (
+      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.12)" : "#fff", borderBottom:`1px solid ${bdr}`, padding:"10px 20px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={() => setAiMenu(info.parent)}
+          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, color: isDark ? "#a5b4fc" : "#7c6aff", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s" }}
+          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          뒤로
+        </button>
+        <div style={{ width:1, height:20, background:bdr }} />
+        {info.icon ? <img src={info.icon} alt="" style={{ width:22, height:22, borderRadius:4, objectFit:"contain" }} /> : <span style={{ fontSize:20 }}>{info.emoji}</span>}
+        <span style={{ fontSize:14, fontWeight:800, color: homeText }}>{info.label}</span>
+      </div>
+    );
+  };
+
+  // ── 도구 래퍼 (헤더 + 콘텐츠) ──
+  const ToolWrap = ({ menuId, children }) => (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <ToolHeader menuId={menuId} />
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        {children}
+      </div>
+    </div>
+  );
+
   // 비즈니스 문서: 하위 도구 직접 진입
   if (aiMenu === "prompt_studio_make") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} theme={theme} renderFooter={() => <AiFooter />} noHeader />
-        </div>
-      </div>
+      <ToolWrap menuId="prompt_studio_make">
+        <PromptStudioPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} theme={theme} renderFooter={() => <AiFooter />} noHeader />
+      </ToolWrap>
     );
   }
 
@@ -420,33 +477,33 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 링크 글쓰기 → 통합 글쓰기의 링크 탭으로 리다이렉트
   if (aiMenu === "blog_link" || aiMenu === "blog_link_intro") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="link_youtube" />;
+    return <ToolWrap menuId="blog_link"><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="link_youtube" /></ToolWrap>;
   }
   // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
   if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="news" />;
+    return <ToolWrap menuId="blog_news"><LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="news" /></ToolWrap>;
   }
   if (aiMenu === "blog_yt_blog" || aiMenu === "blog_yt_blog_intro") {
-    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="youtube" />;
+    return <ToolWrap menuId="blog_yt_blog"><LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="youtube" /></ToolWrap>;
   }
 
   // 블로그 계열 인트로 → 인트로 없이 직접 도구로 이동
   if (aiMenu.endsWith("_intro") && aiMenu.startsWith("blog_")) {
     const baseId = aiMenu.replace("_intro", "");
-    const info = BLOG_MAP[baseId] || { type: "blog", label: "블로그 글쓰기" };
+    const binfo = BLOG_MAP[baseId] || { type: "blog", label: "블로그 글쓰기" };
     return (
-      <div key={baseId} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <BlogGenerator initialType={info.type} menuLabel={info.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
+      <ToolWrap menuId={baseId}>
+        <BlogGenerator initialType={binfo.type} menuLabel={binfo.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </ToolWrap>
     );
   }
 
   // 글쓰기: 하위 플랫폼 직접 진입 (선택 후)
   if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" />;
+    return <ToolWrap menuId="blog_cafe"><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" /></ToolWrap>;
   }
   if (aiMenu.startsWith("blog_") && aiMenu !== "blog_write") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} />;
+    return <ToolWrap menuId={aiMenu}><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} /></ToolWrap>;
   }
 
   // 글쓰기: 선택 화면 (무엇을 작성할까요?)
@@ -520,32 +577,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
-    return (
-      <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
+    return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
-    return (
-      <div key="detail_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
+    return <ToolWrap menuId="detail_simple"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
-    return (
-      <div key="thumb_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
+    return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
   if (aiMenu === "ppt_gen") {
-    return (
-      <div key="ppt_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
+    return <ToolWrap menuId="ppt_gen"><PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
 
   // ── 콘텐츠 제작: 선택 화면 (무엇을 만들어야 하나요?) ──
@@ -597,14 +638,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 이미지: 하위 도구 직접 진입 ──
-  if (aiMenu === "product_shot") return <div key="product_shot" style={{ flex:1, display:"flex", overflow:"hidden" }}><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
-  if (aiMenu === "logo_gen") return <div key="logo_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
-  if (aiMenu === "mockup_gen") return <div key="mockup_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></div>;
-  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  if (aiMenu === "skin_retouch") return <SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
-  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} />;
+  if (aiMenu === "product_shot") return <ToolWrap menuId="product_shot"><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "logo_gen") return <ToolWrap menuId="logo_gen"><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "mockup_gen") return <ToolWrap menuId="mockup_gen"><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ToolWrap menuId="model_gen"><ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "skin_retouch") return <ToolWrap menuId="skin_retouch"><SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <ToolWrap menuId="face_swap"><FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <ToolWrap menuId="outfit_swap"><OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <ToolWrap menuId="outpaint"><OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
 
   // ── 이미지: 선택 화면 (이미지 생성 + 수정 통합) ──
   if (aiMenu === "image_tools" || aiMenu === "image_create" || aiMenu === "image_edit") {
