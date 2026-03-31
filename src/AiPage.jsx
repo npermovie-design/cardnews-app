@@ -153,64 +153,95 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { icon: "🔄", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
     ];
 
-    // 다글로 스타일 홈 — 중앙 타이틀 + 기능 아이콘 그리드
-    const featureCards = [
-      { icon:"/icons3d/blog-write.png", title:"글쓰기", desc:"블로그·SNS 자동 작성", menu:"blog_write" },
-      { icon:"/icons3d/palette.png", title:"콘텐츠 제작", desc:"카드뉴스·상세페이지·썸네일·PPT", menu:"content_create" },
-      { icon:"/icons3d/instagram-cam.png", title:"이미지 생성", desc:"제품컷·로고·목업·모델", menu:"image_create" },
-      { icon:"/icons3d/camera.png", title:"이미지 수정", desc:"보정·얼굴교체·의상·여백", menu:"image_edit" },
-      { icon:"/icons3d/report.png", title:"비즈니스 문서", desc:"기획서·보고서·제안서", menu:"prompt_studio" },
-      { icon:"/icons3d/sns-share.png", title:"리퍼포징", desc:"1개 글 → 5개 포맷 변환", menu:"repurpose" },
+    // 다글로 스타일 홈
+    const homeRef = React.useRef(null);
+    const features = [
+      { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
+      { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
+      { icon:"/icons3d/instagram-cam.png", title:_s("이미지 생성","Image Gen"), menu:"image_create" },
+      { icon:"/icons3d/camera.png", title:_s("이미지 수정","Image Edit"), menu:"image_edit" },
+      { icon:"/icons3d/report.png", title:_s("비즈니스 문서","Biz Docs"), menu:"prompt_studio" },
+      { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
     ];
 
+    const handleHomeSubmit = () => {
+      const val = homeRef.current?.value?.trim();
+      if (!val) return;
+      setAiMenu("blog_write");
+    };
+
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", background:isDark?"transparent":"#f8f8fb", overflow:"auto" }}>
-        <div style={{ maxWidth:680, width:"100%", textAlign:"center" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
+        <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
 
           {/* 메인 타이틀 */}
-          <div style={{ fontSize:28, fontWeight:900, color:homeText, marginBottom:8, letterSpacing:-0.5 }}>
-            {_s("AI로 콘텐츠를 만들어보세요","Create content with AI")}
-          </div>
-          <div style={{ fontSize:14, color:homeMuted, marginBottom:36 }}>
-            {_s("주제만 입력하면 글, 이미지, 디자인을 자동으로 만들어드려요","Just enter a topic and we'll create text, images, and designs for you")}
+          <h1 style={{ fontSize:32, fontWeight:900, color:homeText, marginBottom:12, letterSpacing:-1, lineHeight:1.3 }}>
+            {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
+          </h1>
+
+          {/* AI 입력창 */}
+          <div style={{
+            margin:"28px auto 12px", maxWidth:560, borderRadius:16, padding:"16px 20px",
+            border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`,
+            background:isDark?"rgba(255,255,255,0.04)":"#fff",
+            boxShadow:"0 2px 16px rgba(0,0,0,0.04)",
+          }}>
+            <textarea
+              ref={homeRef}
+              placeholder={_s("어떤 작업을 도와드릴까요?","What can I help you with?")}
+              rows={2}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleHomeSubmit(); }}}
+              style={{ width:"100%", border:"none", outline:"none", fontSize:15, color:homeText, background:"transparent", resize:"none", fontFamily:"inherit", lineHeight:1.6, boxSizing:"border-box" }}
+            />
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8 }}>
+              <div style={{ fontSize:11, color:homeMuted }}>{_s("Enter로 시작","Press Enter to start")}</div>
+              <button onClick={handleHomeSubmit}
+                style={{ width:32, height:32, borderRadius:"50%", border:"none", background:"#7c6aff", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
+            </div>
           </div>
 
-          {/* 기능 아이콘 그리드 — 다글로 스타일 */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:16, marginBottom:40 }}>
-            {featureCards.map(card => (
-              <div key={card.menu} onClick={() => setAiMenu(card.menu)}
-                style={{
-                  padding:"24px 14px 18px", borderRadius:16,
-                  border:`1px solid ${cardBdr}`,
-                  background:isDark?"rgba(255,255,255,0.04)":"#fff",
-                  cursor:"pointer", transition:"all 0.2s",
-                  display:"flex", flexDirection:"column", alignItems:"center", gap:10,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
-                <img src={card.icon} alt="" style={{ width:40, height:40, objectFit:"contain" }} />
-                <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:3 }}>{card.title}</div>
-                  <div style={{ fontSize:11, color:homeMuted, lineHeight:1.4 }}>{card.desc}</div>
+          {/* 기능 아이콘 한줄 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
+            {features.map(f => (
+              <div key={f.menu} onClick={() => setAiMenu(f.menu)}
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"}
+                onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <img src={f.icon} alt="" style={{ width:28, height:28, objectFit:"contain" }} />
                 </div>
+                <span style={{ fontSize:12, fontWeight:600, color:homeText }}>{f.title}</span>
               </div>
             ))}
           </div>
 
-          {/* 최근 작업 안내 */}
-          <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-            <button onClick={() => setAiMenu("library")}
-              style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:13, fontWeight:600, color:homeText, display:"flex", alignItems:"center", gap:6 }}
-              onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.08)":"#f5f5ff"}
-              onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"#fff"}>
-              <img src="/icons3d/search-book.png" alt="" style={{ width:18, height:18 }} /> {_s("내 보관함","My Library")}
-            </button>
-            <button onClick={() => navigate("mypage")}
-              style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:13, fontWeight:600, color:"#7c6aff", display:"flex", alignItems:"center", gap:6 }}
-              onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)"}
-              onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"#fff"}>
-              🔗 {_s("SNS 연동·관리","SNS Connect")}
-            </button>
+          {/* 최근 작업 / 보관함 */}
+          <div style={{ textAlign:"left", maxWidth:560, margin:"0 auto" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{_s("최근 작업","Recent Work")}</span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+              {[
+                { title:_s("내 보관함","My Library"), desc:_s("저장한 콘텐츠 확인","View saved content"), menu:"library", icon:"📁" },
+                { title:_s("SNS 연동","SNS Connect"), desc:_s("계정 연동·자동 발행","Auto publish"), menu:null, icon:"🔗", action:()=>navigate("mypage") },
+              ].map((item,i) => (
+                <div key={i} onClick={item.action || (() => setAiMenu(item.menu))}
+                  style={{ padding:"14px 16px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", transition:"all 0.15s" }}
+                  onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.06)"}
+                  onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:16 }}>{item.icon}</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.title}</div>
+                      <div style={{ fontSize:11, color:homeMuted, marginTop:1 }}>{item.desc}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>
