@@ -41,7 +41,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [inlineImages,    setInlineImages]    = useState({}); // { "키워드": imageUrl }
 
   // ── 세부 설정 상태 ──
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
   const [advAudience,  setAdvAudience]  = useState(""); // 대상 독자
   const [advWordCount, setAdvWordCount] = useState(2000); // 원하는 분량
@@ -494,7 +494,72 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
-          {(viewMode==="text"||!isTistory)&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9}}>
+          {(viewMode==="text"||!isTistory)&&<div
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={e => {
+              // 편집 내용을 result에 반영
+              const newText = e.currentTarget.innerText;
+              if (newText !== result) setResult(newText);
+            }}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #7c6aff"; }}
+            onDragLeave={e => { e.currentTarget.style.outline = "none"; }}
+            onDrop={e => {
+              e.preventDefault();
+              e.currentTarget.style.outline = "none";
+              const file = e.dataTransfer?.files?.[0];
+              if (file && file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  const img = document.createElement("img");
+                  img.src = ev.target.result;
+                  img.style.maxWidth = "100%";
+                  img.style.borderRadius = "12px";
+                  img.style.margin = "12px 0";
+                  img.style.display = "block";
+                  // 드롭 위치에 이미지 삽입
+                  const sel = window.getSelection();
+                  if (sel.rangeCount) {
+                    const range = sel.getRangeAt(0);
+                    range.insertNode(img);
+                    range.collapse(false);
+                  } else {
+                    e.currentTarget.appendChild(img);
+                  }
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
+            onPaste={e => {
+              // 모바일/PC 이미지 붙여넣기 지원
+              const items = e.clipboardData?.items;
+              if (items) {
+                for (const item of items) {
+                  if (item.type.startsWith("image/")) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                      const img = document.createElement("img");
+                      img.src = ev.target.result;
+                      img.style.maxWidth = "100%";
+                      img.style.borderRadius = "12px";
+                      img.style.margin = "12px 0";
+                      img.style.display = "block";
+                      const sel = window.getSelection();
+                      if (sel.rangeCount) {
+                        const range = sel.getRangeAt(0);
+                        range.insertNode(img);
+                        range.collapse(false);
+                      }
+                    };
+                    reader.readAsDataURL(blob);
+                    break;
+                  }
+                }
+              }
+            }}
+            style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
             {renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
@@ -918,20 +983,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     <input type="text" value={advAudience} onChange={e => setAdvAudience(e.target.value)}
                       placeholder="어떤 독자를 위한 글인지 입력하세요 (선택)"
                       style={IS}/>
-                  </div>
-                  {/* 원하는 분량 */}
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>
-                      원하는 분량: <span style={{color:accent,fontWeight:800}}>{advWordCount.toLocaleString()}자</span>
-                    </div>
-                    <input type="range" min={500} max={5000} step={100} value={advWordCount}
-                      onChange={e => setAdvWordCount(Number(e.target.value))}
-                      style={{width:"100%",accentColor:"#7c6aff",cursor:"pointer"}}/>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:muted,marginTop:2}}>
-                      <span>500자</span>
-                      <span>2,500자</span>
-                      <span>5,000자</span>
-                    </div>
                   </div>
                   {/* 추가 지시사항 */}
                   <div>

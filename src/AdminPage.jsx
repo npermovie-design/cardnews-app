@@ -396,7 +396,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
-        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"]].map(([t,l]) => (
+        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["templates","🎨 템플릿 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -1059,6 +1059,63 @@ export default function AdminPage({ C, user: adminUser }) {
       )}
 
       {/* ─────────────── 문의 관리 ─────────────── */}
+      {/* ─────────────── 템플릿 관리 ─────────────── */}
+      {tab === "templates" && (() => {
+        const TemplateManager = () => {
+          const [templates, setTemplates] = React.useState([]);
+          const [tplLoading, setTplLoading] = React.useState(true);
+          const loadTemplates = async () => {
+            setTplLoading(true);
+            try {
+              const { data, error } = await supabase.from("shared_templates").select("*").order("created_at", { ascending: false });
+              if (!error && data) setTemplates(data);
+            } catch (e) { console.warn("템플릿 로드 실패:", e); }
+            setTplLoading(false);
+          };
+          React.useEffect(() => { loadTemplates(); }, []);
+          const deleteTemplate = async (id) => {
+            if (!window.confirm("이 템플릿을 삭제하시겠습니까?")) return;
+            try {
+              await supabase.from("shared_templates").delete().eq("id", id);
+              setTemplates(prev => prev.filter(t => t.id !== id));
+            } catch (e) { alert("삭제 실패: " + e.message); }
+          };
+          if (tplLoading) return <div style={{ textAlign: "center", padding: 40, color: C.muted }}>로딩 중...</div>;
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>공유 템플릿 ({templates.length}개)</span>
+                <button onClick={loadTemplates} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>새로고침</button>
+              </div>
+              {templates.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40, color: C.muted }}>등록된 템플릿이 없습니다</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                  {templates.map(tpl => (
+                    <div key={tpl.id} style={{ borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, overflow: "hidden" }}>
+                      <div style={{ width: "100%", paddingBottom: "60%", position: "relative", background: isDark ? "rgba(255,255,255,0.05)" : "#f5f5f5" }}>
+                        {tpl.preview ? <img src={tpl.preview} alt={tpl.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#ccc" }}>🎨</div>}
+                      </div>
+                      <div style={{ padding: "10px 12px" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>{tpl.title || "제목 없음"}</div>
+                        <div style={{ fontSize: 10, color: C.muted }}>{tpl.author || "익명"} · {tpl.slide_count || "?"}장 · {new Date(tpl.created_at).toLocaleDateString()}</div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                          <button onClick={() => deleteTemplate(tpl.id)}
+                            style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        };
+        return <TemplateManager />;
+      })()}
+
       {tab === "inquiries" && <InquiryManager C={C} isDark={isDark} />}
     </div>
   );
