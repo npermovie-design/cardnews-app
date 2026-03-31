@@ -424,7 +424,7 @@ export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
   // editMode가 true면 바로 에디터만 표시
   if (editMode) {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"100%" }}>
+      <div style={{ position:"fixed", inset:0, zIndex:100, display:"flex", flexDirection:"column", overflow:"hidden", background:"#fff" }}>
         <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
           <UnifiedCanvasEditor
             slides={[{

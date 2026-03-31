@@ -330,31 +330,34 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   };
+  // 모바일 호환 복사 (clipboard API fallback)
+  const fallbackCopy = (text) => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    document.body.removeChild(ta);
+  };
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    // 이미지 포함 HTML 복사 (네이버 블로그 등 리치 에디터용)
     if (withImages && Object.keys(inlineImages).length > 0) {
       let html = cleaned;
-      // [image: keyword] / [이미지: keyword] 태그를 <img> HTML로 교체
       html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (match, desc) => {
         const url = inlineImages[desc.trim()];
         if (url) return `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>`;
         return match;
       });
-      // 줄바꿈을 <br>로
       html = html.replace(/\n/g, "<br/>");
       try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([cleaned], { type: "text/plain" }),
-          })
-        ]);
-      } catch {
-        navigator.clipboard.writeText(cleaned);
-      }
+        if (navigator.clipboard?.write) {
+          await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([cleaned],{type:"text/plain"})})]);
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(cleaned);
+        } else { fallbackCopy(cleaned); }
+      } catch { fallbackCopy(cleaned); }
     } else {
-      navigator.clipboard.writeText(cleaned);
+      try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
+      catch { fallbackCopy(cleaned); }
     }
     setCopied(true);
     setTimeout(()=>setCopied(false),2000);
@@ -384,7 +387,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",maxWidth:900,margin:"0 auto",width:"100%"}}>
-        <div style={{minHeight:46,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 18px",borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:6}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 18px",borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:6}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:viewMode===mode?700:400,cursor:"pointer"}}>
