@@ -1032,64 +1032,117 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     const removeImg = (idx) => setUserImages(prev => prev.filter((_,i) => i !== idx));
     const hasImages = userImages.length > 0;
 
+    // 이미지 바로 생성 실행
+    const generateImageOnly = async () => {
+      if (!user && guestLimitExceeded()) return;
+      if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+      if (!user) incrementGuestUsage();
+      if (user?.uid) {
+        changePoints(user.uid, -10, "이미지 바로 생성").then(newPts => {
+          if (onUserUpdate) onUserUpdate({...user, points: newPts});
+        }).catch(()=>{});
+      }
+      setLoading(true); setGenError("");
+      try {
+        const srcContent = urlResult ? [urlResult.title, urlResult.description, urlResult.content].filter(Boolean).join("\n").slice(0,700) : undefined;
+        const textData = await generateSlideTexts({topic, pageCount, sourceContent: srcContent, topicDetail, slideTypes: SLIDE_TYPES});
+        const slidesData = (textData.slides||[]).map(s=>({ ...s, title:s.headline, subtitle:s.subheadline, highlight:s.badge }));
+        // 업로드 이미지를 배경으로 적용
+        const newSted = {};
+        if (hasImages) {
+          slidesData.forEach((_, i) => {
+            if (userImages[i]) {
+              newSted[i] = { bgImage: userImages[i].preview };
+            }
+          });
+        }
+        setSlides(slidesData); setSted(newSted); setSelIdx(0); setWizStep(4);
+        saveToCardLibrary(slidesData);
+      } catch(e) { setGenError((ko?"생성 실패: ":"Failed: ") + (e.message||"")); console.error(e); }
+      setLoading(false);
+    };
+
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
         <div style={{ maxWidth:700, margin:"0 auto", padding:"24px 24px 40px", width:"100%", boxSizing:"border-box" }}>
-          <div style={{ marginBottom:16 }}>
+          <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{imageOnlyLabel || "이미지 바로 생성"}</div>
-            <div style={{ fontSize:12, color:muted }}>사용할 이미지를 먼저 업로드하세요 (최대 20장)</div>
+            <div style={{ fontSize:12, color:muted }}>주제와 이미지를 넣으면 AI가 바로 완성해줘요</div>
           </div>
 
-          {/* 업로드 영역 */}
-          <div style={{ padding:"32px 20px", borderRadius:14, border:`2px dashed ${bdr}`, background:cardBg, textAlign:"center", marginBottom:16, cursor:"pointer" }}
-            onClick={() => imgInputRef2.current?.click()}
-            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#7c6aff"; }}
-            onDragLeave={e => e.currentTarget.style.borderColor=bdr}
-            onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor=bdr; handleImgAdd(e.dataTransfer.files); }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>📂</div>
-            <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4 }}>클릭하거나 드래그하여 이미지 업로드</div>
-            <div style={{ fontSize:11, color:muted }}>JPG, PNG, WEBP · 최대 20장</div>
+          {/* 주제 입력 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>{ko?"주제":"Topic"}</div>
+            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={ko?"예: 직장인 번아웃 극복법 5가지":"e.g. 5 Tips for Burnout"}
+              style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
           </div>
-          <input ref={imgInputRef2} type="file" accept="image/*" multiple style={{ display:"none" }}
-            onChange={e => { handleImgAdd(e.target.files); e.target.value=""; }} />
 
-          {/* 업로드된 이미지 미리보기 */}
+          {/* 페이지 수 */}
+          <div style={{ marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"페이지 수":"Pages"}</div>
+            <div style={{ display:"flex", gap:4 }}>
+              {[3,4,5,6,8,10].map(n => (
+                <button key={n} onClick={() => setPageCount(n)}
+                  style={{ width:36, height:36, borderRadius:8, border: pageCount===n?`2px solid #7c6aff`:`1.5px solid ${bdr}`,
+                    background: pageCount===n?"rgba(124,106,255,0.12)":"transparent", color: pageCount===n?"#7c6aff":text,
+                    fontSize:13, fontWeight:700, cursor:"pointer" }}>{n}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* 이미지 업로드 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:6 }}>{ko?"이미지 업로드":"Upload Images"} <span style={{ fontWeight:400, color:muted }}>(선택)</span></div>
+            <div style={{ padding:"24px 16px", borderRadius:12, border:`2px dashed ${bdr}`, background:cardBg, textAlign:"center", cursor:"pointer" }}
+              onClick={() => imgInputRef2.current?.click()}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#7c6aff"; }}
+              onDragLeave={e => e.currentTarget.style.borderColor=bdr}
+              onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor=bdr; handleImgAdd(e.dataTransfer.files); }}>
+              <div style={{ fontSize:28, marginBottom:4 }}>📂</div>
+              <div style={{ fontSize:12, fontWeight:600, color:text }}>클릭 또는 드래그하여 업로드</div>
+              <div style={{ fontSize:10, color:muted }}>JPG, PNG · 최대 20장</div>
+            </div>
+            <input ref={imgInputRef2} type="file" accept="image/*" multiple style={{ display:"none" }}
+              onChange={e => { handleImgAdd(e.target.files); e.target.value=""; }} />
+          </div>
+
+          {/* 업로드된 이미지 */}
           {hasImages && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))", gap:8, marginBottom:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6, marginBottom:16 }}>
               {userImages.map((img,i) => (
                 <div key={i} style={{ position:"relative", paddingBottom:"100%", borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}` }}>
                   <img src={img.preview} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
-                  <button onClick={() => removeImg(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:"50%", border:"none", background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                  <button onClick={() => removeImg(i)} style={{ position:"absolute", top:2, right:2, width:18, height:18, borderRadius:"50%", border:"none", background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
                 </div>
               ))}
             </div>
           )}
 
-          {/* 경고 (이미지 없을 때) */}
+          {/* 경고 */}
           {!hasImages && (
-            <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(249,115,22,0.08)", border:"1px solid rgba(249,115,22,0.2)", marginBottom:16 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:"#f97316", marginBottom:4 }}>이미지를 넣지 않으면 AI가 임의로 생성합니다</div>
-              <div style={{ fontSize:11, color:"#fb923c" }}>원하는 결과물을 위해 직접 이미지를 업로드하는 것을 권장해요.</div>
-              <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, cursor:"pointer" }}>
+            <div style={{ padding:"12px 14px", borderRadius:10, background:"rgba(249,115,22,0.08)", border:"1px solid rgba(249,115,22,0.2)", marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#f97316", marginBottom:3 }}>이미지를 넣지 않으면 AI가 임의로 배경을 생성합니다</div>
+              <div style={{ fontSize:11, color:"#fb923c" }}>원하는 결과를 위해 직접 이미지를 업로드하는 것을 권장해요.</div>
+              <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, cursor:"pointer" }}>
                 <input type="checkbox" checked={imgWarnAck} onChange={e => setImgWarnAck(e.target.checked)} />
-                <span style={{ fontSize:11, color:"#f97316", fontWeight:600 }}>이미지 없이 진행하겠습니다</span>
+                <span style={{ fontSize:11, color:"#f97316", fontWeight:600 }}>이미지 없이 진행</span>
               </label>
             </div>
           )}
 
-          {/* 주제 입력 (간소화) */}
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:8 }}>주제</div>
-            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={ko?"카드뉴스 주제를 입력하세요":"Enter topic"}
-              style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
-          </div>
+          {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:12 }}>{genError}</div>}
 
-          <button onClick={() => { setWizStep(3); }} disabled={!topic.trim() || (!hasImages && !imgWarnAck)}
-            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor: (!topic.trim()||(!hasImages&&!imgWarnAck))?"not-allowed":"pointer",
-              background: (!topic.trim()||(!hasImages&&!imgWarnAck))?"rgba(99,102,241,0.3)":"#7c6aff", color:"#fff", fontSize:15, fontWeight:900, opacity: (!topic.trim()||(!hasImages&&!imgWarnAck))?0.5:1 }}>
-            {ko?"다음 → 디자인 선택":"Next → Design"}
+          <button onClick={generateImageOnly} disabled={loading || !topic.trim() || (!hasImages && !imgWarnAck)}
+            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
+              cursor: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?"not-allowed":"pointer",
+              background:"#7c6aff", color:"#fff", fontSize:15, fontWeight:900,
+              opacity: (loading||!topic.trim()||(!hasImages&&!imgWarnAck))?0.5:1,
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            {loading ? <><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</> : (ko?"이미지 바로 생성":"Generate Images")}
           </button>
         </div>
+        {loading && <PlanningAnimation pageCount={pageCount} ko={ko} />}
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
@@ -1485,7 +1538,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           {genError && <div style={{ marginBottom:12, padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#ef4444", fontSize:13 }}>{genError}</div>}
 
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
+            <button onClick={()=>setWizStep(imageOnlyMode ? 1 : 2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감":"Est. cost"}: <b style={{ color:"#7c6aff" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
