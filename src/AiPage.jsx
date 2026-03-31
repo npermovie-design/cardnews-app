@@ -1337,15 +1337,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           borderBottom: "1px solid " + topBdr, background: topBg,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* 모바일 햄버거 — 홈이 아닐 때만 */}
-            {aiMenu && aiMenu !== "home" && (
-              <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22,
-                  color: isDark ? "#fff" : "#333", padding: "8px 10px", marginRight: 2, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                ☰
-              </button>
-            )}
-            {aiMenu && aiMenu !== "home" && <span style={{ fontSize: 12, color: topClr, whiteSpace: "nowrap", fontWeight: 600 }}>{MENU_LABELS[aiMenu] || ""}</span>}
             {isGenerating && (
               <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 10px", borderRadius: 12,
                 background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)",
