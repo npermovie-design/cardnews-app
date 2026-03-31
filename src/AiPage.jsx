@@ -384,19 +384,63 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 통합 글쓰기 (플랫폼 선택)
-  if (aiMenu === "blog_write") {
-    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
-  }
-
-  // 네이버 카페 글쓰기 (하위호환)
+  // 글쓰기: 하위 플랫폼 직접 진입 (선택 후)
   if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
     return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" />;
   }
-
-  // 블로그 계열 생성기 (하위호환)
-  if (aiMenu.startsWith("blog_")) {
+  if (aiMenu.startsWith("blog_") && aiMenu !== "blog_write") {
     return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} />;
+  }
+
+  // 글쓰기: 선택 화면 (무엇을 작성할까요?)
+  if (aiMenu === "blog_write") {
+    const writeItems = [
+      { category: "직접 작성", items: [
+        { id:"blog_naver", icon:"/icon-naver-blog.png", label:"네이버 블로그", desc:"네이버 블로그 글쓰기" },
+        { id:"blog_cafe", icon:"/icon-naver-cafe.webp", label:"네이버 카페", desc:"카페 커뮤니티 글" },
+        { id:"blog_tistory", icon:"/icon-tistory.png", label:"티스토리", desc:"티스토리 포스트" },
+        { id:"blog_insta", icon:"/icon-instagram.webp", label:"인스타그램", desc:"인스타 캡션 생성" },
+        { id:"blog_thread", icon:"/icon-threads.png", label:"스레드", desc:"스레드 게시물" },
+      ]},
+      { category: "링크에서 변환", items: [
+        { id:"blog_link", icon:"/icon-youtube.png", label:"유튜브 → 블로그", desc:"유튜브 영상을 글로 변환" },
+        { id:"blog_news", emoji:"📰", label:"뉴스 → 블로그", desc:"뉴스 기사를 글로 변환" },
+      ]},
+    ];
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
+          <div style={{ maxWidth:720, margin:"0 auto", padding:"40px 24px 60px" }}>
+            <div style={{ textAlign:"center", marginBottom:36 }}>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 작성할까요?</div>
+              <div style={{ fontSize:13, color:homeMuted }}>플랫폼을 선택하면 AI가 글을 작성해드려요</div>
+            </div>
+            {writeItems.map(cat => (
+              <div key={cat.category} style={{ marginBottom:28 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+                  {cat.items.map(item => (
+                    <button key={item.id} onClick={() => setAiMenu(item.id)}
+                      style={{
+                        padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
+                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
+                        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                        transition:"all 0.15s", textAlign:"center",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
+                      {item.icon ? <img src={item.icon} alt="" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
+                      <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
+                      <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // 보관함에서 심플 카드뉴스 열기
@@ -417,8 +461,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작기 (탭 없이 각 도구 직접 진입) ──
-  if (aiMenu === "content_create" || aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
+  // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
+  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return (
       <div key="cn_simple" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
@@ -443,6 +487,54 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return (
       <div key="ppt_gen" style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
+      </div>
+    );
+  }
+
+  // ── 콘텐츠 제작: 선택 화면 (무엇을 만들어야 하나요?) ──
+  if (aiMenu === "content_create") {
+    const contentItems = [
+      { category: "홍보 · 마케팅", items: [
+        { id:"cardnews_simple", icon:"🎴", label:"카드뉴스", size:"1080 × 1080 px", desc:"SNS용 카드뉴스" },
+        { id:"detail_simple", icon:"📄", label:"상세페이지", size:"860 × 1100 px", desc:"제품 상세 설명" },
+        { id:"thumbnail_gen", icon:"🖼", label:"썸네일", size:"1280 × 720 px", desc:"유튜브/블로그 썸네일" },
+      ]},
+      { category: "문서 · 발표", items: [
+        { id:"ppt_gen", icon:"📊", label:"PPT 슬라이드", size:"1920 × 1080 px", desc:"프레젠테이션 자료" },
+      ]},
+    ];
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
+          <div style={{ maxWidth:800, margin:"0 auto", padding:"40px 24px 60px" }}>
+            <div style={{ textAlign:"center", marginBottom:36 }}>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 만들어야 하나요?</div>
+              <div style={{ fontSize:13, color:homeMuted }}>만들고 싶은 콘텐츠를 선택하세요</div>
+            </div>
+            {contentItems.map(cat => (
+              <div key={cat.category} style={{ marginBottom:28 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
+                  {cat.items.map(item => (
+                    <button key={item.id} onClick={() => setAiMenu(item.id)}
+                      style={{
+                        padding:"24px 16px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
+                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
+                        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                        transition:"all 0.15s", textAlign:"center",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
+                      <span style={{ fontSize:36 }}>{item.icon}</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:homeText }}>{item.label}</span>
+                      <span style={{ fontSize:11, color:homeMuted }}>{item.size}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

@@ -773,8 +773,6 @@ ${fileContent.slice(0, 4000)}
 }
 
 function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, showPointConfirm, defaultPlatform }) {
-  const defaultIsLink = defaultPlatform && WRITE_PLATFORMS.find(p => p.id === defaultPlatform)?.link;
-  const [category, setCategory] = useState(defaultIsLink ? "link" : defaultPlatform === "file" ? "file" : "direct");
   const [platform, setPlatform] = useState(defaultPlatform || "blog_naver");
   const info = WRITE_PLATFORMS.find(p => p.id === platform) || WRITE_PLATFORMS[0];
   const isLink = info && info.link;
@@ -782,53 +780,19 @@ function UnifiedBlogWriter({ theme, isDark, user, onLoginRequest, onUserUpdate, 
   const _text = isDark ? "#e8eaed" : "#1a1a2e";
   const _muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const _bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const _accent = "#7c6aff";
-
-  const allOptions = [
-    { group: "직접 작성", items: WRITE_PLATFORMS.filter(p => !p.link && !p.separator) },
-    { group: "링크에서 변환", items: WRITE_PLATFORMS.filter(p => p.link) },
-    { group: "파일", items: [{ id: "_file", label: "파일 받아쓰기" }] },
-  ];
-
-  const handleSelect = (id) => {
-    if (id === "_file") { setCategory("file"); return; }
-    const found = WRITE_PLATFORMS.find(p => p.id === id);
-    if (found?.link) { setCategory("link"); setPlatform(id); }
-    else { setCategory("direct"); setPlatform(id); }
-  };
-
-  const currentLabel = category === "file" ? "파일 받아쓰기" : (info?.label || "네이버 블로그");
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${_bdr}` }}>
-        <div style={{ maxWidth:720, margin:"0 auto", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div>
-            <div style={{ fontSize:17, fontWeight:900, color:_text }}>글쓰기</div>
-            <div style={{ fontSize:11, color:_muted }}>AI가 블로그 글을 작성해드려요</div>
+        <div style={{ maxWidth:720, margin:"0 auto", padding:"12px 24px", display:"flex", alignItems:"center", gap:12 }}>
+          {info.icon && <img src={info.icon} alt="" style={{ width:22, height:22, borderRadius:4, objectFit:"contain" }} />}
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:_text }}>{info.label || "글쓰기"}</div>
           </div>
-          <select value={category === "file" ? "_file" : platform}
-            onChange={e => handleSelect(e.target.value)}
-            style={{
-              padding:"8px 14px", borderRadius:10, border:`1.5px solid ${_bdr}`,
-              background: isDark ? "rgba(255,255,255,0.08)" : "#fff",
-              color: _text, fontSize:13, fontWeight:600, cursor:"pointer", outline:"none",
-              minWidth:140,
-            }}>
-            {allOptions.map(group => (
-              <optgroup key={group.group} label={group.group}>
-                {group.items.map(item => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
         </div>
       </div>
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        {category === "file" ? (
-          <FileTranscriber isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-        ) : isLink ? (
+        {isLink ? (
           info.linkTab === "youtube" ? (
             <YtBlogGenerator key={platform} theme={theme} embedded user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
           ) : (
