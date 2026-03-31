@@ -95,6 +95,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"image_create", label:"이미지 생성", icon:"/icons3d/instagram-cam.png", ids:["product_shot","logo_gen","mockup_gen","model_gen"] },
     { id:"image_edit", label:"이미지 수정", icon:"/icons3d/camera.png", ids:["skin_retouch","face_swap","outfit_swap","outpaint"] },
     { sep:true },
+    { id:"ai_chat", label:"AI 채팅", icon:"/icons3d/sns-heart.png", ids:[] },
     { id:"repurpose", label:"리퍼포징", icon:"/icons3d/sns-share.png" },
   ];
 

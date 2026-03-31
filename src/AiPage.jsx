@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator, TabbedGroup } from "./AiImageGenerators.jsx";
@@ -54,6 +54,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const _s = (ko, en) => isKo ? ko : en;
 
   const AiFooter = () => null;
+
+  // AI 채팅
+  if (aiMenu === "ai_chat") {
+    const AiChat = React.lazy(() => import("./AiChat"));
+    return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><AiChat isDark={isDark} user={user} theme={theme} /></React.Suspense>;
+  }
 
   // 보관함
   if (aiMenu === "library") {
@@ -162,6 +168,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { icon:"/icons3d/camera.png", title:_s("이미지 수정","Image Edit"), menu:"image_edit" },
       { icon:"/icons3d/report.png", title:_s("비즈니스 문서","Biz Docs"), menu:"prompt_studio" },
       { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
+      { icon:"/icons3d/sns-heart.png", title:_s("AI 채팅","AI Chat"), menu:"ai_chat" },
     ];
 
     const handleHomeSubmit = () => {
