@@ -1411,7 +1411,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   // ═══ STEP 4: 캔버스 편집기 (Fabric.js) ══════════════════════════════
   if (wizStep === 4) {
     return (
-      <div style={{ flex:1, overflowY:"auto" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"100%" }}>
         <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888"}}>에디터 로딩 중...</div>}>
           <UnifiedCanvasEditor
             slides={slides.map((s, i) => {

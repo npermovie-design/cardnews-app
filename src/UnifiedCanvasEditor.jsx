@@ -168,7 +168,8 @@ export default function UnifiedCanvasEditor({
     // 하이라이트/뱃지 텍스트
     if (s.highlight || s.subtitle) {
       const hl = new Textbox(s.highlight || s.subtitle || "", {
-        left:width*0.08, top:height*0.12, width:width*0.84,
+        left:width/2, top:height*0.15, width:width*0.84,
+        originX:"center", originY:"center",
         fontSize:16, fontWeight:"700", fill:s.textColor||"#000000",
         fontFamily:s.fontFamily||"Pretendard", opacity:0.6,
         textAlign:"center", name:"highlight",
@@ -179,7 +180,8 @@ export default function UnifiedCanvasEditor({
     // 제목 — 정중앙 배치
     if (s.title) {
       const t = new Textbox(s.title, {
-        left:width*0.08, top:height*0.3, width:width*0.84,
+        left:width/2, top:height*0.38, width:width*0.84,
+        originX:"center", originY:"center",
         fontSize:s.fontSize||42, fontWeight:"bold",
         fill:s.textColor||"#000000",
         fontFamily:s.fontFamily||"Pretendard",
@@ -191,7 +193,8 @@ export default function UnifiedCanvasEditor({
     // 본문 — 제목 아래 중앙 배치
     if (s.body) {
       const b = new Textbox(s.body, {
-        left:width*0.08, top:height*0.52, width:width*0.84,
+        left:width/2, top:height*0.58, width:width*0.84,
+        originX:"center", originY:"center",
         fontSize:Math.round((s.fontSize||42)*0.38),
         fill:s.textColor||"#000000", opacity:0.85,
         fontFamily:s.fontFamily||"Pretendard",

@@ -498,11 +498,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {(viewMode==="text"||!isTistory)&&<div
             contentEditable
             suppressContentEditableWarning
-            onBlur={e => {
-              // 편집 내용을 result에 반영
-              const newText = e.currentTarget.innerText;
-              if (newText !== result) setResult(newText);
-            }}
             onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #7c6aff"; }}
             onDragLeave={e => { e.currentTarget.style.outline = "none"; }}
             onDrop={e => {

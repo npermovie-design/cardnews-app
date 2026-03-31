@@ -147,20 +147,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <span style={{ fontSize: 13 }}>🔗</span>
           SNS 계정 연동·관리
         </button>
-        {user && (
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            padding: "0 4px", fontSize: 11, color: isDark ? "rgba(255,255,255,0.35)" : "#aaa",
-          }}>
-            <span>보유 포인트</span>
-            <span style={{
-              fontWeight: 700, fontSize: 12,
-              color: isDark ? "#a5b4fc" : "#6366f1",
-            }}>
-              {Math.max(0, (freeLimit - info.used) * 10 + (user.points || 0)).toLocaleString()}P
-            </span>
-          </div>
-        )}
+        {/* 포인트 정보는 우측 상단에만 표시 (중복 제거) */}
       </div>
     </div>
   );
