@@ -1559,6 +1559,54 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // ── 크레딧 소진 팝업 ──────────────────────────────────────
 
+  // ═══ STEP 4 (이미지 바로 생성 모드): 결과 미리보기 + 다운로드 ═══
+  if (wizStep === 4 && imageOnlyMode) {
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: D ? "#0f0c29" : "#f4f4f8" }}>
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"24px 20px 60px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            <div>
+              <div style={{ fontSize:18, fontWeight:900, color:text }}>{ko?"생성 완료!":"Generated!"}</div>
+              <div style={{ fontSize:12, color:muted }}>{slides.length}{ko?"장의 이미지가 생성되었습니다":"images created"}</div>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={saveAll} disabled={dlSt.busy}
+                style={{ padding:"10px 20px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                {dlSt.busy ? dlSt.msg : (ko?"ZIP 다운로드":"Download ZIP")}
+              </button>
+              <button onClick={() => { setWizStep(1); setSlides([]); setSted({}); }}
+                style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                {ko?"다시 만들기":"New"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:16 }}>
+            {slides.map((s, i) => {
+              const slideStyle = getSlideStyle(i);
+              const cur = getCurSlide(i);
+              return (
+                <div key={i} style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.04)":"#fff" }}>
+                  <div style={{ position:"relative" }}>
+                    <SlideCanvas slide={cur} style={slideStyle} CW={imgW} CH={imgH} displayW={Math.min(400, imgW)} bgImageSrc={(sted[i]||{}).bgImage} />
+                  </div>
+                  <div style={{ padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:text }}>{i+1}/{slides.length}</span>
+                    <button onClick={() => saveOne(i)}
+                      style={{ padding:"5px 14px", borderRadius:6, border:"none", background:"rgba(99,102,241,0.12)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                      PNG
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {dlSt.msg && !dlSt.busy && <div style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#10b981", fontWeight:700 }}>{dlSt.msg}</div>}
+        </div>
+      </div>
+    );
+  }
+
   // ═══ STEP 4: 캔버스 편집기 — 콘텐츠 영역만 차지 (사이드바 유지) ═══
   if (wizStep === 4) {
     return (
