@@ -48,6 +48,7 @@ export default function UnifiedCanvasEditor({
   const [aiLoading, setAiLoading] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [showExitWarn, setShowExitWarn] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   // Undo/Redo
   const historyRef = useRef([]);
   const historyIdxRef = useRef(-1);
@@ -413,7 +414,7 @@ export default function UnifiedCanvasEditor({
 
   /* ═══ RENDER ═══ */
   return (
-    <div style={inline?{width:"100%",flex:1,display:"flex",overflow:"hidden"}:{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
+    <div style={inline?(isFullscreen?{position:"fixed",inset:0,zIndex:200,display:"flex",overflow:"hidden",background:"#fff"}:{width:"100%",flex:1,display:"flex",overflow:"hidden"}):{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
       <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
         {/* ── 왼쪽 아이콘 바 (미리캔버스 스타일) ── */}
@@ -814,6 +815,7 @@ export default function UnifiedCanvasEditor({
               const preview=fc.toDataURL({format:"png",multiplier:0.3});
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
+            {inline&&<button onClick={()=>setIsFullscreen(!isFullscreen)} title={isFullscreen?"축소":"전체화면"} style={{...B,fontSize:13,padding:"4px 8px"}}>{isFullscreen?"⊡":"⊞"}</button>}
             {onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
           </div>
           {/* 캔버스 */}
