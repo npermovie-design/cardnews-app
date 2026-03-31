@@ -153,125 +153,66 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { icon: "🔄", title: "원소스 멀티유즈", desc: "1개 글을 5개 포맷으로 동시 변환", menu: "repurpose", tag: "NEW", tagColor: "#10b981", tagBg: "rgba(16,185,129,0.1)" },
     ];
 
-    return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", background: isDark ? "transparent" : "#f8f8fb" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+    // 다글로 스타일 홈 — 중앙 타이틀 + 기능 아이콘 그리드
+    const featureCards = [
+      { icon:"/icons3d/blog-write.png", title:"글쓰기", desc:"블로그·SNS 자동 작성", menu:"blog_write" },
+      { icon:"/icons3d/palette.png", title:"콘텐츠 제작", desc:"카드뉴스·상세페이지·썸네일·PPT", menu:"content_create" },
+      { icon:"/icons3d/instagram-cam.png", title:"이미지 생성", desc:"제품컷·로고·목업·모델", menu:"image_create" },
+      { icon:"/icons3d/camera.png", title:"이미지 수정", desc:"보정·얼굴교체·의상·여백", menu:"image_edit" },
+      { icon:"/icons3d/report.png", title:"비즈니스 문서", desc:"기획서·보고서·제안서", menu:"prompt_studio" },
+      { icon:"/icons3d/sns-share.png", title:"리퍼포징", desc:"1개 글 → 5개 포맷 변환", menu:"repurpose" },
+    ];
 
-          {/* 환영 헤더 */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: homeText, marginBottom: 6 }}>
-              안녕하세요{user?.nick ? `, ${user.nick}님` : ""}!
-            </div>
-            <div style={{ fontSize: 14, color: homeMuted, lineHeight: 1.6 }}>
-              핵심 기능을 하나씩 체험하면 보너스 포인트를 받을 수 있어요!
-            </div>
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", background:isDark?"transparent":"#f8f8fb", overflow:"auto" }}>
+        <div style={{ maxWidth:680, width:"100%", textAlign:"center" }}>
+
+          {/* 메인 타이틀 */}
+          <div style={{ fontSize:28, fontWeight:900, color:homeText, marginBottom:8, letterSpacing:-0.5 }}>
+            {_s("AI로 콘텐츠를 만들어보세요","Create content with AI")}
+          </div>
+          <div style={{ fontSize:14, color:homeMuted, marginBottom:36 }}>
+            {_s("주제만 입력하면 글, 이미지, 디자인을 자동으로 만들어드려요","Just enter a topic and we'll create text, images, and designs for you")}
           </div>
 
-          {/* 퀵스타트 카드 */}
-          <div style={{ display: "flex", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
-            {quickStartCards.map((card, idx) => (
-              <div key={idx} onClick={() => setAiMenu(card.menu)} style={{
-                flex: "1 1 200px", minWidth: 200, padding: "20px 18px", borderRadius: 16,
-                border: `1px solid ${cardBdr}`,
-                background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
-                cursor: "pointer", transition: "all 0.2s",
-                display: "flex", flexDirection: "column", gap: 10, position: "relative",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isDark ? "0 8px 24px rgba(0,0,0,0.3)" : "0 8px 24px rgba(99,102,241,0.1)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 28 }}>{card.icon}</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
-                    background: card.tagBg, color: card.tagColor,
-                  }}>{card.tag}</span>
-                </div>
+          {/* 기능 아이콘 그리드 — 다글로 스타일 */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:16, marginBottom:40 }}>
+            {featureCards.map(card => (
+              <div key={card.menu} onClick={() => setAiMenu(card.menu)}
+                style={{
+                  padding:"24px 14px 18px", borderRadius:16,
+                  border:`1px solid ${cardBdr}`,
+                  background:isDark?"rgba(255,255,255,0.04)":"#fff",
+                  cursor:"pointer", transition:"all 0.2s",
+                  display:"flex", flexDirection:"column", alignItems:"center", gap:10,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
+                <img src={card.icon} alt="" style={{ width:40, height:40, objectFit:"contain" }} />
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: homeText, marginBottom: 4 }}>{card.title}</div>
-                  <div style={{ fontSize: 12, color: homeMuted, lineHeight: 1.5 }}>{card.desc}</div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
-                  <span style={{ fontSize: 16, color: isDark ? "rgba(255,255,255,0.25)" : "#ccc" }}>→</span>
+                  <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:3 }}>{card.title}</div>
+                  <div style={{ fontSize:11, color:homeMuted, lineHeight:1.4 }}>{card.desc}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* 기존 헤더 */}
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: homeText, marginBottom: 6 }}>{_s("무엇을 만들어볼까요?","What would you like to create?")}</div>
-            <div style={{ fontSize: 14, color: homeMuted }}>{_s("왼쪽 메뉴에서 선택하거나, 아래에서 도구를 골라보세요.","Select from the menu or choose a tool below.")}</div>
+          {/* 최근 작업 안내 */}
+          <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+            <button onClick={() => setAiMenu("library")}
+              style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:13, fontWeight:600, color:homeText, display:"flex", alignItems:"center", gap:6 }}
+              onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.08)":"#f5f5ff"}
+              onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"#fff"}>
+              <img src="/icons3d/search-book.png" alt="" style={{ width:18, height:18 }} /> {_s("내 보관함","My Library")}
+            </button>
+            <button onClick={() => navigate("mypage")}
+              style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", fontSize:13, fontWeight:600, color:"#7c6aff", display:"flex", alignItems:"center", gap:6 }}
+              onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)"}
+              onMouseLeave={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.04)":"#fff"}>
+              🔗 {_s("SNS 연동·관리","SNS Connect")}
+            </button>
           </div>
 
-          {/* SNS 자동발행 안내 */}
-          <div onClick={() => navigate("mypage")} style={{ borderRadius:14, padding:"16px 20px", marginBottom:24, cursor:"pointer",
-            background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))" : "linear-gradient(135deg,rgba(124,106,255,0.04),rgba(236,72,153,0.02))",
-            border: `1px solid ${isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)"}`, display:"flex", alignItems:"center", gap:14 }}>
-            <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-              {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
-                <img key={i} src={ic} alt="" style={{ width:20, height:20, objectFit:"contain", borderRadius:4, border:`2px solid ${isDark?"#1a1a2e":"#fff"}`, marginLeft:i>0?-8:0 }} />
-              )}
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{_s("스레드·블로그 계정을 연결하고 자동 발행해보세요","Connect your SNS and auto-publish")}</div>
-              <div style={{ fontSize:11, color:homeMuted, marginTop:2 }}>{_s("글 작성 후 원클릭으로 바로 업로드됩니다","One-click upload after writing")}</div>
-            </div>
-            <div style={{ fontSize:11, fontWeight:700, color:"#7c6aff", flexShrink:0 }}>{_s("연동하기 →","Connect →")}</div>
-          </div>
-
-          {/* 카테고리별 그리드 */}
-          {GROUPS.map(group => {
-            const isAdmin = user?.role === "admin";
-            const visibleItems = group.items.filter(m => !m.adminOnly || isAdmin);
-            if (visibleItems.length === 0 && !group.devBadge) return null;
-            if (group.devBadge && !isAdmin) {
-              // 비관리자에게는 "개발중" 안내만 표시
-              return (
-                <div key={group.label} style={{ marginBottom: 32 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: group.color }}>{group.label}</div>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 6, padding: "2px 8px" }}>개발중</span>
-                    <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
-                  </div>
-                  <div style={{ padding: "24px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", textAlign: "center" }}>
-                    <div style={{ fontSize: 13, color: homeMuted }}>곧 만나볼 수 있어요! 열심히 준비하고 있습니다.</div>
-                  </div>
-                </div>
-              );
-            }
-            return (
-            <div key={group.label} style={{ marginBottom: 32 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: group.color }}>{group.label}</div>
-                {group.devBadge && <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 6, padding: "2px 8px" }}>개발중</span>}
-                <div style={{ flex: 1, height: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
-                <div style={{ fontSize: 11, color: homeMuted }}>{visibleItems.length}{_s("개","")}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12 }}>
-                {visibleItems.map(m => (
-                  <div key={m.id} onClick={() => setAiMenu(m.id)} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && setAiMenu(m.id)} style={{
-                    padding: "18px 16px", borderRadius: 14, border: `1px solid ${cardBdr}`,
-                    background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
-                    cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 14,
-                    minHeight: 48,
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = isDark ? "0 6px 20px rgba(0,0,0,0.3)" : "0 6px 20px rgba(0,0,0,0.05)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: isDark ? m.darkColor : m.lightColor, display: "flex", alignItems: "center", justifyContent: "center", color: group.color, flexShrink: 0 }}>
-                      {m.iconImg ? <img src={m.iconImg} alt="" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 4 }} /> : (TOOL_ICONS[m.id] || m.title[0])}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: homeText, marginBottom: 2 }}>{m.title}</div>
-                      <div style={{ fontSize: 11, color: cardDescC, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.desc}</div>
-                    </div>
-                    {m.cr > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.35)" : "#bbb", flexShrink: 0 }}>{m.cr}P</div>}
-                  </div>
-                ))}
-              </div>
-            </div>
-            );
-          })}
         </div>
       </div>
     );

@@ -799,7 +799,11 @@ export default function UnifiedCanvasEditor({
               <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
               <div style={{width:1,height:16,background:"#eee"}}/>
             </>}
-            <span style={{fontSize:12,color:"#aaa"}}>{width}×{height}px</span>
+            <select value={`${width}x${height}`} onChange={e=>{
+              // 사이즈 전환은 현재 세션에서는 표시만 (실제 리사이즈는 새 에디터 필요)
+            }} style={{fontSize:11,color:"#888",border:"1px solid #eee",borderRadius:6,padding:"3px 8px",background:"#fff",cursor:"default"}}>
+              <option value={`${width}x${height}`}>{width}×{height}px</option>
+            </select>
             <div style={{flex:1}}/>
             {sel&&sel.name!=="bg"&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:11}}>삭제</button>}
             <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
