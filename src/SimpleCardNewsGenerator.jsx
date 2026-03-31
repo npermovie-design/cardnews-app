@@ -535,7 +535,7 @@ function PlanningAnimation({ pageCount, ko=true }) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary , onUserUpdate, showPointConfirm}) {
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary, onUserUpdate, showPointConfirm, imageOnlyMode, imageOnlyLabel }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
   const TOPIC_EXAMPLES = getTopicExamples(ko);
@@ -585,6 +585,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [genError,  setGenError]  = useState("");
+  // 이미지 바로 생성 모드
+  const [userImages, setUserImages] = useState([]); // [{file, preview}]
+  const [imgWarnAck, setImgWarnAck] = useState(false);
   const [showMediaSearch, setShowMediaSearch] = useState(false);
   const [mediaQuery, setMediaQuery] = useState("");
   const [mediaResults, setMediaResults] = useState([]);
@@ -1014,7 +1017,84 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
     setSlides([]); setSted({});
   };
 
-  // ═══ STEP 1 ═══════════════════════════════════════════════
+  // ═══ 이미지 바로 생성 모드: 이미지 업로드 (Step1 전) ═══
+  if (imageOnlyMode && wizStep === 1) {
+    const imgInputRef2 = useRef(null);
+    const handleImgAdd = (files) => {
+      const newImgs = [...userImages];
+      Array.from(files).forEach(f => {
+        if (f.type.startsWith("image/") && newImgs.length < 20) {
+          newImgs.push({ file:f, preview:URL.createObjectURL(f) });
+        }
+      });
+      setUserImages(newImgs);
+    };
+    const removeImg = (idx) => setUserImages(prev => prev.filter((_,i) => i !== idx));
+    const hasImages = userImages.length > 0;
+
+    return (
+      <div style={{ flex:1, overflowY:"auto" }}>
+        <div style={{ maxWidth:700, margin:"0 auto", padding:"24px 24px 40px", width:"100%", boxSizing:"border-box" }}>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{imageOnlyLabel || "이미지 바로 생성"}</div>
+            <div style={{ fontSize:12, color:muted }}>사용할 이미지를 먼저 업로드하세요 (최대 20장)</div>
+          </div>
+
+          {/* 업로드 영역 */}
+          <div style={{ padding:"32px 20px", borderRadius:14, border:`2px dashed ${bdr}`, background:cardBg, textAlign:"center", marginBottom:16, cursor:"pointer" }}
+            onClick={() => imgInputRef2.current?.click()}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#7c6aff"; }}
+            onDragLeave={e => e.currentTarget.style.borderColor=bdr}
+            onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor=bdr; handleImgAdd(e.dataTransfer.files); }}>
+            <div style={{ fontSize:40, marginBottom:8 }}>📂</div>
+            <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4 }}>클릭하거나 드래그하여 이미지 업로드</div>
+            <div style={{ fontSize:11, color:muted }}>JPG, PNG, WEBP · 최대 20장</div>
+          </div>
+          <input ref={imgInputRef2} type="file" accept="image/*" multiple style={{ display:"none" }}
+            onChange={e => { handleImgAdd(e.target.files); e.target.value=""; }} />
+
+          {/* 업로드된 이미지 미리보기 */}
+          {hasImages && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))", gap:8, marginBottom:16 }}>
+              {userImages.map((img,i) => (
+                <div key={i} style={{ position:"relative", paddingBottom:"100%", borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}` }}>
+                  <img src={img.preview} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                  <button onClick={() => removeImg(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:"50%", border:"none", background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 경고 (이미지 없을 때) */}
+          {!hasImages && (
+            <div style={{ padding:"14px 16px", borderRadius:10, background:"rgba(249,115,22,0.08)", border:"1px solid rgba(249,115,22,0.2)", marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#f97316", marginBottom:4 }}>이미지를 넣지 않으면 AI가 임의로 생성합니다</div>
+              <div style={{ fontSize:11, color:"#fb923c" }}>원하는 결과물을 위해 직접 이미지를 업로드하는 것을 권장해요.</div>
+              <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, cursor:"pointer" }}>
+                <input type="checkbox" checked={imgWarnAck} onChange={e => setImgWarnAck(e.target.checked)} />
+                <span style={{ fontSize:11, color:"#f97316", fontWeight:600 }}>이미지 없이 진행하겠습니다</span>
+              </label>
+            </div>
+          )}
+
+          {/* 주제 입력 (간소화) */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:8 }}>주제</div>
+            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={ko?"카드뉴스 주제를 입력하세요":"Enter topic"}
+              style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+          </div>
+
+          <button onClick={() => { setWizStep(3); }} disabled={!topic.trim() || (!hasImages && !imgWarnAck)}
+            style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor: (!topic.trim()||(!hasImages&&!imgWarnAck))?"not-allowed":"pointer",
+              background: (!topic.trim()||(!hasImages&&!imgWarnAck))?"rgba(99,102,241,0.3)":"#7c6aff", color:"#fff", fontSize:15, fontWeight:900, opacity: (!topic.trim()||(!hasImages&&!imgWarnAck))?0.5:1 }}>
+            {ko?"다음 → 디자인 선택":"Next → Design"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ STEP 1 (일반 모드) ═══════════════════════════════════
   if (wizStep === 1) {
     const canNext = topic.trim().length > 0;
     return (

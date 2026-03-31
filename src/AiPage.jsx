@@ -40,196 +40,121 @@ import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToke
 
 // ── 기획 ──────────────────────────────────────────────────────
 
-// ── 콘텐츠 제작 선택 화면 (미리캔버스 스타일) ──────────────────────────────
+// ── 콘텐츠 제작 선택 화면 ──────────────────────────────
 function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const [tab, setTab] = useState("all");
-  const [openCats, setOpenCats] = useState({});
   const [search, setSearch] = useState("");
+  const [customW, setCustomW] = useState("1080");
+  const [customH, setCustomH] = useState("1080");
+  const [showCustom, setShowCustom] = useState(false);
+  const [aiModal, setAiModal] = useState(null); // {id, label} for mode selection
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const accent = "#7c6aff";
 
-  const toggle = (cat) => setOpenCats(p => ({ ...p, [cat]: !p[cat] }));
   const go = (w, h) => setAiMenu(`canvas_direct_${w}x${h}`);
 
-  const ALL_DATA = {
+  const aiTools = [
+    { id:"cardnews_simple", label:"AI 카드뉴스", icon:"🎴", desc:"SNS 카드뉴스 자동 생성", size:"1080×1080" },
+    { id:"detail_simple", label:"AI 상세페이지", icon:"📄", desc:"제품 상세 설명 자동 생성", size:"860×1100" },
+    { id:"thumbnail_gen", label:"AI 썸네일", icon:"🖼", desc:"유튜브/블로그 썸네일", size:"1280×720" },
+    { id:"ppt_gen", label:"AI PPT", icon:"📊", desc:"프레젠테이션 자동 생성", size:"1920×1080" },
+  ];
+
+  const sizeGroups = {
     all: [
-      { cat:"AI로 시작하기", items:[
-        { label:"AI 카드뉴스 만들기", ai:"cardnews_simple" },
-        { label:"AI 상세페이지 만들기", ai:"detail_simple" },
-        { label:"AI 썸네일 만들기", ai:"thumbnail_gen" },
-        { label:"AI PPT 만들기", ai:"ppt_gen" },
+      { cat:"SNS · 마케팅", items:[
+        { label:"카드뉴스", w:1080, h:1080, icon:"🎴" },
+        { label:"인스타 피드", w:1080, h:1350, icon:"📷" },
+        { label:"인스타 스토리", w:1080, h:1920, icon:"📱" },
+        { label:"상세페이지", w:860, h:1100, icon:"📄" },
+        { label:"프레젠테이션", w:1920, h:1080, icon:"📊" },
+        { label:"썸네일", w:1280, h:720, icon:"🖼" },
       ]},
-      { cat:"프레젠테이션", items:[
-        { label:"프레젠테이션 가로", w:1920, h:1080 },
-        { label:"프레젠테이션 세로", w:1080, h:1920 },
-      ]},
-      { cat:"카드뉴스", items:[
-        { label:"정사각형", w:1080, h:1080 },
-        { label:"세로형 4:5", w:1080, h:1350 },
-      ]},
-      { cat:"상세페이지", items:[
-        { label:"기본 상세페이지", w:860, h:1100 },
-        { label:"긴 상세페이지", w:800, h:2000 },
-        { label:"쇼핑몰 상세", w:860, h:3000 },
-      ]},
-      { cat:"소셜 미디어", expand:true, items:[
-        { label:"인스타 정사각형", w:1080, h:1080 },
-        { label:"인스타 세로", w:1080, h:1350 },
-        { label:"인스타 스토리/릴스", w:1080, h:1920 },
-        { label:"페이스북 커버", w:820, h:312 },
-        { label:"페이스북 게시물", w:1200, h:630 },
-        { label:"X(트위터) 게시물", w:1200, h:675 },
-        { label:"X(트위터) 헤더", w:1500, h:500 },
-        { label:"링크드인 배너", w:1584, h:396 },
-        { label:"핀터레스트 핀", w:1000, h:1500 },
+      { cat:"소셜 미디어", items:[
+        { label:"페이스북 커버", w:820, h:312 }, { label:"페이스북 게시물", w:1200, h:630 },
+        { label:"X(트위터)", w:1200, h:675 }, { label:"X 헤더", w:1500, h:500 },
+        { label:"링크드인 배너", w:1584, h:396 }, { label:"핀터레스트", w:1000, h:1500 },
         { label:"틱톡/쇼츠", w:1080, h:1920 },
       ]},
-      { cat:"유튜브", expand:true, items:[
-        { label:"썸네일", w:1280, h:720 },
-        { label:"채널 아트", w:2560, h:1440 },
-        { label:"쇼츠", w:1080, h:1920 },
-        { label:"영상 배경", w:1920, h:1080 },
+      { cat:"유튜브", items:[
+        { label:"썸네일", w:1280, h:720 }, { label:"채널 아트", w:2560, h:1440 },
+        { label:"쇼츠", w:1080, h:1920 }, { label:"영상 배경", w:1920, h:1080 },
       ]},
-      { cat:"웹 배너", expand:true, items:[
-        { label:"리더보드 (728×90)", w:728, h:90 },
-        { label:"스카이스크래퍼 (160×600)", w:160, h:600 },
-        { label:"미디엄 렉탱글 (300×250)", w:300, h:250 },
-        { label:"빅 배너 (970×250)", w:970, h:250 },
-        { label:"모바일 배너 (320×100)", w:320, h:100 },
-        { label:"네이버 배너 (1200×628)", w:1200, h:628 },
-        { label:"카카오 배너 (720×360)", w:720, h:360 },
+      { cat:"배너 · 광고", items:[
+        { label:"네이버 배너", w:1200, h:628 }, { label:"카카오 배너", w:720, h:360 },
+        { label:"GDN (300×250)", w:300, h:250 }, { label:"GDN (300×600)", w:300, h:600 },
+        { label:"리더보드", w:728, h:90 }, { label:"빅 배너", w:970, h:250 },
       ]},
-      { cat:"로고 · 프로필", items:[
-        { label:"로고/프로필 (500×500)", w:500, h:500 },
-        { label:"파비콘 (512×512)", w:512, h:512 },
-        { label:"앱 아이콘 (1024×1024)", w:1024, h:1024 },
+      { cat:"로고 · 아이콘", items:[
+        { label:"로고 (500×500)", w:500, h:500 }, { label:"파비콘", w:512, h:512 },
+        { label:"앱 아이콘", w:1024, h:1024 },
       ]},
     ],
     web: [
       { cat:"소셜 미디어", items:[
-        { label:"인스타 정사각형", w:1080, h:1080 },
-        { label:"인스타 세로", w:1080, h:1350 },
-        { label:"인스타 스토리/릴스", w:1080, h:1920 },
-        { label:"페이스북 커버", w:820, h:312 },
-        { label:"페이스북 게시물", w:1200, h:630 },
-        { label:"X(트위터) 게시물", w:1200, h:675 },
-        { label:"X(트위터) 헤더", w:1500, h:500 },
-        { label:"링크드인 배너", w:1584, h:396 },
-        { label:"핀터레스트 핀", w:1000, h:1500 },
-        { label:"틱톡/쇼츠", w:1080, h:1920 },
+        { label:"인스타 정사각형", w:1080, h:1080 }, { label:"인스타 세로", w:1080, h:1350 },
+        { label:"인스타 스토리", w:1080, h:1920 }, { label:"페이스북 커버", w:820, h:312 },
+        { label:"페이스북 게시물", w:1200, h:630 }, { label:"X(트위터)", w:1200, h:675 },
+        { label:"링크드인", w:1584, h:396 }, { label:"핀터레스트", w:1000, h:1500 },
       ]},
-      { cat:"유튜브", items:[
-        { label:"썸네일", w:1280, h:720 },
-        { label:"채널 아트", w:2560, h:1440 },
-        { label:"쇼츠", w:1080, h:1920 },
-      ]},
-      { cat:"웹 배너", items:[
-        { label:"리더보드 (728×90)", w:728, h:90 },
-        { label:"스카이스크래퍼 (160×600)", w:160, h:600 },
-        { label:"미디엄 렉탱글 (300×250)", w:300, h:250 },
-        { label:"빅 배너 (970×250)", w:970, h:250 },
-        { label:"네이버 배너 (1200×628)", w:1200, h:628 },
-        { label:"카카오 배너 (720×360)", w:720, h:360 },
-        { label:"GDN 배너 (300×600)", w:300, h:600 },
-      ]},
-      { cat:"웹 포스터", items:[
-        { label:"세로형 (891×1260)", w:891, h:1260 },
-        { label:"가로형 (1200×628)", w:1200, h:628 },
-        { label:"이벤트 팝업 (500×700)", w:500, h:700 },
-      ]},
-      { cat:"네이버 블로그", items:[
-        { label:"블로그 대표이미지 (720×460)", w:720, h:460 },
-        { label:"블로그 콘텐츠 (860×1100)", w:860, h:1100 },
-      ]},
-      { cat:"카카오", items:[
-        { label:"카카오친구톡 (720×720)", w:720, h:720 },
-        { label:"카카오 알림톡 (800×400)", w:800, h:400 },
-      ]},
+      { cat:"유튜브", items:[ { label:"썸네일", w:1280, h:720 }, { label:"채널 아트", w:2560, h:1440 }, { label:"쇼츠", w:1080, h:1920 } ]},
+      { cat:"배너 · 광고", items:[ { label:"네이버", w:1200, h:628 }, { label:"카카오", w:720, h:360 }, { label:"GDN", w:300, h:250 }, { label:"모바일", w:320, h:100 } ]},
+      { cat:"블로그 · 카카오", items:[ { label:"블로그 대표이미지", w:720, h:460 }, { label:"블로그 콘텐츠", w:860, h:1100 }, { label:"카카오친구톡", w:720, h:720 }, { label:"알림톡", w:800, h:400 } ]},
     ],
     video: [
-      { cat:"유튜브", items:[
-        { label:"썸네일 (1280×720)", w:1280, h:720 },
-        { label:"채널 아트 (2560×1440)", w:2560, h:1440 },
-        { label:"쇼츠 (1080×1920)", w:1080, h:1920 },
-        { label:"영상 배경 (1920×1080)", w:1920, h:1080 },
-      ]},
-      { cat:"인스타그램", items:[
-        { label:"릴스 (1080×1920)", w:1080, h:1920 },
-        { label:"피드 영상 (1080×1080)", w:1080, h:1080 },
-      ]},
-      { cat:"틱톡", items:[
-        { label:"틱톡 영상 (1080×1920)", w:1080, h:1920 },
-      ]},
-      { cat:"프레젠테이션", items:[
-        { label:"가로 슬라이드 (1920×1080)", w:1920, h:1080 },
-      ]},
+      { cat:"유튜브", items:[ { label:"썸네일", w:1280, h:720 }, { label:"채널 아트", w:2560, h:1440 }, { label:"쇼츠", w:1080, h:1920 }, { label:"영상 배경", w:1920, h:1080 } ]},
+      { cat:"SNS 영상", items:[ { label:"인스타 릴스", w:1080, h:1920 }, { label:"인스타 피드", w:1080, h:1080 }, { label:"틱톡", w:1080, h:1920 } ]},
+      { cat:"프레젠테이션", items:[ { label:"가로 (16:9)", w:1920, h:1080 } ]},
     ],
     print: [
-      { cat:"명함 · 카드 · 스티커", items:[
-        { label:"가로 명함 (90×54mm)", w:1063, h:638 },
-        { label:"세로 명함 (54×90mm)", w:638, h:1063 },
-        { label:"엽서 (148×105mm)", w:1748, h:1240 },
-      ]},
-      { cat:"포스터 · 전단지 · 리플렛", items:[
-        { label:"A4 세로", w:2480, h:3508 },
-        { label:"A4 가로", w:3508, h:2480 },
-        { label:"A3 세로", w:3508, h:4961 },
-        { label:"B5 세로", w:2079, h:2953 },
-      ]},
-      { cat:"현수막 · 배너 · 입간판", items:[
-        { label:"현수막 가로 (3000×600)", w:3000, h:600 },
-        { label:"X배너 세로 (600×1800)", w:600, h:1800 },
-        { label:"롤업 배너 (850×2000)", w:850, h:2000 },
-      ]},
-      { cat:"상패 · 상장", items:[
-        { label:"상장 가로 (297×210mm)", w:3508, h:2480 },
-        { label:"감사패 세로", w:2480, h:3508 },
-      ]},
+      { cat:"명함 · 카드", items:[ { label:"가로 명함", w:1063, h:638 }, { label:"세로 명함", w:638, h:1063 }, { label:"엽서", w:1748, h:1240 } ]},
+      { cat:"포스터 · 전단지", items:[ { label:"A4 세로", w:2480, h:3508 }, { label:"A4 가로", w:3508, h:2480 }, { label:"A3 세로", w:3508, h:4961 }, { label:"B5 세로", w:2079, h:2953 } ]},
+      { cat:"현수막 · 배너", items:[ { label:"현수막 가로", w:3000, h:600 }, { label:"X배너 세로", w:600, h:1800 }, { label:"롤업 배너", w:850, h:2000 } ]},
+      { cat:"상패 · 상장", items:[ { label:"상장 가로", w:3508, h:2480 }, { label:"감사패 세로", w:2480, h:3508 } ]},
     ],
   };
 
-  const tabs = [
-    { id:"all", label:"전체" },
-    { id:"web", label:"웹" },
-    { id:"video", label:"동영상" },
-    { id:"print", label:"인쇄" },
-  ];
-
-  const cats = ALL_DATA[tab] || ALL_DATA.all;
-
-  // 검색 필터
-  const filtered = search.trim() ? cats.map(c => ({
-    ...c, items: c.items.filter(it => it.label.toLowerCase().includes(search.toLowerCase()))
-  })).filter(c => c.items.length > 0) : cats;
-
-  const SizeItem = ({ item }) => (
-    <button onClick={() => item.ai ? setAiMenu(item.ai) : go(item.w, item.h)}
-      style={{ width:"100%", padding:"10px 16px", border:"none", borderBottom:`1px solid ${bdr}`,
-        background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:10,
-        fontSize:13, color:homeText, textAlign:"left", transition:"background 0.1s" }}
-      onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)"}
-      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-      <span style={{ fontSize:15, width:22, textAlign:"center", flexShrink:0 }}>{item.ai ? "✨" : "✏️"}</span>
-      <span style={{ flex:1 }}>{item.label}</span>
-      {item.w && <span style={{ fontSize:11, color:homeMuted, flexShrink:0 }}>{item.w} × {item.h}</span>}
-      {item.ai && <span style={{ fontSize:9, padding:"2px 6px", borderRadius:4, background:"rgba(124,106,255,0.12)", color:"#7c6aff", fontWeight:700, flexShrink:0 }}>AI</span>}
-    </button>
-  );
+  const tabs = [{ id:"all", label:"전체" }, { id:"web", label:"웹" }, { id:"video", label:"동영상" }, { id:"print", label:"인쇄" }];
+  const cats = sizeGroups[tab] || sizeGroups.all;
+  const filtered = search.trim() ? cats.map(c => ({ ...c, items: c.items.filter(it => it.label.includes(search)) })).filter(c => c.items.length > 0) : cats;
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
-        <div style={{ maxWidth:640, margin:"0 auto", padding:"32px 20px 60px" }}>
-          {/* 제목 */}
-          <div style={{ fontSize:22, fontWeight:900, color:homeText, marginBottom:20, textAlign:"center" }}>무엇을 만들어야 하나요?</div>
+        <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 24px 60px" }}>
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 만들어야 하나요?</div>
+            <div style={{ fontSize:13, color:homeMuted }}>AI로 자동 생성하거나, 원하는 크기로 직접 디자인하세요</div>
+          </div>
 
           {/* 검색 */}
-          <div style={{ position:"relative", marginBottom:16 }}>
+          <div style={{ position:"relative", marginBottom:20, maxWidth:480, margin:"0 auto 20px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2" style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="만들고 싶은 것을 검색하세요"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="검색 (카드뉴스, 인스타, 썸네일 ...)"
               style={{ width:"100%", padding:"12px 14px 12px 40px", borderRadius:12, border:`1.5px solid ${bdr}`, background:bg, color:homeText, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+          </div>
+
+          {/* AI 자동 생성 */}
+          <div style={{ marginBottom:28 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:12 }}>AI로 시작하기</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))", gap:10 }}>
+              {aiTools.map(t => (
+                <button key={t.id} onClick={() => setAiModal(t)}
+                  style={{ padding:"18px 14px", borderRadius:14, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer",
+                    display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor=accent; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.1)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; e.currentTarget.style.boxShadow="none"; }}>
+                  <span style={{ fontSize:28, flexShrink:0 }}>{t.icon}</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{t.label}</div>
+                    <div style={{ fontSize:11, color:homeMuted, marginTop:2 }}>{t.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 탭 */}
@@ -237,55 +162,92 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", background:"transparent",
-                  fontSize:13, fontWeight:tab===t.id?800:500, color:tab===t.id?"#7c6aff":homeMuted,
-                  borderBottom:tab===t.id?"2.5px solid #7c6aff":"2.5px solid transparent", transition:"all 0.12s" }}>
+                  fontSize:13, fontWeight:tab===t.id?800:500, color:tab===t.id?accent:homeMuted,
+                  borderBottom:tab===t.id?`2.5px solid ${accent}`:"2.5px solid transparent", transition:"all 0.12s" }}>
                 {t.label}
               </button>
             ))}
           </div>
 
           {/* 직접 입력 */}
-          <button onClick={() => {
-            const w = prompt("가로 크기 (px):", "1080");
-            if (!w) return;
-            const h = prompt("세로 크기 (px):", "1080");
-            if (!h) return;
-            go(parseInt(w)||1080, parseInt(h)||1080);
-          }} style={{ width:"100%", padding:"12px 16px", border:`1.5px solid ${bdr}`, borderRadius:10,
-            background:bg, cursor:"pointer", display:"flex", alignItems:"center", gap:10, marginBottom:16,
-            fontSize:13, fontWeight:600, color:homeText, transition:"border-color 0.12s" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
-            onMouseLeave={e => e.currentTarget.style.borderColor=bdr}>
-            <span style={{ fontSize:16 }}>✏️</span> 직접 입력
-            <span style={{ flex:1 }} />
-            <span style={{ fontSize:11, color:homeMuted }}>원하는 크기 지정</span>
-          </button>
-
-          {/* 카테고리 목록 */}
-          {filtered.map(cat => {
-            const isOpen = openCats[cat.cat] !== undefined ? openCats[cat.cat] : !cat.expand;
-            return (
-              <div key={cat.cat} style={{ marginBottom:4 }}>
-                <button onClick={() => toggle(cat.cat)}
-                  style={{ width:"100%", padding:"12px 16px", border:"none", borderBottom:`1px solid ${bdr}`,
-                    background:"transparent", cursor:"pointer", display:"flex", alignItems:"center",
-                    fontSize:13, fontWeight:700, color:homeText, textAlign:"left" }}>
-                  <span style={{ flex:1 }}>{cat.cat}</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2.5"
-                    style={{ transition:"transform 0.2s", transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-                {isOpen && (
-                  <div style={{ borderLeft:`2px solid ${isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.15)"}`, marginLeft:8 }}>
-                    {cat.items.map((item, i) => <SizeItem key={i} item={item} />)}
-                  </div>
-                )}
+          <div style={{ marginBottom:16, padding:"14px 16px", borderRadius:12, border:`1.5px solid ${bdr}`, background:bg }}>
+            <button onClick={() => setShowCustom(!showCustom)} style={{ width:"100%", border:"none", background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:700, color:homeText, padding:0 }}>
+              <span>✏️</span> 직접 입력 <span style={{ flex:1 }}/> <span style={{ fontSize:11, color:homeMuted }}>{showCustom?"접기":"원하는 크기 지정"}</span>
+            </button>
+            {showCustom && (
+              <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:12 }}>
+                <input value={customW} onChange={e=>setCustomW(e.target.value)} placeholder="가로" style={{ flex:1, padding:"10px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#f5f5f5", color:homeText, fontSize:13, textAlign:"center", outline:"none", boxSizing:"border-box" }} />
+                <span style={{ color:homeMuted, fontSize:14 }}>×</span>
+                <input value={customH} onChange={e=>setCustomH(e.target.value)} placeholder="세로" style={{ flex:1, padding:"10px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#f5f5f5", color:homeText, fontSize:13, textAlign:"center", outline:"none", boxSizing:"border-box" }} />
+                <span style={{ color:homeMuted, fontSize:12 }}>px</span>
+                <button onClick={() => go(parseInt(customW)||1080, parseInt(customH)||1080)} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:accent, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>만들기</button>
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {/* 크기 그리드 */}
+          {filtered.map(cat => (
+            <div key={cat.cat} style={{ marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:homeText, marginBottom:10, paddingLeft:2 }}>{cat.cat}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8 }}>
+                {cat.items.map((item, i) => (
+                  <button key={i} onClick={() => go(item.w, item.h)}
+                    style={{ padding:"14px 10px", borderRadius:10, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer",
+                      display:"flex", flexDirection:"column", alignItems:"center", gap:4, transition:"all 0.12s", textAlign:"center" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor=accent; e.currentTarget.style.background=isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.03)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; e.currentTarget.style.background=bg; }}>
+                    <span style={{ fontSize:13, fontWeight:600, color:homeText }}>{item.label}</span>
+                    <span style={{ fontSize:10, color:homeMuted }}>{item.w} × {item.h} px</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* AI 모드 선택 모달 */}
+      {aiModal && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={e => { if(e.target===e.currentTarget) setAiModal(null); }}>
+          <div style={{ background:isDark?"#1a1a2e":"#fff", borderRadius:20, maxWidth:440, width:"100%", overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,0.25)" }}>
+            <div style={{ padding:"28px 28px 20px", textAlign:"center" }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>{aiModal.icon}</div>
+              <div style={{ fontSize:20, fontWeight:900, color:homeText, marginBottom:4 }}>{aiModal.label}</div>
+              <div style={{ fontSize:12, color:homeMuted }}>생성 모드를 선택하세요</div>
+            </div>
+            <div style={{ padding:"0 20px 24px", display:"flex", flexDirection:"column", gap:10 }}>
+              {/* 편집 가능 모드 */}
+              <button onClick={() => { setAiModal(null); setAiMenu(aiModal.id); }}
+                style={{ padding:"18px 20px", borderRadius:14, border:`2px solid ${accent}`, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", cursor:"pointer", textAlign:"left" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                  <span style={{ fontSize:20 }}>✏️</span>
+                  <span style={{ fontSize:15, fontWeight:800, color:accent }}>편집 가능 모드</span>
+                </div>
+                <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6, paddingLeft:30 }}>
+                  AI가 생성한 후 텍스트, 이미지, 레이아웃을 자유롭게 수정할 수 있어요.
+                </div>
+              </button>
+              {/* 편집 불가능 모드 */}
+              <button onClick={() => { setAiModal(null); setAiMenu(aiModal.id + "_image"); }}
+                style={{ padding:"18px 20px", borderRadius:14, border:`1.5px solid ${bdr}`, background:bg, cursor:"pointer", textAlign:"left" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor=accent}
+                onMouseLeave={e => e.currentTarget.style.borderColor=bdr}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                  <span style={{ fontSize:20 }}>🖼</span>
+                  <span style={{ fontSize:15, fontWeight:800, color:homeText }}>이미지 바로 생성</span>
+                </div>
+                <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6, paddingLeft:30 }}>
+                  AI가 완성된 이미지를 바로 만들어줘요. 내 사진을 넣으면 더 좋은 결과물!
+                </div>
+              </button>
+            </div>
+            <div style={{ padding:"0 20px 20px", textAlign:"center" }}>
+              <button onClick={() => setAiModal(null)} style={{ border:"none", background:"transparent", cursor:"pointer", color:homeMuted, fontSize:12 }}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -827,7 +789,18 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 콘텐츠 제작: 하위 도구 직접 진입 (AI 자동 생성) ──
+  // ── 콘텐츠 제작: 이미지 바로 생성 모드 (_image 접미사) ──
+  if (aiMenu.endsWith("_image") && ["cardnews_simple_image","detail_simple_image","thumbnail_gen_image","ppt_gen_image"].includes(aiMenu)) {
+    const baseId = aiMenu.replace("_image","");
+    const baseInfo = { cardnews_simple:{label:"AI 카드뉴스",icon:"🎴"}, detail_simple:{label:"AI 상세페이지",icon:"📄"}, thumbnail_gen:{label:"AI 썸네일",icon:"🖼"}, ppt_gen:{label:"AI PPT",icon:"📊"} }[baseId] || {label:"AI 생성",icon:"✨"};
+    return (
+      <ToolWrap menuId={baseId}>
+        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageOnlyMode imageOnlyLabel={baseInfo.label} />
+      </ToolWrap>
+    );
+  }
+
+  // ── 콘텐츠 제작: 하위 도구 직접 진입 (편집 가능 AI 모드) ──
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
