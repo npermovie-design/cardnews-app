@@ -39,6 +39,67 @@ function mdToHtml(md) {
 }
 
 
+/* ── 교체 가능한 이미지 컴포넌트 (우클릭/드래그앤드롭) ── */
+function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
+  const [imgSrc, setImgSrc] = React.useState(src);
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [dragOver, setDragOver] = React.useState(false);
+  const fileRef = React.useRef(null);
+
+  const replaceWithFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = e => setImgSrc(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div style={{margin:"20px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",position:"relative",
+      outline: dragOver ? "3px dashed #7c6aff" : "none", transition:"outline 0.15s"}}
+      onContextMenu={e => { e.preventDefault(); setShowMenu(!showMenu); }}
+      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => { e.preventDefault(); setDragOver(false); replaceWithFile(e.dataTransfer?.files?.[0]); }}>
+      <img src={imgSrc} alt={desc} loading="lazy"
+        onError={e => { e.target.onerror=null; e.target.src=`https://picsum.photos/seed/${fallbackSeed}/800/450`; }}
+        style={{width:"100%",display:"block",height:320,objectFit:"cover",cursor:"pointer"}}
+        onClick={() => setShowMenu(!showMenu)} />
+      <div style={{padding:"10px 16px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.4)":"#f8f8fb",display:"flex",alignItems:"center",gap:6}}>
+        <span style={{opacity:0.5}}>&#128247;</span> {desc}
+        <span style={{marginLeft:"auto",fontSize:10,opacity:0.5}}>클릭 또는 드래그로 교체</span>
+      </div>
+      {/* 교체 메뉴 */}
+      {showMenu && (
+        <div style={{position:"absolute",top:8,right:8,background:"#fff",borderRadius:10,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",padding:4,zIndex:10,minWidth:140}}
+          onClick={e => e.stopPropagation()}>
+          <button onClick={() => { fileRef.current?.click(); setShowMenu(false); }}
+            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#333",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
+            onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            📁 PC에서 교체
+          </button>
+          <button onClick={() => { const url = prompt("이미지 URL을 입력하세요:"); if(url) setImgSrc(url); setShowMenu(false); }}
+            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#333",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
+            onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            🔗 URL로 교체
+          </button>
+          <button onClick={() => { setImgSrc(`https://picsum.photos/seed/${Date.now()}/800/450`); setShowMenu(false); }}
+            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#333",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
+            onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            🎲 랜덤 이미지
+          </button>
+          <div style={{height:1,background:"#eee",margin:"2px 0"}}/>
+          <button onClick={() => setShowMenu(false)}
+            style={{width:"100%",padding:"6px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:11,color:"#999",textAlign:"center",borderRadius:6}}>
+            닫기
+          </button>
+        </div>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}}
+        onChange={e => { replaceWithFile(e.target.files?.[0]); e.target.value=""; }} />
+    </div>
+  );
+}
+
 /* ── 마크다운 → JSX 렌더러 ── */
 function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
   if (!text) return null;
@@ -52,31 +113,11 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
     if (imgMatch) {
       const desc = imgMatch[1].trim();
       const imgUrl = inlineImages && inlineImages[desc];
-      if (imgUrl) {
-        const fallbackSeed = encodeURIComponent(desc.slice(0, 20));
-        elements.push(
-          <div key={i} style={{margin:"20px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
-            <img src={imgUrl} alt={desc} loading="lazy"
-              onError={e => { e.target.onerror = null; e.target.src = `https://picsum.photos/seed/${fallbackSeed}/800/450`; }}
-              style={{width:"100%",display:"block",height:320,objectFit:"cover"}} />
-            <div style={{padding:"10px 16px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.4)":"#f8f8fb",display:"flex",alignItems:"center",gap:6}}>
-              <span style={{opacity:0.5}}>&#128247;</span> {desc}
-            </div>
-          </div>
-        );
-      } else {
-        const fallbackSeed = encodeURIComponent(desc.slice(0, 20));
-        elements.push(
-          <div key={i} style={{margin:"20px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
-            <div style={{width:"100%",height:320,background:`url(https://picsum.photos/seed/${fallbackSeed}/800/450) center/cover`,position:"relative"}}>
-              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.03)"}} />
-            </div>
-            <div style={{padding:"10px 16px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.4)":"#f8f8fb",display:"flex",alignItems:"center",gap:6}}>
-              <span style={{opacity:0.5}}>&#128247;</span> {desc}
-            </div>
-          </div>
-        );
-      }
+      const fallbackSeed = encodeURIComponent(desc.slice(0, 20));
+      const src = imgUrl || `https://picsum.photos/seed/${fallbackSeed}/800/450`;
+      elements.push(
+        <ReplaceableImage key={i} src={src} desc={desc} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />
+      );
     } else if (line.startsWith("### ")) {
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
     } else if (line.startsWith("## ")) {
