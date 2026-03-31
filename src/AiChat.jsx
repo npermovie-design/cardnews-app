@@ -1,17 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { callAI } from "./aiClient";
+import { useAiOnce, CHAT_COST, guestLimitExceeded, incrementGuestUsage } from "./storage";
 
 /* ═══════════════════════════════════════════════════════
    AiChat — 다글로식 AI 채팅 인터페이스
 ═══════════════════════════════════════════════════════ */
 
 const MODELS = [
-  { id:"claude-haiku-4-5", label:"Claude Haiku", desc:"빠르고 효율적인 응답", badge:"기본", color:"#7c6aff" },
-  { id:"claude-sonnet-4-5", label:"Claude Sonnet", desc:"깊이 있는 분석과 창작", badge:"추천", color:"#7c6aff" },
-  { id:"gpt-4o-mini", label:"GPT-4o Mini", desc:"빠르고 가성비 좋은 모델", badge:"", color:"#10a37f" },
-  { id:"gpt-4o", label:"GPT-4o", desc:"OpenAI 최신 멀티모달 모델", badge:"고급", color:"#10a37f" },
-  { id:"gemini-2.5-flash", label:"Gemini 2.5 Flash", desc:"Google 초고속 응답 모델", badge:"", color:"#4285f4" },
-  { id:"gemini-2.5-pro", label:"Gemini 2.5 Pro", desc:"Google 고성능 추론 모델", badge:"고급", color:"#4285f4" },
+  { id:"claude-haiku-4-5", label:"Claude Haiku", desc:"빠르고 효율적인 응답", badge:"기본", color:"#7c6aff", cost:5 },
+  { id:"claude-sonnet-4-5", label:"Claude Sonnet", desc:"깊이 있는 분석과 창작", badge:"추천", color:"#7c6aff", cost:15 },
+  { id:"gpt-4o-mini", label:"GPT-4o Mini", desc:"빠르고 가성비 좋은 모델", badge:"", color:"#10a37f", cost:5 },
+  { id:"gpt-4o", label:"GPT-4o", desc:"OpenAI 최신 멀티모달 모델", badge:"고급", color:"#10a37f", cost:20 },
+  { id:"gemini-2.5-flash", label:"Gemini 2.5 Flash", desc:"Google 초고속 응답 모델", badge:"", color:"#4285f4", cost:3 },
+  { id:"gemini-2.5-pro", label:"Gemini 2.5 Pro", desc:"Google 고성능 추론 모델", badge:"고급", color:"#4285f4", cost:15 },
 ];
 
 export default function AiChat({ isDark, user, theme, setAiMenu }) {
@@ -85,15 +86,30 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
   const send = async () => {
     const q = input.trim();
     if (!q || loading) return;
-    setInput("");
 
+    // 비회원: 5회 제한 체크
+    if (!user) {
+      if (guestLimitExceeded()) {
+        alert("비회원 무료 체험 5회를 모두 사용했습니다. 회원가입하면 100P를 드려요!");
+        return;
+      }
+      incrementGuestUsage();
+    }
+
+    setInput("");
     const userMsg = { role: "user", content: q };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setLoading(true);
 
+    // 회원: 포인트 차감
+    const chatCost = CHAT_COST[model] || -5;
+    if (user) {
+      try { await useAiOnce(user, null, chatCost, `AI 채팅 (${MODELS.find(m=>m.id===model)?.label||model})`); }
+      catch { /* 포인트 부족해도 일단 진행 */ }
+    }
+
     try {
-      // 대화 컨텍스트 (최근 10개)
       const ctx = newMsgs.slice(-10).map(m => ({ role: m.role, content: m.content }));
       const systemPrompt = "당신은 SNS메이킷의 AI 어시스턴트입니다. SNS 콘텐츠 제작, 마케팅, 블로그 글쓰기, 디자인, 비즈니스에 대해 전문적이고 친절하게 답변합니다. 한국어로 답변하세요. 마크다운 형식으로 깔끔하게 정리해주세요.";
       const response = await callAI(model, [
@@ -208,7 +224,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                           style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: model === m.id ? "rgba(124,106,255,0.08)" : "transparent", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
                           <span style={{ width: 8, height: 8, borderRadius: "50%", background: model === m.id ? m.color : "#ddd", flexShrink: 0 }} />
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{m.label} {m.badge && <span style={{ fontSize: 10, fontWeight: 600, color: accent, background: "rgba(124,106,255,0.1)", padding: "1px 6px", borderRadius: 6, marginLeft: 4 }}>{m.badge}</span>}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{m.label} {m.badge && <span style={{ fontSize: 10, fontWeight: 600, color: accent, background: "rgba(124,106,255,0.1)", padding: "1px 6px", borderRadius: 6, marginLeft: 4 }}>{m.badge}</span>} <span style={{ fontSize: 10, color: muted, fontWeight: 500 }}>{m.cost}P/회</span></div>
                             <div style={{ fontSize: 11, color: muted }}>{m.desc}</div>
                           </div>
                         </button>

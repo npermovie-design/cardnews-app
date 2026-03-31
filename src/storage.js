@@ -40,14 +40,31 @@ export const POINTS = {
   DAILY_LOGIN: 3,      // 일일 로그인 (출석체크 +3P)
   POST_WRITE:  2,      // 게시글 작성 (+2P)
   COMMENT:     0,      // 댓글 작성
-  AI_USE:      -10,    // 기본 텍스트 생성 (Haiku) — cost ~7원, margin 86%+
-  AI_SONNET:   -35,    // 고급 텍스트 생성 (Sonnet) — cost ~42원, margin 72%+
-  IMAGE_GEN:   -80,    // 이미지 생성 (AI 이미지) — cost ~100원, margin 75%+
-  PPT_GEN:     -25,    // PPT 1덱 생성 — cost ~15원, margin 85%+
-  VIDEO_ANALYZE: -35,  // 영상 AI 분석 — cost ~30원, margin 78%+
+  AI_USE:      -10,    // 기본 텍스트 생성 (Haiku) — cost ~7원
+  AI_SONNET:   -35,    // 고급 텍스트 생성 (Sonnet) — cost ~42원
+  IMAGE_GEN:   -80,    // 이미지 생성 (AI 이미지) — cost ~100원
+  PPT_GEN:     -25,    // PPT 1덱 생성 — cost ~15원
+  VIDEO_ANALYZE: -35,  // 영상 AI 분석 — cost ~30원
   VIDEO_GEN:   -15,    // 영상 생성 기본 (15초 이하) — cost ~10원
   VIDEO_GEN_30: -25,   // 영상 생성 (30초) — cost ~20원
   VIDEO_GEN_60: -40,   // 영상 생성 (60초+) — cost ~30원
+  // AI 채팅 — 모델별 차감
+  CHAT_HAIKU:    -5,   // Claude Haiku 채팅 — cost ~3원
+  CHAT_SONNET:  -15,   // Claude Sonnet 채팅 — cost ~15원
+  CHAT_GPT4O_MINI: -5, // GPT-4o Mini — cost ~3원
+  CHAT_GPT4O:   -20,   // GPT-4o — cost ~25원
+  CHAT_GEMINI_FLASH: -3, // Gemini Flash — cost ~2원
+  CHAT_GEMINI_PRO: -15, // Gemini Pro — cost ~15원
+};
+
+// 채팅 모델 → 포인트 매핑
+export const CHAT_COST = {
+  "claude-haiku-4-5": POINTS.CHAT_HAIKU,
+  "claude-sonnet-4-5": POINTS.CHAT_SONNET,
+  "gpt-4o-mini": POINTS.CHAT_GPT4O_MINI,
+  "gpt-4o": POINTS.CHAT_GPT4O,
+  "gemini-2.5-flash": POINTS.CHAT_GEMINI_FLASH,
+  "gemini-2.5-pro": POINTS.CHAT_GEMINI_PRO,
 };
 
 // 단건 충전 플랜 (PricingPage.jsx의 ONE_OFF_PLANS과 동기화)
