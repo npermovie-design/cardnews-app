@@ -46,6 +46,7 @@ export default function UnifiedCanvasEditor({
   const [layerTick, setLayerTick] = useState(0);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   // Undo/Redo
   const historyRef = useRef([]);
   const historyIdxRef = useRef(-1);
@@ -396,7 +397,7 @@ export default function UnifiedCanvasEditor({
   /* ═══ RENDER ═══ */
   return (
     <div style={inline?{width:"100%",flex:1,display:"flex",overflow:"hidden"}:{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
-      <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff"}:{width:"100%",maxWidth:1400,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+      <div style={inline?{width:"100%",height:"100%",display:"flex",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1400,height:"95vh",background:"#fff",borderRadius:16,display:"flex",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
         {/* 캔버스 영역 */}
         <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
@@ -433,8 +434,11 @@ export default function UnifiedCanvasEditor({
           )}
         </div>
 
-        {/* 우측 패널 */}
-        <div style={{width:280,background:"#fafafa",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+        {/* 우측 패널 (접기/펼치기 가능) */}
+        <button onClick={()=>setPanelOpen(!panelOpen)} style={{position:"absolute",right:panelOpen?276:0,top:"50%",transform:"translateY(-50%)",zIndex:10,width:20,height:40,borderRadius:"4px 0 0 4px",border:"1px solid #eee",borderRight:"none",background:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#888",boxShadow:"-2px 0 8px rgba(0,0,0,0.05)"}}>
+          {panelOpen?"▶":"◀"}
+        </button>
+        <div style={{width:panelOpen?280:0,background:"#fafafa",borderLeft:panelOpen?"1px solid #eee":"none",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden",transition:"width 0.2s ease"}}>
           {/* 패널 탭 */}
           <div style={{display:"flex",borderBottom:"1px solid #eee",flexShrink:0}}>
             {[{id:"props",label:"속성"},{id:"layers",label:"레이어"},{id:"images",label:"이미지"},{id:"shapes",label:"도형/폰트"}].map(t=>(

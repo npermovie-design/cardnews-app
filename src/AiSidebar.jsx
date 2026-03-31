@@ -84,71 +84,113 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     );
   };
 
+  const [expanded, setExpanded] = useState(false);
+
+  // 메뉴 그룹 정의
+  const menuGroups = [
+    { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png" },
+    { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
+    { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png" },
+    { id:"blog_write", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"] },
+    { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"] },
+    { id:"image_create", label:"이미지 생성", icon:"/icons3d/instagram-cam.png", ids:["product_shot","logo_gen","mockup_gen","model_gen"] },
+    { id:"image_edit", label:"이미지 수정", icon:"/icons3d/camera.png", ids:["skin_retouch","face_swap","outfit_swap","outpaint"] },
+    { id:"repurpose", label:"리퍼포징", icon:"/icons3d/sns-share.png" },
+  ];
+
+  const isActive = (item) => {
+    const baseId = item.id.replace('_intro','');
+    return aiMenu === item.id || aiMenu.startsWith(baseId) || (item.ids && item.ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
+  };
+
   return (
-    <div style={{
-      width: 210, flexShrink: 0, background: sideBg,
-      borderRight: `1px solid ${sideBdr}`,
-      display: "flex", flexDirection: "column", height: "100%", overflow: "visible",
-      position: "relative",
-    }}>
-      {/* 브랜드 */}
-      <div style={{ padding: "14px 14px 10px", borderBottom: `1px solid ${sideBdr}`, display: "flex", alignItems: "center", gap: 8 }}>
-        <img src="/logo.png" alt="SNS메이킷" style={{ width: 28, height: 28, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
-          <div style={{ fontSize: 9, color: brandSub, marginTop: 1 }}>{t("aiGen")}</div>
-        </div>
-      </div>
-
-      {/* 메뉴 */}
-      <div style={{ padding: "8px", flex: 1, overflowY: "auto", overflowX: "visible" }}>
-        <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>MENU</div>
-        <Item id="home" label={t("home")} icon="/icons3d/sns-heart.png" />
-        <Item id="library" label={t("library")} icon="/icons3d/search-book.png" />
-
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <Item id="prompt_studio" label="비즈니스 문서" icon="/icons3d/report.png" />
-        <Item id="blog_write" label="글쓰기" icon="/icons3d/blog-write.png" ids={["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"]} />
-        <Item id="content_create" label="콘텐츠 제작" icon="/icons3d/palette.png" ids={["cardnews_simple","detail_simple","thumbnail_gen","ppt_gen"]} badge="추천" badgeColor="orange" />
-        <Item id="image_create" label="이미지 생성" icon="/icons3d/instagram-cam.png" ids={["product_shot","logo_gen","mockup_gen","model_gen"]} />
-        <Item id="image_edit" label="이미지 수정" icon="/icons3d/camera.png" ids={["skin_retouch","face_swap","outfit_swap","outpaint"]} />
-        {user?.role === "admin" ? (
-          <Item id="video_create" label="영상 제작" icon="/icons3d/sns-app.png" ids={["shorts_make"]} badge="개발중" badgeColor="orange" />
-        ) : (
-          <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 8, opacity: 0.5 }}>
-            <img src="/icons3d/sns-app.png" alt="" style={{ width: 20, height: 20 }} />
-            <span style={{ fontSize: 13, color: isDark ? "#aaa" : "#999" }}>영상 제작</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 4, padding: "1px 6px", marginLeft: "auto" }}>개발중</span>
-          </div>
-        )}
-
-        <div style={{ height:1, background:sideBdr, margin:"8px 4px" }} />
-        <div style={{ fontSize: 9, color: menuLabel, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", marginBottom: 3 }}>리퍼포징</div>
-        <Item id="repurpose" label="원소스 멀티유즈" icon="/icons3d/sns-share.png" badge="NEW" badgeColor="green" />
-      </div>
-
-      {/* 하단 섹션 – SNS 연동 + 포인트 */}
+    <div style={{ display:"flex", flexShrink:0, height:"100%", position:"relative" }}>
+      {/* ── 좁은 아이콘 바 (48px) ── */}
       <div style={{
-        padding: "10px 12px 12px", borderTop: `1px solid ${sideBdr}`,
-        background: isDark ? "rgba(0,0,0,0.2)" : "rgba(99,102,241,0.03)",
-        flexShrink: 0,
+        width: 48, background: isDark ? "rgba(0,0,0,0.5)" : "#fff",
+        borderRight: `1px solid ${sideBdr}`,
+        display: "flex", flexDirection: "column", alignItems: "center",
+        paddingTop: 8, paddingBottom: 8,
       }}>
-        <button onClick={() => navigate && navigate("mypage")} style={{
-          width: "100%", padding: "8px 10px", borderRadius: 8,
-          border: `1px solid ${isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.12)"}`,
-          background: isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.05)",
-          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          color: isDark ? "#a5b4fc" : "#6366f1", fontSize: 11, fontWeight: 600,
-          marginBottom: 8, transition: "background 0.15s",
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.1)"}
-          onMouseLeave={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.05)"}
-        >
-          <span style={{ fontSize: 13 }}>🔗</span>
-          SNS 계정 연동·관리
+        {/* 로고 */}
+        <button onClick={() => setAiMenu("home")} style={{ width:36, height:36, borderRadius:10, border:"none", cursor:"pointer", background:"transparent", padding:0, marginBottom:12 }}>
+          <img src="/logo.png" alt="SNS메이킷" style={{ width:32, height:32, borderRadius:8, objectFit:"cover" }} />
         </button>
-        {/* 포인트 정보는 우측 상단에만 표시 (중복 제거) */}
+
+        {/* 확장 토글 */}
+        <button onClick={() => setExpanded(!expanded)} title={expanded ? "접기" : "메뉴 펼치기"}
+          style={{ width:36, height:28, borderRadius:6, border:"none", cursor:"pointer", background:expanded ? (isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)") : "transparent", color:isDark?"#a5b4fc":"#7c6aff", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:8 }}>
+          {expanded ? "◁" : "☰"}
+        </button>
+
+        {/* 아이콘 메뉴 */}
+        {menuGroups.map(item => {
+          const active = isActive(item);
+          return (
+            <button key={item.id} onClick={() => { setAiMenu(item.id); if(!expanded) setExpanded(false); }}
+              title={item.label}
+              style={{
+                width:40, height:40, borderRadius:8, border:"none", cursor:"pointer",
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1,
+                marginBottom:2, transition:"all 0.12s",
+                background: active ? (isDark ? "rgba(124,106,255,0.25)" : "rgba(124,106,255,0.12)") : "transparent",
+                borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
+              }}>
+              {typeof item.icon === "string" && item.icon.startsWith("/") ?
+                <img src={item.icon} alt="" style={{ width:18, height:18, objectFit:"contain", opacity: active?1:0.6 }} /> :
+                <span style={{ fontSize:16, opacity: active?1:0.6 }}>{item.icon}</span>
+              }
+            </button>
+          );
+        })}
+
+        <div style={{ flex:1 }} />
+
+        {/* 하단: 프로필/설정 */}
+        <button onClick={() => navigate && navigate("mypage")} title="마이페이지"
+          style={{ width:36, height:36, borderRadius:8, border:"none", cursor:"pointer", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", color:isDark?"#a5b4fc":"#7c6aff", fontSize:16 }}>
+          👤
+        </button>
       </div>
+
+      {/* ── 확장 패널 (펼침 시만 표시) ── */}
+      {expanded && (
+        <div style={{
+          width: 180, background: isDark ? "rgba(0,0,0,0.4)" : "#fafafa",
+          borderRight: `1px solid ${sideBdr}`,
+          display: "flex", flexDirection: "column", overflow: "hidden",
+        }}>
+          <div style={{ padding: "12px 12px 8px", borderBottom: `1px solid ${sideBdr}` }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: brandText }}>SNS메이킷</div>
+            <div style={{ fontSize: 9, color: brandSub, marginTop: 2 }}>{t("aiGen")}</div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: "6px 6px" }}>
+            {menuGroups.map(item => {
+              const active = isActive(item);
+              return (
+                <button key={item.id} onClick={() => { setAiMenu(item.id); }}
+                  style={{
+                    width: "100%", padding: "10px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                    textAlign: "left", display: "flex", alignItems: "center", gap: 8, marginBottom: 1,
+                    background: active ? itemActiveBg : "transparent",
+                    color: active ? itemActive : itemText,
+                    fontSize: 13, fontWeight: active ? 700 : 500,
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={e => { if(!active) e.currentTarget.style.background = "rgba(99,102,241,0.05)"; }}
+                  onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>
+                  {typeof item.icon === "string" && item.icon.startsWith("/") ?
+                    <img src={item.icon} alt="" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} /> :
+                    <span style={{ fontSize:14 }}>{item.icon}</span>
+                  }
+                  <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
