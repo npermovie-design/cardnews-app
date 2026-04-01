@@ -663,11 +663,32 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     </div>
                   </div>
 
+                  {/* 상단 제목/부제 편집 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>🎬 제목 · 부제 수정</div>
+                    <input value={editClips[previewIdx]?.title || ""} onChange={e => {
+                      const clips = [...editClips]; clips[previewIdx] = { ...clips[previewIdx], title: e.target.value }; setEditClips(clips);
+                    }} placeholder="상단 제목" style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
+                    <input value={editClips[previewIdx]?.subtitle_text || ""} onChange={e => {
+                      const clips = [...editClips]; clips[previewIdx] = { ...clips[previewIdx], subtitle_text: e.target.value }; setEditClips(clips);
+                    }} placeholder="하단 부제" style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+
                   {/* 자막 편집 */}
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>📝 자막 수정</div>
-                    <div style={{ maxHeight: 120, overflowY: "auto" }}>
-                      {(editClips[previewIdx]?.subtitles || []).slice(0, 10).map((s, i) => (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: text }}>📝 자막 수정</div>
+                      <button onClick={() => {
+                        const clips = [...editClips];
+                        const subs = [...(clips[previewIdx]?.subtitles || [])];
+                        const lastEnd = subs.length > 0 ? (subs[subs.length - 1].end || subs[subs.length - 1].start + 3) : 0;
+                        subs.push({ start: lastEnd, end: lastEnd + 3, text: "" });
+                        clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
+                        setEditClips(clips);
+                      }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: acc, cursor: "pointer", fontWeight: 700 }}>+ 자막 추가</button>
+                    </div>
+                    <div style={{ maxHeight: 150, overflowY: "auto" }}>
+                      {(editClips[previewIdx]?.subtitles || []).map((s, i) => (
                         <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
                           <span style={{ fontSize: 10, color: muted, flexShrink: 0, width: 36 }}>{fmt(s.start)}</span>
                           <input value={s.text} onChange={e => {
@@ -677,6 +698,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                             clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
                             setEditClips(clips);
                           }} style={{ flex: 1, padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 11, outline: "none" }} />
+                          <button onClick={() => {
+                            const clips = [...editClips];
+                            const subs = [...(clips[previewIdx]?.subtitles || [])];
+                            subs.splice(i, 1);
+                            clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
+                            setEditClips(clips);
+                          }} style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}>✕</button>
                         </div>
                       ))}
                     </div>
@@ -697,18 +725,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              {/* 다운로드 + 연계 버튼 */}
-              <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
-                {doneResults.map(r => (
-                  <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
-                    style={{ padding: "12px 24px", borderRadius: 12, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-                    Short {r.index + 1} 다운로드
-                  </a>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>📝 글쓰기 연계</button>
-                <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>🎨 콘텐츠 제작</button>
+              {/* 편집 완료 → 다운로드 */}
+              <div style={{ marginTop: 16, textAlign: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 10 }}>편집이 완료되면 다운로드하세요</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                  {doneResults.map(r => (
+                    <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
+                      style={{ padding: "12px 24px", borderRadius: 12, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      ⬇ Short {r.index + 1} 다운로드
+                    </a>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 10, marginTop: 12, justifyContent: "center" }}>
+                  <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>📝 글쓰기 연계</button>
+                  <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>🎨 콘텐츠 제작</button>
+                </div>
               </div>
             </>
           ) : (
