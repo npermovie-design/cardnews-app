@@ -26,8 +26,7 @@ app = FastAPI(title="Shorts Factory")
 # CORS - iframe 임베딩 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://www.snsmakeit.com", "https://snsmakeit.com", "http://localhost:5173", "http://localhost:3000", "https://*.vercel.app"],
-    allow_origin_regex=r"https://cardnews-.*-npermovie-7580s-projects\.vercel\.app",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
