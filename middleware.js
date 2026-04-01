@@ -4,7 +4,7 @@ export const config = {
   matcher: ["/((?!api|_next|favicon|og-image|robots|sitemap|rss|assets|manifest|icon-|\\.).*)"],
 };
 
-const SITE = "https://www.snsmakeit.com";
+const SITE = "https://snsmakeit.com";
 const DEFAULT_OG = {
   title: "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성",
   desc: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버·인스타·유튜브 콘텐츠까지 비회원 5회 무료!",
@@ -113,7 +113,7 @@ export default async function middleware(request) {
   let title, desc, image, keywords, bodyContent = "";
 
   // 게시글 URL 처리: /community/:cat/post-:id
-  const postMatch = path.match(/\/community\/(\w+)\/post-(\d+)/);
+  const postMatch = path.match(/\/community\/(\w+)\/post-(.+)/);
   if (postMatch) {
     const [, catId, postId] = postMatch;
     const catName = COMMUNITY_CATS[catId] || catId;
