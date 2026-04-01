@@ -640,10 +640,64 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 32px", overflowY: "auto" }}>
           {doneResults.length > 0 ? (
             <>
-              <div style={{ ...cardStyle, width: "100%", maxWidth: 720, textAlign: "center", padding: 24 }}>
-                <video controls playsinline src={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
-                  style={{ maxHeight: "70vh", width: "100%", maxWidth: 480, borderRadius: 14, background: "#000" }} />
+              {/* 영상 미리보기 + 편집기 */}
+              <div style={{ ...cardStyle, width: "100%", maxWidth: 760, padding: 0, overflow: "hidden" }}>
+                {/* 비디오 플레이어 */}
+                <div style={{ background: "#000", textAlign: "center", position: "relative" }}>
+                  <video id="shorts-preview-video" controls playsinline
+                    src={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
+                    style={{ maxHeight: "50vh", width: "100%", maxWidth: 400, display: "block", margin: "0 auto" }} />
+                </div>
+
+                {/* 편집 도구 */}
+                <div style={{ padding: "16px 20px" }}>
+                  {/* 트림 구간 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>✂️ 트림 (시작/끝 조절)</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: muted }}>시작</span>
+                      <input type="range" min="0" max="100" defaultValue="0" style={{ flex: 1, accentColor: acc }}
+                        onChange={e => { const v = document.getElementById("shorts-preview-video"); if (v) { v.currentTime = (v.duration || 60) * e.target.value / 100; } }} />
+                      <span style={{ fontSize: 11, color: muted }}>끝</span>
+                      <input type="range" min="0" max="100" defaultValue="100" style={{ flex: 1, accentColor: acc }} />
+                    </div>
+                  </div>
+
+                  {/* 자막 편집 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>📝 자막 수정</div>
+                    <div style={{ maxHeight: 120, overflowY: "auto" }}>
+                      {(editClips[previewIdx]?.subtitles || []).slice(0, 10).map((s, i) => (
+                        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
+                          <span style={{ fontSize: 10, color: muted, flexShrink: 0, width: 36 }}>{fmt(s.start)}</span>
+                          <input value={s.text} onChange={e => {
+                            const clips = [...editClips];
+                            const subs = [...(clips[previewIdx]?.subtitles || [])];
+                            subs[i] = { ...subs[i], text: e.target.value };
+                            clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
+                            setEditClips(clips);
+                          }} style={{ flex: 1, padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 11, outline: "none" }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 속도 조절 */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>⚡ 재생 속도</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {[0.5, 0.75, 1, 1.25, 1.5, 2].map(spd => (
+                        <button key={spd} onClick={() => { const v = document.getElementById("shorts-preview-video"); if (v) v.playbackRate = spd; }}
+                          style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
+                          {spd}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* 다운로드 + 연계 버튼 */}
               <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
                 {doneResults.map(r => (
                   <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
@@ -652,9 +706,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </a>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>글쓰기 연계</button>
-                <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>콘텐츠 제작</button>
+              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>📝 글쓰기 연계</button>
+                <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>🎨 콘텐츠 제작</button>
               </div>
             </>
           ) : (
