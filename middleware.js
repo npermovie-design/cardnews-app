@@ -120,18 +120,18 @@ export default async function middleware(request) {
     try {
       const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
       const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
-      const res = await fetch(`${sbUrl}/rest/v1/posts?id=eq.${postId}&select=title,body,images,author_name`, {
+      const res = await fetch(`${sbUrl}/rest/v1/posts?id=eq.${postId}&select=title,content,images,author`, {
         headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
       });
       const data = await res.json();
       const post = data?.[0];
       if (post) {
         title = `${post.title} - SNS메이킷 ${catName}`;
-        const plainBody = (post.body || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+        const plainBody = (post.content || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
         desc = plainBody.slice(0, 155) + (plainBody.length > 155 ? "..." : "");
         image = post.images?.[0] || DEFAULT_OG.image;
         keywords = `SNS메이킷, ${catName}, ${post.title}`;
-        bodyContent = `<article><h2>${post.title}</h2><p>${plainBody}</p>${post.author_name ? `<span>작성자: ${post.author_name}</span>` : ""}</article>`;
+        bodyContent = `<article><h2>${post.title}</h2><p>${plainBody}</p>${post.author ? `<span>작성자: ${post.author}</span>` : ""}</article>`;
       }
     } catch {}
   }
