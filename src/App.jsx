@@ -12,7 +12,8 @@ import Footer from "./Footer.jsx";
 const AboutPage = lazy(() => import("./AboutPage").then(m => ({ default: m.AboutPage })));
 const HowToPage = lazy(() => import("./AboutPage").then(m => ({ default: m.HowToPage })));
 const FaqPage = lazy(() => import("./AboutPage").then(m => ({ default: m.FaqPage })));
-const AiPage = lazy(() => import("./AiPage").then(m => ({ default: m.AiPage })));
+// AiPage는 lazy 사용 안 함 (Suspense 리셋 → 하위 컴포넌트 unmount 방지)
+import { AiPage } from "./AiPage";
 const ContactPage = lazy(() => import("./ContactPage").then(m => ({ default: m.ContactPage })));
 const PricingPage = lazy(() => import("./PricingPage").then(m => ({ default: m.PricingPage })));
 const PaymentSuccessPage = lazy(() => import("./PaymentPage").then(m => ({ default: m.PaymentSuccessPage })));
@@ -1043,11 +1044,17 @@ export default function App() {
       )}
 
       {/* ── 페이지 ── */}
-      <div style={{ paddingTop: 60 }} className="page-anim" key={page}>
-        <Suspense fallback={<PageLoader />}>
+      {page === "ai" ? (
+        <div style={{ paddingTop: 60 }}>
           {renderPage()}
-        </Suspense>
-      </div>
+        </div>
+      ) : (
+        <div style={{ paddingTop: 60 }} className="page-anim" key={page}>
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </div>
+      )}
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
       {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}

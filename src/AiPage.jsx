@@ -176,7 +176,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
                       onMouseEnter={e => { e.currentTarget.style.borderColor=accent; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; }}>
                       {item.thumb ? (
-                        <img src={item.thumb} alt="" style={{ width:40, height:40, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+                        <img src={item.thumb} alt="" loading="lazy" decoding="async" style={{ width:40, height:40, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
                       ) : (
                         <span style={{ fontSize:24, flexShrink:0 }}>{item.icon}</span>
                       )}
@@ -201,7 +201,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
                     display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor=accent; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.1)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor=bdr; e.currentTarget.style.boxShadow="none"; }}>
-                  <img src={t.img} alt="" style={{ width:36, height:36, objectFit:"contain", flexShrink:0 }} />
+                  <img src={t.img} alt="" loading="lazy" decoding="async" style={{ width:36, height:36, objectFit:"contain", flexShrink:0 }} />
                   <div>
                     <div style={{ fontSize:13, fontWeight:700, color:homeText }}>{t.label}</div>
                     <div style={{ fontSize:11, color:homeMuted, marginTop:2 }}>{t.desc}</div>
@@ -1561,6 +1561,13 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         @keyframes ai-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.05)}}
         @keyframes ai-progress{from{width:0%}to{width:92%}}
         @keyframes ai-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        img[loading="lazy"]{background:linear-gradient(90deg,rgba(124,106,255,0.05) 25%,rgba(124,106,255,0.1) 50%,rgba(124,106,255,0.05) 75%);background-size:200% 100%;animation:imgShimmer 1.5s infinite}
+        @keyframes imgShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .ai-content-fade{animation:aiFadeIn 0.2s ease}
+        @keyframes aiFadeIn{from{opacity:0}to{opacity:1}}
+        button:disabled{opacity:0.5!important;cursor:not-allowed!important}
+        button{min-height:36px}
+        @media(max-width:768px){button{min-height:44px}}
         .ai-sidebar-desktop{display:flex}
         .ai-sidebar-mobile{display:none}
         @media(max-width:768px){
