@@ -1327,6 +1327,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   return null;
 }
 
+// React.memo로 불필요한 리렌더 방지 (부모 state 변경 시 unmount 방지)
+const AiContentMemo = React.memo(AiContent, (prev, next) => {
+  // aiMenu가 바뀔 때만 리렌더, 나머지 props 변경은 무시
+  return prev.aiMenu === next.aiMenu && prev.user === next.user && prev.theme === next.theme;
+});
+
 export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
   const { t: tt } = useI18n();
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
@@ -1642,7 +1648,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContent aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
+          <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
         </div>
       </div>
     </div>
