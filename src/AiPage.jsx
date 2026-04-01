@@ -54,12 +54,11 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
     { id:"ppt_gen", label:"PPT 슬라이드", img:"/icons3d/ppt.png", desc:"텍스트 편집 가능 · 프레젠테이션", size:"1920×1080" },
   ];
 
-  // 이미지 AI: 이미지로 바로 생성
+  // 이미지 AI: 같은 콘텐츠를 이미지로 바로 생성
   const imageAiTools = [
-    { id:"product_shot", img:"/icons3d/camera.png", label:"제품컷", desc:"AI가 제품 사진을 바로 생성" },
-    { id:"logo_gen", img:"/icons3d/palette.png", label:"로고", desc:"AI가 브랜드 로고를 바로 생성" },
-    { id:"mockup_gen", img:"/icons3d/sns-app.png", label:"목업", desc:"제품 목업 이미지를 바로 생성" },
-    { id:"model_gen", img:"/icons3d/char-standing.png", label:"AI 모델", desc:"광고용 모델 이미지 바로 생성" },
+    { id:"cardnews_simple_img", img:"/icons3d/sns-content.png", label:"카드뉴스", desc:"완성된 이미지로 바로 생성", size:"1080×1080" },
+    { id:"detail_simple_img", img:"/icons3d/memo.png", label:"상세페이지", desc:"완성된 이미지로 바로 생성", size:"860×1100" },
+    { id:"thumbnail_gen_img", img:"/icons3d/instagram-cam.png", label:"썸네일", desc:"완성된 이미지로 바로 생성", size:"1280×720" },
   ];
 
   const renderToolCard = (t) => (
@@ -905,11 +904,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
     return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
+  if (aiMenu === "cardnews_simple_img") {
+    return <ToolWrap menuId="cardnews_simple_img"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
+  }
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
     return <ToolWrap menuId="detail_simple"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
+  if (aiMenu === "detail_simple_img") {
+    return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
+  }
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
     return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  }
+  if (aiMenu === "thumbnail_gen_img") {
+    return <ToolWrap menuId="thumbnail_gen_img"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
   }
   if (aiMenu === "ppt_gen") {
     return <ToolWrap menuId="ppt_gen"><PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;

@@ -180,7 +180,7 @@ const defaultText = () => ({
   rotate:0, opacity:1,
 });
 
-export default function ThumbnailGenerator({ isDark, user, onUserUpdate }) {
+export default function ThumbnailGenerator({ isDark, user, onUserUpdate, showPointConfirm, imageMode }) {
   const D = isDark;
   const text = D ? "#e8eaed" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";

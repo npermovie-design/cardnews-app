@@ -253,7 +253,7 @@ async function getAiSuggestions(catLabel, form) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate, showPointConfirm }) {
+export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserUpdate, showPointConfirm, imageMode }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
   const CATEGORIES = getCategories(ko);

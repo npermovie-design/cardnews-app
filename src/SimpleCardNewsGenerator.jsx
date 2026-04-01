@@ -553,7 +553,7 @@ function PlanningAnimation({ pageCount, ko=true, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // 메인 컴포넌트
 // ══════════════════════════════════════════════════════════════
-export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary, onUserUpdate, showPointConfirm }) {
+export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromLibrary, onUserUpdate, showPointConfirm, imageMode }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
   const TOPIC_EXAMPLES = getTopicExamples(ko);
