@@ -257,36 +257,37 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 최대 2회 시도 (실패 시 재시도)
     let lastErr = null;
     try {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        _savedFull = "";
-        const full = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (accumulated) => {
-          _savedFull = accumulated;
-          // 스트리밍 중에는 result 설정 안 함 — 로딩 화면 유지
-        });
-        // 스트리밍 완전 완료 후에만 결과 설정 → 화면 전환
-        if (full && full.length > 50) {
-          setGenStep(5); // 먼저 완료 표시
-          setResult(cleanBlogText(full));
-          if (isTistory) setHtmlResult(mdToHtml(full));
-          lastErr = null;
-          break;
-        } else {
-          lastErr = "글이 너무 짧게 생성되었습니다.";
-        }
-      } catch(e) {
-        lastErr = e.message || "생성 중 오류";
-        if (_savedFull && _savedFull.length > 50) {
-          setGenStep(5);
-          setResult(cleanBlogText(_savedFull));
-          if (isTistory) setHtmlResult(mdToHtml(_savedFull));
-          lastErr = null;
-          break;
-        }
+    // 글 생성 (부족하면 이어쓰기)
+    _savedFull = "";
+    try {
+      let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; });
+
+      // 글이 짧거나 해시태그 없으면 이어쓰기 시도
+      const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
+      if (fullText && fullText.length < minLen && fullText.length > 50) {
+        try {
+          const contPrompt = `아래 글을 이어서 완성해주세요. 해시태그 10개로 마무리하세요.\n\n${fullText.slice(-500)}`;
+          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 2000, (acc) => { _savedFull = fullText + acc; });
+          if (cont) fullText = fullText + "\n" + cont;
+        } catch {}
       }
-      if (attempt === 0 && lastErr) setLoadingMsg?.("재시도 중...");
+
+      if (fullText && fullText.length > 50) {
+        setGenStep(5);
+        setResult(cleanBlogText(fullText));
+        if (isTistory) setHtmlResult(mdToHtml(fullText));
+      } else {
+        setError("글 생성에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch(e) {
+      if (_savedFull && _savedFull.length > 50) {
+        setGenStep(5);
+        setResult(cleanBlogText(_savedFull));
+        if (isTistory) setHtmlResult(mdToHtml(_savedFull));
+      } else {
+        setError((e.message || "생성 중 오류") + " 다시 시도해주세요.");
+      }
     }
-    if (lastErr) setError(lastErr + " 다시 시도해주세요.");
     } finally {
       stepTimers.forEach(t => clearTimeout(t));
       setGenStep(5); // all completed
