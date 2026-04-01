@@ -168,6 +168,8 @@ export default async function middleware(request) {
 <meta name="description" content="${esc(desc)}"/>
 <meta name="keywords" content="${esc(keywords)}"/>
 <meta name="robots" content="index, follow"/>
+<meta name="google-site-verification" content="RK3cE_t-6IlrSQbjoV4TvEg9n-Crqg8eaEByIHq_V50"/>
+<meta name="naver-site-verification" content="b7ec85037f97a6e5870a755bc0c1d9b90d224ed9"/>
 <link rel="canonical" href="${canonical}"/>
 
 <!-- Open Graph -->
