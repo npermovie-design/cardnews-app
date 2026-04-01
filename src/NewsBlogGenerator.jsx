@@ -365,6 +365,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
     if (!user && guestLimitExceeded()) return;
     if (!user) incrementGuestUsage();
     setGenErr(""); setGenerating(true); setResult(""); setCopied(false); setLoadStep(1);
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_news", type: "blog_write", message: "뉴스 블로그 작성 중..." } } }));
     // 포인트 즉시 차감
     if (user && user.uid) {
       changePoints(user.uid, -10, "뉴스 블로그 생성").then(newPts => {
@@ -534,6 +535,7 @@ ${articleSection}
         fetchInlineImages(_nfFull);
       }
       setGenerating(false); setLoadStep(0);
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_news", type: "blog_write", message: "뉴스 블로그 작성 완료!" } } }));
       if (user) {
         var _u = getAiUsage();
         var _k = "member_" + (user.uid || "u");

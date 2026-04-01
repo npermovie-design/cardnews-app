@@ -937,35 +937,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     },
   };
 
-  // 링크 글쓰기 → 통합 글쓰기의 링크 탭으로 리다이렉트
-  if (aiMenu === "blog_link" || aiMenu === "blog_link_intro") {
-    return <ToolWrap menuId="blog_link"><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="link_youtube" /></ToolWrap>;
-  }
-  // 하위 호환 - 기존 메뉴 ID로 접근 시 통합 페이지로 이동
-  if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
-    return <ToolWrap menuId="blog_news"><LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="news" /></ToolWrap>;
-  }
-  if (aiMenu === "blog_yt_blog" || aiMenu === "blog_yt_blog_intro") {
-    return <ToolWrap menuId="blog_yt_blog"><LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="youtube" /></ToolWrap>;
-  }
-
-  // 블로그 계열 인트로 → 인트로 없이 직접 도구로 이동
-  if (aiMenu.endsWith("_intro") && aiMenu.startsWith("blog_")) {
-    const baseId = aiMenu.replace("_intro", "");
-    const binfo = BLOG_MAP[baseId] || { type: "blog", label: "블로그 글쓰기" };
-    return (
-      <ToolWrap menuId={baseId}>
-        <BlogGenerator initialType={binfo.type} menuLabel={binfo.label} embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </ToolWrap>
-    );
-  }
-
-  // 글쓰기: 하위 플랫폼 직접 진입 (선택 후)
-  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
-    return <ToolWrap menuId="blog_cafe"><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" /></ToolWrap>;
-  }
+  // ── 블로그 도구 메뉴 → AiPage의 영속 레이어가 렌더링하므로 여기선 null 반환 ──
   if (aiMenu.startsWith("blog_") && aiMenu !== "blog_write") {
-    return <ToolWrap menuId={aiMenu}><UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} /></ToolWrap>;
+    return null;
   }
 
   // 글쓰기: 선택 화면 (무엇을 작성할까요?)
@@ -1289,6 +1263,24 @@ const AiContentMemo = React.memo(AiContent, (prev, next) => {
   return prev.aiMenu === next.aiMenu && prev.user === next.user && prev.theme === next.theme;
 });
 
+// ── 블로그 영속 레이어: unmount 방지용 ──
+// 블로그 도구 메뉴인지 판별 (blog_write 선택 화면 제외)
+function isBlogToolMenu(menu) {
+  return menu && menu.startsWith("blog_") && menu !== "blog_write";
+}
+// 블로그 메뉴 → 렌더링 타입/props 결정
+function getBlogRenderInfo(menu) {
+  if (menu === "blog_link" || menu === "blog_link_intro") return { type:"unified", platform:"link_youtube", menuId:"blog_link" };
+  if (menu === "blog_news" || menu === "blog_news_intro") return { type:"linkCombined", tab:"news", menuId:"blog_news" };
+  if (menu === "blog_yt_blog" || menu === "blog_yt_blog_intro") return { type:"linkCombined", tab:"youtube", menuId:"blog_yt_blog" };
+  if (menu === "blog_cafe_intro" || menu === "blog_cafe" || menu === "blog_cafe_make") return { type:"unified", platform:"blog_cafe", menuId:"blog_cafe" };
+  if (menu && menu.endsWith("_intro") && menu.startsWith("blog_")) {
+    const baseId = menu.replace("_intro", "");
+    return { type:"unified", platform: baseId, menuId: baseId };
+  }
+  return { type:"unified", platform: menu, menuId: menu };
+}
+
 export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
   const { t: tt } = useI18n();
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
@@ -1346,6 +1338,24 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
   // 생성 중 상태는 window.__isGenerating으로 직접 참조 (state 제거 → 리렌더 방지)
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
+
+  // ── 블로그 영속 레이어: 한번 마운트되면 메뉴 이동해도 unmount 안 함 ──
+  const blogActiveNow = isBlogToolMenu(aiMenu);
+  const blogRenderInfo = blogActiveNow ? getBlogRenderInfo(aiMenu) : null;
+  const blogMountedRef = useRef(false);
+  const [blogLayer, setBlogLayer] = useState(null); // { type, platform, tab, menuId }
+  // 블로그 메뉴 진입 시 레이어 정보 갱신 (같은 플랫폼이면 유지, 다른 플랫폼이면 교체)
+  useEffect(() => {
+    if (blogActiveNow && blogRenderInfo) {
+      blogMountedRef.current = true;
+      setBlogLayer(prev => {
+        // 같은 플랫폼이면 유지 (unmount 방지)
+        if (prev && prev.platform === blogRenderInfo.platform && prev.type === blogRenderInfo.type) return prev;
+        return blogRenderInfo;
+      });
+    }
+  }, [aiMenu]);
+
   const [guardModal, setGuardModal] = useState(null);
   const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
 
@@ -1367,7 +1377,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
   const setAiMenu = async (id) => {
     // 생성 중 다른 메뉴 클릭 차단 - 커스텀 모달
-    if (window.__isGenerating) {
+    // 블로그 영속 레이어가 활성화된 상태에서는 가드 스킵 (백그라운드에서 계속 생성됨)
+    const blogGenRunning = blogMountedRef.current && isBlogToolMenu(aiMenu);
+    if (window.__isGenerating && !blogGenRunning) {
       const cost = window.__generatingCost || 10;
       const ok = await new Promise(resolve => {
         setGuardModal({
@@ -1610,10 +1622,21 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         </div>
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <div key={aiMenu} className="ai-content-fade" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
+          {/* 일반 콘텐츠 (블로그 도구 활성 시 숨김) */}
+          <div className="ai-content-fade" style={{ flex:1, display: blogActiveNow ? "none" : "flex", overflow:"hidden" }}>
             <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
           </div>
+          {/* 블로그 영속 레이어: 한번 마운트되면 메뉴 이동해도 unmount 안 함 */}
+          {blogLayer && (
+            <div style={{ flex:1, display: blogActiveNow ? "flex" : "none", overflow:"hidden" }}>
+              {blogLayer.type === "linkCombined" ? (
+                <LinkBlogCombined key={blogLayer.menuId} theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab={blogLayer.tab} />
+              ) : (
+                <UnifiedBlogWriter key={blogLayer.platform} theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={blogLayer.platform} />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

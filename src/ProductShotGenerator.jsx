@@ -183,7 +183,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
     if (!productImg) { setError("제품 이미지를 먼저 업로드해주세요."); return; }
     if (!mode)       { setError("생성 모드를 선택해주세요."); return; }
 
-    const cost = 10 * imgCount;
+    const cost = 50 * imgCount;
     if (!user) {
       if (guestLimitExceeded()) { setError("비회원 무료 횟수를 모두 사용했어요. 회원가입 후 계속 이용하세요."); return; }
       incrementGuestUsage();

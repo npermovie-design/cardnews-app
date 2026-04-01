@@ -132,7 +132,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
     setStep(4); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_model", type: "product_shot", message: "모델 이미지 생성 중..." } } }));
@@ -368,7 +368,7 @@ function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest, show
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("사진을 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_skinretouch", type: "product_shot", message: "피부 보정 중..." } } }));
@@ -520,7 +520,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg || !refImg) { setErr("두 이미지를 모두 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_faceswap", type: "product_shot", message: "얼굴 교체 중..." } } }));
@@ -636,7 +636,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showP
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("원본 이미지를 업로드해주세요."); return; }
     if (outfitMode === "ref" && !refImg) { setErr("참고 의상 이미지를 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
     setGenerating(true); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outfitswap", type: "product_shot", message: "의상 교체 중..." } } }));
@@ -809,7 +809,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
     if (sizeMode === "manual" && expLeft===0 && expRight===0 && expTop===0 && expBottom===0) {
       setErr("최소 한 방향의 여백 크기를 0보다 크게 설정해주세요."); return;
     }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outpaint", type: "product_shot", message: "이미지 확장 중..." } } }));

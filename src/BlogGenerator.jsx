@@ -74,6 +74,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 진행 단계 상태 (Mirra-style) ──
   const _ssStepKey = "_bg_step_" + (initialType || "blog");
+  const _ssStartTimeKey = "_bg_startTime_" + (initialType || "blog");
+  const _ssSavedFullKey = "_bg_savedFull_" + (initialType || "blog");
   const [genStep, setGenStep_raw] = useState(() => {
     try { const v = parseInt(sessionStorage.getItem(_ssStepKey) || "0"); return isNaN(v) ? 0 : v; } catch { return 0; }
   });
@@ -81,6 +83,86 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setGenStep_raw(v);
     try { if (v > 0) sessionStorage.setItem(_ssStepKey, String(v)); else sessionStorage.removeItem(_ssStepKey); } catch {}
   };
+  const genStartTimeRef = useRef((() => {
+    try { return parseInt(sessionStorage.getItem(_ssStartTimeKey) || "0") || 0; } catch { return 0; }
+  })());
+
+  // ── 탭 전환 대응: elapsed-time 기반 step progression ──
+  useEffect(() => {
+    if (!loading) return;
+    const stepThresholds = [
+      { step: 2, ms: 2000 },
+      { step: 3, ms: 5000 },
+      { step: 4, ms: 9000 },
+    ];
+    const interval = setInterval(() => {
+      const startTime = genStartTimeRef.current;
+      if (!startTime) return;
+      const elapsed = Date.now() - startTime;
+      for (let i = stepThresholds.length - 1; i >= 0; i--) {
+        if (elapsed >= stepThresholds[i].ms) {
+          const targetStep = stepThresholds[i].step;
+          setGenStep_raw(prev => {
+            const next = Math.max(prev, targetStep);
+            try { if (next > 0) sessionStorage.setItem(_ssStepKey, String(next)); } catch {}
+            return next;
+          });
+          break;
+        }
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // ── 탭 복귀 시 visibilitychange 감지 → 상태 복원 ──
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const wasLoading = sessionStorage.getItem(_ssLoadKey) === "1";
+        const savedStep = parseInt(sessionStorage.getItem(_ssStepKey) || "0");
+        const savedFull = sessionStorage.getItem(_ssSavedFullKey) || "";
+        const savedResult = sessionStorage.getItem(_ssKey) || "";
+
+        // 생성이 진행 중이었는데 loading state가 꺼져 있다면 (스트리밍 끊김)
+        if (wasLoading && !loading) {
+          // 이미 결과가 있으면 그대로 표시
+          if (savedResult && savedResult.length > 50) {
+            setResult(savedResult);
+            setGenStep(5);
+            setLoading(false);
+            return;
+          }
+          // 부분 결과가 있으면 그걸로 복원
+          if (savedFull && savedFull.length > 50) {
+            setResult(cleanBlogText(savedFull));
+            setGenStep(5);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // loading 중이면 step을 elapsed time 기반으로 보정
+        if (loading) {
+          const startTime = genStartTimeRef.current;
+          if (startTime) {
+            const elapsed = Date.now() - startTime;
+            let correctStep = 1;
+            if (elapsed >= 9000) correctStep = 4;
+            else if (elapsed >= 5000) correctStep = 3;
+            else if (elapsed >= 2000) correctStep = 2;
+            setGenStep_raw(prev => {
+              const next = Math.max(prev, correctStep);
+              try { if (next > 0) sessionStorage.setItem(_ssStepKey, String(next)); } catch {}
+              return next;
+            });
+          }
+        }
+      } catch(e) {}
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loading, _ssLoadKey, _ssStepKey, _ssSavedFullKey, _ssKey]);
 
   useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
   const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
@@ -224,9 +306,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       setError("포인트가 부족합니다. 충전 후 이용해주세요.");
       return;
     }
-    setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);}catch(e){} setHtmlResult(""); setCopied(false);
+    setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssSavedFullKey);}catch(e){} setHtmlResult(""); setCopied(false);
     abortRef.current = false;
+    // elapsed-time 기반 step progression을 위해 시작 시각 기록
+    const _startTime = Date.now();
+    genStartTimeRef.current = _startTime;
+    try { sessionStorage.setItem(_ssStartTimeKey, String(_startTime)); } catch {}
     setGenStep(1); // 자료 조사
+    // 백그라운드 작업 표시기 등록 (메뉴 이동 시 진행 상태 표시)
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 중..." } } }));
 
     // 포인트 즉시 차감 (무료 횟수 소진 후에만)
     if (user && user.uid && _aiUsed >= _aiLimit) {
@@ -235,11 +323,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }).catch(()=>{});
     }
 
-    // 진행 단계 타이머 (Mirra-style step progression)
-    const stepTimers = [];
-    stepTimers.push(setTimeout(() => setGenStep(2), 2000)); // 글 구성
-    stepTimers.push(setTimeout(() => setGenStep(3), 5000)); // 본문 작성
-    stepTimers.push(setTimeout(() => setGenStep(4), 9000)); // 검색 최적화
+    // step progression은 useEffect의 interval이 elapsed time 기반으로 처리함 (setTimeout 미사용)
 
     // 세부 설정을 프롬프트에 반영
     let advPromptExtra = "";
@@ -260,14 +344,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 글 생성 (부족하면 이어쓰기)
     _savedFull = "";
     try {
-      let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; });
+      let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
 
       // 글이 짧거나 해시태그 없으면 이어쓰기 시도
       const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
       if (fullText && fullText.length < minLen && fullText.length > 50) {
         try {
           const contPrompt = `아래 글을 이어서 완성해주세요. 해시태그 10개로 마무리하세요.\n\n${fullText.slice(-500)}`;
-          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 2000, (acc) => { _savedFull = fullText + acc; });
+          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 2000, (acc) => { _savedFull = fullText + acc; try { sessionStorage.setItem(_ssSavedFullKey, _savedFull); } catch {} });
           if (cont) fullText = fullText + "\n" + cont;
         } catch {}
       }
@@ -289,9 +373,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
     }
     } finally {
-      stepTimers.forEach(t => clearTimeout(t));
+      genStartTimeRef.current = 0;
+      try { sessionStorage.removeItem(_ssStartTimeKey); sessionStorage.removeItem(_ssSavedFullKey); } catch {}
       setGenStep(5); // all completed
       setLoading(false);
+      // 백그라운드 작업 표시기 완료
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 완료!" } } }));
       if (user) { // 회원만 finally에서 횟수 증가 (비회원은 generate 시작 시점에 이미 처리)
         var _u2 = getAiUsage();
         var _k2 = "member_" + (user.uid || "u");

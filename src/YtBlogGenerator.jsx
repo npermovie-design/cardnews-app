@@ -283,6 +283,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
     if (!user && guestLimitExceeded()) return;
     if (!user) incrementGuestUsage();
     setGenErr(""); setGenerating(true); setResult(""); setInlineImages({}); setCopied(false);
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_yt", type: "blog_write", message: "유튜브 블로그 작성 중..." } } }));
     // 포인트 즉시 차감
     if (user && user.uid) {
       changePoints(user.uid, -10, "유튜브 블로그 생성").then(newPts => {
@@ -417,6 +418,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
     } catch(e) { setGenErr("생성 중 오류가 발생했습니다."); }
     finally {
       setGenerating(false);
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_yt", type: "blog_write", message: "유튜브 블로그 작성 완료!" } } }));
       if (user) {
         var _u = getAiUsage();
         var _k = "member_" + (user.uid || "u");

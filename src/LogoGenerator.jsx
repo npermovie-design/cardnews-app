@@ -103,7 +103,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
   const generate = async () => {
     if (!canGenerate) return;
     if (!user && guestLimitExceeded()) return;
-    if (showPointConfirm && user && !(await showPointConfirm(10 * genCount))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(50 * genCount))) return;
     if (!user) incrementGuestUsage();
     setStep(2); setResults([]); setError(""); setGenIdx(0);
     const styleLabel = LOGO_STYLES.find(s => s.id === selStyle)?.label || selStyle;

@@ -35,7 +35,7 @@ const SUB_PLANS = [
     points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 1,800P 충전", "AI 글쓰기 약 180회", ...COMMON_FEATURES],
+    features: ["매월 1,800P 충전", "AI 글쓰기 약 180회", "이미지 생성 약 36회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
@@ -44,7 +44,7 @@ const SUB_PLANS = [
     points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 3,800P 충전", "AI 글쓰기 약 380회", "이미지 생성 약 47회", ...COMMON_FEATURES],
+    features: ["매월 3,800P 충전", "AI 글쓰기 약 380회", "이미지 생성 약 76회", "영상 제작 약 47회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
@@ -53,7 +53,7 @@ const SUB_PLANS = [
     points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
-    features: ["매월 7,000P 충전", "AI 글쓰기 약 700회", "이미지 생성 약 87회", ...COMMON_FEATURES],
+    features: ["매월 7,000P 충전", "AI 글쓰기 약 700회", "이미지 생성 약 140회", "영상 제작 약 87회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
 ];

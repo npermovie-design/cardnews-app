@@ -188,7 +188,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
   const generate = async () => {
     if (!canGenerate) return;
     if (!user && guestLimitExceeded()) return;
-    if (showPointConfirm && user && !(await showPointConfirm(10 * selTypes.length))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(50 * selTypes.length))) return;
     if (!user) incrementGuestUsage();
     setStep(2); setResults({}); setError("");
     setGenQueue([...selTypes]);
