@@ -20,8 +20,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [tone,       setTone]       = useState(cfg.tones[0].id);
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
-  // ── remount 복원: 생성 완료 후 부모 리렌더로 unmount/remount 시 결과 유지 ──
+  // ── remount 복원: 부모 리렌더로 unmount/remount 시 전체 상태 유지 ──
   const _ssKey = "_bg_res_" + (initialType || "blog");
+  const _ssLoadKey = "_bg_loading_" + (initialType || "blog");
   const [result, setResult_raw] = useState(() => {
     try { return sessionStorage.getItem(_ssKey) || ""; } catch(e) { return ""; }
   });
@@ -29,11 +30,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setResult_raw(v);
     try { if (v && v.length > 10) sessionStorage.setItem(_ssKey, v); } catch(e) {}
   };
-  // 사용자가 메뉴 이동 시 정리 (initialType 변경 시)
   useEffect(() => { return () => { try { sessionStorage.removeItem(_ssKey); } catch(e) {} }; }, [_ssKey]);
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
-  const [loading,    setLoading]    = useState(false);
+  // loading + genStep도 sessionStorage로 복원 (unmount 시 로딩 화면 유지)
+  const [loading, setLoading_raw] = useState(() => {
+    try { return sessionStorage.getItem(_ssLoadKey) === "1"; } catch { return false; }
+  });
+  const setLoading = (v) => {
+    setLoading_raw(v);
+    try { if (v) sessionStorage.setItem(_ssLoadKey, "1"); else sessionStorage.removeItem(_ssLoadKey); } catch {}
+  };
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
@@ -60,7 +67,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [advExtra,     setAdvExtra]     = useState(""); // 추가 지시사항
 
   // ── 진행 단계 상태 (Mirra-style) ──
-  const [genStep, setGenStep] = useState(0); // 0=before, 1~4=steps during generation
+  const _ssStepKey = "_bg_step_" + (initialType || "blog");
+  const [genStep, setGenStep_raw] = useState(() => {
+    try { const v = parseInt(sessionStorage.getItem(_ssStepKey) || "0"); return isNaN(v) ? 0 : v; } catch { return 0; }
+  });
+  const setGenStep = (v) => {
+    setGenStep_raw(v);
+    try { if (v > 0) sessionStorage.setItem(_ssStepKey, String(v)); else sessionStorage.removeItem(_ssStepKey); } catch {}
+  };
 
   useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
   const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
