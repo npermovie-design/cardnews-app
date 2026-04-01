@@ -1086,7 +1086,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const { t: tt } = useI18n();
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // isGenerating은 state 대신 전역 변수로 (리렌더 방지 — BlogGenerator unmount 원인)
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
 
@@ -1137,25 +1137,25 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-  // 생성 중 상태 감지 (useGeneratingGuard 이벤트)
-  useEffect(() => {
-    const handler = (e) => setIsGenerating(e.detail?.generating || false);
-    window.addEventListener("aiGeneratingChange", handler);
-    return () => window.removeEventListener("aiGeneratingChange", handler);
-  }, []);
+  // 생성 중 상태는 window.__isGenerating으로 직접 참조 (state 제거 → 리렌더 방지)
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
   const [guardModal, setGuardModal] = useState(null);
   const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
 
-  // 포인트 차감 확인 모달 — Promise를 반환하므로 await로 사용
-  const showPointConfirm = (cost) => {
-    return new Promise((resolve) => {
-      setPointConfirm({
-        cost,
-        onConfirm: () => { setPointConfirm(null); resolve(true); },
-        onCancel:  () => { setPointConfirm(null); resolve(false); },
-      });
-    });
+  // 포인트 차감 확인 — state 변경 없이 처리 (하위 컴포넌트 unmount 방지)
+  const showPointConfirm = async (cost) => {
+    if (!user) return true;
+    const pts = user.points ?? 0;
+    // 무료 횟수 남아있으면 바로 진행
+    const usage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+    const used = usage["member_" + (user.uid || "u")] || 0;
+    if (used < 20) return true; // 무료 횟수 남음
+    // 포인트 부족 시 차단
+    if (pts < cost) {
+      window.dispatchEvent(new Event("pointsExhausted"));
+      return false;
+    }
+    return true;
   };
 
   const setAiMenu = async (id) => {
@@ -1366,14 +1366,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
                 color: isDark ? "#fff" : "#333", padding: "6px 8px", display: "none", alignItems: "center", justifyContent: "center" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            {isGenerating && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 10px", borderRadius: 12,
-                background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)",
-                border: "1px solid rgba(99,102,241,0.3)" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", border: "2px solid rgba(99,102,241,0.4)", borderTopColor: "#7c6aff", animation: "spin 0.7s linear infinite" }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#7c6aff" }}>AI 생성 중...</span>
-              </div>
-            )}
+            {/* AI 생성 중 배지 제거 — state 변경으로 하위 컴포넌트 unmount 유발하므로 */}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             </div>

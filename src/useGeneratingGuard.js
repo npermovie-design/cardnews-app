@@ -11,8 +11,7 @@ export function useGeneratingGuard(generating, costPerUse = 10, featureType = ""
     // 전역 플래그 설정 (App.jsx popstate에서 확인)
     window.__isGenerating = generating;
     window.__generatingCost = costPerUse;
-    // AiPage.jsx에서 로딩 오버레이 표시를 위한 이벤트
-    window.dispatchEvent(new CustomEvent("aiGeneratingChange", { detail: { generating } }));
+    // aiGeneratingChange 이벤트 제거 — AiPage 리렌더 시 하위 컴포넌트 unmount 유발
 
     // 백그라운드 작업 인디케이터 연동
     if (featureType) {

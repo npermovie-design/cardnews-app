@@ -20,7 +20,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [tone,       setTone]       = useState(cfg.tones[0].id);
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
-  const [result,     setResult]     = useState("");
+  // ── remount 복원: 생성 완료 후 부모 리렌더로 unmount/remount 시 결과 유지 ──
+  const _ssKey = "_bg_res_" + (initialType || "blog");
+  const [result, setResult_raw] = useState(() => {
+    try { return sessionStorage.getItem(_ssKey) || ""; } catch(e) { return ""; }
+  });
+  const setResult = (v) => {
+    setResult_raw(v);
+    try { if (v && v.length > 10) sessionStorage.setItem(_ssKey, v); } catch(e) {}
+  };
+  // 사용자가 메뉴 이동 시 정리 (initialType 변경 시)
+  useEffect(() => { return () => { try { sessionStorage.removeItem(_ssKey); } catch(e) {} }; }, [_ssKey]);
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   const [loading,    setLoading]    = useState(false);
@@ -182,7 +192,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       setError("포인트가 부족합니다. 충전 후 이용해주세요.");
       return;
     }
-    setError(""); setLoading(true); setResult(""); setHtmlResult(""); setCopied(false);
+    setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);}catch(e){} setHtmlResult(""); setCopied(false);
     setGenStep(1); // 자료 조사
 
     // 포인트 즉시 차감 (무료 횟수 소진 후에만)
