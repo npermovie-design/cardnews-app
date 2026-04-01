@@ -124,114 +124,20 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
-    setStep("loading"); setLoadingMsg("영상 정보를 가져오는 중..."); setError("");
+    setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
-      // 1) 트랜스크립트 가져오기 (여러 방법 시도)
-      let transcript = "";
-
-      // 방법 1: /api/youtube?action=transcript (videoId 파라미터 필요)
-      setLoadingMsg("자막을 가져오는 중...");
-      try {
-        const trRes = await fetch(`/api/youtube?action=transcript&videoId=${parsed.id}`);
-        if (trRes.ok) {
-          const trData = await trRes.json();
-          // items 배열에서 텍스트 추출
-          if (trData.items?.length) {
-            transcript = trData.items.map(item => item.text || item.snippet?.text || "").join(" ");
-          } else {
-            transcript = trData.transcript || trData.text || "";
-          }
-        }
-      } catch {}
-
-      // 방법 2: /api/transcript (url 파라미터)
-      if (!transcript || transcript.length < 20) {
-        try {
-          const trRes2 = await fetch(`/api/transcript?videoId=${parsed.id}`);
-          if (trRes2.ok) { const trData2 = await trRes2.json(); transcript = trData2.items?.map(i => i.text).join(" ") || trData2.transcript || ""; }
-        } catch {}
-      }
-
-      // 방법 3: oEmbed API (항상 작동) + 영상 정보로 대체
-      if (!transcript || transcript.length < 20) {
-        setLoadingMsg("자막이 없어 영상 정보로 분석합니다...");
-        // oEmbed (제목 가져오기 - 100% 성공)
-        try {
-          const oeRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(parsed.url)}&format=json`);
-          if (oeRes.ok) {
-            const oe = await oeRes.json();
-            transcript = `[영상 제목] ${oe.title || ""}\n[채널] ${oe.author_name || ""}`;
-          }
-        } catch {}
-        // /api/youtube?action=info 시도 (추가 설명 가져오기)
-        try {
-          const infoRes = await fetch(`/api/youtube?action=info&url=${encodeURIComponent(parsed.url)}`);
-          if (infoRes.ok) {
-            const info = await infoRes.json();
-            if (info.description || info.desc) transcript += `\n[설명]\n${info.description || info.desc || ""}`;
-          }
-        } catch {}
-      }
-
-      if (!transcript || transcript.length < 10) {
-        throw new Error("영상 정보를 가져올 수 없습니다. 파일 업로드를 이용해주세요.");
-      }
-
-      // 2) AI로 쇼츠 구간 분석
-      setLoadingMsg("AI가 영상을 분석하고 있어요...");
-      const { callAI } = await import("./aiClient");
-      const lengthMap = { s15: "15~30초", s30: "30~60초", s60: "60~90초", s90: "90~120초" };
-      const targetLen = lengthMap[shortsLength] || "30~60초";
-      const hasFullTranscript = transcript.length > 100 && !transcript.startsWith("[영상 제목]");
-
-      const prompt = hasFullTranscript
-        ? `당신은 유튜브 숏폼 편집 전문가입니다. 아래 영상 자막을 분석해서 ${targetLen} 길이의 쇼츠로 만들기 좋은 구간 3~5개를 추출해주세요.
-${userPrompt ? `\n사용자 요청: ${userPrompt}\n` : ""}
-[자막]
-${transcript.slice(0, 6000)}
-
-반드시 아래 JSON 배열 형식으로만 답하세요:
-[{"title":"구간 제목","start_text":"시작 부분 자막 텍스트(10자)","end_text":"끝 부분 자막 텍스트(10자)","script":"이 구간의 쇼츠 대본(자막 기반 요약, 200자 이상)","hook":"첫 3초 후킹 멘트","reason":"이 구간을 선택한 이유"}]`
-        : `당신은 유튜브 숏폼 콘텐츠 기획 전문가입니다. 아래 영상 정보를 바탕으로 ${targetLen} 길이의 쇼츠 대본 3~5개를 기획해주세요. 자막이 없으므로 영상 제목과 정보를 기반으로 창의적으로 쇼츠 대본을 작성해주세요.
-${userPrompt ? `\n사용자 요청: ${userPrompt}\n` : ""}
-${transcript}
-
-반드시 아래 JSON 배열 형식으로만 답하세요. script는 쇼츠 전체 대본(나레이션)이고 최소 200자 이상 작성하세요:
-[{"title":"쇼츠 제목","script":"쇼츠 전체 대본 (나레이션, 200자 이상)","hook":"첫 3초 후킹 멘트 (시청자를 사로잡는 한마디)","reason":"이 주제를 선택한 이유"}]`;
-
-      const aiResult = await callAI("claude-haiku-4-5", [{ role: "user", content: prompt }], 4096);
-      let segs = [];
-      try {
-        // ```json ... ``` 블록 또는 [ ... ] 배열 추출
-        let jsonStr = "";
-        const codeBlock = aiResult.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (codeBlock) jsonStr = codeBlock[1].trim();
-        else {
-          const arrMatch = aiResult.match(/\[[\s\S]*\]/);
-          if (arrMatch) jsonStr = arrMatch[0];
-        }
-        if (jsonStr) {
-          // 잘린 JSON 복구: 마지막 완전한 객체까지만 파싱
-          try { segs = JSON.parse(jsonStr); } catch {
-            // 불완전한 JSON — 마지막 }] 앞까지 자르기
-            const lastComplete = jsonStr.lastIndexOf("}");
-            if (lastComplete > 0) {
-              try { segs = JSON.parse(jsonStr.slice(0, lastComplete + 1) + "]"); } catch {}
-            }
-          }
-        }
-      } catch { segs = []; }
-
-      if (segs.length === 0) throw new Error("분석 결과를 파싱할 수 없습니다. 다시 시도해주세요.");
-
-      setSegments(segs);
-      setSelectedSegs(segs.map((_, i) => i));
-      setFileId("yt_" + parsed.id); // 유튜브 ID 기반 가상 fileId
+      // Render 서버로 유튜브 다운로드 + 분석 → 영상 생성
+      setLoadingMsg("영상 다운로드 중... (최대 2분 소요)");
+      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }), timeout: 180000 });
+      setFileId(d.file_id);
+      setLoadingMsg("음성 인식 + AI 분석 중...");
+      const analyzeBody = { max_chars: maxChars };
+      if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
+      const ad = await apiCall(`/analyze/${d.file_id}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
+      setSegments(ad.segments || []);
+      setSelectedSegs(ad.segments?.map((_, i) => i) || []);
       setStep("analysis");
-    } catch (e) {
-      setError(e.message);
-      setStep("upload");
-    }
+    } catch (e) { setError(e.message); setStep("upload"); }
   };
 
   // 파일 업로드
@@ -297,7 +203,6 @@ ${transcript}
         body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, template, title_color: titleColor, caption_color: captionColor }),
       });
       setJobId(d.job_id);
-      // 폴링
       const poll = setInterval(async () => {
         try {
           const j = await apiCall(`/jobs/${d.job_id}`);

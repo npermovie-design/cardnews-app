@@ -149,7 +149,7 @@ async def youtube_download(request: Request):
     errors = []
 
     # 1) yt-dlp (최신 우회 옵션 - 여러 player_client 시도)
-    for client in [["default"], ["mweb", "android"], ["android", "web"], ["ios", "web"], ["tv_embedded"]]:
+    for client in [["default"], ["mweb"], ["android"], ["ios"], ["tv_embedded"], ["mweb", "android"], ["android", "web"]]:
         if video_path.exists():
             break
         try:
