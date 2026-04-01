@@ -224,6 +224,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const handleGenerate = async () => {
     if (showPointConfirm && user && !(await showPointConfirm(30))) return;
     setStep("generate"); setResults([]); setPreviewIdx(0);
+
+    // 백그라운드 인디케이터 등록
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+      detail: { action: "register", task: { id: "shorts_gen", type: "shorts_make", message: "영상 생성 중... (0/" + editClips.length + ")" } }
+    }));
+
     try {
       const d = await apiCall("/generate-async", {
         method: "POST",
@@ -235,10 +241,44 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           const j = await apiCall(`/jobs/${d.job_id}`);
           setJobStatus(j);
           setResults(j.results || []);
-          if (j.status === "complete") clearInterval(poll);
+          const done = (j.results || []).filter(r => r.type === "done").length;
+          const total = editClips.length;
+
+          // 백그라운드 인디케이터 업데이트
+          window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+            detail: { action: "update", task: { id: "shorts_gen", message: `영상 생성 중... (${done}/${total})`, progress: Math.round(done / total * 100) } }
+          }));
+
+          if (j.status === "complete") {
+            clearInterval(poll);
+            // 완료 알림
+            window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+              detail: { action: "complete", task: { id: "shorts_gen", message: `쇼츠 ${done}개 생성 완료!` } }
+            }));
+            // 보관함에 저장
+            try {
+              const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+              (j.results || []).filter(r => r.type === "done").forEach((r, idx) => {
+                saves.unshift({
+                  id: Date.now().toString() + idx,
+                  type: "shorts",
+                  title: editClips[r.index]?.title || `Short ${r.index + 1}`,
+                  content: `[쇼츠 영상] ${editClips[r.index]?.subtitle_text || ""}\n${(editClips[r.index]?.subtitles || []).map(s => s.text).join("\n")}`,
+                  date: new Date().toLocaleDateString("ko-KR"),
+                  videoUrl: `${API}/outputs/${fileId}/${r.filename}`,
+                });
+              });
+              localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
+            } catch {}
+          }
         } catch {}
       }, 3000);
-    } catch (e) { setError("생성 실패: " + e.message); }
+    } catch (e) {
+      setError("생성 실패: " + e.message);
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+        detail: { action: "complete", task: { id: "shorts_gen", message: "생성 실패" } }
+      }));
+    }
   };
 
   // 연계
