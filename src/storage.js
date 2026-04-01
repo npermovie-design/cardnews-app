@@ -601,20 +601,25 @@ export async function getPostByIdFromDB(postId) {
 }
 
 /** 게시글 저장 (신규) */
-// 검색엔진 sitemap ping (게시글 작성/수정 시 호출)
-function pingSitemapAsync() {
+// 검색엔진 자동 색인 요청 (게시글 작성/수정 시 호출)
+function pingSitemapAsync(postUrl) {
   try {
     const sm = encodeURIComponent("https://snsmakeit.com/sitemap.xml");
     fetch(`https://www.google.com/ping?sitemap=${sm}`).catch(() => {});
-    fetch(`https://www.bing.com/ping?sitemap=${sm}`).catch(() => {});
+    // IndexNow (Bing/Yandex/네이버 동시 색인 요청)
+    if (postUrl) {
+      fetch(`/api/seo?action=index-now&url=${encodeURIComponent(postUrl)}`).catch(() => {});
+    }
   } catch {}
 }
 
 export async function savePostToDB(post) {
-  const { error } = await supabase.from("posts").insert(postToRow(post));
+  const row = postToRow(post);
+  const { error } = await supabase.from("posts").insert(row);
   if (error) throw error;
   try { sessionStorage.removeItem(POSTS_CACHE_KEY); } catch {} // 캐시 무효화
-  pingSitemapAsync();
+  const postUrl = `/community/${row.subCat || row.cat || "info"}/post-${row.id}`;
+  pingSitemapAsync(postUrl);
 }
 
 /** 게시글 업데이트 (부분) */

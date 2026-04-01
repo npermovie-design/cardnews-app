@@ -182,6 +182,36 @@ async function handleArchiveAutoTag(req, res) {
   }
 }
 
+// ── IndexNow (Bing/Yandex/네이버) + Google ping ──
+async function handleIndexNow(req, res) {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: "url 파라미터 필요" });
+
+  const SITE = "https://snsmakeit.com";
+  const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9"; // 네이버 인증키 재활용
+  const fullUrl = url.startsWith("http") ? url : SITE + url;
+
+  const results = {};
+  // 1) IndexNow (Bing, Yandex, Naver 동시 지원)
+  try {
+    const r = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: [fullUrl] }),
+    });
+    results.indexnow = { status: r.status, ok: r.ok };
+  } catch (e) { results.indexnow = { error: e.message }; }
+
+  // 2) Google sitemap ping
+  try {
+    const sm = encodeURIComponent(SITE + "/sitemap.xml");
+    await fetch(`https://www.google.com/ping?sitemap=${sm}`);
+    results.google_ping = "ok";
+  } catch (e) { results.google_ping = e.message; }
+
+  return res.status(200).json({ success: true, url: fullUrl, results });
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   const action = req.query.action;
@@ -195,8 +225,10 @@ export default async function handler(req, res) {
       return handleArchiveAutoTag(req, res);
     case "cron-briefing":
       return handleCronBriefing(req, res);
+    case "index-now":
+      return handleIndexNow(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now" });
   }
 }
 
@@ -261,6 +293,16 @@ HEADLINE: [7개 중 검색량/관심도 가장 높은 핵심 이슈를 SEO 친�
       summary: `${todayLabel} SNS 마케팅 주요 뉴스 7선 - 매일 오전 7시 자동 발행`,
       created_at: new Date().toISOString(),
     }, { onConflict: "id" });
+
+    // 자동 색인 요청 (IndexNow)
+    try {
+      const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9";
+      await fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: ["https://snsmakeit.com/snsnews"] }),
+      });
+    } catch {}
 
     return res.status(200).json({ success: true, date: todayKey, length: content.length });
   } catch (e) {
