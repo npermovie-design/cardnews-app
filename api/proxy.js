@@ -111,6 +111,40 @@ async function handleUnsplash(req, res) {
   }
 }
 
+// ── Image Proxy (외부 이미지 → binary, 복사 시 base64 변환용) ──
+async function handleImage(req, res) {
+  const url = req.query.url;
+  if (!url) return res.status(400).json({ error: "url 파라미터 필요" });
+
+  // 허용 도메인 검증 (보안: 임의 URL fetch 방지)
+  const allowed = ["images.unsplash.com", "images.pexels.com", "pixabay.com", "cdn.pixabay.com", "picsum.photos", "fastly.picsum.photos"];
+  try {
+    const parsed = new URL(url);
+    if (!allowed.some(d => parsed.hostname === d || parsed.hostname.endsWith("." + d))) {
+      return res.status(403).json({ error: "허용되지 않은 이미지 도메인" });
+    }
+  } catch {
+    return res.status(400).json({ error: "잘못된 URL" });
+  }
+
+  try {
+    const r = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SNSMakeIt/1.0)" },
+    });
+    if (!r.ok) return res.status(r.status).json({ error: `이미지 fetch 실패: ${r.status}` });
+
+    const contentType = r.headers.get("content-type") || "image/jpeg";
+    const buffer = Buffer.from(await r.arrayBuffer());
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.status(200).send(buffer);
+  } catch (e) {
+    return res.status(500).json({ error: "이미지 프록시 실패: " + (e.message || "").slice(0, 100) });
+  }
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   setCors(req, res);
@@ -127,7 +161,9 @@ export default async function handler(req, res) {
       return handlePixabay(req, res);
     case "unsplash":
       return handleUnsplash(req, res);
+    case "image":
+      return handleImage(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: klipy|pexels|pixabay|unsplash" });
+      return res.status(400).json({ error: "action 파라미터 필요: klipy|pexels|pixabay|unsplash|image" });
   }
 }

@@ -52,6 +52,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [ytUrl, setYtUrl] = useState("");
   const [ytParsed, setYtParsed] = useState(null); // { id, url } or null
   const [videoFile, setVideoFile] = useState(null);
+  const [downloadHelper, setDownloadHelper] = useState(null); // { id, url, title, thumbnail } when Render download fails
   const [subFile, setSubFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [fontFile, setFontFile] = useState(null);
@@ -150,7 +151,32 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       setSegments(ad.segments || []);
       setSelectedSegs(ad.segments?.map((_, i) => i) || []);
       setStep("analysis");
-    } catch (e) { setError(e.message); setStep("upload"); }
+    } catch (e) {
+      // Render 서버 다운로드 실패 → 다운로드 도우미 모드로 전환
+      const parsed = parseYoutubeUrl(ytUrl);
+      if (parsed) {
+        // oEmbed로 영상 제목 가져오기 시도
+        let ytTitle = "";
+        try {
+          const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(parsed.url)}`);
+          if (oembed.ok) {
+            const data = await oembed.json();
+            ytTitle = data.title || "";
+          }
+        } catch {}
+        setDownloadHelper({
+          id: parsed.id,
+          url: parsed.url,
+          title: ytTitle || `YouTube 영상 (${parsed.id})`,
+          thumbnail: `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`,
+        });
+        setInputMode("file");
+        setError("");
+      } else {
+        setError(e.message);
+      }
+      setStep("upload");
+    }
   };
 
   // 파일 업로드
@@ -260,7 +286,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
         {/* 탭 */}
         <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 24, border: `1px solid ${bdr}` }}>
-          <button onClick={() => setInputMode("youtube")} style={{ ...tabBtn(inputMode === "youtube"), display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><img src="/icon-youtube.png" alt="" style={{ width:18, height:13, objectFit:"contain" }} /> 유튜브 링크</button>
+          <button onClick={() => { setInputMode("youtube"); setDownloadHelper(null); }} style={{ ...tabBtn(inputMode === "youtube"), display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><img src="/icon-youtube.png" alt="" style={{ width:18, height:13, objectFit:"contain" }} /> 유튜브 링크</button>
           <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>📁 파일 업로드</button>
         </div>
 
@@ -300,12 +326,60 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </div>
         ) : (
           <div>
+            {/* 다운로드 도우미 (Render 서버 실패 시 표시) */}
+            {downloadHelper && (
+              <div style={{ ...cardStyle, marginBottom: 16, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)", border: `1px solid ${acc}30` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <img src={downloadHelper.thumbnail} alt="" style={{ width: 100, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: text, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{downloadHelper.title}</div>
+                    <div style={{ fontSize: 11, color: muted }}>ID: {downloadHelper.id}</div>
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 10, background: D ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 15 }}>&#9888;&#65039;</span> 서버 다운로드 실패 - 직접 다운로드가 필요합니다
+                  </div>
+                  <div style={{ fontSize: 12, color: text, lineHeight: 1.8, opacity: 0.85 }}>
+                    <div style={{ marginBottom: 6 }}>아래 단계를 따라주세요:</div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
+                      <span>아래 다운로드 사이트에서 영상을 <b>MP4</b>로 다운로드하세요</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
+                      <span>다운로드된 파일을 아래 업로드 영역에 선택하세요</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>3</span>
+                      <span>&quot;쇼츠 생성해보기&quot; 버튼을 클릭하면 AI가 분석을 시작합니다</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <a href={`https://ssyoutube.com/watch?v=${downloadHelper.id}`} target="_blank" rel="noopener noreferrer"
+                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#ef4444", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
+                    ssyoutube.com
+                  </a>
+                  <a href={`https://www.y2mate.com/youtube/${downloadHelper.id}`} target="_blank" rel="noopener noreferrer"
+                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
+                    y2mate.com
+                  </a>
+                  <a href={`https://en.savefrom.net/1-youtube-video-downloader-${downloadHelper.id}/`} target="_blank" rel="noopener noreferrer"
+                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
+                    savefrom.net
+                  </a>
+                </div>
+                <button onClick={() => setDownloadHelper(null)} style={{ marginTop: 10, padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>닫기</button>
+              </div>
+            )}
+
             <div onClick={() => fileRef.current?.click()}
               style={{ border: `2px dashed ${bdr}`, borderRadius: 14, padding: "40px 20px", textAlign: "center", cursor: "pointer", marginBottom: 12, background: ibg }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
                 <span style={{ fontSize: 24 }}>⬆️</span>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>영상 파일을 클릭하여 선택하세요</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{downloadHelper ? "다운로드한 영상 파일을 선택하세요" : "영상 파일을 클릭하여 선택하세요"}</div>
               <div style={{ fontSize: 12, color: muted }}>MP4, MOV, AVI (+ SRT 자막 선택)</div>
               <input ref={fileRef} type="file" accept=".mp4,.mkv,.avi,.mov,.srt,.txt" multiple style={{ display: "none" }}
                 onChange={e => { for (const f of e.target.files) { const ext = f.name.split(".").pop().toLowerCase(); if (["mp4", "mkv", "avi", "mov"].includes(ext)) setVideoFile(f); else if (["srt", "txt"].includes(ext)) setSubFile(f); } }} />

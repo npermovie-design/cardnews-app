@@ -160,6 +160,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
   const STEPS = [{n:1,label:"내용 입력"},{n:2,label:"AI 생성중"},{n:3,label:"결과 확인"}];
   const [genErr,      setGenErr]      = useState("");
   const [copied,      setCopied]      = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
   const transcriptRef = useRef(null);
 
   /* ── 유튜브 정보 + 자막 가져오기 ── */
@@ -455,15 +456,70 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
     }
   };
 
+  // 이미지 URL → base64 data URI 변환 (CORS 우회를 위해 프록시 경유)
+  const imageUrlToBase64 = async (url) => {
+    try {
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxyUrl);
+      if (!resp.ok) throw new Error("proxy failed");
+      const blob = await resp.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      try {
+        const resp = await fetch(url, { mode: "cors" });
+        if (!resp.ok) throw new Error("direct fetch failed");
+        const blob = await resp.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch { return null; }
+    }
+  };
+
   const handleCopy = async () => {
     if (Object.keys(inlineImages).length > 0) {
-      let html = result;
-      html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
-        const url = inlineImages[desc.trim()];
-        return url ? `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>` : m;
-      });
-      html = html.replace(/\n/g, "<br/>");
-      try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
+      setCopyLoading(true);
+      try {
+        const imgTags = result.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
+        const descs = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
+        const uniqueDescs = [...new Set(descs)];
+
+        const base64Map = {};
+        const conversionResults = await Promise.allSettled(
+          uniqueDescs.map(async (desc) => {
+            const url = inlineImages[desc];
+            if (!url) return { desc, data: null };
+            const data = await imageUrlToBase64(url);
+            return { desc, data };
+          })
+        );
+        conversionResults.forEach(r => {
+          if (r.status === "fulfilled" && r.value?.data) base64Map[r.value.desc] = r.value.data;
+        });
+
+        let html = result;
+        html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
+          const trimmed = desc.trim();
+          const dataUri = base64Map[trimmed];
+          if (dataUri) return `<br/><img src="${dataUri}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
+          const url = inlineImages[trimmed];
+          return url ? `<br/><img src="${url}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>` : m;
+        });
+        html = html.replace(/\n/g, "<br/>");
+        try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
+      } catch {
+        navigator.clipboard.writeText(result);
+      } finally {
+        setCopyLoading(false);
+      }
     } else { navigator.clipboard.writeText(result); }
     setCopied(true); setTimeout(()=>setCopied(false),2000);
   };
@@ -697,9 +753,9 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
           <div style={{height:56,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 28px",borderBottom:`1px solid ${border}`,background:headerBg}}>
             <span style={{fontSize:15,fontWeight:800,color:text}}>📄 작성 결과</span>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={handleCopy}
-                style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
+              <button onClick={handleCopy} disabled={copyLoading}
+                style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${border}`,background:copied?"rgba(74,222,128,0.12)":"transparent",color:copied?"#4ade80":accent,fontSize:13,fontWeight:700,cursor:copyLoading?"wait":"pointer",opacity:copyLoading?0.6:1}}>
+                {copyLoading?"⏳ 이미지 변환 중...":copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
               </button>
               <button onClick={()=>{
                 const b=new Blob([result],{type:"text/plain;charset=utf-8"});

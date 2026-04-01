@@ -155,15 +155,31 @@ async def youtube_download(request: Request):
             import httpx
             async with httpx.AsyncClient(timeout=120, follow_redirects=True) as client_http:
                 r = await client_http.get(stream_url, headers={"User-Agent": "Mozilla/5.0"})
-                if r.status_code == 200:
+                if r.status_code == 200 and len(r.content) > 10000:
                     video_path.write_bytes(r.content)
                     logger.info("Downloaded from stream_url successfully")
         except Exception as e:
             errors.append(f"stream_url: {str(e)[:80]}")
-            logger.warning(f"stream_url download failed: {e}")
 
-    # 1) yt-dlp (여러 player_client 시도)
-    for client in [["mweb"], ["android"], ["default"], ["ios"], ["tv_embedded"]]:
+    # 0.5) 무료 프록시 목록 가져오기 (YouTube 차단 우회)
+    proxy_urls = [None]  # None = 직접 연결
+    if not video_path.exists():
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as pc:
+                pr = await pc.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text&protocol=http&timeout=5000&country=kr,jp,us,de,gb&anonymity=elite,anonymous")
+                if pr.status_code == 200:
+                    lines = [l.strip() for l in pr.text.strip().split("\n") if l.strip()][:5]
+                    proxy_urls = [None] + lines
+                    logger.info(f"Got {len(lines)} proxies")
+        except Exception as e:
+            logger.warning(f"Proxy fetch failed: {e}")
+
+    # 1) yt-dlp (여러 player_client + 프록시 시도)
+    for proxy in proxy_urls:
+      if video_path.exists():
+        break
+      for client in [["mweb"], ["android"], ["default"], ["ios"], ["tv_embedded"]]:
         if video_path.exists():
             break
         try:
@@ -185,13 +201,16 @@ async def youtube_download(request: Request):
                 "live_from_start": False,
                 "concurrent_fragment_downloads": 4,
             }
+            if proxy:
+                ydl_opts["proxy"] = proxy
+                logger.info(f"Trying proxy: {proxy[:30]}...")
             loop = asyncio.get_event_loop()
             def do_download(opts=ydl_opts):
                 with yt_dlp.YoutubeDL(opts) as ydl:
                     ydl.download([url])
             await loop.run_in_executor(None, do_download)
             if video_path.exists():
-                logger.info(f"yt-dlp succeeded with client={client}")
+                logger.info(f"yt-dlp succeeded with client={client}, proxy={proxy}")
                 break
         except Exception as e:
             errors.append(f"yt-dlp({client[0]}): {str(e)[:80]}")

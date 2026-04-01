@@ -36,6 +36,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [loading,    setLoading]    = useState(false);
   useGeneratingGuard(loading, 10, initialType || "blog_write"); // 생성 중 이탈 방지
   const [copied,     setCopied]     = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
   const [snsConns,setSnsConns]=useState([]);const [publishing,setPublishing]=useState(null);const [publishResult,setPublishResult]=useState(null);const [showSchedule,setShowSchedule]=useState(false);const [scheduleTime,setScheduleTime]=useState("");
   const [error,      setError]      = useState("");
   const [titleSugg,  setTitleSugg]  = useState([]);
@@ -359,23 +360,96 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try { document.execCommand("copy"); } catch {}
     document.body.removeChild(ta);
   };
+  // 이미지 URL → base64 data URI 변환 (CORS 우회를 위해 프록시 경유)
+  const imageUrlToBase64 = async (url) => {
+    try {
+      // 프록시를 통해 이미지를 가져와 CORS 문제 회피
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxyUrl);
+      if (!resp.ok) throw new Error("proxy failed");
+      const blob = await resp.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      // 프록시 실패 시 직접 fetch 시도 (같은 origin이거나 CORS 허용된 경우)
+      try {
+        const resp = await fetch(url, { mode: "cors" });
+        if (!resp.ok) throw new Error("direct fetch failed");
+        const blob = await resp.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return null; // 변환 실패 시 null 반환
+      }
+    }
+  };
+
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
     if (withImages && Object.keys(inlineImages).length > 0) {
-      let html = cleaned;
-      html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (match, desc) => {
-        const url = inlineImages[desc.trim()];
-        if (url) return `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>`;
-        return match;
-      });
-      html = html.replace(/\n/g, "<br/>");
+      setCopyLoading(true);
       try {
-        if (navigator.clipboard?.write) {
-          await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([cleaned],{type:"text/plain"})})]);
-        } else if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(cleaned);
-        } else { fallbackCopy(cleaned); }
-      } catch { fallbackCopy(cleaned); }
+        // 이미지 태그에서 키워드 추출
+        const imgTags = cleaned.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
+        const descs = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
+        const uniqueDescs = [...new Set(descs)];
+
+        // 모든 이미지를 병렬로 base64 변환
+        const base64Map = {};
+        const conversionResults = await Promise.allSettled(
+          uniqueDescs.map(async (desc) => {
+            const url = inlineImages[desc];
+            if (!url) return { desc, data: null };
+            const data = await imageUrlToBase64(url);
+            return { desc, data };
+          })
+        );
+        conversionResults.forEach(r => {
+          if (r.status === "fulfilled" && r.value?.data) {
+            base64Map[r.value.desc] = r.value.data;
+          }
+        });
+
+        let html = cleaned;
+        const hasAnyImage = Object.keys(base64Map).length > 0;
+        html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (match, desc) => {
+          const trimmed = desc.trim();
+          const dataUri = base64Map[trimmed];
+          if (dataUri) {
+            return `<br/><img src="${dataUri}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
+          }
+          // base64 변환 실패 시 원본 URL로 폴백
+          const url = inlineImages[trimmed];
+          if (url) return `<br/><img src="${url}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
+          return match;
+        });
+        html = html.replace(/\n/g, "<br/>");
+
+        try {
+          if (navigator.clipboard?.write) {
+            await navigator.clipboard.write([new ClipboardItem({
+              "text/html": new Blob([html], {type: "text/html"}),
+              "text/plain": new Blob([cleaned], {type: "text/plain"})
+            })]);
+          } else if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(cleaned);
+          } else { fallbackCopy(cleaned); }
+        } catch { fallbackCopy(cleaned); }
+      } catch {
+        // 전체 실패 시 텍스트만 복사
+        try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
+        catch { fallbackCopy(cleaned); }
+      } finally {
+        setCopyLoading(false);
+      }
     } else {
       try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
       catch { fallbackCopy(cleaned); }
@@ -435,11 +509,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {result&&(
               <div style={{display:"flex",gap:4}}>
                 <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
+                  disabled={copyLoading}
                   style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
                     background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                  {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
+                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:copyLoading?"wait":"pointer",
+                    display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",opacity:copyLoading?0.6:1}}>
+                  {copyLoading?"⏳ 이미지 변환 중...":copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
                 </button>
               </div>
             )}

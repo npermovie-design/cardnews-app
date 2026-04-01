@@ -224,9 +224,78 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   useGeneratingGuard(generating, 10, "blog_write"); // 생성 중 이탈 방지
   const [genErr,     setGenErr]     = useState("");
   const [copied,     setCopied]     = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
   const [loadStep,   setLoadStep]  = useState(0);
   const wizStep = generating ? 2 : result ? 3 : 1;
   const STEPS = [{n:1,label:"내용 입력"},{n:2,label:"AI 생성중"},{n:3,label:"결과 확인"}];
+
+  // 이미지 URL → base64 data URI 변환 (CORS 우회를 위해 프록시 경유)
+  const imageUrlToBase64 = async (url) => {
+    try {
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxyUrl);
+      if (!resp.ok) throw new Error("proxy failed");
+      const blob = await resp.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      try {
+        const resp = await fetch(url, { mode: "cors" });
+        if (!resp.ok) throw new Error("direct fetch failed");
+        const blob = await resp.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch { return null; }
+    }
+  };
+
+  const handleCopyWithImages = async () => {
+    if (Object.keys(inlineImages).length > 0) {
+      setCopyLoading(true);
+      try {
+        const imgTags = result.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
+        const descs = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
+        const uniqueDescs = [...new Set(descs)];
+
+        const base64Map = {};
+        const conversionResults = await Promise.allSettled(
+          uniqueDescs.map(async (desc) => {
+            const url = inlineImages[desc];
+            if (!url) return { desc, data: null };
+            const data = await imageUrlToBase64(url);
+            return { desc, data };
+          })
+        );
+        conversionResults.forEach(r => {
+          if (r.status === "fulfilled" && r.value?.data) base64Map[r.value.desc] = r.value.data;
+        });
+
+        let html = result;
+        html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
+          const trimmed = desc.trim();
+          const dataUri = base64Map[trimmed];
+          if (dataUri) return `<br/><img src="${dataUri}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
+          const url = inlineImages[trimmed];
+          return url ? `<br/><img src="${url}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>` : m;
+        });
+        html = html.replace(/\n/g, "<br/>");
+        try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
+      } catch {
+        navigator.clipboard.writeText(result);
+      } finally {
+        setCopyLoading(false);
+      }
+    } else { navigator.clipboard.writeText(result); }
+    setCopied(true); setTimeout(()=>setCopied(false),2000);
+  };
 
   const IS = {
     width:"100%", padding:"13px 16px", borderRadius:10,
@@ -733,22 +802,11 @@ ${articleSection}
                   <span style={{fontSize:10,color:muted}}>공백제외</span>
                   <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
                 </div>
-                <button onClick={async()=>{
-                  let html = result;
-                  if (Object.keys(inlineImages).length > 0) {
-                    html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (m, desc) => {
-                      const url = inlineImages[desc.trim()];
-                      return url ? `<br/><img src="${url}" alt="${desc.trim()}" style="max-width:100%;border-radius:8px;margin:12px 0;" /><br/>` : m;
-                    });
-                    html = html.replace(/\n/g, "<br/>");
-                    try { await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([result],{type:"text/plain"})})]); } catch { navigator.clipboard.writeText(result); }
-                  } else { navigator.clipboard.writeText(result); }
-                  setCopied(true);setTimeout(()=>setCopied(false),2000);
-                }}
+                <button onClick={handleCopyWithImages} disabled={copyLoading}
                   style={{padding:"5px 14px",borderRadius:7,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
                     background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                  {copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
+                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:copyLoading?"wait":"pointer",display:"flex",alignItems:"center",gap:5,opacity:copyLoading?0.6:1}}>
+                  {copyLoading?"⏳ 이미지 변환 중...":copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
                 </button>
                 <button onClick={()=>{
                   const b=new Blob([result],{type:"text/plain;charset=utf-8"});
