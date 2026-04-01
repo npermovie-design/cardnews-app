@@ -937,9 +937,21 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     },
   };
 
-  // ── 블로그 도구 메뉴 → AiPage의 영속 레이어가 렌더링하므로 여기선 null 반환 ──
+  // ── 블로그 도구 메뉴 ──
+  if (aiMenu === "blog_link" || aiMenu === "blog_link_intro") {
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="link_youtube" />;
+  }
+  if (aiMenu === "blog_news" || aiMenu === "blog_news_intro") {
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="news" />;
+  }
+  if (aiMenu === "blog_yt_blog" || aiMenu === "blog_yt_blog_intro") {
+    return <LinkBlogCombined theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab="youtube" />;
+  }
+  if (aiMenu === "blog_cafe_intro" || aiMenu === "blog_cafe" || aiMenu === "blog_cafe_make") {
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform="blog_cafe" />;
+  }
   if (aiMenu.startsWith("blog_") && aiMenu !== "blog_write") {
-    return null;
+    return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} />;
   }
 
   // 글쓰기: 선택 화면 (무엇을 작성할까요?)
@@ -1339,22 +1351,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   // 생성 중 상태는 window.__isGenerating으로 직접 참조 (state 제거 → 리렌더 방지)
   const aiMenu = aiMenuProp !== undefined ? aiMenuProp : localMenu;
 
-  // ── 블로그 영속 레이어: 한번 마운트되면 메뉴 이동해도 unmount 안 함 ──
-  const blogActiveNow = isBlogToolMenu(aiMenu);
-  const blogRenderInfo = blogActiveNow ? getBlogRenderInfo(aiMenu) : null;
-  const blogMountedRef = useRef(false);
-  const [blogLayer, setBlogLayer] = useState(null); // { type, platform, tab, menuId }
-  // 블로그 메뉴 진입 시 레이어 정보 갱신 (같은 플랫폼이면 유지, 다른 플랫폼이면 교체)
-  useEffect(() => {
-    if (blogActiveNow && blogRenderInfo) {
-      blogMountedRef.current = true;
-      setBlogLayer(prev => {
-        // 같은 플랫폼이면 유지 (unmount 방지)
-        if (prev && prev.platform === blogRenderInfo.platform && prev.type === blogRenderInfo.type) return prev;
-        return blogRenderInfo;
-      });
-    }
-  }, [aiMenu]);
+  // 블로그 관련 변수 (persistent layer 제거 — sessionStorage 복원으로 대체)
+  const blogActiveNow = false; // persistent layer 비활성화
 
   const [guardModal, setGuardModal] = useState(null);
   const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
@@ -1378,8 +1376,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const setAiMenu = async (id) => {
     // 생성 중 다른 메뉴 클릭 차단 - 커스텀 모달
     // 블로그 영속 레이어가 활성화된 상태에서는 가드 스킵 (백그라운드에서 계속 생성됨)
-    const blogGenRunning = blogMountedRef.current && isBlogToolMenu(aiMenu);
-    if (window.__isGenerating && !blogGenRunning) {
+    if (window.__isGenerating) {
       const cost = window.__generatingCost || 10;
       const ok = await new Promise(resolve => {
         setGuardModal({
@@ -1623,20 +1620,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
-          {/* 일반 콘텐츠 (블로그 도구 활성 시 숨김) */}
-          <div className="ai-content-fade" style={{ flex:1, display: blogActiveNow ? "none" : "flex", overflow:"hidden" }}>
+          <div className="ai-content-fade" style={{ flex:1, display:"flex", overflow:"hidden" }}>
             <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
           </div>
-          {/* 블로그 영속 레이어: 한번 마운트되면 메뉴 이동해도 unmount 안 함 */}
-          {blogLayer && (
-            <div style={{ flex:1, display: blogActiveNow ? "flex" : "none", overflow:"hidden" }}>
-              {blogLayer.type === "linkCombined" ? (
-                <LinkBlogCombined key={blogLayer.menuId} theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultTab={blogLayer.tab} />
-              ) : (
-                <UnifiedBlogWriter key={blogLayer.platform} theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={blogLayer.platform} />
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
