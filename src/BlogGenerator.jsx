@@ -229,15 +229,44 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
     const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
     const prompt = advPromptExtra ? basePrompt + advPromptExtra : basePrompt;
+    // 분량에 따른 max_tokens 설정
+    const tokenMap = { short: 2000, medium: 4000, long: 6000, xlong: 8000 };
+    const maxTok = tokenMap[wordCount] || 4000;
     var _savedFull = "";
+    // 최대 2회 시도 (실패 시 재시도)
+    let lastErr = null;
     try {
-      const full = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], 4000, (accumulated) => {
-        _savedFull = accumulated;
-        setResult(cleanBlogText(accumulated));
-      });
-      if (isTistory) setHtmlResult(mdToHtml(full));
-    } catch(e) { setError("생성 중 오류가 발생했습니다."); }
-    finally {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        _savedFull = "";
+        const full = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (accumulated) => {
+          _savedFull = accumulated;
+          // 스트리밍 중 실시간 표시
+          setResult(cleanBlogText(accumulated));
+        });
+        // 스트리밍 완료
+        if (full && full.length > 50) {
+          setResult(cleanBlogText(full));
+          if (isTistory) setHtmlResult(mdToHtml(full));
+          lastErr = null;
+          break; // 성공 → 루프 종료
+        } else {
+          lastErr = "글이 너무 짧게 생성되었습니다.";
+        }
+      } catch(e) {
+        lastErr = e.message || "생성 중 오류";
+        // 중간까지 생성된 내용이 있으면 그걸 사용
+        if (_savedFull && _savedFull.length > 50) {
+          setResult(cleanBlogText(_savedFull));
+          if (isTistory) setHtmlResult(mdToHtml(_savedFull));
+          lastErr = null;
+          break;
+        }
+      }
+      if (attempt === 0 && lastErr) setLoadingMsg?.("재시도 중...");
+    }
+    if (lastErr) setError(lastErr + " 다시 시도해주세요.");
+    } finally {
       stepTimers.forEach(t => clearTimeout(t));
       setGenStep(5); // all completed
       setLoading(false);
@@ -480,8 +509,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         </div>
       );
     }
+    const isStillGenerating = loading || (genStep > 0 && genStep < 5);
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",maxWidth:900,margin:"0 auto",width:"100%"}}>
+        {/* 생성 중 안내 배너 */}
+        {isStillGenerating && (
+          <div style={{padding:"10px 18px",background:isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)",borderBottom:`1px solid ${isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.15)"}`,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(124,106,255,0.3)",borderTopColor:"#7c6aff",animation:"spin 0.8s linear infinite",flexShrink:0}} />
+            <span style={{fontSize:12,fontWeight:700,color:"#7c6aff"}}>글을 생성하고 있습니다. 완료될 때까지 화면을 나가지 말아주세요.</span>
+          </div>
+        )}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 18px",borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:6}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(

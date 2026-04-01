@@ -46,12 +46,17 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
   const body = { model, max_tokens: maxTokens, stream: true, messages: convertMessages(messages) };
   if (system) body.system = system;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000); // 2분 타임아웃
+
   const res = await fetch(PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal: controller.signal,
   });
   if (!res.ok) {
+    clearTimeout(timeout);
     const err = await res.text().catch(() => res.statusText);
     throw new Error(`AI API 오류 ${res.status}: ${err}`);
   }
@@ -60,10 +65,12 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
   const decoder = new TextDecoder();
   let buf = "";
   let full = "";
+  let lastChunkTime = Date.now();
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+    lastChunkTime = Date.now();
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split("\n");
     buf = lines.pop();
@@ -82,6 +89,7 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
       }
     }
   }
+  clearTimeout(timeout);
   return full;
 }
 
