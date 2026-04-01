@@ -148,8 +148,22 @@ async def youtube_download(request: Request):
 
     errors = []
 
-    # 1) yt-dlp (최신 우회 옵션 - 여러 player_client 시도)
-    for client in [["default"], ["mweb"], ["android"], ["ios"], ["tv_embedded"], ["mweb", "android"], ["android", "web"]]:
+    # 0) 클라이언트가 stream URL을 전달한 경우 직접 다운로드
+    stream_url = body.get("stream_url", "")
+    if stream_url:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=120, follow_redirects=True) as client_http:
+                r = await client_http.get(stream_url, headers={"User-Agent": "Mozilla/5.0"})
+                if r.status_code == 200:
+                    video_path.write_bytes(r.content)
+                    logger.info("Downloaded from stream_url successfully")
+        except Exception as e:
+            errors.append(f"stream_url: {str(e)[:80]}")
+            logger.warning(f"stream_url download failed: {e}")
+
+    # 1) yt-dlp (여러 player_client 시도)
+    for client in [["mweb"], ["android"], ["default"], ["ios"], ["tv_embedded"]]:
         if video_path.exists():
             break
         try:

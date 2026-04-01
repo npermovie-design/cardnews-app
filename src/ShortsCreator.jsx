@@ -126,9 +126,22 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
-      // Render 서버로 유튜브 다운로드 + 분석 → 영상 생성
+      // Step 1: 스트림 URL 추출 시도 (Vercel Edge)
+      let streamUrl = "";
+      setLoadingMsg("영상 스트림 URL 추출 중...");
+      try {
+        const suRes = await fetch(`/api/youtube-stream-url?url=${encodeURIComponent(parsed.url)}`);
+        if (suRes.ok) {
+          const suData = await suRes.json();
+          streamUrl = suData.streamUrl || "";
+        }
+      } catch {}
+
+      // Step 2: Render 서버로 다운로드 (stream_url 전달 → 직접 다운로드)
       setLoadingMsg("영상 다운로드 중... (최대 2분 소요)");
-      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }), timeout: 180000 });
+      const downloadBody = { url: parsed.url };
+      if (streamUrl) downloadBody.stream_url = streamUrl;
+      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 180000 });
       setFileId(d.file_id);
       setLoadingMsg("음성 인식 + AI 분석 중...");
       const analyzeBody = { max_chars: maxChars };
