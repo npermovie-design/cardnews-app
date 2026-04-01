@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
 import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
@@ -373,6 +373,9 @@ export default function App() {
   };
 
   const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
+  // AiPage에 전달하는 콜백 안정화 (인라인 함수 → useCallback)
+  const stableOnLoginRequest = useCallback(() => setShowAuth(true), []);
+  const stableOnUserUpdate = useCallback(u => { setLocalUser(u); setUserState(u); }, []);
   const logout = async () => {
     // 로그아웃 플래그 → onAuthStateChange 재로그인 차단
     isLoggingOut.current = true;
@@ -473,12 +476,7 @@ export default function App() {
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={() => setShowAuth(true)} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} showPointConfirm={async (cost) => {
-      if (!user) return true;
-      const pts = user.points ?? 0;
-      if (pts < cost) { window.dispatchEvent(new Event("pointsExhausted")); return false; }
-      return true;
-    }} />;
+    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={stableOnLoginRequest} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={stableOnUserUpdate} />;
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
