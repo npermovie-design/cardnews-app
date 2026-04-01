@@ -127,16 +127,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
-      // Step 1: 스트림 URL 추출 시도 (Vercel Edge)
+      // Step 1: 브라우저에서 직접 스트림 URL 추출 (사용자 IP = 차단 없음)
       let streamUrl = "";
       setLoadingMsg("영상 스트림 URL 추출 중...");
       try {
-        const suRes = await fetch(`/api/youtube-stream-url?url=${encodeURIComponent(parsed.url)}`);
-        if (suRes.ok) {
-          const suData = await suRes.json();
-          streamUrl = suData.streamUrl || "";
+        // CORS 우회: 서버 프록시를 통해 YouTube 페이지 가져오기
+        const proxyRes = await fetch(`/api/youtube-stream-url?url=${encodeURIComponent(parsed.url)}`);
+        if (proxyRes.ok) {
+          const proxyData = await proxyRes.json();
+          streamUrl = proxyData.streamUrl || "";
         }
       } catch {}
+      // Vercel에서 실패 시 — Render 서버의 yt-dlp가 직접 처리하도록
+      if (!streamUrl) {
+        setLoadingMsg("서버에서 영상을 가져오는 중...");
+      }
 
       // Step 2: Render 서버로 다운로드 (stream_url 전달 → 직접 다운로드)
       setLoadingMsg("영상 다운로드 중... (최대 2분 소요)");

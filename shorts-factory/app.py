@@ -161,19 +161,22 @@ async def youtube_download(request: Request):
         except Exception as e:
             errors.append(f"stream_url: {str(e)[:80]}")
 
-    # 0.5) 무료 프록시 목록 가져오기 (YouTube 차단 우회)
+    # 0.5) Webshare 프록시 가져오기 (YouTube 차단 우회)
+    import os
     proxy_urls = [None]  # None = 직접 연결
-    if not video_path.exists():
+    webshare_token = os.environ.get("WEBSHARE_API_KEY", "")
+    if not video_path.exists() and webshare_token:
         try:
             import httpx
             async with httpx.AsyncClient(timeout=10) as pc:
-                pr = await pc.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text&protocol=http&timeout=5000&country=kr,jp,us,de,gb&anonymity=elite,anonymous")
+                pr = await pc.get("https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=10",
+                    headers={"Authorization": f"Token {webshare_token}"})
                 if pr.status_code == 200:
-                    lines = [l.strip() for l in pr.text.strip().split("\n") if l.strip()][:5]
-                    proxy_urls = [None] + lines
-                    logger.info(f"Got {len(lines)} proxies")
+                    proxies = pr.json().get("results", [])
+                    proxy_urls = [None] + [f"http://{p['username']}:{p['password']}@{p['proxy_address']}:{p['port']}" for p in proxies[:5]]
+                    logger.info(f"Got {len(proxies)} Webshare proxies")
         except Exception as e:
-            logger.warning(f"Proxy fetch failed: {e}")
+            logger.warning(f"Webshare proxy fetch failed: {e}")
 
     # 1) yt-dlp (여러 player_client + 프록시 시도)
     for proxy in proxy_urls:
