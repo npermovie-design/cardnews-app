@@ -591,7 +591,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           <span>뒤로</span>
         </button>
         <div style={{ width:1, height:18, background:bdr, flexShrink:0 }} />
-        <img src={info.icon} alt="" style={{ width:22, height:22, borderRadius:4, objectFit:"contain", flexShrink:0 }} />
+        <img src={info.icon} alt="" loading="lazy" decoding="async" style={{ width:22, height:22, borderRadius:4, objectFit:"contain", flexShrink:0 }} />
         <span style={{ fontSize:13, fontWeight:800, color: homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{info.label}</span>
       </div>
     );
@@ -795,7 +795,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                 <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <img src={f.icon} alt="" style={{ width:28, height:28, objectFit:"contain" }} />
+                  <img src={f.icon} alt="" loading="lazy" decoding="async" style={{ width:28, height:28, objectFit:"contain" }} />
                 </div>
                 <span style={{ fontSize:12, fontWeight:600, color:homeText }}>{f.title}</span>
               </div>
@@ -1072,7 +1072,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                       }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
-                      {item.icon ? <img src={item.icon} alt="" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
+                      {item.icon ? <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
                       <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
                       <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
                     </button>
@@ -1190,7 +1190,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                       }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
-                      <img src={item.img} alt="" style={{ width:40, height:40, objectFit:"contain" }} />
+                      <img src={item.img} alt="" loading="lazy" decoding="async" style={{ width:40, height:40, objectFit:"contain" }} />
                       <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
                       <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
                     </button>
@@ -1655,7 +1655,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
 
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
+          <div key={aiMenu} className="ai-content-fade" style={{ flex:1, display:"flex", overflow:"hidden" }}>
+            <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
+          </div>
         </div>
       </div>
     </div>

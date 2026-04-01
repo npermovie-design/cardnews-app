@@ -221,7 +221,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e" }} />
               <span style={{ flex: 1, textAlign: "center", fontSize: 10, color: C.muted, fontWeight: 600 }}>snsmakeit.com</span>
             </div>
-            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" style={{ width: "100%", display: "block", marginTop: 32 }} />
+            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" loading="lazy" style={{ width: "100%", display: "block", marginTop: 32 }} />
           </div>
         </div>
 

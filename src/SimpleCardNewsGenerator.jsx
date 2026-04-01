@@ -404,9 +404,19 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=tru
         {templates.length > 0 && <span style={{ fontSize:11, color:muted }}>{templates.length}개</span>}
       </div>
       {loadingTpl ? (
-        <div style={{ textAlign:"center", padding:"20px 0", color:muted, fontSize:12 }}>
-          <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(99,102,241,0.3)", borderTopColor:"#7c6aff", animation:"spin 0.8s linear infinite", margin:"0 auto 8px" }} />
-          {ko?"템플릿 불러오는 중...":"Loading templates..."}
+        <div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:10 }}>
+            {[1,2,3,4].map(i => (
+              <div key={i} style={{ borderRadius:12, overflow:"hidden", background:D?"rgba(255,255,255,0.03)":"#f5f5f5" }}>
+                <div style={{ width:"100%", paddingBottom:"75%", background:"linear-gradient(90deg,rgba(124,106,255,0.05) 25%,rgba(124,106,255,0.1) 50%,rgba(124,106,255,0.05) 75%)", backgroundSize:"200% 100%", animation:"imgShimmer 1.5s infinite" }} />
+                <div style={{ padding:"8px 10px" }}>
+                  <div style={{ height:12, borderRadius:4, background:D?"rgba(255,255,255,0.06)":"#e8e8e8", marginBottom:6, width:"80%" }} />
+                  <div style={{ height:10, borderRadius:4, background:D?"rgba(255,255,255,0.04)":"#efefef", width:"60%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <style>{`@keyframes imgShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
         </div>
       ) : templates.length === 0 ? (
         <div style={{ textAlign:"center", padding:"28px 12px", color:muted, fontSize:13, lineHeight:1.8 }}>
@@ -421,7 +431,7 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=tru
               {/* 미리보기 이미지 */}
               <div style={{ width:"100%", paddingBottom:"75%", position:"relative", background:D?"rgba(255,255,255,0.05)":"#f5f5f5" }}>
                 {tpl.preview ? (
-                  <img src={tpl.preview} alt={tpl.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                  <img src={tpl.preview} alt={tpl.title} loading="lazy" decoding="async" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
                 ) : (
                   <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:muted }}>🎨</div>
                 )}
@@ -446,7 +456,7 @@ function CommunityTemplateSection({ D, text, muted, bdr, cardBg, onApply, ko=tru
 }
 
 // ── 기획 중 애니메이션 컴포넌트 ─────────────────────────────
-function PlanningAnimation({ pageCount, ko=true }) {
+function PlanningAnimation({ pageCount, ko=true, onCancel }) {
   const [step, setStep] = useState(0);
   const steps = [
     { icon: "\uD83D\uDCCB", text: ko?"주제를 분석하고 있어요":"Analyzing your topic" },
@@ -521,6 +531,14 @@ function PlanningAnimation({ pageCount, ko=true }) {
             transition:"width 0.8s ease-in-out",
           }} />
         </div>
+
+        {/* 취소 버튼 */}
+        {onCancel && (
+          <button onClick={onCancel}
+            style={{ marginTop:24, padding:"12px 32px", borderRadius:12, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.08)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+            {ko?"취소":"Cancel"}
+          </button>
+        )}
 
         <style>{`
           @keyframes planFloat { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
@@ -1228,7 +1246,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               setPlanLoading(false);
               setWizStep(2);
             }} disabled={!canNext||planLoading}
-              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext&&!planLoading?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8, opacity:planLoading?0.7:1 }}>
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext&&!planLoading?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8, opacity:(!canNext||planLoading)?0.5:1, transition:"opacity 0.15s", minHeight:48 }}>
               {planLoading?(ko?"AI 기획 중...":"AI Planning..."):(ko?"AI 자동 기획 →":"AI Auto-Plan →")}
             </button>
           </div>
@@ -1440,7 +1458,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감":"Est. cost"}: <b style={{ color:"#7c6aff" }}>10P</b></div>
               <button onClick={generate} disabled={loading}
-                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
+                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"not-allowed":"pointer",background:loading?"rgba(124,106,255,0.5)":"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.5:1,transition:"opacity 0.15s",minHeight:48 }}>
                 {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</>:user?(ko?"카드뉴스 만들기 →":"Generate →"):(ko?"✦ 1회 생성하기":"✦ Generate Once")}
               </button>
             </div>
@@ -1449,7 +1467,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
         {/* 생성 중 애니메이션 */}
-        {loading && <PlanningAnimation pageCount={slides.length || pageCount} ko={ko} />}
+        {loading && <PlanningAnimation pageCount={slides.length || pageCount} ko={ko} onCancel={() => setLoading(false)} />}
       </div>
     );
   }

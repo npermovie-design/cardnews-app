@@ -70,7 +70,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       }}
         onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(99,102,241,0.05)"; }}
         onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
-        {icon && (typeof icon === "string" && icon.startsWith("/") ? <img src={icon} alt="" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} /> : <span style={{ fontSize: 14 }}>{icon}</span>)}
+        {icon && (typeof icon === "string" && icon.startsWith("/") ? <img src={icon} alt="" loading="lazy" decoding="async" style={{ width:18, height:18, objectFit:"contain", flexShrink:0 }} /> : <span style={{ fontSize: 14 }}>{icon}</span>)}
         <span style={{ flex: 1 }}>{label}</span>
         {badge && (
           <span style={{
@@ -112,7 +112,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     }}>
       {/* 로고 */}
       <div style={{ padding:"14px 14px 12px", display:"flex", alignItems:"center", gap:8 }}>
-        <img src="/logo.png" alt="" style={{ width:28, height:28, borderRadius:8, objectFit:"cover", flexShrink:0 }} />
+        <img src="/logo.png" alt="" loading="lazy" decoding="async" style={{ width:28, height:28, borderRadius:8, objectFit:"cover", flexShrink:0 }} />
         <div>
           <div style={{ fontSize:13, fontWeight:900, color:brandText, lineHeight:1.2 }}>SNS메이킷</div>
           <div style={{ fontSize:9, color:brandSub }}>{t("aiGen")}</div>
@@ -137,7 +137,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
               }}
               onMouseEnter={e => { if(!active) e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(99,102,241,0.05)"; }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>
-              <img src={item.icon} alt="" style={{ width:26, height:26, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
+              <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:26, height:26, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
               <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{item.label}</span>
               {item.badge && <span style={{ fontSize:9, fontWeight:700, color:"#fff", background:"#f59e0b", borderRadius:4, padding:"1px 6px", flexShrink:0 }}>{item.badge}</span>}
             </button>

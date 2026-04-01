@@ -58,6 +58,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
   const [inlineImages,    setInlineImages]    = useState({}); // { "키워드": imageUrl }
+  const abortRef = useRef(false);
+  const handleCancelGenerate = () => {
+    abortRef.current = true;
+    setLoading(false);
+    setGenStep(0);
+  };
 
   // ── 세부 설정 상태 ──
   const [showAdvanced, setShowAdvanced] = useState(true);
@@ -219,6 +225,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       return;
     }
     setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);}catch(e){} setHtmlResult(""); setCopied(false);
+    abortRef.current = false;
     setGenStep(1); // 자료 조사
 
     // 포인트 즉시 차감 (무료 횟수 소진 후에만)
@@ -511,7 +518,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     // 풀스크린 로딩 오버레이
     if (loading) {
-      return <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword} · ${cfg.title}`} isDark={isDark} />;
+      return (
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative"}}>
+          <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword} · ${cfg.title}`} isDark={isDark} />
+          <button onClick={handleCancelGenerate}
+            style={{position:"fixed",bottom:40,left:"50%",transform:"translateX(-50%)",zIndex:10000,padding:"12px 32px",borderRadius:12,border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)"}`,background:isDark?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.9)",color:isDark?"#fff":"#333",fontSize:14,fontWeight:700,cursor:"pointer",backdropFilter:"blur(8px)",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
+            취소
+          </button>
+        </div>
+      );
     }
     if (!result && !loading) {
       const sub = cfg.subtypes.find(s=>s.id===subtype);
@@ -1181,7 +1196,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             </div>
 
             {/* 생성 버튼 */}
-            <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:48}}>
               {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
           </div>
