@@ -264,6 +264,241 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   );
 }
 
+// ── 미니 통계 대시보드 (홈 화면용) ──────────────────────────────────────
+function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s }) {
+  const saves = React.useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]"); } catch { return []; }
+  }, []);
+  const totalCount = saves.length;
+  const usedPoints = totalCount * 10;
+  const weekCount = React.useMemo(() => {
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    return saves.filter(s => {
+      const ts = parseInt(s.id, 10);
+      return !isNaN(ts) && (now - ts) < weekMs;
+    }).length;
+  }, [saves]);
+  const accent = "#7c6aff";
+  const stats = [
+    { label: _s("총 콘텐츠", "Total"), value: totalCount, icon: "📝", color: accent },
+    { label: _s("사용 포인트", "Points"), value: usedPoints + "P", icon: "💎", color: "#f59e0b" },
+    { label: _s("이번 주", "This Week"), value: weekCount, icon: "📅", color: "#10b981" },
+  ];
+  return (
+    <div style={{ display:"flex", gap:10, marginBottom:24, justifyContent:"center", flexWrap:"wrap" }}>
+      {stats.map(s => (
+        <div key={s.label} style={{ flex:"1 1 0", minWidth:100, maxWidth:180, padding:"14px 12px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:20, marginBottom:4 }}>{s.icon}</div>
+          <div style={{ fontSize:22, fontWeight:900, color:s.color, lineHeight:1.2 }}>{s.value}</div>
+          <div style={{ fontSize:11, fontWeight:600, color:homeMuted, marginTop:4 }}>{s.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── 최근 작업 빠른 접근 (홈 화면용) ──────────────────────────────────────
+function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
+  const saves = React.useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]").slice(0, 3); } catch { return []; }
+  }, []);
+  const accent = "#7c6aff";
+  const typeLabel = (t) => {
+    const map = { blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타", blog_youtube:"유튜브", blog_thread:"스레드", blog_link:"링크", blog_cafe:"카페", blog_yt_blog:"링크" };
+    return map[t] || t || "기타";
+  };
+  return (
+    <div style={{ marginBottom:24, textAlign:"left" }}>
+      <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <span>{_s("최근 작업","Recent Work")}</span>
+        {saves.length > 0 && (
+          <span onClick={() => setAiMenu("library")} style={{ fontSize:12, fontWeight:600, color:accent, cursor:"pointer" }}>{_s("전체보기","View All")} →</span>
+        )}
+      </div>
+      {saves.length === 0 ? (
+        <div style={{ padding:"24px 16px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:28, marginBottom:8 }}>✨</div>
+          <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>{_s("아직 생성한 콘텐츠가 없어요","No content created yet")}</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {saves.map(s => (
+            <div key={s.id} onClick={() => setAiMenu("library")}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", transition:"all 0.15s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}
+              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title || "제목 없음"}</div>
+                <div style={{ fontSize:11, color:homeMuted, marginTop:3 }}>{s.date}</div>
+              </div>
+              <span style={{ fontSize:11, fontWeight:700, color:accent, background:`${accent}15`, padding:"3px 10px", borderRadius:20, flexShrink:0 }}>{typeLabel(s.type)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 온보딩 튜토리얼 모달 ──────────────────────────────────────
+function OnboardingModal({ isDark, onClose, _s }) {
+  const [step, setStep] = React.useState(0);
+  const accent = "#7c6aff";
+  const bg = isDark ? "#1a1a2e" : "#fff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const steps = [
+    { icon:"✍️", title:_s("AI 도구로 콘텐츠를 만들어보세요","Create content with AI tools"), desc:_s("블로그 글쓰기, 카드뉴스, 썸네일 등\nAI가 전문가 수준의 콘텐츠를 만들어줘요.","Blog writing, card news, thumbnails\nAI creates professional-level content.") },
+    { icon:"🔥", title:_s("트렌드 키워드로 빠르게 시작","Start fast with trend keywords"), desc:_s("실시간 인기 키워드를 클릭하면\n바로 콘텐츠 작성이 시작돼요.","Click trending keywords to\ninstantly start creating content.") },
+    { icon:"📅", title:_s("소셜 플래너로 일정 관리","Manage schedules with Social Planner"), desc:_s("콘텐츠 발행 일정을 캘린더에 등록하고\n체계적으로 SNS를 관리하세요.","Register publishing schedules\nand manage your SNS systematically.") },
+    { icon:"🎉", title:_s("무료 5회 체험 가능!","5 free trials available!"), desc:_s("지금 바로 무료로 시작해보세요.\n회원가입 없이도 체험할 수 있어요!","Start for free right now.\nNo sign-up required to try!") },
+  ];
+  const cur = steps[step];
+  const isLast = step === steps.length - 1;
+  const handleFinish = () => { localStorage.setItem("sns_onboarding_done", "1"); onClose(); };
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(6px)", padding:20 }} onClick={handleFinish}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:24, background:bg, padding:"40px 32px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.25)", textAlign:"center", position:"relative", overflow:"hidden" }}>
+        {/* skip */}
+        <button onClick={handleFinish} style={{ position:"absolute", top:14, right:16, background:"none", border:"none", fontSize:12, fontWeight:600, color:muted, cursor:"pointer" }}>{_s("건너뛰기","Skip")}</button>
+        {/* icon */}
+        <div style={{ fontSize:52, marginBottom:16, lineHeight:1 }}>{cur.icon}</div>
+        {/* title */}
+        <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:10, lineHeight:1.4 }}>{cur.title}</div>
+        {/* desc */}
+        <div style={{ fontSize:14, color:muted, lineHeight:1.8, whiteSpace:"pre-line", marginBottom:28 }}>{cur.desc}</div>
+        {/* dots */}
+        <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:24 }}>
+          {steps.map((_, i) => (
+            <div key={i} style={{ width: i===step?24:8, height:8, borderRadius:4, background: i===step?accent:`${accent}30`, transition:"all 0.3s" }} />
+          ))}
+        </div>
+        {/* buttons */}
+        <div style={{ display:"flex", gap:10 }}>
+          {step > 0 && (
+            <button onClick={()=>setStep(step-1)} style={{ flex:1, padding:"14px 0", borderRadius:14, border:`1.5px solid ${accent}40`, background:"transparent", color:accent, fontSize:15, fontWeight:800, cursor:"pointer" }}>{_s("이전","Back")}</button>
+          )}
+          <button onClick={()=>{ if(isLast) handleFinish(); else setStep(step+1); }}
+            style={{ flex:1, padding:"14px 0", borderRadius:14, border:"none", background:accent, color:"#fff", fontSize:15, fontWeight:800, cursor:"pointer", boxShadow:`0 8px 24px ${accent}40` }}>
+            {isLast ? _s("시작하기","Get Started") : _s("다음","Next")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 미니 소셜 플래너 (홈 화면용) ──────────────────────────────────────
+function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const PLANNER_KEY = "sns_planner_v1";
+  const STICKER_KEY = "sns_planner_stickers_v1";
+  const plans = (() => { try { return JSON.parse(localStorage.getItem(PLANNER_KEY)) || []; } catch { return []; } })();
+  const stickerData = (() => { try { return JSON.parse(localStorage.getItem(STICKER_KEY)) || {}; } catch { return {}; } })();
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const todayPlans = plans.filter(p => p.date === todayStr).sort((a,b) => (a.time||"").localeCompare(b.time||""));
+  const todayStickers = stickerData[todayStr] || [];
+  const upcomingCount = plans.filter(p => p.date >= todayStr).length;
+
+  const PLAT_MAP = {
+    instagram:"#E1306C", youtube:"#FF0000", naverblog:"#03C75A", navercafe:"#03C75A",
+    tiktok:"#010101", threads:"#000", tistory:"#F97316", twitter:"#1DA1F2",
+    facebook:"#1877F2", linkedin:"#0A66C2", pinterest:"#E60023", kakao:"#FEE500",
+    band:"#06CF58", brunch:"#333", other:"#888"
+  };
+
+  return (
+    <div style={{ borderRadius:16, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", overflow:"hidden" }}>
+      <div style={{ padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${cardBdr}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:20 }}>📅</span>
+          <div>
+            <div style={{ fontSize:14, fontWeight:800, color:homeText }}>오늘의 플랜 {todayStickers.map((s,i)=><span key={i}>{s}</span>)}</div>
+            <div style={{ fontSize:11, color:homeMuted }}>예정된 일정 {upcomingCount}개</div>
+          </div>
+        </div>
+        <button onClick={() => setAiMenu("social_planner")}
+          style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${isDark?"rgba(124,106,255,0.3)":"rgba(124,106,255,0.2)"}`, background:"transparent", color:"#7c6aff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+          전체 보기 →
+        </button>
+      </div>
+      <div style={{ padding:"12px 20px" }}>
+        {todayPlans.length === 0 ? (
+          <div style={{ textAlign:"center", padding:"16px 0", color:homeMuted, fontSize:13 }}>
+            오늘 등록된 플랜이 없어요 ·{" "}
+            <span onClick={() => setAiMenu("social_planner")} style={{ color:"#7c6aff", cursor:"pointer", fontWeight:700 }}>플랜 만들기</span>
+          </div>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {todayPlans.slice(0, 3).map(plan => (
+              <div key={plan.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0" }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:PLAT_MAP[plan.platform]||"#888", flexShrink:0 }} />
+                <span style={{ fontSize:12, color:homeMuted, flexShrink:0, width:42 }}>{plan.time}</span>
+                <span style={{ fontSize:13, fontWeight:600, color:homeText, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{plan.title}</span>
+              </div>
+            ))}
+            {todayPlans.length > 3 && <div style={{ fontSize:11, color:homeMuted, textAlign:"center" }}>+{todayPlans.length - 3}개 더</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 트렌드 키워드 섹션 ──────────────────────────────────────
+function TrendKeywords({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
+  const [trendPlatform, setTrendPlatform] = useState(0);
+  const accent_ = "#7c6aff";
+  const trendPlatforms = [
+    { name:"인스타그램", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
+      keywords:["릴스 알고리즘 2026","인스타 팔로워 늘리기","인스타 해시태그 전략","숏폼 콘텐츠 제작","인스타 쇼핑 태그"] },
+    { name:"유튜브", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="4"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>,
+      keywords:["유튜브 쇼츠 수익화","썸네일 디자인 팁","유튜브 SEO 최적화","구독자 1000명 전략","유튜브 스튜디오 분석"] },
+    { name:"네이버블로그", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>,
+      keywords:["블로그 상위노출 2026","체험단 마케팅 전략","키워드 분석 도구","블로그 수익화 방법","네이버 플레이스 최적화"] },
+    { name:"틱톡", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v14a4 4 0 1 1-3-3.87"/><path d="M19 2v4c-3 0-5-2-5-4"/></svg>,
+      keywords:["틱톡 알고리즘 공략","틱톡 쇼핑 라이브","틱톡 광고 세팅법","바이럴 챌린지 기획","틱톡 크리에이터 펀드"] },
+    { name:"스레드", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8c2.5 0 4 1.5 4 4s-1.5 4-4 4-4-1.5-4-4"/></svg>,
+      keywords:["스레드 팔로워 전략","스레드 vs X 비교","스레드 마케팅 활용법","텍스트 콘텐츠 기획","스레드 알고리즘 이해"] },
+  ];
+  const tp = trendPlatforms[trendPlatform];
+  return (
+    <div style={{ maxWidth:540, margin:"0 auto 32px", textAlign:"left" }}>
+      <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:14, textAlign:"center" }}>
+        {_s("트렌드 키워드","Trending Keywords")}
+      </div>
+      <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap", justifyContent:"center" }}>
+        {trendPlatforms.map((p, pi) => (
+          <button key={p.name} onClick={() => setTrendPlatform(pi)}
+            style={{ display:"flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:20,
+              border: trendPlatform===pi ? `1.5px solid ${accent_}` : `1px solid ${cardBdr}`,
+              background: trendPlatform===pi ? (isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.06)") : (isDark?"rgba(255,255,255,0.04)":"#fff"),
+              color: trendPlatform===pi ? accent_ : homeMuted,
+              fontSize:12, fontWeight: trendPlatform===pi ? 700 : 500, cursor:"pointer", transition:"all 0.15s" }}>
+            <span style={{ display:"flex", alignItems:"center" }}>{p.icon}</span>
+            {p.name}
+          </button>
+        ))}
+      </div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center" }}>
+        {tp.keywords.map(kw => (
+          <button key={kw} onClick={() => {
+            sessionStorage.setItem("nper_trend_keyword", kw);
+            setAiMenu("blog_write");
+          }}
+            style={{ padding:"8px 16px", borderRadius:20, border:`1px solid ${cardBdr}`,
+              background: isDark ? "rgba(255,255,255,0.05)" : "#fff",
+              color: homeText, fontSize:12, fontWeight:600, cursor:"pointer",
+              transition:"all 0.15s", boxShadow:"0 1px 4px rgba(0,0,0,0.03)" }}
+            onMouseEnter={e=>{ e.currentTarget.style.borderColor=accent_; e.currentTarget.style.color=accent_; e.currentTarget.style.background=isDark?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.04)"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.borderColor=cardBdr; e.currentTarget.style.color=homeText; e.currentTarget.style.background=isDark?"rgba(255,255,255,0.05)":"#fff"; }}>
+            # {kw}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── 콘텐츠 리퍼포징 (원소스 멀티유즈) ──────────────────────────────────────
 function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateAi, C, theme, onLoginRequest, onUserUpdate, showPointConfirm, setSideOpen }) {
   const isDark = theme === "dark";
@@ -385,22 +620,22 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   if (aiMenu === "prompt_studio") {
     const docItems = [
       { category: "비즈니스", items: [
-        { id:"prompt_studio_make", icon:"📋", label:"사업 제안서", desc:"투자·파트너 제안" },
-        { id:"prompt_studio_make", icon:"📊", label:"사업계획서", desc:"창업·투자유치용" },
-        { id:"prompt_studio_make", icon:"📑", label:"PPT 구성안", desc:"발표 슬라이드 기획" },
-        { id:"prompt_studio_make", icon:"📝", label:"보고서", desc:"업무·분석 보고서" },
+        { id:"prompt_studio_make", docType:"proposal",    icon:"📋", label:"사업 제안서", desc:"투자·파트너 제안" },
+        { id:"prompt_studio_make", docType:"bizplan",     icon:"📊", label:"사업계획서", desc:"창업·투자유치용" },
+        { id:"prompt_studio_make", docType:"ppt_outline", icon:"📑", label:"PPT 구성안", desc:"발표 슬라이드 기획" },
+        { id:"prompt_studio_make", docType:"report",      icon:"📝", label:"보고서", desc:"업무·분석 보고서" },
       ]},
       { category: "업무", items: [
-        { id:"prompt_studio_make", icon:"📅", label:"플래너·일정표", desc:"프로젝트·업무 계획" },
-        { id:"prompt_studio_make", icon:"📃", label:"회의록", desc:"회의 안건·결과 정리" },
-        { id:"prompt_studio_make", icon:"✉️", label:"비즈니스 메일", desc:"공식 이메일·레터" },
-        { id:"prompt_studio_make", icon:"📜", label:"계약서 초안", desc:"계약·합의서 템플릿" },
+        { id:"prompt_studio_make", docType:"planner",  icon:"📅", label:"플래너·일정표", desc:"프로젝트·업무 계획" },
+        { id:"prompt_studio_make", docType:"meeting",  icon:"📃", label:"회의록", desc:"회의 안건·결과 정리" },
+        { id:"prompt_studio_make", docType:"email",    icon:"✉️", label:"비즈니스 메일", desc:"공식 이메일·레터" },
+        { id:"prompt_studio_make", docType:"contract", icon:"📜", label:"계약서 초안", desc:"계약·합의서 템플릿" },
       ]},
       { category: "메시지·인사", items: [
-        { id:"prompt_studio_make", icon:"🎉", label:"축하 메시지", desc:"결혼·승진·생일·개업" },
-        { id:"prompt_studio_make", icon:"💐", label:"위로·감사", desc:"조의·병문안·감사" },
-        { id:"prompt_studio_make", icon:"🎤", label:"인사말·축사", desc:"행사·연설·건배사" },
-        { id:"prompt_studio_make", icon:"💌", label:"초대장·안내문", desc:"행사·모임·공지" },
+        { id:"prompt_studio_make", docType:"congrats",   icon:"🎉", label:"축하 메시지", desc:"결혼·승진·생일·개업" },
+        { id:"prompt_studio_make", docType:"condolence", icon:"💐", label:"위로·감사", desc:"조의·병문안·감사" },
+        { id:"prompt_studio_make", docType:"speech",     icon:"🎤", label:"인사말·축사", desc:"행사·연설·건배사" },
+        { id:"prompt_studio_make", docType:"invite",     icon:"💌", label:"초대장·안내문", desc:"행사·모임·공지" },
       ]},
     ];
     return (
@@ -439,7 +674,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
                   {cat.items.map((item, idx) => (
-                    <button key={idx} onClick={() => setAiMenu(item.id)}
+                    <button key={idx} onClick={() => { if (item.docType) sessionStorage.setItem("_prompt_doctype", item.docType); setAiMenu(item.id); }}
                       style={{
                         padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
                         background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
@@ -501,6 +736,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const homeRef_ = useRef(null);
     const modelRef_ = useRef("claude-haiku-4-5");
 
+    // 온보딩 상태
+    const [showOnboarding, setShowOnboarding] = React.useState(() => !localStorage.getItem("sns_onboarding_done"));
+
     const features_ = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
       { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
@@ -519,14 +757,17 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
     // 홈 화면
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
+      <div className="ai-home-container" style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
+        {/* 온보딩 튜토리얼 */}
+        {showOnboarding && <OnboardingModal isDark={isDark} onClose={() => setShowOnboarding(false)} _s={_s} />}
+
         <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
-          <h1 style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:10, letterSpacing:-0.8, lineHeight:1.3 }}>
+          <h1 className="ai-home-title" style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:10, letterSpacing:-0.8, lineHeight:1.3 }}>
             {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
           </h1>
 
           {/* AI 입력창 */}
-          <div style={{ margin:"24px auto 0", maxWidth:540, borderRadius:16, padding:"16px 20px", border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", boxShadow:"0 2px 16px rgba(0,0,0,0.04)" }}>
+          <div className="ai-home-search" style={{ margin:"24px auto 0", maxWidth:540, borderRadius:16, padding:"16px 20px", border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", boxShadow:"0 2px 16px rgba(0,0,0,0.04)" }}>
             <textarea ref={homeRef_} placeholder={_s("어떤 작업을 도와드릴까요?","What can I help you with?")} rows={2}
               onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); const v=homeRef_.current?.value?.trim(); if(v){ sessionStorage.setItem("nper_chat_init",v); sessionStorage.setItem("nper_chat_model",modelRef_.current||"claude-haiku-4-5"); setAiMenu("ai_chat"); } }}}
               style={{ width:"100%", border:"none", outline:"none", fontSize:15, color:homeText, background:"transparent", resize:"none", fontFamily:"inherit", lineHeight:1.6, boxSizing:"border-box" }} />
@@ -548,7 +789,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           </div>
 
           {/* 기능 아이콘 */}
-          <div style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
+          <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
             {features_.map(f => (
               <div key={f.menu} onClick={() => setAiMenu(f.menu)}
                 style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
@@ -561,20 +802,18 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             ))}
           </div>
 
-          {/* 하단 카드 */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, maxWidth:480, margin:"0 auto" }}>
-            {[
-              { icon:"💬", label:_s("AI 대화","AI Chat"), action:()=>setAiMenu("ai_chat"), color:"#7c6aff" },
-              { icon:"📁", label:_s("내 보관함","Library"), action:()=>setAiMenu("library"), color:homeText },
-              { icon:"🔗", label:_s("SNS 연동","SNS Connect"), action:()=>navigate("mypage"), color:"#7c6aff" },
-            ].map(b => (
-              <button key={b.label} onClick={b.action}
-                style={{ padding:"14px 12px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                <span style={{ fontSize:22 }}>{b.icon}</span>
-                <span style={{ fontSize:12, fontWeight:600, color:b.color }}>{b.label}</span>
-              </button>
-            ))}
+          {/* 소셜 플래너 바로가기 */}
+          <div style={{ marginBottom:24, textAlign:"center" }}>
+            <button onClick={() => setAiMenu("social_planner")}
+              style={{ padding:"14px 28px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:10, transition:"all 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <span style={{ fontSize:22 }}>📅</span>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ fontSize:14, fontWeight:700, color:homeText }}>소셜 플래너</div>
+                <div style={{ fontSize:11, color:homeMuted }}>SNS 업로드 일정을 관리하세요</div>
+              </div>
+              <span style={{ fontSize:14, color:"#7c6aff", fontWeight:700 }}>→</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1064,8 +1303,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
   }
 
-  // 영상 제작 (관리자 전용 - 개발중)
-  if (aiMenu === "video_create" || aiMenu === "shorts_make") {
+  // 소셜 플래너
+  if (aiMenu === "social_planner") {
+    const SocialPlanner = React.lazy(() => import("./SocialPlanner"));
+    return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><SocialPlanner isDark={isDark} user={user} theme={theme} /></React.Suspense>;
+  }
+
+  // 영상 편집 (관리자 전용 - 개발중) — 링크 삽입 + 편집
+  if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make") {
     if (user?.role !== "admin") {
       return (
         <div style={{ textAlign: "center", padding: "80px 20px" }}>
@@ -1315,6 +1560,14 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         @media(max-width:768px){
           .ai-sidebar-desktop{display:none!important}
           .ai-sidebar-mobile{display:flex!important}
+          .ai-home-features{gap:12px!important}
+          .ai-home-features>div{width:auto!important}
+          .ai-home-features>div>div:first-child{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}
+          .ai-home-search{max-width:100%!important;margin-left:0!important;margin-right:0!important}
+          .ai-home-search textarea{font-size:16px!important}
+          .ai-home-container{padding:24px 16px 60px!important}
+          .ai-home-title{font-size:22px!important}
+          .ai-home-2col{grid-template-columns:1fr!important}
         }
         @media(max-width:640px){
           .ai-content-pad{padding:16px 10px 60px!important}
@@ -1326,6 +1579,21 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           .tool-header-back span{display:none!important}
           .select-grid{grid-template-columns:repeat(2,1fr)!important}
           .select-title{font-size:20px!important}
+          .ai-home-features{gap:10px!important}
+          .ai-home-features>div>div:first-child{width:40px!important;height:40px!important;min-width:40px!important;border-radius:10px!important}
+          .ai-home-features>div>div:first-child img{width:22px!important;height:22px!important}
+          .ai-home-features>div>span{font-size:11px!important}
+        }
+        @media(max-width:480px){
+          .ai-grid{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-3{grid-template-columns:repeat(2,1fr)!important}
+          .ai-grid-4{grid-template-columns:repeat(2,1fr)!important}
+          .select-grid{grid-template-columns:repeat(2,1fr)!important}
+          .ai-home-container{padding:16px 12px 60px!important}
+          .ai-home-title{font-size:20px!important;letter-spacing:-0.5px!important}
+          .ai-home-search{border-radius:12px!important}
+          .ai-home-2col{grid-template-columns:1fr!important}
+          .ai-home-features{gap:8px!important;justify-content:space-between!important}
         }
         @media(max-width:400px){
           .ai-grid{grid-template-columns:1fr!important}

@@ -27,6 +27,12 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
   const [chatId, setChatId] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const chatsRef = useRef(chats);
+  const chatIdRef = useRef(chatId);
+  const messagesRef = useRef(messages);
+  useEffect(() => { chatsRef.current = chats; }, [chats]);
+  useEffect(() => { chatIdRef.current = chatId; }, [chatId]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const text = isDark ? "#e8eaed" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
@@ -36,6 +42,35 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
 
   // 스크롤 하단 유지
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // 메시지 변경 시 디바운스 자동 저장
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const t = setTimeout(() => {
+      saveCurrentConversation(messages, chatsRef.current, chatIdRef.current);
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [messages]); // eslint-disable-line
+
+  // 페이지 종료 시 미저장 대화 저장
+  useEffect(() => {
+    const handleUnload = () => {
+      const msgs = messagesRef.current;
+      if (!msgs || msgs.length === 0) return;
+      const curChats = chatsRef.current;
+      const curChatId = chatIdRef.current;
+      const title = msgs[0]?.content?.slice(0, 30) || "채팅";
+      let updated;
+      if (curChatId) {
+        updated = curChats.map(c => c.id === curChatId ? { ...c, messages: msgs, title } : c);
+      } else {
+        updated = [{ id: Date.now(), title, messages: msgs, date: new Date().toLocaleDateString(), model }, ...curChats];
+      }
+      try { localStorage.setItem("nper_ai_chats", JSON.stringify(updated.slice(0, 50))); } catch {}
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []); // eslint-disable-line
 
   // 홈에서 전달된 초기 질문 자동 전송
   useEffect(() => {
@@ -53,8 +88,17 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
         setLoading(true);
         const systemPrompt = "당신은 SNS메이킷의 AI 어시스턴트입니다. SNS 콘텐츠 제작, 마케팅, 블로그 글쓰기, 디자인, 비즈니스에 대해 전문적이고 친절하게 답변합니다. 한국어로 답변하세요. 마크다운 형식으로 깔끔하게 정리해주세요.";
         callAI(model, [{ role: "user", content: systemPrompt }, { role: "user", content: initQ }], 2000)
-          .then(response => { setMessages([userMsg, { role: "assistant", content: response }]); })
-          .catch(e => { setMessages([userMsg, { role: "assistant", content: "오류: " + (e.message || "다시 시도해주세요") }]); })
+          .then(response => {
+            const finalMsgs = [userMsg, { role: "assistant", content: response }];
+            setMessages(finalMsgs);
+            // 자동 전송 후 대화 저장
+            saveCurrentConversation(finalMsgs, chatsRef.current, chatIdRef.current);
+          })
+          .catch(e => {
+            const finalMsgs = [userMsg, { role: "assistant", content: "오류: " + (e.message || "다시 시도해주세요") }];
+            setMessages(finalMsgs);
+            saveCurrentConversation(finalMsgs, chatsRef.current, chatIdRef.current);
+          })
           .finally(() => setLoading(false));
       }, 100);
     }
@@ -63,6 +107,23 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
   // 채팅 저장
   const saveChats = (list) => {
     try { localStorage.setItem("nper_ai_chats", JSON.stringify(list.slice(0, 50))); } catch {}
+  };
+
+  // 현재 대화를 chats에 저장하는 공용 헬퍼
+  const saveCurrentConversation = (msgs, curChats, curChatId) => {
+    if (!msgs || msgs.length === 0) return;
+    const title = msgs[0]?.content?.slice(0, 30) || "채팅";
+    if (curChatId) {
+      const updated = curChats.map(c => c.id === curChatId ? { ...c, messages: msgs, title } : c);
+      setChats(updated);
+      saveChats(updated);
+    } else {
+      const newId = Date.now();
+      setChatId(newId);
+      const updated = [{ id: newId, title, messages: msgs, date: new Date().toLocaleDateString(), model }, ...curChats];
+      setChats(updated);
+      saveChats(updated);
+    }
   };
 
   // 새 채팅
@@ -124,18 +185,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
       setMessages(finalMsgs);
 
       // 항상 자동 저장
-      const title = newMsgs[0]?.content?.slice(0, 30) || "채팅";
-      if (chatId) {
-        const updated = chats.map(c => c.id === chatId ? { ...c, messages: finalMsgs, title } : c);
-        setChats(updated);
-        saveChats(updated);
-      } else {
-        const newId = Date.now();
-        setChatId(newId);
-        const updated = [{ id: newId, title, messages: finalMsgs, date: new Date().toLocaleDateString(), model }, ...chats];
-        setChats(updated);
-        saveChats(updated);
-      }
+      saveCurrentConversation(finalMsgs, chats, chatId);
     } catch (e) {
       setMessages([...newMsgs, { role: "assistant", content: "오류가 발생했습니다: " + (e.message || "다시 시도해주세요.") }]);
     }
@@ -171,7 +221,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
       {/* 왼쪽: 채팅 목록 */}
-      <div style={{ width: 200, background: isDark ? "rgba(0,0,0,0.2)" : "#fafafa", borderRight: `1px solid ${bdr}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <div className="chat-sidebar" style={{ width: 200, background: isDark ? "rgba(0,0,0,0.2)" : "#fafafa", borderRight: `1px solid ${bdr}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "12px" }}>
           <button onClick={newChat}
             style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: cardBg, cursor: "pointer", fontSize: 13, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6 }}>
@@ -203,7 +253,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
 
         {/* 메시지 영역 */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px" }}>
+        <div className="chat-messages" style={{ flex: 1, overflowY: "auto", padding: "24px 20px" }}>
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
             {/* 빈 상태 — 다글로식 모델선택 + 프롬프트 카드 */}
@@ -236,7 +286,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                 </div>
 
                 {/* 타이틀 */}
-                <div style={{ fontSize: 20, fontWeight: 800, color: text, marginBottom: 4, lineHeight: 1.5 }}>
+                <div className="chat-empty-title" style={{ fontSize: 20, fontWeight: 800, color: text, marginBottom: 4, lineHeight: 1.5 }}>
                   SNS 콘텐츠, 무엇이든 도와드려요
                 </div>
                 <div style={{ fontSize: 13, color: muted, marginBottom: 28 }}>
@@ -244,7 +294,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
                 </div>
 
                 {/* 프롬프트 카드 — 다글로 스타일 */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, textAlign: "left" }}>
+                <div className="chat-prompt-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, textAlign: "left" }}>
                   {[
                     { icon: "📊", title: "마케팅 전략", desc: "인스타그램 팔로워 늘리는 전략을 세워줘" },
                     { icon: "📝", title: "블로그 SEO", desc: "네이버 블로그 상위 노출 최적화 팁 알려줘" },
@@ -265,7 +315,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
 
                 {/* 도구 바로가기 */}
                 {setAiMenu && (
-                  <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
+                  <div className="chat-tool-links" style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
                     {[
                       { icon: "/icons3d/blog-write.png", label: "글쓰기", menu: "blog_write" },
                       { icon: "/icons3d/palette.png", label: "콘텐츠 제작", menu: "content_create" },
@@ -289,7 +339,7 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
               <div key={i} style={{ marginBottom: 20 }}>
                 {msg.role === "user" ? (
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <div style={{
+                    <div className="chat-user-msg" style={{
                       maxWidth: "80%", padding: "12px 16px", borderRadius: "16px 16px 4px 16px",
                       background: accent, color: "#fff", fontSize: 14, lineHeight: 1.7,
                     }}>
@@ -359,9 +409,9 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
         </div>
 
         {/* 입력 영역 */}
-        <div style={{ flexShrink: 0, borderTop: `1px solid ${bdr}`, padding: "12px 20px", background: isDark ? "rgba(0,0,0,0.1)" : "#fff" }}>
+        <div className="chat-input-area" style={{ flexShrink: 0, borderTop: `1px solid ${bdr}`, padding: "12px 20px", background: isDark ? "rgba(0,0,0,0.1)" : "#fff" }}>
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
-            <div style={{
+            <div className="chat-input-wrap" style={{
               display: "flex", alignItems: "flex-end", gap: 10,
               padding: "10px 14px", borderRadius: 14,
               border: `1.5px solid ${bdr}`, background: cardBg,
@@ -397,7 +447,31 @@ export default function AiChat({ isDark, user, theme, setAiMenu }) {
         </div>
       </div>
 
-      <style>{`@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}`}</style>
+      <style>{`
+        @keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+        @media(max-width:768px){
+          .chat-sidebar{display:none!important}
+          .chat-messages{padding:16px 12px!important}
+          .chat-messages>div{max-width:100%!important}
+          .chat-user-msg{max-width:90%!important}
+          .chat-input-area{padding:10px 12px!important}
+          .chat-input-area>div{max-width:100%!important}
+          .chat-input-wrap{padding:8px 10px!important}
+          .chat-input-wrap textarea{font-size:16px!important}
+          .chat-prompt-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+          .chat-prompt-grid button{padding:12px 10px!important}
+          .chat-tool-links{gap:8px!important}
+          .chat-tool-links button{padding:6px 10px!important;font-size:11px!important}
+          .chat-empty-title{font-size:17px!important}
+        }
+        @media(max-width:480px){
+          .chat-messages{padding:12px 8px!important}
+          .chat-prompt-grid{grid-template-columns:1fr!important}
+          .chat-input-area{padding:8px!important}
+          .chat-empty-title{font-size:16px!important}
+          .chat-model-picker{min-width:200px!important}
+        }
+      `}</style>
     </div>
   );
 }

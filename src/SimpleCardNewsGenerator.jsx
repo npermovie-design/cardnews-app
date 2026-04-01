@@ -725,7 +725,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // WizHeader
   const WizHeader = () => (
-    <div style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
+    <div className="cn-wiz-header" style={{ padding:"20px 28px 0", maxWidth:800, margin:"0 auto", width:"100%", boxSizing:"border-box" }}>
       <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
         {[["1",ko?"주제 입력":"Topic"],["2",ko?"슬라이드 기획":"Plan"],["3",ko?"디자인 선택":"Design"],["4",ko?"편집":"Edit"]].map(([n,label],i)=>{
           const step=parseInt(n); const done=wizStep>step; const active=wizStep===step;
@@ -1015,12 +1015,37 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   };
 
   // ═══ STEP 1 ═══════════════════════════════════════════════
+  // ── shared mobile styles (injected once via step 1, applies globally) ──
+  const mobileStyleBlock = <style>{`
+    @media(max-width:768px){
+      .cn-step-wrap{padding:16px 14px 40px!important}
+      .cn-wiz-header{padding:16px 14px 0!important}
+      .cn-wiz-header>div{gap:0!important;margin-bottom:20px!important}
+      .cn-wiz-header>div>div>span{font-size:11px!important}
+      .cn-wiz-header>div>div>div:first-child{width:24px!important;height:24px!important;font-size:10px!important}
+      .cn-size-grid{grid-template-columns:repeat(3,1fr)!important}
+      .cn-canvas-area{width:100%!important;max-width:100%!important;overflow-x:auto!important}
+      .cn-step-wrap input,.cn-step-wrap textarea,.cn-step-wrap select{font-size:16px!important}
+      .cn-step-wrap button{min-height:44px!important}
+    }
+    @media(max-width:480px){
+      .cn-step-wrap{padding:12px 10px 36px!important}
+      .cn-wiz-header{padding:12px 10px 0!important}
+      .cn-wiz-header>div>div>span{font-size:10px!important;display:none!important}
+      .cn-size-grid{grid-template-columns:repeat(2,1fr)!important}
+      .cn-design-grid{grid-template-columns:repeat(3,1fr)!important}
+      .cn-step-wrap .cn-topic-tags{gap:4px!important}
+      .cn-step-wrap .cn-topic-tags button{padding:4px 10px!important;font-size:11px!important}
+    }
+  `}</style>;
+
   if (wizStep === 1) {
     const canNext = topic.trim().length > 0;
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
+        {mobileStyleBlock}
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:960, margin:"0 auto", padding:"16px 24px 40px", width:"100%", boxSizing:"border-box" }}>
+        <div className="cn-step-wrap" style={{ maxWidth:960, margin:"0 auto", padding:"16px 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"주제를 입력하세요":"Enter a Topic"}</div>
             <div style={{ fontSize:12, color:muted }}>{ko?"주제를 입력하면 AI가 슬라이드를 자동 구성해줘요":"Enter a topic and AI will auto-generate your slides"}</div>
@@ -1054,7 +1079,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           {/* 예시 주제 */}
           <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5 }}>{ko?"예시 주제":"Example Topics"}</div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
+            <div className="cn-topic-tags" style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
               {TOPIC_EXAMPLES.map(ex=>{
                 const isC = topic === ex.text;
                 return (
@@ -1216,8 +1241,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   if (wizStep === 2) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
+        {mobileStyleBlock}
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
+        <div className="cn-step-wrap" style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"슬라이드 기획":"Slide Planning"}</div>
             <div style={{ fontSize:12, color:muted }}>{ko?"문구를 직접 입력하거나 비워두면 AI가 자동 채워줘요":"Enter text manually or leave blank for AI to auto-fill"}</div>
@@ -1290,8 +1316,9 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   if (wizStep === 3) {
     return (
       <div style={{ flex:1, overflowY:"auto" }}>
+        {mobileStyleBlock}
         {/* WizHeader 제거 */}
-        <div style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
+        <div className="cn-step-wrap" style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"디자인 & 크기":"Design & Size"}</div>
             <div style={{ fontSize:12, color:muted }}>{ko?"템플릿을 사용하거나 스타일을 선택하세요":"Use a template or choose a style"}</div>
@@ -1329,7 +1356,11 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                       if (s.textColor) overrides.textColor = s.textColor;
                       if (s.overlayColor) overrides.overlayColor = s.overlayColor;
                       if (s.overlayOpacity !== undefined) overrides.overlayOpacity = s.overlayOpacity;
+                      if (s.overlayType) overrides.overlayType = s.overlayType;
                       if (s.imgLayout) overrides.imgLayout = s.imgLayout;
+                      if (s.imgLayoutRatio !== undefined) overrides.imgLayoutRatio = s.imgLayoutRatio;
+                      if (s.bgScale !== undefined) overrides.bgScale = s.bgScale;
+                      if (s.bgOpacity !== undefined) overrides.bgOpacity = s.bgOpacity;
                       if (Object.keys(overrides).length > 0) newSted[i] = overrides;
                     });
                     if (Object.keys(newSted).length > 0) setSted(newSted);
@@ -1349,7 +1380,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
           {/* 디자인 프리셋 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>{ko?"디자인 스타일":"Design Style"}</div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
+            <div className="cn-design-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
               {DESIGN_PRESETS.map((p) => {
                 const sel = selPreset?.key === p.key;
                 return (
@@ -1371,7 +1402,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"이미지 크기":"Image Size"}</div>
               <div style={{ fontSize:14, fontWeight:900, color:"#7c6aff" }}>{imgW} × {imgH} px</div>
             </div>
-            <div className="ai-grid-4" style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
+            <div className="ai-grid-4 cn-size-grid" style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
                   style={{ padding:"8px 4px",borderRadius:12,border:`1.5px solid ${selSize===i?"#7c6aff":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
@@ -1385,12 +1416,12 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               <div style={{ display:"flex",gap:8,alignItems:"center" }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:11,color:muted,marginBottom:4 }}>{ko?"가로":"Width"} (px)</div>
-                  <input type="number" value={customW} onChange={e=>setCustomW(Number(e.target.value))} min={100} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
+                  <input type="number" value={customW} onChange={e=>{const v=Number(e.target.value);setCustomW(Math.max(300,Math.min(4000,v||300)));}} min={300} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
                 </div>
                 <div style={{ fontSize:18,color:muted,paddingTop:18 }}>×</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:11,color:muted,marginBottom:4 }}>{ko?"세로":"Height"} (px)</div>
-                  <input type="number" value={customH} onChange={e=>setCustomH(Number(e.target.value))} min={100} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
+                  <input type="number" value={customH} onChange={e=>{const v=Number(e.target.value);setCustomH(Math.max(300,Math.min(4000,v||300)));}} min={300} max={4000} step={10} style={{...inputStyle,textAlign:"center",fontWeight:700}}/>
                 </div>
               </div>
             )}
@@ -1437,12 +1468,21 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               const ss = getSlideStyle(i);
               return {
                 title: st.title ?? s.title ?? "",
+                subtitle: st.subtitle ?? s.subtitle ?? s.subheadline ?? "",
                 body: st.body ?? s.body ?? "",
+                highlight: st.highlight ?? s.highlight ?? s.badge ?? "",
                 bgColor: st.bgColor || ss.bgColor || "#1a1a2e",
                 textColor: st.textColor || ss.textColor || "#fff",
                 fontSize: ss.titleSize || ss.fontSize || 42,
                 fontFamily: st.fontFamily || ss.fontFamily || "Pretendard",
                 image: st.bgImage || ss.bgImage || null,
+                imgLayout: st.imgLayout || s.imgLayout || null,
+                imgLayoutRatio: st.imgLayoutRatio ?? s.imgLayoutRatio ?? null,
+                overlayColor: st.overlayColor || s.overlayColor || null,
+                overlayOpacity: st.overlayOpacity ?? s.overlayOpacity ?? null,
+                overlayType: st.overlayType || s.overlayType || null,
+                bgScale: st.bgScale ?? s.bgScale ?? null,
+                bgOpacity: st.bgOpacity ?? s.bgOpacity ?? null,
               };
             })}
             width={imgW}

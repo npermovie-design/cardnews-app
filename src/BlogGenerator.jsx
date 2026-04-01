@@ -80,6 +80,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     } catch(e) {}
   }, []);
 
+  // 트렌드 키워드에서 진입 시 키워드 자동 입력
+  useEffect(() => {
+    try {
+      const trendKw = sessionStorage.getItem('nper_trend_keyword');
+      if (trendKw) {
+        setFields(prev => ({ ...prev, keyword: trendKw }));
+        sessionStorage.removeItem('nper_trend_keyword');
+      }
+    } catch(e) {}
+  }, []);
+
   // 이탈 방지
   useEffect(() => {
     const handler = (e) => {
@@ -724,13 +735,28 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         .tistory-content p{margin:8px 0;line-height:1.8}
         .tistory-content ul{padding-left:20px;margin:8px 0}
         .tistory-content li{margin:4px 0}
+        @media(max-width:768px){
+          .bl-form-wrap{padding:16px 14px 24px!important;max-width:100%!important}
+          .bl-form-wrap input,.bl-form-wrap textarea,.bl-form-wrap select{font-size:16px!important;padding:12px 14px!important}
+          .bl-form-wrap button{min-height:44px!important}
+          .bl-gen-btn{position:sticky!important;bottom:0!important;z-index:10!important;margin:0 -14px!important;padding:16px 14px!important;border-radius:0!important;background:linear-gradient(135deg,#7c6aff,#8b5cf6)!important}
+          .bl-result-header{padding:6px 12px!important;gap:4px!important}
+          .bl-result-header>div{flex-wrap:wrap!important}
+        }
+        @media(max-width:480px){
+          .bl-form-wrap{padding:12px 10px 20px!important}
+          .bl-form-wrap input,.bl-form-wrap textarea,.bl-form-wrap select{font-size:16px!important}
+          .bl-tone-group{gap:4px!important}
+          .bl-tone-group button{padding:5px 10px!important;font-size:11px!important;min-height:36px!important}
+          .bl-gen-btn{font-size:14px!important;padding:14px!important}
+        }
       `}</style>
       {/* 단계 없음 - 자동 전환 */}
       {/* 본문 */}
       <div style={{flex:1,overflowY:"auto"}}>
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
-          <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
+          <div className="bl-form-wrap" style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
             {/* StepBar 제거됨 */}
 
             {/* URL 불러오기 */}
@@ -914,7 +940,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* 글 톤 */}
             <div style={{marginBottom:14}}>
               <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <div className="bl-tone-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
               </div>
             </div>
@@ -1035,7 +1061,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             </div>
 
             {/* 생성 버튼 */}
-            <button onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
             </button>
           </div>

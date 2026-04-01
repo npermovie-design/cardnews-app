@@ -120,21 +120,117 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     } finally { clearTimeout(timer); }
   };
 
-  // 유튜브 다운로드
+  // 유튜브 링크 분석 (Vercel API 활용 — shorts-factory 불필요)
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
-    setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
+    setStep("loading"); setLoadingMsg("영상 정보를 가져오는 중..."); setError("");
     try {
-      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }) });
-      setFileId(d.file_id);
-      if (d.caption_only) setLoadingMsg("자막으로 분석 중... (영상 생성 시 MP4 업로드 필요)");
-      else setLoadingMsg("음성 인식 + AI 분석 중...");
-      await doAnalyze(d.file_id);
+      // 1) 트랜스크립트 가져오기 (여러 방법 시도)
+      let transcript = "";
+
+      // 방법 1: /api/youtube?action=transcript (videoId 파라미터 필요)
+      setLoadingMsg("자막을 가져오는 중...");
+      try {
+        const trRes = await fetch(`/api/youtube?action=transcript&videoId=${parsed.id}`);
+        if (trRes.ok) {
+          const trData = await trRes.json();
+          // items 배열에서 텍스트 추출
+          if (trData.items?.length) {
+            transcript = trData.items.map(item => item.text || item.snippet?.text || "").join(" ");
+          } else {
+            transcript = trData.transcript || trData.text || "";
+          }
+        }
+      } catch {}
+
+      // 방법 2: /api/transcript (url 파라미터)
+      if (!transcript || transcript.length < 20) {
+        try {
+          const trRes2 = await fetch(`/api/transcript?videoId=${parsed.id}`);
+          if (trRes2.ok) { const trData2 = await trRes2.json(); transcript = trData2.items?.map(i => i.text).join(" ") || trData2.transcript || ""; }
+        } catch {}
+      }
+
+      // 방법 3: oEmbed API (항상 작동) + 영상 정보로 대체
+      if (!transcript || transcript.length < 20) {
+        setLoadingMsg("자막이 없어 영상 정보로 분석합니다...");
+        // oEmbed (제목 가져오기 - 100% 성공)
+        try {
+          const oeRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(parsed.url)}&format=json`);
+          if (oeRes.ok) {
+            const oe = await oeRes.json();
+            transcript = `[영상 제목] ${oe.title || ""}\n[채널] ${oe.author_name || ""}`;
+          }
+        } catch {}
+        // /api/youtube?action=info 시도 (추가 설명 가져오기)
+        try {
+          const infoRes = await fetch(`/api/youtube?action=info&url=${encodeURIComponent(parsed.url)}`);
+          if (infoRes.ok) {
+            const info = await infoRes.json();
+            if (info.description || info.desc) transcript += `\n[설명]\n${info.description || info.desc || ""}`;
+          }
+        } catch {}
+      }
+
+      if (!transcript || transcript.length < 10) {
+        throw new Error("영상 정보를 가져올 수 없습니다. 파일 업로드를 이용해주세요.");
+      }
+
+      // 2) AI로 쇼츠 구간 분석
+      setLoadingMsg("AI가 영상을 분석하고 있어요...");
+      const { callAI } = await import("./aiClient");
+      const lengthMap = { s15: "15~30초", s30: "30~60초", s60: "60~90초", s90: "90~120초" };
+      const targetLen = lengthMap[shortsLength] || "30~60초";
+      const hasFullTranscript = transcript.length > 100 && !transcript.startsWith("[영상 제목]");
+
+      const prompt = hasFullTranscript
+        ? `당신은 유튜브 숏폼 편집 전문가입니다. 아래 영상 자막을 분석해서 ${targetLen} 길이의 쇼츠로 만들기 좋은 구간 3~5개를 추출해주세요.
+${userPrompt ? `\n사용자 요청: ${userPrompt}\n` : ""}
+[자막]
+${transcript.slice(0, 6000)}
+
+반드시 아래 JSON 배열 형식으로만 답하세요:
+[{"title":"구간 제목","start_text":"시작 부분 자막 텍스트(10자)","end_text":"끝 부분 자막 텍스트(10자)","script":"이 구간의 쇼츠 대본(자막 기반 요약, 200자 이상)","hook":"첫 3초 후킹 멘트","reason":"이 구간을 선택한 이유"}]`
+        : `당신은 유튜브 숏폼 콘텐츠 기획 전문가입니다. 아래 영상 정보를 바탕으로 ${targetLen} 길이의 쇼츠 대본 3~5개를 기획해주세요. 자막이 없으므로 영상 제목과 정보를 기반으로 창의적으로 쇼츠 대본을 작성해주세요.
+${userPrompt ? `\n사용자 요청: ${userPrompt}\n` : ""}
+${transcript}
+
+반드시 아래 JSON 배열 형식으로만 답하세요. script는 쇼츠 전체 대본(나레이션)이고 최소 200자 이상 작성하세요:
+[{"title":"쇼츠 제목","script":"쇼츠 전체 대본 (나레이션, 200자 이상)","hook":"첫 3초 후킹 멘트 (시청자를 사로잡는 한마디)","reason":"이 주제를 선택한 이유"}]`;
+
+      const aiResult = await callAI("claude-haiku-4-5", [{ role: "user", content: prompt }], 4096);
+      let segs = [];
+      try {
+        // ```json ... ``` 블록 또는 [ ... ] 배열 추출
+        let jsonStr = "";
+        const codeBlock = aiResult.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlock) jsonStr = codeBlock[1].trim();
+        else {
+          const arrMatch = aiResult.match(/\[[\s\S]*\]/);
+          if (arrMatch) jsonStr = arrMatch[0];
+        }
+        if (jsonStr) {
+          // 잘린 JSON 복구: 마지막 완전한 객체까지만 파싱
+          try { segs = JSON.parse(jsonStr); } catch {
+            // 불완전한 JSON — 마지막 }] 앞까지 자르기
+            const lastComplete = jsonStr.lastIndexOf("}");
+            if (lastComplete > 0) {
+              try { segs = JSON.parse(jsonStr.slice(0, lastComplete + 1) + "]"); } catch {}
+            }
+          }
+        }
+      } catch { segs = []; }
+
+      if (segs.length === 0) throw new Error("분석 결과를 파싱할 수 없습니다. 다시 시도해주세요.");
+
+      setSegments(segs);
+      setSelectedSegs(segs.map((_, i) => i));
+      setFileId("yt_" + parsed.id); // 유튜브 ID 기반 가상 fileId
+      setStep("analysis");
     } catch (e) {
       setError(e.message);
       setStep("upload");
-      setInputMode("file"); // 다운로드 실패 시 파일 업로드 탭으로 자동 전환
     }
   };
 
@@ -178,7 +274,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const goToEdit = () => {
     const clips = selectedSegs.map(i => {
       const s = segments[i];
-      return { ...s, title: s.hook_text || "", subtitle_text: s.seo_title || "", subtitles: s.subtitles || [] };
+      return {
+        ...s,
+        title: s.hook || s.hook_text || s.title || "",
+        subtitle_text: s.title || s.seo_title || "",
+        script: s.script || "",
+        subtitles: s.subtitles || (s.script ? s.script.match(/.{1,30}/g)?.map((t, j) => ({ start: j * 3, end: (j + 1) * 3, text: t })) || [] : []),
+      };
     });
     setEditClips(clips);
     setEditIdx(0);
@@ -375,35 +477,55 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   );
 
   // ═══════════════════════════════════
-  // Step: 분석 결과
+  // Step: 분석 결과 (Opus.pro 스타일)
   // ═══════════════════════════════════
   if (step === "analysis") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 20px 60px" }}>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, color: text }}>AI 추천 구간</div>
-          <div style={{ fontSize: 13, color: muted }}>조회수가 높을 것으로 예상되는 {segments.length}개 구간을 찾았어요</div>
-        </div>
-        {segments.map((s, i) => (
-          <div key={i} onClick={() => setSelectedSegs(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-            style={{ ...cardStyle, cursor: "pointer", borderColor: selectedSegs.includes(i) ? acc : bdr, background: selectedSegs.includes(i) ? `${acc}08` : card }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${selectedSegs.includes(i) ? acc : bdr}`, display: "flex", alignItems: "center", justifyContent: "center", background: selectedSegs.includes(i) ? acc : "transparent" }}>
-                  {selectedSegs.includes(i) && <span style={{ color: "#fff", fontSize: 12, fontWeight: 900 }}>✓</span>}
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 800, color: text }}>Short {i + 1}</span>
-                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: `${acc}15`, color: acc, fontWeight: 700 }}>{fmt(s.start_seconds)} ~ {fmt(s.end_seconds)}</span>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 800, color: acc }}>{s.score}점</span>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>{s.hook_text}</div>
-            <div style={{ fontSize: 12, color: muted, lineHeight: 1.6 }}>{s.reason?.slice(0, 100)}...</div>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, background: `${acc}15`, marginBottom: 10 }}>
+            <span style={{ fontSize: 14 }}>✨</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: acc }}>AI가 {segments.length}개 쇼츠 구간을 찾았어요</span>
           </div>
-        ))}
-        <button onClick={goToEdit} disabled={selectedSegs.length === 0} style={{ ...btnStyle, opacity: selectedSegs.length === 0 ? 0.4 : 1 }}>
-          {selectedSegs.length}개 구간 편집하기 →
-        </button>
+          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>추천 쇼츠 클립</div>
+          <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>프롬프트 기반으로 분석된 최적의 구간입니다</div>
+        </div>
+        {segments.map((s, i) => {
+          const selected = selectedSegs.includes(i);
+          const title = s.title || s.hook_text || `Short ${i+1}`;
+          const script = s.script || s.reason || "";
+          const hook = s.hook || s.hook_text || "";
+          const reason = s.reason || "";
+          const hasTime = s.start_seconds != null;
+          return (
+            <div key={i} onClick={() => setSelectedSegs(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+              style={{ ...cardStyle, cursor: "pointer", borderColor: selected ? acc : bdr, background: selected ? (D ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : card, transition: "all 0.15s" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${selected ? acc : bdr}`, display: "flex", alignItems: "center", justifyContent: "center", background: selected ? acc : "transparent", flexShrink: 0 }}>
+                    {selected ? <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span> : <span style={{ color: muted, fontSize: 12 }}>{i+1}</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: text }}>{title}</div>
+                    {hasTime && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: `${acc}12`, color: acc, fontWeight: 600 }}>{fmt(s.start_seconds)} ~ {fmt(s.end_seconds)}</span>}
+                  </div>
+                </div>
+                {s.score && <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>{s.score}점</span>
+                </div>}
+              </div>
+              {hook && <div style={{ fontSize: 13, fontWeight: 600, color: acc, marginBottom: 6, padding: "6px 10px", borderRadius: 8, background: `${acc}08`, borderLeft: `3px solid ${acc}` }}>🎬 {hook}</div>}
+              {script && <div style={{ fontSize: 12, color: text, lineHeight: 1.7, marginBottom: 6, opacity: 0.85 }}>{script.slice(0, 200)}{script.length > 200 ? "..." : ""}</div>}
+              {reason && reason !== script && <div style={{ fontSize: 11, color: muted, lineHeight: 1.5 }}>💡 {reason.slice(0, 120)}</div>}
+            </div>
+          );
+        })}
+        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+          <button onClick={() => { setStep("upload"); setSegments([]); }} style={{ flex: "0 0 auto", padding: "14px 20px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← 다시 분석</button>
+          <button onClick={goToEdit} disabled={selectedSegs.length === 0} style={{ ...btnStyle, flex: 1, opacity: selectedSegs.length === 0 ? 0.4 : 1 }}>
+            {selectedSegs.length}개 구간 편집하기 →
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -90,12 +90,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"ai_chat", label:"AI 대화", icon:"/icons3d/sns-heart.png" },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
     { sep:true },
-    { id:"prompt_studio", label:"비즈니스 문서", icon:"/icons3d/report.png", ids:["prompt_studio_make"] },
     { id:"blog_write", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link"] },
     { id:"content_create", label:"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","canvas_direct_"] },
     { id:"image_tools", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
+    { id:"video_edit", label:"영상", icon:"/icons3d/sns-app.png", ids:["shorts_make"], adminOnly:true, badge:"개발중" },
     { sep:true },
     { id:"repurpose", label:"리퍼포징", icon:"/icons3d/sns-share.png" },
+    { id:"social_planner", label:"소셜 플래너", icon:"/icons3d/sns-heart.png" },
   ];
 
   const isActive = (item) => {
@@ -122,6 +123,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       <div style={{ flex:1, overflowY:"auto", padding:"4px 8px" }}>
         {menuItems.map((item, i) => {
           if (item.sep) return <div key={`sep-${i}`} style={{ height:1, background:sideBdr, margin:"6px 4px" }} />;
+          if (item.adminOnly && user?.role !== "admin") return null;
           const active = isActive(item);
           return (
             <button key={item.id} onClick={() => setAiMenu(item.id)}
@@ -136,7 +138,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
               onMouseEnter={e => { if(!active) e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(99,102,241,0.05)"; }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>
               <img src={item.icon} alt="" style={{ width:26, height:26, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
-              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</span>
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{item.label}</span>
+              {item.badge && <span style={{ fontSize:9, fontWeight:700, color:"#fff", background:"#f59e0b", borderRadius:4, padding:"1px 6px", flexShrink:0 }}>{item.badge}</span>}
             </button>
           );
         })}

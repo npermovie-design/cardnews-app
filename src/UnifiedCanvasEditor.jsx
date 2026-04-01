@@ -166,13 +166,26 @@ export default function UnifiedCanvasEditor({
     fc.clear();
     fc.backgroundColor = s.bgColor || "#ffffff";
 
-    // 배경 이미지
+    // 배경 이미지 (imgLayout 지원)
     if (s.image) {
       FabricImage.fromURL(s.image, {crossOrigin:"anonymous"}).then(img => {
         if(!img||!fcRef.current) return;
-        const sc = Math.max(width/img.width, height/img.height);
-        img.set({scaleX:sc,scaleY:sc,left:width/2,top:height/2,originX:"center",originY:"center",selectable:false,evented:false,name:"bg"});
-        fc.insertAt(0,img); fc.renderAll();
+        const layout = s.imgLayout || "full";
+        const ratio = (s.imgLayoutRatio ?? 50) / 100;
+        let ix=0,iy=0,iw=width,ih=height;
+        if(layout==="top"){ih=Math.round(height*ratio);}
+        else if(layout==="bottom"){iy=Math.round(height*(1-ratio));ih=Math.round(height*ratio);}
+        else if(layout==="left"){iw=Math.round(width*ratio);}
+        else if(layout==="right"){ix=Math.round(width*(1-ratio));iw=Math.round(width*ratio);}
+        const sc = Math.max(iw/img.width, ih/img.height) * ((s.bgScale??100)/100);
+        img.set({scaleX:sc,scaleY:sc,left:ix+iw/2,top:iy+ih/2,originX:"center",originY:"center",selectable:false,evented:false,name:"bg",opacity:s.bgOpacity??1});
+        fc.insertAt(0,img);
+        // 오버레이 (overlayColor + overlayOpacity)
+        if(s.overlayColor && (s.overlayOpacity??0)>0){
+          const ov=new Rect({left:0,top:0,width:width,height:height,fill:s.overlayColor,opacity:s.overlayOpacity??0.48,selectable:false,evented:false,name:"gradient"});
+          fc.insertAt(1,ov);
+        }
+        fc.renderAll();
       }).catch(()=>{});
     }
 
@@ -396,6 +409,56 @@ export default function UnifiedCanvasEditor({
     if(cur) await fc.loadFromJSON(cur); fc.renderAll();
     const blob=await zip.generateAsync({type:"blob"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="slides.zip";a.click();
+  };
+
+  /* ── TXT 내보내기 ── */
+  const exportTxt = () => {
+    const fc = fcRef.current; if (!fc) return;
+    const lines = [];
+    for (let i = 0; i < total; i++) {
+      const slide = initSlides[i];
+      if (slide) {
+        lines.push(`[슬라이드 ${i + 1}]`);
+        if (slide.title) lines.push(slide.title);
+        if (slide.body) lines.push(slide.body);
+        lines.push("");
+      }
+    }
+    const text = lines.join("\n") || "내용 없음";
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "slides.txt"; a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  /* ── PDF 내보내기 (jsPDF 동적 로드, 슬라이드를 이미지로 삽입) ── */
+  const exportPdf = async () => {
+    save();
+    const fc = fcRef.current; if (!fc) return;
+    // jsPDF 동적 로드
+    if (!window.jspdf) {
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
+        s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+    }
+    const { jsPDF } = window.jspdf;
+    const orientation = width >= height ? "landscape" : "portrait";
+    const pdf = new jsPDF({ orientation, unit: "px", format: [width, height] });
+
+    for (let i = 0; i < total; i++) {
+      if (i > 0) pdf.addPage([width, height], orientation);
+      const s = slidesRef.current[i];
+      if (s) await fc.loadFromJSON(s).then(() => fc.renderAll());
+      else if (initSlides[i]) buildSlide(fc, initSlides[i], i);
+      const dataUrl = fc.toDataURL({ format: "jpeg", quality: 0.92, multiplier: 1 });
+      pdf.addImage(dataUrl, "JPEG", 0, 0, width, height);
+    }
+    // 현재 슬라이드 복원
+    const cur = slidesRef.current[idx];
+    if (cur) await fc.loadFromJSON(cur); fc.renderAll();
+
+    pdf.save("slides.pdf");
   };
 
   /* ── 키보드 ── */
@@ -635,7 +698,7 @@ export default function UnifiedCanvasEditor({
                       {label:"정중앙",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width/2-b.left-b.width/2));sel.set("top",sel.top+(height/2-b.top-b.height/2));}},
                       {label:"하단",fn:()=>{const b=sel.getBoundingRect();sel.set("top",sel.top+(height*0.92-b.top-b.height));}},
                     ].map(a=>(
-                      <button key={a.label} onClick={()=>{const fc=fcRef.current;if(!fc||!sel)return;a.fn();fc.renderAll();syncSel(sel);}}
+                      <button key={a.label} onClick={()=>{const fc=fcRef.current;if(!fc||!sel)return;a.fn();sel.setCoords();fc.renderAll();syncSel(sel);}}
                         style={{padding:"7px 4px",borderRadius:6,border:"1px solid #e5e7eb",background:"#fff",cursor:"pointer",fontSize:10,fontWeight:600,color:"#555"}}>{a.label}</button>
                     ))}
                   </div>
@@ -834,6 +897,8 @@ export default function UnifiedCanvasEditor({
             {sel&&sel.name!=="bg"&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:11}}>삭제</button>}
             <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
             {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
+            <button onClick={exportPdf} style={{background:"#e74c3c",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PDF</button>
+            <button onClick={exportTxt} style={{background:"#27ae60",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>TXT</button>
             {onShareTemplate&&<button onClick={()=>{
               const fc=fcRef.current; if(!fc) return;
               if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;

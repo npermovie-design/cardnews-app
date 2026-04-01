@@ -25,7 +25,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const D = isDark;
 
   const [input, setInput] = useState("");
-  const [docType, setDocType] = useState("proposal");
+  const [docType, setDocType] = useState(() => { const saved = sessionStorage.getItem("_prompt_doctype"); if (saved) sessionStorage.removeItem("_prompt_doctype"); return saved || "proposal"; });
   const [docCat, setDocCat] = useState(0);
   const [tone, setTone] = useState("professional");
   const [format, setFormat] = useState("structured");
