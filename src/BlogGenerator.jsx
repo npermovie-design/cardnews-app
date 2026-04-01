@@ -245,6 +245,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         });
         // 스트리밍 완전 완료 후에만 결과 설정 → 화면 전환
         if (full && full.length > 50) {
+          setGenStep(5); // 먼저 완료 표시
           setResult(cleanBlogText(full));
           if (isTistory) setHtmlResult(mdToHtml(full));
           lastErr = null;
@@ -255,6 +256,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       } catch(e) {
         lastErr = e.message || "생성 중 오류";
         if (_savedFull && _savedFull.length > 50) {
+          setGenStep(5);
           setResult(cleanBlogText(_savedFull));
           if (isTistory) setHtmlResult(mdToHtml(_savedFull));
           lastErr = null;
@@ -793,7 +795,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // eslint-disable-next-line no-unused-vars
   const [mobileTab, setMobileTab] = useState("input");
   // 현재 단계: 1=입력, 2=생성중, 3=결과
-  const wizStep = loading ? 2 : result ? 3 : 1;
+  // genStep: 0=시작전, 1~4=생성중, 5=완료
+  // loading 또는 genStep이 1~4이면 생성중 화면 유지
+  const wizStep = (loading || (genStep > 0 && genStep < 5)) ? 2 : result ? 3 : 1;
   const WSTEPS = [
     {n:1, label:t("inputStep")},
     {n:2, label:t("genStep")},
