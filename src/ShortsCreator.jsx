@@ -22,15 +22,16 @@ function parseYoutubeUrl(url) {
   return null;
 }
 
-// ── 자료실 갤러리 컴포넌트 (커뮤니티 자료실 + 검색) ──
+// ── 자료실 갤러리 컴포넌트 (내 자료 + Pixabay + Unsplash + Klipy) ──
 function ArchiveGallery({ onSelect }) {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("archive"); // archive | search
+  const [tab, setTab] = useState("archive"); // archive | pixabay | unsplash | klipy
 
   // 자료실 이미지 로드
   useEffect(() => {
+    if (tab !== "archive") return;
     (async () => {
       setLoading(true);
       try {
@@ -53,58 +54,94 @@ function ArchiveGallery({ onSelect }) {
       } catch (e) { console.error("자료실 로드:", e); }
       setLoading(false);
     })();
-  }, []);
+  }, [tab]);
 
-  // Unsplash 무료 이미지 검색
-  const searchImages = async () => {
+  // 외부 소스 검색
+  const doSearch = async () => {
     if (!search.trim()) return;
     setLoading(true);
+    setItems([]);
     try {
-      const r = await fetch(`/api/ai-proxy`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "unsplash", query: search.trim() }),
-      });
-      const d = await r.json();
-      if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small || img.urls?.regular, title: img.alt_description || "" })));
-    } catch { /* 폴백: 자료실 필터 */
-      setItems(prev => prev.filter(it => it.title?.includes(search)));
-    }
+      if (tab === "unsplash") {
+        const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(search.trim())}&per_page=20&orientation=portrait`);
+        const d = await r.json();
+        if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small || img.urls?.regular, title: img.alt_description || "", src: "Unsplash" })));
+      } else if (tab === "pixabay") {
+        const r = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(search.trim())}&per_page=20&image_type=photo`);
+        const d = await r.json();
+        if (d.hits) setItems(d.hits.map(img => ({ url: img.webformatURL || img.previewURL, title: img.tags || "", src: "Pixabay" })));
+      } else if (tab === "klipy") {
+        const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(search.trim())}&limit=20`);
+        const d = await r.json();
+        const results = d.data || d.results || [];
+        setItems(results.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+      }
+    } catch (e) { console.error("검색 실패:", e); }
     setLoading(false);
   };
 
+  // 트렌딩 로드 (탭 전환 시)
+  useEffect(() => {
+    if (tab === "archive") return;
+    (async () => {
+      setLoading(true);
+      setItems([]);
+      try {
+        if (tab === "pixabay") {
+          const r = await fetch(`/api/proxy?action=pixabay&q=nature&per_page=12&image_type=photo&editors_choice=true`);
+          const d = await r.json();
+          if (d.hits) setItems(d.hits.map(img => ({ url: img.webformatURL, title: img.tags || "", src: "Pixabay" })));
+        } else if (tab === "unsplash") {
+          const r = await fetch(`/api/proxy?action=unsplash&query=trending&per_page=12&orientation=portrait`);
+          const d = await r.json();
+          if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small, title: img.alt_description || "", src: "Unsplash" })));
+        } else if (tab === "klipy") {
+          const r = await fetch(`/api/proxy?action=klipy&path=gifs/trending&limit=12`);
+          const d = await r.json();
+          const results = d.data || d.results || [];
+          setItems(results.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, [tab]);
+
   const filteredItems = tab === "archive" && search ? items.filter(it => it.title?.toLowerCase().includes(search.toLowerCase())) : items;
+  const TABS = [["archive","내 자료"],["pixabay","Pixabay"],["unsplash","Unsplash"],["klipy","Klipy"]];
 
   return (
     <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>자료실</div>
-        <div style={{ display: "flex", gap: 2 }}>
-          {[["archive","내 자료"],["search","검색"]].map(([k,l]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ padding: "2px 8px", borderRadius: 4, border: "none", background: tab === k ? "#7c6aff20" : "transparent", color: tab === k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
-          ))}
-        </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>자료실</div>
+      <div style={{ display: "flex", gap: 2, marginBottom: 8, flexWrap: "wrap" }}>
+        {TABS.map(([k,l]) => (
+          <button key={k} onClick={() => { setTab(k); setSearch(""); }}
+            style={{ padding: "3px 8px", borderRadius: 4, border: "none", background: tab === k ? "#7c6aff20" : "transparent", color: tab === k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+        ))}
       </div>
       <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && tab === "search" && searchImages()}
-          placeholder={tab === "archive" ? "자료실 검색..." : "이미지 검색 (영어)"}
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && tab !== "archive" && doSearch()}
+          placeholder={tab === "archive" ? "자료실 필터..." : tab === "klipy" ? "GIF/스티커 검색..." : "이미지 검색 (영어 추천)"}
           style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-        {tab === "search" && <button onClick={searchImages} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
+        {tab !== "archive" && <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
       </div>
       {loading ? (
         <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>로딩 중...</div>
       ) : filteredItems.length === 0 ? (
         <div style={{ textAlign: "center", padding: 16, color: "#555", fontSize: 11 }}>
-          {tab === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하세요"}
+          {tab === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하고 Enter"}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 200, overflowY: "auto", padding: 2 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 240, overflowY: "auto", padding: 2 }}>
           {filteredItems.slice(0, 30).map((it, i) => (
             <div key={i} onClick={() => onSelect(it.url)}
               style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", width: "100%", height: 70, position: "relative", background: "#12122a" }}
               title={it.title}>
               <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "6px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "6px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {it.src && <span style={{ color: "#7c6aff", marginRight: 3, fontSize: 7 }}>{it.src}</span>}
+                {it.title}
+              </div>
             </div>
           ))}
         </div>
@@ -218,6 +255,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 패널 크기 (드래그 조절)
   const [rightPanelWidth, setRightPanelWidth] = useState(280);
   const [leftPanelWidth, setLeftPanelWidth] = useState(180);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(180);
+  // 타임라인 범위 선택
+  const [rangeSelecting, setRangeSelecting] = useState(null); // {startPh, endPh}
 
   const fileRef = useRef(null);
   const timerRef = useRef(null);
@@ -1086,9 +1126,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             {editClips.map((c, i) => (
               <div key={i} onClick={() => { setEditIdx(i); setSelectedSubIdx(-1); setPlayhead(0); setIsPlaying(false); }}
                 style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(124,106,255,0.18)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#7c6aff" : "transparent"}`, transition: "all 0.15s" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc" }}>Short {i + 1}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
                 <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{fmt(c.start_seconds)} ~ {fmt(c.end_seconds)}</div>
-                <div style={{ fontSize: 10, color: "#555", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || "제목 없음"}</div>
               </div>
             ))}
           </div>
@@ -1107,8 +1146,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
 
-          {/* 9:16 프리뷰 (대형) */}
-          <div ref={previewRef} style={{ width: 360, height: 640, borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
+          {/* 9:16 프리뷰 (화면에 맞게 자동 크기) */}
+          <div ref={previewRef} style={{ width: "min(420px, 45vh * 9 / 16)", height: "min(746px, 80vh)", aspectRatio: "9/16", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
@@ -1430,8 +1469,17 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       </div>
 
-      {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) */}
-      <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+      {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) — 높이 조절 가능 */}
+      <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
+        {/* 높이 조절 핸들 */}
+        <div style={{ position: "absolute", top: -4, left: 0, right: 0, height: 8, cursor: "ns-resize", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onMouseDown={e => { e.preventDefault(); const sy = e.clientY; const oh = bottomPanelHeight;
+            const mv = ev => setBottomPanelHeight(Math.max(120, Math.min(400, oh - (ev.clientY - sy))));
+            const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+            window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+          }}>
+          <div style={{ width: 40, height: 3, borderRadius: 2, background: "#3a3a5a" }} />
+        </div>
         {/* 툴바 (AlphaCut 스타일) */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1488,7 +1536,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
 
         {/* 타임라인 트랙 영역 */}
-        <div style={{ height: 20 + TRACK_H * allTracks.length + 4, display: "flex", overflow: "hidden" }}>
+        <div style={{ height: Math.max(20 + TRACK_H * allTracks.length + 4, bottomPanelHeight - 40), display: "flex", overflow: "hidden" }}>
           {/* 트랙 라벨 (좌측 고정) */}
           <div style={{ width: 44, flexShrink: 0, background: "#0a0a18", borderRight: "1px solid #1a1a30" }}>
             <div style={{ height: 20 }} />
@@ -1499,12 +1547,45 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
 
-          {/* 스크롤 가능한 트랙 */}
-          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "pointer" }}
-            onClick={e => {
+          {/* 스크롤 가능한 트랙 — 클릭: playhead 이동, 드래그: 범위 선택 */}
+          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "crosshair" }}
+            onMouseDown={e => {
+              if (e.button !== 0) return;
               const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
-              setPlayhead(Math.max(0, Math.min(clipDuration, x / pxPerSec)));
+              const scrollEl = e.currentTarget;
+              const x = e.clientX - rect.left + scrollEl.scrollLeft;
+              const startPh = Math.max(0, Math.min(clipDuration, x / pxPerSec));
+              setPlayhead(startPh);
+              setRangeSelecting({ startPh, endPh: startPh });
+              const onMove = ev => {
+                const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
+                const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
+                setRangeSelecting(prev => prev ? { ...prev, endPh } : null);
+              };
+              const onUp = ev => {
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+                const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
+                const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
+                const lo = Math.min(startPh, endPh), hi = Math.max(startPh, endPh);
+                if (hi - lo < 0.3) { setRangeSelecting(null); return; } // 짧은 클릭은 무시
+                // 범위 내 자막/세그먼트 선택
+                const subIdx = (curClip.subtitles || []).findIndex(s => {
+                  const rs = s.start - clipStart, re = (s.end || s.start + 3) - clipStart;
+                  return rs >= lo && re <= hi;
+                });
+                if (subIdx >= 0) setSelectedSubIdx(subIdx);
+                let accSeg = 0;
+                for (let si = 0; si < videoSegs.length; si++) {
+                  const segLen = videoSegs[si].end - videoSegs[si].start;
+                  const segStart = accSeg, segEnd = accSeg + segLen;
+                  if (segStart >= lo && segEnd <= hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
+                  accSeg += segLen;
+                }
+                setRangeSelecting(null);
+              };
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
             }}>
             <div style={{ width: tlWidth, height: "100%", position: "relative" }}>
 
@@ -1622,6 +1703,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 );
               })}
 
+              {/* 범위 선택 하이라이트 */}
+              {rangeSelecting && Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) > 0.1 && (
+                <div style={{ position: "absolute", left: Math.min(rangeSelecting.startPh, rangeSelecting.endPh) * pxPerSec, top: 0, width: Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) * pxPerSec, height: "100%", background: "rgba(124,106,255,0.15)", border: "1px solid rgba(124,106,255,0.4)", zIndex: 18, pointerEvents: "none", borderRadius: 2 }} />
+              )}
+
               {/* 재생 헤드 */}
               <div style={{ position: "absolute", left: playhead * pxPerSec, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 20, pointerEvents: "none" }}>
                 <div style={{ position: "absolute", top: -1, left: -5, width: 12, height: 10, background: "#ff3b3b", clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
@@ -1658,7 +1744,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {r?.type === "done" ? <span style={{ color: "#4ade80", fontSize: 14 }}>✓</span> : r?.type === "error" ? <span style={{ color: "#f87171", fontSize: 14 }}>✗</span> : <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite" }} />}
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text }}>Short {i + 1}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
                     <div style={{ fontSize: 10, color: muted }}>{r?.type === "done" ? "완료" : r?.type === "error" ? "실패" : "생성 중..."}</div>
                   </div>
                 </div>
