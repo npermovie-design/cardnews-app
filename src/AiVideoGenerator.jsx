@@ -133,14 +133,114 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
         </AbsoluteFill>
       )}
 
-      {/* 모션그래픽: 데코 라인 */}
-      {styleId === "motion" && (
+      {/* ── 모션그래픽 스타일: 데코 요소들 ── */}
+      {styleId === "motion" && (<>
+        {/* 상단 데코 라인 */}
         <div style={{
           position: "absolute", left: "8%", top: "12%",
           width: interpolate(enterSpring, [0, 1], [0, 60]), height: 4,
           background: style?.titleColor || "#00d4ff", borderRadius: 2,
         }} />
-      )}
+        {/* 움직이는 원형 장식 */}
+        {[0,1,2].map(j => (
+          <div key={`mc${j}`} style={{
+            position: "absolute",
+            right: `${8 + j * 12}%`, bottom: `${15 + j * 8}%`,
+            width: 12 + j * 6, height: 12 + j * 6, borderRadius: "50%",
+            border: `2px solid rgba(0,212,255,${0.3 - j * 0.08})`,
+            transform: `scale(${interpolate(frame, [j * 5, j * 5 + fps * 0.5], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
+          }} />
+        ))}
+        {/* 점선 패스 */}
+        <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }} viewBox="0 0 1080 1920">
+          <line x1="86" y1={280} x2={86 + interpolate(enterSpring, [0, 1], [0, 200])} y2="280"
+            stroke="rgba(0,212,255,0.2)" strokeWidth="1.5" strokeDasharray="6 4" />
+        </svg>
+      </>)}
+
+      {/* ── 애니메이션 스타일: 별/하트/스파클 ── */}
+      {styleId === "animation" && (<>
+        {[0,1,2,3].map(j => {
+          const delay = j * 6;
+          const floatY = interpolate(frame, [delay, delay + durationInFrames * 0.7], [110, -20], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+          const wobble = Math.sin((frame + j * 20) / fps * 3) * 8;
+          const sparkOpacity = interpolate(frame, [delay, delay + 10, durationInFrames - 10, durationInFrames], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+          const shapes = ["★", "♥", "✦", "●"];
+          return (
+            <div key={`sp${j}`} style={{
+              position: "absolute", left: `${15 + j * 22}%`, top: `${floatY}%`,
+              fontSize: 16 + j * 4, color: `rgba(255,${150 + j * 30},${180 - j * 20},${0.4 * sparkOpacity})`,
+              transform: `translateX(${wobble}px) rotate(${frame * (j % 2 === 0 ? 2 : -2)}deg)`,
+              pointerEvents: "none",
+            }}>{shapes[j]}</div>
+          );
+        })}
+      </>)}
+
+      {/* ── 시네마틱: 영화 필름 그레인 + 비네팅 ── */}
+      {styleId === "cinematic" && (<>
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%)",
+        }} />
+        {/* 상단/하단 레터박스 */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "5%", background: "#000" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "5%", background: "#000" }} />
+      </>)}
+
+      {/* ── 임팩트(bold): 줌 파동 + 대각선 라인 ── */}
+      {styleId === "bold" && (<>
+        {/* 충격파 원 */}
+        {frame < fps * 0.6 && (
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            width: interpolate(frame, [0, fps * 0.6], [0, 800]), height: interpolate(frame, [0, fps * 0.6], [0, 800]),
+            borderRadius: "50%", border: `3px solid rgba(255,59,59,${interpolate(frame, [0, fps * 0.6], [0.6, 0], { extrapolateRight: "clamp" })})`,
+            transform: "translate(-50%, -50%)",
+          }} />
+        )}
+        {/* 대각선 스트라이프 */}
+        <div style={{
+          position: "absolute", top: 0, right: 0, width: "30%", height: "100%",
+          background: "repeating-linear-gradient(135deg, transparent, transparent 20px, rgba(255,0,0,0.04) 20px, rgba(255,0,0,0.04) 22px)",
+          opacity: enterSpring, pointerEvents: "none",
+        }} />
+      </>)}
+
+      {/* ── 미니멀: 깔끔한 기하학 라인 ── */}
+      {styleId === "minimal" && (<>
+        <div style={{
+          position: "absolute", top: "12%", left: "10%",
+          width: interpolate(enterSpring, [0, 1], [0, 40]), height: 2,
+          background: "#1a1a2e", borderRadius: 1,
+        }} />
+        <div style={{
+          position: "absolute", bottom: "12%", right: "10%",
+          width: 2, height: interpolate(enterSpring, [0, 1], [0, 40]),
+          background: "#1a1a2e", borderRadius: 1,
+        }} />
+        {/* 코너 프레임 */}
+        <div style={{
+          position: "absolute", top: "8%", left: "8%",
+          width: 24, height: 24, borderTop: "2px solid rgba(26,26,46,0.3)", borderLeft: "2px solid rgba(26,26,46,0.3)",
+          opacity: enterSpring,
+        }} />
+        <div style={{
+          position: "absolute", bottom: "8%", right: "8%",
+          width: 24, height: 24, borderBottom: "2px solid rgba(26,26,46,0.3)", borderRight: "2px solid rgba(26,26,46,0.3)",
+          opacity: enterSpring,
+        }} />
+      </>)}
+
+      {/* ── 실사 홍보영상: 기업 UI 요소 ── */}
+      {styleId === "realfilm" && (<>
+        {/* 좌측 컬러 바 */}
+        <div style={{
+          position: "absolute", left: 0, top: "20%",
+          width: 4, height: interpolate(enterSpring, [0, 1], [0, 120]),
+          background: "#fff", borderRadius: 2,
+        }} />
+      </>)}
 
       {/* 씬 번호 인디케이터 */}
       {(styleId === "motion" || styleId === "realfilm") && (
@@ -254,6 +354,25 @@ const VIDEO_STYLES = [
 
 const FPS = 30;
 
+// 텍스트를 최대 글자수 기준으로 자연스럽게 분할
+function splitTextByChars(text, maxChars) {
+  if (!text || maxChars <= 0) return [text];
+  const result = [];
+  // 띄어쓰기/구두점 기준으로 단어 분리
+  const words = text.split(/(\s+)/).filter(Boolean);
+  let line = "";
+  for (const w of words) {
+    if ((line + w).trim().length > maxChars && line.trim()) {
+      result.push(line.trim());
+      line = w.trimStart();
+    } else {
+      line += w;
+    }
+  }
+  if (line.trim()) result.push(line.trim());
+  return result.length ? result : [text];
+}
+
 export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
@@ -273,6 +392,12 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const [audioUrl, setAudioUrl] = useState(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [ttsUrl, setTtsUrl] = useState(null); // TTS 생성된 음성 URL
+  const [ttsVoice, setTtsVoice] = useState("Kore"); // Gemini TTS 음성
+  const [ttsSpeed, setTtsSpeed] = useState(1.0);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [captionMaxChars, setCaptionMaxChars] = useState(12); // 자막 글자수 제한
+  const [silenceThreshold, setSilenceThreshold] = useState(1.0); // 무음 구간 제거 기준 (초)
+  const [removeSilence, setRemoveSilence] = useState(true); // 무음 제거 활성화
   const [scenes, setScenes] = useState([]);
   const [captions, setCaptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -360,9 +485,31 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
                 fullText = analyzedText;
                 audioAnalyzed = true;
               }
-              captionData = allSubs
+              // 자막 데이터 생성
+              const rawCaptions = allSubs
                 .filter(s => s.text?.trim() && (s.end - s.start) > 0.3)
                 .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }));
+
+              // 무음 구간 제거: gap이 threshold 이상이면 다음 자막을 앞당김
+              if (removeSilence && rawCaptions.length > 1) {
+                let totalRemoved = 0;
+                captionData = rawCaptions.map((c, i) => {
+                  const adjusted = { ...c, startMs: c.startMs - totalRemoved, endMs: c.endMs - totalRemoved };
+                  if (i < rawCaptions.length - 1) {
+                    const gap = (rawCaptions[i + 1].startMs - c.endMs) / 1000;
+                    if (gap >= silenceThreshold) totalRemoved += (gap - 0.15) * 1000; // 0.15초 자연스러운 간격 유지
+                  }
+                  return adjusted;
+                });
+                if (totalRemoved > 0) {
+                  // 영상 길이를 무음 제거 후로 조정
+                  const lastCaption = captionData[captionData.length - 1];
+                  const newDuration = Math.ceil(lastCaption.endMs / 1000) + 1;
+                  setDuration(prev => Math.min(prev, newDuration));
+                }
+              } else {
+                captionData = rawCaptions;
+              }
             }
           }
         } catch (e) { console.warn("음성 분석 실패 (서버):", e); }
@@ -457,18 +604,83 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
         };
       }));
 
-      // 5) 자막 생성: 각 씬의 대본 텍스트를 해당 씬 시간에 정확히 매칭
+      // 5) 자막 생성: 글자수 제한에 맞춰 분할
       if (captionData.length === 0) {
-        captionData = scenesWithImages.map(sc => ({
-          text: sc._scriptText || sc.title,
-          startMs: Math.round(sc._startSec * 1000),
-          endMs: Math.round(sc._endSec * 1000),
-        }));
+        captionData = [];
+        for (const sc of scenesWithImages) {
+          const fullText = sc._scriptText || sc.title || "";
+          const chunks = splitTextByChars(fullText, captionMaxChars);
+          const sceneDurMs = (sc._endSec - sc._startSec) * 1000;
+          const chunkDurMs = sceneDurMs / chunks.length;
+          const startMs = sc._startSec * 1000;
+          for (let ci = 0; ci < chunks.length; ci++) {
+            captionData.push({
+              text: chunks[ci],
+              startMs: Math.round(startMs + ci * chunkDurMs),
+              endMs: Math.round(startMs + (ci + 1) * chunkDurMs),
+            });
+          }
+        }
       }
       setCaptions(captionData);
 
       setScenes(scenesWithImages);
       setEditingScene(0);
+
+      // TTS 음성 생성 (OpenAI TTS API)
+      if (ttsEnabled && !audioFile) {
+        setLoadingMsg("AI 음성을 생성하고 있어요...");
+        try {
+          // 전체 대본을 하나의 TTS로 생성 (자연스러운 흐름)
+          const fullScript = scenesWithImages.map(sc => sc._scriptText || sc.title || "").filter(Boolean).join("\n");
+          if (fullScript.trim()) {
+            // 4096자 제한: 넘으면 잘라서 생성
+            const ttsText = fullScript.slice(0, 4096);
+            const ttsRes = await fetch("/api/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: ttsText, voice: ttsVoice, speed: ttsSpeed }),
+            });
+            if (ttsRes.ok) {
+              const blob = await ttsRes.blob();
+              const url = URL.createObjectURL(blob);
+              setTtsUrl(url);
+              // TTS 오디오 길이 측정 → 씬 타이밍 재조정
+              const audio = new window.Audio(url);
+              await new Promise(resolve => {
+                audio.onloadedmetadata = () => {
+                  const ttsDuration = audio.duration;
+                  if (ttsDuration > 3) {
+                    setDuration(Math.ceil(ttsDuration));
+                    // 씬 타이밍을 TTS 오디오 길이에 맞춰 재분배
+                    const secPerScene = ttsDuration / scenesWithImages.length;
+                    setScenes(prev => prev.map((sc, i) => ({
+                      ...sc,
+                      _startSec: i * secPerScene,
+                      _endSec: (i + 1) * secPerScene,
+                      _startFrame: Math.round(i * secPerScene * FPS),
+                      _durFrames: Math.round(secPerScene * FPS),
+                    })));
+                    // 자막도 TTS 시간에 맞게 재조정
+                    setCaptions(prev => prev.map((c, i) => ({
+                      ...c,
+                      startMs: Math.round(i * secPerScene * 1000),
+                      endMs: Math.round((i + 1) * secPerScene * 1000),
+                    })));
+                  }
+                  resolve();
+                };
+                audio.onerror = resolve;
+              });
+            } else {
+              console.warn("TTS 생성 실패:", await ttsRes.text().catch(() => ""));
+            }
+          }
+        } catch (e) {
+          console.warn("TTS 생성 오류:", e);
+        }
+      }
+
       setStep("editing");
     } catch (e) {
       setError("씬 생성 실패: " + e.message);
@@ -514,13 +726,49 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
           </div>
           {/* TTS */}
           <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: ttsEnabled ? 12 : 0 }}>
               <input type="checkbox" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} style={{ accentColor: acc, width: 18, height: 18 }} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 800, color: text }}>AI 음성 (TTS) 나레이션</div>
-                <div style={{ fontSize: 11, color: muted }}>대본을 AI가 읽어주는 음성을 자동 생성합니다</div>
+                <div style={{ fontSize: 11, color: muted }}>Google AI 고품질 음성으로 대본을 읽어줍니다</div>
               </div>
             </label>
+            {ttsEnabled && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 5 }}>음성 선택</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4 }}>
+                    {[["Kore","Kore","여성/밝음"],["Aoede","Aoede","여성/부드러움"],["Puck","Puck","남성/자연"],["Charon","Charon","남성/깊음"],["Fenrir","Fenrir","남성/중후"],["Leda","Leda","여성/차분"]].map(([id,name,desc]) => (
+                      <button key={id} onClick={() => setTtsVoice(id)}
+                        style={{ padding: "6px 4px", borderRadius: 8, border: `1.5px solid ${ttsVoice === id ? acc : bdr}`, background: ttsVoice === id ? `${acc}12` : "transparent", cursor: "pointer", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: ttsVoice === id ? acc : text }}>{name}</div>
+                        <div style={{ fontSize: 8, color: muted }}>{desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 5 }}>읽기 속도</div>
+                  <input type="range" min={0.5} max={2.0} step={0.1} value={ttsSpeed} onChange={e => setTtsSpeed(+e.target.value)}
+                    style={{ width: "100%", accentColor: acc }} />
+                  <div style={{ fontSize: 11, color: muted, textAlign: "center" }}>{ttsSpeed.toFixed(1)}x</div>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* 자막 글자수 */}
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 8 }}>자막 글자수</div>
+            <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>자막 한 줄에 표시할 최대 글자수를 선택하세요</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+              {[{ v: 8, label: "8자", desc: "짧게" }, { v: 12, label: "12자", desc: "기본" }, { v: 15, label: "15자", desc: "보통" }, { v: 20, label: "20자", desc: "길게" }].map(o => (
+                <button key={o.v} onClick={() => setCaptionMaxChars(o.v)}
+                  style={{ padding: "8px 4px", borderRadius: 8, border: `1.5px solid ${captionMaxChars === o.v ? acc : bdr}`, background: captionMaxChars === o.v ? `${acc}12` : "transparent", cursor: "pointer", textAlign: "center" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: captionMaxChars === o.v ? acc : text }}>{o.label}</div>
+                  <div style={{ fontSize: 9, color: muted }}>{o.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </>) : (<>
           {/* 음성 파일 */}
@@ -549,6 +797,29 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
             <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>추가 지시사항 <span style={{ fontSize: 10, color: muted, fontWeight: 400 }}>(선택)</span></div>
             <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={2} placeholder="예: 밝은 분위기로, 자연 이미지 위주로"
               style={{ ...inputStyle, resize: "none", lineHeight: 1.5, fontFamily: "inherit" }} />
+          </div>
+          {/* 무음 구간 처리 */}
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: removeSilence ? 10 : 0 }}>
+              <input type="checkbox" checked={removeSilence} onChange={e => setRemoveSilence(e.target.checked)} style={{ accentColor: acc, width: 18, height: 18 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: text }}>무음 구간 자동 제거</div>
+                <div style={{ fontSize: 11, color: muted }}>설정한 시간 이상의 무음 구간을 자동으로 제거합니다</div>
+              </div>
+            </label>
+            {removeSilence && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>무음 기준 (이 이상이면 제거)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+                  {[{ v: 0.5, label: "0.5초" }, { v: 1.0, label: "1초" }, { v: 1.5, label: "1.5초" }, { v: 2.0, label: "2초" }].map(o => (
+                    <button key={o.v} onClick={() => setSilenceThreshold(o.v)}
+                      style={{ padding: "8px 4px", borderRadius: 8, border: `1.5px solid ${silenceThreshold === o.v ? acc : bdr}`, background: silenceThreshold === o.v ? `${acc}12` : "transparent", cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: silenceThreshold === o.v ? acc : text }}>{o.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </>)}
 
@@ -715,7 +986,7 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
           </div>
           <div style={{ padding: 6, borderTop: "1px solid #2a2a4a", display: "flex", gap: 4 }}>
             <button onClick={() => setStep("suggest")} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>← 스타일</button>
-            <button onClick={() => { setStep("input"); setScenes([]); setCaptions([]); }} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>처음</button>
+            <button onClick={() => { setStep("input"); setScenes([]); setCaptions([]); if (ttsUrl) { URL.revokeObjectURL(ttsUrl); setTtsUrl(null); } }} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>처음</button>
           </div>
         </div>
 
@@ -745,35 +1016,11 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
             <button onClick={() => {
               if (isPlaying) {
                 playerRef.current?.pause();
-                if (window.speechSynthesis) window.speechSynthesis.cancel();
                 setIsPlaying(false);
               } else {
                 playerRef.current?.play();
                 setIsPlaying(true);
-                // TTS: 씬별 대본을 순서대로 읽기
-                if (ttsEnabled && scenes.length > 0 && window.speechSynthesis) {
-                  window.speechSynthesis.cancel();
-                  const readScene = (idx) => {
-                    if (idx >= scenes.length) return;
-                    const sc = scenes[idx];
-                    const txt = sc._scriptText || sc.title || "";
-                    if (!txt.trim()) { readScene(idx + 1); return; }
-                    const utt = new SpeechSynthesisUtterance(txt);
-                    utt.lang = "ko-KR";
-                    utt.rate = 0.95;
-                    utt.onend = () => readScene(idx + 1);
-                    // 씬 시작 시간에 맞춰 딜레이 후 재생
-                    const delaySec = (sc._startSec || 0) - (playhead || 0);
-                    if (delaySec > 0) {
-                      setTimeout(() => { if (window.speechSynthesis) window.speechSynthesis.speak(utt); }, delaySec * 1000);
-                    } else {
-                      window.speechSynthesis.speak(utt);
-                    }
-                  };
-                  // 현재 playhead 위치의 씬부터 시작
-                  const startIdx = scenes.findIndex(sc => playhead >= (sc._startSec || 0) && playhead < (sc._endSec || 0));
-                  readScene(Math.max(0, startIdx));
-                }
+                // TTS 오디오는 Remotion Player <Audio> 컴포넌트가 자동 재생
               }
             }} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 12px ${acc}40` }}>
               {isPlaying ? "⏸" : "▶"}
@@ -822,6 +1069,63 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
                     <div><div style={{ fontSize: 12, fontWeight: 700, color: styleId === s.id ? acc : "#ccc" }}>{s.name}</div><div style={{ fontSize: 9, color: "#666" }}>{s.desc}</div></div>
                   </div>
                 ))}
+                {/* TTS 재생성 */}
+                <div style={{ marginTop: 16, padding: "10px 8px", borderRadius: 8, background: "rgba(124,106,255,0.06)", border: "1px solid rgba(124,106,255,0.15)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: acc, marginBottom: 8 }}>AI 음성 (TTS)</div>
+                  {ttsUrl ? (
+                    <div style={{ fontSize: 10, color: "#4ade80", marginBottom: 6 }}>AI 음성 적용됨</div>
+                  ) : (
+                    <div style={{ fontSize: 10, color: "#888", marginBottom: 6 }}>음성 없음</div>
+                  )}
+                  <select value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}
+                    style={{ width: "100%", padding: "5px 6px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", fontSize: 10, marginBottom: 6, outline: "none" }}>
+                    <option value="Kore">Kore (여성/밝음)</option>
+                    <option value="Aoede">Aoede (여성/부드러움)</option>
+                    <option value="Puck">Puck (남성/자연)</option>
+                    <option value="Charon">Charon (남성/깊음)</option>
+                    <option value="Fenrir">Fenrir (남성/중후)</option>
+                    <option value="Leda">Leda (여성/차분)</option>
+                  </select>
+                  <button disabled={ttsLoading} onClick={async () => {
+                    setTtsLoading(true);
+                    try {
+                      const fullScript = scenes.map(sc => sc._scriptText || sc.title || "").filter(Boolean).join("\n").slice(0, 4096);
+                      if (!fullScript.trim()) return;
+                      const res = await fetch("/api/tts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: fullScript, voice: ttsVoice, speed: ttsSpeed }),
+                      });
+                      if (res.ok) {
+                        if (ttsUrl) URL.revokeObjectURL(ttsUrl);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        setTtsUrl(url);
+                        const audio = new window.Audio(url);
+                        audio.onloadedmetadata = () => {
+                          if (audio.duration > 3) {
+                            setDuration(Math.ceil(audio.duration));
+                            const secPerScene = audio.duration / scenes.length;
+                            setScenes(prev => prev.map((sc, i) => ({
+                              ...sc, _startSec: i * secPerScene, _endSec: (i + 1) * secPerScene,
+                              _startFrame: Math.round(i * secPerScene * FPS), _durFrames: Math.round(secPerScene * FPS),
+                            })));
+                            setCaptions(prev => prev.map((c, i) => ({
+                              ...c, startMs: Math.round(i * secPerScene * 1000), endMs: Math.round((i + 1) * secPerScene * 1000),
+                            })));
+                          }
+                        };
+                      }
+                    } catch (e) { console.warn("TTS 재생성 실패:", e); }
+                    setTtsLoading(false);
+                  }} style={{ width: "100%", padding: 6, borderRadius: 6, border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", opacity: ttsLoading ? 0.5 : 1 }}>
+                    {ttsLoading ? "생성 중..." : ttsUrl ? "음성 재생성" : "AI 음성 생성"}
+                  </button>
+                  {ttsUrl && (
+                    <button onClick={() => { URL.revokeObjectURL(ttsUrl); setTtsUrl(null); }}
+                      style={{ width: "100%", padding: 5, borderRadius: 6, border: "1px solid rgba(248,113,113,0.3)", background: "transparent", color: "#f87171", fontSize: 9, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>음성 제거</button>
+                  )}
+                </div>
               </div>
             ) : propTab === "caption" ? (
               <div>
@@ -883,7 +1187,7 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
             <div style={{ height: 20 }} />
             <div style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#4a9eff" }}>V</div>
             {captions.length > 0 && <div style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#f59e0b" }}>S</div>}
-            {audioUrl && <div style={{ height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#4ade80" }}>A</div>}
+            {(ttsUrl || audioUrl) && <div style={{ height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#4ade80" }}>A</div>}
           </div>
           {/* 트랙 영역 — 클릭으로 playhead 이동 */}
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
@@ -933,10 +1237,10 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
                 </div>
               )}
               {/* 오디오 트랙 */}
-              {audioUrl && (
+              {(ttsUrl || audioUrl) && (
                 <div style={{ height: 20, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                  <div style={{ position: "absolute", left: 0, top: 4, width: duration * tlPxPerSec, height: 12, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 3, display: "flex", alignItems: "center", padding: "0 4px" }}>
-                    <span style={{ fontSize: 7, color: "#4ade80" }}>Audio</span>
+                  <div style={{ position: "absolute", left: 0, top: 4, width: duration * tlPxPerSec, height: 12, background: ttsUrl ? "rgba(124,106,255,0.15)" : "rgba(74,222,128,0.15)", border: `1px solid ${ttsUrl ? "rgba(124,106,255,0.3)" : "rgba(74,222,128,0.3)"}`, borderRadius: 3, display: "flex", alignItems: "center", padding: "0 4px" }}>
+                    <span style={{ fontSize: 7, color: ttsUrl ? "#a78bfa" : "#4ade80" }}>{ttsUrl ? "TTS" : "Audio"}</span>
                   </div>
                 </div>
               )}
