@@ -22,124 +22,135 @@ function parseYoutubeUrl(url) {
   return null;
 }
 
-// ── 자료실 갤러리 컴포넌트 (내 자료 + Pixabay + Unsplash + Klipy) ──
+// ── 통합 자료실 (내 자료 + 무료사진 + 무료영상 + GIF 통합 검색) ──
 function ArchiveGallery({ onSelect }) {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("archive"); // archive | pixabay | unsplash | klipy
+  const [cat, setCat] = useState("photo"); // archive | photo | video | gif
+  const CATS = [["archive","내 자료"],["photo","무료사진"],["video","무료영상"],["gif","GIF"]];
 
-  // 자료실 이미지 로드
+  // 내 자료실 로드
   useEffect(() => {
-    if (tab !== "archive") return;
+    if (cat !== "archive") return;
     (async () => {
       setLoading(true);
       try {
         const { supabase } = await import("./storage");
-        const { data } = await supabase
-          .from("posts")
-          .select("id,title,images")
-          .eq("cat", "archive")
-          .not("images", "is", null)
-          .order("id", { ascending: false })
-          .limit(50);
+        const { data } = await supabase.from("posts").select("id,title,images").eq("cat", "archive").not("images", "is", null).order("id", { ascending: false }).limit(50);
         const imgs = [];
         (data || []).forEach(p => {
           const parsed = typeof p.images === "string" ? JSON.parse(p.images || "[]") : (p.images || []);
-          parsed.forEach(url => {
-            if (typeof url === "string" && url.startsWith("http")) imgs.push({ url, title: p.title });
-          });
+          parsed.forEach(url => { if (typeof url === "string" && url.startsWith("http")) imgs.push({ url, title: p.title, src: "내 자료" }); });
         });
         setItems(imgs);
-      } catch (e) { console.error("자료실 로드:", e); }
+      } catch (e) { console.error(e); }
       setLoading(false);
     })();
-  }, [tab]);
+  }, [cat]);
 
-  // 외부 소스 검색
-  const doSearch = async () => {
-    if (!search.trim()) return;
-    setLoading(true);
-    setItems([]);
+  // 통합 검색 (Pixabay + Unsplash + Klipy를 카테고리에 따라 합산)
+  const doSearch = async (query) => {
+    const q = (query || search).trim();
+    if (!q && cat !== "archive") { loadTrending(); return; }
+    if (!q) return;
+    setLoading(true); setItems([]);
+    const all = [];
     try {
-      if (tab === "unsplash") {
-        const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(search.trim())}&per_page=20&orientation=portrait`);
-        const d = await r.json();
-        if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small || img.urls?.regular, title: img.alt_description || "", src: "Unsplash" })));
-      } else if (tab === "pixabay") {
-        const r = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(search.trim())}&per_page=20&image_type=photo`);
-        const d = await r.json();
-        if (d.hits) setItems(d.hits.map(img => ({ url: img.webformatURL || img.previewURL, title: img.tags || "", src: "Pixabay" })));
-      } else if (tab === "klipy") {
-        const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(search.trim())}&limit=20`);
-        const d = await r.json();
-        const results = d.data || d.results || [];
-        setItems(results.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+      if (cat === "photo") {
+        // Pixabay 사진 + Unsplash 동시 검색
+        const [px, us] = await Promise.allSettled([
+          fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(q)}&per_page=12&image_type=photo`).then(r => r.json()),
+          fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(q)}&per_page=12&orientation=portrait`).then(r => r.json()),
+        ]);
+        if (px.status === "fulfilled" && px.value.hits) all.push(...px.value.hits.map(h => ({ url: h.webformatURL, title: h.tags || "", src: "Pixabay" })));
+        if (us.status === "fulfilled" && us.value.results) all.push(...us.value.results.map(h => ({ url: h.urls?.small, title: h.alt_description || "", src: "Unsplash" })));
+      } else if (cat === "video") {
+        // Pixabay 영상 + Pexels 영상
+        const [px, pe] = await Promise.allSettled([
+          fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(q)}&per_page=12&video=true`).then(r => r.json()),
+          fetch(`/api/proxy?action=pexels&path=videos/search&query=${encodeURIComponent(q)}&per_page=12`).then(r => r.json()),
+        ]);
+        if (px.status === "fulfilled" && px.value.hits) all.push(...px.value.hits.map(h => ({ url: h.videos?.tiny?.url || h.videos?.small?.url || `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`, title: h.tags || "", src: "Pixabay", thumb: `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`, isVideo: true, videoUrl: h.videos?.tiny?.url || h.videos?.small?.url })));
+        if (pe.status === "fulfilled" && pe.value.videos) all.push(...pe.value.videos.map(v => ({ url: v.image || v.video_pictures?.[0]?.picture, title: v.url || "", src: "Pexels", isVideo: true, videoUrl: v.video_files?.find(f => f.quality === "sd")?.link || v.video_files?.[0]?.link })));
+      } else if (cat === "gif") {
+        // Klipy GIF
+        const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(q)}&limit=24`).then(r => r.json());
+        const data = r.data || r.results || [];
+        all.push(...data.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+      } else if (cat === "archive") {
+        setItems(prev => prev.filter(it => it.title?.toLowerCase().includes(q.toLowerCase())));
+        setLoading(false); return;
       }
-    } catch (e) { console.error("검색 실패:", e); }
+    } catch (e) { console.error(e); }
+    setItems(all);
     setLoading(false);
   };
 
-  // 트렌딩 로드 (탭 전환 시)
-  useEffect(() => {
-    if (tab === "archive") return;
-    (async () => {
-      setLoading(true);
-      setItems([]);
-      try {
-        if (tab === "pixabay") {
-          const r = await fetch(`/api/proxy?action=pixabay&q=nature&per_page=12&image_type=photo&editors_choice=true`);
-          const d = await r.json();
-          if (d.hits) setItems(d.hits.map(img => ({ url: img.webformatURL, title: img.tags || "", src: "Pixabay" })));
-        } else if (tab === "unsplash") {
-          const r = await fetch(`/api/proxy?action=unsplash&query=trending&per_page=12&orientation=portrait`);
-          const d = await r.json();
-          if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small, title: img.alt_description || "", src: "Unsplash" })));
-        } else if (tab === "klipy") {
-          const r = await fetch(`/api/proxy?action=klipy&path=gifs/trending&limit=12`);
-          const d = await r.json();
-          const results = d.data || d.results || [];
-          setItems(results.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
-        }
-      } catch {}
-      setLoading(false);
-    })();
-  }, [tab]);
+  // 트렌딩 로드 (카테고리 전환 시)
+  const loadTrending = async () => {
+    if (cat === "archive") return;
+    setLoading(true); setItems([]);
+    const all = [];
+    try {
+      if (cat === "photo") {
+        const [px, us] = await Promise.allSettled([
+          fetch(`/api/proxy?action=pixabay&q=background&per_page=9&image_type=photo&editors_choice=true`).then(r => r.json()),
+          fetch(`/api/proxy?action=unsplash&query=abstract&per_page=9&orientation=portrait`).then(r => r.json()),
+        ]);
+        if (px.status === "fulfilled" && px.value.hits) all.push(...px.value.hits.map(h => ({ url: h.webformatURL, title: h.tags || "", src: "Pixabay" })));
+        if (us.status === "fulfilled" && us.value.results) all.push(...us.value.results.map(h => ({ url: h.urls?.small, title: h.alt_description || "", src: "Unsplash" })));
+      } else if (cat === "video") {
+        const px = await fetch(`/api/proxy?action=pixabay&q=nature&per_page=12&video=true`).then(r => r.json()).catch(() => ({}));
+        if (px.hits) all.push(...px.hits.map(h => ({ url: `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`, title: h.tags || "", src: "Pixabay", isVideo: true, videoUrl: h.videos?.tiny?.url })));
+      } else if (cat === "gif") {
+        const r = await fetch(`/api/proxy?action=klipy&path=gifs/trending&limit=18`).then(r => r.json()).catch(() => ({}));
+        const data = r.data || r.results || [];
+        all.push(...data.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+      }
+    } catch {}
+    setItems(all);
+    setLoading(false);
+  };
 
-  const filteredItems = tab === "archive" && search ? items.filter(it => it.title?.toLowerCase().includes(search.toLowerCase())) : items;
-  const TABS = [["archive","내 자료"],["pixabay","Pixabay"],["unsplash","Unsplash"],["klipy","Klipy"]];
+  useEffect(() => { if (cat !== "archive") loadTrending(); }, [cat]);
+
+  const filteredItems = cat === "archive" && search ? items.filter(it => it.title?.toLowerCase().includes(search.toLowerCase())) : items;
 
   return (
     <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>자료실</div>
-      <div style={{ display: "flex", gap: 2, marginBottom: 8, flexWrap: "wrap" }}>
-        {TABS.map(([k,l]) => (
-          <button key={k} onClick={() => { setTab(k); setSearch(""); }}
-            style={{ padding: "3px 8px", borderRadius: 4, border: "none", background: tab === k ? "#7c6aff20" : "transparent", color: tab === k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+      {/* 카테고리 탭 */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
+        {CATS.map(([k,l]) => (
+          <button key={k} onClick={() => { setCat(k); setSearch(""); }}
+            style={{ flex: 1, padding: "5px 4px", border: "none", background: cat === k ? "#7c6aff" : "#12122a", color: cat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700, transition: "all .15s" }}>{l}</button>
         ))}
       </div>
+      {/* 검색창 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
         <input value={search} onChange={e => setSearch(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && tab !== "archive" && doSearch()}
-          placeholder={tab === "archive" ? "자료실 필터..." : tab === "klipy" ? "GIF/스티커 검색..." : "이미지 검색 (영어 추천)"}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
+          placeholder={cat === "archive" ? "자료실 필터..." : cat === "gif" ? "GIF 검색 (영어 추천)" : cat === "video" ? "영상 검색 (영어 추천)" : "사진 검색 (영어 추천)"}
           style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-        {tab !== "archive" && <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
+        {cat !== "archive" && <button onClick={() => doSearch()} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
       </div>
       {loading ? (
         <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>로딩 중...</div>
       ) : filteredItems.length === 0 ? (
         <div style={{ textAlign: "center", padding: 16, color: "#555", fontSize: 11 }}>
-          {tab === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하고 Enter"}
+          {cat === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하고 Enter"}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 240, overflowY: "auto", padding: 2 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 260, overflowY: "auto", padding: 2 }}>
           {filteredItems.slice(0, 30).map((it, i) => (
-            <div key={i} onClick={() => onSelect(it.url)}
+            <div key={i} onClick={() => onSelect(it.videoUrl || it.url)}
               style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", width: "100%", height: 70, position: "relative", background: "#12122a" }}
-              title={it.title}>
+              title={`[${it.src}] ${it.title}`}>
               <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "6px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {it.src && <span style={{ color: "#7c6aff", marginRight: 3, fontSize: 7 }}>{it.src}</span>}
+              {it.isVideo && <div style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", borderRadius: 3, padding: "1px 4px", fontSize: 8, color: "#4ade80", fontWeight: 700 }}>VIDEO</div>}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.85))", padding: "8px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ color: cat === "gif" ? "#ec4899" : cat === "video" ? "#4ade80" : "#7c6aff", marginRight: 3, fontSize: 7 }}>{it.src}</span>
                 {it.title}
               </div>
             </div>
@@ -1588,21 +1599,22 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
                 const lo = Math.min(startPh, endPh), hi = Math.max(startPh, endPh);
                 if (hi - lo < 0.3) { setRangeSelecting(null); return; }
-                // 범위 내 모든 요소 선택: 세그먼트(V1)
+                // 범위 내 모든 요소 선택: 세그먼트(V1) — 겹치면 선택
                 let accSeg = 0;
                 for (let si = 0; si < videoSegs.length; si++) {
                   const segLen = videoSegs[si].end - videoSegs[si].start;
-                  if (accSeg >= lo && accSeg + segLen <= hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
+                  const segStart = accSeg, segEnd = accSeg + segLen;
+                  if (segEnd > lo && segStart < hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
                   accSeg += segLen;
                 }
-                // 범위 내 자막(S1)
+                // 범위와 겹치는 자막(S1) — 범위와 조금이라도 겹치면 선택
                 const subIdx = (curClip.subtitles || []).findIndex(s => {
                   const rs = s.start - clipStart, re = (s.end || s.start + 3) - clipStart;
-                  return rs >= lo && re <= hi;
+                  return re > lo && rs < hi; // 겹침 판정 (완전포함이 아닌 overlap)
                 });
                 if (subIdx >= 0) setSelectedSubIdx(subIdx);
-                // 범위 내 오버레이
-                const olHit = overlays.find(o => o.start >= lo && o.end <= hi);
+                // 범위와 겹치는 오버레이
+                const olHit = overlays.find(o => o.end > lo && o.start < hi);
                 if (olHit) { setSelectedOverlay(olHit.id); setPropTab("overlay"); }
                 setRangeSelecting(null);
               };
