@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Player } from "@remotion/player";
 import { AbsoluteFill, Img, Audio, Sequence, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 
+const SHORTS_API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
+
 // ════════════════════════════════════════
 // Remotion 컴포지션
 // ════════════════════════════════════════
@@ -148,36 +150,48 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
     let fullText = prompt;
     let captionData = [];
 
-    // 음성 파일이 있으면 Whisper로 분석
+    // 음성 파일이 있으면 shorts-factory 서버로 업로드 + 분석 (ShortsCreator와 동일 방식)
     if (audioFile) {
-      setLoadingMsg("음성을 인식하고 있어요..."); setStep("analyzing");
+      setLoadingMsg("음성 파일 업로드 중..."); setStep("analyzing");
       try {
-        const form = new FormData();
-        form.append("file", audioFile);
-        form.append("language", "ko");
-        const res = await fetch("/api/whisper", { method: "POST", body: form });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `HTTP ${res.status}`); }
-        const data = await res.json();
-        const segments = data.segments || [];
-        fullText = data.text || segments.map(s => s.text).join(" ");
+        // 1) 파일 업로드
+        const uploadForm = new FormData();
+        uploadForm.append("video", audioFile); // shorts-factory는 "video" 필드명 사용
+        const uploadRes = await fetch(`${SHORTS_API}/upload`, { method: "POST", body: uploadForm });
+        if (!uploadRes.ok) throw new Error("서버 업로드 실패");
+        const uploadData = await uploadRes.json();
+        const fileId = uploadData.file_id;
+
+        // 2) AI 분석 (음성인식 + 세그먼트 추출)
+        setLoadingMsg("AI가 음성을 인식하고 있어요...");
+        const analyzeRes = await fetch(`${SHORTS_API}/analyze/${fileId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ max_chars: 0 }),
+          signal: AbortSignal.timeout(180000),
+        });
+        if (!analyzeRes.ok) throw new Error("분석 실패");
+        const analyzeData = await analyzeRes.json();
+
+        // 분석 결과에서 텍스트 + 자막 추출
+        const segments = analyzeData.segments || [];
+        fullText = segments.map(s => s.script || s.title || "").join("\n");
+        if (!fullText.trim() && analyzeData.transcript) fullText = analyzeData.transcript;
         setTranscript(fullText);
 
-        // 세그먼트 → 캡션 변환 (무음 구간 제거)
-        captionData = segments
-          .filter(s => s.text && s.text.trim().length > 0) // 빈 텍스트 제거
-          .filter(s => {
-            // 무음/쉬는 구간: 이전 세그먼트와 1.5초 이상 갭이면 앞 구간만 사용
-            return s.end - s.start > 0.3; // 0.3초 미만 너무 짧은 구간 제거
-          })
-          .map(s => ({
-            text: s.text.trim(),
-            startMs: Math.round(s.start * 1000),
-            endMs: Math.round(s.end * 1000),
-          }));
+        // 각 세그먼트의 자막 합산
+        for (const seg of segments) {
+          if (seg.subtitles) {
+            captionData.push(...seg.subtitles
+              .filter(s => s.text && s.text.trim().length > 0 && (s.end - s.start) > 0.3)
+              .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }))
+            );
+          }
+        }
         setCaptions(captionData);
 
         if (!fullText.trim()) { setError("음성에서 텍스트를 인식하지 못했습니다"); setStep("input"); setLoading(false); return; }
-        if (!prompt.trim()) setPrompt(fullText.slice(0, 200));
+        if (!prompt.trim()) setPrompt(fullText.slice(0, 300));
       } catch (e) {
         setError("음성 분석 실패: " + e.message);
         setStep("input"); setLoading(false); return;
