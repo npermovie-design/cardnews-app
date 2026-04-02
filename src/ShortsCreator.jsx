@@ -100,6 +100,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [dragging, setDragging] = useState(null); // 'title' | 'caption' | overlay id | null
   // 속성 패널 탭
   const [propTab, setPropTab] = useState("style"); // style | overlay
+  // 레이아웃 모드: full(전체화면) | bars(검은바+중앙영상)
+  const [layoutMode, setLayoutMode] = useState("bars");
+  // 스냅 가이드 표시
+  const [snapGuide, setSnapGuide] = useState(null); // { axis: 'x'|'y', pos: number }
 
   const fileRef = useRef(null);
   const timerRef = useRef(null);
@@ -168,25 +172,33 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return () => v.removeEventListener("timeupdate", onTime);
   }, [isPlaying, editIdx]);
 
-  // 드래그 핸들러 (자막/제목 위치)
+  // 드래그 핸들러 (자막/제목 위치) + 스냅 가이드
+  const SNAP_THRESHOLD = 4; // px 기준 스냅 범위
+  const SNAP_POINTS = { x: [10, 25, 50, 75, 90], y: [8, 15, 25, 50, 75, 85, 92] }; // %
   const handlePreviewMouseDown = (target, e) => {
     e.preventDefault();
     setDragging(target);
     const rect = previewRef.current?.getBoundingClientRect();
     if (!rect) return;
     const onMove = (ev) => {
-      const cx = ((ev.clientX - rect.left) / rect.width) * 100;
-      const cy = ((ev.clientY - rect.top) / rect.height) * 100;
-      const x = Math.max(5, Math.min(95, cx));
-      const y = Math.max(3, Math.min(97, cy));
+      let cx = ((ev.clientX - rect.left) / rect.width) * 100;
+      let cy = ((ev.clientY - rect.top) / rect.height) * 100;
+      let x = Math.max(5, Math.min(95, cx));
+      let y = Math.max(3, Math.min(97, cy));
+      // 스냅
+      let guide = null;
+      for (const sp of SNAP_POINTS.x) {
+        if (Math.abs(x - sp) < SNAP_THRESHOLD) { x = sp; guide = { axis: "x", pos: sp }; break; }
+      }
+      for (const sp of SNAP_POINTS.y) {
+        if (Math.abs(y - sp) < SNAP_THRESHOLD) { y = sp; guide = guide ? { ...guide, y: sp, axis: "both" } : { axis: "y", pos: sp }; break; }
+      }
+      setSnapGuide(guide);
       if (target === "title") setTitlePos({ x, y });
       else if (target === "caption") setCaptionPos({ x, y });
-      else {
-        // 오버레이 드래그
-        setOverlays(prev => prev.map(o => o.id === target ? { ...o, x, y } : o));
-      }
+      else setOverlays(prev => prev.map(o => o.id === target ? { ...o, x, y } : o));
     };
-    const onUp = () => { setDragging(null); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    const onUp = () => { setDragging(null); setSnapGuide(null); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
@@ -720,35 +732,71 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </div>
         </div>
 
-        {/* CENTER: Preview (실제 영상 + 드래그 가능 오버레이) */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 16, minWidth: 0 }}>
+        {/* CENTER: Preview (검은바 레이아웃 + 드래그 가능 오버레이) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0 }}>
+          {/* 레이아웃 전환 */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+            {[["bars","검은바"],["full","전체화면"]].map(([k,l]) => (
+              <button key={k} onClick={() => setLayoutMode(k)}
+                style={{ padding: "4px 12px", borderRadius: 6, border: layoutMode===k ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: layoutMode===k ? "rgba(124,106,255,0.15)" : "#1a1a30", color: layoutMode===k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+            ))}
+          </div>
+
           {/* 9:16 프리뷰 (대형) */}
-          <div ref={previewRef} style={{ width: 360, height: 640, borderRadius: 12, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
-            {/* 실제 비디오 (단일 ref) */}
-            <video ref={videoRef} src={sourceUrl || undefined}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
-              preload="auto" playsInline />
-            {!sourceUrl && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(128,128,128,0.1)" }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+          <div ref={previewRef} style={{ width: 360, height: 640, borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
+
+            {layoutMode === "bars" ? (<>
+              {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
+              {/* 상단 검은바 (제목) */}
+              <div onMouseDown={e => handlePreviewMouseDown("title", e)}
+                style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent" }}>
+                <span style={{ fontSize: Math.min(fontSize + 4, 22), fontWeight: 900, color: titleColor, textAlign: "center", lineHeight: 1.3, textShadow: "0 2px 8px rgba(0,0,0,0.5)", maxWidth: "90%", wordBreak: "keep-all" }}>{curClip.title || "제목을 입력하세요"}</span>
               </div>
-            )}
 
-            {/* 제목 오버레이 (드래그 가능) */}
-            <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-              style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", transition: dragging === "title" ? "none" : "border 0.15s", maxWidth: "85%", textAlign: "center" }}>
-              <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>{curClip.title || "제목"}</span>
-            </div>
+              {/* 중앙 영상 */}
+              <div style={{ position: "absolute", top: "22%", left: 0, right: 0, bottom: "22%", overflow: "hidden" }}>
+                <video ref={videoRef} src={sourceUrl || undefined}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
+                  preload="metadata" playsInline />
+                {!sourceUrl && (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(40,40,60,0.5)" }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.3"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+                  </div>
+                )}
+              </div>
 
-            {/* 자막 오버레이 (드래그 가능) */}
-            <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-              style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", transition: dragging === "caption" ? "none" : "border 0.15s", maxWidth: "90%", textAlign: "center" }}>
-              <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4, textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
-                {currentSub ? currentSub.text : (curClip.subtitle_text || "자막")}
-              </span>
-            </div>
+              {/* 하단 검은바 (자막) */}
+              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+                style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent" }}>
+                <span style={{ fontSize: Math.min(fontSize + 2, 18), color: captionColor, fontWeight: 700, textAlign: "center", lineHeight: 1.4, textShadow: "0 1px 6px rgba(0,0,0,0.5)", maxWidth: "90%", wordBreak: "keep-all" }}>
+                  {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
+                </span>
+              </div>
+            </>) : (<>
+              {/* 전체화면 레이아웃 */}
+              <video ref={videoRef} src={sourceUrl || undefined}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
+                preload="metadata" playsInline />
+              {!sourceUrl && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(40,40,60,0.3)" }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+                </div>
+              )}
+              {/* 제목 (드래그 가능) */}
+              <div onMouseDown={e => handlePreviewMouseDown("title", e)}
+                style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", maxWidth: "85%", textAlign: "center" }}>
+                <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3 }}>{curClip.title || "제목"}</span>
+              </div>
+              {/* 자막 (드래그 가능) */}
+              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+                style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", maxWidth: "90%", textAlign: "center" }}>
+                <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4 }}>
+                  {currentSub ? currentSub.text : (curClip.subtitle_text || "자막")}
+                </span>
+              </div>
+            </>)}
 
-            {/* 이미지/로고/텍스트 오버레이 */}
+            {/* 이미지/로고/텍스트 오버레이 (공통) */}
             {visibleOverlays.map(o => (
               <div key={o.id} onMouseDown={e => handlePreviewMouseDown(o.id, e)}
                 onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); }}
@@ -761,17 +809,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </div>
             ))}
 
+            {/* 스냅 가이드라인 */}
+            {snapGuide && (<>
+              {(snapGuide.axis === "x" || snapGuide.axis === "both") && <div style={{ position: "absolute", left: `${snapGuide.pos || 50}%`, top: 0, width: 1, height: "100%", background: "#7c6aff80", zIndex: 30, pointerEvents: "none" }} />}
+              {(snapGuide.axis === "y" || snapGuide.axis === "both") && <div style={{ position: "absolute", top: `${snapGuide.y || snapGuide.pos}%`, left: 0, width: "100%", height: 1, background: "#7c6aff80", zIndex: 30, pointerEvents: "none" }} />}
+            </>)}
+
             {/* 시간 표시 */}
-            <div style={{ position: "absolute", top: 8, right: 10, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{fmt(playhead)} / {fmt(clipDuration)}</div>
+            <div style={{ position: "absolute", top: 8, right: 10, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4, zIndex: 20 }}>{fmt(playhead)} / {fmt(clipDuration)}</div>
           </div>
 
           {/* 재생 컨트롤 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
-            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
-            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 16px rgba(124,106,255,0.4)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(124,106,255,0.4)" }}>
               {isPlaying ? "⏸" : "▶"}
             </button>
-            <button onClick={() => { setPlayhead(clipDuration); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
+            <button onClick={() => { setPlayhead(clipDuration); setIsPlaying(false); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
           </div>
         </div>
 
