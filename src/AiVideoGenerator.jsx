@@ -95,27 +95,34 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const acc = "#7c6aff";
 
-  // step: input → analyzing → suggest → editing
+  // step: input → analyzing → editing
   const [step, setStep] = useState("input");
-  const [prompt, setPrompt] = useState("");
+  const [inputMode, setInputMode] = useState("script"); // script | audio
+  const [prompt, setPrompt] = useState(""); // 대본 텍스트
   const [duration, setDuration] = useState(30);
   const [sizeId, setSizeId] = useState("9:16");
-  const [styleId, setStyleId] = useState("cinematic");
+  const [styleId, setStyleId] = useState("motion");
   const [audioFile, setAudioFile] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [ttsUrl, setTtsUrl] = useState(null); // TTS 생성된 음성 URL
   const [scenes, setScenes] = useState([]);
-  const [captions, setCaptions] = useState([]); // {text, startMs, endMs}
+  const [captions, setCaptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
   const [editingScene, setEditingScene] = useState(0);
-  const [suggestions, setSuggestions] = useState([]); // AI 스타일 제안
   const [transcript, setTranscript] = useState("");
+  // 에디터 상태 (ShortsCreator 동일)
+  const [playhead, setPlayhead] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedSubIdx, setSelectedSubIdx] = useState(-1);
+  const [volume, setVolume] = useState(100);
   // 패널
-  const [propTab, setPropTab] = useState("scene"); // scene | style | caption
+  const [propTab, setPropTab] = useState("scene");
   const [leftW, setLeftW] = useState(200);
   const [rightW, setRightW] = useState(280);
-  const [bottomH, setBottomH] = useState(140);
+  const [bottomH, setBottomH] = useState(160);
 
   const audioInputRef = useRef(null);
   const playerRef = useRef(null);
@@ -277,15 +284,70 @@ JSON 형식: {"scenes":[...]}`
 
   const pxPerSec = 16;
 
-  // ════════ Step: 입력 ════════
+  // ════════ Step: 입력 (대본/음성 탭) ════════
   if (step === "input") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
       <div style={{ textAlign: "center", padding: "32px 20px 0" }}>
         <div style={{ fontSize: 22, fontWeight: 900, color: text }}>AI 영상 생성</div>
-        <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>프롬프트 또는 음성 파일로 AI가 영상을 자동 생성합니다</div>
+        <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>대본이나 음성을 넣으면 AI가 자동으로 영상을 구성합니다</div>
       </div>
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 20px 60px" }}>
-        {/* 영상 사이즈 */}
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
+        {/* 입력 모드 탭 */}
+        <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 20, border: `1px solid ${bdr}` }}>
+          {[["script","대본 입력"],["audio","음성 파일"]].map(([k,l]) => (
+            <button key={k} onClick={() => setInputMode(k)} style={{ flex: 1, padding: 12, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, background: inputMode === k ? `linear-gradient(135deg,${acc},#8b5cf6)` : "transparent", color: inputMode === k ? "#fff" : muted }}>{l}</button>
+          ))}
+        </div>
+
+        {inputMode === "script" ? (<>
+          {/* 대본 입력 */}
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 8 }}>대본 / 스크립트 *</div>
+            <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={8}
+              placeholder={"대본을 붙여넣거나 직접 작성하세요.\n\nAI가 대본을 분석해서 씬별로 분할하고\n각 씬에 어울리는 이미지를 자동 매칭합니다.\n\n예시:\n안녕하세요, 오늘은 AI로 영상 만드는 방법입니다.\n첫 번째, 대본을 준비합니다.\n두 번째, 스타일을 선택합니다..."}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7, fontFamily: "inherit", minHeight: 160 }} />
+          </div>
+          {/* TTS */}
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input type="checkbox" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} style={{ accentColor: acc, width: 18, height: 18 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: text }}>AI 음성 (TTS) 나레이션</div>
+                <div style={{ fontSize: 11, color: muted }}>대본을 AI가 읽어주는 음성을 자동 생성합니다</div>
+              </div>
+            </label>
+          </div>
+        </>) : (<>
+          {/* 음성 파일 */}
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 8 }}>음성/나레이션 파일 *</div>
+            <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>AI가 음성을 분석하여 씬과 자막을 자동 생성합니다. 무음 구간은 자동 제외됩니다.</div>
+            {audioFile ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, background: `${acc}08`, border: `1px solid ${acc}25` }}>
+                <span style={{ fontSize: 18 }}>🎵</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: acc }}>{audioFile.name}</div>
+                  <div style={{ fontSize: 11, color: muted }}>{(audioFile.size / 1024 / 1024).toFixed(1)}MB · {duration}초</div>
+                </div>
+                <button onClick={() => { setAudioFile(null); setAudioUrl(null); setDuration(30); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 16 }}>✕</button>
+              </div>
+            ) : (
+              <div onClick={() => audioInputRef.current?.click()} style={{ padding: "36px 20px", borderRadius: 12, border: `2px dashed ${bdr}`, cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>🎤</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: text }}>음성 파일 선택</div>
+                <div style={{ fontSize: 11, color: muted, marginTop: 3 }}>MP3, WAV, M4A (최대 50MB)</div>
+              </div>
+            )}
+            <input ref={audioInputRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) setAudioFile(e.target.files[0]); e.target.value = ""; }} />
+          </div>
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>추가 지시사항 <span style={{ fontSize: 10, color: muted, fontWeight: 400 }}>(선택)</span></div>
+            <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={2} placeholder="예: 밝은 분위기로, 자연 이미지 위주로"
+              style={{ ...inputStyle, resize: "none", lineHeight: 1.5, fontFamily: "inherit" }} />
+          </div>
+        </>)}
+
+        {/* 영상 사이즈 + 길이 + 스타일 */}
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 10 }}>영상 사이즈</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
@@ -300,67 +362,49 @@ JSON 형식: {"scenes":[...]}`
           </div>
         </div>
 
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>영상 사이즈</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {SIZES.map(s => (
+                <button key={s.id} onClick={() => setSizeId(s.id)} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: `1.5px solid ${sizeId === s.id ? acc : bdr}`, background: sizeId === s.id ? `${acc}12` : "transparent", cursor: "pointer", textAlign: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: sizeId === s.id ? acc : text }}>{s.label}</div>
+                  <div style={{ fontSize: 9, color: muted }}>{s.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          {!audioFile && (
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>영상 길이</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[15, 30, 60, 90].map(d => (
+                  <button key={d} onClick={() => setDuration(d)} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: `1.5px solid ${duration === d ? acc : bdr}`, background: duration === d ? `${acc}12` : "transparent", color: duration === d ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{d}s</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* 영상 스타일 */}
-        <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 10 }}>영상 스타일 *</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+        <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 10 }}>영상 디자인 스타일</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
             {VIDEO_STYLES.map(s => (
-              <button key={s.id} onClick={() => setStyleId(s.id)}
-                style={{ padding: "14px 8px", borderRadius: 12, border: `2px solid ${styleId === s.id ? acc : bdr}`, background: styleId === s.id ? `${acc}10` : "transparent", cursor: "pointer", textAlign: "center", transition: "all .15s" }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: styleId === s.id ? acc : text }}>{s.name}</div>
-                <div style={{ fontSize: 10, color: muted, marginTop: 3 }}>{s.desc}</div>
+              <button key={s.id} onClick={() => setStyleId(s.id)} style={{ padding: "10px 6px", borderRadius: 10, border: `2px solid ${styleId === s.id ? acc : bdr}`, background: styleId === s.id ? `${acc}10` : "transparent", cursor: "pointer", textAlign: "center" }}>
+                <span style={{ fontSize: 20 }}>{s.icon}</span>
+                <div style={{ fontSize: 11, fontWeight: 700, color: styleId === s.id ? acc : text, marginTop: 4 }}>{s.name}</div>
+                <div style={{ fontSize: 9, color: muted }}>{s.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 음성 파일 */}
-        <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 8 }}>음성/나레이션 파일 <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>(선택)</span></div>
-          <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>음성을 AI가 분석하여 내용에 맞는 씬과 자막을 자동 생성합니다</div>
-          {audioFile ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: `${acc}08`, border: `1px solid ${acc}25` }}>
-              <span style={{ fontSize: 16 }}>🎵</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: acc }}>{audioFile.name}</div>
-                <div style={{ fontSize: 11, color: muted }}>{(audioFile.size / 1024 / 1024).toFixed(1)}MB · {duration}초</div>
-              </div>
-              <button onClick={() => { setAudioFile(null); setAudioUrl(null); setDuration(30); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 14 }}>✕</button>
-            </div>
-          ) : (
-            <button onClick={() => audioInputRef.current?.click()} style={{ padding: "14px", borderRadius: 10, border: `2px dashed ${bdr}`, background: "transparent", color: muted, cursor: "pointer", fontSize: 12, width: "100%", fontWeight: 600 }}>
-              🎤 음성 파일 선택 (MP3, WAV, M4A)
-            </button>
-          )}
-          <input ref={audioInputRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) setAudioFile(e.target.files[0]); e.target.value = ""; }} />
-        </div>
-
-        {/* 프롬프트 */}
-        <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 8 }}>영상 주제 {!audioFile && <span style={{ color: "#f87171" }}>*</span>}</div>
-          <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} placeholder={audioFile ? "음성 내용 외 추가 지시사항 (선택)" : "영상 주제를 입력하세요"}
-            style={{ ...inputStyle, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} />
-        </div>
-
-        {/* 영상 길이 */}
-        {!audioFile && (
-          <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 10 }}>영상 길이</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-              {[15, 30, 60, 90].map(d => (
-                <button key={d} onClick={() => setDuration(d)}
-                  style={{ padding: "10px", borderRadius: 10, border: `1.5px solid ${duration === d ? acc : bdr}`, background: duration === d ? `${acc}15` : "transparent", color: duration === d ? acc : muted, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{d}초</button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {error && <div style={{ marginBottom: 12, padding: 12, borderRadius: 10, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 12 }}>{error}</div>}
 
         <button onClick={startGeneration} disabled={loading}
           style={{ width: "100%", padding: 14, borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", opacity: loading ? 0.6 : 1 }}>
-          {audioFile ? "음성 분석 + 영상 생성" : "AI 영상 생성하기"} <span style={{ opacity: 0.7, fontSize: 12 }}>(50P)</span>
+          {inputMode === "audio" && audioFile ? "음성 분석 + 영상 생성" : ttsEnabled ? "AI 영상 + TTS 생성" : "AI 영상 생성하기"} <span style={{ opacity: 0.7, fontSize: 12 }}>(50P)</span>
         </button>
       </div>
     </div>
@@ -369,15 +413,22 @@ JSON 형식: {"scenes":[...]}`
   // ════════ Step: 분석 중 ════════
   if (step === "analyzing") return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ textAlign: "center", maxWidth: 400 }}>
-        <div style={{ width: 80, height: 80, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite", margin: "0 auto 20px" }} />
-        <div style={{ fontSize: 18, fontWeight: 800, color: text, marginBottom: 8 }}>{loadingMsg}</div>
-        {transcript && <div style={{ fontSize: 11, color: muted, marginTop: 12, padding: "10px 14px", borderRadius: 8, background: `${acc}08`, maxHeight: 100, overflow: "auto", textAlign: "left", lineHeight: 1.6 }}>인식된 텍스트: {transcript.slice(0, 200)}...</div>}
+      <style>{`@keyframes iconBounce2{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
+      <div style={{ textAlign: "center", maxWidth: 420 }}>
+        <div style={{ position: "relative", width: 90, height: 90, margin: "0 auto 20px" }}>
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, animation: "spin 1.5s linear infinite" }} />
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: "iconBounce2 2s ease-in-out infinite" }}><rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill={acc}/></svg>
+          </div>
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 8 }}>{loadingMsg || "AI가 영상을 구성하고 있어요"}</div>
+        <div style={{ fontSize: 13, color: muted }}>대본을 분석하고 씬을 배치하는 중...</div>
+        {transcript && <div style={{ fontSize: 11, color: muted, marginTop: 14, padding: "10px 14px", borderRadius: 8, background: `${acc}06`, maxHeight: 80, overflow: "auto", textAlign: "left", lineHeight: 1.5 }}>{transcript.slice(0, 200)}...</div>}
       </div>
     </div>
   );
 
-  // ════════ Step: 스타일 제안 ════════
+  // suggest 단계 제거 (입력 단계에서 스타일 선택)
   if (step === "suggest") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "40px 20px 60px" }}>
