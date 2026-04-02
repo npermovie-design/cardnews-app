@@ -171,8 +171,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </h1>
           <p style={{ fontSize: "clamp(15px,2vw,20px)", color: C.muted, lineHeight: 1.8, maxWidth: 620, margin: "0 auto 20px" }}>
             {lang === "ko"
-              ? "주제만 입력하면 AI가 카드뉴스, 블로그, 상세페이지를 3분 만에 완성합니다"
-              : "Just enter a topic and AI completes card news, blogs, and detail pages in 3 minutes"}
+              ? "주제만 입력하면 AI가 블로그, 카드뉴스, 쇼츠 영상까지 3분 만에 완성합니다"
+              : "Just enter a topic — AI creates blogs, card news, and shorts videos in 3 minutes"}
           </p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
             {[
@@ -200,9 +200,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {/* 실시간 통계 카운트업 */}
           <div style={{ display: "flex", gap: "clamp(24px,5vw,52px)", justifyContent: "center", flexWrap: "wrap" }}>
             {[
-              { end: 20, suffix: p("statToolsSuffix"), label: p("statTools") },
+              { end: 25, suffix: "+", label: p("statTools") },
               { end: statsCount > 0 ? statsCount : 500, suffix: p("statContentsSuffix"), label: p("statContents") },
               { end: 3, suffix: p("statTimeSuffix"), label: p("statTime") },
+              { end: 60, suffix: lang === "ko" ? "초" : "s", label: lang === "ko" ? "쇼츠 영상 제작" : "Shorts creation" },
             ].map(({ end, suffix, label }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: "#7c6aff" }}>
@@ -264,6 +265,11 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 icon: "&#127912;",
                 title: lang === "ko" ? "전문가 수준의 이미지 필요" : "Need professional images",
                 quote: lang === "ko" ? "제품 사진, 로고, 목업을 직접 만들 수가 없어요" : "I can't create product photos, logos, or mockups myself",
+              },
+              {
+                icon: "🎬",
+                title: lang === "ko" ? "영상 제작은 너무 복잡해요" : "Video creation is too complex",
+                quote: lang === "ko" ? "촬영, 편집, 자막... 쇼츠 하나 만드는 데 반나절이 걸려요" : "Filming, editing, subtitles... making one short takes half a day",
               },
             ].map((pain, i) => (
               <FadeIn key={i} delay={i * 0.08}>

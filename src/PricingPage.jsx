@@ -101,6 +101,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     { q: p("faqQ2"), a: p("faqA2") },
     { q: p("faqQ3"), a: p("faqA3") },
     { q: p("faqQ4"), a: p("faqA4") },
+    { q: p("faqQ5"), a: p("faqA5") },
+    { q: p("faqQ6"), a: p("faqA6") },
+    { q: p("faqQ7"), a: p("faqA7") },
   ];
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
@@ -297,33 +300,57 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             })}
           </div>
 
-          {/* 플랜별 기능 비교 테이블 */}
-          <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", marginBottom: 32, overflowX: "auto" }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 20, textAlign: "center" }}>{p("compTitle")}</div>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+          {/* 플랜 비교 테이블 (SaaS-style detailed comparison) */}
+          <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", marginBottom: 32, overflowX: "auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 8 }}>
+              <span style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "4px 14px", fontSize: 11, color: "#7c6aff", fontWeight: 700, marginBottom: 10 }}>{p("compBadge")}</span>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 6, textAlign: "center" }}>{p("compTitle")}</div>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 24, textAlign: "center" }}>{p("compSubtitle")}</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, fontWeight: 700, color: C.muted, borderBottom: "1px solid " + C.border }}></th>
-                  {["Free", "Basic", "Pro", "Premium"].map(name => (
-                    <th key={name} style={{ textAlign: "center", padding: "10px 8px", fontSize: 13, fontWeight: 800, color: name === "Pro" ? "#7c6aff" : C.text, borderBottom: "1px solid " + C.border }}>{name}</th>
+                  <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 13, fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, width: "28%" }}>{p("compFeature")}</th>
+                  {[
+                    { name: "Free", color: "#888" },
+                    { name: "Basic", color: "#4ade80" },
+                    { name: "Pro", color: "#38bdf8" },
+                    { name: "Premium", color: "#f59e0b" },
+                  ].map(plan => (
+                    <th key={plan.name} style={{ textAlign: "center", padding: "14px 8px", fontSize: 13, fontWeight: 800, color: plan.color, borderBottom: "2px solid " + C.border, width: "18%", position: "relative" }}>
+                      {plan.name}
+                      {plan.name === "Pro" && <div style={{ position: "absolute", top: -2, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", padding: "1px 8px", borderRadius: 8, whiteSpace: "nowrap" }}>{p("recommend")}</div>}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { key: "compSnsWrite", vals: [true, true, true, true] },
-                  { key: "compCardNews", vals: [true, true, true, true] },
-                  { key: "compAiImage", vals: [true, true, true, true] },
-                  { key: "compAutoPublish", vals: [true, true, true, true] },
-                  { key: "compPrioritySupport", vals: [false, false, true, true] },
+                  { key: "compAiWrite", vals: ["5" + p("compUnitTimes"), "~100" + p("compUnitTimes"), "~350" + p("compUnitTimes"), "~950" + p("compUnitTimes")], types: ["num","num","num","num"] },
+                  { key: "compAiImage", vals: ["—", "~20" + p("compUnitTimes"), "~70" + p("compUnitTimes"), "~190" + p("compUnitTimes")], types: ["no","num","num","num"] },
+                  { key: "compVideoGen", vals: ["—", "—", "14" + p("compUnitTimes"), "47" + p("compUnitTimes")], types: ["no","no","num","num"] },
+                  { key: "compAutoPublish", vals: ["—", "—", "check", "check"], types: ["no","no","yes","yes"] },
+                  { key: "compCardNews", vals: ["check", "check", "check", "check"], types: ["yes","yes","yes","yes"] },
+                  { key: "compDetailPage", vals: ["check", "check", "check", "check"], types: ["yes","yes","yes","yes"] },
+                  { key: "compCommunity", vals: ["check", "check", "check", "check"], types: ["yes","yes","yes","yes"] },
+                  { key: "compSupport", vals: [p("compSupportComm"), p("compSupportEmail"), p("compSupportEmail"), p("compSupportPriority")], types: ["text","text","text","highlight"] },
                 ].map((row, i) => (
-                  <tr key={i} style={{ background: i % 2 === 0 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)") : "transparent" }}>
-                    <td style={{ padding: "12px", fontSize: 13, fontWeight: 600, color: C.text, borderBottom: "1px solid " + C.border }}>{p(row.key)}</td>
-                    {row.vals.map((v, j) => (
-                      <td key={j} style={{ textAlign: "center", padding: "12px 8px", fontSize: 16, borderBottom: "1px solid " + C.border, color: v ? "#22c55e" : (isDark ? "rgba(255,255,255,0.2)" : "#ccc") }}>
-                        {v ? "✓" : "✗"}
-                      </td>
-                    ))}
+                  <tr key={i} style={{ background: i % 2 === 0 ? (isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.018)") : "transparent", transition: "background 0.15s" }}>
+                    <td style={{ padding: "14px 12px", fontSize: 13, fontWeight: 600, color: C.text, borderBottom: "1px solid " + C.border }}>{p(row.key)}</td>
+                    {row.vals.map((v, j) => {
+                      const type = row.types[j];
+                      let content, color;
+                      if (type === "yes") { content = "✓"; color = "#22c55e"; }
+                      else if (type === "no") { content = v; color = isDark ? "rgba(255,255,255,0.2)" : "#bbb"; }
+                      else if (type === "num") { content = v; color = j === 2 ? "#7c6aff" : C.text; }
+                      else if (type === "highlight") { content = v; color = "#7c6aff"; }
+                      else { content = v; color = C.muted; }
+                      return (
+                        <td key={j} style={{ textAlign: "center", padding: "14px 8px", fontSize: type === "yes" || type === "no" ? 16 : 13, fontWeight: type === "num" || type === "highlight" ? 700 : 500, borderBottom: "1px solid " + C.border, color }}>
+                          {content}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

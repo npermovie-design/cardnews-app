@@ -35,8 +35,11 @@ export function AboutPage({ navigate, C }) {
       { icon: "OS", title: "의상 교체", desc: "AI로 의상을 다른 스타일로 교체" },
       { icon: "OP", title: "여백 채우기", desc: "이미지 여백을 AI가 자연스럽게 확장" },
     ]},
-    { cat: "영상 편집", items: [
+    { cat: "AI 영상 제작", items: [
       { icon: "SF", title: "숏폼 편집기", desc: "영상 파일로 숏폼 자동 편집·자막 추가" },
+      { icon: "SV", title: "AI 쇼츠 영상 제작", desc: "AI로 숏폼 영상 자동 생성" },
+      { icon: "ST", title: "AI 자막 생성", desc: "영상에 자막을 자동으로 생성·삽입" },
+      { icon: "TL", title: "타임라인 편집기", desc: "직관적인 타임라인 기반 영상 편집" },
     ]},
   ];
 
