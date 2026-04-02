@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Player } from "@remotion/player";
-import { AbsoluteFill, Img, Audio, Sequence, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, Img, Audio, Sequence, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 
 const SHORTS_API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
 // ════════════════════════════════════════
-// Remotion 컴포지션
+// Remotion 컴포지션 (스킬 기반 — spring, 스타일별 모션)
 // ════════════════════════════════════════
 function SceneComposition({ scenes, audioUrl, style, captions }) {
   const { fps, durationInFrames } = useVideoConfig();
@@ -16,52 +16,219 @@ function SceneComposition({ scenes, audioUrl, style, captions }) {
         const dur = Math.round(sc._durFrames || (durationInFrames / scenes.length));
         return (
           <Sequence key={i} from={from} durationInFrames={dur}>
-            <SceneSlide scene={sc} style={style} />
+            <SceneSlide scene={sc} style={style} sceneIndex={i} totalScenes={scenes.length} />
           </Sequence>
         );
       })}
-      {/* 자막 오버레이 */}
       {captions && captions.length > 0 && <CaptionOverlay captions={captions} style={style} />}
       {audioUrl && <Audio src={audioUrl} volume={1} />}
     </AbsoluteFill>
   );
 }
 
-function SceneSlide({ scene, style }) {
+// ── 스타일별 씬 슬라이드 (spring 애니메이션 + 고유 모션) ──
+function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const fadeIn = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
-  const scale = interpolate(frame, [0, durationInFrames], [1, 1.05], { extrapolateRight: "clamp" });
+  const { fps, durationInFrames } = useVideoConfig();
+  const styleId = style?.id || "cinematic";
+
+  // spring 기반 입장 애니메이션 (스킬: timing.md)
+  const enterSpring = spring({ frame, fps, config: { damping: 200 } }); // smooth, no bounce
+  const bounceSpring = spring({ frame, fps, config: { damping: 8 } }); // bouncy
+  const snappySpring = spring({ frame, fps, config: { damping: 20, stiffness: 200 } }); // snappy
+
+  // 퇴장 페이드아웃
+  const exitStart = Math.max(0, durationInFrames - 8);
+  const exitOpacity = interpolate(frame, [exitStart, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  // Ken Burns 효과 (이미지 줌/팬)
+  const kenBurnsScale = interpolate(frame, [0, durationInFrames], [1, 1.12], { extrapolateRight: "clamp" });
+  const kenBurnsPanX = interpolate(frame, [0, durationInFrames], [sceneIndex % 2 === 0 ? -2 : 2, sceneIndex % 2 === 0 ? 2 : -2], { extrapolateRight: "clamp" });
+
+  // 스타일별 배경 효과
+  const bgGradient = {
+    motion: "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,106,255,0.1))",
+    animation: "linear-gradient(135deg, rgba(255,107,157,0.15), rgba(255,238,173,0.1))",
+    realfilm: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.8))",
+    cinematic: "linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.85) 100%)",
+    minimal: "linear-gradient(180deg, rgba(255,255,255,0.1), rgba(0,0,0,0.05))",
+    bold: "linear-gradient(180deg, rgba(255,0,0,0.05), rgba(0,0,0,0.8))",
+  }[styleId] || "linear-gradient(transparent, rgba(0,0,0,0.6))";
+
+  // 스타일별 제목 모션
+  const titleMotion = {
+    motion: { // 좌측에서 슬라이드 인
+      transform: `translateX(${interpolate(enterSpring, [0, 1], [-80, 0])}px)`,
+      opacity: enterSpring,
+    },
+    animation: { // 바운스 스케일 인
+      transform: `scale(${interpolate(bounceSpring, [0, 1], [0.3, 1])})`,
+      opacity: bounceSpring,
+    },
+    realfilm: { // 페이드 업
+      transform: `translateY(${interpolate(enterSpring, [0, 1], [30, 0])}px)`,
+      opacity: enterSpring,
+    },
+    cinematic: { // 서서히 등장 + 글로우
+      opacity: interpolate(frame, [0, fps * 0.8], [0, 1], { extrapolateRight: "clamp" }),
+      textShadow: `0 0 ${interpolate(frame, [0, fps], [0, 30])}px rgba(255,215,0,0.4), 0 4px 20px rgba(0,0,0,0.9)`,
+    },
+    minimal: { // 스냅 페이드인
+      opacity: snappySpring,
+      transform: `translateY(${interpolate(snappySpring, [0, 1], [10, 0])}px)`,
+    },
+    bold: { // 줌인 + 쉐이크
+      transform: `scale(${interpolate(bounceSpring, [0, 1], [1.8, 1])})`,
+      opacity: bounceSpring,
+    },
+  }[styleId] || { opacity: enterSpring };
+
+  // 스타일별 서브텍스트 모션 (제목보다 늦게)
+  const delayedSpring = spring({ frame, fps, delay: 8, config: { damping: 200 } });
+  const textMotion = {
+    opacity: delayedSpring,
+    transform: `translateY(${interpolate(delayedSpring, [0, 1], [15, 0])}px)`,
+  };
+
+  // 스타일별 제목 위치
+  const titlePosition = {
+    motion: { top: "15%", left: "8%", right: "8%", textAlign: "left" },
+    animation: { top: "50%", left: "8%", right: "8%", transform: "translateY(-50%)", textAlign: "center" },
+    realfilm: { bottom: "25%", left: "8%", right: "8%", textAlign: "left" },
+    cinematic: { bottom: "20%", left: "8%", right: "8%", textAlign: "center" },
+    minimal: { top: "50%", left: "10%", right: "10%", transform: "translateY(-50%)", textAlign: "center" },
+    bold: { top: "50%", left: "5%", right: "5%", transform: "translateY(-50%)", textAlign: "center" },
+  }[styleId] || { bottom: "20%", left: "8%", right: "8%" };
+
   return (
-    <AbsoluteFill style={{ opacity: fadeIn }}>
+    <AbsoluteFill style={{ opacity: exitOpacity }}>
+      {/* 배경 이미지 (Ken Burns 효과) */}
       {scene.imageUrl ? (
         <AbsoluteFill>
-          <Img src={scene.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${scale})` }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 30%, rgba(0,0,0,0.75))" }} />
+          <Img src={scene.imageUrl} style={{
+            width: "100%", height: "100%", objectFit: "cover",
+            transform: `scale(${kenBurnsScale}) translateX(${kenBurnsPanX}%)`,
+          }} />
+          <div style={{ position: "absolute", inset: 0, background: bgGradient }} />
         </AbsoluteFill>
       ) : (
-        <AbsoluteFill style={{ background: scene.bgColor || style?.bg || "#1a1a2e" }} />
-      )}
-      {/* 씬 제목 */}
-      {scene.title && (
-        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8%" }}>
-          <div style={{ fontSize: style?.titleSize || 42, fontWeight: 900, color: style?.titleColor || "#fff", textAlign: "center", lineHeight: 1.2, textShadow: "0 4px 20px rgba(0,0,0,0.9)", wordBreak: "keep-all" }}>{scene.title}</div>
+        <AbsoluteFill style={{ background: scene.bgColor || style?.bg || "#1a1a2e" }}>
+          {/* 모션그래픽 배경: 움직이는 그래디언트 */}
+          {styleId === "motion" && (
+            <div style={{
+              position: "absolute", inset: "-20%",
+              background: `radial-gradient(circle at ${30 + interpolate(frame, [0, durationInFrames], [0, 40])}% ${40 + interpolate(frame, [0, durationInFrames], [0, 20])}%, rgba(0,212,255,0.3), transparent 60%)`,
+            }} />
+          )}
+          {/* 애니메이션 배경: 떠다니는 원 */}
+          {styleId === "animation" && Array.from({ length: 5 }).map((_, j) => (
+            <div key={j} style={{
+              position: "absolute",
+              width: 60 + j * 30, height: 60 + j * 30, borderRadius: "50%",
+              background: `rgba(${255 - j * 40}, ${107 + j * 30}, ${157 + j * 20}, 0.12)`,
+              left: `${10 + j * 18}%`,
+              top: `${20 + Math.sin(frame / fps + j) * 15}%`,
+            }} />
+          ))}
         </AbsoluteFill>
+      )}
+
+      {/* 모션그래픽: 데코 라인 */}
+      {styleId === "motion" && (
+        <div style={{
+          position: "absolute", left: "8%", top: "12%",
+          width: interpolate(enterSpring, [0, 1], [0, 60]), height: 4,
+          background: style?.titleColor || "#00d4ff", borderRadius: 2,
+        }} />
+      )}
+
+      {/* 씬 번호 인디케이터 */}
+      {(styleId === "motion" || styleId === "realfilm") && (
+        <div style={{
+          position: "absolute", top: "8%", right: "8%",
+          fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)",
+          opacity: enterSpring,
+        }}>{String(sceneIndex + 1).padStart(2, "0")} / {String(totalScenes).padStart(2, "0")}</div>
+      )}
+
+      {/* 제목 */}
+      {scene.title && (
+        <div style={{ position: "absolute", ...titlePosition }}>
+          <div style={{
+            fontSize: style?.titleSize || 42, fontWeight: 900,
+            color: style?.titleColor || "#fff",
+            lineHeight: 1.15, wordBreak: "keep-all",
+            textShadow: styleId === "cinematic" ? undefined : "0 3px 16px rgba(0,0,0,0.8)",
+            letterSpacing: styleId === "bold" ? -2 : styleId === "minimal" ? -1 : 0,
+            ...titleMotion,
+          }}>{scene.title}</div>
+          {/* 서브텍스트 */}
+          {scene.text && (
+            <div style={{
+              fontSize: (style?.titleSize || 42) * 0.45,
+              fontWeight: 500, color: style?.textColor || "rgba(255,255,255,0.7)",
+              lineHeight: 1.5, marginTop: 12, wordBreak: "keep-all",
+              textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+              ...textMotion,
+            }}>{scene.text}</div>
+          )}
+        </div>
+      )}
+
+      {/* 하단 바 (realfilm/cinematic) */}
+      {(styleId === "realfilm" || styleId === "cinematic") && (
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0, height: 4,
+          background: style?.titleColor || "#fff",
+          transform: `scaleX(${interpolate(frame, [0, durationInFrames], [0, 1])})`,
+          transformOrigin: "left",
+        }} />
       )}
     </AbsoluteFill>
   );
 }
 
+// ── 자막 오버레이 (TikTok 스타일 — 단어 하이라이트) ──
 function CaptionOverlay({ captions, style }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentMs = (frame / fps) * 1000;
   const current = captions.find(c => currentMs >= c.startMs && currentMs < c.endMs);
   if (!current) return null;
+
+  const styleId = style?.id || "cinematic";
+  const progress = interpolate(currentMs, [current.startMs, current.endMs], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const popIn = spring({ frame: Math.round((currentMs - current.startMs) / 1000 * fps), fps, config: { damping: 15, stiffness: 200 } });
+
+  const captionBg = {
+    motion: "rgba(0,20,40,0.85)",
+    animation: "rgba(30,10,50,0.85)",
+    realfilm: "rgba(0,0,0,0.75)",
+    cinematic: "rgba(0,0,0,0.0)",
+    minimal: "rgba(255,255,255,0.9)",
+    bold: "rgba(200,0,0,0.85)",
+  }[styleId] || "rgba(0,0,0,0.7)";
+
+  const captionTextColor = styleId === "minimal" ? "#1a1a2e" : (style?.captionColor || "#fff");
+
   return (
-    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 6% 10%" }}>
-      <div style={{ background: "rgba(0,0,0,0.7)", borderRadius: 12, padding: "10px 20px", maxWidth: "90%" }}>
-        <div style={{ fontSize: style?.captionSize || 24, fontWeight: 700, color: style?.captionColor || "#fff", textAlign: "center", lineHeight: 1.4, wordBreak: "keep-all" }}>{current.text}</div>
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 5% 8%" }}>
+      <div style={{
+        background: captionBg, borderRadius: styleId === "cinematic" ? 0 : 10,
+        padding: styleId === "cinematic" ? "0" : "8px 18px",
+        maxWidth: "92%",
+        transform: `scale(${interpolate(popIn, [0, 1], [0.9, 1])})`,
+        opacity: popIn,
+        borderLeft: styleId === "cinematic" ? `3px solid ${style?.titleColor || "#ffd700"}` : "none",
+        paddingLeft: styleId === "cinematic" ? 14 : undefined,
+      }}>
+        <div style={{
+          fontSize: style?.captionSize || 24, fontWeight: 700,
+          color: captionTextColor,
+          textAlign: styleId === "cinematic" ? "left" : "center",
+          lineHeight: 1.4, wordBreak: "keep-all",
+          textShadow: styleId === "minimal" ? "none" : "0 2px 8px rgba(0,0,0,0.5)",
+        }}>{current.text}</div>
       </div>
     </AbsoluteFill>
   );
