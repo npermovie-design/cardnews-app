@@ -27,13 +27,94 @@ function SceneComposition({ scenes, audioUrl, style, captions }) {
 }
 
 // ═══════════════════════════════════════════════
-// 모션그래픽 서브 컴포넌트들
+// 모션그래픽 서브 컴포넌트들 (참고 영상 수준)
 // ═══════════════════════════════════════════════
 
-// ── 애니메이션 프로그레스 바 (하단) ──
+// ── 글라스 카드 ──
+function GlassCard({ children, style: s, frame, fps, delay = 0 }) {
+  const enter = spring({ frame, fps, delay, config: { damping: 20, stiffness: 120 } });
+  return (
+    <div style={{
+      background: "rgba(255,255,255,0.06)", backdropFilter: "blur(12px)",
+      border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
+      padding: "20px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+      opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
+      ...s,
+    }}>{children}</div>
+  );
+}
+
+// ── 번호 배지 (01, 02, 03) ──
+function NumberBadge({ num, color, size = 44, frame, fps, delay = 0 }) {
+  const s = spring({ frame, fps, delay, config: { damping: 15, stiffness: 150 } });
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 12, flexShrink: 0,
+      background: `${color}18`, border: `1.5px solid ${color}40`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.38, fontWeight: 900, color,
+      transform: `scale(${s})`,
+    }}>{String(num).padStart(2, "0")}</div>
+  );
+}
+
+// ── 수치 카드 (VIX 15.06 같은) ──
+function StatCard({ label, value, sub, color = "#fff", frame, fps, delay = 0 }) {
+  const enter = spring({ frame, fps, delay, config: { damping: 20 } });
+  const counterProg = spring({ frame, fps, delay: delay + 8, config: { damping: 30, stiffness: 80 } });
+  const numVal = typeof value === "number" ? Math.round(value * counterProg) : value;
+  return (
+    <div style={{
+      flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 14,
+      padding: "16px 14px", textAlign: "center",
+      border: "1px solid rgba(255,255,255,0.08)",
+      opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
+    }}>
+      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>
+        {typeof value === "number" ? numVal.toLocaleString() : value}
+      </div>
+      {sub && <div style={{ fontSize: 11, color: sub.startsWith("+") ? "#4ade80" : sub.startsWith("-") ? "#f87171" : "rgba(255,255,255,0.4)", fontWeight: 700, marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── 리스트 아이템 (번호 + 텍스트 카드) ──
+function ListItem({ num, text, color, frame, fps, delay = 0, light = false }) {
+  const enter = spring({ frame, fps, delay, config: { damping: 20 } });
+  const bg = light ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.06)";
+  const textColor = light ? "#1a1a2e" : "#fff";
+  const borderColor = light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)";
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 16,
+      background: bg, borderRadius: 14, padding: "18px 22px",
+      border: `1px solid ${borderColor}`,
+      opacity: enter, transform: `translateX(${interpolate(enter, [0, 1], [-40, 0])}px)`,
+    }}>
+      <NumberBadge num={num} color={color} size={42} frame={frame} fps={fps} delay={delay + 4} />
+      <div style={{ fontSize: 20, fontWeight: 800, color: textColor, lineHeight: 1.3, wordBreak: "keep-all" }}>{text}</div>
+    </div>
+  );
+}
+
+// ── 태그/배지 ──
+function Tag({ text, color, frame, fps, delay = 0 }) {
+  const enter = spring({ frame, fps, delay, config: { damping: 20, stiffness: 200 } });
+  return (
+    <span style={{
+      display: "inline-block", padding: "6px 16px", borderRadius: 20,
+      background: `${color}18`, border: `1px solid ${color}35`,
+      fontSize: 13, fontWeight: 700, color,
+      opacity: enter, transform: `scale(${enter})`,
+    }}>{text}</span>
+  );
+}
+
+// ── 프로그레스 바 (하단) ──
 function ProgressBar({ color, frame, durationInFrames }) {
-  return <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 6, background: "rgba(0,0,0,0.3)" }}>
-    <div style={{ height: "100%", background: color, width: `${interpolate(frame, [0, durationInFrames], [0, 100])}%`, borderRadius: "0 3px 3px 0" }} />
+  return <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 5, background: "rgba(0,0,0,0.4)" }}>
+    <div style={{ height: "100%", background: `linear-gradient(90deg, ${color}, ${color}cc)`, width: `${interpolate(frame, [0, durationInFrames], [0, 100])}%`, borderRadius: "0 3px 3px 0", boxShadow: `0 0 12px ${color}60` }} />
   </div>;
 }
 
@@ -139,369 +220,185 @@ function GridLines({ frame, fps, color, count = 8 }) {
 }
 
 // ═══════════════════════════════════════════════
-// 메인 씬 슬라이드 (완전 재설계)
+// 메인 씬 슬라이드 — 카드/리스트/수치 기반 디자인
 // ═══════════════════════════════════════════════
 function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const styleId = style?.id || "cinematic";
-  const isFirst = sceneIndex === 0;
-  const isLast = sceneIndex === totalScenes - 1;
 
-  // ── 공통 spring 애니메이션 ──
+  // ── springs ──
   const enter = spring({ frame, fps, config: { damping: 200 } });
-  const bounce = spring({ frame, fps, config: { damping: 10, stiffness: 120 } });
-  const snap = spring({ frame, fps, config: { damping: 20, stiffness: 200 } });
-  const delayed1 = spring({ frame, fps, delay: 8, config: { damping: 200 } });
-  const delayed2 = spring({ frame, fps, delay: 16, config: { damping: 200 } });
-  const delayed3 = spring({ frame, fps, delay: 24, config: { damping: 200 } });
+  const bounce = spring({ frame, fps, config: { damping: 12, stiffness: 120 } });
+  const d1 = spring({ frame, fps, delay: 8, config: { damping: 200 } });
+  const d2 = spring({ frame, fps, delay: 16, config: { damping: 200 } });
+  const d3 = spring({ frame, fps, delay: 24, config: { damping: 200 } });
+  const d4 = spring({ frame, fps, delay: 32, config: { damping: 200 } });
 
-  // ── 퇴장 ──
   const exitStart = Math.max(0, durationInFrames - 10);
   const exitOp = interpolate(frame, [exitStart, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // ── Ken Burns (이미지용) ──
-  const kbScale = interpolate(frame, [0, durationInFrames], [1, 1.15], { extrapolateRight: "clamp" });
-  const kbX = interpolate(frame, [0, durationInFrames], [sceneIndex % 2 === 0 ? -3 : 3, sceneIndex % 2 === 0 ? 3 : -3]);
+  const kbScale = interpolate(frame, [0, durationInFrames], [1, 1.12], { extrapolateRight: "clamp" });
+  const kbX = interpolate(frame, [0, durationInFrames], [sceneIndex % 2 === 0 ? -2 : 2, sceneIndex % 2 === 0 ? 2 : -2]);
 
-  // ── 타이틀 텍스트 ──
-  const titleText = scene.title || "";
-  const subText = scene.text || "";
-  const scriptText = scene._scriptText || "";
+  const title = scene.title || "";
+  const sub = scene.text || "";
+  const script = scene._scriptText || "";
+  const num = String(sceneIndex + 1).padStart(2, "0");
+  const accentColor = style?.titleColor || "#7c6aff";
 
-  // ── 씬 번호 ──
-  const sceneNum = String(sceneIndex + 1).padStart(2, "0");
+  // 대본에서 핵심 포인트 추출 (문장 분리)
+  const points = script.split(/[.!?。]\s*/).filter(s => s.trim().length > 3).slice(0, 3);
+  const isDark = styleId !== "minimal";
 
   return (
     <AbsoluteFill style={{ opacity: exitOp, overflow: "hidden" }}>
-
-      {/* ════ 배경 레이어 ════ */}
+      {/* ═══ 배경 ═══ */}
       {scene.imageUrl ? (
         <AbsoluteFill>
-          <Img src={scene.imageUrl} style={{
-            width: "100%", height: "100%", objectFit: "cover",
-            transform: `scale(${kbScale}) translateX(${kbX}%)`,
-          }} />
-          {/* 강한 오버레이 */}
-          <div style={{ position: "absolute", inset: 0, background: styleId === "minimal"
-            ? "rgba(255,255,255,0.7)"
-            : styleId === "bold"
-            ? "linear-gradient(135deg, rgba(0,0,0,0.7), rgba(100,0,0,0.6))"
-            : "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.85) 100%)"
-          }} />
+          <Img src={scene.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${kbScale}) translateX(${kbX}%)` }} />
+          <div style={{ position: "absolute", inset: 0, background: isDark
+            ? "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 30%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.88) 100%)"
+            : "rgba(255,255,255,0.75)" }} />
         </AbsoluteFill>
       ) : (
-        <AbsoluteFill style={{ background: scene.bgColor || style?.bg || "#0a0a1a" }} />
+        <AbsoluteFill style={{ background: isDark ? "#0d0d1a" : "#f0f0f8" }} />
       )}
 
-      {/* ════ 스타일별 배경 효과 ════ */}
+      {/* ═══ 모션그래픽: 카드 리스트 + 차트 레이아웃 ═══ */}
+      {styleId === "motion" && (
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8% 7%" }}>
+          {/* 상단 태그 */}
+          <Tag text={`STEP ${num}`} color="#00d4ff" frame={frame} fps={fps} />
+          {/* 큰 제목 */}
+          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginTop: 20, marginBottom: 24,
+            opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`, wordBreak: "keep-all",
+            textShadow: "0 4px 30px rgba(0,0,0,0.8)" }}>{title}</div>
+          {/* 핵심 포인트 카드 리스트 */}
+          {points.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {points.map((p, i) => (
+                <ListItem key={i} num={i + 1} text={p} color="#00d4ff" frame={frame} fps={fps} delay={12 + i * 8} />
+              ))}
+            </div>
+          )}
+          {/* 하단 수치 카드들 */}
+          <div style={{ position: "absolute", bottom: "6%", left: "7%", right: "7%", display: "flex", gap: 10, opacity: d4 }}>
+            <StatCard label="진행도" value={Math.round(((sceneIndex + 1) / totalScenes) * 100)} sub={`${sceneIndex + 1}/${totalScenes}`} color="#00d4ff" frame={frame} fps={fps} delay={36} />
+            <StatCard label="STEP" value={sceneIndex + 1} color="#7c6aff" frame={frame} fps={fps} delay={40} />
+            <StatCard label="TOTAL" value={totalScenes} color="#00ffaa" frame={frame} fps={fps} delay={44} />
+          </div>
+        </AbsoluteFill>
+      )}
 
-      {/* 모션그래픽: 그리드 + 글로잉 오브 + 움직이는 그래디언트 */}
-      {styleId === "motion" && (<>
-        <GridLines frame={frame} fps={fps} color="#00d4ff" count={10} />
-        <GlowOrb x={20} y={30} size={200} color="rgba(0,212,255,0.4)" frame={frame} fps={fps} />
-        <GlowOrb x={80} y={70} size={150} color="rgba(124,106,255,0.3)" frame={frame} fps={fps} delay={10} />
-        <GlowOrb x={60} y={20} size={100} color="rgba(0,255,170,0.2)" frame={frame} fps={fps} delay={20} />
-        <div style={{ position: "absolute", inset: "-30%",
-          background: `conic-gradient(from ${frame * 2}deg at 50% 50%, rgba(0,212,255,0.08), rgba(124,106,255,0.06), rgba(0,255,170,0.04), rgba(0,212,255,0.08))`,
-          transform: `rotate(${frame * 0.5}deg)`,
-        }} />
-      </>)}
+      {/* ═══ 애니메이션: 말풍선 + 파티클 ═══ */}
+      {styleId === "animation" && (
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          {/* 씬 도트 */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 24, opacity: enter }}>
+            {Array.from({ length: totalScenes }).map((_, i) => (
+              <div key={i} style={{ width: i === sceneIndex ? 28 : 10, height: 10, borderRadius: 5,
+                background: i === sceneIndex ? "#ff6b9d" : "rgba(255,255,255,0.15)" }} />
+            ))}
+          </div>
+          {/* 글라스 카드 */}
+          <GlassCard frame={frame} fps={fps} delay={4} style={{ textAlign: "center", padding: "36px 40px", borderRadius: 24, border: "1.5px solid rgba(255,107,157,0.2)" }}>
+            <div style={{ fontSize: 48, fontWeight: 900, color: "#ff6b9d", lineHeight: 1.2, wordBreak: "keep-all",
+              textShadow: "0 2px 20px rgba(255,107,157,0.3)" }}>{title}</div>
+            {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", marginTop: 16, lineHeight: 1.6, wordBreak: "keep-all", opacity: d1 }}>{sub}</div>}
+          </GlassCard>
+          {/* 하단 포인트 */}
+          {points.length > 1 && (
+            <div style={{ display: "flex", gap: 10, marginTop: 20, width: "100%" }}>
+              {points.slice(0, 2).map((p, i) => (
+                <GlassCard key={i} frame={frame} fps={fps} delay={16 + i * 8} style={{ flex: 1, padding: "14px 16px", borderRadius: 14 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ffeead", lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
+                </GlassCard>
+              ))}
+            </div>
+          )}
+        </AbsoluteFill>
+      )}
 
-      {/* 애니메이션: 파티클 + 떠다니는 도형 */}
-      {styleId === "animation" && (<>
-        <Particles count={12} frame={frame} fps={fps} durationInFrames={durationInFrames}
-          colors={["#ff6b9d","#ffeead","#a78bfa","#67e8f9","#f472b6"]}
-          shapes={["★","♥","✦","◆","●","♦","✿","◇"]} />
-        {[0,1,2].map(j => (
-          <div key={`ab${j}`} style={{
-            position: "absolute",
-            left: `${15 + j * 30}%`, top: `${25 + Math.sin(frame/fps + j*2) * 12}%`,
-            width: 80 + j * 30, height: 80 + j * 30, borderRadius: j === 1 ? "30%" : "50%",
-            background: `rgba(${255 - j*60},${107+j*40},${157+j*30},0.08)`,
-            border: `2px solid rgba(${255-j*60},${107+j*40},${157+j*30},0.15)`,
-            transform: `rotate(${frame * (j % 2 === 0 ? 1 : -1)}deg) scale(${spring({ frame, fps, delay: j*8, config: { damping: 15 } })})`,
-          }} />
-        ))}
-      </>)}
+      {/* ═══ 실사 홍보: 프로 비즈니스 레이아웃 ═══ */}
+      {styleId === "realfilm" && (
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8% 7%" }}>
+          <div style={{ opacity: enter }}>
+            <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.12)", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: 3 }}>{num} / {String(totalScenes).padStart(2, "0")}</div>
+          </div>
+          <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginTop: 16, marginBottom: 12,
+            opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`, wordBreak: "keep-all",
+            textShadow: "0 4px 30px rgba(0,0,0,0.8)" }}>{title}</div>
+          <div style={{ width: interpolate(d1, [0, 1], [0, 80]), height: 4, background: "#fff", borderRadius: 2, marginBottom: 16 }} />
+          {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, opacity: d2, maxWidth: "90%", wordBreak: "keep-all" }}>{sub}</div>}
+          {/* 하단 수치 */}
+          <div style={{ position: "absolute", bottom: "7%", left: "7%", right: "7%", display: "flex", gap: 12, opacity: d3 }}>
+            <StatCard label="STEP" value={sceneIndex + 1} color="#fff" frame={frame} fps={fps} delay={24} />
+            <StatCard label="PROGRESS" value={Math.round(((sceneIndex+1)/totalScenes)*100)} sub="%" color="#4ade80" frame={frame} fps={fps} delay={28} />
+          </div>
+        </AbsoluteFill>
+      )}
 
-      {/* 시네마틱: 비네팅 + 레터박스 + 아나모픽 플레어 */}
+      {/* ═══ 시네마틱: 영화 스타일 ═══ */}
       {styleId === "cinematic" && (<>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.7) 100%)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "6%", background: "#000" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "6%", background: "#000" }} />
-        {/* 아나모픽 렌즈 플레어 */}
-        <div style={{
-          position: "absolute", top: "30%", left: "-10%", right: "-10%", height: 3,
-          background: `linear-gradient(90deg, transparent, rgba(255,215,0,${interpolate(frame, [fps*0.5, fps*1.5], [0, 0.3], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}) 40%, rgba(255,200,100,${interpolate(frame, [fps*0.5, fps*1.5], [0, 0.15], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}) 60%, transparent)`,
-          transform: `translateY(${interpolate(frame, [0, durationInFrames], [-20, 20])}px)`,
-          pointerEvents: "none",
-        }} />
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "10% 8% 12%" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffd700", letterSpacing: 4, marginBottom: 12,
+            opacity: interpolate(frame, [0, fps*0.5], [0, 1], { extrapolateRight: "clamp" }) }}>SCENE {num}</div>
+          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.12, wordBreak: "keep-all",
+            opacity: interpolate(frame, [fps*0.2, fps], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+            textShadow: "0 0 50px rgba(255,215,0,0.2), 0 4px 24px rgba(0,0,0,0.9)" }}>{title}</div>
+          {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.6)", marginTop: 14, lineHeight: 1.6, wordBreak: "keep-all", opacity: d1 }}>{sub}</div>}
+        </AbsoluteFill>
       </>)}
 
-      {/* 임팩트(bold): 충격파 + 스트라이프 + 글리치 */}
+      {/* ═══ 미니멀: KEY FEATURES 스타일 (참고이미지 #6) ═══ */}
+      {styleId === "minimal" && (
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8% 7%" }}>
+          <div style={{ position: "absolute", inset: "5%", border: "1.5px solid rgba(0,0,0,0.06)", borderRadius: 12, pointerEvents: "none", opacity: enter }} />
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", letterSpacing: 5, marginBottom: 28, opacity: enter }}>KEY POINTS</div>
+          <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
+            {(points.length > 0 ? points : [title]).map((p, i) => (
+              <ListItem key={i} num={i + 1} text={p} color="#3b5998" frame={frame} fps={fps} delay={8 + i * 8} light />
+            ))}
+          </div>
+          {sub && <div style={{ fontSize: 16, color: "#888", marginTop: 24, textAlign: "center", lineHeight: 1.6, opacity: d3, wordBreak: "keep-all" }}>{sub}</div>}
+        </AbsoluteFill>
+      )}
+
+      {/* ═══ 임팩트(bold): 풀스크린 강조 ═══ */}
       {styleId === "bold" && (<>
-        {frame < fps * 0.8 && [0,1,2].map(j => (
-          <div key={`sw${j}`} style={{
+        {frame < fps * 0.6 && [0,1].map(j => (
+          <div key={j} style={{
             position: "absolute", top: "50%", left: "50%",
-            width: interpolate(frame, [j*4, j*4 + fps*0.6], [0, 1200]), height: interpolate(frame, [j*4, j*4 + fps*0.6], [0, 1200]),
-            borderRadius: "50%", border: `${3-j}px solid rgba(255,59,59,${interpolate(frame, [j*4, j*4 + fps*0.6], [0.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
+            width: interpolate(frame, [j*3, j*3+fps*0.5], [0, 1400]), height: interpolate(frame, [j*3, j*3+fps*0.5], [0, 1400]),
+            borderRadius: "50%", border: `${3-j}px solid rgba(255,59,59,${interpolate(frame, [j*3, j*3+fps*0.5], [0.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
             transform: "translate(-50%, -50%)", pointerEvents: "none",
           }} />
         ))}
-        <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(135deg, transparent, transparent 30px, rgba(255,0,0,0.03) 30px, rgba(255,0,0,0.03) 32px)", opacity: enter, pointerEvents: "none" }} />
-        {/* 글리치 라인 */}
-        {frame % 30 < 2 && (
-          <div style={{ position: "absolute", left: 0, right: 0, top: `${20 + (frame * 7) % 60}%`, height: 4, background: "rgba(255,0,0,0.4)", pointerEvents: "none" }} />
-        )}
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          <div style={{ fontSize: 60, fontWeight: 900, color: "#ff3b3b", lineHeight: 1.05, wordBreak: "keep-all", textAlign: "center",
+            letterSpacing: -2, transform: `scale(${interpolate(bounce, [0, 1], [2.2, 1])})`, opacity: bounce,
+            textShadow: "0 0 80px rgba(255,59,59,0.5), 0 6px 24px rgba(0,0,0,0.8)" }}>{title}</div>
+          {sub && <div style={{ fontSize: 22, color: "#fff", marginTop: 20, fontWeight: 700, textAlign: "center",
+            opacity: d2, lineHeight: 1.5, wordBreak: "keep-all" }}>{sub}</div>}
+          {/* 하단 번호 배지 */}
+          <div style={{ marginTop: 30, opacity: d3 }}>
+            <NumberBadge num={sceneIndex + 1} color="#ff3b3b" size={60} frame={frame} fps={fps} delay={24} />
+          </div>
+        </AbsoluteFill>
       </>)}
 
-      {/* 미니멀: 클린 프레임 + 도형 */}
-      {styleId === "minimal" && (<>
-        <div style={{ position: "absolute", inset: "6%", border: `1.5px solid rgba(26,26,46,${enter * 0.15})`, borderRadius: 8, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: "8%", left: "8%", width: interpolate(enter, [0, 1], [0, 50]), height: 3, background: "#7c6aff", borderRadius: 2 }} />
-        <div style={{ position: "absolute", bottom: "8%", right: "8%", width: 3, height: interpolate(enter, [0, 1], [0, 50]), background: "#7c6aff", borderRadius: 2 }} />
-      </>)}
-
-      {/* 실사 홍보: 기업 UI 라인 + 번호 + 액센트 바 */}
-      {styleId === "realfilm" && (<>
-        <div style={{ position: "absolute", left: 0, top: "15%", width: 5, height: interpolate(enter, [0, 1], [0, 180]), background: "linear-gradient(180deg, #fff, rgba(255,255,255,0.3))", borderRadius: 3 }} />
-        <div style={{ position: "absolute", bottom: "12%", left: "8%", right: "60%", height: 1, background: `rgba(255,255,255,${delayed1 * 0.2})` }} />
-      </>)}
-
-      {/* ════ 콘텐츠 레이어 ════ */}
-
-      {/* ── 모션그래픽: 좌상단 레이아웃 + 인포그래픽 ── */}
-      {styleId === "motion" && (
-        <AbsoluteFill style={{ padding: "10% 8%" }}>
-          {/* 씬 번호 배지 */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 16,
-            opacity: enter,
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8, background: "rgba(0,212,255,0.15)",
-              border: "1.5px solid rgba(0,212,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, fontWeight: 900, color: "#00d4ff",
-              transform: `scale(${bounce})`,
-            }}>{sceneNum}</div>
-            <div style={{ width: interpolate(delayed1, [0, 1], [0, 40]), height: 2, background: "#00d4ff", borderRadius: 1 }} />
-          </div>
-          {/* 메인 타이틀: 타이핑 효과 */}
-          <div style={{ marginBottom: 16 }}>
-            <TypewriterText text={titleText} frame={frame} fps={fps} delay={6}
-              style={{ fontSize: style?.titleSize || 44, fontWeight: 900, color: "#fff", lineHeight: 1.2, wordBreak: "keep-all",
-                textShadow: "0 4px 20px rgba(0,0,0,0.8)" }} />
-          </div>
-          {/* 서브텍스트 */}
-          {subText && (
-            <div style={{ opacity: delayed2, transform: `translateY(${interpolate(delayed2, [0, 1], [20, 0])}px)`,
-              fontSize: 18, fontWeight: 500, color: "rgba(200,230,255,0.8)", lineHeight: 1.6, maxWidth: "80%", wordBreak: "keep-all" }}>
-              {subText}
-            </div>
-          )}
-          {/* 하단 인포그래픽 (짝수 씬: 바 차트, 홀수 씬: 원형 프로그레스) */}
-          <div style={{ position: "absolute", bottom: "12%", left: "8%", right: "8%", opacity: delayed3 }}>
-            {sceneIndex % 2 === 0 ? (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <BarChart data={[
-                  { label: "A", value: 80 + sceneIndex * 5 },
-                  { label: "B", value: 60 + sceneIndex * 8 },
-                  { label: "C", value: 90 - sceneIndex * 3 },
-                  { label: "D", value: 70 + sceneIndex * 2 },
-                ]} frame={frame} fps={fps} colors={["#00d4ff","#7c6aff","#00ffaa","#ff6b9d"]} maxH={80} />
-              </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                <div style={{ position: "relative" }}>
-                  <CircleProgress progress={0.75} size={70} strokeWidth={6} color="#00d4ff" frame={frame} fps={fps} />
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <AnimatedCounter value={75} frame={frame} fps={fps} suffix="%" style={{ fontSize: 16, fontWeight: 900, color: "#00d4ff" }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700 }}>PROGRESS</div>
-                  <div style={{ fontSize: 14, color: "#fff", fontWeight: 800, marginTop: 2 }}>Scene {sceneNum}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ── 애니메이션: 중앙 레이아웃 + 말풍선 느낌 ── */}
-      {styleId === "animation" && (
-        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10%" }}>
-          <div style={{ textAlign: "center", transform: `scale(${bounce})` }}>
-            {/* 말풍선 배경 */}
-            <div style={{
-              background: "rgba(255,255,255,0.12)", backdropFilter: "blur(10px)",
-              borderRadius: 24, padding: "28px 32px", border: "2px solid rgba(255,255,255,0.15)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-              transform: `translateY(${interpolate(bounce, [0, 1], [40, 0])}px)`,
-            }}>
-              <div style={{
-                fontSize: style?.titleSize || 40, fontWeight: 900,
-                color: style?.titleColor || "#ff6b9d", lineHeight: 1.2, wordBreak: "keep-all",
-                textShadow: "0 2px 12px rgba(0,0,0,0.3)",
-              }}>{titleText}</div>
-              {subText && (
-                <div style={{
-                  fontSize: 16, color: "rgba(255,255,255,0.8)", marginTop: 12,
-                  opacity: delayed1, lineHeight: 1.5, wordBreak: "keep-all",
-                }}>{subText}</div>
-              )}
-            </div>
-            {/* 씬 인디케이터 도트 */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 16, opacity: delayed2 }}>
-              {Array.from({ length: totalScenes }).map((_, i) => (
-                <div key={i} style={{
-                  width: i === sceneIndex ? 20 : 8, height: 8, borderRadius: 4,
-                  background: i === sceneIndex ? "#ff6b9d" : "rgba(255,255,255,0.2)",
-                  transition: "none",
-                }} />
-              ))}
-            </div>
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ── 실사 홍보: 프로 레이아웃 ── */}
-      {styleId === "realfilm" && (
-        <AbsoluteFill style={{ padding: "12% 8%" }}>
-          {/* 상단 라벨 */}
-          <div style={{ opacity: enter, marginBottom: 8 }}>
-            <div style={{
-              display: "inline-block", padding: "4px 12px", borderRadius: 4,
-              background: "rgba(255,255,255,0.15)", fontSize: 11, fontWeight: 700,
-              color: "rgba(255,255,255,0.7)", letterSpacing: 2, textTransform: "uppercase",
-            }}>{sceneNum} / {String(totalScenes).padStart(2, "0")}</div>
-          </div>
-          {/* 메인 타이틀 */}
-          <div style={{
-            fontSize: style?.titleSize || 42, fontWeight: 900, color: "#fff",
-            lineHeight: 1.15, wordBreak: "keep-all", marginBottom: 14,
-            opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
-            textShadow: "0 4px 24px rgba(0,0,0,0.8)",
-          }}>{titleText}</div>
-          {/* 구분선 */}
-          <div style={{ width: interpolate(delayed1, [0, 1], [0, 60]), height: 3, background: "#fff", borderRadius: 2, marginBottom: 14 }} />
-          {/* 서브텍스트 */}
-          {subText && (
-            <div style={{
-              fontSize: 16, color: "rgba(255,255,255,0.75)", lineHeight: 1.7,
-              opacity: delayed2, transform: `translateY(${interpolate(delayed2, [0, 1], [15, 0])}px)`,
-              maxWidth: "85%", wordBreak: "keep-all",
-            }}>{subText}</div>
-          )}
-          {/* 하단 수치 표시 */}
-          <div style={{ position: "absolute", bottom: "10%", left: "8%", right: "8%", display: "flex", gap: 24, opacity: delayed3 }}>
-            {[{ label: "STEP", val: sceneIndex + 1 }, { label: "TOTAL", val: totalScenes }].map((d, i) => (
-              <div key={i}>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 2 }}>{d.label}</div>
-                <AnimatedCounter value={d.val} frame={frame} fps={fps} delay={20 + i * 6}
-                  style={{ fontSize: 28, fontWeight: 900, color: "#fff" }} />
-              </div>
-            ))}
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ── 시네마틱: 영화 자막 스타일 ── */}
-      {styleId === "cinematic" && (
-        <AbsoluteFill>
-          {/* 하단 텍스트 영역 */}
-          <div style={{ position: "absolute", bottom: "10%", left: "8%", right: "8%" }}>
-            {/* 작은 라벨 */}
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: style?.titleColor || "#ffd700",
-              letterSpacing: 3, textTransform: "uppercase", marginBottom: 10,
-              opacity: interpolate(frame, [0, fps * 0.5], [0, 1], { extrapolateRight: "clamp" }),
-            }}>SCENE {sceneNum}</div>
-            {/* 메인 타이틀 */}
-            <div style={{
-              fontSize: style?.titleSize || 44, fontWeight: 900, color: "#fff",
-              lineHeight: 1.15, wordBreak: "keep-all",
-              opacity: interpolate(frame, [fps * 0.2, fps], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-              textShadow: `0 0 40px rgba(255,215,0,0.25), 0 4px 20px rgba(0,0,0,0.9)`,
-            }}>{titleText}</div>
-            {/* 서브텍스트 */}
-            {subText && (
-              <div style={{
-                fontSize: 16, color: "rgba(255,255,255,0.65)", marginTop: 10,
-                lineHeight: 1.6, wordBreak: "keep-all",
-                opacity: delayed1,
-              }}>{subText}</div>
-            )}
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ── 미니멀: 클린 중앙 타이포 ── */}
-      {styleId === "minimal" && (
-        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12%" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: "#7c6aff", letterSpacing: 4, marginBottom: 14,
-              opacity: snap, textTransform: "uppercase",
-            }}>PART {sceneNum}</div>
-            <div style={{
-              fontSize: style?.titleSize || 40, fontWeight: 900,
-              color: style?.titleColor || "#1a1a2e", lineHeight: 1.2, wordBreak: "keep-all",
-              opacity: snap, transform: `translateY(${interpolate(snap, [0, 1], [15, 0])}px)`,
-            }}>{titleText}</div>
-            {subText && (
-              <div style={{
-                fontSize: 16, color: "#666", lineHeight: 1.7, marginTop: 16,
-                opacity: delayed1, maxWidth: 600, wordBreak: "keep-all",
-              }}>{subText}</div>
-            )}
-            {/* 하단 구분자 */}
-            <div style={{
-              width: interpolate(delayed2, [0, 1], [0, 40]), height: 2,
-              background: "#7c6aff", borderRadius: 1, margin: "20px auto 0",
-            }} />
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ── 임팩트(bold): 풀스크린 타이포 ── */}
-      {styleId === "bold" && (
-        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{
-              fontSize: (style?.titleSize || 48) * 1.2, fontWeight: 900,
-              color: style?.titleColor || "#ff3b3b", lineHeight: 1.05, wordBreak: "keep-all",
-              letterSpacing: -3,
-              transform: `scale(${interpolate(bounce, [0, 1], [2.5, 1])})`,
-              opacity: bounce,
-              textShadow: "0 0 60px rgba(255,59,59,0.5), 0 4px 20px rgba(0,0,0,0.8)",
-            }}>{titleText}</div>
-            {subText && (
-              <div style={{
-                fontSize: 18, color: "#fff", marginTop: 16, fontWeight: 700,
-                opacity: delayed2, transform: `translateY(${interpolate(delayed2, [0, 1], [20, 0])}px)`,
-                lineHeight: 1.5, wordBreak: "keep-all",
-              }}>{subText}</div>
-            )}
-            {/* 카운터 강조 */}
-            <div style={{ marginTop: 20, opacity: delayed3 }}>
-              <AnimatedCounter value={sceneIndex + 1} frame={frame} fps={fps} delay={20}
-                style={{ fontSize: 56, fontWeight: 900, color: "rgba(255,59,59,0.3)" }} />
-            </div>
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ════ 공통: 프로그레스 바 ════ */}
-      <ProgressBar color={style?.titleColor || "#7c6aff"} frame={frame} durationInFrames={durationInFrames} />
-
+      {/* ═══ 공통: 프로그레스 바 ═══ */}
+      <ProgressBar color={accentColor} frame={frame} durationInFrames={durationInFrames} />
     </AbsoluteFill>
   );
 }
 
 // ═══════════════════════════════════════════════
-// 자막 오버레이 (완전 재설계 — 하이라이트 + 모션)
+// 자막 오버레이 — 고정 자막 (애니메이션 없음, 사용자 요청)
 // ═══════════════════════════════════════════════
 function CaptionOverlay({ captions, style }) {
   const frame = useCurrentFrame();
@@ -511,58 +408,33 @@ function CaptionOverlay({ captions, style }) {
   if (!current) return null;
 
   const styleId = style?.id || "cinematic";
-  const localFrame = Math.round((currentMs - current.startMs) / 1000 * fps);
-  const pop = spring({ frame: localFrame, fps, config: { damping: 15, stiffness: 200 } });
-  const progress = interpolate(currentMs, [current.startMs, current.endMs], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const isDark = styleId !== "minimal";
 
-  // 단어 단위 하이라이트
-  const words = (current.text || "").split(/(\s+)/);
-  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
-  let charCount = 0;
+  const captionBg = {
+    motion: "rgba(0,10,30,0.92)",
+    animation: "rgba(30,10,50,0.92)",
+    realfilm: "rgba(0,0,0,0.88)",
+    cinematic: "rgba(0,0,0,0.75)",
+    minimal: "rgba(255,255,255,0.95)",
+    bold: "rgba(180,0,0,0.92)",
+  }[styleId] || "rgba(0,0,0,0.85)";
 
-  const captionStyle = {
-    motion: { bg: "rgba(0,10,30,0.9)", border: "1px solid rgba(0,212,255,0.3)", color: "#fff", highlight: "#00d4ff" },
-    animation: { bg: "rgba(40,10,60,0.9)", border: "1px solid rgba(255,107,157,0.3)", color: "#fff", highlight: "#ff6b9d" },
-    realfilm: { bg: "rgba(0,0,0,0.85)", border: "none", color: "#fff", highlight: "#4a9eff" },
-    cinematic: { bg: "transparent", border: "none", color: "#fff", highlight: "#ffd700" },
-    minimal: { bg: "rgba(255,255,255,0.95)", border: "1px solid rgba(0,0,0,0.08)", color: "#1a1a2e", highlight: "#7c6aff" },
-    bold: { bg: "rgba(180,0,0,0.9)", border: "none", color: "#fff", highlight: "#fff" },
-  }[styleId] || { bg: "rgba(0,0,0,0.8)", border: "none", color: "#fff", highlight: "#fff" };
+  const textColor = styleId === "minimal" ? "#1a1a2e" : "#fff";
 
   return (
-    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 4% 6%", pointerEvents: "none" }}>
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 4% 4%", pointerEvents: "none" }}>
       <div style={{
-        background: captionStyle.bg, border: captionStyle.border,
-        borderRadius: styleId === "cinematic" ? 0 : 12,
-        padding: styleId === "cinematic" ? "0 0 0 14px" : "10px 22px",
-        maxWidth: "94%",
-        transform: `scale(${interpolate(pop, [0, 1], [0.85, 1])}) translateY(${interpolate(pop, [0, 1], [10, 0])}px)`,
-        opacity: pop,
-        borderLeft: styleId === "cinematic" ? `3px solid ${style?.titleColor || "#ffd700"}` : undefined,
-        boxShadow: styleId === "cinematic" ? "none" : "0 4px 20px rgba(0,0,0,0.3)",
+        background: captionBg, borderRadius: 10,
+        padding: "12px 28px", maxWidth: "94%",
+        boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.4)" : "0 2px 12px rgba(0,0,0,0.08)",
+        border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)",
       }}>
         <div style={{
-          fontSize: style?.captionSize || 26, fontWeight: 800,
+          fontSize: style?.captionSize || 28, fontWeight: 800,
+          color: textColor, textAlign: "center",
           lineHeight: 1.5, wordBreak: "keep-all",
-          textAlign: "center",
-        }}>
-          {words.map((word, wi) => {
-            const wordStart = charCount / totalChars;
-            charCount += word.length;
-            const wordEnd = charCount / totalChars;
-            const isActive = progress >= wordStart && progress < wordEnd + 0.05;
-            const isPast = progress >= wordEnd + 0.05;
-            return (
-              <span key={wi} style={{
-                color: isActive ? captionStyle.highlight : isPast ? captionStyle.color : `${captionStyle.color}88`,
-                textShadow: isActive ? `0 0 12px ${captionStyle.highlight}60` : styleId === "minimal" ? "none" : "0 2px 8px rgba(0,0,0,0.5)",
-                transform: isActive ? "scale(1.05)" : "scale(1)",
-                display: "inline",
-                fontWeight: isActive ? 900 : 700,
-              }}>{word}</span>
-            );
-          })}
-        </div>
+          textShadow: isDark ? "0 2px 8px rgba(0,0,0,0.5)" : "none",
+        }}>{current.text}</div>
       </div>
     </AbsoluteFill>
   );
@@ -658,8 +530,21 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const currentStyle = VIDEO_STYLES.find(s => s.id === styleId) || VIDEO_STYLES[0];
   const currentSize = SIZES.find(s => s.id === sizeId) || SIZES[0];
   const durationInFrames = Math.max(1, Math.round(duration * FPS));
-  // 프리뷰: 화면에 맞게 크게
-  const previewScale = sizeId === "9:16" ? { w: "min(400px, 45vh * 9 / 16)", h: "min(710px, 78vh)" } : sizeId === "1:1" ? { w: "min(560px, 70vh)", h: "min(560px, 70vh)" } : { w: "min(720px, 90vw)", h: "min(405px, 50vh)" };
+  // 프리뷰: 최대한 크게 (2배+)
+  const previewScale = sizeId === "9:16" ? { w: "min(540px, 60vh * 9 / 16)", h: "min(960px, 92vh)" } : sizeId === "1:1" ? { w: "min(720px, 85vh)", h: "min(720px, 85vh)" } : { w: "min(960px, 95vw)", h: "min(540px, 55vh)" };
+
+  // 타임라인 플레이헤드 동기화 — 재생 중 프레임 업데이트
+  useEffect(() => {
+    if (!isPlaying || !playerRef.current) return;
+    const interval = setInterval(() => {
+      const p = playerRef.current;
+      if (p && typeof p.getCurrentFrame === "function") {
+        const f = p.getCurrentFrame();
+        setPlayhead(f / FPS);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.06)" : "#f9f9fc", color: text, fontSize: 13, outline: "none", boxSizing: "border-box" };
