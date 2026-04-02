@@ -210,10 +210,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [editClips, setEditClips] = useState([]);
   const [editIdx, setEditIdx] = useState(0);
   const [template, setTemplate] = useState("minimal");
-  // 제목 스타일
-  const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 20, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100 });
+  // 제목 스타일 (font, align 추가)
+  const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 20, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100, font: "default", align: "center" });
   // 자막 스타일
-  const [captionStyle, setCaptionStyle] = useState({ color: "#FFFFFF", fontSize: 15, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100 });
+  const [captionStyle, setCaptionStyle] = useState({ color: "#FFFFFF", fontSize: 15, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center" });
   // 호환성
   const titleColor = titleStyle.color;
   const captionColor = captionStyle.color;
@@ -1189,13 +1189,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
-              {/* 상단 검은바 (제목 — 가운데 정렬 고정, Y축만 드래그) */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-                  style={{ width: "90%", textAlign: "center", cursor: "move", border: dragging === "title" ? "2px dashed #7c6aff" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: titleStyle.opacity / 100 }}>
+              {/* 상단 검은바 (제목) */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: titleStyle.align === "left" ? "flex-start" : titleStyle.align === "right" ? "flex-end" : "center", padding: "0 12px" }}>
+                <div style={{ maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100 }}>
                   <span style={{
                     fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
-                    lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", textAlign: "center",
+                    fontFamily: titleStyle.font === "default" ? "inherit" : titleStyle.font,
+                    lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", textAlign: titleStyle.align || "center",
                     textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
                     WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
                     background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
@@ -1216,13 +1216,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 (자막 — 가운데 정렬 고정) */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                  style={{ width: "90%", textAlign: "center", cursor: "move", border: dragging === "caption" ? "2px dashed #f59e0b" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: captionStyle.opacity / 100 }}>
+              {/* 하단 검은바 (자막) */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: captionStyle.align === "left" ? "flex-start" : captionStyle.align === "right" ? "flex-end" : "center", padding: "0 12px" }}>
+                <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100 }}>
                   <span style={{
                     fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
-                    lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: "center",
+                    fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
+                    lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: captionStyle.align || "center",
                     textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
                     WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
                     background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
@@ -1372,6 +1372,33 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {[["title","상단 제목",titleStyle,setTitleStyle,"#7c6aff"],["caption","하단 자막",captionStyle,setCaptionStyle,"#f59e0b"]].map(([key,label,st,setSt,ac]) => (
                 <div key={key} style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: `1px solid ${ac}25` }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: ac, marginBottom: 8 }}>{label}</div>
+                  {/* 폰트 선택 */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>폰트</div>
+                    <select value={st.font || "default"} onChange={e => setSt(p=>({...p,font:e.target.value}))}
+                      style={{ width: "100%", padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", fontFamily: st.font === "default" ? "inherit" : st.font }}>
+                      <option value="default">기본</option>
+                      <option value="'Noto Sans KR', sans-serif" style={{ fontFamily: "'Noto Sans KR'" }}>Noto Sans KR</option>
+                      <option value="'Nanum Gothic', sans-serif" style={{ fontFamily: "'Nanum Gothic'" }}>나눔고딕</option>
+                      <option value="'Nanum Myeongjo', serif" style={{ fontFamily: "'Nanum Myeongjo'" }}>나눔명조</option>
+                      <option value="'Black Han Sans', sans-serif" style={{ fontFamily: "'Black Han Sans'" }}>블랙한산스</option>
+                      <option value="'Jua', sans-serif" style={{ fontFamily: "'Jua'" }}>주아</option>
+                      <option value="'Do Hyeon', sans-serif" style={{ fontFamily: "'Do Hyeon'" }}>도현</option>
+                      <option value="'Gothic A1', sans-serif" style={{ fontFamily: "'Gothic A1'" }}>Gothic A1</option>
+                      <option value="Impact, sans-serif">Impact</option>
+                      <option value="Georgia, serif">Georgia</option>
+                    </select>
+                  </div>
+                  {/* 글씨 위치 */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>위치</div>
+                    <div style={{ display: "flex", gap: 3 }}>
+                      {[["left","좌"],["center","중앙"],["right","우"]].map(([v,l]) => (
+                        <button key={v} onClick={() => setSt(p=>({...p,align:v}))}
+                          style={{ flex: 1, padding: "4px", borderRadius: 4, border: `1px solid ${(st.align||"center")===v ? ac : "#2a2a4a"}`, background: (st.align||"center")===v ? `${ac}20` : "#12122a", color: (st.align||"center")===v ? ac : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <div>
                       <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자색</div>
@@ -1521,8 +1548,18 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         {/* 툴바 (AlphaCut 스타일) */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={splitAtPlayhead} title="현재 위치에서 영상 분할" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+            <button onClick={splitAtPlayhead} title="현재 위치에서 영상 분할 (S)" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
               ✂ 분할
+            </button>
+            <button onClick={() => {
+              const subs = [...(curClip.subtitles || [])];
+              const newStart = clipStart + playhead;
+              subs.push({ start: newStart, end: newStart + 3, text: "새 자막" });
+              subs.sort((a, b) => a.start - b.start);
+              updateClip("subtitles", subs);
+              setSelectedSubIdx(subs.findIndex(s => s.start === newStart));
+            }} title="현재 위치에 자막 추가" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#a5b4fc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+              + 자막
             </button>
             {selectedSegIdx >= 0 && videoSegs.length > 1 && (
               <button onClick={() => deleteSegment(selectedSegIdx)} title="선택 구간 삭제" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
@@ -1585,44 +1622,50 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
 
-          {/* 스크롤 가능한 트랙 — 클릭: playhead 이동, 드래그: 범위 선택 (모든 트랙) */}
+          {/* 스크롤 가능한 트랙 — 캡처 단계에서 범위 선택 처리 (자막 위에서도 동작) */}
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
-            onMouseDown={e => {
+            onMouseDownCapture={e => {
               if (e.button !== 0) return;
-              const scrollEl = e.currentTarget;
+              const scrollEl = timelineRef.current;
+              if (!scrollEl) return;
               const rect = scrollEl.getBoundingClientRect();
-              const initScroll = scrollEl.scrollLeft;
-              const x = e.clientX - rect.left + initScroll;
+              const x = e.clientX - rect.left + scrollEl.scrollLeft;
               const startPh = Math.max(0, Math.min(clipDuration, x / pxPerSec));
-              setPlayhead(startPh);
-              setRangeSelecting({ startPh, endPh: startPh });
+              let moved = false;
               const onMove = ev => {
                 const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
-                const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
-                setRangeSelecting(prev => prev ? { ...prev, endPh } : null);
+                const curPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
+                if (!moved && Math.abs(curPh - startPh) > 0.2) moved = true;
+                if (moved) setRangeSelecting({ startPh, endPh: curPh });
               };
               const onUp = ev => {
                 window.removeEventListener("mousemove", onMove);
                 window.removeEventListener("mouseup", onUp);
+                if (!moved) {
+                  // 단순 클릭 → playhead 이동만
+                  setPlayhead(startPh);
+                  setRangeSelecting(null);
+                  return;
+                }
                 const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
                 const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
                 const lo = Math.min(startPh, endPh), hi = Math.max(startPh, endPh);
-                if (hi - lo < 0.3) { setRangeSelecting(null); return; }
-                // 범위 내 모든 요소 선택: 세그먼트(V1) — 겹치면 선택
+                setPlayhead(lo);
+                // 범위 내 세그먼트(V1)
                 let accSeg = 0;
                 for (let si = 0; si < videoSegs.length; si++) {
                   const segLen = videoSegs[si].end - videoSegs[si].start;
-                  const segStart = accSeg, segEnd = accSeg + segLen;
-                  if (segEnd > lo && segStart < hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
+                  if (accSeg + segLen > lo && accSeg < hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
                   accSeg += segLen;
                 }
-                // 범위와 겹치는 자막(S1) — 범위와 조금이라도 겹치면 선택
-                const subIdx = (curClip.subtitles || []).findIndex(s => {
-                  const rs = s.start - clipStart, re = (s.end || s.start + 3) - clipStart;
-                  return re > lo && rs < hi; // 겹침 판정 (완전포함이 아닌 overlap)
-                });
-                if (subIdx >= 0) setSelectedSubIdx(subIdx);
-                // 범위와 겹치는 오버레이
+                // 범위 내 자막(S1) — 타임라인 렌더링과 동일한 좌표 기준
+                const subs = curClip.subtitles || [];
+                for (let si = 0; si < subs.length; si++) {
+                  const rs = Math.max(0, subs[si].start - clipStart);
+                  const re = Math.max(rs + 0.5, (subs[si].end || subs[si].start + 3) - clipStart);
+                  if (re > lo && rs < hi) { setSelectedSubIdx(si); break; }
+                }
+                // 범위 내 오버레이
                 const olHit = overlays.find(o => o.end > lo && o.start < hi);
                 if (olHit) { setSelectedOverlay(olHit.id); setPropTab("overlay"); }
                 setRangeSelecting(null);
@@ -1729,40 +1772,34 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              {/* S1 자막 (절대→상대 시간 변환) */}
+              {/* S1 자막 (절대→상대 시간 변환, 겹침 방지: 인접 자막은 폭 축소) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 {(curClip.subtitles || []).map((s, i) => {
                   const relStart = Math.max(0, s.start - clipStart);
                   const relEnd = Math.max(relStart + 0.5, (s.end || s.start + 3) - clipStart);
                   const left = relStart * pxPerSec;
-                  const width = Math.max((relEnd - relStart) * pxPerSec, 16);
+                  // 다음 자막과 겹치면 폭을 줄여서 표시
+                  const nextSub = (curClip.subtitles || [])[i + 1];
+                  let maxRight = relEnd * pxPerSec;
+                  if (nextSub) {
+                    const nextStart = Math.max(0, nextSub.start - clipStart) * pxPerSec;
+                    if (maxRight > nextStart) maxRight = nextStart - 1;
+                  }
+                  const width = Math.max(maxRight - left, 14);
                   const color = subColors[i % subColors.length];
                   const sel = selectedSubIdx === i;
                   return (
                     <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setSelectedSegIdx(-1); setSelectedOverlay(null); setPlayhead(relStart); }}
-                      onMouseDown={e => {
-                        if (e.target.style.cursor === "ew-resize") return;
-                        e.stopPropagation(); e.preventDefault();
-                        setSelectedSubIdx(i);
-                        const sx = e.clientX; const origStart = s.start; const origEnd = s.end || s.start + 3; const dur = origEnd - origStart;
-                        const mv = ev => {
-                          const dt = (ev.clientX - sx) / pxPerSec;
-                          const ns = Math.max(clipStart, Math.round((origStart + dt) * 10) / 10);
-                          const subs = [...(curClip.subtitles || [])];
-                          subs[i] = { ...subs[i], start: ns, end: ns + dur };
-                          updateClip("subtitles", subs);
-                        };
-                        const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
-                        window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                      }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "grab", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
                       <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pointerEvents: "none" }}>{s.text || `#${i+1}`}</span>
+                      {/* 좌측 트림 */}
                       <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const os=s.start;
                           const mv=ev=>{const ns=Math.max(0,Math.round((os+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],start:Math.min(ns,(s.end||s.start+3)-0.5)};updateClip("subtitles",subs);};
                           const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
                           window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
                         }} />
+                      {/* 우측 트림 */}
                       <div style={{ position: "absolute", right: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const oe=s.end||s.start+3;
                           const mv=ev=>{const ne=Math.max(s.start+0.5,Math.round((oe+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],end:ne};updateClip("subtitles",subs);};
