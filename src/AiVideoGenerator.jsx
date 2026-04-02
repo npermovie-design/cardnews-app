@@ -65,7 +65,7 @@ function SegmentCaptions({ segments }) {
 }
 
 // ═══════════════════════════════════════════════
-// 텍스트 애니메이션 세그먼트 — 6종 애니메이션
+// 텍스트 애니메이션 세그먼트 — 12종 애니메이션 + 디자인 요소
 // ═══════════════════════════════════════════════
 function TextSegment({ text, animation, bgImageUrl, style, segIndex, totalSegs }) {
   const frame = useCurrentFrame();
@@ -190,11 +190,134 @@ function TextSegment({ text, animation, bgImageUrl, style, segIndex, totalSegs }
     );
   }
 
-  // fallback
+  // ── blur: 블러에서 선명하게 ──
+  if (anim === "blur") {
+    const blur = interpolate(frame, [0, fps * 0.8], [20, 0], { extrapolateRight: "clamp" });
+    const sc = interpolate(frame, [0, fps * 0.8], [1.1, 1], { extrapolateRight: "clamp" });
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%", filter: `blur(${blur}px)`, transform: `scale(${sc})` }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3, wordBreak: "keep-all", textShadow: "0 4px 30px rgba(0,0,0,0.6)" }}>{text}</div>
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // ── split: 좌우에서 모여서 합체 ──
+  if (anim === "split") {
+    const words = (text || "").split(/\s+/);
+    const half = Math.ceil(words.length / 2);
+    const s = spring({ frame, fps, config: { damping: 15, stiffness: 100 } });
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%", gap: 12 }}>
+          <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", textAlign: "center", wordBreak: "keep-all",
+            transform: `translateX(${interpolate(s, [0, 1], [-200, 0])}px)`, textShadow: "0 4px 24px rgba(0,0,0,0.6)" }}>{words.slice(0, half).join(" ")}</div>
+          <div style={{ fontSize: 50, fontWeight: 900, color: accent, textAlign: "center", wordBreak: "keep-all",
+            transform: `translateX(${interpolate(s, [0, 1], [200, 0])}px)`, textShadow: `0 0 30px ${accent}40` }}>{words.slice(half).join(" ")}</div>
+          {/* 중앙 구분선 */}
+          <div style={{ width: interpolate(s, [0, 1], [0, 120]), height: 3, background: accent, borderRadius: 2, marginTop: 8 }} />
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // ── wave: 글자별 물결 등장 ──
+  if (anim === "wave") {
+    const chars = (text || "").split("");
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%", flexWrap: "wrap" }}>
+          <div style={{ textAlign: "center" }}>
+            {chars.map((c, ci) => {
+              const delay = ci * 1.5;
+              const charS = spring({ frame, fps, delay, config: { damping: 12, stiffness: 150 } });
+              return <span key={ci} style={{
+                display: "inline-block", fontSize: 48, fontWeight: 900, color: "#fff",
+                transform: `translateY(${interpolate(charS, [0, 1], [30, 0])}px)`,
+                opacity: charS, textShadow: "0 2px 16px rgba(0,0,0,0.5)",
+              }}>{c === " " ? "\u00A0" : c}</span>;
+            })}
+          </div>
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // ── rotate: 회전하며 등장 ──
+  if (anim === "rotate") {
+    const s = spring({ frame, fps, config: { damping: 15, stiffness: 80 } });
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          <div style={{
+            fontSize: 54, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.2, wordBreak: "keep-all",
+            transform: `rotate(${interpolate(s, [0, 1], [-15, 0])}deg) scale(${interpolate(s, [0, 1], [0.7, 1])})`,
+            textShadow: "0 4px 30px rgba(0,0,0,0.6)",
+          }}>{text}</div>
+          {/* 장식: 코너 브래킷 */}
+          <div style={{ position: "absolute", top: "12%", left: "10%", width: 40, height: 40, borderTop: `3px solid ${accent}`, borderLeft: `3px solid ${accent}`, opacity: s }} />
+          <div style={{ position: "absolute", bottom: "12%", right: "10%", width: 40, height: 40, borderBottom: `3px solid ${accent}`, borderRight: `3px solid ${accent}`, opacity: s }} />
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // ── bounce: 통통 바운스 ──
+  if (anim === "bounce") {
+    const s = spring({ frame, fps, config: { damping: 8, stiffness: 150 } });
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          {/* 상단 장식 원 */}
+          <div style={{ width: 60, height: 60, borderRadius: "50%", background: `${accent}20`, border: `2px solid ${accent}40`,
+            display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20,
+            transform: `scale(${s})` }}>
+            <div style={{ fontSize: 24, color: accent, fontWeight: 900 }}>{segIndex + 1}</div>
+          </div>
+          <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3, wordBreak: "keep-all",
+            transform: `scale(${interpolate(s, [0, 1], [0.3, 1])})`,
+            textShadow: "0 4px 24px rgba(0,0,0,0.6)" }}>{text}</div>
+          {/* 하단 진행 도트 */}
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            {Array.from({ length: Math.min(totalSegs, 10) }).map((_, i) => (
+              <div key={i} style={{ width: i === segIndex ? 24 : 8, height: 8, borderRadius: 4,
+                background: i === segIndex ? accent : "rgba(255,255,255,0.15)" }} />
+            ))}
+          </div>
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // ── reveal: 좌→우 마스크 reveal ──
+  if (anim === "reveal") {
+    const revealProg = interpolate(frame, [0, fps * 1], [0, 100], { extrapolateRight: "clamp" });
+    return (
+      <AbsoluteFill style={{ opacity }}>{bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          <div style={{ position: "relative" }}>
+            {/* 텍스트 (clipPath로 reveal) */}
+            <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3, wordBreak: "keep-all",
+              clipPath: `inset(0 ${100 - revealProg}% 0 0)`, textShadow: "0 4px 24px rgba(0,0,0,0.6)" }}>{text}</div>
+            {/* reveal 커서 라인 */}
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${revealProg}%`, width: 3, background: accent, borderRadius: 2,
+              boxShadow: `0 0 12px ${accent}`, opacity: revealProg < 98 ? 1 : 0 }} />
+          </div>
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
+
+  // fallback: fade
+  const sF = spring({ frame, fps, config: { damping: 20 } });
   return (
-    <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%", opacity }}>
-      <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", textAlign: "center", lineHeight: 1.4,
-        wordBreak: "keep-all", textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>{text}</div>
+    <AbsoluteFill style={{ opacity }}>{bgEl}
+      <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+        <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3,
+          wordBreak: "keep-all", transform: `scale(${interpolate(sF, [0, 1], [0.85, 1])})`,
+          textShadow: "0 4px 30px rgba(0,0,0,0.6)" }}>{text}</div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
@@ -1056,13 +1179,19 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   "durationSec": 3~6 사이의 초
 }
 
-텍스트 애니메이션 타입 (반드시 다양하게 섞어 사용):
-- "fade": 심플 페이드인 (일반 설명)
-- "typewriter": 한 글자씩 타이핑 (중요 메시지, 인트로)
+텍스트 애니메이션 타입 (12종, 반드시 다양하게 섞어! 같은 타입 2번 연속 절대 금지):
+- "fade": 페이드+스케일 (일반 설명)
+- "typewriter": 한 글자씩 타이핑 (코드, 명령어, 인트로)
 - "highlight": 단어별 순차 하이라이트 (강조 포인트)
-- "scale": 큰 임팩트 줌인 (핵심 숫자, 결론)
+- "scale": 큰 임팩트 줌인 (핵심 결론, 충격적 사실)
 - "slide": 아래에서 슬라이드업 (전환, 새 주제)
-- "counter": 숫자 카운트업 (수치, 통계)
+- "counter": 숫자 카운트업 (수치, 통계, 퍼센트)
+- "blur": 블러→선명 (드라마틱한 공개)
+- "split": 좌우에서 합체 (대비, 비교)
+- "wave": 글자별 물결 등장 (재미, 감성)
+- "rotate": 회전하며 등장 (전환, 새 관점)
+- "bounce": 통통 바운스 (밝은 톤, 흥미)
+- "reveal": 좌→우 커서 reveal (공개, 발표)
 
 규칙:
 1. 의미 단위는 3~6초가 이상적
@@ -1086,7 +1215,7 @@ JSON 배열만 출력하세요.`
 
       // fallback + 보충: 전체 합산이 duration에 맞도록 반드시 채움
       const targetSegCount = Math.ceil(duration / 4);
-      const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
+      const anims = ["fade","typewriter","highlight","scale","slide","counter","blur","split","wave","rotate","bounce","reveal"];
 
       if (segmentData.length === 0) {
         // AI 완전 실패: 문장 단위로 분할
@@ -1636,7 +1765,7 @@ JSON 배열만 출력하세요.`
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>애니메이션</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3 }}>
-                      {["fade","typewriter","highlight","scale","slide","counter"].map(a => (
+                      {["fade","typewriter","highlight","scale","slide","counter","blur","split","wave","rotate","bounce","reveal"].map(a => (
                         <button key={a} onClick={() => updSeg("animation", a)} style={{ padding: "4px 2px", borderRadius: 4, border: `1px solid ${seg.animation === a ? acc : "#2a2a4a"}`, background: seg.animation === a ? `${acc}10` : "transparent", color: seg.animation === a ? acc : "#888", fontSize: 9, fontWeight: 700, cursor: "pointer" }}>{a}</button>
                       ))}
                     </div>
