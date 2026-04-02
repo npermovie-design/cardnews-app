@@ -130,7 +130,8 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const currentStyle = VIDEO_STYLES.find(s => s.id === styleId) || VIDEO_STYLES[0];
   const currentSize = SIZES.find(s => s.id === sizeId) || SIZES[0];
   const durationInFrames = Math.max(1, Math.round(duration * FPS));
-  const previewScale = sizeId === "9:16" ? { w: 340, h: 604 } : sizeId === "1:1" ? { w: 480, h: 480 } : { w: 600, h: 338 };
+  // 프리뷰: 화면에 맞게 크게
+  const previewScale = sizeId === "9:16" ? { w: "min(400px, 45vh * 9 / 16)", h: "min(710px, 78vh)" } : sizeId === "1:1" ? { w: "min(560px, 70vh)", h: "min(560px, 70vh)" } : { w: "min(720px, 90vw)", h: "min(405px, 50vh)" };
 
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.06)" : "#f9f9fc", color: text, fontSize: 13, outline: "none", boxSizing: "border-box" };
@@ -293,7 +294,7 @@ JSON 형식: {"scenes":[...]}`
     } catch {}
   };
 
-  const pxPerSec = 16;
+  const basePxPerSec = 16;
 
   // ════════ Step: 입력 (대본/음성 탭) ════════
   if (step === "input") return (
@@ -495,9 +496,11 @@ JSON 형식: {"scenes":[...]}`
     </div>
   );
 
-  // ════════ Step: 편집 (ShortsCreator 스타일 3패널) ════════
-  const sceneDurSec = scenes.length > 0 ? scenes.map(s => (s._endSec || 0) - (s._startSec || 0)) : [duration];
-  const tlWidth = Math.max(duration * pxPerSec, 600);
+  // ════════ Step: 편집 (ShortsCreator 동일 구성) ════════
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const tlPxPerSec = basePxPerSec * timelineZoom;
+  const tlWidth = Math.max(duration * tlPxPerSec, 600);
+  const timelineRef = useRef(null);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
@@ -525,24 +528,36 @@ JSON 형식: {"scenes":[...]}`
           </div>
         </div>
 
-        {/* 중앙: 프리뷰 */}
+        {/* 중앙: 프리뷰 + 재생 컨트롤 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0 }}>
-          <div style={{ borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.5)", border: "2px solid #2a2a4a" }}>
+          <div style={{ borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.5)", border: "2px solid #2a2a4a", position: "relative" }}>
             <Player
               ref={playerRef}
               component={SceneComposition}
-              inputProps={{ scenes, audioUrl, style: currentStyle, captions }}
+              inputProps={{ scenes, audioUrl: ttsUrl || audioUrl, style: currentStyle, captions }}
               durationInFrames={durationInFrames}
               fps={FPS}
               compositionWidth={currentSize.w}
               compositionHeight={currentSize.h}
               style={{ width: previewScale.w, height: previewScale.h }}
-              controls
+              controls={false}
               autoPlay={false}
               clickToPlay
             />
+            {/* 시간 표시 */}
+            <div style={{ position: "absolute", top: 8, right: 10, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{fmt(playhead)} / {fmt(duration)}</div>
           </div>
-          <div style={{ marginTop: 8, fontSize: 11, color: "#666" }}>{currentSize.label} · {duration}초 · {currentStyle.name}</div>
+          {/* 재생 컨트롤 (ShortsCreator 동일) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+            <button onClick={() => { setPlayhead(0); playerRef.current?.seekTo(0); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
+            <button onClick={() => {
+              if (isPlaying) { playerRef.current?.pause(); setIsPlaying(false); }
+              else { playerRef.current?.play(); setIsPlaying(true); }
+            }} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 12px ${acc}40` }}>
+              {isPlaying ? "⏸" : "▶"}
+            </button>
+            <button onClick={() => { setPlayhead(duration); playerRef.current?.seekTo(durationInFrames); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
+          </div>
         </div>
 
         {/* 우측: 속성 패널 */}
@@ -606,7 +621,7 @@ JSON 형식: {"scenes":[...]}`
         </div>
       </div>
 
-      {/* 하단: 타임라인 */}
+      {/* 하단: 툴바 + 타임라인 (ShortsCreator 동일) */}
       <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", position: "relative" }}>
         {/* 높이 조절 핸들 */}
         <div style={{ position: "absolute", top: -4, left: 0, right: 0, height: 8, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}
@@ -616,28 +631,63 @@ JSON 형식: {"scenes":[...]}`
             window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
           }}><div style={{ width: 40, height: 3, borderRadius: 2, background: "#3a3a5a" }} /></div>
 
+        {/* 툴바 (ShortsCreator 동일) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 12px", borderBottom: "1px solid #1a1a30", background: "#12122a" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => { const last = scenes[scenes.length-1]; setScenes(prev => [...prev, { title:"새 씬", text:"", imagePrompt:"", bgColor: currentStyle.bg, _startSec: last?._endSec||duration, _endSec:(last?._endSec||duration)+5, _startFrame: Math.round((last?._endSec||duration)*FPS), _durFrames: 5*FPS }]); }}
+              style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: acc, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>+ 씬</button>
+            {scenes.length > 1 && editingScene >= 0 && (
+              <button onClick={() => { setScenes(prev => prev.filter((_,j)=>j!==editingScene)); setEditingScene(Math.max(0,editingScene-1)); }}
+                style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>씬 삭제</button>
+            )}
+            <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 4px" }} />
+            <span style={{ fontSize: 10, color: "#888" }}>🔊</span>
+            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#4ade80" }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => { setPlayhead(0); playerRef.current?.seekTo(0); }} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: acc, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>⏮ 처음</button>
+            <span style={{ fontSize: 11, color: acc, fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)} | {fmt(duration)}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: acc }} />
+              <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            </div>
+          </div>
+        </div>
+
         <div style={{ display: "flex", height: bottomH, overflow: "hidden" }}>
           {/* 트랙 라벨 */}
           <div style={{ width: 44, flexShrink: 0, background: "#0a0a18", borderRight: "1px solid #1a1a30" }}>
-            <div style={{ height: 18 }} />
+            <div style={{ height: 20 }} />
             <div style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#4a9eff" }}>V</div>
             {captions.length > 0 && <div style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#f59e0b" }}>S</div>}
             {audioUrl && <div style={{ height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#4ade80" }}>A</div>}
           </div>
-          {/* 트랙 영역 */}
-          <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative" }}>
+          {/* 트랙 영역 — 클릭으로 playhead 이동 */}
+          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
+            onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
+              const sec = Math.max(0, Math.min(duration, x / tlPxPerSec));
+              setPlayhead(sec);
+              playerRef.current?.seekTo(Math.round(sec * FPS));
+              // 클릭한 위치의 씬 선택
+              for (let i = 0; i < scenes.length; i++) {
+                if (sec >= (scenes[i]._startSec || 0) && sec < (scenes[i]._endSec || 0)) { setEditingScene(i); break; }
+              }
+            }}>
             <div style={{ width: tlWidth, height: "100%", position: "relative" }}>
               {/* 룰러 */}
               <div style={{ height: 18, position: "relative", borderBottom: "1px solid #1a1a30" }}>
                 {Array.from({ length: Math.ceil(duration) + 1 }, (_, i) => i).filter(i => i % 5 === 0).map(sec => (
-                  <div key={sec} style={{ position: "absolute", left: sec * pxPerSec }}><div style={{ width: 1, height: 6, background: "#444" }} /><span style={{ fontSize: 7, color: "#444", position: "absolute", left: 2, top: 6, fontFamily: "monospace" }}>{fmt(sec)}</span></div>
+                  <div key={sec} style={{ position: "absolute", left: sec * tlPxPerSec }}><div style={{ width: 1, height: 6, background: "#444" }} /><span style={{ fontSize: 7, color: "#444", position: "absolute", left: 2, top: 6, fontFamily: "monospace" }}>{fmt(sec)}</span></div>
                 ))}
               </div>
               {/* 비디오 씬 블록 */}
               <div style={{ height: 28, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 {scenes.map((sc, i) => {
-                  const left = (sc._startSec || 0) * pxPerSec;
-                  const width = Math.max(((sc._endSec || 0) - (sc._startSec || 0)) * pxPerSec - 1, 16);
+                  const left = (sc._startSec || 0) * tlPxPerSec;
+                  const width = Math.max(((sc._endSec || 0) - (sc._startSec || 0)) * tlPxPerSec - 1, 16);
                   const colors = ["#7c6aff", "#ec4899", "#4ade80", "#f59e0b", "#4a9eff", "#ef4444"];
                   const c = colors[i % colors.length];
                   return (
@@ -652,8 +702,8 @@ JSON 형식: {"scenes":[...]}`
               {captions.length > 0 && (
                 <div style={{ height: 24, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                   {captions.map((c, i) => {
-                    const left = (c.startMs / 1000) * pxPerSec;
-                    const width = Math.max(((c.endMs - c.startMs) / 1000) * pxPerSec, 8);
+                    const left = (c.startMs / 1000) * tlPxPerSec;
+                    const width = Math.max(((c.endMs - c.startMs) / 1000) * tlPxPerSec, 8);
                     return <div key={i} style={{ position: "absolute", left, top: 3, width, height: 18, background: "rgba(245,158,11,0.2)", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 3, overflow: "hidden", display: "flex", alignItems: "center", padding: "0 2px" }}>
                       <span style={{ fontSize: 7, color: "#f59e0b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.text}</span>
                     </div>;
@@ -663,11 +713,15 @@ JSON 형식: {"scenes":[...]}`
               {/* 오디오 트랙 */}
               {audioUrl && (
                 <div style={{ height: 20, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                  <div style={{ position: "absolute", left: 0, top: 4, width: duration * pxPerSec, height: 12, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 3, display: "flex", alignItems: "center", padding: "0 4px" }}>
+                  <div style={{ position: "absolute", left: 0, top: 4, width: duration * tlPxPerSec, height: 12, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 3, display: "flex", alignItems: "center", padding: "0 4px" }}>
                     <span style={{ fontSize: 7, color: "#4ade80" }}>Audio</span>
                   </div>
                 </div>
               )}
+              {/* 재생 헤드 */}
+              <div style={{ position: "absolute", left: playhead * tlPxPerSec, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 20, pointerEvents: "none" }}>
+                <div style={{ position: "absolute", top: -1, left: -5, width: 12, height: 10, background: "#ff3b3b", clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+              </div>
             </div>
           </div>
         </div>
