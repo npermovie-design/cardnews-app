@@ -71,8 +71,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [editClips, setEditClips] = useState([]);
   const [editIdx, setEditIdx] = useState(0);
   const [template, setTemplate] = useState("minimal");
-  const [titleColor, setTitleColor] = useState("#FFFFFF");
-  const [captionColor, setCaptionColor] = useState("#FFFFFF");
+  // 제목 스타일
+  const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 20, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100 });
+  // 자막 스타일
+  const [captionStyle, setCaptionStyle] = useState({ color: "#FFFFFF", fontSize: 15, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100 });
+  // 호환성
+  const titleColor = titleStyle.color;
+  const captionColor = captionStyle.color;
+  const fontSize = titleStyle.fontSize;
   const [removeSilence, setRemoveSilence] = useState(false);
   const [maxChars, setMaxChars] = useState(0);
   const [shortsLength, setShortsLength] = useState("s30");
@@ -89,7 +95,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [isPlaying, setIsPlaying] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [selectedSubIdx, setSelectedSubIdx] = useState(-1);
-  const [fontSize, setFontSize] = useState(14);
 
   // 오버레이 (이미지/로고/텍스트)
   const [overlays, setOverlays] = useState([]); // { id, type:'image'|'text'|'logo', src, text, x, y, w, h, start, end }
@@ -145,35 +150,53 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
   };
 
-  // ── 비디오 ↔ playhead 동기화 ──────────────
+  // ── 비디오 ↔ playhead 동기화 (버벅임 방지) ──────────────
+  const seekingRef = useRef(false);
+
+  // seek: 재생 중이 아닐 때만 currentTime 설정 (재생 중엔 video가 자체 관리)
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || step !== "edit") return;
+    if (!v || step !== "edit" || isPlaying) return;
     const clip = editClips[editIdx];
     if (!clip) return;
-    v.currentTime = (clip.start_seconds || 0) + playhead;
+    const target = (clip.start_seconds || 0) + playhead;
+    if (Math.abs(v.currentTime - target) > 0.3) {
+      seekingRef.current = true;
+      v.currentTime = target;
+    }
   }, [playhead, editIdx, step]);
 
+  // play/pause
   useEffect(() => {
     const v = videoRef.current;
     if (!v || step !== "edit") return;
-    if (isPlaying) { v.play().catch(() => {}); }
-    else { v.pause(); }
+    if (isPlaying) {
+      const clip = editClips[editIdx];
+      if (clip) v.currentTime = (clip.start_seconds || 0) + playhead;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
   }, [isPlaying, step]);
 
-  // 비디오 timeupdate → playhead
+  // video timeupdate → playhead (재생 중에만, requestAnimationFrame 사용)
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    const onTime = () => {
+    let raf;
+    const tick = () => {
       if (!isPlaying) return;
       const clip = editClips[editIdx];
-      if (!clip) return;
-      const rel = v.currentTime - (clip.start_seconds || 0);
-      setPlayhead(Math.max(0, rel));
+      if (clip) {
+        const rel = v.currentTime - (clip.start_seconds || 0);
+        const dur = (clip.end_seconds || 30) - (clip.start_seconds || 0);
+        if (rel >= dur) { setIsPlaying(false); setPlayhead(dur); return; }
+        setPlayhead(Math.max(0, rel));
+      }
+      raf = requestAnimationFrame(tick);
     };
-    v.addEventListener("timeupdate", onTime);
-    return () => v.removeEventListener("timeupdate", onTime);
+    if (isPlaying) raf = requestAnimationFrame(tick);
+    return () => { if (raf) cancelAnimationFrame(raf); };
   }, [isPlaying, editIdx]);
 
   // 드래그 핸들러 (자막/제목 위치) + 스냅 가이드
@@ -753,14 +776,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
               {/* 상단 검은바 (제목) */}
               <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-                style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent" }}>
-                <span style={{ fontSize: Math.min(fontSize + 4, 22), fontWeight: 900, color: titleColor, textAlign: "center", lineHeight: 1.3, textShadow: "0 2px 8px rgba(0,0,0,0.5)", maxWidth: "90%", wordBreak: "keep-all" }}>{curClip.title || "제목을 입력하세요"}</span>
+                style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", opacity: titleStyle.opacity / 100 }}>
+                <span style={{
+                  fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
+                  textAlign: "center", lineHeight: 1.3, maxWidth: "90%", wordBreak: "keep-all",
+                  textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
+                  WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
+                  background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
+                  padding: titleStyle.bgBox ? "4px 12px" : 0, borderRadius: titleStyle.bgBox ? 6 : 0,
+                }}>{curClip.title || "제목을 입력하세요"}</span>
               </div>
 
-              {/* 중앙 영상 */}
-              <div style={{ position: "absolute", top: "22%", left: 0, right: 0, bottom: "22%", overflow: "hidden" }}>
+              {/* 중앙 영상 (원본 비율 유지) */}
+              <div style={{ position: "absolute", top: "22%", left: 0, right: 0, bottom: "22%", overflow: "hidden", background: "#000" }}>
                 <video ref={videoRef} src={sourceUrl || undefined}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
                   preload="metadata" playsInline />
                 {!sourceUrl && (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(40,40,60,0.5)" }}>
@@ -771,8 +801,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 하단 검은바 (자막) */}
               <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent" }}>
-                <span style={{ fontSize: Math.min(fontSize + 2, 18), color: captionColor, fontWeight: 700, textAlign: "center", lineHeight: 1.4, textShadow: "0 1px 6px rgba(0,0,0,0.5)", maxWidth: "90%", wordBreak: "keep-all" }}>
+                style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", opacity: captionStyle.opacity / 100 }}>
+                <span style={{
+                  fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
+                  textAlign: "center", lineHeight: 1.4, maxWidth: "90%", wordBreak: "keep-all",
+                  textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
+                  WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
+                  background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
+                  padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
+                }}>
                   {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
                 </span>
               </div>
@@ -905,33 +942,63 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               )}
 
               {/* 템플릿 + 색상 */}
+              {/* 텍스트 스타일 편집기 (공용) */}
+              {[["title","상단 제목",titleStyle,setTitleStyle,"#7c6aff"],["caption","하단 자막",captionStyle,setCaptionStyle,"#f59e0b"]].map(([key,label,st,setSt,ac]) => (
+                <div key={key} style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: `1px solid ${ac}25` }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: ac, marginBottom: 8 }}>{label}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자색</div>
+                      <input type="color" value={st.color} onChange={e => setSt(p=>({...p,color:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>크기 <span style={{ color: ac }}>{st.fontSize}px</span></div>
+                      <input type="range" min="10" max="32" value={st.fontSize} onChange={e => setSt(p=>({...p,fontSize:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                      <input type="checkbox" checked={st.shadow} onChange={e => setSt(p=>({...p,shadow:e.target.checked}))} style={{ accentColor: ac }} /> 그림자
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                      <input type="checkbox" checked={st.border} onChange={e => setSt(p=>({...p,border:e.target.checked}))} style={{ accentColor: ac }} /> 테두리
+                    </label>
+                  </div>
+                  {st.border && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>테두리색</div>
+                      <input type="color" value={st.borderColor} onChange={e => setSt(p=>({...p,borderColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
+                    </div>
+                  )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                      <input type="checkbox" checked={st.bgBox} onChange={e => setSt(p=>({...p,bgBox:e.target.checked}))} style={{ accentColor: ac }} /> 배경 박스
+                    </label>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>투명도 {st.opacity}%</div>
+                      <input type="range" min="0" max="100" value={st.opacity} onChange={e => setSt(p=>({...p,opacity:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
+                    </div>
+                  </div>
+                  {st.bgBox && (
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>박스 배경색</div>
+                      <input type="color" value={st.bgColor?.startsWith("rgba") ? "#000000" : (st.bgColor || "#000000")} onChange={e => setSt(p=>({...p,bgColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* 템플릿 프리셋 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>템플릿</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 8 }}>템플릿 프리셋</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4 }}>
                   {TEMPLATES.map(t => (
-                    <div key={t.id} onClick={() => { setTemplate(t.id); setTitleColor(t.titleColor); setCaptionColor(t.captionColor); }}
+                    <div key={t.id} onClick={() => { setTemplate(t.id); setTitleStyle(p=>({...p,color:t.titleColor})); setCaptionStyle(p=>({...p,color:t.captionColor})); }}
                       style={{ border: `2px solid ${template === t.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
-                      <div style={{ height: 28, borderRadius: 4, background: t.bg }} />
-                      <div style={{ fontSize: 8, fontWeight: 700, color: template === t.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t.name}</div>
+                      <div style={{ height: 24, borderRadius: 4, background: t.bg }} />
+                      <div style={{ fontSize: 7, fontWeight: 700, color: template === t.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t.name}</div>
                     </div>
                   ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>제목색</div>
-                    <input type="color" value={titleColor} onChange={e => setTitleColor(e.target.value)} style={{ width: "100%", height: 24, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>자막색</div>
-                    <input type="color" value={captionColor} onChange={e => setCaptionColor(e.target.value)} style={{ width: "100%", height: 24, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input type="range" min="8" max="24" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} style={{ flex: 1, accentColor: "#7c6aff" }} />
-                      <span style={{ fontSize: 10, color: "#7c6aff", minWidth: 20 }}>{fontSize}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1297,18 +1364,56 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </div>
             </>
           ) : (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 20px" }}>
-                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, borderRightColor: acc, animation: "shorts-ring-spin 1.5s linear infinite" }} />
+            <div style={{ textAlign: "center", maxWidth: 420, width: "100%" }}>
+              {/* 애니메이션 아이콘 */}
+              <div style={{ position: "relative", width: 100, height: 100, margin: "0 auto 24px" }}>
+                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, borderRightColor: acc, animation: "spin 1.5s linear infinite" }} />
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: "shorts-icon-bounce 2s ease-in-out infinite" }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
                     <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8" />
                     <polygon points="10,8 17,12 10,16" fill={acc} />
                   </svg>
                 </div>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: text }}>영상 생성 중...</div>
-              <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>{completed}/{total}개 완료 · 페이지를 이동해도 계속 생성됩니다</div>
+
+              <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>영상을 만들고 있어요</div>
+              <div style={{ fontSize: 14, color: muted, marginBottom: 20, lineHeight: 1.6 }}>
+                AI가 영상을 분석하고 편집 중입니다<br/>
+                페이지를 이동해도 백그라운드에서 계속 생성됩니다
+              </div>
+
+              {/* 진행률 바 */}
+              <div style={{ background: "rgba(128,128,128,0.15)", borderRadius: 10, height: 8, overflow: "hidden", marginBottom: 12 }}>
+                <div style={{ height: "100%", borderRadius: 10, background: `linear-gradient(90deg,${acc},#8b5cf6)`, width: `${total > 0 ? (completed / total) * 100 : 0}%`, transition: "width 0.5s ease" }} />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: acc }}>{completed} / {total}개 완료</span>
+                <span style={{ fontSize: 12, color: muted }}>예상 {Math.max(1, (total - completed) * 2)}~{Math.max(2, (total - completed) * 4)}분 남음</span>
+              </div>
+
+              {/* 단계별 상태 */}
+              <div style={{ textAlign: "left" }}>
+                {editClips.map((c, i) => {
+                  const r = results.find(x => x.index === i);
+                  const isDone = r?.type === "done";
+                  const isErr = r?.type === "error";
+                  const isCurrent = !isDone && !isErr && i <= completed;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, marginBottom: 4, background: isDone ? "rgba(74,222,128,0.06)" : isCurrent ? `${acc}08` : "transparent" }}>
+                      {isDone ? <span style={{ color: "#4ade80", fontSize: 16 }}>✓</span>
+                        : isErr ? <span style={{ color: "#f87171", fontSize: 16 }}>✗</span>
+                        : isCurrent ? <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${acc}`, borderTopColor: "transparent", animation: "spin 1s linear infinite" }} />
+                        : <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${bdr}` }} />}
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: isDone ? "#4ade80" : isErr ? "#f87171" : text }}>{c.title || `Short ${i+1}`}</span>
+                        <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>{isDone ? "완료" : isErr ? "실패" : isCurrent ? "생성 중..." : "대기"}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: muted }}>{fmt(c.start_seconds||0)}~{fmt(c.end_seconds||0)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
