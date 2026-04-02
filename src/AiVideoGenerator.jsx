@@ -25,7 +25,38 @@ function SceneComposition({ segments, audioUrl, style }) {
           </Sequence>
         );
       })}
+      {/* 자막: 세그먼트 텍스트를 시간에 맞춰 표시 */}
+      <SegmentCaptions segments={segments} />
       {audioUrl && <Audio src={audioUrl} volume={1} />}
+    </AbsoluteFill>
+  );
+}
+
+// ── 세그먼트 기반 자막 (음성에 맞춰 계속 변경) ──
+function SegmentCaptions({ segments }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const sec = frame / fps;
+  const current = segments.find(s => sec >= s.startSec && sec < s.endSec);
+  if (!current || !current.text) return null;
+
+  // 세그먼트 내 단어별 순차 표시
+  const words = current.text.split(/\s+/);
+  const segDur = current.endSec - current.startSec;
+  const elapsed = sec - current.startSec;
+  const progress = elapsed / segDur;
+  const visibleWords = Math.ceil(words.length * Math.min(1, progress * 1.5));
+
+  return (
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 4% 4%", pointerEvents: "none" }}>
+      <div style={{ background: "rgba(0,0,0,0.85)", borderRadius: 10, padding: "10px 24px", maxWidth: "94%",
+        border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", textAlign: "center", lineHeight: 1.5, wordBreak: "keep-all" }}>
+          {words.map((w, i) => (
+            <span key={i} style={{ color: i < visibleWords ? "#fff" : "rgba(255,255,255,0.25)" }}>{w} </span>
+          ))}
+        </div>
+      </div>
     </AbsoluteFill>
   );
 }
@@ -776,6 +807,23 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
+  // 스페이스바 재생/정지
+  useEffect(() => {
+    if (step !== "editing") return;
+    const handleKey = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (isPlaying) { playerRef.current?.pause(); setIsPlaying(false); }
+        else { playerRef.current?.play(); setIsPlaying(true); }
+      }
+      if (e.code === "ArrowLeft") { e.preventDefault(); const t = Math.max(0, playhead - 2); setPlayhead(t); playerRef.current?.seekTo(Math.round(t * FPS)); }
+      if (e.code === "ArrowRight") { e.preventDefault(); const t = Math.min(duration, playhead + 2); setPlayhead(t); playerRef.current?.seekTo(Math.round(t * FPS)); }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [step, isPlaying, playhead, duration]);
+
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.06)" : "#f9f9fc", color: text, fontSize: 13, outline: "none", boxSizing: "border-box" };
 
@@ -927,7 +975,7 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   "type": "text" 또는 "gif",
   "animation": "텍스트 애니메이션 타입 (type=text일 때만)",
   "gifKeyword": "영어 GIF 검색 키워드 (type=gif일 때만)",
-  "durationSec": 3~8 사이의 초
+  "durationSec": 3~5 사이의 초 (짧고 빠른 전환이 좋음)
 }
 
 텍스트 애니메이션 타입 (반드시 다양하게 섞어 사용):
@@ -939,7 +987,7 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
 - "counter": 숫자 카운트업 (수치, 통계)
 
 규칙:
-1. 의미 단위가 3초 미만이거나 8초 초과하면 안 됨
+1. 의미 단위는 3~5초가 이상적. 6초 이상은 지루함
 2. 연속으로 같은 animation/type 금지
 3. GIF 구간은 전체의 20~40% 정도 (시각적 변화를 위해)
 4. GIF 키워드는 반드시 영어 (고퀄 검색용)
@@ -969,7 +1017,7 @@ JSON 배열만 출력하세요.`
       // 타이밍 계산
       let currentSec = 0;
       const timedSegments = segmentData.map(s => {
-        const dur = Math.max(3, Math.min(8, s.durationSec || 5));
+        const dur = Math.max(2, Math.min(6, s.durationSec || 4));
         const seg = { ...s, startSec: currentSec, endSec: currentSec + dur };
         currentSec += dur;
         return seg;
@@ -1053,13 +1101,17 @@ JSON 배열만 출력하세요.`
           if (ttsBlobs.length > 0) {
             const pcmChunks = [];
             let sampleRate = 24000;
-            for (const blob of ttsBlobs) {
-              const buf = await blob.arrayBuffer();
-              // WAV 헤더에서 sample rate 읽기 (바이트 24-27)
+            for (let bi = 0; bi < ttsBlobs.length; bi++) {
+              const buf = await ttsBlobs[bi].arrayBuffer();
               const view = new DataView(buf);
               if (buf.byteLength > 44) {
                 sampleRate = view.getUint32(24, true);
                 pcmChunks.push(new Uint8Array(buf, 44)); // PCM 데이터만
+                // 씬 사이 짧은 무음 (0.2초) 추가 → 자연스러운 연결
+                if (bi < ttsBlobs.length - 1) {
+                  const silenceBytes = Math.round(sampleRate * 0.2 * 2); // 16bit mono
+                  pcmChunks.push(new Uint8Array(silenceBytes));
+                }
               }
             }
             // 새 WAV 헤더 생성
@@ -1446,6 +1498,12 @@ JSON 배열만 출력하세요.`
               {isPlaying ? "⏸" : "▶"}
             </button>
             <button onClick={() => { setPlayhead(duration); playerRef.current?.seekTo(durationInFrames); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
+            {/* 다운로드 */}
+            {ttsUrl && (
+              <a href={ttsUrl} download="ai-voice.wav" style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="음성 다운로드">🔊</a>
+            )}
+            <div style={{ flex: 1 }} />
+            <div style={{ fontSize: 10, color: "#555" }}>Space: 재생 | ←→: 이동</div>
           </div>
         </div>
 
