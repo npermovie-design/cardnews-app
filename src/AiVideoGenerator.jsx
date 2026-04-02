@@ -390,95 +390,85 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
       const ratio = sizeId === "16:9" ? "가로(16:9)" : sizeId === "1:1" ? "정사각(1:1)" : "세로(9:16)";
       const styleDesc = currentStyle.name + " (" + currentStyle.desc + ")";
 
-      // 대본을 문단별로 분할하여 씬에 직접 매핑
-      const paragraphs = fullText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 2);
-      const useDirectMapping = paragraphs.length >= 3 && paragraphs.length <= 15;
-      const actualSceneCount = useDirectMapping ? Math.min(paragraphs.length, 10) : sceneCount;
+      // ── 핵심: 대본을 직접 씬으로 분할 (AI + 코드 하이브리드) ──
+      // 1) 대본을 문장 단위로 분리
+      const sentences = fullText
+        .replace(/([.!?。])\s*/g, "$1\n")
+        .split(/\n+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 2);
+
+      const actualSceneCount = Math.max(3, Math.min(sentences.length, Math.ceil(duration / 8)));
       const secPerScene = duration / actualSceneCount;
 
-      const aiRes = await fetch("/api/ai-proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "chat",
-          model: "gpt-4o-mini",
-          messages: [{
-            role: "system",
-            content: `AI 영상 씬 제작. 반드시 JSON만 출력. 스타일: ${styleDesc}.
-사용자의 대본/텍스트를 ${actualSceneCount}개 씬으로 분할.
+      // 2) 문장을 씬 수에 맞게 그룹핑
+      const sentencesPerScene = Math.ceil(sentences.length / actualSceneCount);
+      const sceneTexts = [];
+      for (let i = 0; i < actualSceneCount; i++) {
+        const chunk = sentences.slice(i * sentencesPerScene, (i + 1) * sentencesPerScene);
+        sceneTexts.push(chunk.join(" "));
+      }
 
-각 씬 형식:
-{"title":"대본에서 가장 핵심적인 한 줄(최대 15자)","text":"대본 원문 요약(최대 40자)","imagePrompt":"${currentStyle.imageKeyword} 관련 영어 2-3단어","startSec":N,"endSec":N}
+      // 3) AI에게는 이미지 키워드만 생성 요청 (대본 매칭은 코드에서 직접)
+      setLoadingMsg("씬에 맞는 이미지를 찾고 있어요...");
+      let imagePrompts = sceneTexts.map(() => currentStyle.imageKeyword || "abstract");
+      try {
+        const aiRes = await fetch("/api/ai-proxy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "chat", model: "gpt-4o-mini",
+            messages: [{
+              role: "system",
+              content: `각 문장에 어울리는 Unsplash 이미지 검색 키워드(영어 2-3단어)를 생성. 스타일: ${currentStyle.name}.
+JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]`
+            }, {
+              role: "user",
+              content: sceneTexts.map((t, i) => `${i+1}. ${t.slice(0, 80)}`).join("\n")
+            }],
+          }),
+        });
+        const aiData = await aiRes.json();
+        const aiContent = aiData.choices?.[0]?.message?.content || aiData.content || "";
+        const arr = JSON.parse(aiContent.match(/\[[\s\S]*\]/)?.[0] || "[]");
+        if (arr.length === sceneTexts.length) imagePrompts = arr.map(k => `${currentStyle.imageKeyword} ${k}`);
+      } catch {}
 
-중요 규칙:
-1. title은 반드시 대본에 있는 실제 문장/키워드에서 추출
-2. text는 대본의 해당 부분을 그대로 요약
-3. 씬 순서 = 대본 순서 (절대 섞지 마)
-4. startSec/endSec: 0초부터 ${duration}초까지 균등 분배
-5. imagePrompt: "${currentStyle.imageKeyword}" + 대본 내용 관련 영어 키워드
-
-출력: {"scenes":[...]}`
-          }, {
-            role: "user",
-            content: `대본 전문 (${duration}초 ${ratio} 영상):\n\n${fullText.slice(0, 3000)}`
-          }],
-        }),
-      });
-      const aiData = await aiRes.json();
-      const aiContent = aiData.choices?.[0]?.message?.content || aiData.content || "";
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("AI 응답 파싱 실패");
-      const parsed = JSON.parse(jsonMatch[0]);
-
-      // suggestions는 더 이상 사용하지 않음 (입력 단계에서 스타일 선택)
-
-      // 이미지 검색
+      // 4) 이미지 검색
       const orient = sizeId === "16:9" ? "landscape" : sizeId === "1:1" ? "squarish" : "portrait";
-      const scenesWithImages = await Promise.all((parsed.scenes || []).map(async (sc, i) => {
-        const startSec = sc.startSec ?? (i * duration / sceneCount);
-        const endSec = sc.endSec ?? ((i + 1) * duration / sceneCount);
+      const scenesWithImages = await Promise.all(sceneTexts.map(async (txt, i) => {
+        const startSec = i * secPerScene;
+        const endSec = (i + 1) * secPerScene;
+        // 제목: 해당 청크의 첫 문장에서 핵심 15자
+        const title = txt.slice(0, 20).replace(/[.!?。,]$/, "");
         let imageUrl = null;
-        if (sc.imagePrompt) {
-          try {
-            const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(sc.imagePrompt)}&per_page=1&orientation=${orient}`);
-            const d = await r.json();
-            imageUrl = d.results?.[0]?.urls?.regular || null;
-          } catch {}
-        }
+        try {
+          const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(imagePrompts[i] || "abstract")}&per_page=1&orientation=${orient}`);
+          const d = await r.json();
+          imageUrl = d.results?.[0]?.urls?.regular || null;
+        } catch {}
         return {
-          ...sc, imageUrl,
-          _startSec: startSec,
-          _endSec: endSec,
+          title, text: txt.slice(0, 60), imageUrl,
+          imagePrompt: imagePrompts[i] || "", bgColor: currentStyle.bg,
+          _startSec: startSec, _endSec: endSec,
           _startFrame: Math.round(startSec * FPS),
-          _durFrames: Math.round((endSec - startSec) * FPS),
+          _durFrames: Math.round(secPerScene * FPS),
+          _scriptText: txt, // 원본 대본 텍스트 (자막용)
         };
       }));
 
+      // 5) 자막 생성: 각 씬의 대본 텍스트를 해당 씬 시간에 정확히 매칭
+      if (captionData.length === 0) {
+        captionData = scenesWithImages.map(sc => ({
+          text: sc._scriptText || sc.title,
+          startMs: Math.round(sc._startSec * 1000),
+          endMs: Math.round(sc._endSec * 1000),
+        }));
+      }
+      setCaptions(captionData);
+
       setScenes(scenesWithImages);
       setEditingScene(0);
-
-      // TTS 생성 (브라우저 Web Speech API 기반)
-      if (ttsEnabled && fullText.trim() && window.speechSynthesis) {
-        setLoadingMsg("AI 나레이션 음성을 생성하고 있어요...");
-        try {
-          // Web Speech API로는 파일을 직접 못 만들지만 재생은 가능
-          // 실시간 TTS는 편집기에서 재생 시 처리
-          // 대신 자막을 대본 기반으로 자동 생성
-          if (captionData.length === 0) {
-            const wordsPerSec = 3; // 한국어 평균
-            let accSec = 0;
-            captionData = scenesWithImages.map(sc => {
-              const txt = sc.title + (sc.text ? " " + sc.text : "");
-              const dur = Math.max(2, txt.length / wordsPerSec);
-              const cap = { text: txt, startMs: Math.round(accSec * 1000), endMs: Math.round((accSec + dur) * 1000) };
-              accSec += dur + 0.5;
-              return cap;
-            });
-            setCaptions(captionData);
-          }
-        } catch {}
-      }
-
       setStep("editing");
     } catch (e) {
       setError("씬 생성 실패: " + e.message);
@@ -760,14 +750,29 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
               } else {
                 playerRef.current?.play();
                 setIsPlaying(true);
-                // TTS 재생 (대본이 있고 TTS 활성화 시)
-                if (ttsEnabled && prompt.trim() && window.speechSynthesis) {
+                // TTS: 씬별 대본을 순서대로 읽기
+                if (ttsEnabled && scenes.length > 0 && window.speechSynthesis) {
                   window.speechSynthesis.cancel();
-                  const utt = new SpeechSynthesisUtterance(prompt.slice(0, 2000));
-                  utt.lang = "ko-KR";
-                  utt.rate = 1.0;
-                  utt.onend = () => {};
-                  window.speechSynthesis.speak(utt);
+                  const readScene = (idx) => {
+                    if (idx >= scenes.length) return;
+                    const sc = scenes[idx];
+                    const txt = sc._scriptText || sc.title || "";
+                    if (!txt.trim()) { readScene(idx + 1); return; }
+                    const utt = new SpeechSynthesisUtterance(txt);
+                    utt.lang = "ko-KR";
+                    utt.rate = 0.95;
+                    utt.onend = () => readScene(idx + 1);
+                    // 씬 시작 시간에 맞춰 딜레이 후 재생
+                    const delaySec = (sc._startSec || 0) - (playhead || 0);
+                    if (delaySec > 0) {
+                      setTimeout(() => { if (window.speechSynthesis) window.speechSynthesis.speak(utt); }, delaySec * 1000);
+                    } else {
+                      window.speechSynthesis.speak(utt);
+                    }
+                  };
+                  // 현재 playhead 위치의 씬부터 시작
+                  const startIdx = scenes.findIndex(sc => playhead >= (sc._startSec || 0) && playhead < (sc._endSec || 0));
+                  readScene(Math.max(0, startIdx));
                 }
               }
             }} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 12px ${acc}40` }}>
