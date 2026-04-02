@@ -227,6 +227,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const previewRef = useRef(null);
   const overlayFileRef = useRef(null);
 
+  // 세그먼트 총 재생 길이 (키보드 단축키보다 먼저 선언)
+  const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
+  const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
+
   // ── 키보드 단축키 (스페이스=재생, Delete/Backspace=삭제) ──
   useEffect(() => {
     if (step !== "edit") return;
@@ -447,8 +451,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     setSelectedSegIdx(-1);
   }, [editIdx]);
 
-  // 세그먼트 총 재생 길이
-  const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
+  // totalSegsDuration는 상단에서 선언됨
 
   // ── 분할: 현재 playhead 위치에서 영상 자르기 ─────
   const splitAtPlayhead = () => {
@@ -512,7 +515,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   }, [isPlaying]);
 
   // ── 타임라인 재생 ─────────────────────
-  const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
+  // clipDuration은 상단에서 선언됨
 
   // 자막은 클립 시작 기준 상대 시간으로 표시
   const clipStart = curClip.start_seconds || 0;
