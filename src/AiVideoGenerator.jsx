@@ -1438,33 +1438,30 @@ JSON 배열만 출력하세요.`
       });
 
       // GIF 구간: Klipy API로 GIF URL 확보
+      // 미디어 검색 — 순차 처리 (429 방지)
       setLoadingMsg("이미지와 GIF를 검색하고 있어요...");
       const orient = sizeId === "16:9" ? "landscape" : sizeId === "1:1" ? "squarish" : "portrait";
-      const segmentsWithMedia = await Promise.all(timedSegments.map(async (seg, si) => {
-        setLoadingMsg(`미디어 검색 중... (${si + 1}/${timedSegments.length})`);
-        // GIF 세그먼트
+      const segmentsWithMedia = [...timedSegments];
+      for (let si = 0; si < segmentsWithMedia.length; si++) {
+        const seg = segmentsWithMedia[si];
+        setLoadingMsg(`미디어 검색 중... (${si + 1}/${segmentsWithMedia.length})`);
+        // GIF
         if (seg.type === "gif" && seg.gifKeyword) {
           try {
             const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(seg.gifKeyword)}&limit=3`);
-            const d = await r.json();
-            const gifs = d.data || d.results || d || [];
-            const gif = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
-            const gifUrl = gif?.images?.original?.url || gif?.url || gif?.media_url || "";
-            return { ...seg, gifUrl };
+            if (r.ok) { const d = await r.json(); const gifs = d.data || d.results || d || []; const gif = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))]; segmentsWithMedia[si] = { ...seg, gifUrl: gif?.images?.original?.url || gif?.url || gif?.media_url || "" }; }
           } catch {}
         }
-        // 텍스트 세그먼트 — 배경 이미지 검색
-        if (seg.type === "text" && seg.bgKeyword) {
+        // 배경 이미지 (text 타입만)
+        else if (seg.type === "text" && seg.bgKeyword) {
           try {
             const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(seg.bgKeyword)}&per_page=3&orientation=${orient}`);
-            const d = await r.json();
-            const imgs = d.results || [];
-            const img = imgs[Math.floor(Math.random() * Math.min(3, imgs.length))];
-            return { ...seg, bgImageUrl: img?.urls?.regular || null };
+            if (r.ok) { const d = await r.json(); const imgs = d.results || []; const img = imgs[Math.floor(Math.random() * Math.min(3, imgs.length))]; segmentsWithMedia[si] = { ...seg, bgImageUrl: img?.urls?.regular || null }; }
           } catch {}
         }
-        return seg;
-      }));
+        // Rate limit 방지: 300ms 딜레이
+        if (si < segmentsWithMedia.length - 1) await new Promise(r => setTimeout(r, 300));
+      }
 
       // 전체 영상 길이 조정
       const totalDur = Math.ceil(segmentsWithMedia[segmentsWithMedia.length - 1]?.endSec || duration);
@@ -1513,16 +1510,19 @@ JSON 배열만 출력하세요.`
           if (!txt) continue;
           setLoadingMsg(`AI 음성 생성 중... (${si + 1}/${segmentsWithMedia.length})`);
           try {
-            // 최대 2회 재시도
+            // 최대 3회 재시도 (429 rate limit 대응)
             let ttsRes = null;
-            for (let retry = 0; retry < 2; retry++) {
+            for (let retry = 0; retry < 3; retry++) {
               ttsRes = await fetch("/api/tts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: txt.slice(0, 800), voice: ttsVoice }),
+                body: JSON.stringify({ text: txt.slice(0, 600), voice: ttsVoice }),
               }).catch(() => null);
               if (ttsRes?.ok) break;
-              if (retry === 0) await new Promise(r => setTimeout(r, 500));
+              // 429(Rate limit) → 더 길게 대기
+              const waitMs = ttsRes?.status === 429 ? 3000 * (retry + 1) : 1000;
+              setLoadingMsg(`AI 음성 대기 중... (${retry + 1}/3)`);
+              await new Promise(r => setTimeout(r, waitMs));
             }
             if (ttsRes?.ok) {
               const blob = await ttsRes.blob();
@@ -1549,7 +1549,9 @@ JSON 배열만 출력하세요.`
                 audio.onerror = resolve;
               });
             }
-          } catch {}
+          } catch (e) { console.warn(`TTS ${si} 실패:`, e); }
+          // Gemini TTS rate limit 방지: 1.2초 딜레이
+          if (si < segmentsWithMedia.length - 1) await new Promise(r => setTimeout(r, 1200));
         }
         // 전체 길이를 마지막 세그먼트 기준으로 재계산
         const lastSeg = segmentsWithMedia[segmentsWithMedia.length - 1];
