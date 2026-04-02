@@ -247,8 +247,11 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
   const num = String(sceneIndex + 1).padStart(2, "0");
   const accentColor = style?.titleColor || "#7c6aff";
 
-  // 대본에서 핵심 포인트 추출 (문장 분리)
-  const points = script.split(/[.!?。]\s*/).filter(s => s.trim().length > 3).slice(0, 3);
+  // AI가 생성한 레이아웃 데이터 (없으면 대본에서 추출)
+  const layout = scene._layout || "hero";
+  const aiPoints = (scene._points && scene._points.length > 0) ? scene._points : script.split(/[.!?。]\s*/).filter(s => s.trim().length > 3).slice(0, 3);
+  const aiStats = scene._stats || [];
+  const aiTag = scene._tag || `STEP ${num}`;
   const isDark = styleId !== "minimal";
 
   return (
@@ -265,29 +268,62 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
         <AbsoluteFill style={{ background: isDark ? "#0d0d1a" : "#f0f0f8" }} />
       )}
 
-      {/* ═══ 모션그래픽: 카드 리스트 + 차트 레이아웃 ═══ */}
+      {/* ═══ 모션그래픽: AI 레이아웃 기반 동적 디자인 ═══ */}
       {styleId === "motion" && (
         <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8% 7%" }}>
           {/* 상단 태그 */}
-          <Tag text={`STEP ${num}`} color="#00d4ff" frame={frame} fps={fps} />
+          <Tag text={aiTag} color="#00d4ff" frame={frame} fps={fps} />
           {/* 큰 제목 */}
           <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginTop: 20, marginBottom: 24,
             opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`, wordBreak: "keep-all",
             textShadow: "0 4px 30px rgba(0,0,0,0.8)" }}>{title}</div>
-          {/* 핵심 포인트 카드 리스트 */}
-          {points.length > 0 && (
+
+          {/* layout=list 또는 steps: 번호 카드 리스트 */}
+          {(layout === "list" || layout === "steps") && aiPoints.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {points.map((p, i) => (
+              {aiPoints.map((p, i) => (
                 <ListItem key={i} num={i + 1} text={p} color="#00d4ff" frame={frame} fps={fps} delay={12 + i * 8} />
               ))}
             </div>
           )}
-          {/* 하단 수치 카드들 */}
-          <div style={{ position: "absolute", bottom: "6%", left: "7%", right: "7%", display: "flex", gap: 10, opacity: d4 }}>
-            <StatCard label="진행도" value={Math.round(((sceneIndex + 1) / totalScenes) * 100)} sub={`${sceneIndex + 1}/${totalScenes}`} color="#00d4ff" frame={frame} fps={fps} delay={36} />
-            <StatCard label="STEP" value={sceneIndex + 1} color="#7c6aff" frame={frame} fps={fps} delay={40} />
-            <StatCard label="TOTAL" value={totalScenes} color="#00ffaa" frame={frame} fps={fps} delay={44} />
-          </div>
+
+          {/* layout=stats: 수치 카드 */}
+          {layout === "stats" && aiStats.length > 0 && (
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              {aiStats.slice(0, 3).map((s, i) => (
+                <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={["#00d4ff","#7c6aff","#00ffaa"][i % 3]} frame={frame} fps={fps} delay={12 + i * 8} />
+              ))}
+            </div>
+          )}
+
+          {/* layout=hero: 서브텍스트만 */}
+          {layout === "hero" && sub && (
+            <div style={{ fontSize: 20, fontWeight: 500, color: "rgba(200,230,255,0.8)", lineHeight: 1.6, opacity: d1, wordBreak: "keep-all", maxWidth: "90%",
+              transform: `translateY(${interpolate(d1, [0, 1], [20, 0])}px)` }}>{sub}</div>
+          )}
+
+          {/* layout=compare: 비교 카드 2개 */}
+          {layout === "compare" && aiPoints.length >= 2 && (
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+              {aiPoints.slice(0, 2).map((p, i) => (
+                <GlassCard key={i} frame={frame} fps={fps} delay={12 + i * 10} style={{ flex: 1, textAlign: "center" }}>
+                  <NumberBadge num={i === 0 ? "A" : "B"} color="#00d4ff" size={38} frame={frame} fps={fps} delay={14 + i * 10} />
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginTop: 10, lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
+                </GlassCard>
+              ))}
+            </div>
+          )}
+
+          {/* 하단 수치 (stats가 없을 때 기본 표시) */}
+          {layout !== "stats" && (
+            <div style={{ position: "absolute", bottom: "6%", left: "7%", right: "7%", display: "flex", gap: 10, opacity: d4 }}>
+              {aiStats.length > 0 ? aiStats.slice(0, 3).map((s, i) => (
+                <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={["#00d4ff","#7c6aff","#00ffaa"][i % 3]} frame={frame} fps={fps} delay={36 + i * 6} />
+              )) : (
+                <StatCard label="진행" value={`${sceneIndex + 1}/${totalScenes}`} color="#00d4ff" frame={frame} fps={fps} delay={36} />
+              )}
+            </div>
+          )}
         </AbsoluteFill>
       )}
 
@@ -308,9 +344,9 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
             {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", marginTop: 16, lineHeight: 1.6, wordBreak: "keep-all", opacity: d1 }}>{sub}</div>}
           </GlassCard>
           {/* 하단 포인트 */}
-          {points.length > 1 && (
+          {aiPoints.length > 1 && (
             <div style={{ display: "flex", gap: 10, marginTop: 20, width: "100%" }}>
-              {points.slice(0, 2).map((p, i) => (
+              {aiPoints.slice(0, 2).map((p, i) => (
                 <GlassCard key={i} frame={frame} fps={fps} delay={16 + i * 8} style={{ flex: 1, padding: "14px 16px", borderRadius: 14 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#ffeead", lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
                 </GlassCard>
@@ -360,7 +396,7 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
           <div style={{ position: "absolute", inset: "5%", border: "1.5px solid rgba(0,0,0,0.06)", borderRadius: 12, pointerEvents: "none", opacity: enter }} />
           <div style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", letterSpacing: 5, marginBottom: 28, opacity: enter }}>KEY POINTS</div>
           <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
-            {(points.length > 0 ? points : [title]).map((p, i) => (
+            {(aiPoints.length > 0 ? aiPoints : [title]).map((p, i) => (
               <ListItem key={i} num={i + 1} text={p} color="#3b5998" frame={frame} fps={fps} delay={8 + i * 8} light />
             ))}
           </div>
@@ -675,9 +711,10 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
         sceneTexts.push(chunk.join(" "));
       }
 
-      // 3) AI에게는 이미지 키워드만 생성 요청 (대본 매칭은 코드에서 직접)
-      setLoadingMsg("씬에 맞는 이미지를 찾고 있어요...");
+      // 3) AI가 씬별 레이아웃 + 시각 데이터 + 이미지 키워드를 한번에 생성
+      setLoadingMsg("AI가 씬별 디자인을 구성하고 있어요...");
       let imagePrompts = sceneTexts.map(() => currentStyle.imageKeyword || "abstract");
+      let sceneLayouts = sceneTexts.map(() => ({ layout: "hero", visualData: {} }));
       try {
         const aiRes = await fetch("/api/ai-proxy", {
           method: "POST",
@@ -686,18 +723,48 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
             action: "chat", model: "gpt-4o-mini",
             messages: [{
               role: "system",
-              content: `각 문장에 어울리는 Unsplash 이미지 검색 키워드(영어 2-3단어)를 생성. 스타일: ${currentStyle.name}.
-JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]`
+              content: `당신은 영상 씬 디자이너입니다. 각 씬의 대본을 분석하여 최적의 시각화 레이아웃을 결정합니다.
+
+각 씬에 대해 JSON 배열로 출력하세요:
+[
+  {
+    "image": "영어 이미지 키워드 2-3단어",
+    "layout": "레이아웃 타입",
+    "title": "핵심 제목 (20자 이내)",
+    "points": ["핵심 포인트1", "포인트2", "포인트3"],
+    "stats": [{"label":"라벨","value":"값","sub":"보조텍스트"}],
+    "tag": "태그 텍스트"
+  }
+]
+
+레이아웃 타입:
+- "list": 번호가 붙은 핵심 포인트 목록 (3개 이하의 핵심 내용이 있을 때)
+- "stats": 수치/데이터 카드 표시 (숫자, 비율, 통계가 언급될 때)
+- "hero": 큰 제목 + 설명 (인트로, 결론, 단순 설명)
+- "compare": 비교/대조 (A vs B, 장단점)
+- "steps": 단계/과정 (1단계, 2단계 같은 순서)
+
+중요: 대본 내용을 **도식화**하세요. 원문을 그대로 쓰지 말고, 핵심만 추출하여 시각적으로 표현할 수 있는 짧은 문구로 만드세요.
+stats의 value는 대본에서 추출한 숫자나, 없으면 맥락에 맞는 상징적 수치를 사용하세요.`
             }, {
               role: "user",
-              content: sceneTexts.map((t, i) => `${i+1}. ${t.slice(0, 80)}`).join("\n")
+              content: sceneTexts.map((t, i) => `씬 ${i+1}: ${t.slice(0, 120)}`).join("\n")
             }],
           }),
         });
         const aiData = await aiRes.json();
         const aiContent = aiData.choices?.[0]?.message?.content || aiData.content || "";
         const arr = JSON.parse(aiContent.match(/\[[\s\S]*\]/)?.[0] || "[]");
-        if (arr.length === sceneTexts.length) imagePrompts = arr.map(k => `${currentStyle.imageKeyword} ${k}`);
+        if (arr.length === sceneTexts.length) {
+          imagePrompts = arr.map(s => `${currentStyle.imageKeyword} ${s.image || "abstract"}`);
+          sceneLayouts = arr.map(s => ({
+            layout: s.layout || "hero",
+            title: s.title || "",
+            points: s.points || [],
+            stats: s.stats || [],
+            tag: s.tag || "",
+          }));
+        }
       } catch {}
 
       // 4) 이미지 검색
@@ -713,13 +780,18 @@ JSON 배열만 출력. 예: ["technology office","nature sunset","food cooking"]
           const d = await r.json();
           imageUrl = d.results?.[0]?.urls?.regular || null;
         } catch {}
+        const layout = sceneLayouts[i] || {};
         return {
-          title, text: txt.slice(0, 60), imageUrl,
+          title: layout.title || title, text: txt.slice(0, 60), imageUrl,
           imagePrompt: imagePrompts[i] || "", bgColor: currentStyle.bg,
           _startSec: startSec, _endSec: endSec,
           _startFrame: Math.round(startSec * FPS),
           _durFrames: Math.round(secPerScene * FPS),
-          _scriptText: txt, // 원본 대본 텍스트 (자막용)
+          _scriptText: txt,
+          _layout: layout.layout || "hero",
+          _points: layout.points || [],
+          _stats: layout.stats || [],
+          _tag: layout.tag || "",
         };
       }));
 
