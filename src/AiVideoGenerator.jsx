@@ -846,89 +846,51 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   }, [step, isPlaying, playhead, duration]);
 
   // 영상 녹화 다운로드 (Canvas + MediaRecorder)
+  // 영상 다운로드 — 탭 캡처 방식 (화면 그대로 녹화)
   const startRecording = useCallback(async () => {
-    const playerContainer = playerRef.current?.getContainerNode?.() || document.querySelector("[data-remotion-player-container]");
-    if (!playerContainer) return;
-    setRecording(true);
-    recChunksRef.current = [];
+    try {
+      // 브라우저 탭 캡처 요청 (오디오 포함)
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: "browser", frameRate: FPS },
+        audio: true, // 시스템 오디오 캡처 (브라우저에서 재생되는 TTS 포함)
+        preferCurrentTab: true,
+      });
 
-    // Canvas 생성 — Player 크기에 맞춤
-    const canvas = document.createElement("canvas");
-    canvas.width = currentSize.w;
-    canvas.height = currentSize.h;
-    const ctx = canvas.getContext("2d");
+      setRecording(true);
+      recChunksRef.current = [];
 
-    // Canvas 스트림 + 오디오 스트림 합성
-    const canvasStream = canvas.captureStream(FPS);
+      // MP4 시도 → 안 되면 WebM
+      const mimeType = MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4"
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
-    // TTS 오디오가 있으면 오디오 트랙 추가
-    let combinedStream = canvasStream;
-    if (ttsUrl) {
-      try {
-        const audioCtx = new AudioContext();
-        const audioEl = new window.Audio(ttsUrl);
-        audioEl.crossOrigin = "anonymous";
-        const source = audioCtx.createMediaElementSource(audioEl);
-        const dest = audioCtx.createMediaStreamDestination();
-        source.connect(dest);
-        source.connect(audioCtx.destination);
-        const audioTrack = dest.stream.getAudioTracks()[0];
-        if (audioTrack) canvasStream.addTrack(audioTrack);
-        audioEl.currentTime = 0;
-        audioEl.play();
-      } catch (e) { console.warn("오디오 트랙 추가 실패:", e); }
-    }
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 6_000_000 });
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(recChunksRef.current, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url; a.download = `ai-video.${ext}`; a.click();
+        URL.revokeObjectURL(url);
+        setRecording(false);
+      };
+      // 사용자가 화면 공유 중지하면 자동 정지
+      stream.getVideoTracks()[0].onended = () => { if (recorder.state === "recording") recorder.stop(); };
 
-    const recorder = new MediaRecorder(canvasStream, {
-      mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm",
-      videoBitsPerSecond: 4_000_000,
-    });
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(recChunksRef.current, { type: "video/webm" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "ai-video.webm"; a.click();
-      URL.revokeObjectURL(url);
+      recorderRef.current = recorder;
+
+      // Player 재생 시작
+      playerRef.current?.seekTo(0);
+      setTimeout(() => { playerRef.current?.play(); setIsPlaying(true); }, 300);
+      recorder.start(200);
+
+      // 영상 끝나면 자동 정지
+      setTimeout(() => { stopRecording(); }, (duration + 2) * 1000);
+    } catch (e) {
+      console.warn("녹화 시작 실패:", e);
       setRecording(false);
-    };
-    recorderRef.current = recorder;
-
-    // Player를 처음부터 재생
-    playerRef.current?.seekTo(0);
-    playerRef.current?.play();
-    setIsPlaying(true);
-    recorder.start(100);
-
-    // 프레임 캡처 루프
-    const captureFrame = () => {
-      if (!recorderRef.current || recorderRef.current.state !== "recording") return;
-      try {
-        // Player 컨테이너의 첫 번째 자식(실제 Remotion 렌더 영역)을 찾아 SVG로 변환
-        const target = playerContainer.querySelector("div") || playerContainer;
-        // html2canvas 없이 간단하게: 배경색 + 현재 표시 텍스트를 canvas에 직접 그리기
-        const rect = target.getBoundingClientRect();
-        ctx.fillStyle = "#0d0d1a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // DOM 스냅샷 → foreignObject SVG → canvas
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
-          <foreignObject width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="width:${canvas.width}px;height:${canvas.height}px;transform:scale(${canvas.width/rect.width});transform-origin:0 0;">
-              ${target.innerHTML}
-            </div>
-          </foreignObject>
-        </svg>`;
-        const img = new Image();
-        img.onload = () => { ctx.drawImage(img, 0, 0); requestAnimationFrame(captureFrame); };
-        img.onerror = () => requestAnimationFrame(captureFrame);
-        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-      } catch { requestAnimationFrame(captureFrame); }
-    };
-    requestAnimationFrame(captureFrame);
-
-    // 영상 끝나면 자동 정지
-    setTimeout(() => { stopRecording(); }, (duration + 1) * 1000);
-  }, [currentSize, ttsUrl, duration]);
+    }
+  }, [duration]);
 
   const stopRecording = useCallback(() => {
     if (recorderRef.current && recorderRef.current.state === "recording") {
@@ -1122,34 +1084,49 @@ JSON 배열만 출력하세요.`
         segmentData = JSON.parse(aiContent.match(/\[[\s\S]*\]/)?.[0] || "[]");
       } catch {}
 
-      // fallback + 보충: 세그먼트가 부족하면 추가 생성
-      const targetSegCount = Math.ceil(duration / 4.5);
+      // fallback + 보충: 전체 합산이 duration에 맞도록 반드시 채움
+      const targetSegCount = Math.ceil(duration / 4);
+      const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
+
       if (segmentData.length === 0) {
-        const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
+        // AI 완전 실패: 문장 단위로 분할
         segmentData = sentences.map((t, i) => ({
-          text: t.slice(0, 50), type: i % 4 === 3 ? "gif" : "text",
-          animation: anims[i % anims.length], gifKeyword: "reaction " + t.slice(0, 10),
+          text: t.slice(0, 50), type: i % 3 === 2 ? "gif" : "text",
+          animation: anims[i % anims.length], gifKeyword: t.slice(0, 15).replace(/[^a-zA-Z ]/g, "") || "reaction",
+          bgKeyword: t.slice(0, 10).replace(/[^a-zA-Z ]/g, "") || "abstract",
           durationSec: Math.min(6, duration / Math.max(sentences.length, 1)),
         }));
       }
-      // AI가 세그먼트를 너무 적게 만들었으면 나머지 문장으로 보충
-      if (segmentData.length < targetSegCount * 0.7 && sentences.length > segmentData.length) {
-        const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
-        const remaining = sentences.slice(segmentData.length);
-        for (let ri = 0; ri < remaining.length && segmentData.length < targetSegCount; ri++) {
-          segmentData.push({
-            text: remaining[ri].slice(0, 50), type: ri % 3 === 2 ? "gif" : "text",
-            animation: anims[(segmentData.length + ri) % anims.length],
-            gifKeyword: "funny " + remaining[ri].slice(0, 8),
-            durationSec: 4,
-          });
-        }
+
+      // 전체 합산 시간 체크 → 부족하면 세그먼트 추가
+      let totalDurCheck = segmentData.reduce((sum, s) => sum + (s.durationSec || 4), 0);
+      let fillIdx = 0;
+      while (totalDurCheck < duration * 0.85 && fillIdx < 100) {
+        // 문장이 남아있으면 사용, 없으면 기존 세그먼트를 재활용
+        const srcIdx = fillIdx % Math.max(sentences.length, segmentData.length);
+        const srcText = sentences[srcIdx] || (segmentData[srcIdx % segmentData.length]?.text) || "...";
+        const dur = Math.min(5, (duration - totalDurCheck));
+        if (dur < 2) break;
+        segmentData.push({
+          text: srcText.slice(0, 50), type: fillIdx % 3 === 1 ? "gif" : "text",
+          animation: anims[segmentData.length % anims.length],
+          gifKeyword: srcText.slice(0, 12).replace(/[^a-zA-Z ]/g, "") || "meme",
+          bgKeyword: srcText.slice(0, 10).replace(/[^a-zA-Z ]/g, "") || "nature",
+          durationSec: dur,
+        });
+        totalDurCheck += dur;
+        fillIdx++;
       }
+
+      // 세그먼트 duration을 전체 길이에 맞게 비례 조정
+      const rawTotal = segmentData.reduce((sum, s) => sum + (s.durationSec || 4), 0);
+      const scale = duration / rawTotal;
+      segmentData = segmentData.map(s => ({ ...s, durationSec: Math.max(2, (s.durationSec || 4) * scale) }));
 
       // 타이밍 계산
       let currentSec = 0;
       const timedSegments = segmentData.map(s => {
-        const dur = Math.max(2, Math.min(8, s.durationSec || 4));
+        const dur = s.durationSec || 4;
         const seg = { ...s, startSec: currentSec, endSec: currentSec + dur };
         currentSec += dur;
         return seg;
