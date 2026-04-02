@@ -1198,7 +1198,8 @@ function getBlogRenderInfo(menu) {
 }
 
 export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, aiMenu: aiMenuProp, setAiMenu: setAiMenuProp, onLogout, onLoginRequest, onUserUpdate }) {
-  const { t: tt } = useI18n();
+  const { t: tt, lang: _pageLang } = useI18n();
+  const _s = (ko, en) => _pageLang === "ko" ? ko : en;
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
   // isGenerating은 state 대신 전역 변수로 (리렌더 방지 — BlogGenerator unmount 원인)
