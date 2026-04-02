@@ -699,6 +699,7 @@ JSON 형식: {"scenes":[...]}`
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0 }}>
           <div style={{ borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.5)", border: "2px solid #2a2a4a", position: "relative" }}>
             <Player
+              acknowledgeRemotionLicense
               ref={playerRef}
               component={SceneComposition}
               inputProps={{ scenes, audioUrl: ttsUrl || audioUrl, style: currentStyle, captions }}

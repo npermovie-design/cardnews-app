@@ -592,6 +592,7 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
 
   // Step3
   const [selPreset, setSelPreset] = useState(DESIGN_PRESETS.find(p => p.key === "pure_white") || DESIGN_PRESETS[2]);
+  const [designPrompt, setDesignPrompt] = useState("");
   const [selSize,   setSelSize]   = useState(0);     // 0 = 정사각형 1080×1080
   const [customW,   setCustomW]   = useState(1080);
   const [customH,   setCustomH]   = useState(1080);
@@ -1338,16 +1339,47 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
         {/* WizHeader 제거 */}
         <div className="cn-step-wrap" style={{ maxWidth:960, margin:"0 auto", padding:"0 24px 40px", width:"100%", boxSizing:"border-box" }}>
           <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"디자인 & 크기":"Design & Size"}</div>
-            <div style={{ fontSize:12, color:muted }}>{ko?"템플릿을 사용하거나 스타일을 선택하세요":"Use a template or choose a style"}</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:3 }}>{ko?"디자인 설정":"Design Settings"}</div>
+            <div style={{ fontSize:12, color:muted }}>{ko?"원하는 디자인을 설명하거나 크기를 선택하세요":"Describe your desired design or choose a size"}</div>
           </div>
 
-          {/* 커뮤니티 템플릿 */}
+          {/* 디자인 설명 입력 */}
+          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:8 }}>{ko?"디자인 요청 (선택)":"Design Request (optional)"}</div>
+            <textarea
+              value={designPrompt || ""}
+              onChange={e => setDesignPrompt(e.target.value)}
+              rows={3}
+              placeholder={ko ? "예: 깔끔한 화이트 배경에 파란 포인트 컬러, 모던한 느낌으로 만들어주세요\n예: 어두운 배경에 골드 텍스트, 고급스러운 분위기\n예: 파스텔톤 귀여운 느낌으로" : "e.g., Clean white background with blue accents, modern feel"}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.06)":"#f9f9fc", color:text, fontSize:13, outline:"none", resize:"none", lineHeight:1.6, fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            <div style={{ fontSize:10, color:muted, marginTop:6 }}>{ko?"입력하지 않으면 AI가 주제에 맞는 디자인을 자동 선택합니다":"If empty, AI will auto-select a design matching your topic"}</div>
+          </div>
+
+          {/* 빠른 스타일 선택 (간소화) */}
+          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>{ko?"빠른 스타일 (선택)":"Quick Style (optional)"}</div>
+            <div className="cn-design-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
+              {DESIGN_PRESETS.map((p) => {
+                const sel = selPreset?.key === p.key;
+                return (
+                  <button key={p.key} onClick={() => setSelPreset(p)}
+                    style={{ padding:0, borderRadius:10, border: sel ? "2px solid #7c6aff" : `1.5px solid ${bdr}`, cursor:"pointer", overflow:"hidden", background:"transparent" }}>
+                    <div style={{ width:"100%", height:48, background:p.bgColor, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ color:p.textColor, fontSize:11, fontWeight:800 }}>Aa</span>
+                    </div>
+                    <div style={{ padding:"4px 6px", fontSize:10, fontWeight: sel ? 800 : 500, color: sel ? "#7c6aff" : muted, textAlign:"center" }}>{p.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 커뮤니티 템플릿 (축소) */}
           <CommunityTemplateSection
             D={D} text={text} muted={muted} bdr={bdr} cardBg={cardBg} ko={ko}
             onApply={(tpl) => {
               try {
-                // 1) 슬라이드 텍스트 + 이미지 적용
                 if (tpl.slides_data) {
                   const parsed = typeof tpl.slides_data === "string" ? JSON.parse(tpl.slides_data) : tpl.slides_data;
                   if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1365,7 +1397,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
                     setSlides(newSlides);
                     setPageCount(newSlides.length);
                     if (tpl.title) setTopic(tpl.title);
-                    // 배경 이미지/스타일 오버라이드 복원
                     const newSted = {};
                     parsed.forEach((s, i) => {
                       const overrides = {};
@@ -1394,25 +1425,6 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
               } catch (e) { console.warn("템플릿 적용 실패:", e); }
             }}
           />
-
-          {/* 디자인 프리셋 */}
-          <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:10 }}>{ko?"디자인 스타일":"Design Style"}</div>
-            <div className="cn-design-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))", gap:6 }}>
-              {DESIGN_PRESETS.map((p) => {
-                const sel = selPreset?.key === p.key;
-                return (
-                  <button key={p.key} onClick={() => setSelPreset(p)}
-                    style={{ padding:0, borderRadius:10, border: sel ? "2px solid #7c6aff" : `1.5px solid ${bdr}`, cursor:"pointer", overflow:"hidden", background:"transparent", transition:"all 0.15s" }}>
-                    <div style={{ width:"100%", height:48, background:p.bgColor, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <span style={{ color:p.textColor, fontSize:11, fontWeight:800, letterSpacing:-0.3 }}>Aa</span>
-                    </div>
-                    <div style={{ padding:"4px 6px", fontSize:10, fontWeight: sel ? 800 : 500, color: sel ? "#7c6aff" : muted, textAlign:"center", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.label}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* 이미지 크기 */}
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
