@@ -1165,39 +1165,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><SocialPlanner isDark={isDark} user={user} theme={theme} /></React.Suspense>;
   }
 
-  // 영상 편집 — Pro 플랜 이상 (포인트 1000P 이상 보유 또는 관리자)
+  // 영상 편집 — 포인트 차감 (추후 Pro 전용 전환 예정)
   if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make") {
-    if (!user) {
-      return (
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", padding:40 }}>
-          <div>
-            <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
-            <div style={{ fontSize:20, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>AI 자동 영상 제작</div>
-            <div style={{ fontSize:14, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:20, lineHeight:1.6 }}>로그인 후 이용할 수 있습니다</div>
-            <button onClick={onLoginRequest} style={{ padding:"12px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>로그인하기</button>
-          </div>
-        </div>
-      );
-    }
-    const userPts = user.points || 0;
-    const isPro = user.role === "admin" || userPts >= 100;
-    if (!isPro) {
-      return (
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", padding:40 }}>
-          <div style={{ maxWidth:400 }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
-            <div style={{ fontSize:20, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>AI 자동 영상 제작</div>
-            <div style={{ fontSize:14, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:6, lineHeight:1.6 }}>영상 제작은 포인트 충전 후 이용 가능합니다</div>
-            <div style={{ fontSize:13, color:"#7c6aff", fontWeight:600, marginBottom:20 }}>현재 보유: {userPts}P / 분석 35P · 생성 80P</div>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button onClick={() => navigate("pricing")} style={{ padding:"12px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>포인트 충전하기</button>
-              <button onClick={() => setAiMenu("home")} style={{ padding:"12px 28px", borderRadius:12, border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "#ddd"}`, background:"transparent", color: isDark ? "rgba(255,255,255,0.6)" : "#888", fontSize:14, fontWeight:700, cursor:"pointer" }}>홈으로</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} />;
+    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => { if (st === "edit") { /* 프로 전환 예정 배너는 ShortsCreator 내부에서 처리 */ } }} />;
   }
 
   return null;
@@ -1448,6 +1418,21 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           </div>
         </div>
       )}
+      {/* 영상 제작 플로팅 아이콘 (영상 메뉴가 아닐 때 항상 표시) */}
+      {aiMenu !== "shorts_make" && aiMenu !== "video_edit" && aiMenu !== "video_create" && (
+        <div onClick={() => setAiMenu("shorts_make")}
+          style={{ position:"absolute", bottom:20, left:20, zIndex:90, cursor:"pointer", display:"flex", alignItems:"center", gap:10, padding:"10px 16px 10px 12px", borderRadius:14, background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.9),rgba(236,72,153,0.8))" : "linear-gradient(135deg,#7c6aff,#ec4899)", boxShadow:"0 6px 24px rgba(124,106,255,0.4)", transition:"transform 0.15s, box-shadow 0.15s" }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px) scale(1.05)"; e.currentTarget.style.boxShadow = "0 10px 32px rgba(124,106,255,0.5)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(124,106,255,0.4)"; }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+          <div>
+            <div style={{ fontSize:12, fontWeight:800, color:"#fff", lineHeight:1.2 }}>영상 제작</div>
+            <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)" }}>AI 자동 쇼츠</div>
+          </div>
+          <span style={{ fontSize:8, fontWeight:800, color:"#fff", background:"rgba(255,255,255,0.2)", padding:"2px 5px", borderRadius:4 }}>NEW</span>
+        </div>
+      )}
+
       {/* 글로벌 백그라운드 작업 인디케이터 */}
       <BackgroundTaskIndicator isDark={isDark} currentMenu={aiMenu} onNavigate={(menu) => setAiMenu(menu)} />
       <style>{`
