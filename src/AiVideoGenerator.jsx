@@ -390,6 +390,12 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
       const ratio = sizeId === "16:9" ? "가로(16:9)" : sizeId === "1:1" ? "정사각(1:1)" : "세로(9:16)";
       const styleDesc = currentStyle.name + " (" + currentStyle.desc + ")";
 
+      // 대본을 문단별로 분할하여 씬에 직접 매핑
+      const paragraphs = fullText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 2);
+      const useDirectMapping = paragraphs.length >= 3 && paragraphs.length <= 15;
+      const actualSceneCount = useDirectMapping ? Math.min(paragraphs.length, 10) : sceneCount;
+      const secPerScene = duration / actualSceneCount;
+
       const aiRes = await fetch("/api/ai-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -398,18 +404,23 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
           model: "gpt-4o-mini",
           messages: [{
             role: "system",
-            content: `AI 영상 제작 전문가. 영상 스타일: ${styleDesc}. 사용자 텍스트를 분석하여:
-"scenes": ${ratio} 영상의 씬 ${sceneCount}개를 JSON 배열로 생성.
-각 씬: {"title":"음성 내용의 핵심 문구(15자)","text":"보조설명(30자)","imagePrompt":"${currentStyle.imageKeyword || ""} + 씬 관련 Unsplash 영어키워드","startSec":시작초,"endSec":종료초}
-규칙:
-- 음성/텍스트의 실제 내용에서 핵심 키워드를 뽑아 제목으로 사용
-- 말하는 내용의 순서대로 씬을 배치
-- 각 씬의 시작/종료 시간은 전체 ${duration}초를 균등 분배
-- 쉬는 구간이나 의미 없는 부분은 건너뛰기
-JSON 형식: {"scenes":[...]}`
+            content: `AI 영상 씬 제작. 반드시 JSON만 출력. 스타일: ${styleDesc}.
+사용자의 대본/텍스트를 ${actualSceneCount}개 씬으로 분할.
+
+각 씬 형식:
+{"title":"대본에서 가장 핵심적인 한 줄(최대 15자)","text":"대본 원문 요약(최대 40자)","imagePrompt":"${currentStyle.imageKeyword} 관련 영어 2-3단어","startSec":N,"endSec":N}
+
+중요 규칙:
+1. title은 반드시 대본에 있는 실제 문장/키워드에서 추출
+2. text는 대본의 해당 부분을 그대로 요약
+3. 씬 순서 = 대본 순서 (절대 섞지 마)
+4. startSec/endSec: 0초부터 ${duration}초까지 균등 분배
+5. imagePrompt: "${currentStyle.imageKeyword}" + 대본 내용 관련 영어 키워드
+
+출력: {"scenes":[...]}`
           }, {
             role: "user",
-            content: `${duration}초 ${ratio} 영상:\n${fullText.slice(0, 1500)}`
+            content: `대본 전문 (${duration}초 ${ratio} 영상):\n\n${fullText.slice(0, 3000)}`
           }],
         }),
       });
@@ -445,7 +456,30 @@ JSON 형식: {"scenes":[...]}`
 
       setScenes(scenesWithImages);
       setEditingScene(0);
-      setStep("editing"); // 바로 편집 화면으로
+
+      // TTS 생성 (브라우저 Web Speech API 기반)
+      if (ttsEnabled && fullText.trim() && window.speechSynthesis) {
+        setLoadingMsg("AI 나레이션 음성을 생성하고 있어요...");
+        try {
+          // Web Speech API로는 파일을 직접 못 만들지만 재생은 가능
+          // 실시간 TTS는 편집기에서 재생 시 처리
+          // 대신 자막을 대본 기반으로 자동 생성
+          if (captionData.length === 0) {
+            const wordsPerSec = 3; // 한국어 평균
+            let accSec = 0;
+            captionData = scenesWithImages.map(sc => {
+              const txt = sc.title + (sc.text ? " " + sc.text : "");
+              const dur = Math.max(2, txt.length / wordsPerSec);
+              const cap = { text: txt, startMs: Math.round(accSec * 1000), endMs: Math.round((accSec + dur) * 1000) };
+              accSec += dur + 0.5;
+              return cap;
+            });
+            setCaptions(captionData);
+          }
+        } catch {}
+      }
+
+      setStep("editing");
     } catch (e) {
       setError("씬 생성 실패: " + e.message);
       setStep("input");
@@ -719,8 +753,23 @@ JSON 형식: {"scenes":[...]}`
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
             <button onClick={() => { setPlayhead(0); playerRef.current?.seekTo(0); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
             <button onClick={() => {
-              if (isPlaying) { playerRef.current?.pause(); setIsPlaying(false); }
-              else { playerRef.current?.play(); setIsPlaying(true); }
+              if (isPlaying) {
+                playerRef.current?.pause();
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                setIsPlaying(false);
+              } else {
+                playerRef.current?.play();
+                setIsPlaying(true);
+                // TTS 재생 (대본이 있고 TTS 활성화 시)
+                if (ttsEnabled && prompt.trim() && window.speechSynthesis) {
+                  window.speechSynthesis.cancel();
+                  const utt = new SpeechSynthesisUtterance(prompt.slice(0, 2000));
+                  utt.lang = "ko-KR";
+                  utt.rate = 1.0;
+                  utt.onend = () => {};
+                  window.speechSynthesis.speak(utt);
+                }
+              }
             }} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 12px ${acc}40` }}>
               {isPlaying ? "⏸" : "▶"}
             </button>
