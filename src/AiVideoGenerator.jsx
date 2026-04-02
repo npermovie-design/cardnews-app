@@ -220,20 +220,206 @@ function GridLines({ frame, fps, color, count = 8 }) {
 }
 
 // ═══════════════════════════════════════════════
-// 메인 씬 슬라이드 — 카드/리스트/수치 기반 디자인
+// 레이아웃별 씬 렌더러 — AI가 결정한 layout 타입에 따라 완전히 다른 비주얼
+// ═══════════════════════════════════════════════
+
+// ── Layout: hero (인트로/결론 — 큰 제목 중앙) ──
+function LayoutHero({ title, sub, tag, accent, f }) {
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+      {tag && <Tag text={tag} color={accent} frame={f.frame} fps={f.fps} />}
+      <div style={{ fontSize: 56, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.12, textAlign: "center",
+        marginTop: 20, wordBreak: "keep-all", opacity: f.enter, transform: `translateY(${interpolate(f.enter, [0, 1], [40, 0])}px)`,
+        textShadow: f.isDark ? "0 4px 30px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      {sub && <div style={{ fontSize: 22, color: f.isDark ? "rgba(255,255,255,0.65)" : "#666", marginTop: 18, textAlign: "center",
+        lineHeight: 1.6, opacity: f.d1, wordBreak: "keep-all", maxWidth: "85%" }}>{sub}</div>}
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: list (번호 카드 리스트 — KEY FEATURES 스타일) ──
+function LayoutList({ title, points, tag, accent, f }) {
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "7% 7%" }}>
+      {tag && <div style={{ fontSize: 13, fontWeight: 700, color: accent, letterSpacing: 4, marginBottom: 16, opacity: f.enter, textTransform: "uppercase" }}>{tag}</div>}
+      <div style={{ fontSize: 44, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.15, marginBottom: 24,
+        opacity: f.enter, transform: `translateY(${interpolate(f.enter, [0, 1], [30, 0])}px)`, wordBreak: "keep-all",
+        textShadow: f.isDark ? "0 4px 24px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {points.map((p, i) => (
+          <ListItem key={i} num={i + 1} text={p} color={accent} frame={f.frame} fps={f.fps} delay={12 + i * 8} light={!f.isDark} />
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: stats (수치 카드 — 시장 데이터/KPI 스타일) ──
+function LayoutStats({ title, stats, tag, accent, f }) {
+  const colors = ["#00d4ff", "#7c6aff", "#4ade80", "#f59e0b"];
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+      {tag && <Tag text={tag} color={accent} frame={f.frame} fps={f.fps} />}
+      <div style={{ fontSize: 48, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.15, textAlign: "center",
+        marginTop: 16, marginBottom: 32, opacity: f.enter, wordBreak: "keep-all",
+        textShadow: f.isDark ? "0 4px 24px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      <div style={{ display: "flex", gap: 14, width: "100%" }}>
+        {stats.slice(0, 4).map((s, i) => (
+          <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={colors[i % 4]} frame={f.frame} fps={f.fps} delay={14 + i * 8} />
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: compare (비교 — 좌우 카드 + 중앙 VS) ──
+function LayoutCompare({ title, points, tag, accent, f }) {
+  const a = points[0] || "";
+  const b = points[1] || "";
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+      {tag && <div style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 4, marginBottom: 12, opacity: f.enter }}>{tag}</div>}
+      <div style={{ fontSize: 42, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", textAlign: "center", marginBottom: 28,
+        opacity: f.enter, wordBreak: "keep-all", textShadow: f.isDark ? "0 4px 20px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
+        <GlassCard frame={f.frame} fps={f.fps} delay={10} style={{ flex: 1, padding: "24px 20px", textAlign: "center",
+          background: f.isDark ? "rgba(0,212,255,0.08)" : "rgba(59,89,152,0.06)", border: `1.5px solid ${f.isDark ? "rgba(0,212,255,0.2)" : "rgba(59,89,152,0.15)"}` }}>
+          <NumberBadge num="A" color={accent} size={42} frame={f.frame} fps={f.fps} delay={14} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: f.isDark ? "#fff" : "#1a1a2e", marginTop: 12, lineHeight: 1.4, wordBreak: "keep-all" }}>{a}</div>
+        </GlassCard>
+        <div style={{ fontSize: 24, fontWeight: 900, color: accent, opacity: f.d1, flexShrink: 0 }}>VS</div>
+        <GlassCard frame={f.frame} fps={f.fps} delay={18} style={{ flex: 1, padding: "24px 20px", textAlign: "center",
+          background: f.isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.06)", border: `1.5px solid ${f.isDark ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.15)"}` }}>
+          <NumberBadge num="B" color="#a78bfa" size={42} frame={f.frame} fps={f.fps} delay={22} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: f.isDark ? "#fff" : "#1a1a2e", marginTop: 12, lineHeight: 1.4, wordBreak: "keep-all" }}>{b}</div>
+        </GlassCard>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: steps (프로세스 — 가로 스텝 + 연결선) ──
+function LayoutSteps({ title, points, tag, accent, f }) {
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "7%" }}>
+      {tag && <div style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 4, marginBottom: 12, opacity: f.enter }}>{tag}</div>}
+      <div style={{ fontSize: 44, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.15, marginBottom: 32,
+        opacity: f.enter, wordBreak: "keep-all", textShadow: f.isDark ? "0 4px 20px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      {/* 가로 스텝 카드 + 연결선 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%" }}>
+        {points.map((p, i) => {
+          const delay = 12 + i * 10;
+          const s = spring({ frame: f.frame, fps: f.fps, delay, config: { damping: 20 } });
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+              <div style={{ flex: 1, opacity: s, transform: `translateY(${interpolate(s, [0, 1], [20, 0])}px)` }}>
+                <div style={{ background: f.isDark ? "rgba(255,255,255,0.06)" : "#fff", borderRadius: 14, padding: "16px 14px",
+                  border: f.isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)", textAlign: "center" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}18`, border: `1.5px solid ${accent}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px",
+                    fontSize: 15, fontWeight: 900, color: accent }}>{i + 1}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
+                </div>
+              </div>
+              {i < points.length - 1 && (
+                <div style={{ width: 24, height: 2, background: `${accent}40`, flexShrink: 0, opacity: spring({ frame: f.frame, fps: f.fps, delay: delay + 6, config: { damping: 200 } }) }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: quote (인용문 — 큰 따옴표 + 중앙 텍스트) ──
+function LayoutQuote({ title, sub, tag, accent, f }) {
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10% 8%" }}>
+      <div style={{ fontSize: 80, color: accent, opacity: f.enter * 0.3, fontWeight: 900, lineHeight: 0.8, marginBottom: -10 }}>"</div>
+      <div style={{ fontSize: 36, fontWeight: 800, color: f.isDark ? "#fff" : "#1a1a2e", textAlign: "center", lineHeight: 1.4,
+        opacity: f.enter, wordBreak: "keep-all", fontStyle: "italic", maxWidth: "85%",
+        textShadow: f.isDark ? "0 2px 16px rgba(0,0,0,0.5)" : "none" }}>{title}</div>
+      {sub && <div style={{ fontSize: 16, color: accent, marginTop: 20, fontWeight: 700, opacity: f.d1 }}> — {sub}</div>}
+      {tag && <Tag text={tag} color={accent} frame={f.frame} fps={f.fps} delay={16} />}
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: highlight (하이라이트 — 큰 숫자 + 라벨) ──
+function LayoutHighlight({ title, stats, tag, accent, f }) {
+  const mainStat = stats[0] || { label: "", value: title, sub: "" };
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+      {tag && <div style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 4, marginBottom: 20, opacity: f.enter }}>{tag}</div>}
+      <div style={{ fontSize: 90, fontWeight: 900, color: accent, lineHeight: 1,
+        opacity: f.enter, transform: `scale(${interpolate(f.enter, [0, 1], [0.5, 1])})`,
+        textShadow: `0 0 60px ${accent}40` }}>{mainStat.value}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: f.isDark ? "#fff" : "#1a1a2e", marginTop: 16, textAlign: "center",
+        opacity: f.d1, wordBreak: "keep-all" }}>{mainStat.label || title}</div>
+      {mainStat.sub && <div style={{ fontSize: 16, color: f.isDark ? "rgba(255,255,255,0.5)" : "#888", marginTop: 8, opacity: f.d2 }}>{mainStat.sub}</div>}
+      {/* 하단 보조 수치 */}
+      {stats.length > 1 && (
+        <div style={{ display: "flex", gap: 14, marginTop: 32, opacity: f.d3 }}>
+          {stats.slice(1, 4).map((s, i) => (
+            <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={["#00d4ff","#7c6aff","#4ade80"][i % 3]} frame={f.frame} fps={f.fps} delay={24 + i * 6} />
+          ))}
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+}
+
+// ── Layout: diagram (다이어그램 — 아이콘 + 연결선 + 라벨) ──
+function LayoutDiagram({ title, points, tag, accent, f }) {
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+      {tag && <div style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 4, marginBottom: 16, opacity: f.enter }}>{tag}</div>}
+      <div style={{ fontSize: 42, fontWeight: 900, color: f.isDark ? "#fff" : "#1a1a2e", textAlign: "center", marginBottom: 32,
+        opacity: f.enter, wordBreak: "keep-all", textShadow: f.isDark ? "0 4px 20px rgba(0,0,0,0.8)" : "none" }}>{title}</div>
+      {/* 다이어그램: 중앙 노드 + 방사형 포인트 */}
+      <div style={{ position: "relative", width: "100%", height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* 중앙 노드 */}
+        <div style={{ width: 80, height: 80, borderRadius: 20, background: `${accent}20`, border: `2px solid ${accent}50`,
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+          transform: `scale(${f.enter})` }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: accent }}>★</div>
+        </div>
+        {/* 방사형 포인트 */}
+        {points.map((p, i) => {
+          const angle = (i / points.length) * Math.PI * 2 - Math.PI / 2;
+          const radius = 140;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          const ds = spring({ frame: f.frame, fps: f.fps, delay: 10 + i * 8, config: { damping: 20 } });
+          return (
+            <div key={i} style={{ position: "absolute", left: `calc(50% + ${x}px - 60px)`, top: `calc(50% + ${y}px - 24px)`,
+              width: 120, textAlign: "center", opacity: ds, transform: `scale(${ds})` }}>
+              <div style={{ background: f.isDark ? "rgba(255,255,255,0.06)" : "#fff", borderRadius: 10, padding: "10px 8px",
+                border: f.isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.06)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: f.isDark ? "#fff" : "#1a1a2e", lineHeight: 1.3, wordBreak: "keep-all" }}>{p}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// 메인 SceneSlide — layout 기반 동적 렌더링
 // ═══════════════════════════════════════════════
 function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const styleId = style?.id || "cinematic";
 
-  // ── springs ──
   const enter = spring({ frame, fps, config: { damping: 200 } });
   const bounce = spring({ frame, fps, config: { damping: 12, stiffness: 120 } });
   const d1 = spring({ frame, fps, delay: 8, config: { damping: 200 } });
   const d2 = spring({ frame, fps, delay: 16, config: { damping: 200 } });
   const d3 = spring({ frame, fps, delay: 24, config: { damping: 200 } });
-  const d4 = spring({ frame, fps, delay: 32, config: { damping: 200 } });
 
   const exitStart = Math.max(0, durationInFrames - 10);
   const exitOp = interpolate(frame, [exitStart, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -246,188 +432,48 @@ function SceneSlide({ scene, style, sceneIndex, totalScenes }) {
   const script = scene._scriptText || "";
   const num = String(sceneIndex + 1).padStart(2, "0");
   const accentColor = style?.titleColor || "#7c6aff";
+  const isDark = styleId !== "minimal";
 
-  // AI가 생성한 레이아웃 데이터 (없으면 대본에서 추출)
   const layout = scene._layout || "hero";
   const aiPoints = (scene._points && scene._points.length > 0) ? scene._points : script.split(/[.!?。]\s*/).filter(s => s.trim().length > 3).slice(0, 3);
   const aiStats = scene._stats || [];
-  const aiTag = scene._tag || `STEP ${num}`;
-  const isDark = styleId !== "minimal";
+  const aiTag = scene._tag || "";
+
+  // 공유 props
+  const f = { frame, fps, enter, bounce, d1, d2, d3, isDark };
+
+  // 레이아웃별 렌더러 매핑
+  const layoutProps = { title, sub, points: aiPoints, stats: aiStats, tag: aiTag, accent: accentColor, f };
+
+  const LayoutRenderer = {
+    hero: LayoutHero,
+    list: LayoutList,
+    stats: LayoutStats,
+    compare: LayoutCompare,
+    steps: LayoutSteps,
+    quote: LayoutQuote,
+    highlight: LayoutHighlight,
+    diagram: LayoutDiagram,
+  }[layout] || LayoutHero;
 
   return (
     <AbsoluteFill style={{ opacity: exitOp, overflow: "hidden" }}>
-      {/* ═══ 배경 ═══ */}
+      {/* 배경 */}
       {scene.imageUrl ? (
         <AbsoluteFill>
           <Img src={scene.imageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${kbScale}) translateX(${kbX}%)` }} />
           <div style={{ position: "absolute", inset: 0, background: isDark
-            ? "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 30%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.88) 100%)"
-            : "rgba(255,255,255,0.75)" }} />
+            ? "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 30%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.88) 100%)"
+            : "rgba(255,255,255,0.8)" }} />
         </AbsoluteFill>
       ) : (
         <AbsoluteFill style={{ background: isDark ? "#0d0d1a" : "#f0f0f8" }} />
       )}
 
-      {/* ═══ 모션그래픽: AI 레이아웃 기반 동적 디자인 ═══ */}
-      {styleId === "motion" && (
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8% 7%" }}>
-          {/* 상단 태그 */}
-          <Tag text={aiTag} color="#00d4ff" frame={frame} fps={fps} />
-          {/* 큰 제목 */}
-          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginTop: 20, marginBottom: 24,
-            opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`, wordBreak: "keep-all",
-            textShadow: "0 4px 30px rgba(0,0,0,0.8)" }}>{title}</div>
+      {/* 레이아웃 렌더링 */}
+      <LayoutRenderer {...layoutProps} />
 
-          {/* layout=list 또는 steps: 번호 카드 리스트 */}
-          {(layout === "list" || layout === "steps") && aiPoints.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {aiPoints.map((p, i) => (
-                <ListItem key={i} num={i + 1} text={p} color="#00d4ff" frame={frame} fps={fps} delay={12 + i * 8} />
-              ))}
-            </div>
-          )}
-
-          {/* layout=stats: 수치 카드 */}
-          {layout === "stats" && aiStats.length > 0 && (
-            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              {aiStats.slice(0, 3).map((s, i) => (
-                <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={["#00d4ff","#7c6aff","#00ffaa"][i % 3]} frame={frame} fps={fps} delay={12 + i * 8} />
-              ))}
-            </div>
-          )}
-
-          {/* layout=hero: 서브텍스트만 */}
-          {layout === "hero" && sub && (
-            <div style={{ fontSize: 20, fontWeight: 500, color: "rgba(200,230,255,0.8)", lineHeight: 1.6, opacity: d1, wordBreak: "keep-all", maxWidth: "90%",
-              transform: `translateY(${interpolate(d1, [0, 1], [20, 0])}px)` }}>{sub}</div>
-          )}
-
-          {/* layout=compare: 비교 카드 2개 */}
-          {layout === "compare" && aiPoints.length >= 2 && (
-            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-              {aiPoints.slice(0, 2).map((p, i) => (
-                <GlassCard key={i} frame={frame} fps={fps} delay={12 + i * 10} style={{ flex: 1, textAlign: "center" }}>
-                  <NumberBadge num={i === 0 ? "A" : "B"} color="#00d4ff" size={38} frame={frame} fps={fps} delay={14 + i * 10} />
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginTop: 10, lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
-                </GlassCard>
-              ))}
-            </div>
-          )}
-
-          {/* 하단 수치 (stats가 없을 때 기본 표시) */}
-          {layout !== "stats" && (
-            <div style={{ position: "absolute", bottom: "6%", left: "7%", right: "7%", display: "flex", gap: 10, opacity: d4 }}>
-              {aiStats.length > 0 ? aiStats.slice(0, 3).map((s, i) => (
-                <StatCard key={i} label={s.label} value={s.value} sub={s.sub} color={["#00d4ff","#7c6aff","#00ffaa"][i % 3]} frame={frame} fps={fps} delay={36 + i * 6} />
-              )) : (
-                <StatCard label="진행" value={`${sceneIndex + 1}/${totalScenes}`} color="#00d4ff" frame={frame} fps={fps} delay={36} />
-              )}
-            </div>
-          )}
-        </AbsoluteFill>
-      )}
-
-      {/* ═══ 애니메이션: 말풍선 + 파티클 ═══ */}
-      {styleId === "animation" && (
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
-          {/* 씬 도트 */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 24, opacity: enter }}>
-            {Array.from({ length: totalScenes }).map((_, i) => (
-              <div key={i} style={{ width: i === sceneIndex ? 28 : 10, height: 10, borderRadius: 5,
-                background: i === sceneIndex ? "#ff6b9d" : "rgba(255,255,255,0.15)" }} />
-            ))}
-          </div>
-          {/* 글라스 카드 */}
-          <GlassCard frame={frame} fps={fps} delay={4} style={{ textAlign: "center", padding: "36px 40px", borderRadius: 24, border: "1.5px solid rgba(255,107,157,0.2)" }}>
-            <div style={{ fontSize: 48, fontWeight: 900, color: "#ff6b9d", lineHeight: 1.2, wordBreak: "keep-all",
-              textShadow: "0 2px 20px rgba(255,107,157,0.3)" }}>{title}</div>
-            {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", marginTop: 16, lineHeight: 1.6, wordBreak: "keep-all", opacity: d1 }}>{sub}</div>}
-          </GlassCard>
-          {/* 하단 포인트 */}
-          {aiPoints.length > 1 && (
-            <div style={{ display: "flex", gap: 10, marginTop: 20, width: "100%" }}>
-              {aiPoints.slice(0, 2).map((p, i) => (
-                <GlassCard key={i} frame={frame} fps={fps} delay={16 + i * 8} style={{ flex: 1, padding: "14px 16px", borderRadius: 14 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ffeead", lineHeight: 1.4, wordBreak: "keep-all" }}>{p}</div>
-                </GlassCard>
-              ))}
-            </div>
-          )}
-        </AbsoluteFill>
-      )}
-
-      {/* ═══ 실사 홍보: 프로 비즈니스 레이아웃 ═══ */}
-      {styleId === "realfilm" && (
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8% 7%" }}>
-          <div style={{ opacity: enter }}>
-            <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.12)", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: 3 }}>{num} / {String(totalScenes).padStart(2, "0")}</div>
-          </div>
-          <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", lineHeight: 1.15, marginTop: 16, marginBottom: 12,
-            opacity: enter, transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`, wordBreak: "keep-all",
-            textShadow: "0 4px 30px rgba(0,0,0,0.8)" }}>{title}</div>
-          <div style={{ width: interpolate(d1, [0, 1], [0, 80]), height: 4, background: "#fff", borderRadius: 2, marginBottom: 16 }} />
-          {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, opacity: d2, maxWidth: "90%", wordBreak: "keep-all" }}>{sub}</div>}
-          {/* 하단 수치 */}
-          <div style={{ position: "absolute", bottom: "7%", left: "7%", right: "7%", display: "flex", gap: 12, opacity: d3 }}>
-            <StatCard label="STEP" value={sceneIndex + 1} color="#fff" frame={frame} fps={fps} delay={24} />
-            <StatCard label="PROGRESS" value={Math.round(((sceneIndex+1)/totalScenes)*100)} sub="%" color="#4ade80" frame={frame} fps={fps} delay={28} />
-          </div>
-        </AbsoluteFill>
-      )}
-
-      {/* ═══ 시네마틱: 영화 스타일 ═══ */}
-      {styleId === "cinematic" && (<>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.7) 100%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "6%", background: "#000" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "6%", background: "#000" }} />
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "10% 8% 12%" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffd700", letterSpacing: 4, marginBottom: 12,
-            opacity: interpolate(frame, [0, fps*0.5], [0, 1], { extrapolateRight: "clamp" }) }}>SCENE {num}</div>
-          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.12, wordBreak: "keep-all",
-            opacity: interpolate(frame, [fps*0.2, fps], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-            textShadow: "0 0 50px rgba(255,215,0,0.2), 0 4px 24px rgba(0,0,0,0.9)" }}>{title}</div>
-          {sub && <div style={{ fontSize: 20, color: "rgba(255,255,255,0.6)", marginTop: 14, lineHeight: 1.6, wordBreak: "keep-all", opacity: d1 }}>{sub}</div>}
-        </AbsoluteFill>
-      </>)}
-
-      {/* ═══ 미니멀: KEY FEATURES 스타일 (참고이미지 #6) ═══ */}
-      {styleId === "minimal" && (
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8% 7%" }}>
-          <div style={{ position: "absolute", inset: "5%", border: "1.5px solid rgba(0,0,0,0.06)", borderRadius: 12, pointerEvents: "none", opacity: enter }} />
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", letterSpacing: 5, marginBottom: 28, opacity: enter }}>KEY POINTS</div>
-          <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
-            {(aiPoints.length > 0 ? aiPoints : [title]).map((p, i) => (
-              <ListItem key={i} num={i + 1} text={p} color="#3b5998" frame={frame} fps={fps} delay={8 + i * 8} light />
-            ))}
-          </div>
-          {sub && <div style={{ fontSize: 16, color: "#888", marginTop: 24, textAlign: "center", lineHeight: 1.6, opacity: d3, wordBreak: "keep-all" }}>{sub}</div>}
-        </AbsoluteFill>
-      )}
-
-      {/* ═══ 임팩트(bold): 풀스크린 강조 ═══ */}
-      {styleId === "bold" && (<>
-        {frame < fps * 0.6 && [0,1].map(j => (
-          <div key={j} style={{
-            position: "absolute", top: "50%", left: "50%",
-            width: interpolate(frame, [j*3, j*3+fps*0.5], [0, 1400]), height: interpolate(frame, [j*3, j*3+fps*0.5], [0, 1400]),
-            borderRadius: "50%", border: `${3-j}px solid rgba(255,59,59,${interpolate(frame, [j*3, j*3+fps*0.5], [0.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
-            transform: "translate(-50%, -50%)", pointerEvents: "none",
-          }} />
-        ))}
-        <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8%" }}>
-          <div style={{ fontSize: 60, fontWeight: 900, color: "#ff3b3b", lineHeight: 1.05, wordBreak: "keep-all", textAlign: "center",
-            letterSpacing: -2, transform: `scale(${interpolate(bounce, [0, 1], [2.2, 1])})`, opacity: bounce,
-            textShadow: "0 0 80px rgba(255,59,59,0.5), 0 6px 24px rgba(0,0,0,0.8)" }}>{title}</div>
-          {sub && <div style={{ fontSize: 22, color: "#fff", marginTop: 20, fontWeight: 700, textAlign: "center",
-            opacity: d2, lineHeight: 1.5, wordBreak: "keep-all" }}>{sub}</div>}
-          {/* 하단 번호 배지 */}
-          <div style={{ marginTop: 30, opacity: d3 }}>
-            <NumberBadge num={sceneIndex + 1} color="#ff3b3b" size={60} frame={frame} fps={fps} delay={24} />
-          </div>
-        </AbsoluteFill>
-      </>)}
-
-      {/* ═══ 공통: 프로그레스 바 ═══ */}
+      {/* 프로그레스 바 */}
       <ProgressBar color={accentColor} frame={frame} durationInFrames={durationInFrames} />
     </AbsoluteFill>
   );
@@ -737,12 +783,15 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   }
 ]
 
-레이아웃 타입:
-- "list": 번호가 붙은 핵심 포인트 목록 (3개 이하의 핵심 내용이 있을 때)
-- "stats": 수치/데이터 카드 표시 (숫자, 비율, 통계가 언급될 때)
+레이아웃 타입 (씬마다 반드시 다른 레이아웃을 사용하세요! 연속으로 같은 타입 금지):
 - "hero": 큰 제목 + 설명 (인트로, 결론, 단순 설명)
+- "list": 번호가 붙은 핵심 포인트 목록 (3개 이하)
+- "stats": 수치/데이터 카드 (숫자, 비율, 통계)
 - "compare": 비교/대조 (A vs B, 장단점)
-- "steps": 단계/과정 (1단계, 2단계 같은 순서)
+- "steps": 단계/과정 (1→2→3 가로 흐름)
+- "quote": 인용/핵심 문구 강조 (명언, 중요 발언)
+- "highlight": 큰 숫자 하나 강조 (핵심 수치, 퍼센트)
+- "diagram": 중심 개념 + 방사형 포인트 (관계, 구조)
 
 중요: 대본 내용을 **도식화**하세요. 원문을 그대로 쓰지 말고, 핵심만 추출하여 시각적으로 표현할 수 있는 짧은 문구로 만드세요.
 stats의 value는 대본에서 추출한 숫자나, 없으면 맥락에 맞는 상징적 수치를 사용하세요.`
