@@ -22,6 +22,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
+const AiVideoGenerator = React.lazy(() => import("./AiVideoGenerator"));
 import AutoPublisher from "./AutoPublisher";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
@@ -1166,8 +1167,57 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // 영상 편집 — 포인트 차감 (추후 Pro 전용 전환 예정)
-  if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make") {
+  // 영상 메뉴 허브 (숏폼 편집 vs AI 영상 생성 선택)
+  if (aiMenu === "video_edit") {
+    const vAcc = "#7c6aff";
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ maxWidth:640, margin:"0 auto", padding:"48px 20px 60px", textAlign:"center" }}>
+          <div style={{ fontSize:24, fontWeight:900, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>영상 제작</div>
+          <div style={{ fontSize:13, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:36 }}>원하는 영상 제작 도구를 선택하세요</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <div onClick={() => setAiMenu("shorts_make")} className="hover-lift"
+              style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center" }}>
+              <div style={{ width:56, height:56, borderRadius:16, background:`${vAcc}15`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={vAcc} strokeWidth="1.8"/><path d="M8 15V9l6 3-6 3z" fill={vAcc}/></svg>
+              </div>
+              <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>숏폼 자동 편집</div>
+              <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>유튜브 링크 또는 파일에서<br/>AI가 쇼츠를 자동 추출</div>
+              <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 80P</div>
+            </div>
+            {user?.role === "admin" ? (
+              <div onClick={() => setAiMenu("ai_video_gen")} className="hover-lift"
+                style={{ padding:"28px 20px", borderRadius:16, border: `1px solid rgba(236,72,153,0.2)`, background: isDark ? "rgba(236,72,153,0.04)" : "rgba(236,72,153,0.02)", cursor:"pointer", textAlign:"center" }}>
+                <div style={{ width:56, height:56, borderRadius:16, background:"rgba(236,72,153,0.12)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:28 }}>✨</span>
+                </div>
+                <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>AI 영상 생성</div>
+                <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>프롬프트만 입력하면<br/>AI가 씬별 영상을 생성</div>
+                <div style={{ marginTop:12, fontSize:11, color:"#ec4899", fontWeight:700 }}>생성 50P</div>
+              </div>
+            ) : (
+              <div style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", textAlign:"center", opacity:0.6 }}>
+                <div style={{ width:56, height:56, borderRadius:16, background:"rgba(128,128,128,0.1)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:28 }}>✨</span>
+                </div>
+                <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>AI 영상 생성</div>
+                <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>프롬프트 기반 영상 생성</div>
+                <div style={{ marginTop:12, fontSize:11, color:"#f59e0b", fontWeight:700 }}>Coming Soon</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (aiMenu === "video_create" || aiMenu === "shorts_make") {
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => { if (st === "edit") { /* 프로 전환 예정 배너는 ShortsCreator 내부에서 처리 */ } }} />;
+  }
+
+  // AI 영상 생성
+  if (aiMenu === "ai_video_gen") {
+    return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><AiVideoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></React.Suspense>;
   }
 
   return null;

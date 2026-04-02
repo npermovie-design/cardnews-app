@@ -92,7 +92,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"blog_write", label:t("sideWrite")||"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","auto_publish"] },
     { id:"content_create", label:t("sideContent")||"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","canvas_direct_"] },
     { id:"image_tools", label:t("sideImage")||"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
-    { id:"video_edit", label:t("sideVideo")||"영상", icon:"/icons3d/sns-app.png", ids:["shorts_make"], badge:"NEW" },
+    { id:"video_edit", label:t("sideVideo")||"영상", icon:"/icons3d/sns-app.png", ids:["shorts_make","ai_video_gen"], badge:"NEW" },
     { sep:true },
     { id:"repurpose", label:t("sideRepurpose")||"리퍼포징", icon:"/icons3d/sns-share.png" },
     { id:"social_planner", label:t("sidePlanner")||"소셜 플래너", icon:"/icons3d/sns-heart.png" },
