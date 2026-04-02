@@ -1426,8 +1426,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(124,106,255,0.4)"; }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
           <div>
-            <div style={{ fontSize:12, fontWeight:800, color:"#fff", lineHeight:1.2 }}>영상 제작</div>
-            <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)" }}>AI 자동 쇼츠</div>
+            <div style={{ fontSize:12, fontWeight:800, color:"#fff", lineHeight:1.2 }}>{_s("영상 제작","Video")}</div>
+            <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)" }}>{_s("AI 자동 쇼츠","AI Shorts")}</div>
           </div>
           <span style={{ fontSize:8, fontWeight:800, color:"#fff", background:"rgba(255,255,255,0.2)", padding:"2px 5px", borderRadius:4 }}>NEW</span>
         </div>
