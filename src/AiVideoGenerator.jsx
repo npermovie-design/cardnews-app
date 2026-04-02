@@ -20,7 +20,7 @@ function SceneComposition({ segments, audioUrl, style }) {
             {seg.type === "gif" ? (
               <GifSegment src={seg.gifUrl} text={seg.text} style={style} />
             ) : (
-              <TextSegment text={seg.text} animation={seg.animation || "fade"} style={style} segIndex={i} totalSegs={segments.length} />
+              <TextSegment text={seg.text} animation={seg.animation || "fade"} bgImageUrl={seg.bgImageUrl} style={style} segIndex={i} totalSegs={segments.length} />
             )}
           </Sequence>
         );
@@ -38,7 +38,8 @@ function SegmentCaptions({ segments }) {
   const { fps } = useVideoConfig();
   const sec = frame / fps;
   const current = segments.find(s => sec >= s.startSec && sec < s.endSec);
-  if (!current || !current.text) return null;
+  // GIF 세그먼트에서만 자막 표시 (텍스트 세그먼트는 이미 본문이 있으므로 겹침 방지)
+  if (!current || !current.text || current.type !== "gif") return null;
 
   // 세그먼트 내 단어별 순차 표시
   const words = current.text.split(/\s+/);
@@ -64,7 +65,7 @@ function SegmentCaptions({ segments }) {
 // ═══════════════════════════════════════════════
 // 텍스트 애니메이션 세그먼트 — 6종 애니메이션
 // ═══════════════════════════════════════════════
-function TextSegment({ text, animation, style, segIndex, totalSegs }) {
+function TextSegment({ text, animation, bgImageUrl, style, segIndex, totalSegs }) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const accent = style?.titleColor || "#7c6aff";
@@ -76,6 +77,15 @@ function TextSegment({ text, animation, style, segIndex, totalSegs }) {
   const exitOp = interpolate(frame, [exitStart, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const opacity = Math.min(enterOp, exitOp);
 
+  // Ken Burns 배경
+  const kbScale = interpolate(frame, [0, durationInFrames], [1, 1.1], { extrapolateRight: "clamp" });
+  const bgEl = bgImageUrl ? (
+    <AbsoluteFill>
+      <Img src={bgImageUrl} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${kbScale})` }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.8) 100%)" }} />
+    </AbsoluteFill>
+  ) : null;
+
   // 애니메이션별 스타일
   const anim = animation || "fade";
 
@@ -83,10 +93,13 @@ function TextSegment({ text, animation, style, segIndex, totalSegs }) {
   if (anim === "fade") {
     const s = spring({ frame, fps, config: { damping: 20 } });
     return (
-      <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%", opacity }}>
-        <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3,
-          wordBreak: "keep-all", transform: `scale(${interpolate(s, [0, 1], [0.85, 1])})`,
-          textShadow: "0 4px 30px rgba(0,0,0,0.6)" }}>{text}</div>
+      <AbsoluteFill style={{ opacity }}>
+        {bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", textAlign: "center", lineHeight: 1.3,
+            wordBreak: "keep-all", transform: `scale(${interpolate(s, [0, 1], [0.85, 1])})`,
+            textShadow: "0 4px 30px rgba(0,0,0,0.6)" }}>{text}</div>
+        </AbsoluteFill>
       </AbsoluteFill>
     );
   }
@@ -98,12 +111,15 @@ function TextSegment({ text, animation, style, segIndex, totalSegs }) {
     const display = (text || "").slice(0, visible);
     const showCursor = visible < (text || "").length;
     return (
-      <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%", opacity }}>
-        <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", textAlign: "center", lineHeight: 1.4,
-          wordBreak: "keep-all", fontFamily: "monospace",
-          textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>
-          {display}{showCursor && <span style={{ color: accent, opacity: interpolate(frame % fps, [0, fps/2, fps], [1, 0, 1]) }}>|</span>}
-        </div>
+      <AbsoluteFill style={{ opacity }}>
+        {bgEl}
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8%" }}>
+          <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", textAlign: "center", lineHeight: 1.4,
+            wordBreak: "keep-all", fontFamily: "monospace",
+            textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>
+            {display}{showCursor && <span style={{ color: accent, opacity: interpolate(frame % fps, [0, fps/2, fps], [1, 0, 1]) }}>|</span>}
+          </div>
+        </AbsoluteFill>
       </AbsoluteFill>
     );
   }
@@ -771,6 +787,9 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
   const [editingScene, setEditingScene] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const recorderRef = useRef(null);
+  const recChunksRef = useRef([]);
   const [transcript, setTranscript] = useState("");
   // 에디터 상태 (ShortsCreator 동일)
   const [playhead, setPlayhead] = useState(0);
@@ -823,6 +842,100 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [step, isPlaying, playhead, duration]);
+
+  // 영상 녹화 다운로드 (Canvas + MediaRecorder)
+  const startRecording = useCallback(async () => {
+    const playerContainer = playerRef.current?.getContainerNode?.() || document.querySelector("[data-remotion-player-container]");
+    if (!playerContainer) return;
+    setRecording(true);
+    recChunksRef.current = [];
+
+    // Canvas 생성 — Player 크기에 맞춤
+    const canvas = document.createElement("canvas");
+    canvas.width = currentSize.w;
+    canvas.height = currentSize.h;
+    const ctx = canvas.getContext("2d");
+
+    // Canvas 스트림 + 오디오 스트림 합성
+    const canvasStream = canvas.captureStream(FPS);
+
+    // TTS 오디오가 있으면 오디오 트랙 추가
+    let combinedStream = canvasStream;
+    if (ttsUrl) {
+      try {
+        const audioCtx = new AudioContext();
+        const audioEl = new window.Audio(ttsUrl);
+        audioEl.crossOrigin = "anonymous";
+        const source = audioCtx.createMediaElementSource(audioEl);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        source.connect(audioCtx.destination);
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        if (audioTrack) canvasStream.addTrack(audioTrack);
+        audioEl.currentTime = 0;
+        audioEl.play();
+      } catch (e) { console.warn("오디오 트랙 추가 실패:", e); }
+    }
+
+    const recorder = new MediaRecorder(canvasStream, {
+      mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm",
+      videoBitsPerSecond: 4_000_000,
+    });
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(recChunksRef.current, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "ai-video.webm"; a.click();
+      URL.revokeObjectURL(url);
+      setRecording(false);
+    };
+    recorderRef.current = recorder;
+
+    // Player를 처음부터 재생
+    playerRef.current?.seekTo(0);
+    playerRef.current?.play();
+    setIsPlaying(true);
+    recorder.start(100);
+
+    // 프레임 캡처 루프
+    const captureFrame = () => {
+      if (!recorderRef.current || recorderRef.current.state !== "recording") return;
+      try {
+        // Player 컨테이너의 첫 번째 자식(실제 Remotion 렌더 영역)을 찾아 SVG로 변환
+        const target = playerContainer.querySelector("div") || playerContainer;
+        // html2canvas 없이 간단하게: 배경색 + 현재 표시 텍스트를 canvas에 직접 그리기
+        const rect = target.getBoundingClientRect();
+        ctx.fillStyle = "#0d0d1a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // DOM 스냅샷 → foreignObject SVG → canvas
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+          <foreignObject width="100%" height="100%">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="width:${canvas.width}px;height:${canvas.height}px;transform:scale(${canvas.width/rect.width});transform-origin:0 0;">
+              ${target.innerHTML}
+            </div>
+          </foreignObject>
+        </svg>`;
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img, 0, 0); requestAnimationFrame(captureFrame); };
+        img.onerror = () => requestAnimationFrame(captureFrame);
+        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      } catch { requestAnimationFrame(captureFrame); }
+    };
+    requestAnimationFrame(captureFrame);
+
+    // 영상 끝나면 자동 정지
+    setTimeout(() => { stopRecording(); }, (duration + 1) * 1000);
+  }, [currentSize, ttsUrl, duration]);
+
+  const stopRecording = useCallback(() => {
+    if (recorderRef.current && recorderRef.current.state === "recording") {
+      recorderRef.current.stop();
+      playerRef.current?.pause();
+      setIsPlaying(false);
+    }
+    setRecording(false);
+  }, []);
 
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.06)" : "#f9f9fc", color: text, fontSize: 13, outline: "none", boxSizing: "border-box" };
@@ -975,6 +1088,7 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   "type": "text" 또는 "gif",
   "animation": "텍스트 애니메이션 타입 (type=text일 때만)",
   "gifKeyword": "영어 GIF 검색 키워드 (type=gif일 때만)",
+  "bgKeyword": "배경 이미지 영어 키워드 2단어 (type=text일 때, 내용에 어울리는 사진)",
   "durationSec": 3~6 사이의 초
 }
 
@@ -989,7 +1103,7 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
 규칙:
 1. 의미 단위는 3~6초가 이상적
 2. 연속으로 같은 animation/type 금지
-3. GIF 구간은 전체의 20~40% 정도 (시각적 변화를 위해)
+3. GIF 구간은 전체의 40~60% — 텍스트만 있으면 밋밋하므로 시각 자료를 많이 넣어라
 4. GIF 키워드는 반드시 영어 (고퀄 검색용)
 5. text는 대본 원문을 그대로 쓰지 말고, 화면에 표시할 핵심 문구로 압축
 6. 전체 합산 시간이 반드시 ${duration}초에 가깝게. 세그먼트 수 = ${Math.ceil(duration / 4.5)}개 정도
@@ -1040,27 +1154,41 @@ JSON 배열만 출력하세요.`
       });
 
       // GIF 구간: Klipy API로 GIF URL 확보
-      setLoadingMsg("GIF를 검색하고 있어요...");
-      const segmentsWithGifs = await Promise.all(timedSegments.map(async (seg) => {
+      setLoadingMsg("이미지와 GIF를 검색하고 있어요...");
+      const orient = sizeId === "16:9" ? "landscape" : sizeId === "1:1" ? "squarish" : "portrait";
+      const segmentsWithMedia = await Promise.all(timedSegments.map(async (seg, si) => {
+        setLoadingMsg(`미디어 검색 중... (${si + 1}/${timedSegments.length})`);
+        // GIF 세그먼트
         if (seg.type === "gif" && seg.gifKeyword) {
           try {
-            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(seg.gifKeyword)}&limit=1`);
+            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(seg.gifKeyword)}&limit=3`);
             const d = await r.json();
-            const gif = d.data?.[0] || d.results?.[0] || d[0];
+            const gifs = d.data || d.results || d || [];
+            const gif = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
             const gifUrl = gif?.images?.original?.url || gif?.url || gif?.media_url || "";
             return { ...seg, gifUrl };
+          } catch {}
+        }
+        // 텍스트 세그먼트 — 배경 이미지 검색
+        if (seg.type === "text" && seg.bgKeyword) {
+          try {
+            const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(seg.bgKeyword)}&per_page=3&orientation=${orient}`);
+            const d = await r.json();
+            const imgs = d.results || [];
+            const img = imgs[Math.floor(Math.random() * Math.min(3, imgs.length))];
+            return { ...seg, bgImageUrl: img?.urls?.regular || null };
           } catch {}
         }
         return seg;
       }));
 
       // 전체 영상 길이 조정
-      const totalDur = Math.ceil(segmentsWithGifs[segmentsWithGifs.length - 1]?.endSec || duration);
+      const totalDur = Math.ceil(segmentsWithMedia[segmentsWithMedia.length - 1]?.endSec || duration);
       setDuration(totalDur);
-      setSegments(segmentsWithGifs);
+      setSegments(segmentsWithMedia);
 
       // 레거시 호환: scenes/captions도 생성 (에디터 좌측 패널용)
-      const scenesWithImages = segmentsWithGifs.map((seg, i) => ({
+      const scenesWithImages = segmentsWithMedia.map((seg, i) => ({
         title: seg.text, text: "", imageUrl: seg.gifUrl || null,
         _startSec: seg.startSec, _endSec: seg.endSec,
         _startFrame: Math.round(seg.startSec * FPS),
@@ -1516,10 +1644,13 @@ JSON 배열만 출력하세요.`
               {isPlaying ? "⏸" : "▶"}
             </button>
             <button onClick={() => { setPlayhead(duration); playerRef.current?.seekTo(durationInFrames); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
-            {/* 다운로드 */}
-            {ttsUrl && (
-              <a href={ttsUrl} download="ai-voice.wav" style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="음성 다운로드">🔊</a>
-            )}
+            {/* 영상 녹화 다운로드 */}
+            <button onClick={recording ? stopRecording : startRecording} disabled={segments.length === 0 && scenes.length === 0}
+              style={{ padding: "6px 14px", borderRadius: 6, border: recording ? "1px solid #f87171" : `1px solid ${acc}40`, background: recording ? "rgba(248,113,113,0.1)" : `${acc}10`,
+                color: recording ? "#f87171" : acc, cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              {recording ? "⏹ 녹화 중지" : "⬇ 영상 다운로드"}
+            </button>
+            {ttsUrl && <a href={ttsUrl} download="ai-voice.wav" style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", fontSize: 10, textDecoration: "none" }}>🔊 음성</a>}
             <div style={{ flex: 1 }} />
             <div style={{ fontSize: 10, color: "#555" }}>Space: 재생 | ←→: 이동</div>
           </div>
