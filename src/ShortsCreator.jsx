@@ -95,6 +95,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [isPlaying, setIsPlaying] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [selectedSubIdx, setSelectedSubIdx] = useState(-1);
+  // 비디오 세그먼트 (분할/삭제용) — [{start, end, muted}]
+  const [videoSegs, setVideoSegs] = useState([]);
+  const [selectedSegIdx, setSelectedSegIdx] = useState(-1);
+  // 볼륨 + 배경음
+  const [volume, setVolume] = useState(100);
+  const [bgmFile, setBgmFile] = useState(null); // { name, url }
+  const [bgmVolume, setBgmVolume] = useState(50);
+  const bgmRef = useRef(null);
+  const bgmFileRef = useRef(null);
 
   // 오버레이 (이미지/로고/텍스트)
   const [overlays, setOverlays] = useState([]); // { id, type:'image'|'text'|'logo', src, text, x, y, w, h, start, end }
@@ -153,51 +162,81 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ── 비디오 ↔ playhead 동기화 (버벅임 방지) ──────────────
   const seekingRef = useRef(false);
 
-  // seek: 재생 중이 아닐 때만 currentTime 설정 (재생 중엔 video가 자체 관리)
+  // playhead(상대) → 절대 시간 변환 (세그먼트 기반)
+  const playheadToAbsolute = (ph) => {
+    let accum = 0;
+    for (const seg of videoSegs) {
+      const segLen = seg.end - seg.start;
+      if (ph < accum + segLen) return seg.start + (ph - accum);
+      accum += segLen;
+    }
+    return videoSegs.length > 0 ? videoSegs[videoSegs.length - 1].end : ph;
+  };
+
+  // seek: 재생 중이 아닐 때만 currentTime 설정
   useEffect(() => {
     const v = videoRef.current;
     if (!v || step !== "edit" || isPlaying) return;
-    const clip = editClips[editIdx];
-    if (!clip) return;
-    const target = (clip.start_seconds || 0) + playhead;
+    const target = playheadToAbsolute(playhead);
     if (Math.abs(v.currentTime - target) > 0.3) {
       seekingRef.current = true;
       v.currentTime = target;
     }
-  }, [playhead, editIdx, step]);
+  }, [playhead, editIdx, step, videoSegs]);
 
   // play/pause
   useEffect(() => {
     const v = videoRef.current;
     if (!v || step !== "edit") return;
     if (isPlaying) {
-      const clip = editClips[editIdx];
-      if (clip) v.currentTime = (clip.start_seconds || 0) + playhead;
+      v.currentTime = playheadToAbsolute(playhead);
       v.play().catch(() => {});
     } else {
       v.pause();
     }
   }, [isPlaying, step]);
 
-  // video timeupdate → playhead (재생 중에만, requestAnimationFrame 사용)
+  // 재생 중 playhead 업데이트 (세그먼트 스킵 포함)
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v || !isPlaying) return;
     let raf;
     const tick = () => {
       if (!isPlaying) return;
-      const clip = editClips[editIdx];
-      if (clip) {
-        const rel = v.currentTime - (clip.start_seconds || 0);
-        const dur = (clip.end_seconds || 30) - (clip.start_seconds || 0);
-        if (rel >= dur) { setIsPlaying(false); setPlayhead(dur); return; }
-        setPlayhead(Math.max(0, rel));
+      const curTime = v.currentTime;
+      // 현재 세그먼트 찾기
+      let accum = 0;
+      let found = false;
+      for (let i = 0; i < videoSegs.length; i++) {
+        const seg = videoSegs[i];
+        if (curTime >= seg.start && curTime < seg.end) {
+          setPlayhead(accum + (curTime - seg.start));
+          found = true;
+          break;
+        }
+        accum += (seg.end - seg.start);
+      }
+      if (!found) {
+        // 세그먼트 사이의 갭 → 다음 세그먼트로 점프
+        for (let i = 0; i < videoSegs.length; i++) {
+          if (curTime < videoSegs[i].start) {
+            v.currentTime = videoSegs[i].start;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          // 끝까지 재생됨
+          setIsPlaying(false);
+          setPlayhead(clipDuration);
+          return;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
-    if (isPlaying) raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
     return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [isPlaying, editIdx]);
+  }, [isPlaying, videoSegs]);
 
   // 드래그 핸들러 (자막/제목 위치) + 스냅 가이드
   const SNAP_THRESHOLD = 4; // px 기준 스냅 범위
@@ -250,9 +289,81 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     e.target.value = "";
   };
 
+  // ── 세그먼트 초기화 (클립 변경 시) ─────────────────
+  useEffect(() => {
+    if (editClips.length > 0 && videoSegs.length === 0) {
+      const c = editClips[editIdx];
+      if (c) setVideoSegs([{ start: c.start_seconds || 0, end: c.end_seconds || 30 }]);
+    }
+  }, [editClips, editIdx]);
+
+  // 클립 변경 시 세그먼트 리셋
+  useEffect(() => {
+    const c = editClips[editIdx];
+    if (c) setVideoSegs([{ start: c.start_seconds || 0, end: c.end_seconds || 30 }]);
+    setSelectedSegIdx(-1);
+  }, [editIdx]);
+
+  // 세그먼트 총 재생 길이
+  const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
+
+  // ── 분할: 현재 playhead 위치에서 영상 자르기 ─────
+  const splitAtPlayhead = () => {
+    if (videoSegs.length === 0) return;
+    // playhead를 절대 시간으로 변환
+    let accum = 0;
+    for (let i = 0; i < videoSegs.length; i++) {
+      const seg = videoSegs[i];
+      const segLen = seg.end - seg.start;
+      if (playhead >= accum && playhead < accum + segLen) {
+        const splitPoint = seg.start + (playhead - accum);
+        if (splitPoint - seg.start < 0.5 || seg.end - splitPoint < 0.5) return; // 너무 짧으면 무시
+        const newSegs = [...videoSegs];
+        newSegs.splice(i, 1, { start: seg.start, end: Math.round(splitPoint * 10) / 10 }, { start: Math.round(splitPoint * 10) / 10, end: seg.end });
+        setVideoSegs(newSegs);
+        return;
+      }
+      accum += segLen;
+    }
+  };
+
+  // ── 세그먼트 삭제: 삭제하면 나머지가 합쳐져서 재생 ─────
+  const deleteSegment = (idx) => {
+    if (videoSegs.length <= 1) return; // 최소 1개 유지
+    setVideoSegs(prev => prev.filter((_, i) => i !== idx));
+    setSelectedSegIdx(-1);
+    setPlayhead(0);
+  };
+
+  // ── 자막 삭제 ─────
+  const deleteSubtitle = (idx) => {
+    const subs = [...(curClip.subtitles || [])];
+    subs.splice(idx, 1);
+    updateClip("subtitles", subs);
+    if (selectedSubIdx === idx) setSelectedSubIdx(-1);
+  };
+
+  // ── 볼륨 동기화 ─────
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v) v.volume = volume / 100;
+  }, [volume]);
+
+  useEffect(() => {
+    const a = bgmRef.current;
+    if (a) { a.volume = bgmVolume / 100; a.loop = true; }
+  }, [bgmVolume]);
+
+  // BGM 재생/정지 연동
+  useEffect(() => {
+    const a = bgmRef.current;
+    if (!a) return;
+    if (isPlaying) a.play().catch(() => {});
+    else a.pause();
+  }, [isPlaying]);
+
   // ── 타임라인 재생 ─────────────────────
-  // clipDuration은 실제 트림된 영상 길이 기준
-  const clipDuration = Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
+  const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
 
   // 자막은 클립 시작 기준 상대 시간으로 표시
   const clipStart = curClip.start_seconds || 0;
@@ -725,8 +836,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
-      {/* 숨겨진 오버레이 파일 input */}
+      {/* 숨겨진 inputs */}
       <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: "none" }} />
+      {bgmFile && <audio ref={bgmRef} src={bgmFile.url} loop preload="auto" style={{ display: "none" }} />}
 
       {/* Top 3-panel area */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
@@ -1076,13 +1188,34 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
         {/* 툴바 (AlphaCut 스타일) */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button onClick={() => setPropTab("style")} style={{ padding: "5px 12px", borderRadius: 6, border: propTab==="style" ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: propTab==="style" ? "rgba(124,106,255,0.15)" : "#1a1a30", color: propTab==="style" ? "#a5b4fc" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 13 }}>✨</span> 소츠 편집
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={splitAtPlayhead} title="현재 위치에서 영상 분할" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+              ✂ 분할
             </button>
-            <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 12px", borderRadius: 6, border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 13 }}>✂</span> 무음 구간 삭제 {removeSilence && "ON"}
+            {selectedSegIdx >= 0 && videoSegs.length > 1 && (
+              <button onClick={() => deleteSegment(selectedSegIdx)} title="선택 구간 삭제" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                🗑 구간삭제
+              </button>
+            )}
+            {selectedSubIdx >= 0 && (
+              <button onClick={() => deleteSubtitle(selectedSubIdx)} title="선택 자막 삭제" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                🗑 자막삭제
+              </button>
+            )}
+            <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
+            <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 10px", borderRadius: 6, border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              무음삭제 {removeSilence ? "ON" : ""}
             </button>
+            <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
+            {/* 볼륨 */}
+            <span style={{ fontSize: 10, color: "#888" }}>🔊</span>
+            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#4ade80" }} title={`볼륨 ${volume}%`} />
+            {/* BGM */}
+            <button onClick={() => bgmFileRef.current?.click()} style={{ padding: "5px 10px", borderRadius: 6, border: bgmFile ? "1px solid #ec4899" : "1px solid #2a2a4a", background: bgmFile ? "rgba(236,72,153,0.1)" : "#1a1a30", color: bgmFile ? "#ec4899" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              🎵 {bgmFile ? bgmFile.name.slice(0,8) : "배경음"}
+            </button>
+            {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899" }} title={`배경음 ${bgmVolume}%`} />}
+            <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
@@ -1128,26 +1261,37 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 ))}
               </div>
 
-              {/* V1 비디오 (클릭 선택 + 좌우 트림 핸들) */}
+              {/* V1 비디오 (세그먼트별 블록 + 트림 핸들) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                <div onClick={e => { e.stopPropagation(); setSelectedTrack("V1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
-                  style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: selectedTrack === "V1" ? "linear-gradient(90deg,#4a9eff50,#4a9eff35)" : "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: `1.5px solid ${selectedTrack === "V1" ? "#4a9eff" : "#4a9eff50"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden", cursor: "pointer" }}>
-                  <span style={{ fontSize: 9, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap" }}>{curClip.title || "Video"} ({fmt(curClip.start_seconds||0)}~{fmt(curClip.end_seconds||0)})</span>
-                  {/* 좌측 트림 핸들 */}
-                  <div style={{ position: "absolute", left: 0, top: 0, width: 6, height: "100%", cursor: "ew-resize", background: selectedTrack === "V1" ? "#4a9eff80" : "transparent", borderRadius: "4px 0 0 4px" }}
-                    onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = curClip.start_seconds || 0;
-                      const mv = ev => { const dt = (ev.clientX - sx) / pxPerSec; const ns = Math.max(0, Math.round((os + dt) * 10) / 10); updateClip("start_seconds", Math.min(ns, (curClip.end_seconds || 30) - 1)); };
-                      const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
-                      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                    }} />
-                  {/* 우측 트림 핸들 */}
-                  <div style={{ position: "absolute", right: 0, top: 0, width: 6, height: "100%", cursor: "ew-resize", background: selectedTrack === "V1" ? "#4a9eff80" : "transparent", borderRadius: "0 4px 4px 0" }}
-                    onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = curClip.end_seconds || 30;
-                      const mv = ev => { const dt = (ev.clientX - sx) / pxPerSec; const ne = Math.max((curClip.start_seconds || 0) + 1, Math.round((oe + dt) * 10) / 10); updateClip("end_seconds", ne); };
-                      const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
-                      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                    }} />
-                </div>
+                {videoSegs.map((seg, si) => {
+                  // 이전 세그먼트까지의 누적 시간 = 타임라인상 위치
+                  let accLeft = 0;
+                  for (let j = 0; j < si; j++) accLeft += (videoSegs[j].end - videoSegs[j].start);
+                  const segLen = seg.end - seg.start;
+                  const left = accLeft * pxPerSec;
+                  const width = segLen * pxPerSec;
+                  const isSel = selectedSegIdx === si;
+                  return (
+                    <div key={si} onClick={e => { e.stopPropagation(); setSelectedSegIdx(si); setSelectedTrack("V1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: isSel ? "linear-gradient(90deg,#4a9eff55,#4a9eff40)" : "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: `1.5px solid ${isSel ? "#4a9eff" : "#4a9eff50"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", cursor: "pointer" }}>
+                      <span style={{ fontSize: 8, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fmt(seg.start)}~{fmt(seg.end)}</span>
+                      {/* 좌측 트림 */}
+                      <div style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: isSel ? "#4a9eff" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.6 }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = seg.start;
+                          const mv = ev => { const ns = Math.max(0, Math.round((os + (ev.clientX - sx)/pxPerSec)*10)/10); setVideoSegs(prev => { const n=[...prev]; n[si]={...n[si], start: Math.min(ns, seg.end-0.5)}; return n; }); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                      {/* 우측 트림 */}
+                      <div style={{ position: "absolute", right: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: isSel ? "#4a9eff" : "transparent", borderRadius: "0 4px 4px 0", opacity: 0.6 }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = seg.end;
+                          const mv = ev => { const ne = Math.max(seg.start+0.5, Math.round((oe + (ev.clientX - sx)/pxPerSec)*10)/10); setVideoSegs(prev => { const n=[...prev]; n[si]={...n[si], end: ne}; return n; }); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                    </div>
+                  );
+                })}
               </div>
 
               {/* A1 오디오 (클릭 선택) */}
