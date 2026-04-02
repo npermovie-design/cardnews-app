@@ -123,6 +123,8 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   const [leftW, setLeftW] = useState(200);
   const [rightW, setRightW] = useState(280);
   const [bottomH, setBottomH] = useState(160);
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const timelineRef = useRef(null);
 
   const audioInputRef = useRef(null);
   const playerRef = useRef(null);
@@ -497,10 +499,8 @@ JSON 형식: {"scenes":[...]}`
   );
 
   // ════════ Step: 편집 (ShortsCreator 동일 구성) ════════
-  const [timelineZoom, setTimelineZoom] = useState(1);
   const tlPxPerSec = basePxPerSec * timelineZoom;
   const tlWidth = Math.max(duration * tlPxPerSec, 600);
-  const timelineRef = useRef(null);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
