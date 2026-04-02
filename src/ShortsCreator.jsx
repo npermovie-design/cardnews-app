@@ -173,7 +173,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [removeSilence, setRemoveSilence] = useState(false);
   const [maxChars, setMaxChars] = useState(0);
   const [shortsLength, setShortsLength] = useState("s30");
-  const [userPrompt, setUserPrompt] = useState(""); // 사용자 분석 요청 프롬프트
+  const [userPrompt, setUserPrompt] = useState("");
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(true); // 자동자막 켜기/끄기
+  const [projectId, setProjectId] = useState(null); // 저장된 프로젝트 ID
 
   // 생성
   const [jobId, setJobId] = useState(null);
@@ -522,7 +524,56 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
 
-  // setInterval 타이머 제거 — RAF만 사용 (아래 비디오 동기화에서 처리)
+  // ── 프로젝트 저장/불러오기 ─────────────────
+  const PROJECTS_KEY = "shorts_projects_v1";
+
+  const saveProject = () => {
+    const projects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]");
+    const proj = {
+      id: projectId || ("sp_" + Date.now()),
+      title: curClip.title || editClips[0]?.title || "제목 없음",
+      fileId, editClips, videoSegs, overlays, template,
+      titleStyle, captionStyle, titlePos, captionPos,
+      layoutMode, videoScale, volume, subtitlesEnabled,
+      date: new Date().toLocaleDateString("ko-KR"),
+      updatedAt: Date.now(),
+    };
+    const idx = projects.findIndex(p => p.id === proj.id);
+    if (idx >= 0) projects[idx] = proj; else projects.unshift(proj);
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.slice(0, 50)));
+    setProjectId(proj.id);
+    return proj;
+  };
+
+  const loadProject = (proj) => {
+    setProjectId(proj.id);
+    setFileId(proj.fileId);
+    setEditClips(proj.editClips || []);
+    setVideoSegs(proj.videoSegs || []);
+    setOverlays(proj.overlays || []);
+    setTemplate(proj.template || "minimal");
+    setTitleStyle(proj.titleStyle || titleStyle);
+    setCaptionStyle(proj.captionStyle || captionStyle);
+    setTitlePos(proj.titlePos || { x: 50, y: 8 });
+    setCaptionPos(proj.captionPos || { x: 50, y: 88 });
+    setLayoutMode(proj.layoutMode || "bars");
+    setVideoScale(proj.videoScale || 100);
+    setVolume(proj.volume || 100);
+    setSubtitlesEnabled(proj.subtitlesEnabled !== false);
+    setEditIdx(0);
+    setStep("edit");
+  };
+
+  const getSavedProjects = () => {
+    try { return JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]"); } catch { return []; }
+  };
+
+  // 자동 저장 (편집 중 30초마다)
+  useEffect(() => {
+    if (step !== "edit" || editClips.length === 0) return;
+    const timer = setInterval(() => { try { saveProject(); } catch {} }, 30000);
+    return () => clearInterval(timer);
+  }, [step, editClips, videoSegs, overlays, titleStyle, captionStyle]);
 
   // ── API 호출 ────────────────────────
   const apiCall = async (path, opts = {}) => {
@@ -871,6 +922,34 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
 
         {error && <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 13 }}>{error}</div>}
+
+        {/* 저장된 프로젝트 */}
+        {(() => {
+          const projs = getSavedProjects();
+          if (projs.length === 0) return null;
+          return (
+            <div style={{ marginTop: 28, padding: "20px 0" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>이어서 편집하기</span>
+                <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>({projs.length})</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
+                {projs.slice(0, 8).map(p => (
+                  <div key={p.id} onClick={() => loadProject(p)}
+                    style={{ padding: "14px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = acc}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{p.title}</div>
+                    <div style={{ fontSize: 11, color: muted }}>{p.date}</div>
+                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{p.editClips?.length || 0}개 클립 · {p.videoSegs?.length || 0}개 세그먼트</div>
+                    <button onClick={e => { e.stopPropagation(); const projs2 = getSavedProjects().filter(x => x.id !== p.id); localStorage.setItem(PROJECTS_KEY, JSON.stringify(projs2)); }}
+                      style={{ marginTop: 6, fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: 0 }}>삭제</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -1057,7 +1136,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 (자막 — 드래그로 위치 조절) */}
+              {/* 하단 검은바 (자막 — 드래그로 위치 조절, 자막 OFF시 빈 검은바) */}
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, overflow: "hidden" }}>
                 <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
                   style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y < 78 ? 50 : ((captionPos.y - 78) / 22) * 100}%`, transform: "translate(-50%,-50%)", cursor: "move", maxWidth: "90%", textAlign: "center", border: dragging === "caption" ? "2px dashed #f59e0b" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: captionStyle.opacity / 100 }}>
@@ -1069,7 +1148,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
                     padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
                   }}>
-                    {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
+                    {subtitlesEnabled ? (currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")) : ""}
                   </span>
                 </div>
               </div>
@@ -1092,7 +1171,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
                 style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", maxWidth: "90%", textAlign: "center" }}>
                 <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4 }}>
-                  {currentSub ? currentSub.text : (curClip.subtitle_text || "자막")}
+                  {subtitlesEnabled ? (currentSub ? currentSub.text : (curClip.subtitle_text || "자막")) : ""}
                 </span>
               </div>
             </>)}
@@ -1381,9 +1460,20 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899" }} title={`배경음 ${bgmVolume}%`} />}
             <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              시작 지점으로 이동
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {/* 자막 토글 */}
+            <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
+              style={{ padding: "5px 10px", borderRadius: 6, border: subtitlesEnabled ? "1px solid #f59e0b" : "1px solid #2a2a4a", background: subtitlesEnabled ? "rgba(245,158,11,0.1)" : "#1a1a30", color: subtitlesEnabled ? "#f59e0b" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              자막 {subtitlesEnabled ? "ON" : "OFF"}
+            </button>
+            {/* 저장 */}
+            <button onClick={() => { saveProject(); alert("프로젝트가 저장되었습니다!"); }}
+              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #4ade8040", background: "rgba(74,222,128,0.08)", color: "#4ade80", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              💾 저장
+            </button>
+            <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
+            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              ⏮ 처음
             </button>
             <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)} | {fmt(clipDuration)}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
