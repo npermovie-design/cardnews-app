@@ -154,11 +154,9 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
       try {
         const form = new FormData();
         form.append("file", audioFile);
-        form.append("action", "whisper");
         form.append("language", "ko");
-        form.append("response_format", "verbose_json");
-        form.append("timestamp_granularities", "word");
-        const res = await fetch("/api/ai-proxy", { method: "POST", body: form });
+        const res = await fetch("/api/whisper", { method: "POST", body: form });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `HTTP ${res.status}`); }
         const data = await res.json();
         const segments = data.segments || [];
         fullText = data.text || segments.map(s => s.text).join(" ");
