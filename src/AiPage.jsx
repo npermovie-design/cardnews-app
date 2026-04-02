@@ -22,6 +22,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
+import AutoPublisher from "./AutoPublisher";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import Footer from "./Footer.jsx";
@@ -579,7 +580,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 홈
   if (!aiMenu || aiMenu === "home") {
     // 온보딩 상태
-    const [showOnboarding, setShowOnboarding] = React.useState(() => !localStorage.getItem("sns_onboarding_done"));
+    const [showOnboarding, setShowOnboarding] = React.useState(false);
 
     const features_ = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
@@ -808,8 +809,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <UnifiedBlogWriter theme={theme} isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} defaultPlatform={aiMenu} />;
   }
 
-  // 글쓰기: 선택 화면 (무엇을 작성할까요?)
+  // 글쓰기: 선택 화면 (수동발행 / 자동발행 탭)
   if (aiMenu === "blog_write") {
+    const writeTab = (() => { try { return sessionStorage.getItem("_blog_write_tab") || "manual"; } catch { return "manual"; } })();
+    const setWriteTab = (t) => { try { sessionStorage.setItem("_blog_write_tab", t); } catch {} setAiMenu("blog_write"); };
+    const isAutoTab = writeTab === "auto";
+    const showAutoTab = user?.role === "admin"; // 관리자만 자동발행 탭 표시
     const writeItems = [
       { category: "직접 작성", items: [
         { id:"blog_naver", icon:"/icon-naver-blog.png", label:"네이버 블로그", desc:"네이버 블로그 글쓰기" },
@@ -823,59 +828,84 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         { id:"blog_news", icon:"/icons3d/news.png", label:"뉴스 → 블로그", desc:"뉴스 기사를 글로 변환" },
       ]},
     ];
+    const tabStyle = (active) => ({
+      flex:1, padding:"12px 0", borderRadius:12, border:"none", cursor:"pointer",
+      background: active ? "#7c6aff" : "transparent",
+      color: active ? "#fff" : (isDark ? "rgba(255,255,255,0.5)" : "#888"),
+      fontSize:14, fontWeight:700, transition:"all 0.15s",
+    });
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
           <div style={{ maxWidth:720, margin:"0 auto", padding:"40px 24px 60px" }}>
-            <div style={{ textAlign:"center", marginBottom:36 }}>
-              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>무엇을 작성할까요?</div>
-              <div style={{ fontSize:13, color:homeMuted }}>플랫폼을 선택하면 AI가 글을 작성해드려요</div>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>글쓰기</div>
+              <div style={{ fontSize:13, color:homeMuted }}>AI가 글을 작성하고 원하는 플랫폼에 발행합니다</div>
             </div>
-            {/* 최근 글 */}
-            {(() => {
-              try {
-                const blogs = JSON.parse(localStorage.getItem("sns_blog_saves_v1")||"[]").slice(0,4);
-                if (blogs.length === 0) return null;
-                return (
-                  <div style={{ marginBottom:28 }}>
-                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>최근 작성한 글</div>
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
-                      {blogs.map((b, i) => (
-                        <button key={i} onClick={() => setAiMenu(b.platform || "blog_naver")}
-                          style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
-                          onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
-                          <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || "제목 없음"}</div>
-                          <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{b.platform_label || b.type || ""} · {b.date || ""}</div>
+            {/* 수동/자동 탭 */}
+            {showAutoTab && (
+              <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background: isDark ? "rgba(255,255,255,0.06)" : "#e8e8f0", marginBottom:28 }}>
+                <button onClick={() => setWriteTab("manual")} style={tabStyle(!isAutoTab)}>
+                  수동발행
+                </button>
+                <button onClick={() => setWriteTab("auto")} style={tabStyle(isAutoTab)}>
+                  자동발행
+                  <span style={{ marginLeft:6, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: isAutoTab ? "rgba(255,255,255,0.2)" : "rgba(16,185,129,0.15)", color: isAutoTab ? "#fff" : "#10b981", verticalAlign:"middle" }}>NEW</span>
+                </button>
+              </div>
+            )}
+            {/* 자동발행 탭 → AutoPublisher 렌더 */}
+            {isAutoTab && showAutoTab ? (
+              <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} embedded />
+            ) : (
+              <>
+                {/* 최근 글 */}
+                {(() => {
+                  try {
+                    const blogs = JSON.parse(localStorage.getItem("sns_blog_saves_v1")||"[]").slice(0,4);
+                    if (blogs.length === 0) return null;
+                    return (
+                      <div style={{ marginBottom:28 }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>최근 작성한 글</div>
+                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
+                          {blogs.map((b, i) => (
+                            <button key={i} onClick={() => setAiMenu(b.platform || "blog_naver")}
+                              style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
+                              onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
+                              <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || "제목 없음"}</div>
+                              <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{b.platform_label || b.type || ""} · {b.date || ""}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
+                {writeItems.map(cat => (
+                  <div key={cat.category} style={{ marginBottom:28 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
+                      {cat.items.map(item => (
+                        <button key={item.id} onClick={() => setAiMenu(item.id)}
+                          style={{
+                            padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
+                            background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
+                            display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                            transition:"all 0.15s", textAlign:"center",
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
+                          {item.icon ? <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
+                          <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
+                          <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
                         </button>
                       ))}
                     </div>
                   </div>
-                );
-              } catch { return null; }
-            })()}
-            {writeItems.map(cat => (
-              <div key={cat.category} style={{ marginBottom:28 }}>
-                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{cat.category}</div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
-                  {cat.items.map(item => (
-                    <button key={item.id} onClick={() => setAiMenu(item.id)}
-                      style={{
-                        padding:"20px 14px", borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`,
-                        background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer",
-                        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
-                        transition:"all 0.15s", textAlign:"center",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor="#7c6aff"; e.currentTarget.style.boxShadow="0 4px 16px rgba(124,106,255,0.12)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
-                      {item.icon ? <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
-                      <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
-                      <span style={{ fontSize:11, color:homeMuted }}>{item.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1106,6 +1136,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 콘텐츠 리퍼포징
   if (aiMenu === "repurpose") {
     return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
+  }
+
+  // 자동발행 (관리자 전용)
+  if (aiMenu === "auto_publish") {
+    return <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />;
   }
 
   // 소셜 플래너

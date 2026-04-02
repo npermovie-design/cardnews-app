@@ -421,13 +421,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     const tick = () => {
       if (!isPlaying) return;
       const curTime = v.currentTime;
-      // 현재 세그먼트 찾기
+      // 현재 세그먼트 찾기 (0.15초 허용오차로 끝부분 누락 방지)
       let accum = 0;
       let found = false;
       for (let i = 0; i < videoSegs.length; i++) {
         const seg = videoSegs[i];
-        if (curTime >= seg.start && curTime < seg.end) {
-          setPlayhead(accum + (curTime - seg.start));
+        if (curTime >= seg.start - 0.05 && curTime <= seg.end + 0.15) {
+          const ph = accum + Math.min(curTime - seg.start, seg.end - seg.start);
+          setPlayhead(Math.max(0, ph));
           found = true;
           break;
         }
@@ -435,19 +436,26 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       }
       if (!found) {
         // 세그먼트 사이의 갭 → 다음 세그먼트로 점프
+        let jumped = false;
         for (let i = 0; i < videoSegs.length; i++) {
           if (curTime < videoSegs[i].start) {
             v.currentTime = videoSegs[i].start;
-            found = true;
+            jumped = true;
             break;
           }
         }
-        if (!found) {
+        if (!jumped) {
           // 끝까지 재생됨
           setIsPlaying(false);
           setPlayhead(clipDuration);
           return;
         }
+      }
+      // 영상이 자연 종료된 경우에도 처리
+      if (v.ended) {
+        setIsPlaying(false);
+        setPlayhead(clipDuration);
+        return;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -1181,13 +1189,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
-              {/* 상단 검은바 (제목 — 드래그로 위치 조절) */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, overflow: "hidden" }}>
+              {/* 상단 검은바 (제목 — 가운데 정렬 고정, Y축만 드래그) */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-                  style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y > 22 ? 50 : (titlePos.y / 22) * 100}%`, transform: "translate(-50%,-50%)", cursor: "move", maxWidth: "90%", textAlign: "center", border: dragging === "title" ? "2px dashed #7c6aff" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: titleStyle.opacity / 100 }}>
+                  style={{ width: "90%", textAlign: "center", cursor: "move", border: dragging === "title" ? "2px dashed #7c6aff" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: titleStyle.opacity / 100 }}>
                   <span style={{
                     fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
-                    lineHeight: 1.3, wordBreak: "keep-all",
+                    lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", textAlign: "center",
                     textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
                     WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
                     background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
@@ -1208,13 +1216,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 (자막 — 드래그로 위치 조절, 자막 OFF시 빈 검은바) */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, overflow: "hidden" }}>
+              {/* 하단 검은바 (자막 — 가운데 정렬 고정) */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                  style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y < 78 ? 50 : ((captionPos.y - 78) / 22) * 100}%`, transform: "translate(-50%,-50%)", cursor: "move", maxWidth: "90%", textAlign: "center", border: dragging === "caption" ? "2px dashed #f59e0b" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: captionStyle.opacity / 100 }}>
+                  style={{ width: "90%", textAlign: "center", cursor: "move", border: dragging === "caption" ? "2px dashed #f59e0b" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: captionStyle.opacity / 100 }}>
                   <span style={{
                     fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
-                    lineHeight: 1.4, wordBreak: "keep-all",
+                    lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: "center",
                     textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
                     WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
                     background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
@@ -1581,9 +1589,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
             onMouseDown={e => {
               if (e.button !== 0) return;
-              const rect = e.currentTarget.getBoundingClientRect();
               const scrollEl = e.currentTarget;
-              const x = e.clientX - rect.left + scrollEl.scrollLeft;
+              const rect = scrollEl.getBoundingClientRect();
+              const initScroll = scrollEl.scrollLeft;
+              const x = e.clientX - rect.left + initScroll;
               const startPh = Math.max(0, Math.min(clipDuration, x / pxPerSec));
               setPlayhead(startPh);
               setRangeSelecting({ startPh, endPh: startPh });
