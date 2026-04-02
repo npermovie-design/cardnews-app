@@ -19,6 +19,12 @@ function SceneComposition({ segments, audioUrl, style }) {
           <Sequence key={i} from={from} durationInFrames={dur}>
             {seg.type === "gif" ? (
               <GifSegment src={seg.gifUrl} text={seg.text} style={style} />
+            ) : seg.type === "list" ? (
+              <ListSegment data={seg} style={style} />
+            ) : seg.type === "stats" ? (
+              <StatsSegment data={seg} style={style} />
+            ) : seg.type === "cards" ? (
+              <CardsSegment data={seg} style={style} />
             ) : (
               <TextSegment text={seg.text} animation={seg.animation || "fade"} bgImageUrl={seg.bgImageUrl} style={style} segIndex={i} totalSegs={segments.length} />
             )}
@@ -345,6 +351,159 @@ function GifSegment({ src, text, style }) {
           </div>
         </div>
       )}
+    </AbsoluteFill>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// 레이아웃 세그먼트 — 번호 리스트 / 수치 카드 / 글라스 카드
+// ═══════════════════════════════════════════════
+
+// ── 번호 리스트 (KEY FEATURES 스타일) ──
+function ListSegment({ data, style }) {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const acc = style?.titleColor || "#3b5998";
+  const items = data.items || data.text?.split(/[,.\n]/).filter(s => s.trim()).slice(0, 4) || [];
+  const title = data.title || data.text || "";
+  const enterOp = interpolate(frame, [0, fps * 0.4], [0, 1], { extrapolateRight: "clamp" });
+  const exitOp = interpolate(frame, [durationInFrames - fps * 0.3, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ opacity: Math.min(enterOp, exitOp), background: data.light ? "#f0f2f8" : "#0d0d1a" }}>
+      <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+        {/* 상단 라벨 */}
+        <div style={{ fontSize: 14, fontWeight: 700, color: acc, letterSpacing: 5, marginBottom: 28,
+          opacity: spring({ frame, fps, config: { damping: 200 } }), textTransform: "uppercase" }}>
+          {data.label || "KEY FEATURES"}
+        </div>
+        {/* 카드 리스트 */}
+        <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 14 }}>
+          {items.map((item, i) => {
+            const s = spring({ frame, fps, delay: 6 + i * 8, config: { damping: 20 } });
+            return (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 16,
+                background: data.light ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.06)",
+                borderRadius: 14, padding: "20px 24px",
+                border: data.light ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)",
+                opacity: s, transform: `translateX(${interpolate(s, [0, 1], [-40, 0])}px)`,
+                boxShadow: data.light ? "0 2px 12px rgba(0,0,0,0.04)" : "0 4px 20px rgba(0,0,0,0.2)",
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                  background: `${acc}15`, border: `1.5px solid ${acc}35`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 16, fontWeight: 900, color: acc }}>{String(i + 1).padStart(2, "0")}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: data.light ? "#1a1a2e" : "#fff",
+                  lineHeight: 1.3, wordBreak: "keep-all" }}>{item.trim()}</div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// ── 수치 카드 (시장 데이터 스타일) ──
+function StatsSegment({ data, style }) {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const acc = style?.titleColor || "#7c6aff";
+  const stats = data.stats || [];
+  const title = data.title || data.text || "";
+  const subtitle = data.subtitle || "";
+  const enterOp = interpolate(frame, [0, fps * 0.4], [0, 1], { extrapolateRight: "clamp" });
+  const exitOp = interpolate(frame, [durationInFrames - fps * 0.3, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ opacity: Math.min(enterOp, exitOp), background: data.light ? "#f0f2f8" : "#0d0d1a" }}>
+      <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+        {/* 상단 라벨 */}
+        {subtitle && <div style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginBottom: 10,
+          opacity: spring({ frame, fps, config: { damping: 200 } }) }}>{subtitle}</div>}
+        {/* 태그 */}
+        {data.tag && (
+          <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `${acc}18`,
+            border: `1px solid ${acc}35`, fontSize: 14, fontWeight: 700, color: acc, marginBottom: 16,
+            opacity: spring({ frame, fps, delay: 4, config: { damping: 200 } }) }}>{data.tag}</div>
+        )}
+        {/* 큰 타이틀 */}
+        <div style={{ fontSize: 44, fontWeight: 900, color: data.light ? "#1a1a2e" : "#fff", textAlign: "center",
+          lineHeight: 1.2, marginBottom: 10, wordBreak: "keep-all",
+          opacity: spring({ frame, fps, delay: 6, config: { damping: 200 } }),
+          textShadow: data.light ? "none" : "0 4px 24px rgba(0,0,0,0.6)" }}>{title}</div>
+        {/* 강조 텍스트 */}
+        {data.highlight && <div style={{ fontSize: 32, fontWeight: 900, color: acc, textAlign: "center", marginBottom: 24,
+          opacity: spring({ frame, fps, delay: 10, config: { damping: 200 } }),
+          textShadow: `0 0 30px ${acc}30` }}>{data.highlight}</div>}
+        {/* 수치 카드들 */}
+        {stats.length > 0 && (
+          <div style={{ display: "flex", gap: 14, width: "100%", maxWidth: 560, marginTop: 12 }}>
+            {stats.slice(0, 4).map((s, i) => {
+              const cardS = spring({ frame, fps, delay: 14 + i * 6, config: { damping: 20 } });
+              return (
+                <div key={i} style={{ flex: 1, background: data.light ? "#fff" : "rgba(255,255,255,0.06)", borderRadius: 14,
+                  padding: "18px 14px", textAlign: "center", border: data.light ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)",
+                  opacity: cardS, transform: `translateY(${interpolate(cardS, [0, 1], [24, 0])}px)`,
+                  boxShadow: data.light ? "0 2px 12px rgba(0,0,0,0.04)" : "0 4px 16px rgba(0,0,0,0.2)" }}>
+                  <div style={{ fontSize: 12, color: data.light ? "#888" : "rgba(255,255,255,0.45)", fontWeight: 600, marginBottom: 6 }}>{s.label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: data.light ? "#1a1a2e" : "#fff", lineHeight: 1 }}>{s.value}</div>
+                  {s.sub && <div style={{ fontSize: 12, color: s.sub?.startsWith?.("+") ? "#4ade80" : s.sub?.startsWith?.("-") ? "#f87171" : (data.light ? "#888" : "rgba(255,255,255,0.4)"),
+                    fontWeight: 700, marginTop: 4 }}>{s.sub}</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// ── 글라스 카드 (레벨/설명 카드) ──
+function CardsSegment({ data, style }) {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const acc = style?.titleColor || "#7c6aff";
+  const cards = data.cards || data.text?.split(/[.\n]/).filter(s => s.trim()).slice(0, 3) || [];
+  const title = data.title || "";
+  const enterOp = interpolate(frame, [0, fps * 0.4], [0, 1], { extrapolateRight: "clamp" });
+  const exitOp = interpolate(frame, [durationInFrames - fps * 0.3, durationInFrames], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ opacity: Math.min(enterOp, exitOp), background: "#0d0d1a" }}>
+      <AbsoluteFill style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "7%" }}>
+        {title && <div style={{ fontSize: 36, fontWeight: 900, color: "#fff", textAlign: "center", marginBottom: 28,
+          opacity: spring({ frame, fps, config: { damping: 200 } }), wordBreak: "keep-all",
+          textShadow: "0 4px 20px rgba(0,0,0,0.6)" }}>{title}</div>}
+        <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 14 }}>
+          {cards.map((card, i) => {
+            const s = spring({ frame, fps, delay: 8 + i * 10, config: { damping: 20 } });
+            const cardText = typeof card === "string" ? card.trim() : card.text || "";
+            const cardSub = typeof card === "object" ? card.sub : "";
+            const colors = ["rgba(255,140,50,0.12)", "rgba(124,106,255,0.12)", "rgba(0,212,255,0.12)"];
+            const borders = ["rgba(255,140,50,0.25)", "rgba(124,106,255,0.25)", "rgba(0,212,255,0.25)"];
+            return (
+              <div key={i} style={{
+                background: colors[i % 3], backdropFilter: "blur(12px)",
+                border: `1.5px solid ${borders[i % 3]}`, borderRadius: 16,
+                padding: "20px 24px", display: "flex", alignItems: "center", gap: 16,
+                opacity: s, transform: `translateY(${interpolate(s, [0, 1], [30, 0])}px)`,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+              }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>{i + 1}</div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", lineHeight: 1.3, wordBreak: "keep-all" }}>{cardText}</div>
+                  {cardSub && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{cardSub}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
@@ -1171,13 +1330,30 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
 
 각 세그먼트:
 {
-  "text": "화면에 표시할 핵심 텍스트 (원문 그대로가 아닌 핵심만 추출, 짧게)",
-  "type": "text" 또는 "gif",
+  "text": "화면에 표시할 핵심 텍스트",
+  "type": "text" | "gif" | "list" | "stats" | "cards",
   "animation": "텍스트 애니메이션 타입 (type=text일 때만)",
   "gifKeyword": "영어 GIF 검색 키워드 (type=gif일 때만)",
-  "bgKeyword": "배경 이미지 영어 키워드 2단어 (type=text일 때, 내용에 어울리는 사진)",
-  "durationSec": 3~6 사이의 초
+  "bgKeyword": "배경 이미지 영어 키워드 (type=text일 때)",
+  "items": ["항목1","항목2","항목3"] (type=list일 때),
+  "stats": [{"label":"라벨","value":"값","sub":"+1.2%"}] (type=stats일 때),
+  "cards": ["카드1 텍스트","카드2 텍스트"] (type=cards일 때),
+  "title": "섹션 제목 (type=list/stats/cards일 때)",
+  "label": "상단 라벨 (KEY FEATURES 등)",
+  "tag": "태그 텍스트",
+  "highlight": "강조 텍스트 (type=stats일 때)",
+  "light": true/false (밝은 배경),
+  "durationSec": 4~6 사이의 초
 }
+
+세그먼트 타입 (반드시 다양하게 섞어! 같은 타입 연속 금지):
+- "text": 텍스트 애니메이션 (짧은 한줄 메시지)
+- "gif": GIF 이미지 + 자막 (리액션, 시각 보조)
+- "list": 번호 카드 리스트 (핵심 포인트 나열, items 필수)
+- "stats": 수치/데이터 카드 (숫자, 통계, stats 필수)
+- "cards": 글라스 카드 (설명 카드 2~3개, cards 필수)
+
+중요: list/stats/cards를 전체의 30~50% 사용! 텍스트만 계속 나오면 밋밋함.
 
 텍스트 애니메이션 타입 (12종, 반드시 다양하게 섞어! 같은 타입 2번 연속 절대 금지):
 - "fade": 페이드+스케일 (일반 설명)
@@ -1337,12 +1513,18 @@ JSON 배열만 출력하세요.`
           if (!txt) continue;
           setLoadingMsg(`AI 음성 생성 중... (${si + 1}/${segmentsWithMedia.length})`);
           try {
-            const ttsRes = await fetch("/api/tts", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: txt.slice(0, 1000), voice: ttsVoice }),
-            });
-            if (ttsRes.ok) {
+            // 최대 2회 재시도
+            let ttsRes = null;
+            for (let retry = 0; retry < 2; retry++) {
+              ttsRes = await fetch("/api/tts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: txt.slice(0, 800), voice: ttsVoice }),
+              }).catch(() => null);
+              if (ttsRes?.ok) break;
+              if (retry === 0) await new Promise(r => setTimeout(r, 500));
+            }
+            if (ttsRes?.ok) {
               const blob = await ttsRes.blob();
               const reader = new FileReader();
               const dataUrl = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(blob); });
