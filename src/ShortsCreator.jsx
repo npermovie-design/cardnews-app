@@ -277,52 +277,71 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
   const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
 
-  // ── 키보드 단축키 (스페이스=재생, Delete/Backspace=삭제) ──
+  // ── 키보드 단축키 ──
+  // Space: 재생/정지, S: 분할, Delete: 선택 삭제
+  // ← →: playhead 1초 이동, Shift+← →: 5초 이동
+  // Home/End: 처음/끝으로 이동
+  // M: 선택 세그먼트 음소거 토글
+  // Ctrl+A: 전체 선택, Escape: 선택 해제
+  // [ ]: 줌 축소/확대, Ctrl+Z: 실행취소(구간선택해제)
+  // Ctrl+D: 선택 오버레이 복제
   useEffect(() => {
     if (step !== "edit") return;
     const handler = (e) => {
-      // input/textarea 안에서는 무시
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
+      // Space: 재생/정지
       if (e.code === "Space") {
         e.preventDefault();
         setIsPlaying(prev => !prev);
       }
+      // Delete/Backspace: 선택 삭제
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
-        // 선택된 자막 삭제
-        if (selectedSubIdx >= 0) {
-          deleteSubtitle(selectedSubIdx);
-          return;
-        }
-        // 선택된 세그먼트 삭제
-        if (selectedSegIdx >= 0 && videoSegs.length > 1) {
-          deleteSegment(selectedSegIdx);
-          return;
-        }
-        // 선택된 오버레이 삭제
-        if (selectedOverlay) {
-          setOverlays(prev => prev.filter(o => o.id !== selectedOverlay));
-          setSelectedOverlay(null);
-        }
+        if (selectedSubIdx >= 0) { deleteSubtitle(selectedSubIdx); return; }
+        if (selectedSegIdx >= 0 && videoSegs.length > 1) { deleteSegment(selectedSegIdx); return; }
+        if (selectedOverlay) { setOverlays(prev => prev.filter(o => o.id !== selectedOverlay)); setSelectedOverlay(null); }
       }
-      // 좌우 화살표: playhead 이동
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setPlayhead(prev => Math.max(0, prev - (e.shiftKey ? 5 : 1)));
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        setPlayhead(prev => Math.min(clipDuration, prev + (e.shiftKey ? 5 : 1)));
-      }
+      // ← →: playhead 이동 (Shift: 5초)
+      if (e.key === "ArrowLeft") { e.preventDefault(); setPlayhead(prev => Math.max(0, prev - (e.shiftKey ? 5 : 1))); }
+      if (e.key === "ArrowRight") { e.preventDefault(); setPlayhead(prev => Math.min(clipDuration, prev + (e.shiftKey ? 5 : 1))); }
+      // Home/End: 처음/끝
+      if (e.key === "Home") { e.preventDefault(); setPlayhead(0); }
+      if (e.key === "End") { e.preventDefault(); setPlayhead(clipDuration); }
       // S: 분할
-      if (e.key === "s" && !e.ctrlKey && !e.metaKey) {
-        splitAtPlayhead();
+      if (e.key === "s" && !e.ctrlKey && !e.metaKey) { splitAtPlayhead(); }
+      // M: 선택 세그먼트 음소거 토글
+      if (e.key === "m" && !e.ctrlKey && selectedSegIdx >= 0) {
+        setVideoSegs(prev => { const n = [...prev]; n[selectedSegIdx] = { ...n[selectedSegIdx], muted: !n[selectedSegIdx].muted }; return n; });
+      }
+      // [ ]: 줌 축소/확대
+      if (e.key === "[") { e.preventDefault(); setTimelineZoom(z => Math.max(0.5, z - 0.25)); }
+      if (e.key === "]") { e.preventDefault(); setTimelineZoom(z => Math.min(4, z + 0.25)); }
+      // Escape: 선택 해제
+      if (e.key === "Escape") {
+        setSelectedSubIdx(-1); setSelectedSegIdx(-1); setSelectedOverlay(null); setSelectedTrack(null); setRangeSelecting(null);
+      }
+      // Ctrl+A: 전체 선택 (세그먼트 + 자막)
+      if (e.key === "a" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (videoSegs.length > 0) setSelectedSegIdx(0);
+        if ((curClip.subtitles || []).length > 0) setSelectedSubIdx(0);
+        setSelectedTrack("V1");
+      }
+      // Ctrl+D: 오버레이 복제
+      if (e.key === "d" && (e.ctrlKey || e.metaKey) && selectedOverlay) {
+        e.preventDefault();
+        const orig = overlays.find(o => o.id === selectedOverlay);
+        if (orig) {
+          const newId = "ol_" + Date.now();
+          setOverlays(prev => [...prev, { ...orig, id: newId, y: Math.min(95, orig.y + 5) }]);
+          setSelectedOverlay(newId);
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [step, selectedSubIdx, selectedSegIdx, selectedOverlay, videoSegs, clipDuration]);
+  }, [step, selectedSubIdx, selectedSegIdx, selectedOverlay, videoSegs, clipDuration, overlays]);
 
   // ── YouTube URL 파싱 ─────────────────────
   useEffect(() => {
@@ -1089,17 +1108,17 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const pxPerSec = 20 * timelineZoom;
   const tlWidth = Math.max(clipDuration * pxPerSec, 800);
   const TRACK_H = 32;
-  // 동적 트랙: 기본 V1/A1/S1 + 오버레이마다 트랙 추가
+  // 동적 트랙: 오버레이(V2,V3...) → V1 → A1 → S1 (오버레이가 V1 위에)
+  const overlayTracks = overlays.map((o, i) => ({
+    id: o.id, label: `V${i+2}`,
+    color: "#ec4899", overlay: o,
+  }));
   const baseTracks = [
     { id: "V1", label: "V1", color: "#4a9eff" },
     { id: "A1", label: "A1", color: "#4ade80" },
     { id: "S1", label: "S1", color: "#f59e0b" },
   ];
-  const overlayTracks = overlays.map((o, i) => ({
-    id: o.id, label: o.type === "text" ? `T${i+1}` : o.type === "logo" ? `L${i+1}` : `I${i+1}`,
-    color: "#ec4899", overlay: o,
-  }));
-  const allTracks = [...baseTracks, ...overlayTracks];
+  const allTracks = [...overlayTracks, ...baseTracks];
   const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
   const visibleOverlays = overlays.filter(o => playhead >= o.start && playhead <= o.end);
 
@@ -1547,8 +1566,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
 
-          {/* 스크롤 가능한 트랙 — 클릭: playhead 이동, 드래그: 범위 선택 */}
-          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "crosshair" }}
+          {/* 스크롤 가능한 트랙 — 클릭: playhead 이동, 드래그: 범위 선택 (모든 트랙) */}
+          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
             onMouseDown={e => {
               if (e.button !== 0) return;
               const rect = e.currentTarget.getBoundingClientRect();
@@ -1568,20 +1587,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
                 const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
                 const lo = Math.min(startPh, endPh), hi = Math.max(startPh, endPh);
-                if (hi - lo < 0.3) { setRangeSelecting(null); return; } // 짧은 클릭은 무시
-                // 범위 내 자막/세그먼트 선택
+                if (hi - lo < 0.3) { setRangeSelecting(null); return; }
+                // 범위 내 모든 요소 선택: 세그먼트(V1)
+                let accSeg = 0;
+                for (let si = 0; si < videoSegs.length; si++) {
+                  const segLen = videoSegs[si].end - videoSegs[si].start;
+                  if (accSeg >= lo && accSeg + segLen <= hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
+                  accSeg += segLen;
+                }
+                // 범위 내 자막(S1)
                 const subIdx = (curClip.subtitles || []).findIndex(s => {
                   const rs = s.start - clipStart, re = (s.end || s.start + 3) - clipStart;
                   return rs >= lo && re <= hi;
                 });
                 if (subIdx >= 0) setSelectedSubIdx(subIdx);
-                let accSeg = 0;
-                for (let si = 0; si < videoSegs.length; si++) {
-                  const segLen = videoSegs[si].end - videoSegs[si].start;
-                  const segStart = accSeg, segEnd = accSeg + segLen;
-                  if (segStart >= lo && segEnd <= hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
-                  accSeg += segLen;
-                }
+                // 범위 내 오버레이
+                const olHit = overlays.find(o => o.start >= lo && o.end <= hi);
+                if (olHit) { setSelectedOverlay(olHit.id); setPropTab("overlay"); }
                 setRangeSelecting(null);
               };
               window.addEventListener("mousemove", onMove);
@@ -1598,6 +1620,50 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                 ))}
               </div>
+
+              {/* 오버레이 트랙 V2, V3... (V1 위에 배치, 드래그+트림 가능) */}
+              {overlayTracks.map(tr => {
+                const o = tr.overlay;
+                const left = o.start * pxPerSec;
+                const width = Math.max((o.end - o.start) * pxPerSec, 16);
+                const sel = selectedOverlay === o.id;
+                return (
+                  <div key={tr.id} style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                    <div
+                      onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); setSelectedSubIdx(-1); setSelectedSegIdx(-1); }}
+                      onMouseDown={e => {
+                        if (e.target.dataset.handle) return;
+                        e.stopPropagation(); e.preventDefault();
+                        setSelectedOverlay(o.id);
+                        const sx = e.clientX; const origStart = o.start; const dur = o.end - o.start;
+                        const mv = ev => {
+                          const dt = (ev.clientX - sx) / pxPerSec;
+                          const ns = Math.max(0, Math.round((origStart + dt) * 10) / 10);
+                          setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: ns, end: ns + dur } : x));
+                        };
+                        const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                        window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                      }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "grab", display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                      <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
+                      {/* 좌측 트림 */}
+                      <div data-handle="left" style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.7 }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = o.start;
+                          const mv = ev => { const ns = Math.max(0, Math.round((os + (ev.clientX - sx)/pxPerSec)*10)/10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: Math.min(ns, o.end - 0.5) } : x)); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                      {/* 우측 트림 */}
+                      <div data-handle="right" style={{ position: "absolute", right: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "0 4px 4px 0", opacity: 0.7 }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = o.end;
+                          const mv = ev => { const ne = Math.max(o.start + 0.5, Math.round((oe + (ev.clientX - sx)/pxPerSec)*10)/10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, end: ne } : x)); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* V1 비디오 (세그먼트별 블록 + 트림 핸들) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
@@ -1686,22 +1752,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   );
                 })}
               </div>
-
-              {/* 동적 오버레이 트랙 (각 오버레이마다 별도 트랙) */}
-              {overlayTracks.map(tr => {
-                const o = tr.overlay;
-                const left = o.start * pxPerSec;
-                const width = Math.max((o.end - o.start) * pxPerSec, 16);
-                const sel = selectedOverlay === o.id;
-                return (
-                  <div key={tr.id} style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                    <div onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden" }}>
-                      <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600 }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
-                    </div>
-                  </div>
-                );
-              })}
 
               {/* 범위 선택 하이라이트 */}
               {rangeSelecting && Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) > 0.1 && (
