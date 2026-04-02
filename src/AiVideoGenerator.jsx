@@ -157,47 +157,58 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
     let fullText = prompt;
     let captionData = [];
 
-    // 음성 파일이 있으면 shorts-factory로 업로드+분석
+    // 음성 파일이 있으면 shorts-factory로 업로드+분석 시도
     if (audioFile) {
-      setLoadingMsg("음성 파일 업로드 중..."); setStep("analyzing");
-      try {
-        const uploadForm = new FormData();
-        uploadForm.append("video", audioFile);
-        const uploadRes = await fetch(`${SHORTS_API}/upload`, { method: "POST", body: uploadForm }).catch(() => null);
-        if (uploadRes?.ok) {
-          const uploadData = await uploadRes.json();
-          setLoadingMsg("AI가 음성을 인식하고 있어요...");
-          const analyzeRes = await fetch(`${SHORTS_API}/analyze/${uploadData.file_id}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ max_chars: 0 }),
-          }).catch(() => null);
-          if (analyzeRes?.ok) {
-            const ad = await analyzeRes.json();
-            // 다양한 응답 형식 처리
-            const segs = ad.segments || [];
-            const allSubs = [];
-            for (const seg of segs) {
-              if (seg.subtitles) allSubs.push(...seg.subtitles);
-              if (seg.script) fullText += seg.script + "\n";
-              else if (seg.title) fullText += seg.title + "\n";
+      setLoadingMsg("음성 파일 분석 중..."); setStep("analyzing");
+      let audioAnalyzed = false;
+      // 50MB 이하만 서버 업로드 시도 (WAV 등 대용량은 건너뜀)
+      if (audioFile.size <= 50 * 1024 * 1024) {
+        try {
+          const uploadForm = new FormData();
+          uploadForm.append("video", audioFile);
+          const uploadRes = await fetch(`${SHORTS_API}/upload`, { method: "POST", body: uploadForm }).catch(() => null);
+          if (uploadRes?.ok) {
+            const uploadData = await uploadRes.json();
+            setLoadingMsg("AI가 음성을 인식하고 있어요...");
+            const analyzeRes = await fetch(`${SHORTS_API}/analyze/${uploadData.file_id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ max_chars: 0 }),
+            }).catch(() => null);
+            if (analyzeRes?.ok) {
+              const ad = await analyzeRes.json();
+              const segs = ad.segments || [];
+              const allSubs = [];
+              let analyzedText = "";
+              for (const seg of segs) {
+                if (seg.subtitles) allSubs.push(...seg.subtitles);
+                if (seg.script) analyzedText += seg.script + "\n";
+                else if (seg.title) analyzedText += seg.title + "\n";
+              }
+              if (!analyzedText.trim()) analyzedText = ad.transcript || ad.text || segs.map(s => s.hook || s.title || s.script || "").join("\n");
+              if (analyzedText.trim()) {
+                fullText = analyzedText;
+                audioAnalyzed = true;
+              }
+              captionData = allSubs
+                .filter(s => s.text?.trim() && (s.end - s.start) > 0.3)
+                .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }));
             }
-            if (!fullText.trim()) fullText = ad.transcript || ad.text || segs.map(s => s.hook || s.title || s.script || "").join("\n");
-            captionData = allSubs
-              .filter(s => s.text?.trim() && (s.end - s.start) > 0.3)
-              .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }));
           }
-        }
-      } catch (e) { console.warn("shorts-factory 분석 실패:", e); }
+        } catch (e) { console.warn("음성 분석 실패 (서버):", e); }
+      }
 
-      // shorts-factory 실패 시에도 프롬프트가 있으면 진행
-      if (fullText.trim()) {
+      if (audioAnalyzed) {
         setTranscript(fullText);
         setCaptions(captionData);
         if (!prompt.trim()) setPrompt(fullText.slice(0, 300));
-      } else if (!prompt.trim()) {
-        setError("음성 인식에 실패했습니다. 영상 주제를 직접 입력해주세요.");
-        setStep("input"); setLoading(false); return;
+      } else {
+        // 음성 분석 실패 → 프롬프트로 진행 (음성은 배경음으로만 사용)
+        console.warn("음성 분석 실패 — 프롬프트 기반으로 진행합니다");
+        if (!fullText.trim()) {
+          setError("파일이 너무 크거나 음성 인식에 실패했습니다.\n영상 주제를 입력하면 프롬프트 기반으로 영상을 생성합니다.\n음성은 배경 오디오로 사용됩니다.");
+          setStep("input"); setLoading(false); return;
+        }
       }
     }
 
