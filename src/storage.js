@@ -431,8 +431,8 @@ export function setAiUsage(u){
   } catch {}
 }
 
-export const FREE_GUEST  = 5;     // 비회원 무료 (10→5)
-export const FREE_MEMBER = 10;    // 회원 월 무료 (20→10)
+export const FREE_GUEST  = 3;     // 비회원 무료
+export const FREE_MEMBER = 5;     // 회원 무료 5회
 
 export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
   const usage  = getAiUsage();
