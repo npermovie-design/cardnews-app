@@ -150,50 +150,46 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
     let fullText = prompt;
     let captionData = [];
 
-    // 음성 파일이 있으면 shorts-factory 서버로 업로드 + 분석 (ShortsCreator와 동일 방식)
+    // 음성 파일이 있으면 shorts-factory로 업로드+분석
     if (audioFile) {
       setLoadingMsg("음성 파일 업로드 중..."); setStep("analyzing");
       try {
-        // 1) 파일 업로드
         const uploadForm = new FormData();
-        uploadForm.append("video", audioFile); // shorts-factory는 "video" 필드명 사용
-        const uploadRes = await fetch(`${SHORTS_API}/upload`, { method: "POST", body: uploadForm });
-        if (!uploadRes.ok) throw new Error("서버 업로드 실패");
-        const uploadData = await uploadRes.json();
-        const fileId = uploadData.file_id;
-
-        // 2) AI 분석 (음성인식 + 세그먼트 추출)
-        setLoadingMsg("AI가 음성을 인식하고 있어요...");
-        const analyzeRes = await fetch(`${SHORTS_API}/analyze/${fileId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ max_chars: 0 }),
-          signal: AbortSignal.timeout(180000),
-        });
-        if (!analyzeRes.ok) throw new Error("분석 실패");
-        const analyzeData = await analyzeRes.json();
-
-        // 분석 결과에서 텍스트 + 자막 추출
-        const segments = analyzeData.segments || [];
-        fullText = segments.map(s => s.script || s.title || "").join("\n");
-        if (!fullText.trim() && analyzeData.transcript) fullText = analyzeData.transcript;
-        setTranscript(fullText);
-
-        // 각 세그먼트의 자막 합산
-        for (const seg of segments) {
-          if (seg.subtitles) {
-            captionData.push(...seg.subtitles
-              .filter(s => s.text && s.text.trim().length > 0 && (s.end - s.start) > 0.3)
-              .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }))
-            );
+        uploadForm.append("video", audioFile);
+        const uploadRes = await fetch(`${SHORTS_API}/upload`, { method: "POST", body: uploadForm }).catch(() => null);
+        if (uploadRes?.ok) {
+          const uploadData = await uploadRes.json();
+          setLoadingMsg("AI가 음성을 인식하고 있어요...");
+          const analyzeRes = await fetch(`${SHORTS_API}/analyze/${uploadData.file_id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ max_chars: 0 }),
+          }).catch(() => null);
+          if (analyzeRes?.ok) {
+            const ad = await analyzeRes.json();
+            // 다양한 응답 형식 처리
+            const segs = ad.segments || [];
+            const allSubs = [];
+            for (const seg of segs) {
+              if (seg.subtitles) allSubs.push(...seg.subtitles);
+              if (seg.script) fullText += seg.script + "\n";
+              else if (seg.title) fullText += seg.title + "\n";
+            }
+            if (!fullText.trim()) fullText = ad.transcript || ad.text || segs.map(s => s.hook || s.title || s.script || "").join("\n");
+            captionData = allSubs
+              .filter(s => s.text?.trim() && (s.end - s.start) > 0.3)
+              .map(s => ({ text: s.text.trim(), startMs: Math.round(s.start * 1000), endMs: Math.round(s.end * 1000) }));
           }
         }
-        setCaptions(captionData);
+      } catch (e) { console.warn("shorts-factory 분석 실패:", e); }
 
-        if (!fullText.trim()) { setError("음성에서 텍스트를 인식하지 못했습니다"); setStep("input"); setLoading(false); return; }
+      // shorts-factory 실패 시에도 프롬프트가 있으면 진행
+      if (fullText.trim()) {
+        setTranscript(fullText);
+        setCaptions(captionData);
         if (!prompt.trim()) setPrompt(fullText.slice(0, 300));
-      } catch (e) {
-        setError("음성 분석 실패: " + e.message);
+      } else if (!prompt.trim()) {
+        setError("음성 인식에 실패했습니다. 영상 주제를 직접 입력해주세요.");
         setStep("input"); setLoading(false); return;
       }
     }
