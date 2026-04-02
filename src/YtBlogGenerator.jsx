@@ -290,7 +290,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }
-    var _nfFull = "";
+    let _nfFull = "";
 
     const transcriptText = transcript.length > 0
       ? transcriptToText(transcript).slice(0, 6000)
@@ -448,7 +448,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       // 보관함 자동저장
       if (typeof _nfFull !== "undefined" && _nfFull && _nfFull.length > 50) {
         try {
-          var _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          let _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
           _sv.unshift({ id: Date.now().toString(), type: "blog_yt_blog",
             title: typeof ytInfo !== "undefined" && ytInfo?.title ? ytInfo.title : "유튜브 블로그",
             content: _nfFull, date: new Date().toLocaleDateString("ko-KR") });

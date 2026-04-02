@@ -337,7 +337,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 분량에 따른 max_tokens 설정
     const tokenMap = { short: 2000, medium: 4000, long: 6000, xlong: 8000 };
     const maxTok = tokenMap[wordCount] || 4000;
-    var _savedFull = "";
+    let _savedFull = "";
     // 최대 2회 시도 (실패 시 재시도)
     let lastErr = null;
     try {
@@ -394,9 +394,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
         try {
-          var _saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
-          var _title = fields.keyword || "제목 없음";
-          var _newSave = { id: Date.now().toString(), type: subtype, title: _title,
+          let _saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          let _title = fields.keyword || "제목 없음";
+          let _newSave = { id: Date.now().toString(), type: subtype, title: _title,
             content: cleanText(_savedFull), date: new Date().toLocaleDateString("ko-KR") };
           _saves.unshift(_newSave);
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_saves.slice(0, 100)));

@@ -372,7 +372,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }
-    var _nfFull = "";
+    let _nfFull = "";
 
     const toneLabel = {info:"정보성·SEO 최적화",casual:"친근하고 읽기 쉬운",pro:"전문적이고 신뢰감 있는",engaging:"흥미롭고 공감가는"}[tone];
     const lenLabel  = {short:"800자 내외",medium:"2,000자 내외",long:"4,000자 내외"}[length];
@@ -547,7 +547,7 @@ ${articleSection}
       // 보관함 자동저장
       if (_nfFull && _nfFull.length > 50) {
         try {
-          var _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+          let _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
           _sv.unshift({ id: Date.now().toString(), type: "blog_news", title: newsInfo?.title || "뉴스 블로그",
             content: _nfFull, date: new Date().toLocaleDateString("ko-KR") });
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_sv.slice(0, 100)));
