@@ -251,30 +251,20 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   };
 
   // ── 타임라인 재생 ─────────────────────
-  const clipDuration = (() => {
-    const subs = curClip.subtitles || [];
-    if (subs.length === 0) return 30;
-    const maxEnd = Math.max(...subs.map(s => s.end || s.start + 3));
-    return Math.max(maxEnd, 10);
-  })();
+  // clipDuration은 실제 트림된 영상 길이 기준
+  const clipDuration = Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
 
-  const currentSub = (curClip.subtitles || []).find(s => playhead >= s.start && playhead < (s.end || s.start + 3));
+  // 자막은 클립 시작 기준 상대 시간으로 표시
+  const clipStart = curClip.start_seconds || 0;
+  const currentSub = (curClip.subtitles || []).find(s => {
+    const relStart = s.start - clipStart;
+    const relEnd = (s.end || s.start + 3) - clipStart;
+    return playhead >= relStart && playhead < relEnd;
+  });
 
   const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
 
-  useEffect(() => {
-    if (isPlaying && step === "edit") {
-      playIntervalRef.current = setInterval(() => {
-        setPlayhead(prev => {
-          if (prev >= clipDuration) { setIsPlaying(false); return 0; }
-          return Math.min(prev + 0.1, clipDuration);
-        });
-      }, 100);
-    } else {
-      if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-    }
-    return () => { if (playIntervalRef.current) clearInterval(playIntervalRef.current); };
-  }, [isPlaying, step, clipDuration]);
+  // setInterval 타이머 제거 — RAF만 사용 (아래 비디오 동기화에서 처리)
 
   // ── API 호출 ────────────────────────
   const apiCall = async (path, opts = {}) => {
@@ -774,17 +764,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
-              {/* 상단 검은바 (제목) */}
-              <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-                style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", opacity: titleStyle.opacity / 100 }}>
-                <span style={{
-                  fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
-                  textAlign: "center", lineHeight: 1.3, maxWidth: "90%", wordBreak: "keep-all",
-                  textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
-                  WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
-                  background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
-                  padding: titleStyle.bgBox ? "4px 12px" : 0, borderRadius: titleStyle.bgBox ? 6 : 0,
-                }}>{curClip.title || "제목을 입력하세요"}</span>
+              {/* 상단 검은바 (제목 — 드래그로 위치 조절) */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, overflow: "hidden" }}>
+                <div onMouseDown={e => handlePreviewMouseDown("title", e)}
+                  style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y > 22 ? 50 : (titlePos.y / 22) * 100}%`, transform: "translate(-50%,-50%)", cursor: "move", maxWidth: "90%", textAlign: "center", border: dragging === "title" ? "2px dashed #7c6aff" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: titleStyle.opacity / 100 }}>
+                  <span style={{
+                    fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
+                    lineHeight: 1.3, wordBreak: "keep-all",
+                    textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
+                    WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
+                    background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
+                    padding: titleStyle.bgBox ? "4px 12px" : 0, borderRadius: titleStyle.bgBox ? 6 : 0,
+                  }}>{curClip.title || "제목을 입력하세요"}</span>
+                </div>
               </div>
 
               {/* 중앙 영상 (원본 비율 유지) */}
@@ -799,19 +791,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 (자막) */}
-              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", zIndex: 10, cursor: "move", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", opacity: captionStyle.opacity / 100 }}>
-                <span style={{
-                  fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
-                  textAlign: "center", lineHeight: 1.4, maxWidth: "90%", wordBreak: "keep-all",
-                  textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
-                  WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
-                  background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
-                  padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
-                }}>
-                  {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
-                </span>
+              {/* 하단 검은바 (자막 — 드래그로 위치 조절) */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, overflow: "hidden" }}>
+                <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+                  style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y < 78 ? 50 : ((captionPos.y - 78) / 22) * 100}%`, transform: "translate(-50%,-50%)", cursor: "move", maxWidth: "90%", textAlign: "center", border: dragging === "caption" ? "2px dashed #f59e0b" : "2px solid transparent", borderRadius: 4, padding: "4px 8px", opacity: captionStyle.opacity / 100 }}>
+                  <span style={{
+                    fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
+                    lineHeight: 1.4, wordBreak: "keep-all",
+                    textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
+                    WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
+                    background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
+                    padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
+                  }}>
+                    {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
+                  </span>
+                </div>
               </div>
             </>) : (<>
               {/* 전체화면 레이아웃 */}
@@ -1166,15 +1160,17 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              {/* S1 자막 */}
+              {/* S1 자막 (절대→상대 시간 변환) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 {(curClip.subtitles || []).map((s, i) => {
-                  const left = s.start * pxPerSec;
-                  const width = Math.max(((s.end || s.start + 3) - s.start) * pxPerSec, 16);
+                  const relStart = Math.max(0, s.start - clipStart);
+                  const relEnd = Math.max(relStart + 0.5, (s.end || s.start + 3) - clipStart);
+                  const left = relStart * pxPerSec;
+                  const width = Math.max((relEnd - relStart) * pxPerSec, 16);
                   const color = subColors[i % subColors.length];
                   const sel = selectedSubIdx === i;
                   return (
-                    <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(s.start); }}
+                    <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(relStart); }}
                       style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
                       <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.text || `#${i+1}`}</span>
                       <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
