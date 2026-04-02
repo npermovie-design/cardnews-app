@@ -118,6 +118,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [step]);
 
+  // ── 현재 클립 (타임라인 등에서 사용) ────────────
+  const curClip = editClips[editIdx] || {};
+  const updateClip = (key, val) => {
+    setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
+  };
+
   // ── 타임라인 재생 ─────────────────────
   const clipDuration = (() => {
     const subs = curClip.subtitles || [];
@@ -322,11 +328,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     const content = (clip?.subtitles || []).map(s => s.text).join(" ");
     try { localStorage.setItem("shorts_linked_data", JSON.stringify({ title: clip?.title || "", content, hook: clip?.hook_text || "" })); } catch {}
     setAiMenu(target);
-  };
-
-  const curClip = editClips[editIdx] || {};
-  const updateClip = (key, val) => {
-    setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
   };
 
   const fmt = s => { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`; };
