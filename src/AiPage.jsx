@@ -585,6 +585,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const features_ = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
       { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
+      { icon:"/icons3d/sns-app.png", title:_s("영상 제작","Video"), menu:"shorts_make", isNew:true },
       { icon:"/icons3d/instagram-cam.png", title:_s("이미지","Image"), menu:"image_tools" },
       { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
     ];
@@ -603,14 +604,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
             {features_.map(f => (
               <div key={f.menu} onClick={() => setAiMenu(f.menu)}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s" }}
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s", position:"relative" }}
                 onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border: f.isNew ? "2px solid #7c6aff" : `1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow: f.isNew ? "0 4px 16px rgba(124,106,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
                   <img src={f.icon} alt="" loading="lazy" decoding="async" style={{ width:28, height:28, objectFit:"contain" }} />
                 </div>
-                <span style={{ fontSize:12, fontWeight:600, color:homeText }}>{f.title}</span>
+                {f.isNew && <span style={{ position:"absolute", top:-6, right:-6, fontSize:8, fontWeight:800, color:"#fff", background:"linear-gradient(135deg,#7c6aff,#ec4899)", padding:"2px 5px", borderRadius:6 }}>NEW</span>}
+                <span style={{ fontSize:12, fontWeight:600, color: f.isNew ? "#7c6aff" : homeText }}>{f.title}</span>
               </div>
             ))}
+          </div>
+
+          {/* 영상 제작 프로모 배너 */}
+          <div onClick={() => setAiMenu("shorts_make")}
+            style={{ marginBottom:20, padding:"20px 24px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:16, transition:"all 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            <div style={{ width:48, height:48, borderRadius:14, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+            </div>
+            <div style={{ flex:1, textAlign:"left" }}>
+              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video Creation")}</div>
+              <div style={{ fontSize:12, color:homeMuted, lineHeight:1.5 }}>{_s("유튜브 링크만 넣으면 쇼츠 영상을 자동으로 만들어요","Just paste a YouTube link to auto-create shorts")}</div>
+            </div>
+            <span style={{ fontSize:10, fontWeight:700, color:"#7c6aff", padding:"4px 8px", borderRadius:6, background: isDark ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
           </div>
 
           {/* 소셜 플래너 바로가기 */}
@@ -1149,8 +1165,38 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><SocialPlanner isDark={isDark} user={user} theme={theme} /></React.Suspense>;
   }
 
-  // 영상 편집 — 일반회원 개방
+  // 영상 편집 — Pro 플랜 이상 (포인트 1000P 이상 보유 또는 관리자)
   if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make") {
+    if (!user) {
+      return (
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", padding:40 }}>
+          <div>
+            <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
+            <div style={{ fontSize:20, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>AI 자동 영상 제작</div>
+            <div style={{ fontSize:14, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:20, lineHeight:1.6 }}>로그인 후 이용할 수 있습니다</div>
+            <button onClick={onLoginRequest} style={{ padding:"12px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>로그인하기</button>
+          </div>
+        </div>
+      );
+    }
+    const userPts = user.points || 0;
+    const isPro = user.role === "admin" || userPts >= 100;
+    if (!isPro) {
+      return (
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", padding:40 }}>
+          <div style={{ maxWidth:400 }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🎬</div>
+            <div style={{ fontSize:20, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>AI 자동 영상 제작</div>
+            <div style={{ fontSize:14, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:6, lineHeight:1.6 }}>영상 제작은 포인트 충전 후 이용 가능합니다</div>
+            <div style={{ fontSize:13, color:"#7c6aff", fontWeight:600, marginBottom:20 }}>현재 보유: {userPts}P / 분석 35P · 생성 80P</div>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <button onClick={() => navigate("pricing")} style={{ padding:"12px 28px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>포인트 충전하기</button>
+              <button onClick={() => setAiMenu("home")} style={{ padding:"12px 28px", borderRadius:12, border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "#ddd"}`, background:"transparent", color: isDark ? "rgba(255,255,255,0.6)" : "#888", fontSize:14, fontWeight:700, cursor:"pointer" }}>홈으로</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} />;
   }
 
