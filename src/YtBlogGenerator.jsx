@@ -420,9 +420,9 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       setGenerating(false);
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_yt", type: "blog_write", message: "유튜브 블로그 작성 완료!" } } }));
       if (user) {
-        var _u = getAiUsage();
-        var _k = "member_" + (user.uid || "u");
-        var _nu = Object.assign({}, _u);
+        const _u = getAiUsage();
+        const _k = "member_" + (user.uid || "u");
+        const _nu = { ..._u };
         _nu[_k] = (_u[_k] || 0) + 1;
         setAiUsage(_nu);
       }

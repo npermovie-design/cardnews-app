@@ -97,8 +97,8 @@ function consumeOne(user) {
   var u = getUsage(); var k = user ? ("m_" + user.id) : "guest";
   u[k] = (u[k] || 0) + 1;
   try { localStorage.setItem(USAGE_KEY, JSON.stringify(u)); } catch(e) {}
-  var su = getAiUsage(); var sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
-  var snu = Object.assign({}, su); snu[sk] = (su[sk] || 0) + 1; setAiUsage(snu);
+  const su = getAiUsage(); const sk = user ? ("member_" + (user.uid || user.id || "u")) : "guest";
+  const snu = { ...su }; snu[sk] = (su[sk] || 0) + 1; setAiUsage(snu);
 }
 
 // ─── 보관함 ──────────────────────────────────────────────────────────────────
@@ -1204,10 +1204,10 @@ function PageMake(props) {
   var prevBg  = D ? "transparent"              : "#f4f4f8";
 
   // 포인트/횟수 소진 체크
-  var _pu = (function(){ try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
-  var _pk = props.user ? ("member_" + (props.user.uid || "u")) : "guest";
-  var _pused = _pu[_pk] || 0;
-  var _plim = props.user ? 20 : 5;
+  const _pu = (function(){ try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+  const _pk = props.user ? ("member_" + (props.user.uid || "u")) : "guest";
+  const _pused = _pu[_pk] || 0;
+  const _plim = props.user ? 20 : 5;
   var _ppts = props.user ? (props.user.points || 0) : 0;
   // 회원: uid 있고 포인트가 명확히 0이고 20회 초과한 경우만 소진 화면
   // 포인트 정보가 없거나(undefined) 로드 안된 경우 → 허용 (사용 가능으로 처리)

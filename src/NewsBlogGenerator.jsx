@@ -537,9 +537,9 @@ ${articleSection}
       setGenerating(false); setLoadStep(0);
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_news", type: "blog_write", message: "뉴스 블로그 작성 완료!" } } }));
       if (user) {
-        var _u = getAiUsage();
-        var _k = "member_" + (user.uid || "u");
-        var _nu = Object.assign({}, _u);
+        const _u = getAiUsage();
+        const _k = "member_" + (user.uid || "u");
+        const _nu = { ..._u };
         _nu[_k] = (_u[_k] || 0) + 1;
         setAiUsage(_nu);
       }

@@ -380,9 +380,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       // 백그라운드 작업 표시기 완료
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 완료!" } } }));
       if (user) { // 회원만 finally에서 횟수 증가 (비회원은 generate 시작 시점에 이미 처리)
-        var _u2 = getAiUsage();
-        var _k2 = "member_" + (user.uid || "u");
-        var _newU2 = Object.assign({}, _u2);
+        const _u2 = getAiUsage();
+        const _k2 = "member_" + (user.uid || "u");
+        const _newU2 = { ..._u2 };
         _newU2[_k2] = (_u2[_k2] || 0) + 1;
         setAiUsage(_newU2);
       }
