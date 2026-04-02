@@ -22,12 +22,14 @@ function SceneComposition({ segments, audioUrl, style }) {
             ) : (
               <TextSegment text={seg.text} animation={seg.animation || "fade"} bgImageUrl={seg.bgImageUrl} style={style} segIndex={i} totalSegs={segments.length} />
             )}
+            {/* 세그먼트별 개별 오디오 — 밀림 없이 정확한 타이밍 */}
+            {seg.audioUrl && <Audio src={seg.audioUrl} volume={1} />}
           </Sequence>
         );
       })}
-      {/* 자막: 세그먼트 텍스트를 시간에 맞춰 표시 */}
       <SegmentCaptions segments={segments} />
-      {audioUrl && <Audio src={audioUrl} volume={1} />}
+      {/* fallback: 개별 오디오가 없으면 전체 오디오 사용 */}
+      {audioUrl && !segments.some(s => s.audioUrl) && <Audio src={audioUrl} volume={1} />}
     </AbsoluteFill>
   );
 }
@@ -1219,84 +1221,52 @@ JSON 배열만 출력하세요.`
       setScenes(scenesWithImages);
       setEditingScene(0);
 
-      // TTS 음성 생성 (Gemini TTS — 씬별 분할 생성 후 합치기)
-      if (ttsEnabled && !audioFile) {
+      // TTS 음성 생성 — 세그먼트별 개별 audioUrl (밀림 방지)
+      if (ttsEnabled && !audioFile && segmentsWithMedia.length > 0) {
         setLoadingMsg("AI 음성을 생성하고 있어요...");
-        try {
-          // 씬별로 짧은 텍스트를 개별 TTS → Vercel 10초 타임아웃 회피
-          const ttsBlobs = [];
-          for (let si = 0; si < scenesWithImages.length; si++) {
-            const txt = (scenesWithImages[si]._scriptText || scenesWithImages[si].title || "").trim();
-            if (!txt) continue;
-            setLoadingMsg(`AI 음성 생성 중... (${si + 1}/${scenesWithImages.length})`);
-            try {
-              const ttsRes = await fetch("/api/tts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: txt.slice(0, 1000), voice: ttsVoice }),
-              });
-              if (ttsRes.ok) {
-                const blob = await ttsRes.blob();
-                ttsBlobs.push(blob);
-              }
-            } catch {}
-          }
-          // WAV 파일 합치기 (헤더 44바이트 스킵 후 PCM 데이터만 연결)
-          if (ttsBlobs.length > 0) {
-            const pcmChunks = [];
-            let sampleRate = 24000;
-            for (let bi = 0; bi < ttsBlobs.length; bi++) {
-              const buf = await ttsBlobs[bi].arrayBuffer();
-              const view = new DataView(buf);
-              if (buf.byteLength > 44) {
-                sampleRate = view.getUint32(24, true);
-                pcmChunks.push(new Uint8Array(buf, 44)); // PCM 데이터만
-                // 씬 사이 짧은 무음 (0.2초) 추가 → 자연스러운 연결
-                if (bi < ttsBlobs.length - 1) {
-                  const silenceBytes = Math.round(sampleRate * 0.2 * 2); // 16bit mono
-                  pcmChunks.push(new Uint8Array(silenceBytes));
-                }
-              }
-            }
-            // 새 WAV 헤더 생성
-            const totalPcm = pcmChunks.reduce((sum, c) => sum + c.byteLength, 0);
-            const wavHeader = new ArrayBuffer(44);
-            const hv = new DataView(wavHeader);
-            const writeStr = (offset, str) => { for (let i = 0; i < str.length; i++) hv.setUint8(offset + i, str.charCodeAt(i)); };
-            writeStr(0, "RIFF"); hv.setUint32(4, 36 + totalPcm, true); writeStr(8, "WAVE");
-            writeStr(12, "fmt "); hv.setUint32(16, 16, true); hv.setUint16(20, 1, true); hv.setUint16(22, 1, true);
-            hv.setUint32(24, sampleRate, true); hv.setUint32(28, sampleRate * 2, true);
-            hv.setUint16(32, 2, true); hv.setUint16(34, 16, true);
-            writeStr(36, "data"); hv.setUint32(40, totalPcm, true);
-            const combined = new Blob([wavHeader, ...pcmChunks], { type: "audio/wav" });
-            // data URL로 변환 (Remotion Audio 호환성 — blob URL은 재생 끊김 발생)
-            const reader = new FileReader();
-            const url = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(combined); });
-            setTtsUrl(url);
-            // 오디오 길이 측정 → 씬 타이밍 재조정
-            const audio = new window.Audio(url);
-            await new Promise(resolve => {
-              audio.onloadedmetadata = () => {
-                const ttsDuration = audio.duration;
-                if (ttsDuration > 3) {
-                  setDuration(Math.ceil(ttsDuration));
-                  const secPerScene = ttsDuration / scenesWithImages.length;
-                  setScenes(prev => prev.map((sc, i) => ({
-                    ...sc, _startSec: i * secPerScene, _endSec: (i + 1) * secPerScene,
-                    _startFrame: Math.round(i * secPerScene * FPS), _durFrames: Math.round(secPerScene * FPS),
-                  })));
-                  setCaptions(prev => prev.map((c, i) => ({
-                    ...c, startMs: Math.round(i * secPerScene * 1000), endMs: Math.round((i + 1) * secPerScene * 1000),
-                  })));
-                }
-                resolve();
-              };
-              audio.onerror = resolve;
+        let totalTtsDur = 0;
+        for (let si = 0; si < segmentsWithMedia.length; si++) {
+          const seg = segmentsWithMedia[si];
+          const txt = (seg.text || "").trim();
+          if (!txt) continue;
+          setLoadingMsg(`AI 음성 생성 중... (${si + 1}/${segmentsWithMedia.length})`);
+          try {
+            const ttsRes = await fetch("/api/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: txt.slice(0, 1000), voice: ttsVoice }),
             });
-          }
-        } catch (e) {
-          console.warn("TTS 생성 오류:", e);
+            if (ttsRes.ok) {
+              const blob = await ttsRes.blob();
+              const reader = new FileReader();
+              const dataUrl = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(blob); });
+              segmentsWithMedia[si].audioUrl = dataUrl;
+              // 오디오 길이 측정 → 세그먼트 duration을 오디오에 맞춤
+              const audio = new window.Audio(dataUrl);
+              await new Promise(resolve => {
+                audio.onloadedmetadata = () => {
+                  const dur = audio.duration;
+                  if (dur > 0.5) {
+                    // 세그먼트 시간을 오디오 길이에 맞춰 재조정
+                    segmentsWithMedia[si].endSec = segmentsWithMedia[si].startSec + dur + 0.3; // 0.3초 여유
+                    // 다음 세그먼트 시작 시간도 조정
+                    for (let ni = si + 1; ni < segmentsWithMedia.length; ni++) {
+                      segmentsWithMedia[ni].startSec = segmentsWithMedia[ni - 1].endSec;
+                      const origDur = (segmentsWithMedia[ni].endSec || 4) - (segmentsWithMedia[ni].startSec || 0);
+                      segmentsWithMedia[ni].endSec = segmentsWithMedia[ni].startSec + Math.max(3, origDur > 0 ? origDur : 4);
+                    }
+                  }
+                  resolve();
+                };
+                audio.onerror = resolve;
+              });
+            }
+          } catch {}
         }
+        // 전체 길이를 마지막 세그먼트 기준으로 재계산
+        const lastSeg = segmentsWithMedia[segmentsWithMedia.length - 1];
+        if (lastSeg) setDuration(Math.ceil(lastSeg.endSec || duration));
+        setSegments([...segmentsWithMedia]);
       }
 
       setStep("editing");
@@ -1665,24 +1635,76 @@ JSON 배열만 출력하세요.`
             ))}
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
-            {propTab === "scene" && editingScene >= 0 && scenes[editingScene] ? (() => {
-              const sc = scenes[editingScene];
-              const upd = (k, v) => setScenes(prev => prev.map((s, i) => i === editingScene ? { ...s, [k]: v } : s));
+            {propTab === "scene" && editingScene >= 0 && segments[editingScene] ? (() => {
+              const seg = segments[editingScene];
+              const updSeg = (k, v) => setSegments(prev => prev.map((s, i) => i === editingScene ? { ...s, [k]: v } : s));
               return <>
-                <div style={{ fontSize: 12, fontWeight: 700, color: acc, marginBottom: 10 }}>씬 {editingScene + 1}</div>
-                <div style={{ marginBottom: 8 }}><div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>제목</div><input value={sc.title || ""} onChange={e => upd("title", e.target.value)} style={inputStyle} /></div>
-                <div style={{ marginBottom: 8 }}><div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>텍스트</div><textarea value={sc.text || ""} onChange={e => upd("text", e.target.value)} rows={2} style={{ ...inputStyle, resize: "none" }} /></div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: acc, marginBottom: 10 }}>세그먼트 {editingScene + 1} <span style={{ fontSize: 9, color: "#666" }}>({seg.type === "gif" ? "GIF" : seg.animation || "text"})</span></div>
+                {/* 텍스트 편집 */}
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>이미지</div>
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>텍스트</div>
+                  <textarea value={seg.text || ""} onChange={e => updSeg("text", e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+                </div>
+                {/* 타입 전환 */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>타입</div>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <input value={sc.imagePrompt || ""} onChange={e => upd("imagePrompt", e.target.value)} placeholder="영어 키워드" style={{ ...inputStyle, flex: 1 }} />
-                    <button onClick={() => replaceSceneImage(editingScene, sc.imagePrompt)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: `${acc}10`, color: acc, fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>교체</button>
+                    {["text", "gif"].map(t => (
+                      <button key={t} onClick={() => updSeg("type", t)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: `1.5px solid ${seg.type === t ? acc : "#2a2a4a"}`, background: seg.type === t ? `${acc}10` : "transparent", color: seg.type === t ? acc : "#888", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{t === "gif" ? "GIF" : "텍스트"}</button>
+                    ))}
                   </div>
                 </div>
-                {sc.imageUrl && <img src={sc.imageUrl} alt="" style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 6, marginBottom: 8 }} />}
-                <div style={{ marginBottom: 8 }}><div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>배경색</div><input type="color" value={sc.bgColor || "#1a1a2e"} onChange={e => upd("bgColor", e.target.value)} style={{ width: "100%", height: 24, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} /></div>
-                {scenes.length > 1 && <button onClick={() => { setScenes(prev => prev.filter((_, j) => j !== editingScene)); setEditingScene(Math.max(0, editingScene - 1)); }}
-                  style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", color: "#f87171", fontSize: 10, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>씬 삭제</button>}
+                {/* 텍스트 애니메이션 선택 */}
+                {seg.type === "text" && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>애니메이션</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3 }}>
+                      {["fade","typewriter","highlight","scale","slide","counter"].map(a => (
+                        <button key={a} onClick={() => updSeg("animation", a)} style={{ padding: "4px 2px", borderRadius: 4, border: `1px solid ${seg.animation === a ? acc : "#2a2a4a"}`, background: seg.animation === a ? `${acc}10` : "transparent", color: seg.animation === a ? acc : "#888", fontSize: 9, fontWeight: 700, cursor: "pointer" }}>{a}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* GIF 키워드 교체 */}
+                {seg.type === "gif" && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>GIF 검색</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <input value={seg.gifKeyword || ""} onChange={e => updSeg("gifKeyword", e.target.value)} placeholder="영어 키워드" style={{ ...inputStyle, flex: 1 }} />
+                      <button onClick={async () => {
+                        try {
+                          const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(seg.gifKeyword || "funny")}&limit=3`);
+                          const d = await r.json();
+                          const gifs = d.data || d.results || d || [];
+                          const gif = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
+                          updSeg("gifUrl", gif?.images?.original?.url || gif?.url || "");
+                        } catch {}
+                      }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: `${acc}10`, color: acc, fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>검색</button>
+                    </div>
+                    {seg.gifUrl && <img src={seg.gifUrl} alt="" style={{ width: "100%", height: 80, objectFit: "contain", borderRadius: 6, marginTop: 6, background: "#000" }} />}
+                  </div>
+                )}
+                {/* 배경 이미지 교체 (텍스트 세그먼트) */}
+                {seg.type === "text" && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>배경 이미지</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <input value={seg.bgKeyword || ""} onChange={e => updSeg("bgKeyword", e.target.value)} placeholder="영어 키워드" style={{ ...inputStyle, flex: 1 }} />
+                      <button onClick={async () => {
+                        try {
+                          const r = await fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(seg.bgKeyword || "abstract")}&per_page=3`);
+                          const d = await r.json();
+                          const img = (d.results || [])[Math.floor(Math.random() * Math.min(3, (d.results || []).length))];
+                          updSeg("bgImageUrl", img?.urls?.regular || null);
+                        } catch {}
+                      }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: `${acc}10`, color: acc, fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>검색</button>
+                    </div>
+                    {seg.bgImageUrl && <img src={seg.bgImageUrl} alt="" style={{ width: "100%", height: 60, objectFit: "cover", borderRadius: 6, marginTop: 6 }} />}
+                  </div>
+                )}
+                {/* 삭제 */}
+                {segments.length > 1 && <button onClick={() => { setSegments(prev => prev.filter((_, j) => j !== editingScene)); setEditingScene(Math.max(0, editingScene - 1)); }}
+                  style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", color: "#f87171", fontSize: 10, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>세그먼트 삭제</button>}
               </>;
             })() : propTab === "style" ? (
               <div>
