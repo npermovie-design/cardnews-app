@@ -20,6 +20,12 @@ SNS 콘텐츠 자동화 플랫폼 (snsmakeit.com)
 - Dockerfile + Procfile 준비됨
 - **아직 미배포** → Render 배포 필요 (VITE_SHORTS_FACTORY_URL 환경변수)
 
+## Remotion (AI 영상 생성)
+- @remotion/player로 브라우저 내 영상 프리뷰
+- AiVideoGenerator.jsx: 프롬프트 → AI 씬 생성 → Remotion Player 프리뷰
+- Remotion 코드 작성 시 `.agents/skills/remotion-best-practices/` 스킬 참조
+- 자막: rules/subtitles.md, 오디오: rules/audio.md, 애니메이션: rules/animations.md
+
 ## 개발 규칙
 - 한국어 UI, 다크모드/라이트모드 지원
 - AiPage.jsx가 메인 AI 메뉴 허브 (2800+ lines)
