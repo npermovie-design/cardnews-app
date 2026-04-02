@@ -1813,115 +1813,78 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </div>
             );
           })}
-          {isComplete && <button onClick={() => { setStep("upload"); setFileId(null); setSegments([]); setResults([]); setError(""); }}
-            style={{ width: "100%", padding: 10, borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginTop: 12 }}>새로운 영상 만들기</button>}
         </div>
 
         {/* 우측: 미리보기 + 다운로드 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 32px", overflowY: "auto" }}>
           {doneResults.length > 0 ? (
             <>
-              {/* 영상 미리보기 + 편집기 */}
-              <div style={{ ...cardStyle, width: "100%", maxWidth: 760, padding: 0, overflow: "hidden" }}>
-                {/* 비디오 플레이어 */}
-                <div style={{ background: "#000", textAlign: "center", position: "relative" }}>
+              {/* 영상 미리보기 */}
+              <div style={{ ...cardStyle, width: "100%", maxWidth: 480, padding: 0, overflow: "hidden", borderRadius: 16 }}>
+                <div style={{ background: "#000", textAlign: "center" }}>
                   <video id="shorts-preview-video" controls playsinline
                     src={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
-                    style={{ maxHeight: "50vh", width: "100%", maxWidth: 400, display: "block", margin: "0 auto" }} />
+                    style={{ maxHeight: "60vh", width: "100%", maxWidth: 360, display: "block", margin: "0 auto" }} />
                 </div>
-
-                {/* 편집 도구 */}
-                <div style={{ padding: "16px 20px" }}>
-                  {/* 트림 구간 */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>✂️ 트림 (시작/끝 조절)</div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: muted }}>시작</span>
-                      <input type="range" min="0" max="100" defaultValue="0" style={{ flex: 1, accentColor: acc }}
-                        onChange={e => { const v = document.getElementById("shorts-preview-video"); if (v) { v.currentTime = (v.duration || 60) * e.target.value / 100; } }} />
-                      <span style={{ fontSize: 11, color: muted }}>끝</span>
-                      <input type="range" min="0" max="100" defaultValue="100" style={{ flex: 1, accentColor: acc }} />
-                    </div>
-                  </div>
-
-                  {/* 상단 제목/부제 편집 */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>🎬 제목 · 부제 수정</div>
-                    <input value={editClips[previewIdx]?.title || ""} onChange={e => {
-                      const clips = [...editClips]; clips[previewIdx] = { ...clips[previewIdx], title: e.target.value }; setEditClips(clips);
-                    }} placeholder="상단 제목" style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
-                    <input value={editClips[previewIdx]?.subtitle_text || ""} onChange={e => {
-                      const clips = [...editClips]; clips[previewIdx] = { ...clips[previewIdx], subtitle_text: e.target.value }; setEditClips(clips);
-                    }} placeholder="하단 부제" style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-
-                  {/* 자막 편집 */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: text }}>📝 자막 수정</div>
-                      <button onClick={() => {
-                        const clips = [...editClips];
-                        const subs = [...(clips[previewIdx]?.subtitles || [])];
-                        const lastEnd = subs.length > 0 ? (subs[subs.length - 1].end || subs[subs.length - 1].start + 3) : 0;
-                        subs.push({ start: lastEnd, end: lastEnd + 3, text: "" });
-                        clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
-                        setEditClips(clips);
-                      }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: acc, cursor: "pointer", fontWeight: 700 }}>+ 자막 추가</button>
-                    </div>
-                    <div style={{ maxHeight: 150, overflowY: "auto" }}>
-                      {(editClips[previewIdx]?.subtitles || []).map((s, i) => (
-                        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
-                          <span style={{ fontSize: 10, color: muted, flexShrink: 0, width: 36 }}>{fmt(s.start)}</span>
-                          <input value={s.text} onChange={e => {
-                            const clips = [...editClips];
-                            const subs = [...(clips[previewIdx]?.subtitles || [])];
-                            subs[i] = { ...subs[i], text: e.target.value };
-                            clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
-                            setEditClips(clips);
-                          }} style={{ flex: 1, padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 11, outline: "none" }} />
-                          <button onClick={() => {
-                            const clips = [...editClips];
-                            const subs = [...(clips[previewIdx]?.subtitles || [])];
-                            subs.splice(i, 1);
-                            clips[previewIdx] = { ...clips[previewIdx], subtitles: subs };
-                            setEditClips(clips);
-                          }} style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 속도 조절 */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>⚡ 재생 속도</div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      {[0.5, 0.75, 1, 1.25, 1.5, 2].map(spd => (
-                        <button key={spd} onClick={() => { const v = document.getElementById("shorts-preview-video"); if (v) v.playbackRate = spd; }}
-                          style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
-                          {spd}x
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {/* 클립 제목 표시 */}
+                <div style={{ padding: "12px 16px", borderTop: `1px solid ${bdr}` }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: text }}>{editClips[previewIdx]?.title || `Short ${previewIdx + 1}`}</div>
+                  {editClips[previewIdx]?.subtitle_text && <div style={{ fontSize: 12, color: muted, marginTop: 4 }}>{editClips[previewIdx].subtitle_text}</div>}
                 </div>
               </div>
 
-              {/* 편집 완료 → 다운로드 */}
-              <div style={{ marginTop: 16, textAlign: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 10 }}>편집이 완료되면 다운로드하세요</div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                  {doneResults.map(r => (
-                    <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
-                      style={{ padding: "12px 24px", borderRadius: 12, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      ⬇ Short {r.index + 1} 다운로드
-                    </a>
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: 10, marginTop: 12, justifyContent: "center" }}>
-                  <button onClick={() => linkTo("blog_write", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>📝 글쓰기 연계</button>
-                  <button onClick={() => linkTo("content_create", previewIdx)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>🎨 콘텐츠 제작</button>
+              {/* 다운로드 */}
+              <div style={{ marginTop: 20, textAlign: "center", width: "100%", maxWidth: 480 }}>
+                <a href={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
+                  download={doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}
+                  style={{ display: "block", padding: "14px 24px", borderRadius: 14, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: `0 4px 20px ${acc}40` }}>
+                  다운로드
+                </a>
+                {doneResults.length > 1 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    {doneResults.filter(r => r.index !== previewIdx).map(r => (
+                      <a key={r.index} href={`${API}/outputs/${fileId}/${r.filename}`} download={r.filename}
+                        style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
+                        {editClips[r.index]?.title || `Short ${r.index + 1}`}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 공유 & 연계 */}
+              <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8, textAlign: "center" }}>다른 기능과 연계</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
+                  <button onClick={() => linkTo("blog_write", previewIdx)}
+                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>&#x1F4DD;</span> 블로그 글쓰기
+                  </button>
+                  <button onClick={() => linkTo("content_create", previewIdx)}
+                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>&#x1F3A8;</span> 카드뉴스 제작
+                  </button>
+                  <button onClick={() => linkTo("sns_post", previewIdx)}
+                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>&#x1F4F1;</span> SNS 발행
+                  </button>
+                  <button onClick={() => {
+                    const url = `${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename}`;
+                    if (navigator.share) navigator.share({ title: editClips[previewIdx]?.title || "쇼츠 영상", url }).catch(() => {});
+                    else { navigator.clipboard.writeText(url).then(() => alert("링크가 복사되었습니다!")); }
+                  }}
+                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>&#x1F517;</span> 공유하기
+                  </button>
                 </div>
               </div>
+
+              {isComplete && (
+                <button onClick={() => { setStep("upload"); setFileId(null); setSegments([]); setResults([]); setError(""); }}
+                  style={{ marginTop: 16, padding: "10px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>
+                  새로운 영상 만들기
+                </button>
+              )}
             </>
           ) : (
             <div style={{ textAlign: "center", maxWidth: 420, width: "100%" }}>
