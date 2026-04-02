@@ -98,12 +98,13 @@ function ArchiveGallery({ onSelect }) {
           {tab === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하세요"}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, maxHeight: 180, overflowY: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 200, overflowY: "auto", padding: 2 }}>
           {filteredItems.slice(0, 30).map((it, i) => (
-            <div key={i} onClick={() => onSelect(it.url)} style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", aspectRatio: "1", position: "relative" }}
+            <div key={i} onClick={() => onSelect(it.url)}
+              style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", width: "100%", height: 70, position: "relative", background: "#12122a" }}
               title={it.title}>
-              <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.7))", padding: "8px 4px 3px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+              <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "6px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
             </div>
           ))}
         </div>
@@ -212,6 +213,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [videoScale, setVideoScale] = useState(100);
   // 선택된 트랙 요소
   const [selectedTrack, setSelectedTrack] = useState(null); // "V1" | "A1" | null
+  // 패널 크기 (드래그 조절)
+  const [rightPanelWidth, setRightPanelWidth] = useState(280);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(180);
 
   const fileRef = useRef(null);
   const timerRef = useRef(null);
@@ -220,6 +224,53 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const videoRef = useRef(null);
   const previewRef = useRef(null);
   const overlayFileRef = useRef(null);
+
+  // ── 키보드 단축키 (스페이스=재생, Delete/Backspace=삭제) ──
+  useEffect(() => {
+    if (step !== "edit") return;
+    const handler = (e) => {
+      // input/textarea 안에서는 무시
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsPlaying(prev => !prev);
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        // 선택된 자막 삭제
+        if (selectedSubIdx >= 0) {
+          deleteSubtitle(selectedSubIdx);
+          return;
+        }
+        // 선택된 세그먼트 삭제
+        if (selectedSegIdx >= 0 && videoSegs.length > 1) {
+          deleteSegment(selectedSegIdx);
+          return;
+        }
+        // 선택된 오버레이 삭제
+        if (selectedOverlay) {
+          setOverlays(prev => prev.filter(o => o.id !== selectedOverlay));
+          setSelectedOverlay(null);
+        }
+      }
+      // 좌우 화살표: playhead 이동
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setPlayhead(prev => Math.max(0, prev - (e.shiftKey ? 5 : 1)));
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setPlayhead(prev => Math.min(clipDuration, prev + (e.shiftKey ? 5 : 1)));
+      }
+      // S: 분할
+      if (e.key === "s" && !e.ctrlKey && !e.metaKey) {
+        splitAtPlayhead();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [step, selectedSubIdx, selectedSegIdx, selectedOverlay, videoSegs, clipDuration]);
 
   // ── YouTube URL 파싱 ─────────────────────
   useEffect(() => {
@@ -419,7 +470,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // ── 세그먼트 삭제: 삭제하면 나머지가 합쳐져서 재생 ─────
   const deleteSegment = (idx) => {
-    if (videoSegs.length <= 1) return; // 최소 1개 유지
+    if (videoSegs.length <= 1) return;
+    const seg = videoSegs[idx];
+    // 해당 구간의 자막도 같이 삭제
+    if (seg) {
+      const subs = (curClip.subtitles || []).filter(s => !(s.start >= seg.start && (s.end || s.start + 3) <= seg.end));
+      updateClip("subtitles", subs);
+    }
     setVideoSegs(prev => prev.filter((_, i) => i !== idx));
     setSelectedSegIdx(-1);
     setPlayhead(0);
@@ -934,7 +991,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT: Clip list */}
-        <div style={{ width: 180, flexShrink: 0, background: "#16162a", borderRight: "1px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: leftPanelWidth, flexShrink: 0, background: "#16162a", borderRight: "1px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
+          {/* 리사이즈 핸들 */}
+          <div style={{ position: "absolute", right: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 5 }}
+            onMouseDown={e => { e.preventDefault(); const sx = e.clientX; const ow = leftPanelWidth;
+              const mv = ev => setLeftPanelWidth(Math.max(120, Math.min(300, ow + ev.clientX - sx)));
+              const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+              window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+            }} />
           <div style={{ padding: "14px 12px 8px", fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1 }}>클립 목록</div>
           <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
             {editClips.map((c, i) => (
@@ -1067,7 +1131,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
 
         {/* RIGHT: 속성 패널 (탭: 스타일 / 오버레이) */}
-        <div style={{ width: 280, flexShrink: 0, background: "#16162a", borderLeft: "1px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: rightPanelWidth, flexShrink: 0, background: "#16162a", borderLeft: "1px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
+          {/* 리사이즈 핸들 */}
+          <div style={{ position: "absolute", left: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 5 }}
+            onMouseDown={e => { e.preventDefault(); const sx = e.clientX; const ow = rightPanelWidth;
+              const mv = ev => setRightPanelWidth(Math.max(200, Math.min(450, ow - (ev.clientX - sx))));
+              const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+              window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+            }} />
           {/* 탭 */}
           <div style={{ display: "flex", borderBottom: "1px solid #2a2a4a" }}>
             {[["style","스타일"],["overlay","오버레이"]].map(([k,l]) => (
@@ -1407,9 +1478,24 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   const color = subColors[i % subColors.length];
                   const sel = selectedSubIdx === i;
                   return (
-                    <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(relStart); }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
-                      <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.text || `#${i+1}`}</span>
+                    <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setSelectedSegIdx(-1); setSelectedOverlay(null); setPlayhead(relStart); }}
+                      onMouseDown={e => {
+                        if (e.target.style.cursor === "ew-resize") return;
+                        e.stopPropagation(); e.preventDefault();
+                        setSelectedSubIdx(i);
+                        const sx = e.clientX; const origStart = s.start; const origEnd = s.end || s.start + 3; const dur = origEnd - origStart;
+                        const mv = ev => {
+                          const dt = (ev.clientX - sx) / pxPerSec;
+                          const ns = Math.max(clipStart, Math.round((origStart + dt) * 10) / 10);
+                          const subs = [...(curClip.subtitles || [])];
+                          subs[i] = { ...subs[i], start: ns, end: ns + dur };
+                          updateClip("subtitles", subs);
+                        };
+                        const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                        window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                      }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "grab", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                      <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pointerEvents: "none" }}>{s.text || `#${i+1}`}</span>
                       <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const os=s.start;
                           const mv=ev=>{const ns=Math.max(0,Math.round((os+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],start:Math.min(ns,(s.end||s.start+3)-0.5)};updateClip("subtitles",subs);};
