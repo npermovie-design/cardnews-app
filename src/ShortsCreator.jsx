@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { supabase } from "./storage";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -20,6 +21,95 @@ function parseYoutubeUrl(url) {
     if (m) return { id: m[1], url: `https://www.youtube.com/watch?v=${m[1]}` };
   }
   return null;
+}
+
+// ── 자료실 갤러리 컴포넌트 (커뮤니티 자료실 + 검색) ──
+function ArchiveGallery({ onSelect }) {
+  const [items, setItems] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState("archive"); // archive | search
+
+  // 자료실 이미지 로드
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from("posts")
+          .select("id,title,images")
+          .eq("cat", "archive")
+          .not("images", "is", null)
+          .order("id", { ascending: false })
+          .limit(50);
+        const imgs = [];
+        (data || []).forEach(p => {
+          const parsed = typeof p.images === "string" ? JSON.parse(p.images || "[]") : (p.images || []);
+          parsed.forEach(url => {
+            if (typeof url === "string" && url.startsWith("http")) imgs.push({ url, title: p.title });
+          });
+        });
+        setItems(imgs);
+      } catch (e) { console.error("자료실 로드:", e); }
+      setLoading(false);
+    })();
+  }, []);
+
+  // Unsplash 무료 이미지 검색
+  const searchImages = async () => {
+    if (!search.trim()) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/ai-proxy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "unsplash", query: search.trim() }),
+      });
+      const d = await r.json();
+      if (d.results) setItems(d.results.map(img => ({ url: img.urls?.small || img.urls?.regular, title: img.alt_description || "" })));
+    } catch { /* 폴백: 자료실 필터 */
+      setItems(prev => prev.filter(it => it.title?.includes(search)));
+    }
+    setLoading(false);
+  };
+
+  const filteredItems = tab === "archive" && search ? items.filter(it => it.title?.toLowerCase().includes(search.toLowerCase())) : items;
+
+  return (
+    <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>자료실</div>
+        <div style={{ display: "flex", gap: 2 }}>
+          {[["archive","내 자료"],["search","검색"]].map(([k,l]) => (
+            <button key={k} onClick={() => setTab(k)} style={{ padding: "2px 8px", borderRadius: 4, border: "none", background: tab === k ? "#7c6aff20" : "transparent", color: tab === k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && tab === "search" && searchImages()}
+          placeholder={tab === "archive" ? "자료실 검색..." : "이미지 검색 (영어)"}
+          style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
+        {tab === "search" && <button onClick={searchImages} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
+      </div>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>로딩 중...</div>
+      ) : filteredItems.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 16, color: "#555", fontSize: 11 }}>
+          {tab === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하세요"}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, maxHeight: 180, overflowY: "auto" }}>
+          {filteredItems.slice(0, 30).map((it, i) => (
+            <div key={i} onClick={() => onSelect(it.url)} style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", aspectRatio: "1", position: "relative" }}
+              title={it.title}>
+              <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.7))", padding: "8px 4px 3px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const TEMPLATES = [
@@ -1113,21 +1203,24 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 오버레이 탭 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 10 }}>요소 추가</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5 }}>
                   <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("image"); overlayFileRef.current.click(); }}
-                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 18 }}>🖼</span>이미지
+                    style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 16 }}>🖼</span>이미지
                   </button>
                   <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("logo"); overlayFileRef.current.click(); }}
-                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 18 }}>💎</span>로고
+                    style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 16 }}>💎</span>로고
                   </button>
                   <button onClick={() => addOverlay("text")}
-                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 18 }}>Aa</span>텍스트
+                    style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 16 }}>Aa</span>텍스트
                   </button>
                 </div>
               </div>
+
+              {/* 자료실 연동 갤러리 */}
+              <ArchiveGallery onSelect={(url) => addOverlay("image", { src: url })} />
 
               {/* 오버레이 리스트 */}
               {overlays.length > 0 && (
