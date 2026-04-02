@@ -680,19 +680,22 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const pxPerSec = 20 * timelineZoom;
   const tlWidth = Math.max(clipDuration * pxPerSec, 800);
   const TRACK_H = 32;
-  const TRACK_LABELS = [
-    { id: "V1", label: "V1", color: "#4a9eff", icon: "🎬" },
-    { id: "A1", label: "A1", color: "#4ade80", icon: "🔊" },
-    { id: "S1", label: "S1", color: "#f59e0b", icon: "Aa" },
-    { id: "O1", label: "O1", color: "#ec4899", icon: "🖼" },
+  // 동적 트랙: 기본 V1/A1/S1 + 오버레이마다 트랙 추가
+  const baseTracks = [
+    { id: "V1", label: "V1", color: "#4a9eff" },
+    { id: "A1", label: "A1", color: "#4ade80" },
+    { id: "S1", label: "S1", color: "#f59e0b" },
   ];
+  const overlayTracks = overlays.map((o, i) => ({
+    id: o.id, label: o.type === "text" ? `T${i+1}` : o.type === "logo" ? `L${i+1}` : `I${i+1}`,
+    color: "#ec4899", overlay: o,
+  }));
+  const allTracks = [...baseTracks, ...overlayTracks];
   const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
   const visibleOverlays = overlays.filter(o => playhead >= o.start && playhead <= o.end);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
-      {/* 숨겨진 video element (오디오+영상 소스) */}
-      {sourceUrl && <video ref={videoRef} src={sourceUrl} preload="auto" style={{ display: "none" }} crossOrigin="anonymous" />}
       {/* 숨겨진 오버레이 파일 input */}
       <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: "none" }} />
 
@@ -721,12 +724,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 16, minWidth: 0 }}>
           {/* 9:16 프리뷰 (대형) */}
           <div ref={previewRef} style={{ width: 360, height: 640, borderRadius: 12, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
-            {/* 실제 비디오 */}
-            {sourceUrl ? (
-              <video src={sourceUrl} ref={el => { if (el && el !== videoRef.current) videoRef.current = el; }}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                preload="auto" muted={false} />
-            ) : (
+            {/* 실제 비디오 (단일 ref) */}
+            <video ref={videoRef} src={sourceUrl || undefined}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
+              preload="auto" playsInline />
+            {!sourceUrl && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(128,128,128,0.1)" }}>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
               </div>
@@ -924,37 +926,44 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       </div>
 
-      {/* BOTTOM: 멀티트랙 타임라인 */}
-      <div style={{ height: 200, flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
-        {/* 타임라인 툴바 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 0.5 }}>TIMELINE</span>
-            <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)}</span>
-          </div>
+      {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) */}
+      <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+        {/* 툴바 (AlphaCut 스타일) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button onClick={() => { const subs = [...(curClip.subtitles || [])]; const last = subs.length > 0 ? (subs[subs.length-1].end || subs[subs.length-1].start+3) : 0; subs.push({ start: last, end: last+3, text: "" }); updateClip("subtitles", subs); }}
-              style={{ padding: "3px 8px", borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>+ 자막</button>
-            <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
-            <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 22, height: 22, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-            <span style={{ fontSize: 10, color: "#666", minWidth: 32, textAlign: "center" }}>{Math.round(timelineZoom * 100)}%</span>
-            <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 22, height: 22, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            <button onClick={() => setPropTab("style")} style={{ padding: "5px 12px", borderRadius: 6, border: propTab==="style" ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: propTab==="style" ? "rgba(124,106,255,0.15)" : "#1a1a30", color: propTab==="style" ? "#a5b4fc" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 13 }}>✨</span> 소츠 편집
+            </button>
+            <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 12px", borderRadius: 6, border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 13 }}>✂</span> 무음 구간 삭제 {removeSilence && "ON"}
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              시작 지점으로 이동
+            </button>
+            <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)} | {fmt(clipDuration)}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: "#7c6aff" }} />
+              <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            </div>
           </div>
         </div>
 
-        {/* 트랙 영역 */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* 타임라인 트랙 영역 */}
+        <div style={{ height: 20 + TRACK_H * allTracks.length + 4, display: "flex", overflow: "hidden" }}>
           {/* 트랙 라벨 (좌측 고정) */}
           <div style={{ width: 44, flexShrink: 0, background: "#0a0a18", borderRight: "1px solid #1a1a30" }}>
-            <div style={{ height: 20 }} />{/* ruler placeholder */}
-            {TRACK_LABELS.map(tr => (
-              <div key={tr.id} style={{ height: TRACK_H, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #1a1a25", gap: 2 }}>
+            <div style={{ height: 20 }} />
+            {allTracks.map(tr => (
+              <div key={tr.id} style={{ height: TRACK_H, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #1a1a25" }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: tr.color }}>{tr.label}</span>
               </div>
             ))}
           </div>
 
-          {/* 스크롤 가능한 트랙 콘텐츠 */}
+          {/* 스크롤 가능한 트랙 */}
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "pointer" }}
             onClick={e => {
               const rect = e.currentTarget.getBoundingClientRect();
@@ -963,7 +972,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             }}>
             <div style={{ width: tlWidth, height: "100%", position: "relative" }}>
 
-              {/* 타임 룰러 */}
+              {/* 룰러 */}
               <div style={{ height: 20, position: "relative", borderBottom: "1px solid #1a1a30" }}>
                 {Array.from({ length: Math.ceil(clipDuration) + 1 }, (_, i) => i).filter(i => timelineZoom >= 2 ? true : timelineZoom >= 1 ? i % 2 === 0 : i % 5 === 0).map(sec => (
                   <div key={sec} style={{ position: "absolute", left: sec * pxPerSec, top: 0, height: "100%" }}>
@@ -973,27 +982,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 ))}
               </div>
 
-              {/* V1: 비디오 트랙 */}
+              {/* V1 비디오 */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: "1px solid #4a9eff50", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
-                  <span style={{ fontSize: 9, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap" }}>{curClip.title || "Video"} ({fmt(curClip.start_seconds || 0)}~{fmt(curClip.end_seconds || 0)})</span>
+                  <span style={{ fontSize: 9, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap" }}>{curClip.title || "Video"} ({fmt(curClip.start_seconds||0)}~{fmt(curClip.end_seconds||0)})</span>
                 </div>
               </div>
 
-              {/* A1: 오디오 트랙 */}
+              {/* A1 오디오 */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4ade8025,#4ade8015)", border: "1px solid #4ade8040", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
-                  {/* 간이 파형 */}
                   <svg width="100%" height="100%" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ opacity: 0.5 }}>
-                    {Array.from({ length: 80 }, (_, i) => {
-                      const h = 3 + Math.random() * 14;
-                      return <rect key={i} x={i * 2.5} y={10 - h / 2} width={1.5} height={h} fill="#4ade80" rx={0.5} />;
-                    })}
+                    {Array.from({ length: 80 }, (_, i) => <rect key={i} x={i*2.5} y={10-(3+Math.abs(Math.sin(i*0.4))*12)/2} width={1.5} height={3+Math.abs(Math.sin(i*0.4))*12} fill="#4ade80" rx={0.5} />)}
                   </svg>
                 </div>
               </div>
 
-              {/* S1: 자막 트랙 */}
+              {/* S1 자막 */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
                 {(curClip.subtitles || []).map((s, i) => {
                   const left = s.start * pxPerSec;
@@ -1004,38 +1009,38 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(s.start); }}
                       style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
                       <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.text || `#${i+1}`}</span>
-                      {/* 좌우 리사이즈 핸들 */}
                       <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
-                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = s.start;
-                          const mv = ev => { const dx = ev.clientX - sx; const ns = Math.max(0, Math.round((os + dx/pxPerSec)*10)/10); const subs = [...(curClip.subtitles||[])]; subs[i] = { ...subs[i], start: Math.min(ns, (s.end||s.start+3)-0.5) }; updateClip("subtitles", subs); };
-                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
-                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const os=s.start;
+                          const mv=ev=>{const ns=Math.max(0,Math.round((os+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],start:Math.min(ns,(s.end||s.start+3)-0.5)};updateClip("subtitles",subs);};
+                          const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
+                          window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
                         }} />
                       <div style={{ position: "absolute", right: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
-                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = s.end||s.start+3;
-                          const mv = ev => { const dx = ev.clientX - sx; const ne = Math.max(s.start+0.5, Math.round((oe+dx/pxPerSec)*10)/10); const subs = [...(curClip.subtitles||[])]; subs[i] = { ...subs[i], end: ne }; updateClip("subtitles", subs); };
-                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
-                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const oe=s.end||s.start+3;
+                          const mv=ev=>{const ne=Math.max(s.start+0.5,Math.round((oe+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],end:ne};updateClip("subtitles",subs);};
+                          const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
+                          window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
                         }} />
                     </div>
                   );
                 })}
               </div>
 
-              {/* O1: 오버레이 트랙 */}
-              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                {overlays.map(o => {
-                  const left = o.start * pxPerSec;
-                  const width = Math.max((o.end - o.start) * pxPerSec, 16);
-                  const sel = selectedOverlay === o.id;
-                  return (
-                    <div key={o.id} onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+              {/* 동적 오버레이 트랙 (각 오버레이마다 별도 트랙) */}
+              {overlayTracks.map(tr => {
+                const o = tr.overlay;
+                const left = o.start * pxPerSec;
+                const width = Math.max((o.end - o.start) * pxPerSec, 16);
+                const sel = selectedOverlay === o.id;
+                return (
+                  <div key={tr.id} style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                    <div onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden" }}>
                       <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600 }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
 
               {/* 재생 헤드 */}
               <div style={{ position: "absolute", left: playhead * pxPerSec, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 20, pointerEvents: "none" }}>

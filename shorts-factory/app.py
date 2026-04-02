@@ -797,6 +797,131 @@ def _fmt_srt(sec: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+@app.post("/detect-silence/{file_id}")
+async def detect_silence(file_id: str, request: Request):
+    """무음 구간 감지 (ffmpeg silencedetect) — 편집기에서 자동 삭제용"""
+    if file_id not in file_store:
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    threshold = body.get("threshold", -30)  # dB
+    min_duration = body.get("min_duration", 0.5)  # 초
+
+    meta = file_store[file_id]
+    video_path = meta["video_path"]
+
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, lambda: subprocess.run(
+            ["ffmpeg", "-i", video_path, "-af",
+             f"silencedetect=noise={threshold}dB:d={min_duration}",
+             "-f", "null", "-"],
+            capture_output=True, text=True, timeout=120
+        ))
+
+        import re
+        silences = []
+        starts = re.findall(r"silence_start: ([\d.]+)", result.stderr)
+        ends = re.findall(r"silence_end: ([\d.]+)", result.stderr)
+
+        for i in range(min(len(starts), len(ends))):
+            s, e = float(starts[i]), float(ends[i])
+            if e - s >= min_duration:
+                silences.append({"start": round(s, 2), "end": round(e, 2), "duration": round(e - s, 2)})
+
+        return {"file_id": file_id, "silences": silences, "count": len(silences)}
+    except Exception as e:
+        raise HTTPException(500, f"무음 감지 실패: {str(e)[:200]}")
+
+
+@app.post("/prompt-edit/{file_id}")
+async def prompt_edit(file_id: str, request: Request):
+    """프롬프트 기반 편집 — 사용자 요청에 맞는 구간 AI 추출"""
+    if file_id not in file_store:
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+
+    body = await request.json()
+    user_prompt = body.get("prompt", "").strip()
+    if not user_prompt:
+        raise HTTPException(400, "프롬프트가 필요합니다")
+
+    meta = file_store[file_id]
+    subs = meta.get("subs_parsed")
+    if not subs:
+        raise HTTPException(400, "먼저 영상을 분석해주세요 (자막 데이터 필요)")
+
+    full_text = "\n".join(
+        f"[{s['start_seconds']:.1f}~{s['end_seconds']:.1f}] {s['text']}" for s in subs
+    )
+
+    prompt = f"""아래는 영상의 전체 자막 (타임스탬프 포함)이야:
+
+{full_text}
+
+사용자 요청: "{user_prompt}"
+
+사용자의 요청에 해당하는 구간을 찾아서 JSON으로 반환해.
+- 요청에 맞는 내용이 포함된 시간대를 정확히 찾아야 함
+- 각 구간은 자막 경계에 맞춰야 함 (말 중간 절단 금지)
+- 가능하면 앞뒤 0.5초 여유를 줘
+
+반드시 아래 JSON 형식으로만 응답:
+[
+  {{
+    "start_seconds": 0.0,
+    "end_seconds": 30.0,
+    "title": "구간 제목",
+    "reason": "이 구간을 선정한 이유",
+    "hook_text": "짧은 훅 문장"
+  }}
+]"""
+
+    import httpx as hx
+    OR_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    resp = hx.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {OR_KEY}",
+        },
+        json={
+            "model": "anthropic/claude-sonnet-4-5",
+            "max_tokens": 4096,
+            "messages": [
+                {"role": "system", "content": "너는 영상 편집 전문가야. 사용자의 요청에 맞는 영상 구간을 정확히 찾아주는 게 임무야."},
+                {"role": "user", "content": prompt},
+            ],
+        },
+        timeout=120,
+    )
+
+    if resp.status_code != 200:
+        raise HTTPException(500, f"AI API 오류: {resp.status_code}")
+
+    text = resp.json()["choices"][0]["message"]["content"].strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+
+    segments = json.loads(text)
+
+    # 자막 경계에 맞춤 + 자막 데이터 추가
+    for seg in segments:
+        seg["start_seconds"], seg["end_seconds"] = snap_to_subtitle_boundaries(
+            seg["start_seconds"], seg["end_seconds"], subs
+        )
+        seg["subtitles"] = [
+            {"start": s["start_seconds"], "end": s["end_seconds"], "text": s["text"]}
+            for s in subs
+            if s["start_seconds"] >= seg["start_seconds"] - 0.5 and s["end_seconds"] <= seg["end_seconds"] + 0.5
+        ]
+
+    return {"file_id": file_id, "segments": segments}
+
+
 @app.get("/source/{file_id}")
 async def get_source_video(file_id: str):
     """원본 업로드 영상 제공 (편집기 미리보기용)"""
