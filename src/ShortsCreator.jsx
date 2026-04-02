@@ -259,6 +259,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [layoutMode, setLayoutMode] = useState("bars");
   // 스냅 가이드 표시
   const [snapGuide, setSnapGuide] = useState(null);
+  // 단축키 가이드 모달
+  const [showShortcuts, setShowShortcuts] = useState(false);
   // 영상 스케일 (%)
   const [videoScale, setVideoScale] = useState(100);
   // 선택된 트랙 요소
@@ -892,7 +894,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
             )}
-            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>쇼츠로 변환하기 →</button>
+            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>쇼츠로 변환하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         ) : (
           <div>
@@ -961,7 +963,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 {!subFile && <span style={{ fontSize: 11, color: muted }}>자막 없음 · AI 음성인식</span>}
               </div>
             )}
-            <button onClick={handleUpload} style={btnStyle} disabled={!videoFile}>쇼츠 생성해보기 →</button>
+            <button onClick={handleUpload} style={btnStyle} disabled={!videoFile}>쇼츠 생성해보기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         )}
 
@@ -1146,6 +1148,35 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       {/* 숨겨진 inputs */}
       <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: "none" }} />
       {bgmFile && <audio ref={bgmRef} src={bgmFile.url} loop preload="auto" style={{ display: "none" }} />}
+
+      {/* 단축키 가이드 모달 */}
+      {showShortcuts && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowShortcuts(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#16162a", border: "1px solid #2a2a4a", borderRadius: 16, padding: "24px 28px", maxWidth: 420, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#e0e0e0" }}>단축키 가이드</div>
+              <button onClick={() => setShowShortcuts(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
+            </div>
+            {[
+              ["재생", [["Space","재생 / 정지"],["Home","처음으로"],["End","끝으로"]]],
+              ["이동", [["← →","1초 이동"],["Shift + ← →","5초 이동"]]],
+              ["편집", [["S","현재 위치에서 분할"],["Delete","선택 요소 삭제"],["M","세그먼트 음소거"],["Ctrl+D","오버레이 복제"]]],
+              ["선택", [["드래그","범위 선택 (전 트랙)"],["클릭","해당 요소 선택"],["Escape","선택 해제"],["Ctrl+A","전체 선택"]]],
+              ["줌", [["[  ]","타임라인 줌 축소/확대"],["줌 슬라이더","우측 하단"]]],
+            ].map(([group, items]) => (
+              <div key={group} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#7c6aff", marginBottom: 6, textTransform: "uppercase" }}>{group}</div>
+                {items.map(([key, desc]) => (
+                  <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: "1px solid #1a1a30" }}>
+                    <span style={{ fontSize: 12, color: "#aaa" }}>{desc}</span>
+                    <kbd style={{ padding: "2px 8px", borderRadius: 4, background: "#0f0f1a", border: "1px solid #2a2a4a", color: "#7c6aff", fontSize: 11, fontFamily: "monospace", fontWeight: 600 }}>{key}</kbd>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Top 3-panel area */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
@@ -1455,7 +1486,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 →</button>
+              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(80P)</span></button>
             </>) : (<>
               {/* 오버레이 탭 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
@@ -1596,6 +1627,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <button onClick={() => { saveProject(); alert("프로젝트가 저장되었습니다!"); }}
               style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #4ade8040", background: "rgba(74,222,128,0.08)", color: "#4ade80", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
               💾 저장
+            </button>
+            {/* 단축키 가이드 */}
+            <button onClick={() => setShowShortcuts(true)}
+              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+              title="단축키 가이드">
+              ⌨
             </button>
             <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
             <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>

@@ -1149,18 +1149,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><SocialPlanner isDark={isDark} user={user} theme={theme} /></React.Suspense>;
   }
 
-  // 영상 편집 (관리자 전용 - 개발중) — 링크 삽입 + 편집
+  // 영상 편집 — 일반회원 개방
   if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make") {
-    if (user?.role !== "admin") {
-      return (
-        <div style={{ textAlign: "center", padding: "80px 20px" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 8 }}>영상 제작 기능 개발중</div>
-          <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.5)" : "#888" }}>곧 만나볼 수 있어요! 열심히 준비하고 있습니다.</div>
-          <button onClick={() => setAiMenu("home")} style={{ marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "none", background: "#7c6aff", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>홈으로</button>
-        </div>
-      );
-    }
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} />;
   }
 
@@ -1255,20 +1245,23 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [guardModal, setGuardModal] = useState(null);
   const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
 
-  // 포인트 차감 확인 — state 변경 없이 처리 (하위 컴포넌트 unmount 방지)
-  const showPointConfirm = async (cost) => {
-    if (!user) return true;
-    const pts = user.points ?? 0;
-    // 무료 횟수 남아있으면 바로 진행
-    const usage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
-    const used = usage["member_" + (user.uid || "u")] || 0;
-    if (used < 20) return true; // 무료 횟수 남음
-    // 포인트 부족 시 차단
-    if (pts < cost) {
-      window.dispatchEvent(new Event("pointsExhausted"));
-      return false;
-    }
-    return true;
+  // 포인트 차감 확인 — 팝업으로 사용자 확인 후 진행
+  const showPointConfirm = (cost) => {
+    return new Promise(resolve => {
+      if (!user) { resolve(true); return; }
+      const pts = user.points ?? 0;
+      // 무료 횟수 남아있으면 바로 진행
+      const usage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
+      const used = usage["member_" + (user.uid || "u")] || 0;
+      if (used < 20) { resolve(true); return; } // 무료 횟수 남음
+      // 포인트 부족 시 팝업
+      if (pts < cost) {
+        setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(false); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
+        return;
+      }
+      // 충분하면 확인 팝업
+      setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(true); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
+    });
   };
 
   const setAiMenu = async (id) => {
