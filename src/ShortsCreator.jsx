@@ -91,10 +91,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [selectedSubIdx, setSelectedSubIdx] = useState(-1);
   const [fontSize, setFontSize] = useState(14);
 
+  // 오버레이 (이미지/로고/텍스트)
+  const [overlays, setOverlays] = useState([]); // { id, type:'image'|'text'|'logo', src, text, x, y, w, h, start, end }
+  const [selectedOverlay, setSelectedOverlay] = useState(null);
+  // 자막/제목 위치 (드래그 가능)
+  const [titlePos, setTitlePos] = useState({ x: 50, y: 8 }); // % 기준
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88 }); // % 기준
+  const [dragging, setDragging] = useState(null); // 'title' | 'caption' | overlay id | null
+  // 속성 패널 탭
+  const [propTab, setPropTab] = useState("style"); // style | overlay
+
   const fileRef = useRef(null);
   const timerRef = useRef(null);
   const playIntervalRef = useRef(null);
   const timelineRef = useRef(null);
+  const videoRef = useRef(null);
+  const previewRef = useRef(null);
+  const overlayFileRef = useRef(null);
 
   // ── YouTube URL 파싱 ─────────────────────
   useEffect(() => {
@@ -122,6 +135,80 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const curClip = editClips[editIdx] || {};
   const updateClip = (key, val) => {
     setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
+  };
+
+  // ── 비디오 ↔ playhead 동기화 ──────────────
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || step !== "edit") return;
+    const clip = editClips[editIdx];
+    if (!clip) return;
+    v.currentTime = (clip.start_seconds || 0) + playhead;
+  }, [playhead, editIdx, step]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || step !== "edit") return;
+    if (isPlaying) { v.play().catch(() => {}); }
+    else { v.pause(); }
+  }, [isPlaying, step]);
+
+  // 비디오 timeupdate → playhead
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onTime = () => {
+      if (!isPlaying) return;
+      const clip = editClips[editIdx];
+      if (!clip) return;
+      const rel = v.currentTime - (clip.start_seconds || 0);
+      setPlayhead(Math.max(0, rel));
+    };
+    v.addEventListener("timeupdate", onTime);
+    return () => v.removeEventListener("timeupdate", onTime);
+  }, [isPlaying, editIdx]);
+
+  // 드래그 핸들러 (자막/제목 위치)
+  const handlePreviewMouseDown = (target, e) => {
+    e.preventDefault();
+    setDragging(target);
+    const rect = previewRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const onMove = (ev) => {
+      const cx = ((ev.clientX - rect.left) / rect.width) * 100;
+      const cy = ((ev.clientY - rect.top) / rect.height) * 100;
+      const x = Math.max(5, Math.min(95, cx));
+      const y = Math.max(3, Math.min(97, cy));
+      if (target === "title") setTitlePos({ x, y });
+      else if (target === "caption") setCaptionPos({ x, y });
+      else {
+        // 오버레이 드래그
+        setOverlays(prev => prev.map(o => o.id === target ? { ...o, x, y } : o));
+      }
+    };
+    const onUp = () => { setDragging(null); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  // 오버레이 추가
+  const addOverlay = (type, data = {}) => {
+    const id = "ol_" + Date.now();
+    const base = { id, type, x: 50, y: 50, w: 20, h: 20, start: 0, end: clipDuration, ...data };
+    if (type === "text") { base.text = "텍스트"; base.fontSize = 16; base.color = "#fff"; }
+    if (type === "logo") { base.w = 15; base.h = 15; base.x = 85; base.y = 10; }
+    setOverlays(prev => [...prev, base]);
+    setSelectedOverlay(id);
+  };
+
+  // 이미지/로고 파일 선택
+  const handleOverlayFile = (type) => (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => addOverlay(type, { src: ev.target.result });
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   // ── 타임라인 재생 ─────────────────────
@@ -589,8 +676,26 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ═══════════════════════════════════
   // Step: 편집 (프로 비디오 에디터)
   // ═══════════════════════════════════
-  if (step === "edit") return (
+  if (step === "edit") {
+  const pxPerSec = 20 * timelineZoom;
+  const tlWidth = Math.max(clipDuration * pxPerSec, 800);
+  const TRACK_H = 32;
+  const TRACK_LABELS = [
+    { id: "V1", label: "V1", color: "#4a9eff", icon: "🎬" },
+    { id: "A1", label: "A1", color: "#4ade80", icon: "🔊" },
+    { id: "S1", label: "S1", color: "#f59e0b", icon: "Aa" },
+    { id: "O1", label: "O1", color: "#ec4899", icon: "🖼" },
+  ];
+  const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
+  const visibleOverlays = overlays.filter(o => playhead >= o.start && playhead <= o.end);
+
+  return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
+      {/* 숨겨진 video element (오디오+영상 소스) */}
+      {sourceUrl && <video ref={videoRef} src={sourceUrl} preload="auto" style={{ display: "none" }} crossOrigin="anonymous" />}
+      {/* 숨겨진 오버레이 파일 input */}
+      <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: "none" }} />
+
       {/* Top 3-panel area */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
@@ -612,234 +717,337 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </div>
         </div>
 
-        {/* CENTER: Preview */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#12122a", padding: 16, minWidth: 0 }}>
-          {/* 9:16 preview */}
-          <div style={{ width: 220, height: 391, borderRadius: 16, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: "2px solid #2a2a4a", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", flexShrink: 0 }}>
-            {/* Title area */}
-            <div style={{ flex: "0 0 18%", background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
-              <span style={{ fontSize: fontSize > 14 ? 14 : 12, fontWeight: 900, color: titleColor, textAlign: "center", lineHeight: 1.3 }}>{curClip.title || "제목을 입력하세요"}</span>
-            </div>
-            {/* Video area */}
-            <div style={{ flex: 1, background: "rgba(128,128,128,0.15)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
-              {/* Time overlay */}
-              <div style={{ position: "absolute", top: 6, right: 8, fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{fmt(playhead)}</div>
-            </div>
-            {/* Subtitle area */}
-            <div style={{ flex: "0 0 14%", background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 10px" }}>
-              <span style={{ fontSize: Math.min(fontSize, 13), color: captionColor, textAlign: "center", lineHeight: 1.3, fontWeight: 600 }}>
-                {currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")}
-              </span>
-            </div>
-          </div>
-
-          {/* Playback controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
-            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
-            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(124,106,255,0.4)" }}>
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-            <button onClick={() => { setPlayhead(clipDuration); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
-            <span style={{ fontSize: 12, color: "#888", fontFamily: "monospace", marginLeft: 4 }}>{fmt(playhead)} / {fmt(clipDuration)}</span>
-          </div>
-        </div>
-
-        {/* RIGHT: Properties panel */}
-        <div style={{ width: 280, flexShrink: 0, background: "#16162a", borderLeft: "1px solid #2a2a4a", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-          <div style={{ padding: "14px 14px 8px", fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1 }}>속성</div>
-          <div style={{ flex: 1, padding: "0 14px 14px", overflowY: "auto" }}>
-
-            {/* Title editing */}
-            <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>제목 / 부제</div>
-              <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder="쇼츠 제목" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
-              <input value={curClip.subtitle_text || ""} onChange={e => updateClip("subtitle_text", e.target.value)} placeholder="부제목 (선택)" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-            </div>
-
-            {/* Selected subtitle editing */}
-            {selectedSubIdx >= 0 && (curClip.subtitles || [])[selectedSubIdx] && (
-              <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #7c6aff40" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", marginBottom: 8 }}>자막 #{selectedSubIdx + 1} 편집</div>
-                <textarea value={(curClip.subtitles || [])[selectedSubIdx]?.text || ""} onChange={e => {
-                  const subs = [...(curClip.subtitles || [])];
-                  subs[selectedSubIdx] = { ...subs[selectedSubIdx], text: e.target.value };
-                  updateClip("subtitles", subs);
-                }} rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
-                    <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.start || 0} onChange={e => {
-                      const subs = [...(curClip.subtitles || [])];
-                      subs[selectedSubIdx] = { ...subs[selectedSubIdx], start: parseFloat(e.target.value) || 0 };
-                      updateClip("subtitles", subs);
-                    }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
-                    <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.end || 0} onChange={e => {
-                      const subs = [...(curClip.subtitles || [])];
-                      subs[selectedSubIdx] = { ...subs[selectedSubIdx], end: parseFloat(e.target.value) || 0 };
-                      updateClip("subtitles", subs);
-                    }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                </div>
+        {/* CENTER: Preview (실제 영상 + 드래그 가능 오버레이) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 16, minWidth: 0 }}>
+          {/* 9:16 프리뷰 (대형) */}
+          <div ref={previewRef} style={{ width: 360, height: 640, borderRadius: 12, background: TEMPLATES.find(t => t.id === template)?.bg || "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
+            {/* 실제 비디오 */}
+            {sourceUrl ? (
+              <video src={sourceUrl} ref={el => { if (el && el !== videoRef.current) videoRef.current = el; }}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                preload="auto" muted={false} />
+            ) : (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(128,128,128,0.1)" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
               </div>
             )}
 
-            {/* Template */}
-            <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>템플릿</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 5, marginBottom: 10 }}>
-                {TEMPLATES.map(t => (
-                  <div key={t.id} onClick={() => { setTemplate(t.id); setTitleColor(t.titleColor); setCaptionColor(t.captionColor); }}
-                    style={{ border: `2px solid ${template === t.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 8, padding: 3, cursor: "pointer", textAlign: "center", background: template === t.id ? "rgba(124,106,255,0.12)" : "transparent" }}>
-                    <div style={{ height: 36, borderRadius: 5, background: t.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
-                      <span style={{ fontSize: 6, fontWeight: 900, color: t.titleColor }}>제목</span>
-                      <span style={{ fontSize: 5, color: t.captionColor }}>자막</span>
+            {/* 제목 오버레이 (드래그 가능) */}
+            <div onMouseDown={e => handlePreviewMouseDown("title", e)}
+              style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", transition: dragging === "title" ? "none" : "border 0.15s", maxWidth: "85%", textAlign: "center" }}>
+              <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>{curClip.title || "제목"}</span>
+            </div>
+
+            {/* 자막 오버레이 (드래그 가능) */}
+            <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+              style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", transition: dragging === "caption" ? "none" : "border 0.15s", maxWidth: "90%", textAlign: "center" }}>
+              <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4, textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+                {currentSub ? currentSub.text : (curClip.subtitle_text || "자막")}
+              </span>
+            </div>
+
+            {/* 이미지/로고/텍스트 오버레이 */}
+            {visibleOverlays.map(o => (
+              <div key={o.id} onMouseDown={e => handlePreviewMouseDown(o.id, e)}
+                onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); }}
+                style={{ position: "absolute", left: `${o.x}%`, top: `${o.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 15, border: selectedOverlay === o.id ? "2px solid #ec4899" : "2px solid transparent", borderRadius: 4 }}>
+                {o.type === "text" ? (
+                  <span style={{ fontSize: o.fontSize || 16, fontWeight: 700, color: o.color || "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>{o.text}</span>
+                ) : (
+                  <img src={o.src} alt="" style={{ width: `${o.w * 3.6}px`, height: "auto", maxHeight: `${o.h * 6.4}px`, objectFit: "contain", borderRadius: 4 }} draggable={false} />
+                )}
+              </div>
+            ))}
+
+            {/* 시간 표시 */}
+            <div style={{ position: "absolute", top: 8, right: 10, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{fmt(playhead)} / {fmt(clipDuration)}</div>
+          </div>
+
+          {/* 재생 컨트롤 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
+            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 16px rgba(124,106,255,0.4)" }}>
+              {isPlaying ? "⏸" : "▶"}
+            </button>
+            <button onClick={() => { setPlayhead(clipDuration); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
+          </div>
+        </div>
+
+        {/* RIGHT: 속성 패널 (탭: 스타일 / 오버레이) */}
+        <div style={{ width: 280, flexShrink: 0, background: "#16162a", borderLeft: "1px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+          {/* 탭 */}
+          <div style={{ display: "flex", borderBottom: "1px solid #2a2a4a" }}>
+            {[["style","스타일"],["overlay","오버레이"]].map(([k,l]) => (
+              <button key={k} onClick={() => setPropTab(k)}
+                style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: propTab === k ? "#1e1e3a" : "transparent", color: propTab === k ? "#7c6aff" : "#666", borderBottom: propTab === k ? "2px solid #7c6aff" : "2px solid transparent" }}>{l}</button>
+            ))}
+          </div>
+
+          <div style={{ flex: 1, padding: "10px 14px 14px", overflowY: "auto" }}>
+            {propTab === "style" ? (<>
+              {/* 제목 편집 */}
+              <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>제목 / 부제</div>
+                <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder="쇼츠 제목" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
+                <input value={curClip.subtitle_text || ""} onChange={e => updateClip("subtitle_text", e.target.value)} placeholder="부제목 (선택)" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 프리뷰에서 드래그하여 위치 변경</div>
+              </div>
+
+              {/* 선택된 자막 편집 */}
+              {selectedSubIdx >= 0 && (curClip.subtitles || [])[selectedSubIdx] && (
+                <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #7c6aff40" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", marginBottom: 8 }}>자막 #{selectedSubIdx + 1}</div>
+                  <textarea value={(curClip.subtitles || [])[selectedSubIdx]?.text || ""} onChange={e => {
+                    const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], text: e.target.value }; updateClip("subtitles", subs);
+                  }} rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                      <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.start || 0} onChange={e => {
+                        const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], start: parseFloat(e.target.value) || 0 }; updateClip("subtitles", subs);
+                      }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                     </div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: template === t.id ? "#7c6aff" : "#666", marginTop: 3 }}>{t.name}</div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                      <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.end || 0} onChange={e => {
+                        const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], end: parseFloat(e.target.value) || 0 }; updateClip("subtitles", subs);
+                      }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                <div>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>제목 색상</div>
-                  <input type="color" value={titleColor} onChange={e => setTitleColor(e.target.value)} style={{ width: "100%", height: 28, borderRadius: 6, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>자막 색상</div>
-                  <input type="color" value={captionColor} onChange={e => setCaptionColor(e.target.value)} style={{ width: "100%", height: 28, borderRadius: 6, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
+              )}
+
+              {/* 템플릿 + 색상 */}
+              <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>템플릿</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4, marginBottom: 10 }}>
+                  {TEMPLATES.map(t => (
+                    <div key={t.id} onClick={() => { setTemplate(t.id); setTitleColor(t.titleColor); setCaptionColor(t.captionColor); }}
+                      style={{ border: `2px solid ${template === t.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ height: 28, borderRadius: 4, background: t.bg }} />
+                      <div style={{ fontSize: 8, fontWeight: 700, color: template === t.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t.name}</div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Font size */}
-            <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>글자 크기</div>
-                <span style={{ fontSize: 11, color: "#7c6aff", fontWeight: 700 }}>{fontSize}px</span>
-              </div>
-              <input type="range" min="8" max="24" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} style={{ width: "100%", accentColor: "#7c6aff" }} />
-            </div>
-
-            {/* Subtitle list */}
-            <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>자막 ({(curClip.subtitles || []).length})</div>
-                <button onClick={() => {
-                  const subs = [...(curClip.subtitles || [])];
-                  const lastEnd = subs.length > 0 ? (subs[subs.length - 1].end || subs[subs.length - 1].start + 3) : 0;
-                  subs.push({ start: lastEnd, end: lastEnd + 3, text: "" });
-                  updateClip("subtitles", subs);
-                }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, border: "1px solid #2a2a4a", background: "transparent", color: "#7c6aff", cursor: "pointer", fontWeight: 700 }}>+ 추가</button>
-              </div>
-              <div style={{ maxHeight: 160, overflowY: "auto" }}>
-                {(curClip.subtitles || []).map((s, i) => (
-                  <div key={i} onClick={() => { setSelectedSubIdx(i); setPlayhead(s.start); }}
-                    style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3, padding: "4px 6px", borderRadius: 5, cursor: "pointer", background: selectedSubIdx === i ? "rgba(124,106,255,0.15)" : "transparent" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: subColors[i % subColors.length], flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, color: "#666", flexShrink: 0, width: 36, fontFamily: "monospace" }}>{fmt(s.start)}</span>
-                    <span style={{ fontSize: 11, color: selectedSubIdx === i ? "#e0e0e0" : "#aaa", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.text || "(빈 자막)"}</span>
-                    <button onClick={e => { e.stopPropagation(); const subs = [...(curClip.subtitles || [])]; subs.splice(i, 1); updateClip("subtitles", subs); if (selectedSubIdx === i) setSelectedSubIdx(-1); }}
-                      style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", flexShrink: 0 }}>✕</button>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>제목색</div>
+                    <input type="color" value={titleColor} onChange={e => setTitleColor(e.target.value)} style={{ width: "100%", height: 24, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
                   </div>
-                ))}
+                  <div>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>자막색</div>
+                    <input type="color" value={captionColor} onChange={e => setCaptionColor(e.target.value)} style={{ width: "100%", height: 24, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a", background: "#12122a" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input type="range" min="8" max="24" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} style={{ flex: 1, accentColor: "#7c6aff" }} />
+                      <span style={{ fontSize: 10, color: "#7c6aff", minWidth: 20 }}>{fontSize}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 →</button>
+              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 →</button>
+            </>) : (<>
+              {/* 오버레이 탭 */}
+              <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 10 }}>요소 추가</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("image"); overlayFileRef.current.click(); }}
+                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 18 }}>🖼</span>이미지
+                  </button>
+                  <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("logo"); overlayFileRef.current.click(); }}
+                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 18 }}>💎</span>로고
+                  </button>
+                  <button onClick={() => addOverlay("text")}
+                    style={{ padding: "12px 8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 18 }}>Aa</span>텍스트
+                  </button>
+                </div>
+              </div>
+
+              {/* 오버레이 리스트 */}
+              {overlays.length > 0 && (
+                <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>오버레이 ({overlays.length})</div>
+                  {overlays.map(o => (
+                    <div key={o.id} onClick={() => setSelectedOverlay(o.id)}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, cursor: "pointer", marginBottom: 3, background: selectedOverlay === o.id ? "rgba(236,72,153,0.15)" : "transparent", border: selectedOverlay === o.id ? "1px solid rgba(236,72,153,0.3)" : "1px solid transparent" }}>
+                      <span style={{ fontSize: 14 }}>{o.type === "text" ? "Aa" : o.type === "logo" ? "💎" : "🖼"}</span>
+                      <span style={{ fontSize: 11, color: "#ccc", flex: 1 }}>{o.type === "text" ? o.text : o.type === "logo" ? "로고" : "이미지"}</span>
+                      <button onClick={e => { e.stopPropagation(); setOverlays(prev => prev.filter(x => x.id !== o.id)); if (selectedOverlay === o.id) setSelectedOverlay(null); }}
+                        style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 선택된 오버레이 속성 */}
+              {selectedOverlay && overlays.find(o => o.id === selectedOverlay) && (() => {
+                const o = overlays.find(x => x.id === selectedOverlay);
+                const upd = (k, v) => setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, [k]: v } : x));
+                return (
+                  <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid rgba(236,72,153,0.2)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#ec4899", marginBottom: 8 }}>속성</div>
+                    {o.type === "text" && <>
+                      <input value={o.text || ""} onChange={e => upd("text", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자 크기</div>
+                          <input type="number" value={o.fontSize || 16} onChange={e => upd("fontSize", Number(e.target.value))} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>색상</div>
+                          <input type="color" value={o.color || "#ffffff"} onChange={e => upd("color", e.target.value)} style={{ width: "100%", height: 28, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
+                        </div>
+                      </div>
+                    </>}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                        <input type="number" step="0.1" value={o.start} onChange={e => upd("start", parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                        <input type="number" step="0.1" value={o.end} onChange={e => upd("end", parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 프리뷰에서 드래그하여 위치 이동</div>
+                  </div>
+                );
+              })()}
+            </>)}
           </div>
         </div>
       </div>
 
-      {/* BOTTOM: Timeline panel */}
-      <div style={{ height: 160, flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
-        {/* Timeline toolbar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30" }}>
+      {/* BOTTOM: 멀티트랙 타임라인 */}
+      <div style={{ height: 200, flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column" }}>
+        {/* 타임라인 툴바 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>타임라인</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 0.5 }}>TIMELINE</span>
             <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 26, height: 26, borderRadius: 5, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-            <span style={{ fontSize: 10, color: "#666", minWidth: 36, textAlign: "center" }}>{Math.round(timelineZoom * 100)}%</span>
-            <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 26, height: 26, borderRadius: 5, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => { const subs = [...(curClip.subtitles || [])]; const last = subs.length > 0 ? (subs[subs.length-1].end || subs[subs.length-1].start+3) : 0; subs.push({ start: last, end: last+3, text: "" }); updateClip("subtitles", subs); }}
+              style={{ padding: "3px 8px", borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>+ 자막</button>
+            <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
+            <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 22, height: 22, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+            <span style={{ fontSize: 10, color: "#666", minWidth: 32, textAlign: "center" }}>{Math.round(timelineZoom * 100)}%</span>
+            <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 22, height: 22, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
           </div>
         </div>
 
-        {/* Timeline content */}
-        <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "pointer" }}
-          onClick={e => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
-            const pxPerSec = 20 * timelineZoom;
-            const newTime = Math.max(0, Math.min(clipDuration, x / pxPerSec));
-            setPlayhead(newTime);
-          }}>
-          <div style={{ width: Math.max(clipDuration * 20 * timelineZoom, 600), height: "100%", position: "relative" }}>
+        {/* 트랙 영역 */}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          {/* 트랙 라벨 (좌측 고정) */}
+          <div style={{ width: 44, flexShrink: 0, background: "#0a0a18", borderRight: "1px solid #1a1a30" }}>
+            <div style={{ height: 20 }} />{/* ruler placeholder */}
+            {TRACK_LABELS.map(tr => (
+              <div key={tr.id} style={{ height: TRACK_H, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #1a1a25", gap: 2 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: tr.color }}>{tr.label}</span>
+              </div>
+            ))}
+          </div>
 
-            {/* Time ruler */}
-            <div style={{ height: 24, position: "relative", borderBottom: "1px solid #1a1a30" }}>
-              {Array.from({ length: Math.ceil(clipDuration) + 1 }, (_, i) => i).filter(i => {
-                if (timelineZoom >= 2) return true;
-                if (timelineZoom >= 1) return i % 2 === 0;
-                return i % 5 === 0;
-              }).map(sec => (
-                <div key={sec} style={{ position: "absolute", left: sec * 20 * timelineZoom, top: 0, height: "100%" }}>
-                  <div style={{ width: 1, height: sec % 5 === 0 ? 10 : 6, background: sec % 5 === 0 ? "#444" : "#2a2a4a" }} />
-                  {(sec % 5 === 0 || timelineZoom >= 2) && <span style={{ fontSize: 9, color: "#555", position: "absolute", left: 3, top: 8, fontFamily: "monospace", whiteSpace: "nowrap" }}>{fmt(sec)}</span>}
-                </div>
-              ))}
-            </div>
+          {/* 스크롤 가능한 트랙 콘텐츠 */}
+          <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "pointer" }}
+            onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
+              setPlayhead(Math.max(0, Math.min(clipDuration, x / pxPerSec)));
+            }}>
+            <div style={{ width: tlWidth, height: "100%", position: "relative" }}>
 
-            {/* Subtitle track */}
-            <div style={{ position: "relative", height: "calc(100% - 24px)", padding: "8px 0" }}>
-              {/* Track label */}
-              <div style={{ position: "absolute", left: 4, top: 8, fontSize: 9, color: "#444", fontWeight: 600, zIndex: 2, pointerEvents: "none" }}>자막</div>
-
-              {/* Subtitle blocks */}
-              {(curClip.subtitles || []).map((s, i) => {
-                const pxPerSec = 20 * timelineZoom;
-                const left = s.start * pxPerSec;
-                const width = Math.max(((s.end || s.start + 3) - s.start) * pxPerSec, 20);
-                const color = subColors[i % subColors.length];
-                const isSelected = selectedSubIdx === i;
-                return (
-                  <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(s.start); }}
-                    style={{ position: "absolute", left, top: 10, width, height: 44, background: isSelected ? `${color}50` : `${color}30`, border: `1.5px solid ${isSelected ? color : `${color}60`}`, borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", transition: "border-color 0.15s, background 0.15s", zIndex: isSelected ? 5 : 1 }}>
-                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10, color: "#e0e0e0", fontWeight: isSelected ? 700 : 400 }}>{s.text || `자막 ${i + 1}`}</div>
-                    {/* Resize handles */}
-                    <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize", background: isSelected ? `${color}80` : "transparent", borderRadius: "6px 0 0 6px" }}
-                      onMouseDown={e => {
-                        e.stopPropagation(); e.preventDefault();
-                        const startX = e.clientX; const origStart = s.start;
-                        const onMove = ev => { const dx = ev.clientX - startX; const dt = dx / (20 * timelineZoom); const newStart = Math.max(0, Math.round((origStart + dt) * 10) / 10); const subs = [...(curClip.subtitles || [])]; subs[i] = { ...subs[i], start: Math.min(newStart, (s.end || s.start + 3) - 0.5) }; updateClip("subtitles", subs); };
-                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
-                      }} />
-                    <div style={{ position: "absolute", right: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize", background: isSelected ? `${color}80` : "transparent", borderRadius: "0 6px 6px 0" }}
-                      onMouseDown={e => {
-                        e.stopPropagation(); e.preventDefault();
-                        const startX = e.clientX; const origEnd = s.end || s.start + 3;
-                        const onMove = ev => { const dx = ev.clientX - startX; const dt = dx / (20 * timelineZoom); const newEnd = Math.max(s.start + 0.5, Math.round((origEnd + dt) * 10) / 10); const subs = [...(curClip.subtitles || [])]; subs[i] = { ...subs[i], end: newEnd }; updateClip("subtitles", subs); };
-                        const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-                        window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
-                      }} />
+              {/* 타임 룰러 */}
+              <div style={{ height: 20, position: "relative", borderBottom: "1px solid #1a1a30" }}>
+                {Array.from({ length: Math.ceil(clipDuration) + 1 }, (_, i) => i).filter(i => timelineZoom >= 2 ? true : timelineZoom >= 1 ? i % 2 === 0 : i % 5 === 0).map(sec => (
+                  <div key={sec} style={{ position: "absolute", left: sec * pxPerSec, top: 0, height: "100%" }}>
+                    <div style={{ width: 1, height: sec % 5 === 0 ? 8 : 4, background: sec % 5 === 0 ? "#444" : "#2a2a4a" }} />
+                    {(sec % 5 === 0 || timelineZoom >= 2) && <span style={{ fontSize: 8, color: "#444", position: "absolute", left: 3, top: 7, fontFamily: "monospace", whiteSpace: "nowrap" }}>{fmt(sec)}</span>}
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
 
-            {/* Playhead */}
-            <div style={{ position: "absolute", left: playhead * 20 * timelineZoom, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 10, pointerEvents: "none" }}>
-              <div style={{ position: "absolute", top: -1, left: -5, width: 12, height: 12, background: "#ff3b3b", clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+              {/* V1: 비디오 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: "1px solid #4a9eff50", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
+                  <span style={{ fontSize: 9, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap" }}>{curClip.title || "Video"} ({fmt(curClip.start_seconds || 0)}~{fmt(curClip.end_seconds || 0)})</span>
+                </div>
+              </div>
+
+              {/* A1: 오디오 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4ade8025,#4ade8015)", border: "1px solid #4ade8040", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
+                  {/* 간이 파형 */}
+                  <svg width="100%" height="100%" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ opacity: 0.5 }}>
+                    {Array.from({ length: 80 }, (_, i) => {
+                      const h = 3 + Math.random() * 14;
+                      return <rect key={i} x={i * 2.5} y={10 - h / 2} width={1.5} height={h} fill="#4ade80" rx={0.5} />;
+                    })}
+                  </svg>
+                </div>
+              </div>
+
+              {/* S1: 자막 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                {(curClip.subtitles || []).map((s, i) => {
+                  const left = s.start * pxPerSec;
+                  const width = Math.max(((s.end || s.start + 3) - s.start) * pxPerSec, 16);
+                  const color = subColors[i % subColors.length];
+                  const sel = selectedSubIdx === i;
+                  return (
+                    <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setPlayhead(s.start); }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                      <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.text || `#${i+1}`}</span>
+                      {/* 좌우 리사이즈 핸들 */}
+                      <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = s.start;
+                          const mv = ev => { const dx = ev.clientX - sx; const ns = Math.max(0, Math.round((os + dx/pxPerSec)*10)/10); const subs = [...(curClip.subtitles||[])]; subs[i] = { ...subs[i], start: Math.min(ns, (s.end||s.start+3)-0.5) }; updateClip("subtitles", subs); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                      <div style={{ position: "absolute", right: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = s.end||s.start+3;
+                          const mv = ev => { const dx = ev.clientX - sx; const ne = Math.max(s.start+0.5, Math.round((oe+dx/pxPerSec)*10)/10); const subs = [...(curClip.subtitles||[])]; subs[i] = { ...subs[i], end: ne }; updateClip("subtitles", subs); };
+                          const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                          window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                        }} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* O1: 오버레이 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                {overlays.map(o => {
+                  const left = o.start * pxPerSec;
+                  const width = Math.max((o.end - o.start) * pxPerSec, 16);
+                  const sel = selectedOverlay === o.id;
+                  return (
+                    <div key={o.id} onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); }}
+                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                      <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600 }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 재생 헤드 */}
+              <div style={{ position: "absolute", left: playhead * pxPerSec, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 20, pointerEvents: "none" }}>
+                <div style={{ position: "absolute", top: -1, left: -5, width: 12, height: 10, background: "#ff3b3b", clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
+  }
 
   // ═══════════════════════════════════
   // Step: 생성 중 / 결과

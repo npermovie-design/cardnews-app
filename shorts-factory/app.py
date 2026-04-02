@@ -797,6 +797,19 @@ def _fmt_srt(sec: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+@app.get("/source/{file_id}")
+async def get_source_video(file_id: str):
+    """원본 업로드 영상 제공 (편집기 미리보기용)"""
+    file_dir = UPLOAD_DIR / file_id
+    if not file_dir.exists():
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+    for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]:
+        video_path = file_dir / f"video{ext}"
+        if video_path.exists():
+            return FileResponse(video_path, media_type="video/mp4")
+    raise HTTPException(404, "원본 영상을 찾을 수 없습니다")
+
+
 @app.get("/outputs/{file_id}/{filename}")
 async def download_output(file_id: str, filename: str):
     file_path = OUTPUT_DIR / file_id / filename
