@@ -1253,7 +1253,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       // 무료 횟수 남아있으면 바로 진행
       const usage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
       const used = usage["member_" + (user.uid || "u")] || 0;
-      if (used < 20) { resolve(true); return; } // 무료 횟수 남음
+      if (used < 10) { resolve(true); return; } // 무료 10회
       // 포인트 부족 시 팝업
       if (pts < cost) {
         setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(false); }, onCancel: () => { setPointConfirm(null); resolve(false); } });

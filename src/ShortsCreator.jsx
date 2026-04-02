@@ -1247,21 +1247,37 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 (자막) */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: captionStyle.align === "left" ? "flex-start" : captionStyle.align === "right" ? "flex-end" : "center", padding: "0 12px" }}>
-                <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100 }}>
-                  <span style={{
-                    fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
-                    fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
-                    lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: captionStyle.align || "center",
-                    textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
-                    WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
-                    background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
-                    padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
-                  }}>
-                    {subtitlesEnabled ? (currentSub ? currentSub.text : (curClip.subtitle_text || "자막 영역")) : ""}
-                  </span>
-                </div>
+              {/* 하단 검은바 — 부제(고정) + 자막(시간별) 분리 */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "6px 12px", gap: 4 }}>
+                {/* 부제 (고정 텍스트) */}
+                {curClip.subtitle_text && (
+                  <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center" }}>
+                    <span style={{
+                      fontSize: Math.min(captionStyle.fontSize - 2, 16), color: captionStyle.color, fontWeight: 600,
+                      fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
+                      lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", opacity: 0.75,
+                      textShadow: captionStyle.shadow ? "0 1px 4px rgba(0,0,0,0.6)" : "none",
+                    }}>{curClip.subtitle_text}</span>
+                  </div>
+                )}
+                {/* 자막 (시간별 변경) */}
+                {subtitlesEnabled && currentSub && (
+                  <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100 }}>
+                    <span style={{
+                      fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
+                      fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
+                      lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: captionStyle.align || "center",
+                      textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
+                      WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
+                      background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
+                      padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
+                    }}>{currentSub.text}</span>
+                  </div>
+                )}
+                {/* 자막 없을 때 빈 영역 표시 (편집 안내) */}
+                {subtitlesEnabled && !currentSub && !(curClip.subtitles || []).length && !curClip.subtitle_text && (
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>자막 없음 (+ 자막 버튼으로 추가)</span>
+                )}
               </div>
             </>) : (<>
               {/* 전체화면 레이아웃 */}
@@ -1278,13 +1294,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", maxWidth: "85%", textAlign: "center" }}>
                 <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3 }}>{curClip.title || "제목"}</span>
               </div>
-              {/* 자막 (드래그 가능) */}
-              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", maxWidth: "90%", textAlign: "center" }}>
-                <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4 }}>
-                  {subtitlesEnabled ? (currentSub ? currentSub.text : (curClip.subtitle_text || "자막")) : ""}
-                </span>
-              </div>
+              {/* 부제 (고정) */}
+              {curClip.subtitle_text && (
+                <div style={{ position: "absolute", left: "50%", bottom: "18%", transform: "translateX(-50%)", zIndex: 10, padding: "4px 14px", borderRadius: 6, background: "rgba(0,0,0,0.5)", maxWidth: "90%", textAlign: "center" }}>
+                  <span style={{ fontSize: Math.min(fontSize - 2, 14), color: captionColor, fontWeight: 500, lineHeight: 1.3, opacity: 0.8 }}>{curClip.subtitle_text}</span>
+                </div>
+              )}
+              {/* 자막 (시간별, 드래그 가능) */}
+              {subtitlesEnabled && currentSub && (
+                <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+                  style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", maxWidth: "90%", textAlign: "center" }}>
+                  <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4 }}>{currentSub.text}</span>
+                </div>
+              )}
             </>)}
 
             {/* 이미지/로고/텍스트 오버레이 (공통) */}
