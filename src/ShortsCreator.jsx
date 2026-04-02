@@ -227,6 +227,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const previewRef = useRef(null);
   const overlayFileRef = useRef(null);
 
+  // ── 현재 클립 (타임라인 등에서 사용) ────────────
+  const curClip = editClips[editIdx] || {};
+  const updateClip = (key, val) => {
+    setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
+  };
+
   // 세그먼트 총 재생 길이 (키보드 단축키보다 먼저 선언)
   const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
   const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
@@ -299,12 +305,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [step]);
-
-  // ── 현재 클립 (타임라인 등에서 사용) ────────────
-  const curClip = editClips[editIdx] || {};
-  const updateClip = (key, val) => {
-    setEditClips(prev => { const n = [...prev]; n[editIdx] = { ...n[editIdx], [key]: val }; return n; });
-  };
 
   // ── 비디오 ↔ playhead 동기화 (버벅임 방지) ──────────────
   const seekingRef = useRef(false);
