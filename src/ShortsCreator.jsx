@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
-import { supabase } from "./storage";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -35,6 +34,7 @@ function ArchiveGallery({ onSelect }) {
     (async () => {
       setLoading(true);
       try {
+        const { supabase } = await import("./storage");
         const { data } = await supabase
           .from("posts")
           .select("id,title,images")
