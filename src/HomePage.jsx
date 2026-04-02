@@ -364,6 +364,35 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </p>
         </div>
 
+        {/* AI 자동 영상 제작 - NEW 강조 배너 (최상단) */}
+        <FadeIn>
+          <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: "linear-gradient(135deg, #1a1030 0%, #2d1b69 50%, #1a1030 100%)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ flex: "1 1 300px", padding: "32px 28px" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#7c6aff,#ec4899)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{lang === "ko" ? "AI 자동 영상 제작" : "AI Auto Video"}</span>
+              </div>
+              <h3 style={{ fontSize: 24, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
+                {lang === "ko" ? "유튜브 링크 하나로\n쇼츠 영상을 자동 제작" : "Auto-create shorts\nfrom a YouTube link"}
+              </h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 16px" }}>
+                {lang === "ko" ? "AI가 영상을 분석하고, 최적의 구간을 찾아 자막과 함께 쇼츠를 자동으로 만들어줍니다. 타임라인 편집, 폰트/스타일 커스텀, 오버레이까지." : "AI analyzes videos, finds optimal segments, and auto-creates shorts with subtitles."}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {(lang === "ko" ? ["자동 구간 분석","자막 자동 생성","타임라인 편집","무료 소스 검색"] : ["Auto segment analysis","Auto subtitles","Timeline editor","Free stock search"]).map(t => (
+                  <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(124,106,255,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{t}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex: "0 0 200px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 120, height: 200, borderRadius: 12, background: "#000", border: "2px solid rgba(124,106,255,0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(124,106,255,0.3)" }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 8 }}><rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c6aff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#7c6aff"/></svg>
+                <div style={{ fontSize: 10, color: "#a5b4fc", fontWeight: 700 }}>9:16 Shorts</div>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
         {/* 벤토 그리드 - Cutback 스타일 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16 }}>
           {/* 글쓰기 - 대형 카드 */}
@@ -398,34 +427,6 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
                 <img src="/screenshots/cardnews.png" alt="카드뉴스 제작 UI" loading="lazy" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
-              </div>
-            </div>
-          </FadeIn>
-          {/* AI 자동 영상 제작 - NEW 강조 카드 */}
-          <FadeIn delay={0.2} style={{ gridColumn: "1 / -1" }}>
-            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: "linear-gradient(135deg, #1a1030 0%, #2d1b69 50%, #1a1030 100%)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-              <div style={{ flex: "1 1 300px", padding: "32px 28px" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#7c6aff,#ec4899)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{lang === "ko" ? "AI 자동 영상 제작" : "AI Auto Video"}</span>
-                </div>
-                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "유튜브 링크 하나로\n쇼츠 영상을 자동 제작" : "Auto-create shorts\nfrom a YouTube link"}
-                </h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 16px" }}>
-                  {lang === "ko" ? "AI가 영상을 분석하고, 최적의 구간을 찾아 자막과 함께 쇼츠를 자동으로 만들어줍니다. 타임라인 편집, 폰트/스타일 커스텀, 오버레이까지." : "AI analyzes videos, finds optimal segments, and auto-creates shorts with subtitles. Timeline editing, font/style customization, overlays included."}
-                </p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(lang === "ko" ? ["자동 구간 분석","자막 자동 생성","타임라인 편집","무료 소스 검색"] : ["Auto segment analysis","Auto subtitles","Timeline editor","Free stock search"]).map(t => (
-                    <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(124,106,255,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: "0 0 200px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 120, height: 200, borderRadius: 12, background: "#000", border: "2px solid rgba(124,106,255,0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(124,106,255,0.3)" }}>
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 8 }}><rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c6aff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#7c6aff"/></svg>
-                  <div style={{ fontSize: 10, color: "#a5b4fc", fontWeight: 700 }}>9:16 Shorts</div>
-                </div>
               </div>
             </div>
           </FadeIn>
