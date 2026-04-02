@@ -103,7 +103,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 레이아웃 모드: full(전체화면) | bars(검은바+중앙영상)
   const [layoutMode, setLayoutMode] = useState("bars");
   // 스냅 가이드 표시
-  const [snapGuide, setSnapGuide] = useState(null); // { axis: 'x'|'y', pos: number }
+  const [snapGuide, setSnapGuide] = useState(null);
+  // 영상 스케일 (%)
+  const [videoScale, setVideoScale] = useState(100);
+  // 선택된 트랙 요소
+  const [selectedTrack, setSelectedTrack] = useState(null); // "V1" | "A1" | null
 
   const fileRef = useRef(null);
   const timerRef = useRef(null);
@@ -756,7 +760,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 중앙 영상 */}
               <div style={{ position: "absolute", top: "22%", left: 0, right: 0, bottom: "22%", overflow: "hidden" }}>
                 <video ref={videoRef} src={sourceUrl || undefined}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
                   preload="metadata" playsInline />
                 {!sourceUrl && (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(40,40,60,0.5)" }}>
@@ -775,7 +779,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             </>) : (<>
               {/* 전체화면 레이아웃 */}
               <video ref={videoRef} src={sourceUrl || undefined}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none" }}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
                 preload="metadata" playsInline />
               {!sourceUrl && (
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(40,40,60,0.3)" }}>
@@ -841,6 +845,33 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
           <div style={{ flex: 1, padding: "10px 14px 14px", overflowY: "auto" }}>
             {propTab === "style" ? (<>
+              {/* 영상 속성 (V1 선택 시) */}
+              {selectedTrack === "V1" && (
+                <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #4a9eff30" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#4a9eff", marginBottom: 10 }}>영상 속성</div>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: "#888" }}>영상 확대/축소</span>
+                      <span style={{ fontSize: 11, color: "#4a9eff", fontWeight: 700 }}>{videoScale}%</span>
+                    </div>
+                    <input type="range" min="50" max="200" value={videoScale} onChange={e => setVideoScale(Number(e.target.value))} style={{ width: "100%", accentColor: "#4a9eff" }} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                      <input type="number" step="0.1" value={curClip.start_seconds || 0} onChange={e => updateClip("start_seconds", Math.max(0, parseFloat(e.target.value) || 0))}
+                        style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                      <input type="number" step="0.1" value={curClip.end_seconds || 0} onChange={e => updateClip("end_seconds", parseFloat(e.target.value) || 0)}
+                        style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 타임라인에서 좌우 핸들 드래그로도 조절 가능</div>
+                </div>
+              )}
+
               {/* 제목 편집 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>제목 / 부제</div>
@@ -1036,16 +1067,32 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 ))}
               </div>
 
-              {/* V1 비디오 */}
+              {/* V1 비디오 (클릭 선택 + 좌우 트림 핸들) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: "1px solid #4a9eff50", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
+                <div onClick={e => { e.stopPropagation(); setSelectedTrack("V1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
+                  style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: selectedTrack === "V1" ? "linear-gradient(90deg,#4a9eff50,#4a9eff35)" : "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: `1.5px solid ${selectedTrack === "V1" ? "#4a9eff" : "#4a9eff50"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden", cursor: "pointer" }}>
                   <span style={{ fontSize: 9, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap" }}>{curClip.title || "Video"} ({fmt(curClip.start_seconds||0)}~{fmt(curClip.end_seconds||0)})</span>
+                  {/* 좌측 트림 핸들 */}
+                  <div style={{ position: "absolute", left: 0, top: 0, width: 6, height: "100%", cursor: "ew-resize", background: selectedTrack === "V1" ? "#4a9eff80" : "transparent", borderRadius: "4px 0 0 4px" }}
+                    onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = curClip.start_seconds || 0;
+                      const mv = ev => { const dt = (ev.clientX - sx) / pxPerSec; const ns = Math.max(0, Math.round((os + dt) * 10) / 10); updateClip("start_seconds", Math.min(ns, (curClip.end_seconds || 30) - 1)); };
+                      const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                    }} />
+                  {/* 우측 트림 핸들 */}
+                  <div style={{ position: "absolute", right: 0, top: 0, width: 6, height: "100%", cursor: "ew-resize", background: selectedTrack === "V1" ? "#4a9eff80" : "transparent", borderRadius: "0 4px 4px 0" }}
+                    onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = curClip.end_seconds || 30;
+                      const mv = ev => { const dt = (ev.clientX - sx) / pxPerSec; const ne = Math.max((curClip.start_seconds || 0) + 1, Math.round((oe + dt) * 10) / 10); updateClip("end_seconds", ne); };
+                      const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+                      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+                    }} />
                 </div>
               </div>
 
-              {/* A1 오디오 */}
+              {/* A1 오디오 (클릭 선택) */}
               <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
-                <div style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: "linear-gradient(90deg,#4ade8025,#4ade8015)", border: "1px solid #4ade8040", borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden" }}>
+                <div onClick={e => { e.stopPropagation(); setSelectedTrack("A1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
+                  style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: selectedTrack === "A1" ? "linear-gradient(90deg,#4ade8045,#4ade8030)" : "linear-gradient(90deg,#4ade8025,#4ade8015)", border: `1.5px solid ${selectedTrack === "A1" ? "#4ade80" : "#4ade8040"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden", cursor: "pointer" }}>
                   <svg width="100%" height="100%" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ opacity: 0.5 }}>
                     {Array.from({ length: 80 }, (_, i) => <rect key={i} x={i*2.5} y={10-(3+Math.abs(Math.sin(i*0.4))*12)/2} width={1.5} height={3+Math.abs(Math.sin(i*0.4))*12} fill="#4ade80" rx={0.5} />)}
                   </svg>
