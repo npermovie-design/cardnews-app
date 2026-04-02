@@ -559,22 +559,44 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{marginTop:24,borderTop:"1px solid "+bdr,paddingTop:20}}>
                 <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>+ 첨부 파일 {view.images.length}개</div>
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  {view.images.map((url,i)=>
-                    isVideoUrl(url) ? (
+                  {view.images.map((url,i)=>{
+                    const isPdf = /\.pdf/i.test(url);
+                    const fname = decodeURIComponent(url.split("/").pop().replace(/^\d+_/,""));
+                    return isVideoUrl(url) ? (
                       <div key={i}>
                         <video src={url} controls style={{width:"100%",maxWidth:640,borderRadius:10,border:"1px solid "+bdr,display:"block"}}/>
-                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>다운로드</a>
+                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>⬇ 영상 다운로드</a>
                       </div>
                     ) : isImageUrl(url) ? (
-                      <img key={i} src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
-                        onClick={()=>window.open(url,"_blank")} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
+                      <div key={i}>
+                        <img src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
+                          onClick={()=>window.open(url,"_blank")} onError={e=>{e.target.style.opacity="0.3";}}/>
+                        <a href={url} download style={{display:"inline-block",marginTop:4,fontSize:11,color:C.muted,textDecoration:"none"}}>⬇ 이미지 다운로드</a>
+                      </div>
+                    ) : isPdf ? (
+                      <div key={i} style={{borderRadius:12,border:"1px solid "+bdr,overflow:"hidden",background:isDark?"rgba(255,255,255,0.03)":"#fafafa"}}>
+                        <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+                          <span style={{fontSize:28}}>📄</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:14,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fname}</div>
+                            <div style={{fontSize:11,color:C.muted}}>PDF 문서</div>
+                          </div>
+                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>⬇ 다운로드</a>
+                        </div>
+                      </div>
                     ) : (
-                      <a key={i} href={url} download rel="noopener noreferrer"
-                        style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",color:C.text,textDecoration:"none",fontSize:13,fontWeight:600}}>
-                        📄 파일 {i+1} <span style={{fontSize:11,color:C.muted,marginLeft:4}}>클릭하여 다운로드</span>
-                      </a>
-                    )
-                  )}
+                      <div key={i} style={{borderRadius:12,border:"1px solid "+bdr,overflow:"hidden",background:isDark?"rgba(255,255,255,0.03)":"#fafafa"}}>
+                        <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+                          <span style={{fontSize:28}}>📎</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:14,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fname}</div>
+                            <div style={{fontSize:11,color:C.muted}}>첨부 파일</div>
+                          </div>
+                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>⬇ 다운로드</a>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

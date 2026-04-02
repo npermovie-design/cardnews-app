@@ -533,13 +533,16 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
     for (let file of Array.from(files)) {
       if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 파일 크기는 50MB 이하여야 합니다.`); continue; }
       try {
-        // 이미지는 WebP로 변환
-        if (file.type.startsWith("image/") && file.type !== "image/gif") {
+        let type = "file";
+        if (file.type.startsWith("image/")) type = "image";
+        else if (file.type.startsWith("video/")) type = "video";
+        else if (file.type === "application/pdf") type = "pdf";
+        // 이미지는 WebP로 변환 (PDF/문서/영상은 원본 유지)
+        if (type === "image" && file.type !== "image/gif") {
           file = await toWebP(file);
         }
         const path = `posts/${Date.now()}_${safeName(file.name)}`;
         const url = await uploadFileToStorage(file, path);
-        const type = file.type.startsWith("video") ? "video" : "image";
         setUploadedFiles(prev => [...prev, { url, type, name: file.name }]);
       } catch(e) {
         alert(`${file.name} 업로드 실패: ${e.message}`);
@@ -603,12 +606,12 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
         {/* 파일 첨부 */}
         <div style={{border:"1px solid "+bdr,borderRadius:12,padding:"14px 16px",background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
-            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상, 최대 50MB)</span></span>
+            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상·PDF·문서, 최대 50MB)</span></span>
             <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
               style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#7c6aff",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
               {uploading?"업로드 중...":"+ 파일 추가"}
             </button>
-            <input ref={fileInputRef} type="file" multiple accept="image/*,video/*"
+            <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.hwp,.txt"
               style={{display:"none"}} onChange={e=>handleFileUpload(e.target.files)}/>
           </div>
           {uploadedFiles.length > 0 && (
@@ -617,8 +620,18 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
                 <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",border:"1px solid "+bdr}}>
                   {f.type==="video"
                     ? <div style={{width:90,height:68,background:isDark?"#1a1a2e":"#e5e7eb",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
-                        <span style={{fontSize:11,fontWeight:700,color:"#3b82f6"}}>영상</span>
+                        <span style={{fontSize:16}}>🎬</span>
                         <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"video").slice(0,12)}</span>
+                      </div>
+                    : f.type==="pdf"
+                    ? <div style={{width:90,height:68,background:isDark?"#1a1a2e":"#fef3c7",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+                        <span style={{fontSize:16}}>📄</span>
+                        <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"pdf").slice(0,12)}</span>
+                      </div>
+                    : f.type==="file"
+                    ? <div style={{width:90,height:68,background:isDark?"#1a1a2e":"#e5e7eb",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+                        <span style={{fontSize:16}}>📎</span>
+                        <span style={{fontSize:9,color:C.muted,padding:"0 4px",textAlign:"center",wordBreak:"break-all",lineHeight:1.2}}>{(f.name||"file").slice(0,12)}</span>
                       </div>
                     : <img src={f.url} alt="" style={{width:90,height:68,objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
                   }
