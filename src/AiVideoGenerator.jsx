@@ -975,7 +975,7 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
   "type": "text" 또는 "gif",
   "animation": "텍스트 애니메이션 타입 (type=text일 때만)",
   "gifKeyword": "영어 GIF 검색 키워드 (type=gif일 때만)",
-  "durationSec": 3~5 사이의 초 (짧고 빠른 전환이 좋음)
+  "durationSec": 3~6 사이의 초
 }
 
 텍스트 애니메이션 타입 (반드시 다양하게 섞어 사용):
@@ -987,12 +987,12 @@ export default function AiVideoGenerator({ isDark, user, showPointConfirm }) {
 - "counter": 숫자 카운트업 (수치, 통계)
 
 규칙:
-1. 의미 단위는 3~5초가 이상적. 6초 이상은 지루함
+1. 의미 단위는 3~6초가 이상적
 2. 연속으로 같은 animation/type 금지
 3. GIF 구간은 전체의 20~40% 정도 (시각적 변화를 위해)
 4. GIF 키워드는 반드시 영어 (고퀄 검색용)
 5. text는 대본 원문을 그대로 쓰지 말고, 화면에 표시할 핵심 문구로 압축
-6. 전체 합산 시간이 ${duration}초에 가깝게
+6. 전체 합산 시간이 반드시 ${duration}초에 가깝게. 세그먼트 수 = ${Math.ceil(duration / 4.5)}개 정도
 
 JSON 배열만 출력하세요.`
             }, {
@@ -1006,18 +1006,34 @@ JSON 배열만 출력하세요.`
         segmentData = JSON.parse(aiContent.match(/\[[\s\S]*\]/)?.[0] || "[]");
       } catch {}
 
-      // fallback: AI 실패 시 문장 단위로 분할
+      // fallback + 보충: 세그먼트가 부족하면 추가 생성
+      const targetSegCount = Math.ceil(duration / 4.5);
       if (segmentData.length === 0) {
         const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
-        segmentData = sceneTexts.map((t, i) => ({
-          text: t.slice(0, 40), type: "text", animation: anims[i % anims.length], durationSec: secPerScene,
+        segmentData = sentences.map((t, i) => ({
+          text: t.slice(0, 50), type: i % 4 === 3 ? "gif" : "text",
+          animation: anims[i % anims.length], gifKeyword: "reaction " + t.slice(0, 10),
+          durationSec: Math.min(6, duration / Math.max(sentences.length, 1)),
         }));
+      }
+      // AI가 세그먼트를 너무 적게 만들었으면 나머지 문장으로 보충
+      if (segmentData.length < targetSegCount * 0.7 && sentences.length > segmentData.length) {
+        const anims = ["fade", "typewriter", "highlight", "scale", "slide", "counter"];
+        const remaining = sentences.slice(segmentData.length);
+        for (let ri = 0; ri < remaining.length && segmentData.length < targetSegCount; ri++) {
+          segmentData.push({
+            text: remaining[ri].slice(0, 50), type: ri % 3 === 2 ? "gif" : "text",
+            animation: anims[(segmentData.length + ri) % anims.length],
+            gifKeyword: "funny " + remaining[ri].slice(0, 8),
+            durationSec: 4,
+          });
+        }
       }
 
       // 타이밍 계산
       let currentSec = 0;
       const timedSegments = segmentData.map(s => {
-        const dur = Math.max(2, Math.min(6, s.durationSec || 4));
+        const dur = Math.max(2, Math.min(8, s.durationSec || 4));
         const seg = { ...s, startSec: currentSec, endSec: currentSec + dur };
         currentSec += dur;
         return seg;
@@ -1125,7 +1141,9 @@ JSON 배열만 출력하세요.`
             hv.setUint16(32, 2, true); hv.setUint16(34, 16, true);
             writeStr(36, "data"); hv.setUint32(40, totalPcm, true);
             const combined = new Blob([wavHeader, ...pcmChunks], { type: "audio/wav" });
-            const url = URL.createObjectURL(combined);
+            // data URL로 변환 (Remotion Audio 호환성 — blob URL은 재생 끊김 발생)
+            const reader = new FileReader();
+            const url = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(combined); });
             setTtsUrl(url);
             // 오디오 길이 측정 → 씬 타이밍 재조정
             const audio = new window.Audio(url);
@@ -1326,7 +1344,7 @@ JSON 배열만 출력하세요.`
             <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 14 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>영상 길이</div>
               <div style={{ display: "flex", gap: 6 }}>
-                {[15, 30, 60, 90].map(d => (
+                {[15, 30, 60, 90, 180, 300, 480].map(d => (
                   <button key={d} onClick={() => setDuration(d)} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: `1.5px solid ${duration === d ? acc : bdr}`, background: duration === d ? `${acc}12` : "transparent", color: duration === d ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{d}s</button>
                 ))}
               </div>
@@ -1458,7 +1476,7 @@ JSON 배열만 출력하세요.`
           </div>
           <div style={{ padding: 6, borderTop: "1px solid #2a2a4a", display: "flex", gap: 4 }}>
             <button onClick={() => setStep("suggest")} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>← 스타일</button>
-            <button onClick={() => { setStep("input"); setScenes([]); setCaptions([]); setSegments([]); if (ttsUrl) { URL.revokeObjectURL(ttsUrl); setTtsUrl(null); } }} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>처음</button>
+            <button onClick={() => { setStep("input"); setScenes([]); setCaptions([]); setSegments([]); setTtsUrl(null); }} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 10, cursor: "pointer" }}>처음</button>
           </div>
         </div>
 
@@ -1575,9 +1593,9 @@ JSON 배열만 출력하세요.`
                         body: JSON.stringify({ text: fullScript, voice: ttsVoice, speed: ttsSpeed }),
                       });
                       if (res.ok) {
-                        if (ttsUrl) URL.revokeObjectURL(ttsUrl);
                         const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
+                        const reader = new FileReader();
+                        const url = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(blob); });
                         setTtsUrl(url);
                         const audio = new window.Audio(url);
                         audio.onloadedmetadata = () => {
