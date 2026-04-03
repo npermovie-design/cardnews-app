@@ -1223,21 +1223,20 @@ function drawSection(canvas, section, themeColors) {
         const iconText = stripEmoji(icon) || "*";
         ctx.fillText(iconText, cx + 16, cy + 16);
 
-        // Title
-        ctx.font = "700 14px " + FONT;
+        // Title (with wrapping)
+        ctx.font = "700 13px " + FONT;
         ctx.fillStyle = tc;
-        ctx.fillText(title || "", cx + 16, cy + 56);
+        const tLines = wrapTextKo(ctx, stripEmoji(title || ""), cardW - 32);
+        let ty = cy + 46;
+        tLines.slice(0, 2).forEach(l => { ctx.fillText(l, cx + 16, ty); ty += 18; });
 
         // Desc
-        ctx.font = "400 11px " + FONT;
+        ctx.font = "400 10px " + FONT;
         ctx.fillStyle = tc;
         ctx.globalAlpha = 0.6;
-        const dLines = wrapTextKo(ctx, desc || "", cardW - 32);
-        let dy = cy + 78;
-        dLines.slice(0, 2).forEach(l => {
-          ctx.fillText(l, cx + 16, dy);
-          dy += 16;
-        });
+        const dLines = wrapTextKo(ctx, stripEmoji(desc || ""), cardW - 32);
+        let dy = ty + 4;
+        dLines.slice(0, 3).forEach(l => { ctx.fillText(l, cx + 16, dy); dy += 14; });
         ctx.globalAlpha = 1;
       });
 
@@ -2170,6 +2169,7 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
   const [aiGenerated, setAiGenerated] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [previewIdx, setPreviewIdx] = useState(null);
   const [dlSt, setDlSt] = useState({ busy: false, msg: "" });
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -2957,10 +2957,19 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
             </div>
           </div>
 
+          {/* -- 캔버스 크게보기 모달 -- */}
+          {previewIdx !== null && previewIdx >= 0 && previewIdx < sections.length && (
+            <div onClick={() => setPreviewIdx(null)} style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"zoom-out" }}>
+              <div style={{ maxWidth:480, width:"90vw", maxHeight:"90vh", overflow:"auto", borderRadius:12 }} onClick={e=>e.stopPropagation()}>
+                <SectionCanvas section={sections[previewIdx]} themeColors={themeColors} index={previewIdx} displayW={480} onClick={()=>setPreviewIdx(null)} />
+              </div>
+            </div>
+          )}
+
           {/* -- 오른쪽: 섹션 편집 영역 -- */}
           <div style={{ flex:1, overflowY:"auto", padding:"16px 24px 40px" }}>
-            <div style={{ maxWidth:680, margin:"0 auto" }}>
-              <div style={{ fontSize:12, color:muted, marginBottom:16 }}>사진 영역을 클릭하면 이미지 업로드, 텍스트는 아래 입력란에서 직접 수정하세요</div>
+            <div style={{ maxWidth:720, margin:"0 auto" }}>
+              <div style={{ fontSize:12, color:muted, marginBottom:16 }}>미리보기 클릭 = 크게 보기 · 텍스트/사진은 우측에서 직접 수정</div>
 
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 {sections.map((sec, i) => {
@@ -2968,6 +2977,7 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
                   const hasItems = ITEMS_TYPES.includes(sec.type);
                   const hasStats = STATS_TYPES.includes(sec.type);
                   const hasImages = (sec.images||[]).length > 0;
+                  const isReview = sec.type === "review_cards";
 
                   return (
                     <div key={sec.id} id={"sec-block-"+i}
@@ -2981,14 +2991,14 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
 
                       {/* 미리보기 + 편집 2단 */}
                       <div style={{ display:"flex", gap:0 }}>
-                        {/* 캔버스 미리보기 */}
-                        <div style={{ flexShrink:0, padding:12, display:"flex", justifyContent:"center", background: D?"rgba(0,0,0,0.15)":"rgba(0,0,0,0.02)" }}>
-                          <SectionCanvas section={sec} themeColors={themeColors} index={i} displayW={displayW}
-                            onClick={e => handleCanvasClick(e, i)} />
+                        {/* 캔버스 미리보기 (클릭하면 크게) */}
+                        <div style={{ flexShrink:0, padding:12, display:"flex", justifyContent:"center", alignItems:"flex-start", background: D?"rgba(0,0,0,0.15)":"rgba(0,0,0,0.02)", cursor:"zoom-in" }}
+                          onClick={() => setPreviewIdx(i)}>
+                          <SectionCanvas section={sec} themeColors={themeColors} index={i} displayW={displayW} onClick={() => setPreviewIdx(i)} />
                         </div>
 
                         {/* 편집 패널 */}
-                        <div style={{ flex:1, padding:"12px 14px", display:"flex", flexDirection:"column", gap:8, overflowY:"auto", maxHeight: 500, minWidth:0 }}>
+                        <div style={{ flex:1, padding:"12px 14px", display:"flex", flexDirection:"column", gap:8, overflowY:"auto", maxHeight: 600, minWidth:0 }}>
                           {/* 기본 텍스트 */}
                           <div>
                             <div style={labelSt}>헤드라인</div>
@@ -3046,8 +3056,48 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
                             </div>
                           )}
 
-                          {/* Items */}
-                          {hasItems && (
+                          {/* review_cards 전용: 후기 개별 편집 */}
+                          {isReview && (
+                            <div>
+                              <div style={{ ...labelSt, display:"flex", justifyContent:"space-between" }}>
+                                <span>후기 목록</span>
+                                <button onClick={()=>addItem(i)} style={{ fontSize:9, padding:"1px 6px", borderRadius:4, border:`1px solid ${bdr}`, background:"transparent", color:accentColor, cursor:"pointer", fontWeight:700 }}>+추가</button>
+                              </div>
+                              {(sec.texts?.items||[]).map((item, ii) => {
+                                const parts = item.split("|");
+                                const rName = parts[0]||""; const rJob = parts[1]||"";
+                                const rStars = parts[2]||"★★★★★"; const rContent = parts[3]||"";
+                                const updateReview = (field, val) => {
+                                  const p = [rName, rJob, rStars, rContent];
+                                  if (field==="name") p[0]=val; if (field==="job") p[1]=val;
+                                  if (field==="stars") p[2]=val; if (field==="content") p[3]=val;
+                                  updateItem(i, ii, p.join("|"));
+                                };
+                                return (
+                                  <div key={ii} style={{ padding:8, borderRadius:8, border:`1px solid ${bdr}`, marginBottom:6, background:D?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.01)" }}>
+                                    <div style={{ display:"flex", gap:4, marginBottom:4 }}>
+                                      <input value={rName} onChange={e=>updateReview("name",e.target.value)} placeholder="이름" style={{...inputSt, flex:1, fontSize:10}} />
+                                      <input value={rJob} onChange={e=>updateReview("job",e.target.value)} placeholder="직업" style={{...inputSt, flex:1, fontSize:10}} />
+                                      <select value={rStars} onChange={e=>updateReview("stars",e.target.value)}
+                                        style={{...inputSt, width:70, fontSize:10, padding:"4px 2px"}}>
+                                        <option value="★★★★★">★×5</option>
+                                        <option value="★★★★">★×4</option>
+                                        <option value="★★★">★×3</option>
+                                        <option value="★★">★×2</option>
+                                        <option value="★">★×1</option>
+                                      </select>
+                                      <button onClick={()=>removeItem(i,ii)} style={{ width:20, height:20, borderRadius:4, border:"none", background:"rgba(239,68,68,0.08)", color:"#ef4444", fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>&times;</button>
+                                    </div>
+                                    <textarea value={rContent} onChange={e=>updateReview("content",e.target.value)} placeholder="후기 내용" rows={2}
+                                      style={{...inputSt, fontSize:10, resize:"vertical", minHeight:30}} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Items (review_cards 제외) */}
+                          {hasItems && !isReview && (
                             <div>
                               <div style={{ ...labelSt, display:"flex", justifyContent:"space-between" }}>
                                 <span>항목</span>
