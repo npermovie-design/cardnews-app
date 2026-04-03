@@ -7,6 +7,6 @@ python-multipart
 python-dotenv
 faster-whisper
 Pillow
-yt-dlp>=2025.3.31
+yt-dlp
 pytubefix>=8.0.0
 av

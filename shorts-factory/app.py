@@ -244,8 +244,9 @@ async def youtube_download(request: Request):
             ydl_opts = {
                 "format": "best[ext=mp4][height<=720]/bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "outtmpl": str(video_path),
-                "quiet": True,
-                "no_warnings": True,
+                "quiet": False,
+                "no_warnings": False,
+                "verbose": True,
                 "extractor_args": {"youtube": {"player_client": client, "player_skip": ["webpage"]}},
                 "socket_timeout": 15,
                 "retries": 1,
