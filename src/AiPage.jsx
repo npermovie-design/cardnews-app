@@ -22,6 +22,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
+import YouTubeAnalyzer from "./YouTubeAnalyzer";
 import AutoPublisher from "./AutoPublisher";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
@@ -1244,6 +1245,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         </div>
       </div>
     );
+  }
+
+  if (aiMenu === "yt_analyzer") {
+    return <YouTubeAnalyzer isDark={isDark} />;
   }
 
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
