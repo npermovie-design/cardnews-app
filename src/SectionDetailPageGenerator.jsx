@@ -2950,6 +2950,28 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
                 );
               })}
             </div>
+            {/* 테마 전환 */}
+            <div style={{ padding:"8px 12px", borderTop:`1px solid ${bdr}` }}>
+              <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>컬러 테마</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                {(COLOR_THEMES[mainCat] || COLOR_THEMES.education).map(t => (
+                  <button key={t.key} onClick={() => setColorTheme(t.key)}
+                    style={{
+                      display:"flex", alignItems:"center", gap:6, padding:"6px 8px", borderRadius:6,
+                      border: colorTheme === t.key ? `2px solid ${accentColor}` : `1px solid ${bdr}`,
+                      background: colorTheme === t.key ? `${accentColor}10` : "transparent",
+                      cursor:"pointer", fontSize:10, fontWeight:600, color:textColor,
+                    }}>
+                    <div style={{ display:"flex", gap:2 }}>
+                      <div style={{ width:14, height:14, borderRadius:3, background:t.bg, border:"1px solid rgba(128,128,128,0.2)" }} />
+                      <div style={{ width:14, height:14, borderRadius:3, background:t.accent }} />
+                      <div style={{ width:14, height:14, borderRadius:3, background:t.secBg, border:"1px solid rgba(128,128,128,0.2)" }} />
+                    </div>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* 하단 버튼 */}
             <div style={{ padding:"8px 12px", borderTop:`1px solid ${bdr}`, display:"flex", gap:6 }}>
               <button onClick={() => setStep(3)} style={{ flex:1, padding:"8px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>&larr; 이전</button>
