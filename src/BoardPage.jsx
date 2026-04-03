@@ -54,7 +54,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [toast,   setToast]   = useState("");
   const [filterTag,   setFilterTag]   = useState(""); // 세부 태그 필터
   const [archiveView, setArchiveView] = useState("posts"); // "posts" | "search"
-  const [viewMode,    setViewMode]    = useState(() => initialCat==="archive" ? "gallery" : "list"); // "list" | "gallery" | "compact"
+  const [viewMode,    setViewMode]    = useState("list"); // "list" | "gallery" | "compact"
   const [showCatMgr, setShowCatMgr] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
   const archiveFileRef = useRef(null);
@@ -1045,8 +1045,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             )}
 
             {/* 자료실 미디어 그리드 뷰 */}
-            {subCat==="archive" && archiveView==="posts" && (
-              <>
+            {subCat==="archive" && archiveView==="posts" && <>
                 {/* 드래그앤드롭 업로드 영역 */}
                 {user && (
                   <div
@@ -1122,83 +1121,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   </button>}
                 </div>
 
-                {/* 미디어 카드 그리드 */}
-                {pageItems.length > 0 ? (
-                  <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
-                    {pageItems.map(p => {
-                      const thumb = (p.images||[])[0];
-                      const isVid = thumb && /\.(mp4|mov|avi|webm|mkv)/i.test(thumb);
-                      const isGif = thumb && /\.gif$/i.test(thumb);
-                      const isPhoto = thumb && !isVid && !isGif && /\.(jpg|jpeg|png|webp|bmp|svg|tiff)/i.test(thumb);
-                      const isMusic = thumb && /\.(mp3|wav|ogg|flac|aac|m4a)/i.test(thumb);
-                      const typeTag = isVid ? "영상" : isGif ? "GIF" : isPhoto ? "사진" : isMusic ? "음악" : (p.tag || "");
-                      const tagColor = isVid ? "rgba(239,68,68,0.85)" : isGif ? "rgba(139,92,246,0.85)" : isPhoto ? "rgba(59,130,246,0.85)" : isMusic ? "rgba(245,158,11,0.85)" : "rgba(100,100,100,0.7)";
-                      return (
-                        <div key={p.id} onClick={()=>{
-                          if (user?.role==="admin") {
-                            setArchiveEditPost(p);
-                            setArchiveEditForm({ title: p.title||"", desc: (p.body||"").replace(/<[^>]*>/g,""), tag: p.tag||typeTag });
-                          } else { openPost(p); }
-                        }}
-                          style={{borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,background:cardBg,cursor:"pointer",position:"relative",transition:"transform 0.15s"}}
-                          onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-                          onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                          <div style={{width:"100%",aspectRatio:"1",background:isDark?"rgba(255,255,255,0.03)":"#f0f0f6",overflow:"hidden",position:"relative"}}>
-                            {isVid ? (
-                              <video src={thumb} muted loop playsInline preload="metadata"
-                                style={{width:"100%",height:"100%",objectFit:"cover"}}
-                                onMouseEnter={e=>e.target.play().catch(()=>{})}
-                                onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
-                            ) : thumb ? (
-                              <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
-                            ) : (
-                              <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#94a3b8",fontWeight:600}}>파일</div>
-                            )}
-                            {/* 유형 태그 배지 (좌상단) */}
-                            {typeTag && <span style={{position:"absolute",top:6,left:6,fontSize:9,background:tagColor,color:"#fff",padding:"2px 7px",borderRadius:4,fontWeight:700}}>{typeTag}</span>}
-                            {/* 유료/무료 배지 */}
-                            {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>유료{p.price?` ${p.price}`:""}</span>}
-                            {p.priceType==="free"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>무료</span>}
-                            {/* 다운로드 + 링크복사 */}
-                            <div style={{position:"absolute",bottom:6,right:6,display:"flex",gap:4}}>
-                              {thumb&&<button onClick={e=>{e.stopPropagation();
-                                const url=window.location.origin+"/community/archive/post-"+p.id;
-                                navigator.clipboard.writeText(url).then(()=>showToast("링크가 복사됐어요!","success")).catch(()=>{});
-                              }}
-                                style={{padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(124,106,255,0.85)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>🔗</button>}
-                              {thumb&&<button onClick={e=>{e.stopPropagation();downloadFile(thumb);}}
-                                style={{padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
-                            </div>
-                            {/* 관리자 수정 아이콘 */}
-                            {user?.role==="admin"&&<button onClick={e=>{e.stopPropagation(); setArchiveEditPost(p); setArchiveEditForm({title:p.title||"",desc:(p.body||"").replace(/<[^>]*>/g,""),tag:p.tag||typeTag});}}
-                              style={{position:"absolute",bottom:6,left:6,padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(124,106,255,0.85)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>✏️</button>}
-                          </div>
-                          <div style={{padding:"8px 10px"}}>
-                            <div style={{fontSize:12,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
-                    <div style={{fontSize:14,color:"#94a3b8",marginBottom:8,fontWeight:600}}>자료 없음</div>
-                    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>아직 등록된 자료가 없어요</div>
-                    <div style={{fontSize:12}}>관리자가 자료를 등록하면 여기에 표시됩니다</div>
-                  </div>
-                )}
-
-                {/* 페이지네이션 */}
-                {totalPages > 1 && (
-                  <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:20}}>
-                    {Array.from({length:totalPages},(_,i)=>i+1).map(n=>(
-                      <button key={n} onClick={()=>setPage(n)}
-                        style={{width:32,height:32,borderRadius:8,border:`1px solid ${page===n?"#7c6aff":bdr}`,
-                          background:page===n?"rgba(99,102,241,0.15)":"transparent",color:page===n?"#a5b4fc":C.muted,
-                          fontSize:12,fontWeight:page===n?700:400,cursor:"pointer"}}>{n}</button>
-                    ))}
-                  </div>
-                )}
+                {/* 자료실은 아래 일반 게시판 리스트에서 렌더 */}
 
                 {/* 자료실 인라인 수정 모달 */}
                 {archiveEditPost && (
@@ -1259,11 +1182,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     </div>
                   </div>
                 )}
-              </>
-            )}
+              </>}
 
-            {/* 일반 게시판 뷰 (자료실 외) */}
-            {subCat!=="archive" && <>
+            {/* 일반 게시판 뷰 */}
+            {<>
 
             {/* 액션바 */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>

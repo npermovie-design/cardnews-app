@@ -689,8 +689,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
       const ad = await apiCall(`/analyze/${d.file_id}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
-      setSegments(ad.segments || []);
-      setSelectedSegs(ad.segments?.map((_, i) => i) || []);
+      const segs = (ad.segments || []).slice(0, maxSegments);
+      setSegments(segs);
+      setSelectedSegs(segs.map((_, i) => i));
       setStep("analysis");
     } catch (e) {
       // Render 서버 다운로드 실패 → 다운로드 도우미 모드로 전환
@@ -750,8 +751,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
       const d = await apiCall(`/analyze/${fid}`, { method: "POST", body: JSON.stringify(analyzeBody) });
-      setSegments(d.segments || []);
-      setSelectedSegs(d.segments?.map((_, i) => i) || []);
+      const segs2 = (d.segments || []).slice(0, maxSegments);
+      setSegments(segs2);
+      setSelectedSegs(segs2.map((_, i) => i));
       setStep("analysis");
     } catch (e) { setError("분석 실패: " + e.message); setStep("upload"); }
   };
