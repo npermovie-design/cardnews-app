@@ -1102,23 +1102,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 <div style={{display:"flex",gap:8,marginBottom:16}}>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="자료 검색..."
                     style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
-                  {user?.role==="admin"&&
-                    <button onClick={async()=>{
-                      try {
-                        const r = await fetch("/api/archive-auto-tag",{method:"POST"});
-                        const d = await r.json();
-                        if(d.updated>0){ showToast(`${d.updated}개 자료 태그 자동 분류 완료!`,"success"); try{const db=await getPostsFromDB();if(db?.length){setPostsS(db.sort((a,b)=>b.id-a.id));setPosts(db);}}catch{} }
-                        else showToast("모든 자료가 이미 분류되어 있어요","info");
-                      } catch(e){ alert("자동 분류 실패"); }
-                    }}
-                      style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      자동 분류
-                    </button>
-                  }
-                  {user&&<button onClick={()=>archiveFileRef.current?.click()}
-                    style={{padding:"10px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
-                    자료 등록
-                  </button>}
                 </div>
 
                 {/* 자료실은 아래 일반 게시판 리스트에서 렌더 */}
@@ -1216,8 +1199,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     </button>
                   ))}
                 </div>
-                {/* 자료실은 관리자만 글쓰기 가능 */}
-                {(subCat!=="archive" || user?.role==="admin") && (
+                {/* 글쓰기/자료등록 버튼 */}
+                {(
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
                     style={{padding:"10px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)",minHeight:44}}>
                     {subCat==="archive"?"자료 등록":t("writePost")}
