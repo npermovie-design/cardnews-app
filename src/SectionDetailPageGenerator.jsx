@@ -1199,7 +1199,7 @@ function drawSection(canvas, section, themeColors) {
       const gapX = 12;
       const gapY = 12;
       const cardW = (contentW - gapX) / 2;
-      const cardH = 130;
+      const cardH = 160;
 
       benefitItems.slice(0, 4).forEach((item, i) => {
         const [icon, title, desc] = item.split("|");
@@ -1352,12 +1352,16 @@ function drawSection(canvas, section, themeColors) {
         "VIP|399,000\uC6D0|\uB9C8\uC2A4\uD130 \uACFC\uC815|\uC804\uCCB4 \uAC15\uC758, 1:1 \uCF54\uCE6D, \uD3C9\uC0DD \uCEE4\uBBA4\uB2C8\uD2F0"
       ];
 
+      const cW = contentW - 32; // card inner width
       plans.forEach((plan, pi) => {
         const [name, price, desc, includes] = plan.split("|");
         const isHighlight = pi === 1 || plans.length === 1;
-        const cardH = 160;
 
-        if (y + cardH > H - 10) return;
+        // 포함항목으로 카드 높이 동적 계산
+        const incItems = includes ? includes.split(",").map(s => s.trim()).filter(Boolean) : [];
+        const cardH = Math.max(100, 60 + Math.max(incItems.length, 1) * 18 + 20);
+
+        if (y + cardH + 16 > H - 10) return;
 
         // Card
         roundRect(ctx, PAD + 8, y, contentW - 16, cardH, 16);
@@ -1370,7 +1374,6 @@ function drawSection(canvas, section, themeColors) {
           ctx.lineWidth = 2;
           ctx.stroke();
 
-          // "추천" badge
           const recBadge = "\uCD94\uCC9C";
           ctx.font = "700 10px " + FONT;
           const rbw = ctx.measureText(recBadge).width + 16;
@@ -1391,40 +1394,46 @@ function drawSection(canvas, section, themeColors) {
           ctx.globalAlpha = 1;
         }
 
-        // Plan name
-        ctx.font = "800 16px " + FONT;
+        // Plan name (wrapped)
+        ctx.font = "800 14px " + FONT;
         ctx.fillStyle = isHighlight ? accent : tc;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(name || "", PAD + 24, y + 20);
+        const nameLines = wrapTextKo(ctx, stripEmoji(name || ""), cW * 0.55);
+        let ny = y + 16;
+        nameLines.slice(0, 1).forEach(l => { ctx.fillText(l, PAD + 24, ny); ny += 20; });
 
-        // Price
-        ctx.font = "900 24px " + FONT;
+        // Price (wrapped)
+        ctx.font = "700 14px " + FONT;
         ctx.fillStyle = tc;
         ctx.textAlign = "right";
-        ctx.fillText(price || "", W - PAD - 24, y + 16);
+        const priceText = stripEmoji(price || "");
+        const priceLines = wrapTextKo(ctx, priceText, cW * 0.4);
+        priceLines.slice(0, 1).forEach(l => { ctx.fillText(l, W - PAD - 24, y + 16); });
 
-        // Desc
+        // Desc (wrapped)
+        let descY = ny + 2;
         if (desc) {
-          ctx.font = "400 12px " + FONT;
+          ctx.font = "400 11px " + FONT;
           ctx.fillStyle = tc;
           ctx.globalAlpha = 0.5;
           ctx.textAlign = "left";
-          ctx.fillText(desc, PAD + 24, y + 46);
+          const dLines = wrapTextKo(ctx, stripEmoji(desc), cW);
+          dLines.slice(0, 1).forEach(l => { ctx.fillText(l, PAD + 24, descY); descY += 16; });
           ctx.globalAlpha = 1;
         }
 
-        // Included items
-        if (includes) {
-          const incItems = includes.split(",").map(s => s.trim());
-          let iy = y + 70;
+        // Included items (wrapped)
+        if (incItems.length > 0) {
+          let iy = descY + 4;
           incItems.forEach(inc => {
-            if (iy + 18 > y + cardH - 8) return;
-            ctx.font = "400 11px " + FONT;
+            if (iy + 16 > y + cardH - 6) return;
+            ctx.font = "400 10px " + FONT;
             ctx.fillStyle = tc;
             ctx.globalAlpha = 0.7;
             ctx.textAlign = "left";
-            ctx.fillText("\u2713 " + inc, PAD + 24, iy);
+            const iLines = wrapTextKo(ctx, "\u2713 " + stripEmoji(inc), cW);
+            iLines.slice(0, 1).forEach(l => { ctx.fillText(l, PAD + 24, iy); iy += 16; });
             ctx.globalAlpha = 1;
             iy += 18;
           });
@@ -1614,26 +1623,28 @@ function drawSection(canvas, section, themeColors) {
         ctx.textBaseline = "middle";
         ctx.fillText(String(bi + 1), PAD + 28, y + cardH/2);
 
-        // Name
-        ctx.font = "700 14px " + FONT;
+        // Name (wrapped)
+        ctx.font = "700 13px " + FONT;
         ctx.fillStyle = tc;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(name || "", PAD + 56, y + 16);
+        const bnLines = wrapTextKo(ctx, stripEmoji(name || ""), contentW - 80);
+        bnLines.slice(0, 1).forEach(l => { ctx.fillText(l, PAD + 56, y + 16); });
 
-        // Desc
-        ctx.font = "400 12px " + FONT;
+        // Desc (wrapped)
+        ctx.font = "400 11px " + FONT;
         ctx.fillStyle = tc;
         ctx.globalAlpha = 0.6;
-        ctx.fillText(desc || "", PAD + 56, y + 38);
+        const bdLines = wrapTextKo(ctx, stripEmoji(desc || ""), contentW - 80);
+        bdLines.slice(0, 2).forEach((l, li) => { ctx.fillText(l, PAD + 56, y + 36 + li * 15); });
         ctx.globalAlpha = 1;
 
-        // Value
+        // Value (wrapped)
         if (value) {
-          ctx.font = "700 11px " + FONT;
+          ctx.font = "700 10px " + FONT;
           ctx.fillStyle = accent;
           ctx.textAlign = "right";
-          ctx.fillText(value, W - PAD - 16, y + 56);
+          ctx.fillText(stripEmoji(value).slice(0, 15), W - PAD - 16, y + 56);
         }
 
         y += cardH + 10;
