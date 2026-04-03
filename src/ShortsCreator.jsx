@@ -708,50 +708,79 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     } finally { clearTimeout(timer); }
   };
 
-  // 유튜브 링크 분석 (Vercel API 활용 — shorts-factory 불필요)
+  // 유튜브 링크 분석
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
-    try {
-      // Render 서버로 다운로드 (Residential 프록시 사용)
-      setLoadingMsg("영상 다운로드 중... (최대 2분 소요)");
-      const downloadBody = { url: parsed.url };
-      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 180000 });
-      setFileId(d.file_id);
+
+    // 분석 실행 함수
+    const doAnalyzeAfterDownload = async (fileId) => {
+      setFileId(fileId);
       setLoadingMsg("음성 인식 + AI 분석 중...");
       const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
-      const ad = await apiCall(`/analyze/${d.file_id}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
+      const ad = await apiCall(`/analyze/${fileId}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
       const segs = (ad.segments || []).slice(0, maxSegments);
       setSegments(segs);
       setSelectedSegs(segs.map((_, i) => i));
       setStep("analysis");
-    } catch (e) {
-      // Render 서버 다운로드 실패 → 다운로드 도우미 모드로 전환
-      const parsed = parseYoutubeUrl(ytUrl);
-      if (parsed) {
-        // oEmbed로 영상 제목 가져오기 시도
+    };
+
+    try {
+      // 1차 시도: Render 서버 직접 다운로드
+      setLoadingMsg("영상 다운로드 중... (최대 2분 소요)");
+      const downloadBody = { url: parsed.url };
+      const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 180000 });
+      await doAnalyzeAfterDownload(d.file_id);
+    } catch (e1) {
+      // 2차 시도: Vercel API로 스트림 URL 추출 → Render 서버에 전달
+      try {
+        setLoadingMsg("대체 경로로 다운로드 시도 중...");
+        const streamRes = await fetch(`/api/youtube-stream-url?url=${encodeURIComponent(parsed.url)}`);
+        if (streamRes.ok) {
+          const streamData = await streamRes.json();
+          if (streamData.stream_url) {
+            const d2 = await apiCall("/youtube-download", {
+              method: "POST",
+              body: JSON.stringify({ url: parsed.url, stream_url: streamData.stream_url }),
+              timeout: 180000
+            });
+            await doAnalyzeAfterDownload(d2.file_id);
+            return;
+          }
+        }
+        throw new Error("스트림 URL 추출 실패");
+      } catch (e2) {
+        // 3차: 자막만으로 분석 시도 (영상 없이)
+        try {
+          setLoadingMsg("자막 기반 분석 시도 중...");
+          const d3 = await apiCall("/youtube-download", {
+            method: "POST",
+            body: JSON.stringify({ url: parsed.url, caption_only: true }),
+            timeout: 60000
+          });
+          if (d3.file_id && d3.caption_only) {
+            await doAnalyzeAfterDownload(d3.file_id);
+            return;
+          }
+        } catch {}
+
+        // 모두 실패 → 다운로드 도우미 모드
         let ytTitle = "";
         try {
           const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(parsed.url)}`);
-          if (oembed.ok) {
-            const data = await oembed.json();
-            ytTitle = data.title || "";
-          }
+          if (oembed.ok) { const data = await oembed.json(); ytTitle = data.title || ""; }
         } catch {}
         setDownloadHelper({
-          id: parsed.id,
-          url: parsed.url,
+          id: parsed.id, url: parsed.url,
           title: ytTitle || `YouTube 영상 (${parsed.id})`,
           thumbnail: `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`,
         });
         setInputMode("file");
         setError("");
-      } else {
-        setError(e.message);
+        setStep("upload");
       }
-      setStep("upload");
     }
   };
 
