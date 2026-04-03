@@ -42,10 +42,13 @@ SYSTEM_PROMPT = """너는 유튜브 숏폼/릴스/틱톡 전문 편집 전략가
 - "비교형" (클릭 유도)"""
 
 
-def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None) -> list[dict]:
+def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None, max_segments: int = 5) -> list[dict]:
     """OpenRouter API로 자막을 분석하여 숏폼 추천 구간 반환"""
     if not durations:
         durations = [15, 30, 60]
+
+    # max_segments 범위 제한
+    max_segments = max(1, min(max_segments, 10))
 
     duration_str = ", ".join(f"{d}초" for d in durations)
 
@@ -54,7 +57,7 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None) ->
 위 자막에서 숏폼으로 만들기 좋은 구간을 찾아줘.
 
 요구사항:
-- {duration_str} 버전 각각 최소 1개씩, 총 최대 5개
+- {duration_str} 버전을 포함하여 총 {max_segments}개만 선정
 - 각 구간은 위 숏폼 공식(훅→전개→CTA)에 맞는 구간이어야 함
 - 강력한 훅이 될 수 있는 문장이 시작점에 있어야 함
 - 자기완결적 스토리 (해당 구간만으로 내용 완성)
@@ -67,10 +70,11 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None) ->
 - 가장 논란이 될 만한 발언, 감정적 반응이 큰 순간, 놀라운 사실 공개 부분을 우선 선택
 - "이걸 왜?" "진짜?" "대박" 같은 반응이 나올 클릭율 높은 구간 위주
 
-구간 시작/끝 정확성 (매우 중요):
-- start_seconds: 반드시 자막 타임스탬프의 시작점을 사용. 문장 중간에서 시작 금지
-- end_seconds: 반드시 자막 타임스탬프의 끝점을 사용. 문장이 완전히 끝난 뒤로 설정
-- 말이 중간에 끊기면 절대 안 됨
+구간 시작/끝 정확성 (가장 중요!!!):
+- start_seconds: 반드시 자막 줄의 타임스탬프 시작점([HH:MM:SS.mmm 부분)을 그대로 사용
+- 문장 중간에서 시작하면 절대 안 됨! 새로운 문장이 시작되는 자막의 시작 타임스탬프를 사용
+- end_seconds: 반드시 자막 줄의 타임스탬프 끝점을 사용. 문장이 완전히 끝난 뒤로 설정
+- 말이 중간에 끊기면 절대 안 됨. 화자가 한 문장을 완전히 끝낸 후의 시점을 선택
 
 각 구간에 대해:
 - hook_text: 첫 3초에 화면에 크게 띄울 훅 문장 (15자 이내, 임팩트 있게)
@@ -129,4 +133,5 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None) ->
         text = text.rsplit("```", 1)[0]
 
     segments = json.loads(text)
-    return sorted(segments, key=lambda x: x.get("score", 0), reverse=True)
+    segments = sorted(segments, key=lambda x: x.get("score", 0), reverse=True)
+    return segments[:max_segments]

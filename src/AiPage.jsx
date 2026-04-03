@@ -22,7 +22,6 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 import PptGenerator from "./PptGenerator";
 import ShortsCreator from "./ShortsCreator";
-const AiVideoGenerator = React.lazy(() => import("./AiVideoGenerator"));
 import AutoPublisher from "./AutoPublisher";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
@@ -101,19 +100,6 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
             </div>
           </div>
 
-          {/* 이미지 AI */}
-          <div style={{ marginBottom:32 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-              <div style={{ width:28, height:28, borderRadius:8, background:"rgba(236,72,153,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🎨</div>
-              <div>
-                <div style={{ fontSize:16, fontWeight:800, color:homeText }}>이미지 AI로 시작하기</div>
-                <div style={{ fontSize:11, color:homeMuted }}>AI가 이미지를 바로 생성합니다</div>
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
-              {imageAiTools.map(renderToolCard)}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -370,6 +356,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   const AiFooter = () => null;
 
+  // 글쓰기 탭 state (sessionStorage 기반 → React state로 전환)
+  const [writeTabState, setWriteTabState] = useState(() => { try { return sessionStorage.getItem("_blog_write_tab") || "manual"; } catch { return "manual"; } });
+
   // 보관함
   if (aiMenu === "library") {
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
@@ -597,9 +586,73 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         {showOnboarding && <OnboardingModal isDark={isDark} onClose={() => setShowOnboarding(false)} _s={_s} />}
 
         <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
-          <h1 className="ai-home-title" style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:10, letterSpacing:-0.8, lineHeight:1.3 }}>
+          <h1 className="ai-home-title" style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:16, letterSpacing:-0.8, lineHeight:1.3 }}>
             {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
           </h1>
+
+          {/* 검색 기능 */}
+          {(() => {
+            const searchMap = [
+              {keywords:["블로그","글쓰기","네이버","포스팅"],menu:"blog_write",label:"블로그 글쓰기"},
+              {keywords:["인스타","인스타그램","릴스"],menu:"blog_insta",label:"인스타그램 글쓰기"},
+              {keywords:["유튜브","youtube","영상"],menu:"blog_youtube",label:"유튜브 글쓰기"},
+              {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
+              {keywords:["카드뉴스","카드","콘텐츠"],menu:"cardnews_simple",label:"카드뉴스 제작"},
+              {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
+              {keywords:["썸네일","thumbnail"],menu:"thumbnail_gen",label:"썸네일 제작"},
+              {keywords:["ppt","프레젠테이션","슬라이드"],menu:"ppt_gen",label:"PPT 슬라이드"},
+              {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
+              {keywords:["로고","logo"],menu:"logo_gen",label:"로고 생성"},
+              {keywords:["목업","mockup"],menu:"mockup_gen",label:"목업 생성"},
+              {keywords:["제품","상품","촬영"],menu:"product_shot",label:"제품 사진"},
+              {keywords:["쇼츠","shorts","숏폼","영상편집"],menu:"shorts_make",label:"쇼츠 자동 편집"},
+              {keywords:["소셜","플래너","일정","캘린더"],menu:"social_planner",label:"소셜 플래너"},
+              {keywords:["티스토리","tistory"],menu:"blog_tistory",label:"티스토리 글쓰기"},
+              {keywords:["카페","cafe"],menu:"blog_cafe",label:"카페 글쓰기"},
+              {keywords:["뉴스","기사","news"],menu:"blog_news",label:"뉴스 글쓰기"},
+              {keywords:["편집","배경제거","보정"],menu:"image_edit",label:"이미지 편집"},
+              {keywords:["모델","인물"],menu:"model_gen",label:"AI 모델"},
+              {keywords:["얼굴","face"],menu:"face_swap",label:"얼굴 교체"},
+              {keywords:["발행","자동","auto"],menu:"auto_publish",label:"자동 발행"},
+            ];
+            const popularKeywords = ["블로그 글쓰기","카드뉴스","이미지 생성","쇼츠 편집","썸네일","인스타그램"];
+            const [homeSearch, setHomeSearch] = React.useState("");
+            const [searchFocused, setSearchFocused] = React.useState(false);
+            const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
+            return (
+              <div style={{ position:"relative", maxWidth:480, margin:"0 auto 24px", width:"100%" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderRadius:14, border:`1.5px solid ${searchFocused ? "#7c6aff" : cardBdr}`, background:isDark?"rgba(255,255,255,0.05)":"#fff", transition:"border-color 0.15s", boxShadow: searchFocused ? "0 4px 16px rgba(124,106,255,0.1)" : "0 2px 8px rgba(0,0,0,0.03)" }}>
+                  <span style={{ fontSize:16, opacity:0.5 }}>🔍</span>
+                  <input value={homeSearch} onChange={e=>setHomeSearch(e.target.value)}
+                    onFocus={()=>setSearchFocused(true)} onBlur={()=>setTimeout(()=>setSearchFocused(false),200)}
+                    placeholder={_s("어떤 콘텐츠를 만들까요?","What content do you want to create?")}
+                    style={{ flex:1, border:"none", background:"transparent", color:homeText, fontSize:14, outline:"none" }}/>
+                  {homeSearch && <button onClick={()=>setHomeSearch("")} style={{ border:"none", background:"transparent", color:homeMuted, cursor:"pointer", fontSize:14, padding:0 }}>✕</button>}
+                </div>
+                {!homeSearch && !searchFocused && (
+                  <div style={{ display:"flex", gap:6, marginTop:10, justifyContent:"center", flexWrap:"wrap" }}>
+                    {popularKeywords.map(k=>(
+                      <button key={k} onClick={()=>{const m=searchMap.find(s=>s.keywords.some(kw=>k.toLowerCase().includes(kw))||s.label.includes(k));if(m)setAiMenu(m.menu);}}
+                        style={{ padding:"5px 12px", borderRadius:20, border:`1px solid ${cardBdr}`, background:"transparent", color:homeMuted, fontSize:11, cursor:"pointer", fontWeight:500 }}>
+                        {k}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {searchResults.length > 0 && searchFocused && (
+                  <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:6, borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(26,23,48,0.98)":"#fff", boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:100, overflow:"hidden" }}>
+                    {searchResults.slice(0,6).map(s=>(
+                      <button key={s.menu} onClick={()=>{setAiMenu(s.menu);setHomeSearch("");}}
+                        style={{ width:"100%", padding:"12px 16px", border:"none", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f0f0f5"}`, background:"transparent", color:homeText, fontSize:13, fontWeight:600, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:8 }}
+                        onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.05)":"#f8f8fb"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <span style={{ fontSize:14, opacity:0.5 }}>→</span> {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 기능 아이콘 */}
           <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
@@ -631,7 +684,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           </div>
 
           {/* 소셜 플래너 바로가기 */}
-          <div style={{ marginBottom:24, textAlign:"center" }}>
+          <div style={{ marginBottom:16, textAlign:"center" }}>
             <button onClick={() => setAiMenu("social_planner")}
               style={{ padding:"14px 28px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:10, transition:"all 0.15s" }}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
@@ -643,6 +696,20 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <span style={{ fontSize:14, color:"#7c6aff", fontWeight:700 }}>→</span>
             </button>
           </div>
+
+          {/* 카톡방 배너 */}
+          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+            style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 18px", borderRadius:14, background:"#FEE500", marginBottom:24, textDecoration:"none", transition:"opacity 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.opacity="0.9"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+            <div style={{ width:36, height:36, borderRadius:10, background:"#191919", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:"#191919" }}>단체카톡방에서 함께 소통하기</div>
+              <div style={{ fontSize:11, color:"rgba(25,25,25,0.55)" }}>SNS 마케팅 인사이트를 함께 나눠보세요</div>
+            </div>
+            <span style={{ fontSize:12, fontWeight:800, color:"#191919" }}>→</span>
+          </a>
         </div>
       </div>
     );
@@ -828,8 +895,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 글쓰기: 선택 화면 (수동발행 / 자동발행 탭)
   if (aiMenu === "blog_write") {
-    const writeTab = (() => { try { return sessionStorage.getItem("_blog_write_tab") || "manual"; } catch { return "manual"; } })();
-    const setWriteTab = (t) => { try { sessionStorage.setItem("_blog_write_tab", t); } catch {} setAiMenu("blog_write"); };
+    const writeTab = writeTabState;
+    const setWriteTab = (t) => { setWriteTabState(t); try { sessionStorage.setItem("_blog_write_tab", t); } catch {} };
     const isAutoTab = writeTab === "auto";
     const showAutoTab = user?.role === "admin"; // 관리자만 자동발행 탭 표시
     const writeItems = [
@@ -1185,26 +1252,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>유튜브 링크 또는 파일에서<br/>AI가 쇼츠를 자동 추출</div>
               <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 80P</div>
             </div>
-            {user?.role === "admin" ? (
-              <div onClick={() => setAiMenu("ai_video_gen")} className="hover-lift"
-                style={{ padding:"28px 20px", borderRadius:16, border: `1px solid rgba(236,72,153,0.2)`, background: isDark ? "rgba(236,72,153,0.04)" : "rgba(236,72,153,0.02)", cursor:"pointer", textAlign:"center" }}>
-                <div style={{ width:56, height:56, borderRadius:16, background:"rgba(236,72,153,0.12)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:28 }}>✨</span>
-                </div>
-                <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>AI 영상 생성</div>
-                <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>프롬프트만 입력하면<br/>AI가 씬별 영상을 생성</div>
-                <div style={{ marginTop:12, fontSize:11, color:"#ec4899", fontWeight:700 }}>생성 50P</div>
-              </div>
-            ) : (
-              <div style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", textAlign:"center", opacity:0.6 }}>
-                <div style={{ width:56, height:56, borderRadius:16, background:"rgba(128,128,128,0.1)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:28 }}>✨</span>
-                </div>
-                <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>AI 영상 생성</div>
-                <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>프롬프트 기반 영상 생성</div>
-                <div style={{ marginTop:12, fontSize:11, color:"#f59e0b", fontWeight:700 }}>Coming Soon</div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1215,10 +1262,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => { if (st === "edit") { /* 프로 전환 예정 배너는 ShortsCreator 내부에서 처리 */ } }} />;
   }
 
-  // AI 영상 생성
-  if (aiMenu === "ai_video_gen") {
-    return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><AiVideoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></React.Suspense>;
-  }
 
   return null;
 }

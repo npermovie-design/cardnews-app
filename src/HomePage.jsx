@@ -289,6 +289,25 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         </div>
       </section>
 
+      {/* ══ 카톡방 배너 ══ */}
+      <section style={{ padding: "0 clamp(16px,4vw,24px)" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto" }}>
+          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 22px", borderRadius: 16, background: "#FEE500", textDecoration: "none", transition: "transform 0.15s, box-shadow 0.15s", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)"; }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: "#191919", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#191919" }}>단체카톡방에서 함께 소통하기</div>
+              <div style={{ fontSize: 12, color: "rgba(25,25,25,0.6)", marginTop: 2 }}>SNS 마케팅 인사이트와 최신 뉴스를 함께 나눠보세요</div>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#191919", flexShrink: 0 }}>참여하기 →</span>
+          </a>
+        </div>
+      </section>
+
       {/* ══ SNS 자동 발행 ══ */}
       <section style={{ padding: "clamp(80px,12vw,120px) clamp(16px,4vw,24px)", position: "relative", overflow: "hidden",
         background: "linear-gradient(180deg, #f8f8fb 0%, #ede5ff 50%, #f8f8fb 100%)" }}>

@@ -225,6 +225,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [maxChars, setMaxChars] = useState(0);
   const [shortsLength, setShortsLength] = useState("s30");
   const [userPrompt, setUserPrompt] = useState("");
+  const [maxSegments, setMaxSegments] = useState(3); // 쇼츠 생성 개수 (1~5)
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(true); // 자동자막 켜기/끄기
   const [projectId, setProjectId] = useState(null); // 저장된 프로젝트 ID
 
@@ -685,7 +686,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 180000 });
       setFileId(d.file_id);
       setLoadingMsg("음성 인식 + AI 분석 중...");
-      const analyzeBody = { max_chars: maxChars };
+      const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
       const ad = await apiCall(`/analyze/${d.file_id}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
       setSegments(ad.segments || []);
@@ -746,7 +747,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const doAnalyze = async (fid) => {
     setLoadingMsg("AI가 영상을 분석하고 있어요...");
     try {
-      const analyzeBody = { max_chars: maxChars };
+      const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
       const d = await apiCall(`/analyze/${fid}`, { method: "POST", body: JSON.stringify(analyzeBody) });
       setSegments(d.segments || []);
@@ -785,7 +786,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     try {
       const d = await apiCall("/generate-async", {
         method: "POST",
-        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, template, title_color: titleColor, caption_color: captionColor }),
+        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, template, title_color: titleColor, caption_color: captionColor, subtitles_enabled: subtitlesEnabled }),
       });
       setJobId(d.job_id);
       const poll = setInterval(async () => {
@@ -1022,11 +1023,20 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>📝 자막 글자수</div>
-          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {[[0, "자동"], [8, "8자"], [15, "15자"], [25, "25자"]].map(([v, l]) => (
               <button key={v} onClick={() => setMaxChars(v)}
                 style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {l}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>🎬 쇼츠 생성 개수</div>
+          <div className="ai-grid-5" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setMaxSegments(n)}
+                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {n}개
               </button>
             ))}
           </div>

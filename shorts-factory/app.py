@@ -58,31 +58,52 @@ file_store: dict[str, dict] = {}
 
 
 def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> tuple[float, float]:
-    """시작/끝 시간을 자막 문장 경계에 맞춰 조정 (말 끊김 방지)"""
+    """시작/끝 시간을 자막 문장 경계에 맞춰 조정 (말 끊김 방지)
+
+    핵심 원칙:
+    - 시작점: 반드시 자막 문장이 시작되는 지점에서 시작 (말 중간 시작 금지)
+    - 끝점: 반드시 자막 문장이 끝난 뒤에 종료 (말 중간 끊김 금지)
+    """
     if not subs:
         return start, end
 
-    # start: 시작 시점에 걸친 자막이 있으면 그 자막의 시작점으로
+    # ── 시작점 보정 ──
+    # 시작 시점이 자막 중간에 걸리면 → 다음 자막의 시작점으로 이동
+    # (이전 자막 시작점으로 가면 말의 앞부분이 잘린 채 시작됨)
     best_start = start
-    for s in subs:
-        if s["start_seconds"] <= start <= s["end_seconds"]:
+    for i, s in enumerate(subs):
+        # Case 1: 시작점이 어떤 자막 발화 구간 안에 있음 (말 중간)
+        if s["start_seconds"] < start < s["end_seconds"]:
+            # 자막 시작부터 0.3초 이내면 → 해당 자막 처음부터 시작 (거의 안 잘림)
+            if start - s["start_seconds"] < 0.3:
+                best_start = s["start_seconds"]
+            else:
+                # 말 중간이므로 다음 자막 시작점으로 이동
+                if i + 1 < len(subs):
+                    best_start = subs[i + 1]["start_seconds"]
+                else:
+                    best_start = s["start_seconds"]
+            break
+        # Case 2: 시작점이 자막과 자막 사이 빈 구간에 있음
+        if s["start_seconds"] > start:
+            # 가장 가까운 다음 자막의 시작점으로
             best_start = s["start_seconds"]
             break
-        if s["start_seconds"] > start:
-            # 다음 자막 시작이 1초 이내면 그걸로
-            if s["start_seconds"] - start < 1.0:
-                best_start = s["start_seconds"]
+        # Case 3: 정확히 자막 시작점에 있음 → 완벽
+        if abs(s["start_seconds"] - start) < 0.1:
+            best_start = s["start_seconds"]
             break
 
-    # end: 끝 시점에 걸친 자막이 있으면 그 자막이 끝날 때까지 연장
+    # ── 끝점 보정 ──
+    # 끝 시점이 자막 중간에 걸리면 → 해당 자막이 끝날 때까지 연장
     best_end = end
     for s in subs:
-        if s["start_seconds"] <= end <= s["end_seconds"]:
-            # 말이 끝나기 전에 잘리는 것 방지 — 자막 끝까지 연장 (최대 2초)
-            if s["end_seconds"] - end < 2.0:
+        if s["start_seconds"] < end < s["end_seconds"]:
+            # 말이 끝나기 전에 잘리는 것 방지 — 자막 끝까지 연장 (최대 3초)
+            if s["end_seconds"] - end < 3.0:
                 best_end = s["end_seconds"] + 0.3
             break
-    # end 직전의 마지막 자막이 끝나는 시점으로
+    # end 직전의 마지막 자막이 끝나는 시점으로 보정
     for s in reversed(subs):
         if s["end_seconds"] <= end + 0.5:
             best_end = max(best_end, s["end_seconds"] + 0.3)
@@ -474,9 +495,10 @@ async def analyze(file_id: str, request: Request):
     except Exception:
         body = {}
     max_chars = body.get("max_chars", 0)
+    max_segments = body.get("max_segments", 5)
 
     meta = file_store[file_id]
-    logger.info(f"[analyze] file_id={file_id}, needs_transcription={meta.get('needs_transcription')}")
+    logger.info(f"[analyze] file_id={file_id}, needs_transcription={meta.get('needs_transcription')}, max_segments={max_segments}")
 
     if meta.get("needs_transcription") or not meta.get("subtitle_path"):
         try:
@@ -507,7 +529,7 @@ async def analyze(file_id: str, request: Request):
 
     meta["subs_parsed"] = subs
     text = subtitles_to_text(subs)
-    segments = analyze_subtitles(text)
+    segments = analyze_subtitles(text, max_segments=max_segments)
 
     # 자막 경계에 맞춰 시작/끝 시간 조정
     for seg in segments:
@@ -541,6 +563,7 @@ async def generate(request: Request):
     template = body.get("template", "minimal")
     title_color = body.get("title_color", "")
     caption_color = body.get("caption_color", "")
+    subtitles_enabled = body.get("subtitles_enabled", True)
 
     if not file_id or file_id not in file_store:
         raise HTTPException(404, "파일을 찾을 수 없습니다")
@@ -566,7 +589,7 @@ async def generate(request: Request):
             edited_subs = [
                 {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
                 for s in clip.get("subtitles", [])
-            ]
+            ] if subtitles_enabled else []
             worker_args = json.dumps({
                 "video_path": meta["video_path"],
                 "srt_path": meta.get("subtitle_path", ""),
@@ -582,6 +605,7 @@ async def generate(request: Request):
                 "custom_font": meta.get("custom_font_path", ""),
                 "title_color": title_color,
                 "caption_color": caption_color,
+                "subtitles_enabled": subtitles_enabled,
             }, ensure_ascii=False)
 
             try:
@@ -649,10 +673,11 @@ async def generate_async(request: Request):
         for idx, clip in enumerate(clips):
             job_store[job_id]["current"] = idx
             output_file = output_dir / f"short_{idx+1:02d}.mp4"
+            subtitles_on = body.get("subtitles_enabled", True)
             edited_subs = [
                 {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
                 for s in clip.get("subtitles", [])
-            ]
+            ] if subtitles_on else []
             worker_args = json.dumps({
                 "video_path": meta["video_path"],
                 "srt_path": meta.get("subtitle_path", ""),
@@ -668,6 +693,7 @@ async def generate_async(request: Request):
                 "custom_font": meta.get("custom_font_path", ""),
                 "title_color": body.get("title_color", ""),
                 "caption_color": body.get("caption_color", ""),
+                "subtitles_enabled": subtitles_on,
             }, ensure_ascii=False)
             try:
                 proc_result = subprocess.run(

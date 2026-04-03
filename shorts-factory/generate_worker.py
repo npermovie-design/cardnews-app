@@ -6,6 +6,8 @@ from video_processor import generate_short
 if __name__ == "__main__":
     args = json.loads(sys.argv[1])
     try:
+        # 자막 비활성화 시 자막 데이터 제거
+        subs_data = args.get("subs", []) if args.get("subtitles_enabled", True) else []
         result = generate_short(
             video_path=args["video_path"],
             srt_path=args.get("srt_path", ""),
@@ -17,7 +19,7 @@ if __name__ == "__main__":
             subtitle=args.get("subtitle", ""),
             logo_path=args.get("logo_path", ""),
             remove_silence=args.get("remove_silence", False),
-            subs=args.get("subs", []),
+            subs=subs_data,
             template=args.get("template", "minimal"),
             custom_font=args.get("custom_font", ""),
             title_color=args.get("title_color", ""),
