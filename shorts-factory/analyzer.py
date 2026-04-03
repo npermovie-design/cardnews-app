@@ -57,7 +57,7 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None, ma
 위 자막에서 숏폼으로 만들기 좋은 구간을 찾아줘.
 
 요구사항:
-- {duration_str} 버전을 포함하여 총 {max_segments}개만 선정
+- 정확히 {max_segments}개만 선정 (이보다 더 많거나 적으면 안 됨!)
 - 각 구간은 위 숏폼 공식(훅→전개→CTA)에 맞는 구간이어야 함
 - 강력한 훅이 될 수 있는 문장이 시작점에 있어야 함
 - 자기완결적 스토리 (해당 구간만으로 내용 완성)
@@ -76,10 +76,14 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None, ma
 - end_seconds: 반드시 자막 줄의 타임스탬프 끝점을 사용. 문장이 완전히 끝난 뒤로 설정
 - 말이 중간에 끊기면 절대 안 됨. 화자가 한 문장을 완전히 끝낸 후의 시점을 선택
 
+구간 끝 문장 완성도 (매우 중요):
+- 구간의 마지막 문장은 반드시 완전한 문장으로 끝나야 함 ("~요", "~다", "~습니다", "~죠" 등)
+- 접속사("그리고","그래서","근데","하지만","또")로 끝나면 절대 안 됨 → 다음 문장까지 포함
+
 각 구간에 대해:
-- hook_text: 첫 3초에 화면에 크게 띄울 훅 문장 (15자 이내, 임팩트 있게)
+- hook_text: 첫 3초에 화면에 크게 띄울 훅 문장 (15자 이내, 임팩트 있게, 줄바꿈 "\n" 사용 가능)
 - structure_type: "15s_viral", "30s_save", "60s_follow" 중 하나
-- seo_title: 검색 최적화 제목
+- seo_title: 검색 최적화 제목 (긴 경우 "\n"으로 줄바꿈)
 - viral_factors: 이 구간이 왜 바이럴될 수 있는지 3가지 요인
 - audience_hook: 어떤 시청자 심리를 자극하는지
 - estimated_retention: 예상 시청 유지율 (%)

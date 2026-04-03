@@ -99,7 +99,6 @@ def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> t
     best_end = end
     for s in subs:
         if s["start_seconds"] < end < s["end_seconds"]:
-            # 말이 끝나기 전에 잘리는 것 방지 — 자막 끝까지 연장 (최대 3초)
             if s["end_seconds"] - end < 3.0:
                 best_end = s["end_seconds"] + 0.3
             break
@@ -108,6 +107,30 @@ def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> t
         if s["end_seconds"] <= end + 0.5:
             best_end = max(best_end, s["end_seconds"] + 0.3)
             break
+
+    # ── 문장 완성도 보정 ──
+    # 접속사("그리고","그래서","근데","하지만","또","그런데")로 끝나는 경우
+    # → 다음 자막까지 연장하여 완전한 문장으로 끝나게 함
+    CONNECTORS = ("그리고", "그래서", "근데", "하지만", "또", "그런데", "그래서",
+                  "그러면", "그러니까", "왜냐하면", "그러므로", "그렇지만", "아니면",
+                  "그럼", "이게", "그걸", "그건", "이건", "저는", "제가", "어떤")
+    GOOD_ENDINGS = ("요", "다", "죠", "니다", "세요", "까요", "네요", "라고", "거든요")
+    # 끝점 근처의 마지막 자막 텍스트 확인
+    last_sub_before_end = None
+    for s in reversed(subs):
+        if s["end_seconds"] <= best_end + 0.5:
+            last_sub_before_end = s
+            break
+    if last_sub_before_end:
+        text = last_sub_before_end["text"].strip().rstrip(".")
+        # 접속사로 끝나거나 완전한 문장이 아닌 경우 → 다음 자막까지 연장
+        if text.endswith(CONNECTORS) or (text and not text.endswith(GOOD_ENDINGS)):
+            idx = subs.index(last_sub_before_end) if last_sub_before_end in subs else -1
+            if idx >= 0 and idx + 1 < len(subs):
+                next_sub = subs[idx + 1]
+                # 다음 자막이 3초 이내면 연장
+                if next_sub["end_seconds"] - best_end < 4.0:
+                    best_end = next_sub["end_seconds"] + 0.3
 
     return best_start, best_end
 

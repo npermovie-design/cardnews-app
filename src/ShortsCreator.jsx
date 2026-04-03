@@ -226,7 +226,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [shortsLength, setShortsLength] = useState("s30");
   const [userPrompt, setUserPrompt] = useState("");
   const [maxSegments, setMaxSegments] = useState(3); // 쇼츠 생성 개수 (1~5)
-  const [subtitlesEnabled, setSubtitlesEnabled] = useState(true); // 자동자막 켜기/끄기
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // 자동자막 기본 OFF
   const [projectId, setProjectId] = useState(null); // 저장된 프로젝트 ID
 
   // 생성

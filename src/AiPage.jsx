@@ -670,31 +670,31 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             ))}
           </div>
 
-          {/* 영상 제작 프로모 배너 */}
-          <div onClick={() => setAiMenu("shorts_make")}
-            style={{ marginBottom:20, padding:"20px 24px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:16, transition:"all 0.15s" }}
-            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-            <div style={{ width:48, height:48, borderRadius:14, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
-            </div>
-            <div style={{ flex:1, textAlign:"left" }}>
-              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video Creation")}</div>
-              <div style={{ fontSize:12, color:homeMuted, lineHeight:1.5 }}>{_s("유튜브 링크만 넣으면 쇼츠 영상을 자동으로 만들어요","Just paste a YouTube link to auto-create shorts")}</div>
-            </div>
-            <span style={{ fontSize:10, fontWeight:700, color:"#7c6aff", padding:"4px 8px", borderRadius:6, background: isDark ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
-          </div>
-
-          {/* 소셜 플래너 바로가기 */}
-          <div style={{ marginBottom:16, textAlign:"center" }}>
-            <button onClick={() => setAiMenu("social_planner")}
-              style={{ padding:"14px 28px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:10, transition:"all 0.15s" }}
+          {/* 영상 제작 + 소셜 플래너 배너 (가로 2열) */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+            <div onClick={() => setAiMenu("shorts_make")}
+              style={{ padding:"18px 20px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:12, transition:"all 0.15s" }}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-              <span style={{ fontSize:22 }}>📅</span>
-              <div style={{ textAlign:"left" }}>
-                <div style={{ fontSize:14, fontWeight:700, color:homeText }}>소셜 플래너</div>
-                <div style={{ fontSize:11, color:homeMuted }}>SNS 업로드 일정을 관리하세요</div>
+              <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
               </div>
-              <span style={{ fontSize:14, color:"#7c6aff", fontWeight:700 }}>→</span>
+              <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video")}</div>
+                <div style={{ fontSize:11, color:homeMuted }}>{_s("유튜브 → 쇼츠 자동","YouTube → Auto Shorts")}</div>
+              </div>
+              <span style={{ fontSize:9, fontWeight:700, color:"#7c6aff", padding:"3px 6px", borderRadius:5, background:isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
+            </div>
+            <button onClick={() => setAiMenu("social_planner")}
+              style={{ padding:"18px 20px", borderRadius:16, border:`1px solid ${cardBdr}`, background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.03)", cursor:"pointer", display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
+              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <div style={{ width:42, height:42, borderRadius:12, background:isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ fontSize:20 }}>📅</span>
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:2 }}>소셜 플래너</div>
+                <div style={{ fontSize:11, color:homeMuted }}>업로드 일정 관리</div>
+              </div>
+              <span style={{ fontSize:14, color:"#7c6aff", fontWeight:700, flexShrink:0 }}>→</span>
             </button>
           </div>
 
