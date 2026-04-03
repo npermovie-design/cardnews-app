@@ -2764,21 +2764,114 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
   if (step === 4) {
     const displayW = 360;
 
+    const scrollToSection = (idx) => {
+      const el = document.getElementById("sec-block-" + idx);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const moveSection = (from, to) => {
+      if (to < 0 || to >= sections.length) return;
+      setSections(prev => {
+        const arr = [...prev];
+        const [item] = arr.splice(from, 1);
+        arr.splice(to, 0, item);
+        return arr.map((s, i) => ({ ...s, order: i }));
+      });
+    };
+
+    const tabDragRef = { current: null };
+
     return (
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <WizHeader />
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px 40px" }}>
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 18, fontWeight: 900, color: textColor, letterSpacing: -0.5, marginBottom: 3 }}>{"\uBE44\uC8FC\uC5BC \uD3B8\uC9D1"}</div>
-            <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>{"\uCE94\uBC84\uC2A4 \uC704\uC758 \uC0AC\uC9C4 \uC601\uC5ED\uC744 \uD074\uB9AD\uD558\uBA74 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC5B4\uC694"}</div>
-          </div>
 
-          {/* 에디터 열기 (UnifiedCanvasEditor) */}
-          {editorOpen && editingSection !== null && (
-            <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: "90vw", maxWidth: 900, height: "85vh", borderRadius: 16, overflow: "hidden", background: D ? "#1a1a2e" : "#fff" }}>
-                <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#888" }}>{"\uC5D0\uB514\uD130 \uB85C\uB529 \uC911..."}</div>}>
+        {/* ── 상단 고정 섹션 탭바 ── */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 50,
+          background: D ? "#1a1a2e" : "#fff",
+          borderBottom: `1.5px solid ${bdr}`,
+          padding: "10px 24px 10px",
+          flexShrink: 0,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>섹션 이동 · 드래그로 순서 변경</span>
+            <span style={{ fontSize: 10, color: muted, opacity: 0.6 }}>{sections.length}개 섹션</span>
+          </div>
+          <div style={{
+            display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4,
+            WebkitOverflowScrolling: "touch", scrollbarWidth: "none",
+          }}>
+            {sections.map((sec, i) => {
+              const st = SECTION_TYPES.find(t => t.id === sec.type);
+              return (
+                <div
+                  key={sec.id}
+                  draggable
+                  onDragStart={() => { tabDragRef.current = i; }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={() => {
+                    if (tabDragRef.current !== null && tabDragRef.current !== i) {
+                      moveSection(tabDragRef.current, i);
+                    }
+                    tabDragRef.current = null;
+                  }}
+                  onClick={() => scrollToSection(i)}
+                  style={{
+                    flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
+                    padding: "6px 12px", borderRadius: 8,
+                    background: D ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                    border: `1px solid ${bdr}`,
+                    cursor: "grab", fontSize: 11, fontWeight: 700, color: textColor,
+                    whiteSpace: "nowrap", userSelect: "none",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${accentColor}18`}
+                  onMouseLeave={e => e.currentTarget.style.background = D ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}
+                >
+                  <span style={{
+                    width: 18, height: 18, borderRadius: 5,
+                    background: `${accentColor}25`, color: accentColor,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 900,
+                  }}>{i + 1}</span>
+                  <span>{st?.label || sec.type}</span>
+                  <span style={{ fontSize: 9, color: muted, cursor: "grab" }}>☰</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── 에디터 모달 (UnifiedCanvasEditor) ── */}
+        {editorOpen && editingSection !== null && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "stretch", justifyContent: "center" }}
+            onClick={e => { if (e.target === e.currentTarget) setEditorOpen(false); }}>
+            <div style={{ width: "100%", maxWidth: 1100, height: "100vh", display: "flex", flexDirection: "column", background: D ? "#1a1a2e" : "#fff" }}>
+              {/* 모달 헤더 */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 20px", borderBottom: `1px solid ${bdr}`, flexShrink: 0,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    width: 24, height: 24, borderRadius: 7, background: `${accentColor}20`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 900, color: accentColor,
+                  }}>{editingSection + 1}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: textColor }}>
+                    {SECTION_TYPES.find(t => t.id === sections[editingSection]?.type)?.label} 캔버스 편집
+                  </span>
+                </div>
+                <button onClick={() => setEditorOpen(false)}
+                  style={{
+                    padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer",
+                    background: accentColor, color: "#fff", fontSize: 13, fontWeight: 700,
+                  }}>← 돌아가기</button>
+              </div>
+              {/* 에디터 본체 */}
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#888" }}>에디터 로딩 중...</div>}>
                   <UnifiedCanvasEditor
                     slides={[{
                       title: sections[editingSection]?.texts?.headline || "",
@@ -2798,66 +2891,82 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
                 </Suspense>
               </div>
             </div>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {sections.map((sec, i) => {
-              const st = SECTION_TYPES.find(t => t.id === sec.type);
-              return (
-                <div key={sec.id} style={{ borderRadius: 14, border: `1.5px solid ${bdr}`, background: cardBg, overflow: "hidden" }}>
-                  {/* Section header */}
-                  <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 16px", borderBottom: `1px solid ${bdr}`,
-                    background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 7, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: accentColor }}>{i + 1}</div>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>{st?.label || sec.type}</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => { setEditingSection(i); setEditorOpen(true); }}
-                        style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{"\uCE94\uBC84\uC2A4 \uD3B8\uC9D1"}</button>
-                      <button onClick={() => removeSection(i)}
-                        style={{ width: 28, height: 28, borderRadius: 7, border: "none", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u00D7"}</button>
-                    </div>
-                  </div>
-
-                  {/* Canvas */}
-                  <div style={{ padding: "16px", display: "flex", justifyContent: "center" }}>
-                    <SectionCanvas
-                      section={sec}
-                      themeColors={themeColors}
-                      index={i}
-                      displayW={displayW}
-                      onClick={e => handleCanvasClick(e, i)}
-                    />
-                  </div>
-
-                  {/* Compact text inputs */}
-                  <div style={{ padding: "0 16px 14px", display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 4 }}>{"\uD5E4\uB4DC\uB77C\uC778"}</div>
-                      <input value={sec.texts?.headline || ""} onChange={e => updateSectionText(i, "headline", e.target.value)}
-                        style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: inputBg, color: textColor, fontSize: 11, outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 4 }}>{"\uBCF8\uBB38"}</div>
-                      <input value={sec.texts?.body || ""} onChange={e => updateSectionText(i, "body", e.target.value)}
-                        style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: inputBg, color: textColor, fontSize: 11, outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
+        )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
-            <button onClick={() => setStep(3)} style={{ padding: "12px 28px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{"\u2190 \uC774\uC804"}</button>
-            <button onClick={() => setStep(5)}
-              style={{ padding: "14px 40px", borderRadius: 12, border: "none", cursor: "pointer", background: accentColor, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}>
-              {"\uB2E4\uC74C \u2192"} <span style={{ fontSize: 12, opacity: 0.8 }}>{"\uB0B4\uBCF4\uB0B4\uAE30"}</span>
-            </button>
+        {/* ── 섹션 리스트 (스크롤 영역) ── */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px 40px" }}>
+          <div style={{ maxWidth: 960, margin: "0 auto" }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: muted, lineHeight: 1.7 }}>캔버스 위의 사진 영역을 클릭하면 이미지를 업로드할 수 있어요</div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {sections.map((sec, i) => {
+                const st = SECTION_TYPES.find(t => t.id === sec.type);
+                return (
+                  <div key={sec.id} id={"sec-block-" + i}
+                    style={{ borderRadius: 14, border: `1.5px solid ${bdr}`, background: cardBg, overflow: "hidden", scrollMarginTop: 120 }}>
+                    {/* Section header */}
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "10px 16px", borderBottom: `1px solid ${bdr}`,
+                      background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 7, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: accentColor }}>{i + 1}</div>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>{st?.label || sec.type}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                        {/* 순서 변경 버튼 */}
+                        <button onClick={() => moveSection(i, i - 1)} disabled={i === 0}
+                          style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: i === 0 ? muted : textColor, fontSize: 12, cursor: i === 0 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: i === 0 ? 0.3 : 1 }}>▲</button>
+                        <button onClick={() => moveSection(i, i + 1)} disabled={i === sections.length - 1}
+                          style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: i === sections.length - 1 ? muted : textColor, fontSize: 12, cursor: i === sections.length - 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: i === sections.length - 1 ? 0.3 : 1 }}>▼</button>
+                        <div style={{ width: 1, height: 18, background: bdr, margin: "0 2px" }} />
+                        <button onClick={() => { setEditingSection(i); setEditorOpen(true); }}
+                          style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${bdr}`, background: "transparent", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>캔버스 편집</button>
+                        <button onClick={() => removeSection(i)}
+                          style={{ width: 26, height: 26, borderRadius: 6, border: "none", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                      </div>
+                    </div>
+
+                    {/* Canvas */}
+                    <div style={{ padding: "16px", display: "flex", justifyContent: "center" }}>
+                      <SectionCanvas
+                        section={sec}
+                        themeColors={themeColors}
+                        index={i}
+                        displayW={displayW}
+                        onClick={e => handleCanvasClick(e, i)}
+                      />
+                    </div>
+
+                    {/* Compact text inputs */}
+                    <div style={{ padding: "0 16px 14px", display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 4 }}>헤드라인</div>
+                        <input value={sec.texts?.headline || ""} onChange={e => updateSectionText(i, "headline", e.target.value)}
+                          style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: inputBg, color: textColor, fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 4 }}>본문</div>
+                        <input value={sec.texts?.body || ""} onChange={e => updateSectionText(i, "body", e.target.value)}
+                          style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: inputBg, color: textColor, fontSize: 11, outline: "none", boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
+              <button onClick={() => setStep(3)} style={{ padding: "12px 28px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← 이전</button>
+              <button onClick={() => setStep(5)}
+                style={{ padding: "14px 40px", borderRadius: 12, border: "none", cursor: "pointer", background: accentColor, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}>
+                다음 → <span style={{ fontSize: 12, opacity: 0.8 }}>내보내기</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
