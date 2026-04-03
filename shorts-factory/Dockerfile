@@ -2,12 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 시스템 패키지: ffmpeg + 한글 폰트 + 빌드 도구
+# 시스템 패키지: ffmpeg + 한글 폰트 + 빌드 도구 + Node.js (yt-dlp PO Token용)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libffi-dev \
     ffmpeg \
     fonts-nanum \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "Node.js version:" && node --version
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
