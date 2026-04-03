@@ -216,8 +216,27 @@ async def youtube_download(request: Request):
         except Exception as e:
             errors.append(f"stream_url: {str(e)[:80]}")
 
-    # 프록시 없이 직접 연결만 시도 (Webshare 만료됨)
-    proxy_urls = [None]
+    # Webshare Rotating Residential 프록시
+    import os
+    proxy_urls = []
+    webshare_token = os.environ.get("WEBSHARE_API_KEY", "")
+    if webshare_token:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as pc:
+                pr = await pc.get("https://proxy.webshare.io/api/v2/proxy/list/?mode=backbone&page=1&page_size=3",
+                    headers={"Authorization": f"Token {webshare_token}"})
+                if pr.status_code == 200:
+                    proxies = pr.json().get("results", [])
+                    for p in proxies:
+                        user = p.get("username", "")
+                        pw = p.get("password", "")
+                        if user and pw:
+                            proxy_urls.append(f"http://{user}:{pw}@p.webshare.io:80")
+                    logger.info(f"Got {len(proxy_urls)} Webshare proxies")
+        except Exception as e:
+            logger.warning(f"Webshare proxy fetch failed: {e}")
+    proxy_urls.append(None)  # 마지막에 직접 연결 시도
 
     # 1) yt-dlp (여러 player_client + 프록시 시도)
     for proxy in proxy_urls:
