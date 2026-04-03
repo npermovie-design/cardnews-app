@@ -2943,12 +2943,12 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
             <div style={{ padding:"8px 12px", borderTop:`1px solid ${bdr}` }}>
               <div style={{ fontSize:10, fontWeight:700, color:muted, marginBottom:6 }}>컬러 테마</div>
               <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                {(COLOR_THEMES[mainCat] || COLOR_THEMES.education).map(t => (
-                  <button key={t.key} onClick={() => setColorTheme(t.key)}
+                {(COLOR_THEMES[mainCat] || COLOR_THEMES.education).map((t, ti) => (
+                  <button key={t.key} onClick={() => setColorThemeIdx(ti)}
                     style={{
                       display:"flex", alignItems:"center", gap:6, padding:"6px 8px", borderRadius:6,
-                      border: colorTheme === t.key ? `2px solid ${accentColor}` : `1px solid ${bdr}`,
-                      background: colorTheme === t.key ? `${accentColor}10` : "transparent",
+                      border: colorThemeIdx === ti ? `2px solid ${accentColor}` : `1px solid ${bdr}`,
+                      background: colorThemeIdx === ti ? `${accentColor}10` : "transparent",
                       cursor:"pointer", fontSize:10, fontWeight:600, color:textColor,
                     }}>
                     <div style={{ display:"flex", gap:2 }}>
