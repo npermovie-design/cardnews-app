@@ -58,6 +58,32 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imgCopied,       setImgCopied]       = useState(null);
   const [imgInput,        setImgInput]        = useState("");
   const [inlineImages,    setInlineImages]    = useState({}); // { "키워드": imageUrl }
+  const [aiImgLoading,    setAiImgLoading]    = useState(false);
+  const [aiImgUrl,        setAiImgUrl]        = useState(null);
+  // AI 이미지 생성
+  const handleAiImage = async () => {
+    if (!result || aiImgLoading) return;
+    setAiImgLoading(true); setAiImgUrl(null);
+    try {
+      const topic = fields?.keyword || fields?.topic || result.split("\n")[0]?.replace(/^#+\s*/, "").slice(0, 50) || "블로그 대표 이미지";
+      const prompt = `${topic} - 블로그/SNS 대표 이미지, 깔끔하고 모던한 디자인, 고품질, 텍스트 없이 이미지만`;
+      const r = await fetch("/api/image?action=generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, aspectRatio: "16:9" }),
+      });
+      const d = await r.json();
+      if (d.imageUrl || d.url) {
+        setAiImgUrl(d.imageUrl || d.url);
+      } else if (d.base64) {
+        setAiImgUrl(`data:image/png;base64,${d.base64}`);
+      } else {
+        alert("이미지 생성 실패");
+      }
+    } catch (e) { alert("이미지 생성 실패: " + e.message); }
+    setAiImgLoading(false);
+  };
+
   const abortRef = useRef(false);
   const handleCancelGenerate = () => {
     abortRef.current = true;
@@ -664,6 +690,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </button>
               </div>
             )}
+            {result&&<button onClick={handleAiImage} disabled={aiImgLoading}
+              style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${aiImgUrl?"rgba(74,222,128,0.4)":border}`,
+                background:aiImgUrl?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
+                color:aiImgUrl?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:aiImgLoading?"wait":"pointer",whiteSpace:"nowrap"}}>
+              {aiImgLoading?"⏳ 생성 중...":aiImgUrl?"✓ 이미지 생성됨":"🎨 AI 이미지"}
+            </button>}
             {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
             {result && (() => {
               const isThread = initialType === "blog_thread";
@@ -740,6 +772,18 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
+          {/* AI 생성 이미지 */}
+          {aiImgUrl && (
+            <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:`1px solid ${border}`,position:"relative"}}>
+              <img src={aiImgUrl} alt="AI 생성 이미지" style={{width:"100%",maxHeight:300,objectFit:"cover",display:"block"}}/>
+              <div style={{position:"absolute",top:8,right:8,display:"flex",gap:6}}>
+                <button onClick={()=>{const a=document.createElement("a");a.href=aiImgUrl;a.download="ai-image.png";a.click();}}
+                  style={{padding:"4px 10px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇ 다운로드</button>
+                <button onClick={()=>setAiImgUrl(null)}
+                  style={{padding:"4px 8px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:13,cursor:"pointer"}}>✕</button>
+              </div>
+            </div>
+          )}
           {(viewMode==="text"||!isTistory)&&<div
             contentEditable
             suppressContentEditableWarning
