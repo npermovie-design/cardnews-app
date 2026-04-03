@@ -16,7 +16,6 @@ import SeoAnalyzer from "./SeoAnalyzer";
 import AnalyzerPage from "./AnalyzerPage";
 import ViralityAnalyzer from "./ViralityAnalyzer";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
-import SectionDetailPageGenerator from "./SectionDetailPageGenerator";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
@@ -52,7 +51,6 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const editAiTools = [
     { id:"cardnews_simple", label:"카드뉴스", img:"/icons3d/sns-content.png", desc:"텍스트 편집 가능 · AI 자동 구성", size:"1080×1080" },
     { id:"detail_simple", label:"상세페이지", img:"/icons3d/memo.png", desc:"텍스트 편집 가능 · 상품 설명", size:"860×1100" },
-    { id:"detail_section", label:"섹션 상세페이지", img:"/icons3d/memo.png", desc:"무형서비스 · 섹션 블록 편집", size:"480×긴이미지" },
     { id:"thumbnail_gen", label:"썸네일", img:"/icons3d/instagram-cam.png", desc:"텍스트 편집 가능 · 유튜브/블로그", size:"1280×720" },
     { id:"ppt_gen", label:"PPT 슬라이드", img:"/icons3d/ppt.png", desc:"텍스트 편집 가능 · 프레젠테이션", size:"1920×1080" },
   ];
@@ -402,7 +400,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     // 콘텐츠 제작
     cardnews_simple: { icon:"/icons3d/sns-content.png", label:"카드뉴스", parent:"content_create" },
     detail_simple:   { icon:"/icons3d/memo.png", label:"상세페이지", parent:"content_create" },
-    detail_section:  { icon:"/icons3d/memo.png", label:"섹션 상세페이지", parent:"content_create" },
     thumbnail_gen:   { icon:"/icons3d/instagram-cam.png", label:"썸네일", parent:"content_create" },
     ppt_gen:         { icon:"/icons3d/ppt.png", label:"PPT 슬라이드", parent:"content_create" },
     // 이미지
@@ -605,7 +602,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
               {keywords:["카드뉴스","카드","콘텐츠"],menu:"cardnews_simple",label:"카드뉴스 제작"},
               {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
-              {keywords:["섹션","무형서비스","코칭","교육상세","서비스상세"],menu:"detail_section",label:"섹션 상세페이지"},
               {keywords:["썸네일","thumbnail"],menu:"thumbnail_gen",label:"썸네일 제작"},
               {keywords:["ppt","프레젠테이션","슬라이드"],menu:"ppt_gen",label:"PPT 슬라이드"},
               {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
@@ -1018,9 +1014,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
   if (aiMenu === "detail_simple_img") {
     return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
-  }
-  if (aiMenu === "detail_section") {
-    return <ToolWrap menuId="detail_section"><SectionDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
   }
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
     return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
