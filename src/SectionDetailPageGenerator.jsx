@@ -103,6 +103,11 @@ const CATEGORY_SECTION_PRESETS = {
 
 const FONT = "'Pretendard Variable','Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif";
 
+function stripEmoji(str) {
+  if (!str) return "";
+  return str.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{FE00}-\u{FEFF}]|[\u{1F900}-\u{1F9FF}]|[\u{200D}]|[\u{20E3}]|[\u{E0020}-\u{E007F}]/gu, "").trim();
+}
+
 function wrapTextKo(ctx, text, maxW) {
   if (!text) return [""];
   const lines = [];
@@ -139,7 +144,7 @@ function drawPlaceholderImage(ctx, img) {
   ctx.font = "500 13px " + FONT;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("\u{1F4F7}",x+w/2,y+h/2-10);
+  ctx.fillText("[+]",x+w/2,y+h/2-10);
   ctx.font = "400 11px " + FONT;
   ctx.fillText(placeholder||"\uC0AC\uC9C4\uC744 \uB123\uC5B4\uC8FC\uC138\uC694",x+w/2,y+h/2+10);
   ctx.restore();
@@ -160,12 +165,31 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawImageOrPlaceholder(ctx, imgDef, imagesData) {
-  const found = imagesData && imagesData.find(d => d.role === imgDef.role);
-  if (found && found.dataUrl) {
-    // dataUrl이 있으면 이미지를 그리기 (캔버스에서 동기로 그릴 수 없으므로 placeholder 표시)
-    // 실제 이미지는 drawSectionWithImages에서 async로 처리
-    drawPlaceholderImage(ctx, imgDef);
+function drawImageOrPlaceholder(ctx, imgDef, section) {
+  const loaded = section._loadedImages && section._loadedImages.find(d => d.role === imgDef.role);
+  if (loaded && loaded.imageObj) {
+    const {x,y,w,h} = imgDef;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x,y,w,h);
+    ctx.clip();
+    const scale = Math.max(w/loaded.imageObj.width, h/loaded.imageObj.height);
+    const dx = x + (w - loaded.imageObj.width*scale)/2;
+    const dy = y + (h - loaded.imageObj.height*scale)/2;
+    ctx.drawImage(loaded.imageObj, dx, dy, loaded.imageObj.width*scale, loaded.imageObj.height*scale);
+    ctx.restore();
+  } else if (imgDef.dataUrl) {
+    // Has dataUrl but not yet loaded as Image - show "loading" placeholder
+    const {x,y,w,h} = imgDef;
+    ctx.save();
+    ctx.fillStyle = "rgba(100,100,100,0.15)";
+    ctx.fillRect(x,y,w,h);
+    ctx.fillStyle = "rgba(100,100,100,0.5)";
+    ctx.font = "400 11px " + FONT;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("이미지 로딩중...", x+w/2, y+h/2);
+    ctx.restore();
   } else {
     drawPlaceholderImage(ctx, imgDef);
   }
@@ -376,7 +400,7 @@ function drawSection(canvas, section, themeColors) {
           ctx.font = "500 13px " + FONT;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("\u{1F4F7} " + (imgDef.placeholder || ""), W/2, 220);
+          ctx.fillText("[+] " + (imgDef.placeholder || ""), W/2, 220);
           ctx.restore();
         }
       }
@@ -495,11 +519,11 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = accent;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText("\u{1F62E}\u200D\u{1F4A8}", PAD + 18, y + cardH / 2);
-        // Text
+        ctx.fillText("!", PAD + 18, y + cardH / 2);
+        // Text (strip emoji for canvas compatibility)
         ctx.font = "500 14px " + FONT;
         ctx.fillStyle = tc;
-        const tLines = wrapTextKo(ctx, item, contentW - 60);
+        const tLines = wrapTextKo(ctx, stripEmoji(item), contentW - 60);
         const tStartY = y + cardH/2 - (tLines.length * 20) / 2;
         tLines.forEach((l, li) => {
           ctx.fillText(l, PAD + 48, tStartY + li * 20 + 10);
@@ -543,7 +567,7 @@ function drawSection(canvas, section, themeColors) {
           ctx.font = "400 11px " + FONT;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("\u{1F4F7} \uD504\uB85C\uD544 \uC0AC\uC9C4", cx, cy);
+          ctx.fillText("[+] \uD504\uB85C\uD544 \uC0AC\uC9C4", cx, cy);
           ctx.restore();
         }
         // Circle border
@@ -609,7 +633,7 @@ function drawSection(canvas, section, themeColors) {
         ctx.globalAlpha = 1;
       }
 
-      // Items as career entries
+      // Items as career entries (with wrapping)
       if (items.length > 0) {
         ctx.textAlign = "left";
         items.forEach(item => {
@@ -617,9 +641,13 @@ function drawSection(canvas, section, themeColors) {
           ctx.font = "500 13px " + FONT;
           ctx.fillStyle = tc;
           ctx.globalAlpha = 0.8;
-          ctx.fillText("\u2714 " + item, PAD + 10, y);
+          const itemLines = wrapTextKo(ctx, "\u2714 " + stripEmoji(item), contentW - 20);
+          itemLines.forEach(il => {
+            if (y + 20 > H - 20) return;
+            ctx.fillText(il, PAD + 10, y);
+            y += 22;
+          });
           ctx.globalAlpha = 1;
-          y += 24;
         });
       }
 
@@ -924,10 +952,18 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = accent;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(title || "PART " + (pi + 1), PAD + 14, y + 18);
-        y += 44;
+        const titleText = stripEmoji(title) || "PART " + (pi + 1);
+        const titleLines = wrapTextKo(ctx, titleText, contentW - 28);
+        if (titleLines.length <= 1) {
+          ctx.fillText(titleLines[0] || titleText, PAD + 14, y + 18);
+          y += 44;
+        } else {
+          let ty = y + 10;
+          titleLines.forEach(tl => { ctx.fillText(tl, PAD + 14, ty); ty += 20; });
+          y = ty + 8;
+        }
 
-        // Sub items
+        // Sub items (with text wrapping)
         subItems.forEach(sub => {
           if (y + 24 > H - 10) return;
           ctx.font = "400 13px " + FONT;
@@ -935,9 +971,13 @@ function drawSection(canvas, section, themeColors) {
           ctx.globalAlpha = 0.75;
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
-          ctx.fillText("\u2022 " + sub, PAD + 20, y);
+          const subLines = wrapTextKo(ctx, "\u2022 " + stripEmoji(sub), contentW - 28);
+          subLines.forEach((sl, sli) => {
+            if (y + 20 > H - 10) return;
+            ctx.fillText(sl, PAD + 20, y);
+            y += 20;
+          });
           ctx.globalAlpha = 1;
-          y += 24;
         });
 
         y += 12;
@@ -1167,12 +1207,13 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = isPrimary ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)";
         ctx.fill();
 
-        // Icon
-        ctx.font = "400 28px " + FONT;
+        // Icon (strip emoji for canvas compatibility)
+        ctx.font = "700 20px " + FONT;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillStyle = tc;
-        ctx.fillText(icon || "\u2728", cx + 16, cy + 16);
+        ctx.fillStyle = accent;
+        const iconText = stripEmoji(icon) || "*";
+        ctx.fillText(iconText, cx + 16, cy + 16);
 
         // Title
         ctx.font = "700 14px " + FONT;
@@ -1489,17 +1530,18 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = isPositive ? (accent + "12") : "rgba(239,68,68,0.08)";
         ctx.fill();
 
-        // Icon
-        ctx.font = "400 16px " + FONT;
+        // Icon (text-safe replacement for emoji)
+        ctx.font = "700 14px " + FONT;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         ctx.fillStyle = isPositive ? accent : "#ef4444";
-        ctx.fillText(isPositive ? "\u2705" : "\u274C", PAD + 12, y + 18);
+        ctx.fillText(isPositive ? "O" : "X", PAD + 12, y + 18);
 
         // Text
         ctx.font = "500 13px " + FONT;
         ctx.fillStyle = tc;
-        ctx.fillText(text, PAD + 40, y + 18);
+        const tgtLines = wrapTextKo(ctx, stripEmoji(text), contentW - 48);
+        ctx.fillText(tgtLines[0] || text, PAD + 40, y + 18);
 
         y += 44;
       });
@@ -1736,7 +1778,7 @@ function drawSection(canvas, section, themeColors) {
           ctx.font = "400 11px " + FONT;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("\u{1F4F7}", cx, cy);
+          ctx.fillText("[+]", cx, cy);
           ctx.restore();
         }
         ctx.strokeStyle = accent;
@@ -1836,7 +1878,7 @@ function drawSection(canvas, section, themeColors) {
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = accent;
-          ctx.fillText("\u{1F6E1}\uFE0F", cx, cy);
+          ctx.fillText("[S]", cx, cy);
           ctx.restore();
         }
         y += 160;
@@ -2752,7 +2794,7 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
   // STEP 4: 섹션 비주얼 편집
   // ══════════════════════════════════════════════════════════
   if (step === 4) {
-    const displayW = 380;
+    const displayW = 300;
 
     const scrollToSection = (idx) => {
       const el = document.getElementById("sec-block-" + idx);
@@ -2769,13 +2811,12 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
       });
     };
 
-    const tabDragRef = { current: null };
+    // Drag reorder for sidebar
+    const sidebarDragRef = { current: null };
 
-    // 사진 업로드 핸들러 (특정 섹션의 특정 이미지 슬롯)
     const handleImageUpload = (secIdx, imgIdx) => {
       const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
+      input.type = "file"; input.accept = "image/*";
       input.onchange = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -2793,7 +2834,6 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
       input.click();
     };
 
-    // 사진 삭제
     const handleImageRemove = (secIdx, imgIdx) => {
       setSections(prev => prev.map((s, si) => {
         if (si !== secIdx) return s;
@@ -2803,12 +2843,10 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
       }));
     };
 
-    // items 편집 헬퍼
     const updateItem = (secIdx, itemIdx, val) => {
       setSections(prev => prev.map((s, si) => {
         if (si !== secIdx) return s;
-        const items = [...(s.texts?.items || [])];
-        items[itemIdx] = val;
+        const items = [...(s.texts?.items || [])]; items[itemIdx] = val;
         return { ...s, texts: { ...s.texts, items } };
       }));
     };
@@ -2821,13 +2859,10 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
     const removeItem = (secIdx, itemIdx) => {
       setSections(prev => prev.map((s, si) => {
         if (si !== secIdx) return s;
-        const items = [...(s.texts?.items || [])];
-        items.splice(itemIdx, 1);
+        const items = [...(s.texts?.items || [])]; items.splice(itemIdx, 1);
         return { ...s, texts: { ...s.texts, items } };
       }));
     };
-
-    // stats 편집 헬퍼
     const updateStat = (secIdx, statIdx, field, val) => {
       setSections(prev => prev.map((s, si) => {
         if (si !== secIdx) return s;
@@ -2837,203 +2872,178 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
       }));
     };
 
-    const inputSt = { width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: inputBg, color: textColor, fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-    const labelSt = { fontSize: 10, fontWeight: 700, color: muted, marginBottom: 4 };
-
-    // 섹션에 items가 필요한 타입들
+    const inputSt = { width:"100%", padding:"8px 10px", borderRadius:8, border:`1px solid ${bdr}`, background:inputBg, color:textColor, fontSize:12, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
+    const labelSt = { fontSize:10, fontWeight:700, color:muted, marginBottom:4 };
     const ITEMS_TYPES = ["pain_points","curriculum","faq","review_cards","process_steps","comparison","benefits","target_audience","bonus_offers","pricing"];
     const STATS_TYPES = ["hero_dark","hero_light","stats_highlight"];
 
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <WizHeader />
+        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
-        {/* ── 상단 고정 섹션 탭바 ── */}
-        <div style={{
-          zIndex: 50, background: D ? "#1a1a2e" : "#fff",
-          borderBottom: `1.5px solid ${bdr}`, padding: "10px 24px", flexShrink: 0,
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>섹션 탭 (클릭=이동, 드래그=순서변경)</span>
-            <span style={{ fontSize: 10, opacity: 0.6 }}>{sections.length}개</span>
-          </div>
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            {sections.map((sec, i) => {
-              const st = SECTION_TYPES.find(t => t.id === sec.type);
-              return (
-                <div key={sec.id} draggable
-                  onDragStart={() => { tabDragRef.current = i; }}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={() => { if (tabDragRef.current !== null && tabDragRef.current !== i) moveSection(tabDragRef.current, i); tabDragRef.current = null; }}
-                  onClick={() => scrollToSection(i)}
-                  style={{
-                    flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
-                    padding: "6px 12px", borderRadius: 8,
-                    background: D ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                    border: `1px solid ${bdr}`, cursor: "grab", fontSize: 11, fontWeight: 700,
-                    color: textColor, whiteSpace: "nowrap", userSelect: "none",
-                  }}>
-                  <span style={{ width: 18, height: 18, borderRadius: 5, background: `${accentColor}25`, color: accentColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900 }}>{i + 1}</span>
-                  <span>{st?.label || sec.type}</span>
-                  <span style={{ fontSize: 9, color: muted }}>☰</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── 섹션 리스트 (스크롤 영역) ── */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 40px" }}>
-          <div style={{ maxWidth: 720, margin: "0 auto" }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* -- 왼쪽 사이드바: 섹션 리스트 -- */}
+          <div style={{
+            width:220, flexShrink:0, borderRight:`1.5px solid ${bdr}`,
+            background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+            display:"flex", flexDirection:"column", overflow:"hidden",
+          }}>
+            <div style={{ padding:"12px 12px 8px", borderBottom:`1px solid ${bdr}` }}>
+              <div style={{ fontSize:12, fontWeight:800, color:textColor }}>섹션 목록</div>
+              <div style={{ fontSize:10, color:muted, marginTop:2 }}>클릭=이동 / 드래그=순서변경</div>
+            </div>
+            <div style={{ flex:1, overflowY:"auto", padding:"8px" }}>
               {sections.map((sec, i) => {
                 const st = SECTION_TYPES.find(t => t.id === sec.type);
-                const hasItems = ITEMS_TYPES.includes(sec.type);
-                const hasStats = STATS_TYPES.includes(sec.type);
-                const hasImages = (sec.images || []).length > 0;
-
                 return (
-                  <div key={sec.id} id={"sec-block-" + i}
-                    style={{ borderRadius: 14, border: `1.5px solid ${bdr}`, background: cardBg, overflow: "hidden", scrollMarginTop: 100 }}>
-
-                    {/* ── 섹션 헤더 ── */}
-                    <div style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "8px 14px", borderBottom: `1px solid ${bdr}`,
-                      background: D ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 22, height: 22, borderRadius: 6, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: accentColor }}>{i + 1}</div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: textColor }}>{st?.label || sec.type}</span>
-                      </div>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <button onClick={() => moveSection(i, i - 1)} disabled={i === 0}
-                          style={{ width: 24, height: 24, borderRadius: 5, border: `1px solid ${bdr}`, background: "transparent", color: i === 0 ? muted : textColor, fontSize: 11, cursor: i === 0 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: i === 0 ? 0.3 : 1 }}>▲</button>
-                        <button onClick={() => moveSection(i, i + 1)} disabled={i === sections.length - 1}
-                          style={{ width: 24, height: 24, borderRadius: 5, border: `1px solid ${bdr}`, background: "transparent", color: i === sections.length - 1 ? muted : textColor, fontSize: 11, cursor: i === sections.length - 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: i === sections.length - 1 ? 0.3 : 1 }}>▼</button>
-                        <button onClick={() => removeSection(i)}
-                          style={{ width: 24, height: 24, borderRadius: 5, border: "none", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-                      </div>
-                    </div>
-
-                    {/* ── 미리보기 캔버스 ── */}
-                    <div style={{ padding: "12px", display: "flex", justifyContent: "center", background: D ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.02)" }}>
-                      <SectionCanvas section={sec} themeColors={themeColors} index={i} displayW={displayW}
-                        onClick={e => handleCanvasClick(e, i)} />
-                    </div>
-
-                    {/* ── 직접 편집 영역 ── */}
-                    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-
-                      {/* 기본 텍스트 필드 */}
-                      <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
-                        <div>
-                          <div style={labelSt}>헤드라인</div>
-                          <input value={sec.texts?.headline || ""} onChange={e => updateSectionText(i, "headline", e.target.value)}
-                            placeholder="메인 제목" style={inputSt} />
-                        </div>
-                        <div>
-                          <div style={labelSt}>서브헤드라인</div>
-                          <input value={sec.texts?.subheadline || ""} onChange={e => updateSectionText(i, "subheadline", e.target.value)}
-                            placeholder="부제목" style={inputSt} />
-                        </div>
-                      </div>
-                      <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
-                        <div>
-                          <div style={labelSt}>본문</div>
-                          <textarea value={sec.texts?.body || ""} onChange={e => updateSectionText(i, "body", e.target.value)}
-                            placeholder="상세 설명" rows={2}
-                            style={{ ...inputSt, resize: "vertical", minHeight: 36 }} />
-                        </div>
-                        <div>
-                          <div style={labelSt}>뱃지</div>
-                          <input value={sec.texts?.badge || ""} onChange={e => updateSectionText(i, "badge", e.target.value)}
-                            placeholder="예: 🔥 얼리버드" style={inputSt} />
-                        </div>
-                      </div>
-
-                      {/* 이미지 슬롯 */}
-                      {hasImages && (
-                        <div>
-                          <div style={labelSt}>사진 ({(sec.images||[]).length}개)</div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            {(sec.images || []).map((img, imgI) => (
-                              <div key={imgI} style={{ position: "relative" }}>
-                                {img.dataUrl ? (
-                                  <div style={{ position: "relative" }}>
-                                    <img src={img.dataUrl} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, border: `1px solid ${bdr}` }} />
-                                    <button onClick={() => handleImageRemove(i, imgI)}
-                                      style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 9, border: "none", background: "#ef4444", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-                                  </div>
-                                ) : (
-                                  <button onClick={() => handleImageUpload(i, imgI)}
-                                    style={{
-                                      width: 80, height: 80, borderRadius: 8, border: `1.5px dashed ${bdr}`,
-                                      background: D ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-                                      cursor: "pointer", display: "flex", flexDirection: "column",
-                                      alignItems: "center", justifyContent: "center", gap: 4,
-                                      color: muted, fontSize: 9,
-                                    }}>
-                                    <span style={{ fontSize: 18 }}>📷</span>
-                                    <span style={{ textAlign: "center", lineHeight: 1.3 }}>{img.placeholder || "사진 추가"}</span>
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* stats 편집 */}
-                      {hasStats && (sec.texts?.stats || []).length > 0 && (
-                        <div>
-                          <div style={labelSt}>통계 수치</div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            {(sec.texts.stats || []).map((stat, si) => (
-                              <div key={si} style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                                <input value={stat.number || ""} onChange={e => updateStat(i, si, "number", e.target.value)}
-                                  placeholder="숫자" style={{ ...inputSt, width: 70 }} />
-                                <input value={stat.label || ""} onChange={e => updateStat(i, si, "label", e.target.value)}
-                                  placeholder="라벨" style={{ ...inputSt, width: 60 }} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* items 편집 */}
-                      {hasItems && (
-                        <div>
-                          <div style={{ ...labelSt, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span>항목 ({(sec.texts?.items || []).length}개)</span>
-                            <button onClick={() => addItem(i)}
-                              style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, border: `1px solid ${bdr}`, background: "transparent", color: accentColor, cursor: "pointer", fontWeight: 700 }}>+ 추가</button>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            {(sec.texts?.items || []).map((item, ii) => (
-                              <div key={ii} style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                                <input value={item} onChange={e => updateItem(i, ii, e.target.value)}
-                                  style={{ ...inputSt, flex: 1 }} placeholder={`항목 ${ii + 1}`} />
-                                <button onClick={() => removeItem(i, ii)}
-                                  style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                  <div key={sec.id} draggable
+                    onDragStart={() => { sidebarDragRef.current = i; }}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => { if (sidebarDragRef.current !== null && sidebarDragRef.current !== i) moveSection(sidebarDragRef.current, i); sidebarDragRef.current = null; }}
+                    onClick={() => scrollToSection(i)}
+                    style={{
+                      display:"flex", alignItems:"center", gap:6,
+                      padding:"8px 8px", marginBottom:4, borderRadius:8,
+                      background: D ? "rgba(255,255,255,0.04)" : "#fff",
+                      border:`1px solid ${bdr}`, cursor:"grab",
+                      transition:"background 0.15s", userSelect:"none",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = `${accentColor}12`}
+                    onMouseLeave={e => e.currentTarget.style.background = D ? "rgba(255,255,255,0.04)" : "#fff"}
+                  >
+                    <span style={{ width:20, height:20, borderRadius:5, background:`${accentColor}20`, color:accentColor, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                    <span style={{ flex:1, fontSize:11, fontWeight:700, color:textColor, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{st?.label||sec.type}</span>
+                    <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+                      <button onClick={e => { e.stopPropagation(); moveSection(i, i-1); }} disabled={i===0}
+                        style={{ width:18, height:18, borderRadius:4, border:"none", background:"transparent", color: i===0?muted:textColor, fontSize:9, cursor:i===0?"default":"pointer", opacity:i===0?0.3:1, display:"flex", alignItems:"center", justifyContent:"center" }}>&#9650;</button>
+                      <button onClick={e => { e.stopPropagation(); moveSection(i, i+1); }} disabled={i===sections.length-1}
+                        style={{ width:18, height:18, borderRadius:4, border:"none", background:"transparent", color:i===sections.length-1?muted:textColor, fontSize:9, cursor:i===sections.length-1?"default":"pointer", opacity:i===sections.length-1?0.3:1, display:"flex", alignItems:"center", justifyContent:"center" }}>&#9660;</button>
+                      <button onClick={e => { e.stopPropagation(); removeSection(i); }}
+                        style={{ width:18, height:18, borderRadius:4, border:"none", background:"rgba(239,68,68,0.08)", color:"#ef4444", fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>&times;</button>
                     </div>
                   </div>
                 );
               })}
             </div>
+            {/* 하단 버튼 */}
+            <div style={{ padding:"8px 12px", borderTop:`1px solid ${bdr}`, display:"flex", gap:6 }}>
+              <button onClick={() => setStep(3)} style={{ flex:1, padding:"8px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>&larr; 이전</button>
+              <button onClick={() => setStep(5)} style={{ flex:1, padding:"8px", borderRadius:8, border:"none", background:accentColor, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>내보내기 &rarr;</button>
+            </div>
+          </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
-              <button onClick={() => setStep(3)} style={{ padding: "12px 28px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← 이전</button>
-              <button onClick={() => setStep(5)}
-                style={{ padding: "14px 40px", borderRadius: 12, border: "none", cursor: "pointer", background: accentColor, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}>
-                다음 → <span style={{ fontSize: 12, opacity: 0.8 }}>내보내기</span>
-              </button>
+          {/* -- 오른쪽: 섹션 편집 영역 -- */}
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 24px 40px" }}>
+            <div style={{ maxWidth:680, margin:"0 auto" }}>
+              <div style={{ fontSize:12, color:muted, marginBottom:16 }}>사진 영역을 클릭하면 이미지 업로드, 텍스트는 아래 입력란에서 직접 수정하세요</div>
+
+              <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {sections.map((sec, i) => {
+                  const st = SECTION_TYPES.find(t => t.id === sec.type);
+                  const hasItems = ITEMS_TYPES.includes(sec.type);
+                  const hasStats = STATS_TYPES.includes(sec.type);
+                  const hasImages = (sec.images||[]).length > 0;
+
+                  return (
+                    <div key={sec.id} id={"sec-block-"+i}
+                      style={{ borderRadius:14, border:`1.5px solid ${bdr}`, background:cardBg, overflow:"hidden", scrollMarginTop:20 }}>
+
+                      {/* 섹션 제목 바 */}
+                      <div style={{ padding:"8px 14px", borderBottom:`1px solid ${bdr}`, background: D?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)", display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ width:22, height:22, borderRadius:6, background:`${accentColor}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:accentColor }}>{i+1}</div>
+                        <span style={{ fontSize:13, fontWeight:800, color:textColor }}>{st?.label||sec.type}</span>
+                      </div>
+
+                      {/* 미리보기 + 편집 2단 */}
+                      <div style={{ display:"flex", gap:0 }}>
+                        {/* 캔버스 미리보기 */}
+                        <div style={{ flexShrink:0, padding:12, display:"flex", justifyContent:"center", background: D?"rgba(0,0,0,0.15)":"rgba(0,0,0,0.02)" }}>
+                          <SectionCanvas section={sec} themeColors={themeColors} index={i} displayW={displayW}
+                            onClick={e => handleCanvasClick(e, i)} />
+                        </div>
+
+                        {/* 편집 패널 */}
+                        <div style={{ flex:1, padding:"12px 14px", display:"flex", flexDirection:"column", gap:8, overflowY:"auto", maxHeight: 500, minWidth:0 }}>
+                          {/* 기본 텍스트 */}
+                          <div>
+                            <div style={labelSt}>헤드라인</div>
+                            <input value={sec.texts?.headline||""} onChange={e=>updateSectionText(i,"headline",e.target.value)} placeholder="메인 제목" style={inputSt} />
+                          </div>
+                          <div>
+                            <div style={labelSt}>서브헤드라인</div>
+                            <input value={sec.texts?.subheadline||""} onChange={e=>updateSectionText(i,"subheadline",e.target.value)} placeholder="부제목" style={inputSt} />
+                          </div>
+                          <div>
+                            <div style={labelSt}>본문</div>
+                            <textarea value={sec.texts?.body||""} onChange={e=>updateSectionText(i,"body",e.target.value)} placeholder="상세 설명" rows={2} style={{...inputSt, resize:"vertical", minHeight:36}} />
+                          </div>
+                          <div>
+                            <div style={labelSt}>뱃지</div>
+                            <input value={sec.texts?.badge||""} onChange={e=>updateSectionText(i,"badge",e.target.value)} placeholder="예: 얼리버드 할인" style={inputSt} />
+                          </div>
+
+                          {/* 사진 슬롯 */}
+                          {hasImages && (
+                            <div>
+                              <div style={labelSt}>사진</div>
+                              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                                {(sec.images||[]).map((img, imgI) => (
+                                  <div key={imgI} style={{ position:"relative" }}>
+                                    {img.dataUrl ? (
+                                      <div style={{ position:"relative" }}>
+                                        <img src={img.dataUrl} alt="" style={{ width:64, height:64, objectFit:"cover", borderRadius:6, border:`1px solid ${bdr}` }} />
+                                        <button onClick={()=>handleImageRemove(i,imgI)} style={{ position:"absolute", top:-5, right:-5, width:16, height:16, borderRadius:8, border:"none", background:"#ef4444", color:"#fff", fontSize:8, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>&times;</button>
+                                      </div>
+                                    ) : (
+                                      <button onClick={()=>handleImageUpload(i,imgI)} style={{ width:64, height:64, borderRadius:6, border:`1.5px dashed ${bdr}`, background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, color:muted, fontSize:8 }}>
+                                        <span style={{ fontSize:14 }}>+</span>
+                                        <span style={{ textAlign:"center", lineHeight:1.2 }}>{img.placeholder||"사진"}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Stats */}
+                          {hasStats && (sec.texts?.stats||[]).length>0 && (
+                            <div>
+                              <div style={labelSt}>통계</div>
+                              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                                {(sec.texts.stats||[]).map((stat,si) => (
+                                  <div key={si} style={{ display:"flex", gap:3 }}>
+                                    <input value={stat.number||""} onChange={e=>updateStat(i,si,"number",e.target.value)} placeholder="숫자" style={{...inputSt, width:55, fontSize:11}} />
+                                    <input value={stat.label||""} onChange={e=>updateStat(i,si,"label",e.target.value)} placeholder="라벨" style={{...inputSt, width:50, fontSize:11}} />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Items */}
+                          {hasItems && (
+                            <div>
+                              <div style={{ ...labelSt, display:"flex", justifyContent:"space-between" }}>
+                                <span>항목</span>
+                                <button onClick={()=>addItem(i)} style={{ fontSize:9, padding:"1px 6px", borderRadius:4, border:`1px solid ${bdr}`, background:"transparent", color:accentColor, cursor:"pointer", fontWeight:700 }}>+추가</button>
+                              </div>
+                              <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                                {(sec.texts?.items||[]).map((item, ii) => (
+                                  <div key={ii} style={{ display:"flex", gap:3 }}>
+                                    <input value={item} onChange={e=>updateItem(i,ii,e.target.value)} style={{...inputSt, flex:1, fontSize:11}} placeholder={`항목 ${ii+1}`} />
+                                    <button onClick={()=>removeItem(i,ii)} style={{ width:20, height:20, borderRadius:4, border:"none", background:"rgba(239,68,68,0.08)", color:"#ef4444", fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, alignSelf:"center" }}>&times;</button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
