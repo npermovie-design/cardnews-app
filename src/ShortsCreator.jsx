@@ -276,6 +276,33 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 타임라인 범위 선택
   const [rangeSelecting, setRangeSelecting] = useState(null); // {startPh, endPh}
 
+  // Undo/Redo 히스토리
+  const undoStack = useRef([]);
+  const redoStack = useRef([]);
+  const pushUndo = () => {
+    undoStack.current.push(JSON.stringify({ editClips, videoSegs, overlays, editIdx }));
+    if (undoStack.current.length > 30) undoStack.current.shift();
+    redoStack.current = [];
+  };
+  const doUndo = () => {
+    if (undoStack.current.length === 0) return;
+    redoStack.current.push(JSON.stringify({ editClips, videoSegs, overlays, editIdx }));
+    const prev = JSON.parse(undoStack.current.pop());
+    setEditClips(prev.editClips);
+    setVideoSegs(prev.videoSegs);
+    setOverlays(prev.overlays);
+    setEditIdx(prev.editIdx);
+  };
+  const doRedo = () => {
+    if (redoStack.current.length === 0) return;
+    undoStack.current.push(JSON.stringify({ editClips, videoSegs, overlays, editIdx }));
+    const next = JSON.parse(redoStack.current.pop());
+    setEditClips(next.editClips);
+    setVideoSegs(next.videoSegs);
+    setOverlays(next.overlays);
+    setEditIdx(next.editIdx);
+  };
+
   const fileRef = useRef(null);
   const timerRef = useRef(null);
   const playIntervalRef = useRef(null);
@@ -345,6 +372,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         if ((curClip.subtitles || []).length > 0) setSelectedSubIdx(0);
         setSelectedTrack("V1");
       }
+      // Ctrl+Z: Undo
+      if (e.key === "z" && (e.ctrlKey || e.metaKey) && !e.shiftKey) { e.preventDefault(); doUndo(); return; }
+      // Ctrl+Y or Ctrl+Shift+Z: Redo
+      if ((e.key === "y" && (e.ctrlKey || e.metaKey)) || (e.key === "z" && (e.ctrlKey || e.metaKey) && e.shiftKey)) { e.preventDefault(); doRedo(); return; }
       // Ctrl+D: 오버레이 복제
       if (e.key === "d" && (e.ctrlKey || e.metaKey) && selectedOverlay) {
         e.preventDefault();
@@ -540,6 +571,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ── 분할: 현재 playhead 위치에서 영상 자르기 ─────
   const splitAtPlayhead = () => {
     if (videoSegs.length === 0) return;
+    pushUndo();
     // playhead를 절대 시간으로 변환
     let accum = 0;
     for (let i = 0; i < videoSegs.length; i++) {
@@ -560,6 +592,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ── 세그먼트 삭제: 삭제하면 나머지가 합쳐져서 재생 ─────
   const deleteSegment = (idx) => {
     if (videoSegs.length <= 1) return;
+    pushUndo();
     const seg = videoSegs[idx];
     // 해당 구간의 자막도 같이 삭제
     if (seg) {
@@ -573,6 +606,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // ── 자막 삭제 ─────
   const deleteSubtitle = (idx) => {
+    pushUndo();
     const subs = [...(curClip.subtitles || [])];
     subs.splice(idx, 1);
     updateClip("subtitles", subs);
@@ -1200,7 +1234,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             {[
               ["재생", [["Space","재생 / 정지"],["Home","처음으로"],["End","끝으로"]]],
               ["이동", [["← →","1초 이동"],["Shift + ← →","5초 이동"]]],
-              ["편집", [["S","현재 위치에서 분할"],["Delete","선택 요소 삭제"],["M","세그먼트 음소거"],["Ctrl+D","오버레이 복제"]]],
+              ["편집", [["S","현재 위치에서 분할"],["Delete","선택 요소 삭제"],["M","세그먼트 음소거"],["Ctrl+D","오버레이 복제"],["Ctrl+Z","되돌리기 (Undo)"],["Ctrl+Y","다시실행 (Redo)"]]],
               ["선택", [["드래그","범위 선택 (전 트랙)"],["클릭","해당 요소 선택"],["Escape","선택 해제"],["Ctrl+A","전체 선택"]]],
               ["줌", [["[  ]","타임라인 줌 축소/확대"],["줌 슬라이더","우측 하단"]]],
             ].map(([group, items]) => (
@@ -1690,6 +1724,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #4ade8040", background: "rgba(74,222,128,0.08)", color: "#4ade80", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
               💾 저장
             </button>
+            {/* Undo/Redo */}
+            <button onClick={doUndo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:undoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title="되돌리기 (Ctrl+Z)">↩</button>
+            <button onClick={doRedo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:redoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title="다시실행 (Ctrl+Y)">↪</button>
             {/* 단축키 가이드 */}
             <button onClick={() => setShowShortcuts(true)}
               style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
