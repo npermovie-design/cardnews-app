@@ -213,6 +213,12 @@ function drawSection(canvas, section, themeColors) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
+  // 글로벌 클리핑: 캔버스 영역 밖으로 절대 안 나가게
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.clip();
+
   const texts = section.texts || {};
   const headline = texts.headline || "";
   const subheadline = texts.subheadline || "";
@@ -721,23 +727,21 @@ function drawSection(canvas, section, themeColors) {
       });
       y += 120;
 
-      // Logo text items
+      // Logo text items (wrapped)
       if (items.length > 0) {
         y += 16;
         ctx.textAlign = "center";
-        ctx.font = "600 12px " + FONT;
+        ctx.font = "500 11px " + FONT;
         ctx.fillStyle = tc;
         ctx.globalAlpha = 0.45;
-        const itemRow = items.slice(0, 5).join("  \u00B7  ");
-        ctx.fillText(itemRow, W/2, y);
+        const allItemsText = items.map(s => stripEmoji(s)).join(" · ");
+        const iLines = wrapTextKo(ctx, allItemsText, contentW - 20);
+        iLines.slice(0, 3).forEach(l => {
+          if (y + 16 > H - 10) return;
+          ctx.fillText(l, W/2, y);
+          y += 16;
+        });
         ctx.globalAlpha = 1;
-        y += 20;
-        // More items
-        if (items.length > 5) {
-          const itemRow2 = items.slice(5, 10).join("  \u00B7  ");
-          ctx.fillText(itemRow2, W/2, y);
-          y += 20;
-        }
       }
 
       break;
@@ -794,6 +798,12 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = isPrimary ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)";
         ctx.fill();
 
+        // Clip to card
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(PAD, y, contentW, cardH);
+        ctx.clip();
+
         // Avatar circle
         ctx.save();
         ctx.fillStyle = accent;
@@ -840,6 +850,9 @@ function drawSection(canvas, section, themeColors) {
           qy += 16;
         });
         ctx.globalAlpha = 1;
+
+        // 카드 클리핑 해제
+        ctx.restore();
 
         y += cardH + 10;
       });
@@ -1210,34 +1223,38 @@ function drawSection(canvas, section, themeColors) {
 
         if (cy + cardH > H - 10) return;
 
-        // Card
+        // Card bg
         roundRect(ctx, cx, cy, cardW, cardH, 14);
         ctx.fillStyle = isPrimary ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)";
         ctx.fill();
 
-        // Icon (strip emoji for canvas compatibility)
-        ctx.font = "700 20px " + FONT;
+        // Clip to card bounds
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(cx, cy, cardW, cardH);
+        ctx.clip();
+
+        ctx.font = "700 16px " + FONT;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillStyle = accent;
-        const iconText = stripEmoji(icon) || "*";
-        ctx.fillText(iconText, cx + 16, cy + 16);
+        ctx.fillText(stripEmoji(icon) || "*", cx + 14, cy + 14);
 
-        // Title (with wrapping)
-        ctx.font = "700 13px " + FONT;
+        ctx.font = "700 12px " + FONT;
         ctx.fillStyle = tc;
-        const tLines = wrapTextKo(ctx, stripEmoji(title || ""), cardW - 32);
-        let ty = cy + 46;
-        tLines.slice(0, 2).forEach(l => { ctx.fillText(l, cx + 16, ty); ty += 18; });
+        const tLines = wrapTextKo(ctx, stripEmoji(title || ""), cardW - 28);
+        let ty = cy + 40;
+        tLines.slice(0, 2).forEach(l => { ctx.fillText(l, cx + 14, ty); ty += 16; });
 
-        // Desc
         ctx.font = "400 10px " + FONT;
         ctx.fillStyle = tc;
         ctx.globalAlpha = 0.6;
-        const dLines = wrapTextKo(ctx, stripEmoji(desc || ""), cardW - 32);
+        const dLines = wrapTextKo(ctx, stripEmoji(desc || ""), cardW - 28);
         let dy = ty + 4;
-        dLines.slice(0, 3).forEach(l => { ctx.fillText(l, cx + 16, dy); dy += 14; });
+        dLines.slice(0, 4).forEach(l => { ctx.fillText(l, cx + 14, dy); dy += 13; });
         ctx.globalAlpha = 1;
+
+        ctx.restore();
       });
 
       break;
@@ -1954,6 +1971,9 @@ function drawSection(canvas, section, themeColors) {
       break;
     }
   }
+
+  // 글로벌 클리핑 해제
+  ctx.restore();
 }
 
 // Draw section with async image loading
