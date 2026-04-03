@@ -531,7 +531,7 @@ function rowToPost(row) {
     date:     row.created_at ? new Date(row.created_at).toLocaleDateString("ko-KR") : (row.date || ""),
     comments: Array.isArray(row.comments) ? row.comments : [],
     likedBy:  Array.isArray(row.likedBy) ? row.likedBy : [],
-    images:   Array.isArray(row.images) ? row.images : [],
+    images:   Array.isArray(row.images) ? row.images : (typeof row.images === "string" ? (() => { try { const p = JSON.parse(row.images); return Array.isArray(p) ? p : []; } catch { return []; } })() : []),
   };
 }
 function postToRow(post) {

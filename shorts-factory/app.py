@@ -57,80 +57,82 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 file_store: dict[str, dict] = {}
 
 
+def _is_good_ending(text: str) -> bool:
+    """문장이 완전하게 끝나는지 체크 (요/습니다/다/죠 등)"""
+    t = text.strip().rstrip(".!?~…")
+    if not t:
+        return False
+    GOOD = ("요", "다", "죠", "니다", "세요", "까요", "네요", "거든요", "잖아요",
+            "는데요", "했어요", "해요", "돼요", "볼게요", "될까요", "합니다", "입니다",
+            "됩니다", "습니다", "있다", "없다", "같다", "하다")
+    return any(t.endswith(g) for g in GOOD)
+
+
+def _is_connector_ending(text: str) -> bool:
+    """접속사로 끝나는지 체크"""
+    t = text.strip()
+    CONN = ("그리고", "그래서", "근데", "하지만", "또", "그런데", "그러면",
+            "그러니까", "왜냐하면", "그러므로", "그렇지만", "아니면", "그럼",
+            "그래서는", "그러다", "그리고는")
+    return any(t.endswith(c) for c in CONN)
+
+
 def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> tuple[float, float]:
     """시작/끝 시간을 자막 문장 경계에 맞춰 조정 (말 끊김 방지)
 
-    핵심 원칙:
-    - 시작점: 반드시 자막 문장이 시작되는 지점에서 시작 (말 중간 시작 금지)
-    - 끝점: 반드시 자막 문장이 끝난 뒤에 종료 (말 중간 끊김 금지)
+    원칙:
+    - 시작점: 자막 문장이 시작되는 정확한 포인트 (말 중간 시작 절대 금지)
+    - 끝점: 완전한 문장이 끝나는 자막의 끝 (억지 연장 없이)
     """
     if not subs:
         return start, end
 
-    # ── 시작점 보정 ──
-    # 시작 시점이 자막 중간에 걸리면 → 다음 자막의 시작점으로 이동
-    # (이전 자막 시작점으로 가면 말의 앞부분이 잘린 채 시작됨)
+    # ── 시작점: 가장 가까운 자막 시작점으로 스냅 ──
     best_start = start
     for i, s in enumerate(subs):
-        # Case 1: 시작점이 어떤 자막 발화 구간 안에 있음 (말 중간)
+        # 시작점이 자막 발화 중간에 있으면 → 다음 자막 시작으로
         if s["start_seconds"] < start < s["end_seconds"]:
-            # 자막 시작부터 0.3초 이내면 → 해당 자막 처음부터 시작 (거의 안 잘림)
-            if start - s["start_seconds"] < 0.3:
-                best_start = s["start_seconds"]
-            else:
-                # 말 중간이므로 다음 자막 시작점으로 이동
-                if i + 1 < len(subs):
-                    best_start = subs[i + 1]["start_seconds"]
-                else:
-                    best_start = s["start_seconds"]
+            if start - s["start_seconds"] < 0.5:
+                best_start = s["start_seconds"]  # 거의 처음이면 그 자막부터
+            elif i + 1 < len(subs):
+                best_start = subs[i + 1]["start_seconds"]  # 다음 자막부터
             break
-        # Case 2: 시작점이 자막과 자막 사이 빈 구간에 있음
-        if s["start_seconds"] > start:
-            # 가장 가까운 다음 자막의 시작점으로
-            best_start = s["start_seconds"]
-            break
-        # Case 3: 정확히 자막 시작점에 있음 → 완벽
-        if abs(s["start_seconds"] - start) < 0.1:
+        # 시작점이 자막 사이 빈 구간 → 다음 자막 시작
+        if s["start_seconds"] >= start:
             best_start = s["start_seconds"]
             break
 
-    # ── 끝점 보정 ──
-    # 끝 시점이 자막 중간에 걸리면 → 해당 자막이 끝날 때까지 연장
+    # ── 끝점: 완전한 문장으로 끝나는 자막 찾기 ──
+    # end 근처에서 가장 가까운 "좋은 끝"을 가진 자막을 찾음
     best_end = end
+    # end 시점 직전/직후의 자막들을 후보로
+    candidates = []
     for s in subs:
-        if s["start_seconds"] < end < s["end_seconds"]:
-            if s["end_seconds"] - end < 3.0:
-                best_end = s["end_seconds"] + 0.3
-            break
-    # end 직전의 마지막 자막이 끝나는 시점으로 보정
-    for s in reversed(subs):
-        if s["end_seconds"] <= end + 0.5:
-            best_end = max(best_end, s["end_seconds"] + 0.3)
-            break
+        if s["end_seconds"] < best_start + 3:
+            continue  # 너무 짧은 건 제외
+        if abs(s["end_seconds"] - end) < 5.0:  # end 기준 ±5초 범위
+            candidates.append(s)
 
-    # ── 문장 완성도 보정 ──
-    # 접속사("그리고","그래서","근데","하지만","또","그런데")로 끝나는 경우
-    # → 다음 자막까지 연장하여 완전한 문장으로 끝나게 함
-    CONNECTORS = ("그리고", "그래서", "근데", "하지만", "또", "그런데", "그래서",
-                  "그러면", "그러니까", "왜냐하면", "그러므로", "그렇지만", "아니면",
-                  "그럼", "이게", "그걸", "그건", "이건", "저는", "제가", "어떤")
-    GOOD_ENDINGS = ("요", "다", "죠", "니다", "세요", "까요", "네요", "라고", "거든요")
-    # 끝점 근처의 마지막 자막 텍스트 확인
-    last_sub_before_end = None
-    for s in reversed(subs):
-        if s["end_seconds"] <= best_end + 0.5:
-            last_sub_before_end = s
-            break
-    if last_sub_before_end:
-        text = last_sub_before_end["text"].strip().rstrip(".")
-        # 접속사로 끝나거나 완전한 문장이 아닌 경우 → 다음 자막까지 연장
-        if text.endswith(CONNECTORS) or (text and not text.endswith(GOOD_ENDINGS)):
-            idx = subs.index(last_sub_before_end) if last_sub_before_end in subs else -1
-            if idx >= 0 and idx + 1 < len(subs):
-                next_sub = subs[idx + 1]
-                # 다음 자막이 3초 이내면 연장
-                if next_sub["end_seconds"] - best_end < 4.0:
-                    best_end = next_sub["end_seconds"] + 0.3
+    if candidates:
+        # 1순위: 완전한 문장 끝 + end에 가까운 것
+        good_candidates = [s for s in candidates if _is_good_ending(s["text"]) and not _is_connector_ending(s["text"])]
+        if good_candidates:
+            # end보다 뒤에 있지만 가장 가까운 것 우선, 없으면 앞쪽
+            after = [s for s in good_candidates if s["end_seconds"] >= end - 0.5]
+            before = [s for s in good_candidates if s["end_seconds"] < end - 0.5]
+            chosen = min(after, key=lambda s: s["end_seconds"] - end) if after else max(before, key=lambda s: s["end_seconds"])
+            best_end = chosen["end_seconds"] + 0.3
+        else:
+            # 좋은 끝이 없으면 end 직전의 마지막 자막 끝으로
+            before_end = [s for s in candidates if s["end_seconds"] <= end + 1.0]
+            if before_end:
+                best_end = max(s["end_seconds"] for s in before_end) + 0.3
+    else:
+        # 후보가 없으면 기존 방식: end 직전 자막 끝
+        for s in reversed(subs):
+            if s["end_seconds"] <= end + 1.0:
+                best_end = s["end_seconds"] + 0.3
+                break
 
     return best_start, best_end
 

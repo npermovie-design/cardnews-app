@@ -1338,7 +1338,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               )}
               <div style={{border:"1px solid "+bdr,borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
                 {pageItems.map((p,idx)=>{
-                  const num=filtered.length-(page-1)*PER-idx;
+                  const num=activeFiltered.length-(page-1)*PER-idx;
                   const today=Date.now()-p.id<86400000;
                   const thumb = (p.images && p.images[0]) || extractThumb(p.body);
                   const hasDl = (p.images||[]).length > 0;
@@ -1472,7 +1472,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {viewMode==="compact" && pageItems.length>0 && (
               <div style={{border:"1px solid "+bdr,borderRadius:10,overflow:"hidden"}}>
                 {pageItems.map((p,idx)=>{
-                  const num=filtered.length-(page-1)*PER-idx;
+                  const num=activeFiltered.length-(page-1)*PER-idx;
                   const thumb=(p.images&&p.images[0])||extractThumb(p.body);
                   const today=Date.now()-p.id<86400000;
                   const hasDl=(p.images||[]).length>0;
