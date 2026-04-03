@@ -11,20 +11,8 @@ import { searchGifs as klipySearch, trendingGifs as klipyTrending, getMediaUrl a
 
 const SB_STORAGE = (import.meta.env.VITE_SUPABASE_URL || "") + "/storage/v1";
 function toThumb(url, w=400, h=300) {
-  if (!url || typeof url !== "string") return url;
-  // 비디오/음악 파일은 render API 미지원 → 원본 반환
-  if (/\.(mp4|mov|avi|mkv|webm|m4v|mp3|wav|ogg|flac|aac|m4a)/i.test(url)) return url;
-  // Supabase Storage render API 사용 (이미지만)
-  if (url.includes("/storage/v1/object/public/")) {
-    try {
-      const path = url.split("/object/public/")[1];
-      if (/\.gif$/i.test(url)) {
-        return url.replace("/object/public/", "/render/image/public/") + `?width=${w}&height=${h}&resize=cover&quality=80`;
-      }
-      return url.replace("/object/public/", "/render/image/public/") + `?width=${w}&height=${h}&resize=cover&format=webp&quality=80`;
-    } catch { return url; }
-  }
-  return url;
+  // render API가 불안정하므로 원본 URL을 그대로 사용
+  return url || "";
 }
 const isVideoUrl = url => /\.(mp4|mov|avi|mkv|webm|m4v)/i.test(url);
 const isImageUrl = url => /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)/i.test(url);

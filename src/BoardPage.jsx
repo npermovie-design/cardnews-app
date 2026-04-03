@@ -975,9 +975,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);}} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
                 <div onClick={e=>e.stopPropagation()} style={{width:"min(480px,95vw)",background:isDark?"#1a1730":"#fff",borderRadius:20,padding:"28px 24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`}}>
                   <div style={{fontSize:18,fontWeight:900,color:C.text,marginBottom:16}}>자료 등록</div>
+                  {/* 썸네일 미리보기 */}
+                  {archiveUploadFile && archiveUploadFile.type?.startsWith("image") && (
+                    <div style={{marginBottom:12,borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,maxHeight:180,display:"flex",justifyContent:"center",background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb"}}>
+                      <img src={URL.createObjectURL(archiveUploadFile)} alt="" style={{maxWidth:"100%",maxHeight:180,objectFit:"contain"}} onLoad={e=>URL.revokeObjectURL(e.target.src)}/>
+                    </div>
+                  )}
+                  {archiveUploadFile && archiveUploadFile.type?.startsWith("video") && (
+                    <div style={{marginBottom:12,borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,maxHeight:180,background:"#000"}}>
+                      <video src={URL.createObjectURL(archiveUploadFile)} controls muted style={{maxWidth:"100%",maxHeight:180,display:"block",margin:"0 auto"}}/>
+                    </div>
+                  )}
                   <div style={{marginBottom:12}}>
                     <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>파일</div>
-                    <div style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",fontSize:13,color:C.text}}>{archiveUploadFile.name}</div>
+                    <div style={{padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.04)":"#f8f8fb",fontSize:13,color:C.text}}>{archiveUploadFile.name} <span style={{color:C.muted,fontSize:11}}>({(archiveUploadFile.size/1024/1024).toFixed(1)}MB)</span></div>
                   </div>
                   <div style={{marginBottom:12}}>
                     <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:4}}>제목</div>
@@ -1167,8 +1178,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 )}
               </>}
 
-            {/* 일반 게시판 뷰 */}
-            {<>
+            {/* 일반 게시판 뷰 (무료이미지 검색 탭에서는 숨김) */}
+            {!(subCat==="archive" && archiveView==="search") && <>
 
             {/* 액션바 */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
