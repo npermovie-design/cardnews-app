@@ -68,22 +68,37 @@ else:
 
 
 def _is_good_ending(text: str) -> bool:
-    """문장이 완전하게 끝나는지 체크 (요/습니다/다/죠 등)"""
+    """문장이 완전하게 끝나는지 체크"""
     t = text.strip().rstrip(".!?~…")
     if not t:
         return False
-    GOOD = ("요", "다", "죠", "니다", "세요", "까요", "네요", "거든요", "잖아요",
-            "는데요", "했어요", "해요", "돼요", "볼게요", "될까요", "합니다", "입니다",
-            "됩니다", "습니다", "있다", "없다", "같다", "하다")
+    GOOD = (
+        # ~요 계열
+        "요", "세요", "까요", "네요", "거든요", "잖아요", "는데요", "했어요", "해요",
+        "돼요", "볼게요", "될까요", "줄게요", "할게요", "드릴게요", "같아요", "싶어요",
+        "봤어요", "났어요", "왔어요", "갔어요", "겠어요", "있어요", "없어요", "맞아요",
+        # ~다 계열
+        "다", "니다", "습니다", "합니다", "입니다", "됩니다", "있다", "없다", "같다",
+        "했다", "된다", "한다", "간다", "온다", "본다",
+        # ~죠 계열
+        "죠", "거죠", "잖죠", "겠죠", "이죠",
+        # 기타 확실한 종결
+        "음", "듯", "거야", "이야", "잖아", "지요", "래요", "던데요",
+    )
     return any(t.endswith(g) for g in GOOD)
 
 
 def _is_connector_ending(text: str) -> bool:
-    """접속사로 끝나는지 체크"""
-    t = text.strip()
-    CONN = ("그리고", "그래서", "근데", "하지만", "또", "그런데", "그러면",
-            "그러니까", "왜냐하면", "그러므로", "그렇지만", "아니면", "그럼",
-            "그래서는", "그러다", "그리고는")
+    """접속사/연결어로 끝나는지 체크 (이런 걸로 끝나면 말이 끊긴 느낌)"""
+    t = text.strip().rstrip(".!?")
+    CONN = (
+        # 접속사
+        "그리고", "그래서", "근데", "하지만", "또", "그런데", "그러면",
+        "그러니까", "왜냐하면", "그러므로", "그렇지만", "아니면", "그럼",
+        # 연결 어미 (말이 이어지는 느낌)
+        "해서", "하고", "인데", "지만", "니까", "더니", "면서", "려고",
+        "때문에", "통해서", "라서", "해가지고", "가지고",
+    )
     return any(t.endswith(c) for c in CONN)
 
 
@@ -97,20 +112,33 @@ def snap_to_subtitle_boundaries(start: float, end: float, subs: list[dict]) -> t
     if not subs:
         return start, end
 
-    # ── 시작점: 가장 가까운 자막 시작점으로 스냅 ──
+    # ── 시작점: 완전한 문장이 시작되는 자막의 시작점으로 스냅 ──
     best_start = start
+    start_idx = 0
     for i, s in enumerate(subs):
-        # 시작점이 자막 발화 중간에 있으면 → 다음 자막 시작으로
         if s["start_seconds"] < start < s["end_seconds"]:
             if start - s["start_seconds"] < 0.5:
-                best_start = s["start_seconds"]  # 거의 처음이면 그 자막부터
+                best_start = s["start_seconds"]
+                start_idx = i
             elif i + 1 < len(subs):
-                best_start = subs[i + 1]["start_seconds"]  # 다음 자막부터
+                best_start = subs[i + 1]["start_seconds"]
+                start_idx = i + 1
             break
-        # 시작점이 자막 사이 빈 구간 → 다음 자막 시작
         if s["start_seconds"] >= start:
             best_start = s["start_seconds"]
+            start_idx = i
             break
+
+    # 시작 자막이 이전 문장의 이어짐인지 체크
+    # 이전 자막이 접속사/연결어로 끝나면 → 현재 자막은 이전 문장의 연속 → 다음 좋은 시작점으로
+    if start_idx > 0:
+        prev_text = subs[start_idx - 1]["text"].strip()
+        if _is_connector_ending(prev_text) and not _is_good_ending(prev_text):
+            # 이전 문장이 이어지는 중 → 현재 자막 포함하고, 좋은 끝 이후의 다음 자막을 찾음
+            for j in range(start_idx, min(start_idx + 3, len(subs))):
+                if _is_good_ending(subs[j]["text"]) and j + 1 < len(subs):
+                    best_start = subs[j + 1]["start_seconds"]
+                    break
 
     # ── 끝점: 완전한 문장으로 끝나는 자막 찾기 ──
     # end 근처에서 가장 가까운 "좋은 끝"을 가진 자막을 찾음
