@@ -247,9 +247,9 @@ async def youtube_download(request: Request):
                 "quiet": True,
                 "no_warnings": True,
                 "extractor_args": {"youtube": {"player_client": client, "player_skip": ["webpage"]}},
-                "socket_timeout": 30,
-                "retries": 5,
-                "fragment_retries": 5,
+                "socket_timeout": 15,
+                "retries": 1,
+                "fragment_retries": 2,
                 "http_headers": {
                     "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
                     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
