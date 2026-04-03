@@ -359,6 +359,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 글쓰기 탭 state (sessionStorage 기반 → React state로 전환)
   const [writeTabState, setWriteTabState] = useState(() => { try { return sessionStorage.getItem("_blog_write_tab") || "manual"; } catch { return "manual"; } });
 
+  // AI도구 홈 검색 state
+  const [homeSearch, setHomeSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+
   // 보관함
   if (aiMenu === "library") {
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
@@ -577,7 +581,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
       { icon:"/icons3d/sns-app.png", title:_s("영상 제작","Video"), menu:"shorts_make", isNew:true },
       { icon:"/icons3d/instagram-cam.png", title:_s("이미지","Image"), menu:"image_tools" },
-      { icon:"/icons3d/sns-share.png", title:_s("리퍼포징","Repurpose"), menu:"repurpose" },
     ];
 
     // 홈 화면
@@ -616,8 +619,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {keywords:["발행","자동","auto"],menu:"auto_publish",label:"자동 발행"},
             ];
             const popularKeywords = ["블로그 글쓰기","카드뉴스","이미지 생성","쇼츠 편집","썸네일","인스타그램"];
-            const [homeSearch, setHomeSearch] = React.useState("");
-            const [searchFocused, setSearchFocused] = React.useState(false);
             const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
             return (
               <div style={{ position:"relative", maxWidth:480, margin:"0 auto 24px", width:"100%" }}>
@@ -1510,20 +1511,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
             <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 완료!</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>클릭하여 결과 확인</div>
           </div>
-        </div>
-      )}
-      {/* 영상 제작 플로팅 아이콘 (영상 메뉴가 아닐 때 항상 표시) */}
-      {aiMenu !== "shorts_make" && aiMenu !== "video_edit" && aiMenu !== "video_create" && (
-        <div onClick={() => setAiMenu("shorts_make")}
-          style={{ position:"absolute", bottom:20, left:20, zIndex:90, cursor:"pointer", display:"flex", alignItems:"center", gap:10, padding:"10px 16px 10px 12px", borderRadius:14, background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.9),rgba(236,72,153,0.8))" : "linear-gradient(135deg,#7c6aff,#ec4899)", boxShadow:"0 6px 24px rgba(124,106,255,0.4)", transition:"transform 0.15s, box-shadow 0.15s" }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px) scale(1.05)"; e.currentTarget.style.boxShadow = "0 10px 32px rgba(124,106,255,0.5)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(124,106,255,0.4)"; }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
-          <div>
-            <div style={{ fontSize:12, fontWeight:800, color:"#fff", lineHeight:1.2 }}>{_s("영상 제작","Video")}</div>
-            <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)" }}>{_s("AI 자동 쇼츠","AI Shorts")}</div>
-          </div>
-          <span style={{ fontSize:8, fontWeight:800, color:"#fff", background:"rgba(255,255,255,0.2)", padding:"2px 5px", borderRadius:4 }}>NEW</span>
         </div>
       )}
 

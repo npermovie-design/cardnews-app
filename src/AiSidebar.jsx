@@ -107,8 +107,14 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
       borderRight: `1px solid ${sideBdr}`,
       display: "flex", flexDirection: "column", height: "100%",
     }}>
-      {/* 상단 여백 */}
-      <div style={{ padding:"10px 14px 6px" }} />
+      {/* 카톡방 배너 */}
+      <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+        style={{ display:"flex", alignItems:"center", gap:6, margin:"10px 8px 4px", padding:"8px 10px", borderRadius:8, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s" }}
+        onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+        <svg width="14" height="14" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+        <span style={{ fontSize:10, fontWeight:700, color:"#191919", flex:1 }}>카톡방 소통하기</span>
+        <span style={{ fontSize:10, color:"#191919", fontWeight:800 }}>→</span>
+      </a>
 
       {/* 메뉴 */}
       <div style={{ flex:1, overflowY:"auto", padding:"4px 8px" }}>
