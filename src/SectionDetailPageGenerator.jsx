@@ -221,9 +221,10 @@ function drawSection(canvas, section, themeColors) {
   const items = texts.items || [];
   const stats = texts.stats || [];
   const images = section.images || [];
-  const imagesData = section.imagesData || [];
+  // _loadedImages는 export 시 async로 주입됨, 편집 중에는 images[].dataUrl 사용
+  const imagesData = section._loadedImages || [];
   const sectionType = SECTION_TYPES.find(st => st.id === section.type);
-  const sectionImages = sectionType ? sectionType.images : [];
+  const sectionImages = images.length > 0 ? images : (sectionType ? sectionType.images : []);
 
   const PAD = 32;
   const contentW = W - PAD * 2;
@@ -773,16 +774,22 @@ function drawSection(canvas, section, themeColors) {
         "\uBC15\uC9C0\uC218|\uD559\uC0DD|\u2605\u2605\u2605\u2605|\uAC15\uC758 \uD488\uC9C8\uC774 \uC88B\uC544\uC694"
       ];
 
-      reviews.forEach((review, i) => {
-        if (y + 130 > H - 10) return;
+      reviews.forEach((review, ri) => {
         const parts = review.split("|");
-        const name = parts[0] || "\uC775\uBA85";
-        const job = parts[1] || "";
-        const starStr = parts[2] || "\u2605\u2605\u2605\u2605\u2605";
-        const content = parts[3] || review;
+        const name = stripEmoji(parts[0] || "\uC775\uBA85");
+        const job = stripEmoji(parts[1] || "");
+        const starStr = (parts[2] || "").replace(/[^\u2605\u2606*]/g, "") || "*****";
+        const content = stripEmoji(parts[3] || parts[0] || review);
 
-        const cardH = 120;
-        // Card
+        // 후기 내용 래핑으로 카드 높이 계산
+        ctx.font = "400 11px " + FONT;
+        const qLines = wrapTextKo(ctx, content, contentW - 72);
+        const visibleLines = qLines.slice(0, 4);
+        const cardH = Math.max(100, 56 + visibleLines.length * 16 + 16);
+
+        if (y + cardH + 12 > H - 10) return;
+
+        // Card bg
         roundRect(ctx, PAD, y, contentW, cardH, 14);
         ctx.fillStyle = isPrimary ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)";
         ctx.fill();
@@ -792,48 +799,49 @@ function drawSection(canvas, section, themeColors) {
         ctx.fillStyle = accent;
         ctx.globalAlpha = 0.2;
         ctx.beginPath();
-        ctx.arc(PAD + 30, y + 30, 18, 0, Math.PI * 2);
+        ctx.arc(PAD + 28, y + 28, 16, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.font = "700 14px " + FONT;
+        ctx.font = "700 12px " + FONT;
         ctx.fillStyle = accent;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(name.charAt(0), PAD + 30, y + 30);
+        ctx.fillText(name.charAt(0), PAD + 28, y + 28);
         ctx.restore();
 
         // Name & job
-        ctx.font = "700 13px " + FONT;
+        ctx.font = "700 12px " + FONT;
         ctx.fillStyle = tc;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(name, PAD + 56, y + 16);
+        const nameText = name.length > 8 ? name.slice(0, 8) + ".." : name;
+        ctx.fillText(nameText, PAD + 52, y + 14);
         if (job) {
-          ctx.font = "400 11px " + FONT;
+          ctx.font = "400 10px " + FONT;
           ctx.fillStyle = tc;
           ctx.globalAlpha = 0.5;
-          ctx.fillText(job, PAD + 56 + ctx.measureText(name).width + 8, y + 18);
+          const jobText = job.length > 10 ? job.slice(0, 10) + ".." : job;
+          ctx.fillText(jobText, PAD + 52 + ctx.measureText(nameText).width + 6, y + 16);
           ctx.globalAlpha = 1;
         }
 
         // Stars
-        ctx.font = "400 12px " + FONT;
+        ctx.font = "400 10px " + FONT;
         ctx.fillStyle = "#fbbf24";
-        ctx.fillText(starStr, PAD + 56, y + 36);
+        ctx.fillText(starStr.slice(0, 5), PAD + 52, y + 32);
 
         // Quote
-        ctx.font = "400 12px " + FONT;
+        ctx.font = "400 11px " + FONT;
         ctx.fillStyle = tc;
         ctx.globalAlpha = 0.75;
-        const qLines = wrapTextKo(ctx, "\u201C" + content + "\u201D", contentW - 72);
-        let qy = y + 56;
-        qLines.slice(0, 3).forEach(l => {
-          ctx.fillText(l, PAD + 56, qy);
-          qy += 18;
+        let qy = y + 50;
+        visibleLines.forEach(l => {
+          ctx.fillText(l, PAD + 52, qy);
+          qy += 16;
         });
         ctx.globalAlpha = 1;
 
-        y += cardH + 12;
+        y += cardH + 10;
       });
 
       break;
@@ -2102,13 +2110,27 @@ function SectionCanvas({ section, themeColors, index, displayW, onClick }) {
   useEffect(() => {
     if (!cRef.current) return;
     const colors = getThemeForSection(section, index, themeColors);
-    drawSection(cRef.current, { ...section, orderIndex: index }, colors);
 
-    // Async image overlay
-    const sectionType = SECTION_TYPES.find(st => st.id === section.type);
-    if (sectionType && section.imagesData && section.imagesData.some(d => d.dataUrl)) {
-      const colors2 = getThemeForSection(section, index, themeColors);
-      drawSectionWithImages(cRef.current, { ...section, orderIndex: index }, colors2);
+    // 이미지가 있으면 async로 로드 후 렌더, 없으면 바로 렌더
+    const hasAnyImage = (section.images || []).some(img => img.dataUrl);
+    if (hasAnyImage) {
+      // Load all images, then draw with them
+      Promise.all(
+        (section.images || []).map(img => {
+          if (!img.dataUrl) return Promise.resolve(null);
+          return new Promise(resolve => {
+            const image = new Image();
+            image.onload = () => resolve({ role: img.role, imgElement: image });
+            image.onerror = () => resolve(null);
+            image.src = img.dataUrl;
+          });
+        })
+      ).then(loaded => {
+        const loadedImages = loaded.filter(Boolean);
+        drawSection(cRef.current, { ...section, orderIndex: index, _loadedImages: loadedImages }, colors);
+      });
+    } else {
+      drawSection(cRef.current, { ...section, orderIndex: index }, colors);
     }
   }, [section, themeColors, index]);
 
@@ -2209,13 +2231,15 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
     const presets = CATEGORY_SECTION_PRESETS[cat] || CATEGORY_SECTION_PRESETS.education;
     const secs = presets.map((typeId, i) => {
       const st = SECTION_TYPES.find(t => t.id === typeId);
+      // SECTION_TYPES에 정의된 images 슬롯을 deep copy
+      const images = (st?.images || []).map(img => ({ ...img, dataUrl: null }));
       return {
         id: "sec_" + Date.now() + "_" + i,
         type: typeId,
         width: 480,
         height: st ? st.defaultH : 700,
         texts: { headline: "", subheadline: "", body: "", badge: "", items: [], stats: [] },
-        imagesData: [],
+        images,
       };
     });
     setSections(secs);
@@ -2307,13 +2331,14 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
   const addSection = useCallback((typeId) => {
     const st = SECTION_TYPES.find(t => t.id === typeId);
     if (!st) return;
+    const images = (st.images || []).map(img => ({ ...img, dataUrl: null }));
     setSections(prev => [...prev, {
       id: "sec_" + Date.now(),
       type: typeId,
       width: 480,
       height: st.defaultH,
       texts: { headline: "", subheadline: "", body: "", badge: "", items: [], stats: [] },
-      imagesData: [],
+      images,
     }]);
   }, []);
 
