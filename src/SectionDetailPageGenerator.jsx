@@ -1977,40 +1977,22 @@ async function drawSectionWithImages(canvas, section, themeColors) {
 // AI 생성 함수
 // ══════════════════════════════════════════════════════════════
 
-async function generateAllSections({ mainCat, subCat, serviceName, description, target, price, sectionTypes }) {
-  // 섹션을 3~4개씩 묶어서 분할 호출 (타임아웃 방지)
-  const chunks = [];
-  for (let i = 0; i < sectionTypes.length; i += 3) {
-    chunks.push(sectionTypes.slice(i, i + 3));
-  }
-
+// 전체 생성: 한 섹션씩 순차 호출 (안정적, 타임아웃 방지)
+// onProgress(idx, total) 콜백으로 진행률 전달
+async function generateAllSections({ mainCat, subCat, serviceName, description, target, price, sectionTypes, onProgress }) {
   const allResults = [];
-  for (const chunk of chunks) {
-    const sectionList = chunk.map((s, i) => {
-      const t = SECTION_TYPES.find(st => st.id === s.type);
-      return `- ${t?.label || s.type} (type:${s.type})`;
-    }).join("\n");
-
-    const prompt = `한국 무형서비스 상세페이지 카피라이터. 감성적 한국어 카피 작성.
-서비스: ${serviceName} (${mainCat}>${subCat})
-설명: ${description || "없음"} / 타겟: ${target || "없음"} / 가격: ${price || "미정"}
-
-아래 섹션들의 텍스트를 JSON으로:
-${sectionList}
-
-응답형식: {"sections":[{"type":"타입","texts":{"headline":"20자이내","subheadline":"25자이내","body":"60자이내","badge":"8자이내","items":["항목"],"stats":[{"number":"숫자","label":"라벨"}]}}]}
-- items: pain_points=고민4개, curriculum="PART제목|내용", faq="Q:질문/A:답변", review_cards="이름|직업|★★★★★|후기", process_steps="제목|설명", benefits="이모지|제목|설명", target_audience="✅추천" 또는 "❌비추", pricing="플랜|가격|설명|항목1,항목2"
-JSON만.`;
-
+  for (let i = 0; i < sectionTypes.length; i++) {
+    const s = sectionTypes[i];
+    if (onProgress) onProgress(i, sectionTypes.length);
     try {
-      const txt = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 2000);
-      const clean = txt.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      const json = JSON.parse(clean);
-      allResults.push(...(json.sections || []));
+      const result = await regenerateOneSection({
+        mainCat, subCat, serviceName, description, target, price,
+        sectionType: s.type,
+      });
+      allResults.push(result || { type: s.type, texts: { headline: "", subheadline: "", body: "", badge: "" } });
     } catch (e) {
-      console.warn("chunk generation failed:", e.message);
-      // 실패한 청크는 빈 텍스트로 채움
-      chunk.forEach(s => allResults.push({ type: s.type, texts: { headline: "", subheadline: "", body: "", badge: "" } }));
+      console.warn("section gen failed:", s.type, e.message);
+      allResults.push({ type: s.type, texts: { headline: "", subheadline: "", body: "", badge: "" } });
     }
   }
   return allResults;
@@ -2170,6 +2152,7 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
   const [editingSection, setEditingSection] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(null);
+  const [genProgress, setGenProgress] = useState("");
   const [dlSt, setDlSt] = useState({ busy: false, msg: "" });
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -2268,7 +2251,13 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
         target,
         price,
         sectionTypes: sections,
+        onProgress: (idx, total) => {
+          const st = SECTION_TYPES.find(t => t.id === sections[idx]?.type);
+          setGenProgress(`${idx + 1}/${total} ${st?.label || ""} 생성 중...`);
+        },
       });
+
+      setGenProgress("");
 
       // Merge AI results into sections
       setSections(prev => prev.map((sec, i) => {
@@ -2671,7 +2660,7 @@ export default function SectionDetailPageGenerator({ isDark, user, theme, onUser
               {generating ? (
                 <>
                   <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />
-                  {"\uC0DD\uC131 \uC911..."}
+                  {genProgress || "생성 중..."}
                 </>
               ) : aiGenerated ? "\u{1F504} \uB2E4\uC2DC \uC0DD\uC131\uD558\uAE30" : "\u2728 AI \uC790\uB3D9 \uC0DD\uC131"}
             </button>
