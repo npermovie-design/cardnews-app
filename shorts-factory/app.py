@@ -236,7 +236,7 @@ async def youtube_download(request: Request):
     for proxy in proxy_urls:
       if video_path.exists():
         break
-      for client in [["mweb"], ["android"], ["default"], ["ios"], ["tv_embedded"]]:
+      for client in [["web_creator"], ["mweb"], ["default"], ["ios"], ["tv_embedded"]]:
         if video_path.exists():
             break
         try:
