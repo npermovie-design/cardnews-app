@@ -63,7 +63,7 @@ export default function YouTubeAnalyzer({ isDark }) {
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
   const acc = "#7c6aff";
 
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || "");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || "server");
   const [query, setQuery] = useState("");
   const [duration, setDuration] = useState("");
   const [period, setPeriod] = useState("");
@@ -82,14 +82,16 @@ export default function YouTubeAnalyzer({ isDark }) {
 
   const doSearch = async (pageToken = "") => {
     if (!query.trim()) return;
-    if (!apiKey) { setError("YouTube Data API 키를 입력해주세요"); return; }
+    if (!apiKey && apiKey !== "server") { setError("YouTube Data API 키를 입력해주세요"); return; }
     saveKey();
     setLoading(true); setError("");
     if (!pageToken) setResults([]);
 
     try {
       const params = new URLSearchParams({
-        action: "search", key: apiKey, q: query.trim(),
+        action: "search",
+        ...(apiKey && apiKey !== "server" ? { key: apiKey } : {}),
+        q: query.trim(),
         maxResults: String(maxResults), order,
         videoDuration: duration, regionCode,
         ...getPeriodDates(period),
@@ -142,18 +144,20 @@ export default function YouTubeAnalyzer({ isDark }) {
         {/* 검색 필터 */}
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
           {/* 1행: API키 + 키워드 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginBottom: 12 }}>
-            <input value={apiKey} onChange={e => setApiKey(e.target.value)} onBlur={saveKey}
-              placeholder="YouTube Data API 키" type="password" style={inputStyle} />
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={query} onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && doSearch()}
-                placeholder="검색 키워드 입력" style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={() => doSearch()} disabled={loading} style={btnStyle}>
-                {loading ? "검색 중..." : "검색 실행"}
-              </button>
-            </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input value={query} onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doSearch()}
+              placeholder="검색 키워드 입력" style={{ ...inputStyle, flex: 1 }} />
+            <button onClick={() => doSearch()} disabled={loading} style={btnStyle}>
+              {loading ? "검색 중..." : "검색 실행"}
+            </button>
           </div>
+          {apiKey !== "server" && (
+            <div style={{ marginBottom: 10 }}>
+              <input value={apiKey} onChange={e => setApiKey(e.target.value)} onBlur={saveKey}
+                placeholder="YouTube Data API 키 (자체 키 사용 시)" type="password" style={{ ...inputStyle, width: "100%", fontSize: 11 }} />
+            </div>
+          )}
 
           {/* 2행: 필터 */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

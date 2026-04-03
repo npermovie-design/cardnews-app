@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   // API 키: 환경변수 또는 클라이언트 전달
-  const apiKey = req.query.key || req.body?.key || process.env.YOUTUBE_DATA_API_KEY || "";
+  const apiKey = req.query.key || req.body?.key || process.env.YOUTUBE_DATA_API_KEY || process.env.GEMINI_API_KEY || "";
   if (!apiKey) return res.status(400).json({ error: "YouTube Data API 키가 필요합니다" });
 
   const BASE = "https://www.googleapis.com/youtube/v3";
