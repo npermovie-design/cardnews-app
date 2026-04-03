@@ -362,6 +362,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // AI도구 홈 검색 state
   const [homeSearch, setHomeSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  // 온보딩 state (조건부 호출 방지)
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // 보관함
   if (aiMenu === "library") {
@@ -573,8 +575,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 홈
   if (!aiMenu || aiMenu === "home") {
-    // 온보딩 상태
-    const [showOnboarding, setShowOnboarding] = React.useState(false);
 
     const features_ = [
       { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
@@ -698,19 +698,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             </button>
           </div>
 
-          {/* 카톡방 배너 */}
-          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-            style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 18px", borderRadius:14, background:"#FEE500", marginBottom:24, textDecoration:"none", transition:"opacity 0.15s" }}
-            onMouseEnter={e=>e.currentTarget.style.opacity="0.9"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-            <div style={{ width:36, height:36, borderRadius:10, background:"#191919", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:"#191919" }}>단체카톡방에서 함께 소통하기</div>
-              <div style={{ fontSize:11, color:"rgba(25,25,25,0.55)" }}>SNS 마케팅 인사이트를 함께 나눠보세요</div>
-            </div>
-            <span style={{ fontSize:12, fontWeight:800, color:"#191919" }}>→</span>
-          </a>
         </div>
       </div>
     );

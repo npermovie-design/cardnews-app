@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST } from "./storage";
 
@@ -101,19 +101,38 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     return aiMenu === item.id || aiMenu.startsWith(baseId) || (item.ids && item.ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
   };
 
+  const [sideW, setSideW] = useState(() => { try { return parseInt(localStorage.getItem("_sidebar_w")) || 180; } catch { return 180; } });
+  const dragRef = useRef(null);
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sideW;
+    const onMove = (ev) => {
+      const newW = Math.max(140, Math.min(320, startW + ev.clientX - startX));
+      setSideW(newW);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      try { localStorage.setItem("_sidebar_w", String(sideW)); } catch {}
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   return (
     <div style={{
-      width: 180, flexShrink: 0, background: isDark ? "rgba(0,0,0,0.35)" : "#fff",
+      width: sideW, flexShrink: 0, background: isDark ? "rgba(0,0,0,0.35)" : "#fff",
       borderRight: `1px solid ${sideBdr}`,
-      display: "flex", flexDirection: "column", height: "100%",
+      display: "flex", flexDirection: "column", height: "100%", position: "relative",
     }}>
       {/* 카톡방 배너 */}
       <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-        style={{ display:"flex", alignItems:"center", gap:6, margin:"10px 8px 4px", padding:"8px 10px", borderRadius:8, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s" }}
+        style={{ display:"flex", alignItems:"center", gap:8, margin:"10px 8px 6px", padding:"10px 12px", borderRadius:10, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s" }}
         onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-        <svg width="14" height="14" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
-        <span style={{ fontSize:10, fontWeight:700, color:"#191919", flex:1 }}>카톡방 소통하기</span>
-        <span style={{ fontSize:10, color:"#191919", fontWeight:800 }}>→</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+        <span style={{ fontSize:11, fontWeight:700, color:"#191919", flex:1, lineHeight:1.3 }}>카톡방 소통하기</span>
+        <span style={{ fontSize:11, color:"#191919", fontWeight:800 }}>→</span>
       </a>
 
       {/* 메뉴 */}
@@ -157,6 +176,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           마이페이지
         </button>
       </div>
+      {/* 리사이즈 핸들 */}
+      <div ref={dragRef} onMouseDown={handleMouseDown}
+        style={{ position:"absolute", top:0, right:-2, bottom:0, width:5, cursor:"col-resize", zIndex:10, background:"transparent" }}
+        onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(124,106,255,0.3)":"rgba(124,106,255,0.15)"}
+        onMouseLeave={e=>e.currentTarget.style.background="transparent"} />
     </div>
   );
 }

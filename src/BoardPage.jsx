@@ -922,15 +922,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       </div>}
 
       {!loading && <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
-        {/* 카톡방 배너 (슬라이드 배너 영역) */}
-        <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-          style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 16px", margin:"16px 0 0", borderRadius:10, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s", maxWidth:480 }}
-          onMouseEnter={e=>e.currentTarget.style.opacity="0.9"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-          <svg width="18" height="18" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
-          <span style={{ fontSize:13, fontWeight:700, color:"#191919", flex:1 }}>단체카톡방에서 함께 소통하기</span>
-          <span style={{ fontSize:12, fontWeight:800, color:"#191919", flexShrink:0 }}>참여하기 →</span>
-        </a>
-
         {/* 포인트 안내 배너 */}
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",margin:"16px 0 0",borderRadius:12,
           background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
@@ -1618,6 +1609,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 우측 사이드바 - 데스크톱만 */}
           {!isMobile && (
           <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
+            {/* 카톡방 배너 */}
+            <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
+              style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.opacity="0.9"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+              <div style={{ width:32, height:32, borderRadius:8, background:"#191919", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:"#191919" }}>카톡방 소통하기</div>
+                <div style={{ fontSize:10, color:"rgba(25,25,25,0.55)" }}>마케팅 인사이트 공유</div>
+              </div>
+              <span style={{ fontSize:11, fontWeight:800, color:"#191919" }}>→</span>
+            </a>
+
             {/* 전체 인기글 TOP10 */}
             {hotPostsAll.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
@@ -1639,7 +1644,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
             {/* 게시판별 인기글 TOP10 */}
-            {hotPosts.length>0&&subCat!=="archive"&&(
+            {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>
                   <span style={{fontSize:13,fontWeight:800,color:C.text}}>⭐ {subInfo?.label||""} 인기글</span>
