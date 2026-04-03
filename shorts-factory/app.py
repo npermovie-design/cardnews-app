@@ -1,4 +1,5 @@
 import sys
+import os
 import uuid
 import json
 import asyncio
@@ -55,6 +56,15 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 file_store: dict[str, dict] = {}
+
+# YouTube 쿠키 파일 (환경변수 YOUTUBE_COOKIES에서 로드)
+COOKIES_FILE = BASE_DIR / "youtube_cookies.txt"
+_yt_cookies_env = os.environ.get("YOUTUBE_COOKIES", "")
+if _yt_cookies_env:
+    COOKIES_FILE.write_text(_yt_cookies_env)
+    logger.info(f"YouTube cookies loaded ({len(_yt_cookies_env)} bytes)")
+else:
+    logger.warning("No YOUTUBE_COOKIES env — YouTube may block downloads")
 
 
 def _is_good_ending(text: str) -> bool:
@@ -224,7 +234,7 @@ async def youtube_download(request: Request):
                 "quiet": True,
                 "no_warnings": True,
                 "extractor_args": {"youtube": {"player_client": client}},
-                "js_runtimes": {"node": {}},
+                "cookiefile": str(COOKIES_FILE) if COOKIES_FILE.exists() else None,
                 "socket_timeout": 15,
                 "retries": 1,
                 "fragment_retries": 2,
@@ -317,6 +327,7 @@ async def _fetch_youtube_captions(vid: str, output_dir: str) -> str | None:
             "subtitlesformat": "srt",
             "outtmpl": str(Path(output_dir) / "video"),
             "quiet": True,
+            "cookiefile": str(COOKIES_FILE) if COOKIES_FILE.exists() else None,
         }
         loop = asyncio.get_event_loop()
         def do_subs():
