@@ -68,7 +68,7 @@ export default async function handler(req) {
         racyCheckOk: true,
       };
 
-      const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+      const res = await fetch("https://www.youtube.com/youtubei/v1/player?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w&prettyPrint=false", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
