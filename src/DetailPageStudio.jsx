@@ -181,7 +181,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
         const b64data = firstImg.base64.includes(",") ? firstImg.base64.split(",")[1] : firstImg.base64;
         if (!b64data || b64data.length < 100) { imageAnalysis = null; }
         if (b64data && b64data.length >= 100) {
-        const result = await callAI("gemini-2.5-flash", [{
+        const result = await callAI("gemini-2.0-flash", [{
           role: "user",
           content: [
             { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64data}` } },
@@ -207,7 +207,7 @@ ${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
 이 제품의 상세페이지 톤앤매너를 결정해줘. JSON으로 답해:
 {"tone":"말투 스타일(예: 프리미엄/친근한/전문적)","voice":"문체(예: ~합니다/~해요/~입니다)","color_palette":{"main":"메인 hex","gradient":"그라데이션 hex","light_bg":"밝은 배경 hex","dark_bg":"어두운 배경 hex"},"font_style":"추천 폰트 스타일(bold/elegant/minimal)","section_count":${mode === "fast" ? "8~10" : "15~20"}}`;
 
-      const toneResult = await callAI("gemini-2.5-flash", [{ role: "user", content: tonePrompt }], 600);
+      const toneResult = await callAI("gemini-2.0-flash", [{ role: "user", content: tonePrompt }], 600);
       let toneData;
       try {
         const cleaned = toneResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();

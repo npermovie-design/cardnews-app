@@ -15,8 +15,9 @@ const MODEL_MAP = {
   "gpt-4o": "openai/gpt-4o",
   "gpt-4o-mini": "openai/gpt-4o-mini",
   // Gemini
-  "gemini-2.5-flash": "google/gemini-2.5-flash-preview",
-  "gemini-2.5-pro": "google/gemini-2.5-pro-preview",
+  "gemini-2.5-flash": "google/gemini-2.5-flash-preview:thinking",
+  "gemini-2.5-pro": "google/gemini-2.5-pro-preview-03-25",
+  "gemini-2.0-flash": "google/gemini-2.0-flash-001",
 };
 
 function orModel(m) {
