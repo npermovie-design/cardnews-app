@@ -32,6 +32,18 @@ const RATIO_LEVELS = [
   { id: 5, label: "5단계 (매우 높음)", color: "#ef4444" },
 ];
 
+const SUB_PRESETS = [
+  { label: "전체", min: 0, max: Infinity },
+  { label: "~1천", min: 0, max: 1000 },
+  { label: "1천~5천", min: 1000, max: 5000 },
+  { label: "5천~1만", min: 5000, max: 10000 },
+  { label: "1만~5만", min: 10000, max: 50000 },
+  { label: "5만~10만", min: 50000, max: 100000 },
+  { label: "10만~50만", min: 100000, max: 500000 },
+  { label: "50만~100만", min: 500000, max: 1000000 },
+  { label: "100만+", min: 1000000, max: Infinity },
+];
+
 function parseDuration(iso) {
   if (!iso) return "";
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -71,6 +83,9 @@ export default function YouTubeAnalyzer({ isDark }) {
   const [regionCode, setRegionCode] = useState("KR");
   const [maxResults, setMaxResults] = useState(20);
   const [ratioFilter, setRatioFilter] = useState([]);
+  const [subPreset, setSubPreset] = useState(0); // SUB_PRESETS index
+  const [subMin, setSubMin] = useState("");
+  const [subMax, setSubMax] = useState("");
   const [viewMode, setViewMode] = useState("card"); // card | table
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
@@ -105,6 +120,12 @@ export default function YouTubeAnalyzer({ isDark }) {
       let filtered = d.results || [];
       if (ratioFilter.length > 0) {
         filtered = filtered.filter(v => ratioFilter.includes(v.ratioLevel));
+      }
+      // 구독자 수 필터
+      const sMin = subMin !== "" ? parseInt(subMin) : (SUB_PRESETS[subPreset]?.min ?? 0);
+      const sMax = subMax !== "" ? parseInt(subMax) : (SUB_PRESETS[subPreset]?.max ?? Infinity);
+      if (sMin > 0 || sMax < Infinity) {
+        filtered = filtered.filter(v => v.subscriberCount >= sMin && v.subscriberCount <= sMax);
       }
 
       setResults(prev => pageToken ? [...prev, ...filtered] : filtered);
@@ -181,27 +202,30 @@ export default function YouTubeAnalyzer({ isDark }) {
             </select>
           </div>
 
-          {/* 3행: 비율 필터 */}
+          {/* 3행: 구독자 수 필터 */}
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: muted, marginBottom: 6 }}>구독자 대비 조회수 비율 (다중 선택)</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {RATIO_LEVELS.map(r => (
-                <button key={r.id} onClick={() => {
-                  if (r.id === 0) { setRatioFilter([]); return; }
-                  setRatioFilter(prev => prev.includes(r.id) ? prev.filter(x => x !== r.id) : [...prev, r.id]);
-                }}
+            <div style={{ fontSize: 11, color: muted, marginBottom: 6 }}>구독자 수 필터</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+              {SUB_PRESETS.map((p, i) => (
+                <button key={i} onClick={() => { setSubPreset(i); setSubMin(""); setSubMax(""); }}
                   style={{
                     padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                    border: `1.5px solid ${(r.id === 0 ? ratioFilter.length === 0 : ratioFilter.includes(r.id)) ? r.color : bdr}`,
-                    background: (r.id === 0 ? ratioFilter.length === 0 : ratioFilter.includes(r.id)) ? r.color + "20" : "transparent",
-                    color: (r.id === 0 ? ratioFilter.length === 0 : ratioFilter.includes(r.id)) ? r.color : muted,
+                    border: `1.5px solid ${subPreset === i && subMin === "" && subMax === "" ? acc : bdr}`,
+                    background: subPreset === i && subMin === "" && subMax === "" ? acc + "20" : "transparent",
+                    color: subPreset === i && subMin === "" && subMax === "" ? acc : muted,
                   }}>
-                  {r.label}
+                  {p.label}
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>
-              * 비율 단계: 1단계 &lt;0.2 | 2단계 0.2~0.6 | 3단계 0.6~1.4 (~1:1) | 4단계 1.4~3 | 5단계 &ge;3
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: muted }}>직접 입력:</span>
+              <input value={subMin} onChange={e => { setSubMin(e.target.value.replace(/[^0-9]/g, "")); setSubPreset(0); }}
+                placeholder="최소 구독자" style={{ ...inputStyle, width: 110, fontSize: 11, padding: "6px 10px" }} />
+              <span style={{ color: muted, fontSize: 12 }}>~</span>
+              <input value={subMax} onChange={e => { setSubMax(e.target.value.replace(/[^0-9]/g, "")); setSubPreset(0); }}
+                placeholder="최대 구독자" style={{ ...inputStyle, width: 110, fontSize: 11, padding: "6px 10px" }} />
+              <span style={{ fontSize: 10, color: muted }}>명</span>
             </div>
           </div>
         </div>
