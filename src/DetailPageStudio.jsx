@@ -1,0 +1,886 @@
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { callAI } from "./aiClient";
+import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { useI18n } from "./i18n.jsx";
+
+/* ══════════════════════════════════════════════════════════════
+   DetailPageStudio — Hookable 스타일 상세페이지 생성기
+   Phase 1: 입력 폼 + AI 파이프라인
+   Phase 2: 멀티페이지 라이브 캔버스 에디터
+══════════════════════════════════════════════════════════════ */
+
+// ── 카테고리 ─────────────────────────────────────────────────
+const CATEGORIES = [
+  { key: "food", label: "식품류", icon: "🍱" },
+  { key: "farm", label: "농수산물", icon: "🌾" },
+  { key: "tech", label: "가전/디지털", icon: "📱" },
+  { key: "living", label: "생활용품/리빙", icon: "🏠" },
+  { key: "fashion", label: "의류/패션", icon: "👗" },
+  { key: "beauty", label: "화장품/뷰티", icon: "💄" },
+  { key: "health", label: "건강기능식품", icon: "💊" },
+  { key: "education", label: "지식서비스/교육", icon: "📚" },
+  { key: "pet", label: "반려동물", icon: "🐕" },
+  { key: "kids", label: "유아/아동", icon: "👶" },
+];
+
+// ── 섹션 타입 (Hookable 스타일) ────────────────────────────
+const SECTION_TYPES = [
+  { id: "hero", label: "히어로", desc: "메인 타이틀 + 제품 이미지" },
+  { id: "review", label: "고객 후기", desc: "실제 후기/별점" },
+  { id: "concept", label: "컨셉 중간", desc: "브랜드 스토리/감성" },
+  { id: "features", label: "특장점 목록", desc: "핵심 장점 나열" },
+  { id: "point", label: "포인트", desc: "상세 설명 포인트" },
+  { id: "cert", label: "인증", desc: "인증/수상/자격" },
+  { id: "facility", label: "시설", desc: "생산시설/환경" },
+  { id: "shipping", label: "배송 방법", desc: "배송/포장 안내" },
+  { id: "info", label: "정보", desc: "구매 전 확인사항" },
+  { id: "contact", label: "연락처", desc: "고객센터/문의" },
+  { id: "event", label: "이벤트", desc: "프로모션/할인" },
+  { id: "cta", label: "구매 유도", desc: "CTA/주문 버튼" },
+  { id: "ai_notice", label: "AI 콘텐츠 고지", desc: "AI 생성 안내" },
+];
+
+// ── AI 파이프라인 단계 ─────────────────────────────────────
+const PIPELINE_STEPS = [
+  { id: "input", label: "입력한 정보", icon: "📋" },
+  { id: "image", label: "이미지 분석", icon: "🔍" },
+  { id: "tone", label: "톤앤매너 추출", icon: "🎨" },
+  { id: "layout", label: "레이아웃 디자인", icon: "📐" },
+  { id: "content", label: "콘텐츠 제작", icon: "✏️" },
+];
+
+// ── 유틸 ──────────────────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function resizeImage(dataUrl, maxW = 800) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width <= maxW) { resolve(dataUrl); return; }
+      const ratio = maxW / img.width;
+      const c = document.createElement("canvas");
+      c.width = maxW; c.height = img.height * ratio;
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  메인 컴포넌트
+// ══════════════════════════════════════════════════════════════
+export default function DetailPageStudio({ isDark, theme, user, showPointConfirm, C }) {
+  const { t, lang } = useI18n();
+  const ko = lang === "ko";
+  const D = isDark || theme === "dark";
+
+  // 테마 색상
+  const text = D ? "#fff" : "#1a1a2e";
+  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f9fafb";
+  const acc = "#7c6aff";
+
+  // ── 상태 ──────────────────────────────────────────────
+  const [phase, setPhase] = useState("input"); // input | generating | editor
+  const [mode, setMode] = useState("fast"); // fast | precise
+
+  // 입력 폼
+  const [productName, setProductName] = useState("");
+  const [category, setCategory] = useState("");
+  const [features, setFeatures] = useState("");
+  const [images, setImages] = useState([]); // [{ file, preview, base64 }]
+  const [options, setOptions] = useState([]); // ["옵션1", ...]
+  const [optionInput, setOptionInput] = useState("");
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [extraInfo, setExtraInfo] = useState({ price: "", origin: "", target: "", shipping: "" });
+
+  // AI 파이프라인
+  const [pipeStep, setPipeStep] = useState(0); // 0-4
+  const [pipeResults, setPipeResults] = useState({});
+  const [pipeError, setPipeError] = useState("");
+
+  // 에디터 (Phase 2)
+  const [sections, setSections] = useState([]);
+  const [colorPalette, setColorPalette] = useState(null);
+  const [activeSection, setActiveSection] = useState(0);
+  const [sidebarTab, setSidebarTab] = useState("pages");
+
+  const fileInputRef = useRef(null);
+
+  // ── 이미지 업로드 ─────────────────────────────────────
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (images.length + files.length > 10) {
+      alert("이미지는 최대 10장까지 업로드 가능합니다.");
+      return;
+    }
+    const newImages = [];
+    for (const file of files) {
+      const preview = URL.createObjectURL(file);
+      const raw = await fileToBase64(file);
+      const base64 = await resizeImage(raw, 800);
+      newImages.push({ file, preview, base64 });
+    }
+    setImages(prev => [...prev, ...newImages]);
+    e.target.value = "";
+  };
+
+  const removeImage = (idx) => {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // ── AI로 내용 채우기 ──────────────────────────────────
+  const autoFillWithAI = async () => {
+    if (!productName.trim()) return;
+    try {
+      const prompt = `상품명: "${productName}"${category ? `, 카테고리: ${CATEGORIES.find(c => c.key === category)?.label}` : ""}
+이 상품의 주요 특징을 5줄로 작성해줘. 번호 매기지 말고, 한 줄에 하나의 특징만.`;
+      const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 500);
+      setFeatures(result.trim());
+    } catch (e) { console.error(e); }
+  };
+
+  // ── AI 파이프라인 실행 ────────────────────────────────
+  const runPipeline = async () => {
+    if (!productName.trim() || !category) return;
+    if (!user && guestLimitExceeded()) return;
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+    if (!user) incrementGuestUsage();
+
+    setPhase("generating");
+    setPipeStep(0);
+    setPipeResults({});
+    setPipeError("");
+
+    const catLabel = CATEGORIES.find(c => c.key === category)?.label || category;
+
+    try {
+      // Step 1: 입력 정보 정리
+      setPipeStep(1);
+      await new Promise(r => setTimeout(r, 500));
+      setPipeResults(prev => ({ ...prev, input: { productName, category: catLabel, features, options, extraInfo } }));
+
+      // Step 2: 이미지 분석
+      setPipeStep(2);
+      let imageAnalysis = null;
+      if (images.length > 0) {
+        const imgContent = images.slice(0, 3).map(img => ({
+          type: "image",
+          source: { type: "base64", media_type: "image/jpeg", data: img.base64.split(",")[1] },
+        }));
+        const result = await callAI("claude-haiku-4-5-20251001", [{
+          role: "user",
+          content: [
+            ...imgContent,
+            { type: "text", text: `이 제품 이미지를 분석해줘. JSON으로 답해:
+{"product_type":"제품 종류","visual_style":"시각적 스타일(고급/캐주얼/자연적/모던 등)","main_colors":["주요색상 hex 3-4개"],"mood":"분위기","key_elements":["이미지에서 보이는 주요 요소들"],"suggested_bg_colors":["배경색 추천 hex 4개: 메인/그라데이션/밝은배경/어두운배경"]}` },
+          ],
+        }], 800);
+        try {
+          const cleaned = result.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+          imageAnalysis = JSON.parse(cleaned);
+        } catch { imageAnalysis = { raw: result }; }
+      }
+      setPipeResults(prev => ({ ...prev, image: imageAnalysis }));
+
+      // Step 3: 톤앤매너 추출
+      setPipeStep(3);
+      const tonePrompt = `제품: ${productName}
+카테고리: ${catLabel}
+특징: ${features}
+${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
+
+이 제품의 상세페이지 톤앤매너를 결정해줘. JSON으로 답해:
+{"tone":"말투 스타일(예: 프리미엄/친근한/전문적)","voice":"문체(예: ~합니다/~해요/~입니다)","color_palette":{"main":"메인 hex","gradient":"그라데이션 hex","light_bg":"밝은 배경 hex","dark_bg":"어두운 배경 hex"},"font_style":"추천 폰트 스타일(bold/elegant/minimal)","section_count":${mode === "fast" ? "8~10" : "15~20"}}`;
+
+      const toneResult = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: tonePrompt }], 600);
+      let toneData;
+      try {
+        const cleaned = toneResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        toneData = JSON.parse(cleaned);
+      } catch { toneData = { tone: "전문적", voice: "~합니다", color_palette: { main: "#8A5E3C", gradient: "#C4A484", light_bg: "#F5F2EC", dark_bg: "#DCD5C9" }, font_style: "bold", section_count: mode === "fast" ? 8 : 15 }; }
+
+      setColorPalette(toneData.color_palette);
+      setPipeResults(prev => ({ ...prev, tone: toneData }));
+
+      // Step 4: 레이아웃 + 콘텐츠 생성
+      setPipeStep(4);
+      const sectionCount = toneData.section_count || (mode === "fast" ? 8 : 15);
+      const layoutPrompt = `제품: ${productName}
+카테고리: ${catLabel}
+특징: ${features}
+톤앤매너: ${JSON.stringify(toneData)}
+${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
+${options.length > 0 ? `옵션: ${options.join(", ")}` : ""}
+${extraInfo.price ? `가격: ${extraInfo.price}` : ""}
+${extraInfo.origin ? `원산지: ${extraInfo.origin}` : ""}
+${extraInfo.target ? `타겟: ${extraInfo.target}` : ""}
+${extraInfo.shipping ? `배송: ${extraInfo.shipping}` : ""}
+
+이 제품의 상세페이지를 ${sectionCount}개 섹션으로 구성해줘.
+각 섹션은 하나의 페이지(860x1100px)이며, 실제 쇼핑몰 상세페이지처럼 구성해.
+
+JSON 배열로 답해. 각 섹션:
+[{
+  "type": "섹션타입(hero/review/concept/features/point/cert/facility/shipping/info/contact/event/cta/ai_notice 중)",
+  "label": "섹션 라벨 (예: 히어로 | 밥도독 간장게장)",
+  "bg_color": "배경색 hex",
+  "elements": [
+    {"type":"text","role":"subtitle","content":"소제목 텍스트","x":50,"y":80,"w":760,"fontSize":16,"fontWeight":"400","color":"색상hex","opacity":0.6},
+    {"type":"text","role":"title","content":"메인 타이틀","x":50,"y":130,"w":760,"fontSize":42,"fontWeight":"900","color":"색상hex"},
+    {"type":"text","role":"body","content":"본문 텍스트","x":50,"y":300,"w":760,"fontSize":16,"fontWeight":"400","color":"색상hex","lineHeight":1.7},
+    {"type":"image","role":"product","x":50,"y":400,"w":760,"h":500,"placeholder":"제품 메인 이미지"}
+  ]
+}]
+
+중요:
+- 실제 판매되는 것처럼 구체적인 카피를 작성
+- x,y,w,h는 860x1100 기준 절대 좌표
+- 첫 섹션은 반드시 hero, 마지막은 ai_notice
+- 고객 후기는 실제같은 가상 후기 포함
+- 색상은 톤앤매너에서 추출한 팔레트 활용`;
+
+      const layoutResult = await callAI("claude-sonnet-4-5-20250514", [{ role: "user", content: layoutPrompt }], 8000);
+      let layoutData;
+      try {
+        const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        layoutData = JSON.parse(cleaned);
+      } catch (e) {
+        console.error("Layout parse error:", e, layoutResult);
+        setPipeError("레이아웃 생성 실패. 다시 시도해주세요.");
+        setPhase("input");
+        return;
+      }
+
+      setPipeResults(prev => ({ ...prev, layout: layoutData }));
+      setPipeStep(5); // 완료
+
+      // 섹션 데이터 설정 → 에디터로 전환
+      setSections(layoutData.map((s, i) => ({ ...s, id: `sec_${i}_${Date.now()}` })));
+      setActiveSection(0);
+
+      // 포인트 차감
+      if (user) await changePoints(user.uid, -10, "상세페이지 생성");
+
+      setTimeout(() => setPhase("editor"), 800);
+
+    } catch (e) {
+      console.error("Pipeline error:", e);
+      setPipeError(e.message || "생성 중 오류가 발생했습니다.");
+      setPhase("input");
+    }
+  };
+
+  // ── 스타일 ──────────────────────────────────────────────
+  const inputStyle = {
+    width: "100%", padding: "12px 16px", borderRadius: 12,
+    border: `1px solid ${bdr}`, background: inputBg, color: text,
+    fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+  };
+  const btnPrimary = {
+    padding: "14px 32px", borderRadius: 12, border: "none",
+    background: "#1a1a2e", color: "#fff", fontSize: 16, fontWeight: 800,
+    cursor: "pointer", width: "100%", maxWidth: 400,
+  };
+
+  // ══════════════════════════════════════════════════════════
+  //  렌더링
+  // ══════════════════════════════════════════════════════════
+
+  // ── 입력 폼 ─────────────────────────────────────────────
+  if (phase === "input") return (
+    <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "linear-gradient(180deg, #fdf2f8 0%, #faf5ff 50%, #f0f9ff 100%)" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 80px" }}>
+        {/* 헤더 */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: D ? text : "#1a1a2e", marginBottom: 8 }}>
+            5분만에 매력적인<br />상세페이지를 만들어 보세요.
+          </h1>
+          <p style={{ fontSize: 14, color: muted }}>어떤 상세페이지를 만들까요? 자유롭게 내용을 입력해 주세요.</p>
+        </div>
+
+        {/* 폼 카드 */}
+        <div style={{ background: D ? cardBg : "#fff", borderRadius: 20, padding: "32px 28px", border: `1px solid ${bdr}`, boxShadow: D ? "none" : "0 2px 20px rgba(0,0,0,0.06)" }}>
+
+          {/* 구성 모드 선택 */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 28, justifyContent: "center" }}>
+            {[{ key: "fast", label: "짧은 구성", desc: "약 8~10개 섹션" }, { key: "precise", label: "긴 구성", desc: "약 15~20개 섹션" }].map(m => (
+              <button key={m.key} onClick={() => setMode(m.key)}
+                style={{
+                  padding: "10px 24px", borderRadius: 24, border: `1.5px solid ${mode === m.key ? "#1a1a2e" : bdr}`,
+                  background: mode === m.key ? (D ? "rgba(255,255,255,0.1)" : "#f8f8f8") : "transparent",
+                  color: mode === m.key ? text : muted, fontSize: 13, fontWeight: mode === m.key ? 700 : 500, cursor: "pointer",
+                }}>
+                {mode === m.key && "✓ "}{m.label}
+              </button>
+            ))}
+            <span style={{ fontSize: 12, color: muted, alignSelf: "center", marginLeft: 4 }}>
+              {mode === "fast" ? "빠른 초안 · 약 30초" : "정교한 기획 · 약 1~2분"}
+            </span>
+          </div>
+
+          {/* 상품명 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
+              상품명 <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={productName} onChange={e => setProductName(e.target.value)}
+                placeholder="예) 밥도독 간장게장" style={{ ...inputStyle, flex: 1 }} />
+              <button onClick={autoFillWithAI} disabled={!productName.trim()}
+                style={{
+                  padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
+                  background: D ? "rgba(255,255,255,0.06)" : "#f9fafb", color: text,
+                  fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                }}>
+                ✦ AI로 내용 채우기
+              </button>
+            </div>
+          </div>
+
+          {/* 카테고리 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
+              카테고리 <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <div style={{ position: "relative" }}>
+              <select value={category} onChange={e => setCategory(e.target.value)}
+                style={{ ...inputStyle, cursor: "pointer", appearance: "none", paddingRight: 36 }}>
+                <option value="">카테고리를 선택해주세요</option>
+                {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.label}</option>)}
+              </select>
+              <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: muted, pointerEvents: "none" }}>▾</span>
+            </div>
+          </div>
+
+          {/* 제품 주요 특징 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
+              제품 주요 특징 <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
+              placeholder={"1. 100% 국내산 꽃게로 만든 프리미엄 간장게장\n2. 전통 비법 간장 소스로 깊고 풍부한 맛\n3. 밥도독이 따로 없는 최고의 밥반찬\n4. HACCP 인증 시설에서 안전하게 생산\n5. 신선도 유지를 위한 꼼꼼한 포장"}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
+          </div>
+
+          {/* 상품 이미지 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              상품 이미지 <span style={{ color: "#ef4444" }}>*</span>
+              <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>({images.length} / 10)</span>
+            </label>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {/* 업로드 버튼 */}
+              <div onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: 120, height: 120, borderRadius: 12, border: `2px dashed ${bdr}`,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", background: inputBg, flexShrink: 0,
+                }}>
+                <span style={{ fontSize: 28, color: acc, marginBottom: 4 }}>+</span>
+                <span style={{ fontSize: 11, color: acc, fontWeight: 600 }}>업로드</span>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
+
+              {/* 이미지 썸네일 */}
+              {images.map((img, i) => (
+                <div key={i} style={{ position: "relative", width: 120, height: 120, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
+                  <img src={img.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button onClick={() => removeImage(i)}
+                    style={{
+                      position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%",
+                      background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", fontSize: 12,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 옵션 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              옵션(종류) <span style={{ fontSize: 12, color: muted, fontWeight: 400 }}>선택</span>
+              <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>{options.length} / 10</span>
+            </label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={optionInput} onChange={e => setOptionInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && optionInput.trim() && options.length < 10) {
+                    setOptions(prev => [...prev, optionInput.trim()]);
+                    setOptionInput("");
+                  }
+                }}
+                placeholder="예시) 대용량 500g" style={{ ...inputStyle, flex: 1 }} />
+              <button onClick={() => {
+                if (optionInput.trim() && options.length < 10) {
+                  setOptions(prev => [...prev, optionInput.trim()]);
+                  setOptionInput("");
+                }
+              }}
+                style={{
+                  padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
+                  background: inputBg, color: muted, fontSize: 13, cursor: "pointer", flexShrink: 0,
+                }}>추가</button>
+            </div>
+            {options.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {options.map((opt, i) => (
+                  <span key={i} style={{
+                    padding: "5px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.08)" : "#f3f4f6",
+                    color: text, fontSize: 12, display: "flex", alignItems: "center", gap: 6,
+                  }}>
+                    {opt}
+                    <span onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))}
+                      style={{ cursor: "pointer", opacity: 0.5 }}>×</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 추가 정보 (접기) */}
+          <div style={{ marginBottom: 28 }}>
+            <button onClick={() => setExtraOpen(!extraOpen)}
+              style={{ background: "none", border: "none", color: muted, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              추가 정보 (선택) <span>{extraOpen ? "▲" : "▼"}</span>
+            </button>
+            {extraOpen && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>가격</label>
+                  <input value={extraInfo.price} onChange={e => setExtraInfo(p => ({ ...p, price: e.target.value }))} placeholder="29,900원" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>원산지</label>
+                  <input value={extraInfo.origin} onChange={e => setExtraInfo(p => ({ ...p, origin: e.target.value }))} placeholder="국내산" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>타겟 고객</label>
+                  <input value={extraInfo.target} onChange={e => setExtraInfo(p => ({ ...p, target: e.target.value }))} placeholder="30~50대 주부" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>배송 정보</label>
+                  <input value={extraInfo.shipping} onChange={e => setExtraInfo(p => ({ ...p, shipping: e.target.value }))} placeholder="당일 출고, 냉장배송" style={inputStyle} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 생성 버튼 */}
+          <div style={{ textAlign: "center" }}>
+            <button onClick={runPipeline}
+              disabled={!productName.trim() || !category || images.length === 0}
+              style={{
+                ...btnPrimary,
+                opacity: (!productName.trim() || !category || images.length === 0) ? 0.4 : 1,
+              }}>
+              ✦ 초안 생성
+            </button>
+            {(!productName.trim() || !category || images.length === 0) && (
+              <p style={{ fontSize: 11, color: "#ef4444", marginTop: 8 }}>
+                상품명, 카테고리, 이미지를 모두 입력해주세요
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── AI 파이프라인 진행 화면 ──────────────────────────────
+  if (phase === "generating") return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "linear-gradient(180deg, #fdf2f8 0%, #faf5ff 50%, #f0f9ff 100%)" }}>
+      <div style={{ maxWidth: 500, width: "100%", padding: "40px 24px", textAlign: "center" }}>
+        <h2 style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>기획 초안 작성</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 32 }}>
+          <span style={{ fontSize: 14, color: text }}>● {productName}</span>
+          <span style={{ fontSize: 12, color: muted }}>· {CATEGORIES.find(c => c.key === category)?.label}</span>
+          {pipeStep < 5 && (
+            <span style={{ fontSize: 12, color: acc, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+              생성 중...
+            </span>
+          )}
+        </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+        {/* 파이프라인 단계 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: "left" }}>
+          <div style={{ padding: "16px 20px", borderRadius: 12, background: cardBg, border: `1px solid ${bdr}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: text }}>입력 내용</div>
+          </div>
+          {PIPELINE_STEPS.slice(1).map((step, i) => {
+            const stepIdx = i + 2; // 2,3,4,5
+            const isDone = pipeStep > stepIdx;
+            const isActive = pipeStep === stepIdx;
+            const isPending = pipeStep < stepIdx;
+            return (
+              <div key={step.id}>
+                {/* 연결선 */}
+                <div style={{ display: "flex", justifyContent: "center", padding: "2px 0" }}>
+                  <div style={{ width: 2, height: 16, background: isDone ? "#1a1a2e" : bdr }} />
+                </div>
+                <div style={{
+                  padding: "16px 20px", borderRadius: 12,
+                  background: isDone ? (D ? "rgba(255,255,255,0.06)" : "#f9fafb") : cardBg,
+                  border: `1px solid ${isActive ? acc : bdr}`,
+                  opacity: isPending ? 0.4 : 1,
+                  transition: "all 0.3s",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {isDone && <span style={{ fontSize: 16 }}>✅</span>}
+                      {isActive && <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite" }} />}
+                      <span style={{ fontSize: 14, fontWeight: 600, color: text }}>{step.label}</span>
+                    </div>
+                    {isDone && <span style={{ fontSize: 11, color: "#22c55e", fontWeight: 700, padding: "2px 10px", borderRadius: 8, background: "rgba(34,197,94,0.1)" }}>완료됨</span>}
+                    {isActive && <span style={{ fontSize: 11, color: acc, fontWeight: 700 }}>진행 중...</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {pipeError && (
+          <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>
+            {pipeError}
+            <button onClick={() => setPhase("input")} style={{ marginLeft: 12, background: "none", border: "none", color: "#f87171", textDecoration: "underline", cursor: "pointer" }}>돌아가기</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── 에디터 (Phase 2) ────────────────────────────────────
+  if (phase === "editor") return (
+    <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      {/* 왼쪽 사이드바 */}
+      <div style={{ width: 280, borderRight: `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff" }}>
+        {/* 사이드바 탭 아이콘 */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0", borderBottom: `1px solid ${bdr}` }}>
+          {[
+            { key: "pages", icon: "☰", label: "페이지" },
+            { key: "text", icon: "T", label: "텍스트" },
+            { key: "color", icon: "◐", label: "색상" },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setSidebarTab(tab.key)}
+              style={{
+                width: "100%", padding: "10px 12px", background: sidebarTab === tab.key ? (D ? "rgba(124,106,255,0.15)" : "#f0eeff") : "transparent",
+                border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                color: sidebarTab === tab.key ? acc : muted, fontSize: 13, fontWeight: sidebarTab === tab.key ? 700 : 500,
+                borderRadius: 8, margin: "0 8px",
+              }}>
+              <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 사이드바 콘텐츠 */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+          {sidebarTab === "pages" && (
+            <>
+              <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>총 {sections.length} 페이지</div>
+              {sections.map((sec, i) => (
+                <div key={sec.id} onClick={() => setActiveSection(i)}
+                  draggable
+                  onDragStart={e => e.dataTransfer.setData("text/plain", String(i))}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => {
+                    const from = parseInt(e.dataTransfer.getData("text/plain"));
+                    if (isNaN(from) || from === i) return;
+                    setSections(prev => {
+                      const arr = [...prev];
+                      const [moved] = arr.splice(from, 1);
+                      arr.splice(i, 0, moved);
+                      return arr;
+                    });
+                    setActiveSection(i);
+                  }}
+                  style={{
+                    padding: "10px 12px", borderRadius: 10, marginBottom: 6, cursor: "pointer",
+                    border: `1.5px solid ${activeSection === i ? acc : bdr}`,
+                    background: activeSection === i ? (D ? "rgba(124,106,255,0.1)" : "#f8f7ff") : "transparent",
+                  }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 10, color: muted, cursor: "grab" }}>⠿</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, color: acc, fontWeight: 700 }}>
+                        {SECTION_TYPES.find(t => t.id === sec.type)?.label || sec.type}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {sec.elements?.find(e => e.role === "title")?.content || sec.label || ""}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* 섹션 추가 */}
+              <button onClick={() => {
+                const newSec = { id: `sec_new_${Date.now()}`, type: "point", label: "새 섹션", bg_color: colorPalette?.light_bg || "#ffffff", elements: [
+                  { type: "text", role: "title", content: "새 섹션 제목", x: 50, y: 200, w: 760, fontSize: 36, fontWeight: "900", color: colorPalette?.main || "#1a1a2e" },
+                  { type: "text", role: "body", content: "내용을 입력하세요", x: 50, y: 300, w: 760, fontSize: 16, fontWeight: "400", color: "#666", lineHeight: 1.7 },
+                ] };
+                setSections(prev => [...prev, newSec]);
+                setActiveSection(sections.length);
+              }}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: 10, border: `1.5px dashed ${bdr}`,
+                  background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginTop: 4,
+                }}>
+                + 섹션 추가
+              </button>
+            </>
+          )}
+
+          {sidebarTab === "text" && activeSection < sections.length && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>
+                페이지 {activeSection + 1} 텍스트 편집
+              </div>
+              {(sections[activeSection]?.elements || []).filter(e => e.type === "text").map((el, ei) => (
+                <div key={ei} style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>{el.role === "title" ? "제목" : el.role === "subtitle" ? "소제목" : "본문"}</label>
+                  <textarea value={el.content}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
+                        ...s, elements: s.elements.map((elem, j) => {
+                          if (elem.type !== "text") return elem;
+                          const textIdx = s.elements.filter((x, k) => x.type === "text" && k <= s.elements.indexOf(elem)).length - 1;
+                          // find the matching text element index
+                          let count = 0;
+                          for (let k = 0; k < s.elements.length; k++) {
+                            if (s.elements[k].type === "text") {
+                              if (count === ei) return k === j ? { ...elem, content: val } : elem;
+                              count++;
+                            }
+                          }
+                          return elem;
+                        }),
+                      }));
+                    }}
+                    rows={el.role === "body" ? 4 : 2}
+                    style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {sidebarTab === "color" && colorPalette && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>색상 모드</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  { key: "main", label: "메인", color: colorPalette.main },
+                  { key: "gradient", label: "그라데이션", color: colorPalette.gradient },
+                  { key: "light_bg", label: "밝은 배경", color: colorPalette.light_bg },
+                  { key: "dark_bg", label: "어두운 배경", color: colorPalette.dark_bg },
+                ].map(c => (
+                  <div key={c.key} style={{ textAlign: "center" }}>
+                    <div style={{ width: "100%", height: 48, borderRadius: 8, background: c.color, border: `1px solid ${bdr}` }} />
+                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{c.label}</div>
+                    <div style={{ fontSize: 10, color: text, fontWeight: 600 }}>{c.color}</div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => {
+                // 전체 색상 적용
+                if (!colorPalette) return;
+                setSections(prev => prev.map((s, i) => ({
+                  ...s,
+                  bg_color: i === 0 ? colorPalette.main : (i % 2 === 0 ? colorPalette.light_bg : "#ffffff"),
+                })));
+              }}
+                style={{ ...btnPrimary, marginTop: 16, padding: "10px", fontSize: 13, background: "#1a1a2e", maxWidth: "100%" }}>
+                색상 적용
+              </button>
+              <button onClick={() => {
+                setSections(prev => prev.map(s => ({ ...s, bg_color: "#ffffff" })));
+              }}
+                style={{ ...btnPrimary, marginTop: 8, padding: "10px", fontSize: 13, background: "transparent", color: text, border: `1px solid ${bdr}`, maxWidth: "100%" }}>
+                초기화
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 캔버스 영역 */}
+      <div style={{ flex: 1, overflowY: "auto", background: D ? "rgba(0,0,0,0.15)" : "#e5e5e5", padding: "20px" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          {sections.map((sec, i) => (
+            <div key={sec.id}
+              onClick={() => setActiveSection(i)}
+              style={{
+                position: "relative", marginBottom: 4,
+                border: activeSection === i ? `2px solid ${acc}` : "2px solid transparent",
+                borderRadius: 4, cursor: "pointer",
+              }}>
+              {/* 섹션 렌더링 */}
+              <div style={{
+                width: "100%", minHeight: 400, background: sec.bg_color || "#fff",
+                padding: "40px", boxSizing: "border-box", position: "relative",
+              }}>
+                {(sec.elements || []).map((el, ei) => {
+                  if (el.type === "text") return (
+                    <div key={ei}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => {
+                        const val = e.currentTarget.textContent;
+                        setSections(prev => prev.map((s, si) => si !== i ? s : {
+                          ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: val } : elem),
+                        }));
+                      }}
+                      style={{
+                        fontSize: el.fontSize || 16, fontWeight: el.fontWeight || "400",
+                        color: el.color || "#1a1a2e", lineHeight: el.lineHeight || 1.5,
+                        opacity: el.opacity || 1, marginBottom: 12, outline: "none",
+                        whiteSpace: "pre-wrap", cursor: "text",
+                        ...(el.role === "title" ? { marginBottom: 16 } : {}),
+                      }}>
+                      {el.content}
+                    </div>
+                  );
+                  if (el.type === "image") return (
+                    <div key={ei} style={{
+                      width: "100%", height: el.h || 400,
+                      background: D ? "rgba(255,255,255,0.05)" : "#f3f4f6",
+                      borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      marginBottom: 12, overflow: "hidden",
+                    }}>
+                      {images.length > 0 ? (
+                        <img src={images[0].preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ color: muted, fontSize: 13 }}>{el.placeholder || "이미지 영역"}</span>
+                      )}
+                    </div>
+                  );
+                  return null;
+                })}
+              </div>
+
+              {/* 페이지 컨트롤 (활성 시) */}
+              {activeSection === i && (
+                <div style={{
+                  position: "absolute", top: 8, right: -44, display: "flex", flexDirection: "column", gap: 4,
+                }}>
+                  {[
+                    { icon: "✦", label: "AI로 수정", action: () => {} },
+                    { icon: "▲", label: "위로", action: () => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1], a[i]] = [a[i], a[i-1]]; return a; }); setActiveSection(i-1); } },
+                    { icon: "▼", label: "아래로", action: () => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; }); setActiveSection(i+1); } },
+                    { icon: "⧉", label: "복제", action: () => { setSections(prev => [...prev.slice(0,i+1), { ...sec, id: `sec_dup_${Date.now()}` }, ...prev.slice(i+1)]); setActiveSection(i+1); } },
+                    { icon: "+", label: "추가", action: () => { const n = { id:`sec_add_${Date.now()}`, type:"point", bg_color:"#fff", elements:[{type:"text",role:"title",content:"새 섹션",fontSize:36,fontWeight:"900",color:"#1a1a2e"}] }; setSections(prev=>[...prev.slice(0,i+1),n,...prev.slice(i+1)]); setActiveSection(i+1); } },
+                    { icon: "🗑", label: "삭제", action: () => { if (sections.length <= 1) return; setSections(prev => prev.filter((_,j) => j !== i)); setActiveSection(Math.max(0, i-1)); } },
+                  ].map((ctrl, ci) => (
+                    <button key={ci} onClick={e => { e.stopPropagation(); ctrl.action(); }}
+                      title={ctrl.label}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8, border: `1px solid ${bdr}`,
+                        background: D ? "rgba(0,0,0,0.6)" : "#fff", color: text,
+                        fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                      }}>
+                      {ctrl.icon}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 오른쪽 AI 패널 */}
+      <div style={{ width: 300, borderLeft: `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff" }}>
+        {/* 파이프라인 결과 요약 */}
+        <div style={{ padding: "16px", borderBottom: `1px solid ${bdr}` }}>
+          {PIPELINE_STEPS.map((step, i) => {
+            if (i === 0) return (
+              <div key={step.id} style={{ padding: "8px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f9fafb", marginBottom: 8, fontSize: 12, color: text, fontWeight: 600, cursor: "pointer" }}>
+                입력한 정보
+              </div>
+            );
+            return (
+              <div key={step.id}>
+                <div style={{ display: "flex", justifyContent: "center", padding: "2px 0" }}>
+                  <div style={{ width: 2, height: 10, background: bdr }} />
+                </div>
+                <div style={{ padding: "8px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f9fafb", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 14 }}>✅</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: text }}>{step.label}</span>
+                  </div>
+                  <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, padding: "1px 8px", borderRadius: 6, background: "rgba(34,197,94,0.1)" }}>완료됨</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* AI 채팅 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            ✦ 에이전트 활용 방법
+          </div>
+          <div style={{
+            padding: "14px 16px", borderRadius: 12, border: `1px solid ${acc}40`,
+            background: D ? "rgba(124,106,255,0.05)" : "#f8f7ff", marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>빠른 프롬프트 예시</div>
+            <div style={{ fontSize: 11, color: muted, marginBottom: 4 }}>클릭하면 입력창에 자동으로 채워집니다.</div>
+            {[
+              "내 제품 정보 알려줘",
+              "선택한 이미지에서 내 제품 색깔로 바꿔줘",
+              "선택한 텍스트를 더 짧고 설득력 있게 다듬어줘",
+              "선택한 페이지 카피라이팅을 더 신뢰도 있게 수정해줘",
+              "선택한 페이지 톤앤매너를 피란색 톤으로 맞춰줘",
+            ].map((prompt, i) => (
+              <div key={i} style={{
+                padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`,
+                background: D ? "rgba(255,255,255,0.04)" : "#fff", marginBottom: 4,
+                fontSize: 12, color: text, cursor: "pointer",
+              }}
+                onClick={() => {/* TODO: AI 채팅 연동 */ }}>
+                {prompt}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: "auto" }}>
+            <div style={{ position: "relative" }}>
+              <input placeholder="메시지를 입력하세요"
+                style={{ ...inputStyle, paddingRight: 40, fontSize: 12 }} />
+              <button style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: acc, fontSize: 16, cursor: "pointer" }}>➤</button>
+            </div>
+          </div>
+        </div>
+
+        {/* 하단: 다운로드/저장 */}
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${bdr}`, display: "flex", gap: 8 }}>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            수동 저장
+          </button>
+          <button style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: acc, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+}

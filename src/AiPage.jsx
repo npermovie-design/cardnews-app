@@ -16,6 +16,7 @@ import SeoAnalyzer from "./SeoAnalyzer";
 import AnalyzerPage from "./AnalyzerPage";
 import ViralityAnalyzer from "./ViralityAnalyzer";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
+import DetailPageStudio from "./DetailPageStudio";
 import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
 import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
@@ -1011,10 +1012,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <ToolWrap menuId="cardnews_simple_img"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
   }
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
-    return <ToolWrap menuId="detail_simple"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
+    return <ToolWrap menuId="detail_simple"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
   }
   if (aiMenu === "detail_simple_img") {
-    return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
+    return <ToolWrap menuId="detail_simple_img"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
   }
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
     return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
