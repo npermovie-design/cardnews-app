@@ -1021,15 +1021,11 @@ JSON배열만 출력.`;
                             {body.content}
                           </div>
                         )}
-                        {!subtitle && !title && !body && els.map((el, ei) => {
-                          if (el.type === "badge") return null;
-                          if (el.type === "divider") return <div key={ei} style={{ height: 1, background: "rgba(255,255,255,0.2)", margin: "16px 0" }} />;
-                          return (
-                            <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.role === "title" ? 38 : el.role === "subtitle" ? 14 : 16, fontWeight: el.role === "title" ? 900 : el.role === "subtitle" ? 600 : 400, color: "#fff", lineHeight: el.role === "title" ? 1.25 : 1.7, marginBottom: el.role === "title" ? 16 : 8, letterSpacing: el.role === "subtitle" ? 3 : 0 }}>
-                              {el.content}
-                            </div>
-                          );
-                        })}
+                        {!subtitle && !title && !body && els.filter(e => e.type === "text").slice(0, 3).map((el, ei) => (
+                          <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: ei === 0 ? 14 : ei === 1 ? 38 : 16, fontWeight: ei === 1 ? 900 : ei === 0 ? 600 : 400, color: "#fff", lineHeight: ei === 1 ? 1.25 : 1.7, marginBottom: ei === 1 ? 16 : 8, letterSpacing: ei === 0 ? 3 : 0 }}>
+                            {el.content}
+                          </div>
+                        ))}
                         {/* 하단 스크롤 유도 */}
                         <div style={{ marginTop: 32, display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.3)" }} />
@@ -1224,7 +1220,7 @@ JSON배열만 출력.`;
                             })()}
                             {/* 후기 텍스트 */}
                             {group.filter(e => e.role === "review_text").map((el, ri) => (
-                              <div key={ri} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.7, marginBottom: 12 }}>
+                              <div key={ri} {...editable(el)} style={{ ...editable(el).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.65, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                                 {el.content}
                               </div>
                             ))}
