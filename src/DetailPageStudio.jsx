@@ -58,16 +58,17 @@ function fileToBase64(file) {
   });
 }
 
-function resizeImage(dataUrl, maxW = 800) {
+function resizeImage(dataUrl, maxW = 512) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      if (img.width <= maxW) { resolve(dataUrl); return; }
-      const ratio = maxW / img.width;
+      const ratio = Math.min(maxW / img.width, maxW / img.height, 1);
       const c = document.createElement("canvas");
-      c.width = maxW; c.height = img.height * ratio;
+      c.width = Math.round(img.width * ratio);
+      c.height = Math.round(img.height * ratio);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      resolve(c.toDataURL("image/jpeg", 0.85));
+      // 항상 jpeg로 변환하여 일관된 포맷 보장
+      resolve(c.toDataURL("image/jpeg", 0.7));
     };
     img.src = dataUrl;
   });
@@ -176,10 +177,15 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       setPipeStep(2);
       let imageAnalysis = null;
       if (images.length > 0) {
-        const imgContent = images.slice(0, 3).map(img => ({
-          type: "image",
-          source: { type: "base64", media_type: "image/jpeg", data: img.base64.split(",")[1] },
-        }));
+        const imgContent = [];
+        for (const img of images.slice(0, 2)) {
+          const b64 = img.base64;
+          const data = b64.includes(",") ? b64.split(",")[1] : b64;
+          if (!data || data.length < 100) continue;
+          imgContent.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } });
+        }
+        if (imgContent.length === 0) { imageAnalysis = null; }
+        if (imgContent.length > 0) {
         const result = await callAI("claude-haiku-4-5-20251001", [{
           role: "user",
           content: [
@@ -192,6 +198,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
           const cleaned = result.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
           imageAnalysis = JSON.parse(cleaned);
         } catch { imageAnalysis = { raw: result }; }
+        } // if imgContent.length > 0
       }
       setPipeResults(prev => ({ ...prev, image: imageAnalysis }));
 
