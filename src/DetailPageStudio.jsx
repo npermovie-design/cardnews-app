@@ -101,7 +101,8 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [options, setOptions] = useState([]); // ["옵션1", ...]
   const [optionInput, setOptionInput] = useState("");
   const [extraOpen, setExtraOpen] = useState(false);
-  const [extraInfo, setExtraInfo] = useState({ price: "", origin: "", target: "", shipping: "" });
+  const [extraInfo, setExtraInfo] = useState({ price: "", origin: "", target: "", shipping: "", brand: "", usp: "" });
+  const [aiFilling, setAiFilling] = useState(false);
 
   // AI 파이프라인
   const [pipeStep, setPipeStep] = useState(0); // 0-4
@@ -141,12 +142,14 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── AI로 내용 채우기 ──────────────────────────────────
   const autoFillWithAI = async () => {
     if (!productName.trim()) return;
+    setAiFilling(true);
     try {
       const prompt = `상품명: "${productName}"${category ? `, 카테고리: ${CATEGORIES.find(c => c.key === category)?.label}` : ""}
-이 상품의 주요 특징을 5줄로 작성해줘. 번호 매기지 말고, 한 줄에 하나의 특징만.`;
+이 상품의 주요 특징과 셀링포인트를 5줄로 작성해줘. 번호를 매기고, 실제 쇼핑몰에서 쓸 수 있는 구체적인 표현으로.`;
       const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 500);
       setFeatures(result.trim());
     } catch (e) { console.error(e); }
+    setAiFilling(false);
   };
 
   // ── AI 파이프라인 실행 ────────────────────────────────
@@ -225,6 +228,8 @@ ${extraInfo.price ? `가격: ${extraInfo.price}` : ""}
 ${extraInfo.origin ? `원산지: ${extraInfo.origin}` : ""}
 ${extraInfo.target ? `타겟: ${extraInfo.target}` : ""}
 ${extraInfo.shipping ? `배송: ${extraInfo.shipping}` : ""}
+${extraInfo.brand ? `브랜드: ${extraInfo.brand}` : ""}
+${extraInfo.usp ? `핵심 차별점: ${extraInfo.usp}` : ""}
 
 이 제품의 상세페이지를 ${sectionCount}개 섹션으로 구성해줘.
 각 섹션은 하나의 페이지(860x1100px)이며, 실제 쇼핑몰 상세페이지처럼 구성해.
@@ -314,9 +319,154 @@ JSON 배열로 답해. 각 섹션:
         {/* 폼 — 카드 없이 플랫 스타일 */}
         <div style={{ background: D ? cardBg : "#fff", borderRadius: 16, padding: "28px 24px", border: `1px solid ${bdr}` }}>
 
-          {/* 구성 모드 선택 — 탭 스타일 */}
-          <div style={{ display: "flex", gap: 0, marginBottom: 24, background: D ? "rgba(255,255,255,0.05)" : "#f0f0f0", borderRadius: 10, padding: 3 }}>
-            {[{ key: "fast", label: "빠른 구성", desc: "8~10섹션 · 약 30초" }, { key: "precise", label: "정밀 구성", desc: "15~20섹션 · 약 1~2분" }].map(m => (
+          {/* ── 1. 상품 이미지 (최상단) ── */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              제품 사진 <span style={{ color: "#ef4444" }}>*</span>
+              <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>AI가 사진을 분석해 디자인에 반영합니다 ({images.length}/10)</span>
+            </label>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: 100, height: 100, borderRadius: 10, border: `2px dashed ${D ? "rgba(255,255,255,0.15)" : "#ccc"}`,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", background: D ? "rgba(255,255,255,0.03)" : "#fafafa", flexShrink: 0,
+                  transition: "border-color 0.2s",
+                }}>
+                <span style={{ fontSize: 24, color: acc }}>+</span>
+                <span style={{ fontSize: 10, color: acc, fontWeight: 600, marginTop: 2 }}>사진 추가</span>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
+              {images.map((img, i) => (
+                <div key={i} style={{ position: "relative", width: 100, height: 100, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: `1px solid ${bdr}` }}>
+                  <img src={img.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button onClick={() => removeImage(i)}
+                    style={{ position: "absolute", top: 3, right: 3, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 구분선 ── */}
+          <div style={{ height: 1, background: bdr, margin: "4px 0 24px" }} />
+
+          {/* ── 2. 상품명 + 카테고리 (한 줄) ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12, marginBottom: 20 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
+                상품명 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input value={productName} onChange={e => setProductName(e.target.value)}
+                placeholder="예) 제주 흑돼지 육포 선물세트" style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
+                카테고리 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <div style={{ position: "relative" }}>
+                <select value={category} onChange={e => setCategory(e.target.value)}
+                  style={{ ...inputStyle, cursor: "pointer", appearance: "none", paddingRight: 32 }}>
+                  <option value="">선택</option>
+                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: muted, pointerEvents: "none", fontSize: 10 }}>▼</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. 제품 특징 + AI 채우기 ── */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: text }}>
+                제품 특징 / 셀링포인트 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <button onClick={autoFillWithAI} disabled={!productName.trim() || aiFilling}
+                style={{
+                  padding: "5px 12px", borderRadius: 8, border: `1px solid ${acc}40`,
+                  background: acc + "10", color: acc, fontSize: 11, fontWeight: 700,
+                  cursor: productName.trim() && !aiFilling ? "pointer" : "not-allowed",
+                  opacity: productName.trim() ? 1 : 0.4, display: "flex", alignItems: "center", gap: 4,
+                }}>
+                {aiFilling ? (
+                  <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite" }} /> 생성 중...</>
+                ) : "✦ AI 자동 채우기"}
+              </button>
+            </div>
+            <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
+              placeholder={"예시)\n1. 제주 청정 환경에서 자란 흑돼지 100% 사용\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\n3. 무방부제·무색소 — 아이도 안심하고 먹는 건강 간식\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\n5. 개별 소포장으로 휴대 간편, 언제 어디서나 간편하게"}
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
+          </div>
+
+          {/* ── 4. 옵션 ── */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              옵션/종류 <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>선택 · {options.length}/10</span>
+            </label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={optionInput} onChange={e => setOptionInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && optionInput.trim() && options.length < 10) { setOptions(prev => [...prev, optionInput.trim()]); setOptionInput(""); } }}
+                placeholder="예) 오리지널 120g / 매운맛 120g / 선물세트 3종" style={{ ...inputStyle, flex: 1 }} />
+              <button onClick={() => { if (optionInput.trim() && options.length < 10) { setOptions(prev => [...prev, optionInput.trim()]); setOptionInput(""); } }}
+                style={{ padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>추가</button>
+            </div>
+            {options.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {options.map((opt, i) => (
+                  <span key={i} style={{ padding: "4px 10px", borderRadius: 6, background: acc + "12", color: acc, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                    {opt}
+                    <span onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))} style={{ cursor: "pointer", opacity: 0.6, fontSize: 13 }}>×</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── 5. 세부 정보 (펼치기) ── */}
+          <div style={{ marginBottom: 24 }}>
+            <button onClick={() => setExtraOpen(!extraOpen)}
+              style={{ background: "none", border: "none", color: text, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
+              <span style={{ fontSize: 11, color: muted, width: 18, height: 18, borderRadius: 4, border: `1px solid ${bdr}`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{extraOpen ? "−" : "+"}</span>
+              세부 정보 입력 <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>(더 정확한 결과를 위해 권장)</span>
+            </button>
+            {extraOpen && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14, padding: "16px", borderRadius: 12, background: D ? "rgba(255,255,255,0.02)" : "#fafafa", border: `1px solid ${bdr}` }}>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>판매 가격</label>
+                  <input value={extraInfo.price} onChange={e => setExtraInfo(p => ({ ...p, price: e.target.value }))} placeholder="39,900원" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>브랜드명</label>
+                  <input value={extraInfo.brand} onChange={e => setExtraInfo(p => ({ ...p, brand: e.target.value }))} placeholder="제주미트" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>원산지 / 제조사</label>
+                  <input value={extraInfo.origin} onChange={e => setExtraInfo(p => ({ ...p, origin: e.target.value }))} placeholder="제주도 / 자체 HACCP 공장" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>타겟 고객</label>
+                  <input value={extraInfo.target} onChange={e => setExtraInfo(p => ({ ...p, target: e.target.value }))} placeholder="30~50대, 선물용 구매자" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>배송 정보</label>
+                  <input value={extraInfo.shipping} onChange={e => setExtraInfo(p => ({ ...p, shipping: e.target.value }))} placeholder="당일출고, 냉장특송" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>핵심 차별점 (USP)</label>
+                  <input value={extraInfo.usp} onChange={e => setExtraInfo(p => ({ ...p, usp: e.target.value }))} placeholder="48시간 저온 숙성 공법" style={inputStyle} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── 구분선 ── */}
+          <div style={{ height: 1, background: bdr, margin: "0 0 24px" }} />
+
+          {/* ── 6. 생성 모드 + 버튼 ── */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 20, background: D ? "rgba(255,255,255,0.05)" : "#f0f0f0", borderRadius: 10, padding: 3 }}>
+            {[
+              { key: "fast", label: "에센셜", desc: "핵심 구성 8~10페이지" },
+              { key: "precise", label: "프리미엄", desc: "풀 구성 15~20페이지" },
+            ].map(m => (
               <button key={m.key} onClick={() => setMode(m.key)}
                 style={{
                   flex: 1, padding: "10px 16px", borderRadius: 8, border: "none",
@@ -326,176 +476,28 @@ JSON 배열로 답해. 각 섹션:
                   transition: "all 0.2s",
                 }}>
                 {m.label}
-                <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{m.desc}</div>
+                <div style={{ fontSize: 10, color: mode === m.key ? acc : muted, marginTop: 2 }}>{m.desc}</div>
               </button>
             ))}
           </div>
 
-          {/* 상품명 */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
-              상품명 <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={productName} onChange={e => setProductName(e.target.value)}
-                placeholder="예) 밥도독 간장게장" style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={autoFillWithAI} disabled={!productName.trim()}
-                style={{
-                  padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
-                  background: D ? "rgba(255,255,255,0.06)" : "#f9fafb", color: text,
-                  fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                }}>
-                ✦ AI로 내용 채우기
-              </button>
-            </div>
-          </div>
-
-          {/* 카테고리 */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
-              카테고리 <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <div style={{ position: "relative" }}>
-              <select value={category} onChange={e => setCategory(e.target.value)}
-                style={{ ...inputStyle, cursor: "pointer", appearance: "none", paddingRight: 36 }}>
-                <option value="">카테고리를 선택해주세요</option>
-                {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.label}</option>)}
-              </select>
-              <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: muted, pointerEvents: "none" }}>▾</span>
-            </div>
-          </div>
-
-          {/* 제품 주요 특징 */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
-              제품 주요 특징 <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
-              placeholder={"1. 100% 국내산 꽃게로 만든 프리미엄 간장게장\n2. 전통 비법 간장 소스로 깊고 풍부한 맛\n3. 밥도독이 따로 없는 최고의 밥반찬\n4. HACCP 인증 시설에서 안전하게 생산\n5. 신선도 유지를 위한 꼼꼼한 포장"}
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
-          </div>
-
-          {/* 상품 이미지 */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              상품 이미지 <span style={{ color: "#ef4444" }}>*</span>
-              <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>({images.length} / 10)</span>
-            </label>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {/* 업로드 버튼 */}
-              <div onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: 120, height: 120, borderRadius: 12, border: `2px dashed ${bdr}`,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", background: inputBg, flexShrink: 0,
-                }}>
-                <span style={{ fontSize: 28, color: acc, marginBottom: 4 }}>+</span>
-                <span style={{ fontSize: 11, color: acc, fontWeight: 600 }}>업로드</span>
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
-
-              {/* 이미지 썸네일 */}
-              {images.map((img, i) => (
-                <div key={i} style={{ position: "relative", width: 120, height: 120, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
-                  <img src={img.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <button onClick={() => removeImage(i)}
-                    style={{
-                      position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%",
-                      background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", fontSize: 12,
-                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>×</button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 옵션 */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              옵션(종류) <span style={{ fontSize: 12, color: muted, fontWeight: 400 }}>선택</span>
-              <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>{options.length} / 10</span>
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={optionInput} onChange={e => setOptionInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && optionInput.trim() && options.length < 10) {
-                    setOptions(prev => [...prev, optionInput.trim()]);
-                    setOptionInput("");
-                  }
-                }}
-                placeholder="예시) 대용량 500g" style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={() => {
-                if (optionInput.trim() && options.length < 10) {
-                  setOptions(prev => [...prev, optionInput.trim()]);
-                  setOptionInput("");
-                }
-              }}
-                style={{
-                  padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`,
-                  background: inputBg, color: muted, fontSize: 13, cursor: "pointer", flexShrink: 0,
-                }}>추가</button>
-            </div>
-            {options.length > 0 && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                {options.map((opt, i) => (
-                  <span key={i} style={{
-                    padding: "5px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.08)" : "#f3f4f6",
-                    color: text, fontSize: 12, display: "flex", alignItems: "center", gap: 6,
-                  }}>
-                    {opt}
-                    <span onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))}
-                      style={{ cursor: "pointer", opacity: 0.5 }}>×</span>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 추가 정보 (접기) */}
-          <div style={{ marginBottom: 28 }}>
-            <button onClick={() => setExtraOpen(!extraOpen)}
-              style={{ background: "none", border: "none", color: muted, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              추가 정보 (선택) <span>{extraOpen ? "▲" : "▼"}</span>
-            </button>
-            {extraOpen && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>가격</label>
-                  <input value={extraInfo.price} onChange={e => setExtraInfo(p => ({ ...p, price: e.target.value }))} placeholder="29,900원" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>원산지</label>
-                  <input value={extraInfo.origin} onChange={e => setExtraInfo(p => ({ ...p, origin: e.target.value }))} placeholder="국내산" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>타겟 고객</label>
-                  <input value={extraInfo.target} onChange={e => setExtraInfo(p => ({ ...p, target: e.target.value }))} placeholder="30~50대 주부" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: muted, marginBottom: 4, display: "block" }}>배송 정보</label>
-                  <input value={extraInfo.shipping} onChange={e => setExtraInfo(p => ({ ...p, shipping: e.target.value }))} placeholder="당일 출고, 냉장배송" style={inputStyle} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 생성 버튼 */}
-          <div style={{ textAlign: "center" }}>
-            <button onClick={runPipeline}
-              disabled={!productName.trim() || !category || images.length === 0}
-              style={{
-                ...btnPrimary,
-                opacity: (!productName.trim() || !category || images.length === 0) ? 0.4 : 1,
-              }}>
-              ✦ 초안 생성
-            </button>
-            {(!productName.trim() || !category || images.length === 0) && (
-              <p style={{ fontSize: 11, color: "#ef4444", marginTop: 8 }}>
-                상품명, 카테고리, 이미지를 모두 입력해주세요
-              </p>
-            )}
-          </div>
+          <button onClick={runPipeline}
+            disabled={!productName.trim() || !category || images.length === 0}
+            style={{
+              ...btnPrimary,
+              opacity: (!productName.trim() || !category || images.length === 0) ? 0.35 : 1,
+              width: "100%", maxWidth: "100%",
+            }}>
+            ✦ 상세페이지 생성하기
+          </button>
+          {(!productName.trim() || !category || images.length === 0) && (
+            <p style={{ fontSize: 11, color: muted, marginTop: 8, textAlign: "center" }}>
+              {!images.length ? "제품 사진을 먼저 올려주세요" : !productName.trim() ? "상품명을 입력해주세요" : "카테고리를 선택해주세요"}
+            </p>
+          )}
         </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );
