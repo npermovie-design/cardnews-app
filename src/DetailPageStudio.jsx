@@ -147,7 +147,9 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       const prompt = `상품명: "${productName}"${category ? `, 카테고리: ${CATEGORIES.find(c => c.key === category)?.label}` : ""}
 이 상품의 주요 특징과 셀링포인트를 5줄로 작성해줘. 번호를 매기고, 실제 쇼핑몰에서 쓸 수 있는 구체적인 표현으로.`;
       const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 500);
-      setFeatures(result.trim());
+      // 마크다운 제거 (#, **, *, ` 등)
+      const cleaned = result.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/^[-•]\s*/gm, "").trim();
+      setFeatures(cleaned);
     } catch (e) { console.error(e); }
     setAiFilling(false);
   };
@@ -232,7 +234,17 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
 type종류:hero,review,concept,features,point,cert,shipping,info,cta,ai_notice
 실제 쇼핑몰처럼 구체적 카피 작성. 첫=hero 마지막=ai_notice. JSON만 출력.`;
 
-      const layoutResult = await callAI("gpt-4o-mini", [{ role: "user", content: layoutPrompt }], 4000);
+      // Gemini API 직접 호출 (OpenRouter 우회 — 타임아웃 방지)
+      const geminiRes = await fetch("/api/gemini-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 4000 }),
+      });
+      if (!geminiRes.ok) {
+        const err = await geminiRes.json().catch(() => ({}));
+        throw new Error(err.error || `생성 실패 (${geminiRes.status})`);
+      }
+      const { text: layoutResult } = await geminiRes.json();
       let layoutData;
       try {
         const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
