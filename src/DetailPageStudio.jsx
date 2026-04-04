@@ -40,6 +40,17 @@ const SECTION_TYPES = [
   { id: "ai_notice", label: "AI 콘텐츠 고지", desc: "AI 생성 안내" },
 ];
 
+// ── 디자인 유형 ──────────────────────────────────────────
+const DESIGN_STYLES = [
+  { key: "clean_white", label: "클린 화이트", desc: "깔끔한 여백, 고급스러운 미니멀", colors: ["#fff", "#f5f5f5", "#333", "#999"], preview: "linear-gradient(180deg, #fff 60%, #f7f7f7 100%)" },
+  { key: "natural_craft", label: "내추럴 크래프트", desc: "따뜻한 베이지, 자연스러운 느낌", colors: ["#f5efe6", "#d4c5a9", "#5c4a32", "#8b7355"], preview: "linear-gradient(180deg, #f5efe6 60%, #e8dcc8 100%)" },
+  { key: "vivid_pop", label: "비비드 팝", desc: "강한 컬러, 눈에 띄는 프로모션", colors: ["#ff6b6b", "#ffd93d", "#fff", "#1a1a2e"], preview: "linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%)" },
+  { key: "pastel_soft", label: "파스텔 소프트", desc: "부드러운 파스텔, 감성적인 분위기", colors: ["#fce4ec", "#e3f2fd", "#f3e5f5", "#666"], preview: "linear-gradient(135deg, #fce4ec 0%, #e3f2fd 50%, #f3e5f5 100%)" },
+  { key: "modern_dark", label: "모던 다크", desc: "다크 배경, 럭셔리한 프리미엄", colors: ["#1a1a2e", "#2d2d3a", "#c9a96e", "#fff"], preview: "linear-gradient(180deg, #1a1a2e 60%, #2d2d3a 100%)" },
+  { key: "magazine", label: "매거진 스타일", desc: "이미지 중심, 그리드 레이아웃", colors: ["#fff", "#f0f0f0", "#111", "#666"], preview: "linear-gradient(180deg, #fff 40%, #f0f0f0 100%)" },
+  { key: "auto", label: "AI 자동 추천", desc: "제품 이미지 분석 후 자동 결정", colors: ["#7c6aff", "#9b6dff", "#f8f8f8", "#333"], preview: "linear-gradient(135deg, #7c6aff 0%, #9b6dff 100%)" },
+];
+
 // ── AI 파이프라인 단계 ─────────────────────────────────────
 const PIPELINE_STEPS = [
   { id: "input", label: "입력한 정보", icon: "📋" },
@@ -92,6 +103,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── 상태 ──────────────────────────────────────────────
   const [phase, setPhase] = useState("input"); // input | generating | editor
   const [mode, setMode] = useState("fast"); // fast | precise
+  const [designStyle, setDesignStyle] = useState("auto");
 
   // 입력 폼
   const [productName, setProductName] = useState("");
@@ -228,11 +240,41 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       setPipeStep(4);
       const mainColor = toneData.color_palette.main;
       const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
-      const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel} 특징:${features.slice(0, 300)}${extraLines ? ` 추가:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""} 색상:${mainColor}
 
-상세페이지 ${sectionCount}섹션 JSON배열. 각 섹션={type,bg_color,elements:[{type:"text",role,content,fontSize,fontWeight,color}또는{type:"image",role:"product",placeholder}]}
-type종류:hero,review,concept,features,point,cert,shipping,info,cta,ai_notice
-실제 쇼핑몰처럼 구체적 카피 작성. 첫=hero 마지막=ai_notice. JSON만 출력.`;
+      // 디자인 스타일별 지시
+      const styleGuide = {
+        clean_white: "배경:#fff/#f5f5f5, 텍스트:#333/#999, 여백 넉넉히, 고급 미니멀, 가느다란 구분선, 폰트크기 대비 크게",
+        natural_craft: "배경:#f5efe6/#ede5d4, 텍스트:#5c4a32/#8b7355, 따뜻한 크림/베이지톤, 우드/린넨 느낌, 둥근 모서리",
+        vivid_pop: "배경:밝은색/#fff, 강한 포인트색(빨강/노랑/초록), 큰 볼드 타이틀, 뱃지/스티커 느낌, 이벤트 강조",
+        pastel_soft: "배경:#fce4ec/#e3f2fd/#f3e5f5, 텍스트:#555, 부드러운 파스텔, 둥근 곡선, 감성적 톤",
+        modern_dark: "배경:#1a1a2e/#2d2d3a, 텍스트:#fff/#c9a96e, 럭셔리 골드 포인트, 프리미엄 느낌, 고급진 여백",
+        magazine: "배경:#fff/#f0f0f0, 텍스트:#111, 이미지 중심 그리드, 큰 사진+작은 캡션, 에디토리얼",
+        auto: `이미지 색상(${mainColor}) 기반으로 어울리는 톤 자동 결정`,
+      }[designStyle] || "";
+
+      const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel}
+특징:${features.slice(0, 300)}${extraLines ? ` 추가:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
+
+디자인스타일: ${DESIGN_STYLES.find(s => s.key === designStyle)?.label || "자동"} — ${styleGuide}
+
+상세페이지 ${sectionCount}섹션 JSON배열을 만들어줘.
+각 섹션 구조: {type, bg_color, elements:[]}
+elements 타입:
+- {type:"text", role:"subtitle|title|body|badge|price|review_name|review_text|star", content, fontSize(숫자만), fontWeight:"400|700|900", color:"hex", opacity, textAlign:"left|center|right"}
+- {type:"image", role:"product|bg|icon", placeholder:"설명"}
+- {type:"divider"} 구분선
+- {type:"badge", content:"텍스트", bg:"hex", color:"hex"} 뱃지/라벨
+
+type종류: hero,review,concept,features,point,cert,howto,shipping,info,event,cta,ai_notice
+
+규칙:
+- 실제 판매하는 것처럼 구체적이고 매력적인 카피
+- hero에는 반드시 캐치프레이즈 + 서브카피 + 제품이미지
+- review에는 가상 구매자 이름/별점/후기 3개 이상
+- features에는 아이콘+설명 형태
+- 색상은 디자인스타일에 맞게 통일
+- 첫=hero 마지막=ai_notice
+JSON만 출력.`;
 
       // Gemini API 직접 호출 (OpenRouter 우회 — 타임아웃 방지)
       const geminiRes = await fetch("/api/gemini-generate", {
@@ -446,6 +488,29 @@ type종류:hero,review,concept,features,point,cert,shipping,info,cta,ai_notice
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── 5.5 디자인 스타일 선택 ── */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 10 }}>
+              디자인 스타일
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
+              {DESIGN_STYLES.map(s => (
+                <button key={s.key} onClick={() => setDesignStyle(s.key)}
+                  style={{
+                    padding: 0, borderRadius: 10, border: `2px solid ${designStyle === s.key ? acc : bdr}`,
+                    background: "transparent", cursor: "pointer", overflow: "hidden", textAlign: "left",
+                    transition: "border-color 0.2s",
+                  }}>
+                  <div style={{ height: 40, background: s.preview, borderRadius: "8px 8px 0 0" }} />
+                  <div style={{ padding: "8px 10px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: designStyle === s.key ? acc : text }}>{s.label}</div>
+                    <div style={{ fontSize: 9, color: muted, marginTop: 1, lineHeight: 1.3 }}>{s.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ── 구분선 ── */}
@@ -768,35 +833,58 @@ type종류:hero,review,concept,features,point,cert,shipping,info,cta,ai_notice
                 padding: "40px", boxSizing: "border-box", position: "relative",
               }}>
                 {(sec.elements || []).map((el, ei) => {
-                  if (el.type === "text") return (
-                    <div key={ei}
-                      contentEditable
-                      suppressContentEditableWarning
+                  if (el.type === "text") {
+                    const fs = typeof el.fontSize === "string" ? parseInt(el.fontSize) : (el.fontSize || 16);
+                    return (
+                      <div key={ei}
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={e => {
+                          const val = e.currentTarget.textContent;
+                          setSections(prev => prev.map((s, si) => si !== i ? s : {
+                            ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: val } : elem),
+                          }));
+                        }}
+                        style={{
+                          fontSize: fs, fontWeight: el.fontWeight || "400",
+                          color: el.color || "#1a1a2e", lineHeight: el.lineHeight || (fs > 30 ? 1.3 : 1.7),
+                          opacity: el.opacity || 1, marginBottom: el.role === "title" ? 16 : 8,
+                          outline: "none", whiteSpace: "pre-wrap", cursor: "text",
+                          textAlign: el.textAlign || "left",
+                          ...(el.role === "star" ? { letterSpacing: 4 } : {}),
+                        }}>
+                        {el.role === "star" ? "★".repeat(parseInt(el.content) || 5) : el.content}
+                      </div>
+                    );
+                  }
+                  if (el.type === "badge") return (
+                    <span key={ei}
+                      contentEditable suppressContentEditableWarning
                       onBlur={e => {
-                        const val = e.currentTarget.textContent;
                         setSections(prev => prev.map((s, si) => si !== i ? s : {
-                          ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: val } : elem),
+                          ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: e.currentTarget.textContent } : elem),
                         }));
                       }}
                       style={{
-                        fontSize: el.fontSize || 16, fontWeight: el.fontWeight || "400",
-                        color: el.color || "#1a1a2e", lineHeight: el.lineHeight || 1.5,
-                        opacity: el.opacity || 1, marginBottom: 12, outline: "none",
-                        whiteSpace: "pre-wrap", cursor: "text",
-                        ...(el.role === "title" ? { marginBottom: 16 } : {}),
+                        display: "inline-block", padding: "6px 16px", borderRadius: 20,
+                        background: el.bg || acc, color: el.color || "#fff",
+                        fontSize: 12, fontWeight: 700, marginBottom: 12, cursor: "text", outline: "none",
                       }}>
                       {el.content}
-                    </div>
+                    </span>
+                  );
+                  if (el.type === "divider") return (
+                    <div key={ei} style={{ height: 1, background: el.color || "rgba(0,0,0,0.1)", margin: "16px 0" }} />
                   );
                   if (el.type === "image") return (
                     <div key={ei} style={{
                       width: "100%", height: el.h || 400,
-                      background: D ? "rgba(255,255,255,0.05)" : "#f3f4f6",
+                      background: sec.bg_color === "#fff" || sec.bg_color === "#ffffff" ? "#f3f4f6" : "rgba(255,255,255,0.1)",
                       borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
                       marginBottom: 12, overflow: "hidden",
                     }}>
                       {images.length > 0 ? (
-                        <img src={images[0].preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={images[Math.min(el.role === "product" ? 0 : 1, images.length - 1)].preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <span style={{ color: muted, fontSize: 13 }}>{el.placeholder || "이미지 영역"}</span>
                       )}
