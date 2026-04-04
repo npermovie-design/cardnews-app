@@ -6,14 +6,14 @@ export default async function handler(req) {
     return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
   }
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.YOUTUBE_DATA_API_KEY;
+  const GEMINI_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_KEY) return new Response(JSON.stringify({ error: "Gemini API key not configured" }), { status: 500 });
 
   try {
     const { prompt, maxTokens } = await req.json();
     if (!prompt) return new Response(JSON.stringify({ error: "prompt 필수" }), { status: 400 });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: maxTokens || 4000, temperature: 0.7 },
