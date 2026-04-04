@@ -224,43 +224,15 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
 
       // Step 4: 레이아웃 + 콘텐츠 생성 (단일 AI 호출)
       setPipeStep(4);
-      const layoutPrompt = `제품: ${productName}
-카테고리: ${catLabel}
-특징: ${features}
-톤앤매너: ${JSON.stringify(toneData)}
-${extractedColors.length > 0 ? `제품 이미지 주요 색상: ${extractedColors.join(", ")}` : ""}
-${options.length > 0 ? `옵션: ${options.join(", ")}` : ""}
-${extraInfo.price ? `가격: ${extraInfo.price}` : ""}
-${extraInfo.origin ? `원산지: ${extraInfo.origin}` : ""}
-${extraInfo.target ? `타겟: ${extraInfo.target}` : ""}
-${extraInfo.shipping ? `배송: ${extraInfo.shipping}` : ""}
-${extraInfo.brand ? `브랜드: ${extraInfo.brand}` : ""}
-${extraInfo.usp ? `핵심 차별점: ${extraInfo.usp}` : ""}
+      const mainColor = toneData.color_palette.main;
+      const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
+      const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel} 특징:${features.slice(0, 300)}${extraLines ? ` 추가:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""} 색상:${mainColor}
 
-이 제품의 상세페이지를 ${sectionCount}개 섹션으로 구성해줘.
-각 섹션은 하나의 페이지(860x1100px)이며, 실제 쇼핑몰 상세페이지처럼 구성해.
+상세페이지 ${sectionCount}섹션 JSON배열. 각 섹션={type,bg_color,elements:[{type:"text",role,content,fontSize,fontWeight,color}또는{type:"image",role:"product",placeholder}]}
+type종류:hero,review,concept,features,point,cert,shipping,info,cta,ai_notice
+실제 쇼핑몰처럼 구체적 카피 작성. 첫=hero 마지막=ai_notice. JSON만 출력.`;
 
-JSON 배열로 답해. 각 섹션:
-[{
-  "type": "섹션타입(hero/review/concept/features/point/cert/facility/shipping/info/contact/event/cta/ai_notice 중)",
-  "label": "섹션 라벨 (예: 히어로 | 밥도독 간장게장)",
-  "bg_color": "배경색 hex",
-  "elements": [
-    {"type":"text","role":"subtitle","content":"소제목 텍스트","x":50,"y":80,"w":760,"fontSize":16,"fontWeight":"400","color":"색상hex","opacity":0.6},
-    {"type":"text","role":"title","content":"메인 타이틀","x":50,"y":130,"w":760,"fontSize":42,"fontWeight":"900","color":"색상hex"},
-    {"type":"text","role":"body","content":"본문 텍스트","x":50,"y":300,"w":760,"fontSize":16,"fontWeight":"400","color":"색상hex","lineHeight":1.7},
-    {"type":"image","role":"product","x":50,"y":400,"w":760,"h":500,"placeholder":"제품 메인 이미지"}
-  ]
-}]
-
-중요:
-- 실제 판매되는 것처럼 구체적인 카피를 작성
-- x,y,w,h는 860x1100 기준 절대 좌표
-- 첫 섹션은 반드시 hero, 마지막은 ai_notice
-- 고객 후기는 실제같은 가상 후기 포함
-- 색상은 톤앤매너에서 추출한 팔레트 활용`;
-
-      const layoutResult = await callAI("claude-sonnet-4-5", [{ role: "user", content: layoutPrompt }], 8000);
+      const layoutResult = await callAI("gpt-4o-mini", [{ role: "user", content: layoutPrompt }], 4000);
       let layoutData;
       try {
         const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
