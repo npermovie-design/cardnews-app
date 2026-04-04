@@ -2,9 +2,15 @@ import { useState, useEffect } from "react";
 
 const DURATION_OPTS = [
   { id: "", label: "전체" },
-  { id: "short", label: "4분 미만" },
-  { id: "medium", label: "4~20분" },
-  { id: "long", label: "20분 이상" },
+  { id: "short", label: "숏폼 (4분 미만)" },
+  { id: "medium", label: "미드폼 (4~20분)" },
+  { id: "long", label: "롱폼 (20분 이상)" },
+];
+
+const FORMAT_PRESETS = [
+  { id: "", label: "전체", icon: "📺" },
+  { id: "short", label: "숏폼/쇼츠", icon: "📱" },
+  { id: "long", label: "롱폼", icon: "🎬" },
 ];
 
 const PERIOD_OPTS = [
@@ -135,19 +141,74 @@ export default function YouTubeAnalyzer({ isDark }) {
     setLoading(false);
   };
 
-  const exportCSV = () => {
+  const getExportData = () => {
     const headers = ["제목", "채널", "조회수", "구독자수", "비율", "비율단계", "좋아요", "댓글", "길이", "게시일", "URL"];
     const rows = results.map(v => [
-      `"${v.title.replace(/"/g, '""')}"`, `"${v.channelTitle}"`,
+      v.title.replace(/<[^>]*>/g, ""), v.channelTitle,
       v.viewCount, v.subscriberCount, v.ratio, v.ratioLevel,
       v.likeCount, v.commentCount, parseDuration(v.duration),
       v.publishedAt?.split("T")[0] || "", `https://youtube.com/watch?v=${v.videoId}`,
     ]);
-    const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    return { headers, rows };
+  };
+
+  const exportCSV = () => {
+    const { headers, rows } = getExportData();
+    const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
     a.download = `youtube_${query}_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+  };
+
+  const exportTXT = () => {
+    const { rows } = getExportData();
+    const lines = results.map((v, i) => [
+      `[${i + 1}] ${v.title.replace(/<[^>]*>/g, "")}`,
+      `   채널: ${v.channelTitle}`,
+      `   조회수: ${v.viewCount.toLocaleString()} | 구독자: ${v.subscriberCount.toLocaleString()} | 비율: ${v.ratio}`,
+      `   좋아요: ${v.likeCount.toLocaleString()} | 댓글: ${v.commentCount.toLocaleString()} | 길이: ${parseDuration(v.duration)}`,
+      `   게시일: ${v.publishedAt?.split("T")[0] || ""} | URL: https://youtube.com/watch?v=${v.videoId}`,
+    ].join("\n"));
+    const txt = `YouTube 검색 결과: "${query}" (${new Date().toLocaleDateString("ko")})\n${"=".repeat(60)}\n\n${lines.join("\n\n")}`;
+    const blob = new Blob(["\uFEFF" + txt], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `youtube_${query}_${new Date().toISOString().split("T")[0]}.txt`;
+    a.click();
+  };
+
+  const exportPDF = () => {
+    const w = window.open("", "_blank");
+    const tableRows = results.map((v, i) => `<tr>
+      <td>${i + 1}</td><td>${v.title}</td><td>${v.channelTitle}</td>
+      <td>${v.viewCount.toLocaleString()}</td><td>${v.subscriberCount.toLocaleString()}</td>
+      <td>${v.ratio}</td><td>${v.likeCount.toLocaleString()}</td>
+      <td>${parseDuration(v.duration)}</td><td>${v.publishedAt?.split("T")[0] || ""}</td>
+    </tr>`).join("");
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>YouTube 검색: ${query}</title>
+      <style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:11px}
+      th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}th{background:#f5f5f5;font-weight:700}
+      h1{font-size:18px}h2{font-size:13px;color:#888;margin-bottom:20px}</style></head>
+      <body><h1>YouTube 검색: "${query}"</h1><h2>${new Date().toLocaleDateString("ko")} | ${results.length}건</h2>
+      <table><thead><tr><th>#</th><th>제목</th><th>채널</th><th>조회수</th><th>구독자</th><th>비율</th><th>좋아요</th><th>길이</th><th>게시일</th></tr></thead>
+      <tbody>${tableRows}</tbody></table>
+      <script>setTimeout(()=>{window.print()},500)<\/script></body></html>`);
+    w.document.close();
+  };
+
+  const exportGoogleSheets = () => {
+    const { headers, rows } = getExportData();
+    const all = [headers, ...rows];
+    const tsv = all.map(r => r.map(c => String(c).replace(/\t/g, " ")).join("\t")).join("\n");
+    navigator.clipboard.writeText(tsv).then(() => {
+      window.open("https://sheets.google.com/create", "_blank");
+      alert("클립보드에 복사되었습니다!\n\n구글 시트가 열리면 Ctrl+V로 붙여넣기 하세요.");
+    }).catch(() => {
+      const blob = new Blob(["\uFEFF" + tsv], { type: "text/tab-separated-values;charset=utf-8" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = `youtube_${query}_${new Date().toISOString().split("T")[0]}.tsv`;
+      a.click();
+    });
   };
 
   const inputStyle = { padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`, background: ibg, color: text, fontSize: 13, outline: "none" };
@@ -180,7 +241,22 @@ export default function YouTubeAnalyzer({ isDark }) {
             </div>
           )}
 
-          {/* 2행: 필터 */}
+          {/* 2행: 롱폼/숏폼 프리셋 */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            {FORMAT_PRESETS.map(f => (
+              <button key={f.id} onClick={() => setDuration(f.id)}
+                style={{
+                  padding: "7px 16px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  border: `1.5px solid ${duration === f.id ? acc : bdr}`,
+                  background: duration === f.id ? acc + "18" : "transparent",
+                  color: duration === f.id ? acc : muted,
+                }}>
+                {f.icon} {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 3행: 상세 필터 */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <select value={duration} onChange={e => setDuration(e.target.value)} style={selectStyle}>
               {DURATION_OPTS.map(o => <option key={o.id} value={o.id}>길이: {o.label}</option>)}
@@ -241,7 +317,10 @@ export default function YouTubeAnalyzer({ isDark }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setViewMode("card")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${viewMode === "card" ? acc : bdr}`, background: viewMode === "card" ? acc + "15" : "transparent", color: viewMode === "card" ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>카드 보기</button>
               <button onClick={() => setViewMode("table")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${viewMode === "table" ? acc : bdr}`, background: viewMode === "table" ? acc + "15" : "transparent", color: viewMode === "table" ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>테이블 보기</button>
-              <button onClick={exportCSV} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>CSV 저장</button>
+              <button onClick={exportCSV} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>CSV</button>
+              <button onClick={exportTXT} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>TXT</button>
+              <button onClick={exportPDF} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>PDF</button>
+              <button onClick={exportGoogleSheets} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid #34a853`, background: "#34a85315", color: "#34a853", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Google 시트</button>
             </div>
           </div>
         )}
