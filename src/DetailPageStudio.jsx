@@ -81,12 +81,12 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const ko = lang === "ko";
   const D = isDark || theme === "dark";
 
-  // 테마 색상
-  const text = D ? "#fff" : "#1a1a2e";
-  const muted = D ? "rgba(255,255,255,0.5)" : "#888";
-  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const inputBg = D ? "rgba(255,255,255,0.06)" : "#f9fafb";
+  // 테마 색상 (메이킷 고유 — 다크 모던 스타일)
+  const text = D ? "#fff" : "#111";
+  const muted = D ? "rgba(255,255,255,0.45)" : "#999";
+  const cardBg = D ? "rgba(255,255,255,0.04)" : "#fafafa";
+  const bdr = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const inputBg = D ? "rgba(255,255,255,0.06)" : "#fff";
   const acc = "#7c6aff";
 
   // ── 상태 ──────────────────────────────────────────────
@@ -249,7 +249,7 @@ JSON 배열로 답해. 각 섹션:
 - 고객 후기는 실제같은 가상 후기 포함
 - 색상은 톤앤매너에서 추출한 팔레트 활용`;
 
-      const layoutResult = await callAI("claude-sonnet-4-5-20250514", [{ role: "user", content: layoutPrompt }], 8000);
+      const layoutResult = await callAI("claude-sonnet-4-5", [{ role: "user", content: layoutPrompt }], 8000);
       let layoutData;
       try {
         const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
@@ -288,7 +288,7 @@ JSON 배열로 답해. 각 섹션:
   };
   const btnPrimary = {
     padding: "14px 32px", borderRadius: 12, border: "none",
-    background: "#1a1a2e", color: "#fff", fontSize: 16, fontWeight: 800,
+    background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", fontSize: 16, fontWeight: 800,
     cursor: "pointer", width: "100%", maxWidth: 400,
   };
 
@@ -298,34 +298,37 @@ JSON 배열로 답해. 각 섹션:
 
   // ── 입력 폼 ─────────────────────────────────────────────
   if (phase === "input") return (
-    <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "linear-gradient(180deg, #fdf2f8 0%, #faf5ff 50%, #f0f9ff 100%)" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 80px" }}>
-        {/* 헤더 */}
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: D ? text : "#1a1a2e", marginBottom: 8 }}>
-            5분만에 매력적인<br />상세페이지를 만들어 보세요.
+    <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f5f5f5" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 20px 80px" }}>
+        {/* 헤더 — 메이킷 스타일 */}
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, background: acc + "15", color: acc, fontSize: 12, fontWeight: 700, marginBottom: 16 }}>
+            ✦ AI 상세페이지
+          </div>
+          <h1 style={{ fontSize: 32, fontWeight: 900, color: text, lineHeight: 1.3, marginBottom: 8 }}>
+            제품 정보를 입력하면<br />AI가 상세페이지를 만들어드려요
           </h1>
-          <p style={{ fontSize: 14, color: muted }}>어떤 상세페이지를 만들까요? 자유롭게 내용을 입력해 주세요.</p>
+          <p style={{ fontSize: 14, color: muted, lineHeight: 1.6 }}>이미지와 제품 정보를 기반으로 톤앤매너를 분석하고, 섹션별 콘텐츠를 자동 생성합니다.</p>
         </div>
 
-        {/* 폼 카드 */}
-        <div style={{ background: D ? cardBg : "#fff", borderRadius: 20, padding: "32px 28px", border: `1px solid ${bdr}`, boxShadow: D ? "none" : "0 2px 20px rgba(0,0,0,0.06)" }}>
+        {/* 폼 — 카드 없이 플랫 스타일 */}
+        <div style={{ background: D ? cardBg : "#fff", borderRadius: 16, padding: "28px 24px", border: `1px solid ${bdr}` }}>
 
-          {/* 구성 모드 선택 */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 28, justifyContent: "center" }}>
-            {[{ key: "fast", label: "짧은 구성", desc: "약 8~10개 섹션" }, { key: "precise", label: "긴 구성", desc: "약 15~20개 섹션" }].map(m => (
+          {/* 구성 모드 선택 — 탭 스타일 */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 24, background: D ? "rgba(255,255,255,0.05)" : "#f0f0f0", borderRadius: 10, padding: 3 }}>
+            {[{ key: "fast", label: "빠른 구성", desc: "8~10섹션 · 약 30초" }, { key: "precise", label: "정밀 구성", desc: "15~20섹션 · 약 1~2분" }].map(m => (
               <button key={m.key} onClick={() => setMode(m.key)}
                 style={{
-                  padding: "10px 24px", borderRadius: 24, border: `1.5px solid ${mode === m.key ? "#1a1a2e" : bdr}`,
-                  background: mode === m.key ? (D ? "rgba(255,255,255,0.1)" : "#f8f8f8") : "transparent",
-                  color: mode === m.key ? text : muted, fontSize: 13, fontWeight: mode === m.key ? 700 : 500, cursor: "pointer",
+                  flex: 1, padding: "10px 16px", borderRadius: 8, border: "none",
+                  background: mode === m.key ? (D ? "rgba(255,255,255,0.12)" : "#fff") : "transparent",
+                  color: mode === m.key ? text : muted, fontSize: 13, fontWeight: mode === m.key ? 700 : 500,
+                  cursor: "pointer", boxShadow: mode === m.key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.2s",
                 }}>
-                {mode === m.key && "✓ "}{m.label}
+                {m.label}
+                <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{m.desc}</div>
               </button>
             ))}
-            <span style={{ fontSize: 12, color: muted, alignSelf: "center", marginLeft: 4 }}>
-              {mode === "fast" ? "빠른 초안 · 약 30초" : "정교한 기획 · 약 1~2분"}
-            </span>
           </div>
 
           {/* 상품명 */}
@@ -499,7 +502,7 @@ JSON 배열로 답해. 각 섹션:
 
   // ── AI 파이프라인 진행 화면 ──────────────────────────────
   if (phase === "generating") return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "linear-gradient(180deg, #fdf2f8 0%, #faf5ff 50%, #f0f9ff 100%)" }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f5f5f5" }}>
       <div style={{ maxWidth: 500, width: "100%", padding: "40px 24px", textAlign: "center" }}>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>기획 초안 작성</h2>
         <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 32 }}>
