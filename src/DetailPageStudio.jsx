@@ -40,17 +40,6 @@ const SECTION_TYPES = [
   { id: "ai_notice", label: "AI 콘텐츠 고지", desc: "AI 생성 안내" },
 ];
 
-// ── 디자인 유형 ──────────────────────────────────────────
-const DESIGN_STYLES = [
-  { key: "clean_white", label: "클린 화이트", desc: "깔끔한 여백, 고급스러운 미니멀", colors: ["#fff", "#f5f5f5", "#333", "#999"], preview: "linear-gradient(180deg, #fff 60%, #f7f7f7 100%)" },
-  { key: "natural_craft", label: "내추럴 크래프트", desc: "따뜻한 베이지, 자연스러운 느낌", colors: ["#f5efe6", "#d4c5a9", "#5c4a32", "#8b7355"], preview: "linear-gradient(180deg, #f5efe6 60%, #e8dcc8 100%)" },
-  { key: "vivid_pop", label: "비비드 팝", desc: "강한 컬러, 눈에 띄는 프로모션", colors: ["#ff6b6b", "#ffd93d", "#fff", "#1a1a2e"], preview: "linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%)" },
-  { key: "pastel_soft", label: "파스텔 소프트", desc: "부드러운 파스텔, 감성적인 분위기", colors: ["#fce4ec", "#e3f2fd", "#f3e5f5", "#666"], preview: "linear-gradient(135deg, #fce4ec 0%, #e3f2fd 50%, #f3e5f5 100%)" },
-  { key: "modern_dark", label: "모던 다크", desc: "다크 배경, 럭셔리한 프리미엄", colors: ["#1a1a2e", "#2d2d3a", "#c9a96e", "#fff"], preview: "linear-gradient(180deg, #1a1a2e 60%, #2d2d3a 100%)" },
-  { key: "magazine", label: "매거진 스타일", desc: "이미지 중심, 그리드 레이아웃", colors: ["#fff", "#f0f0f0", "#111", "#666"], preview: "linear-gradient(180deg, #fff 40%, #f0f0f0 100%)" },
-  { key: "auto", label: "AI 자동 추천", desc: "제품 이미지 분석 후 자동 결정", colors: ["#7c6aff", "#9b6dff", "#f8f8f8", "#333"], preview: "linear-gradient(135deg, #7c6aff 0%, #9b6dff 100%)" },
-];
-
 // ── AI 파이프라인 단계 ─────────────────────────────────────
 const PIPELINE_STEPS = [
   { id: "input", label: "입력한 정보", icon: "📋" },
@@ -103,7 +92,6 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── 상태 ──────────────────────────────────────────────
   const [phase, setPhase] = useState("input"); // input | generating | editor
   const [mode, setMode] = useState("fast"); // fast | precise
-  const [designStyle, setDesignStyle] = useState("auto");
 
   // 입력 폼
   const [productName, setProductName] = useState("");
@@ -126,6 +114,39 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [colorPalette, setColorPalette] = useState(null);
   const [activeSection, setActiveSection] = useState(0);
   const [sidebarTab, setSidebarTab] = useState("pages");
+  const [sectionImages, setSectionImages] = useState({}); // { secId: { url, loading, error } }
+
+  // ── 섹션별 AI 이미지 생성 ──────────────────────────────
+  const generateSectionImage = async (secId, prompt) => {
+    if (!prompt) return;
+    setSectionImages(prev => ({ ...prev, [secId]: { loading: true, url: null, error: null } }));
+    try {
+      const token = (await import("./storage")).getAuthToken?.() || "";
+      const res = await fetch("/api/image?action=generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ prompt, aspectRatio: "3:4" }),
+      });
+      const data = await res.json();
+      if (data.image) {
+        setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: data.image, error: null } }));
+      } else {
+        setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: null, error: data.error || "생성 실패" } }));
+      }
+    } catch (e) {
+      setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: null, error: e.message } }));
+    }
+  };
+
+  // 전체 섹션 이미지 일괄 생성
+  const generateAllImages = async () => {
+    for (const sec of sections) {
+      if (sec.image_prompt && !sectionImages[sec.id]?.url) {
+        await generateSectionImage(sec.id, sec.image_prompt);
+        await new Promise(r => setTimeout(r, 1000)); // rate limit 방지
+      }
+    }
+  };
 
   const fileInputRef = useRef(null);
 
@@ -241,46 +262,51 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       const mainColor = toneData.color_palette.main;
       const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
 
-      // 디자인 스타일별 지시
-      const styleGuide = {
-        clean_white: "배경:#fff/#f5f5f5, 텍스트:#333/#999, 여백 넉넉히, 고급 미니멀, 가느다란 구분선, 폰트크기 대비 크게",
-        natural_craft: "배경:#f5efe6/#ede5d4, 텍스트:#5c4a32/#8b7355, 따뜻한 크림/베이지톤, 우드/린넨 느낌, 둥근 모서리",
-        vivid_pop: "배경:밝은색/#fff, 강한 포인트색(빨강/노랑/초록), 큰 볼드 타이틀, 뱃지/스티커 느낌, 이벤트 강조",
-        pastel_soft: "배경:#fce4ec/#e3f2fd/#f3e5f5, 텍스트:#555, 부드러운 파스텔, 둥근 곡선, 감성적 톤",
-        modern_dark: "배경:#1a1a2e/#2d2d3a, 텍스트:#fff/#c9a96e, 럭셔리 골드 포인트, 프리미엄 느낌, 고급진 여백",
-        magazine: "배경:#fff/#f0f0f0, 텍스트:#111, 이미지 중심 그리드, 큰 사진+작은 캡션, 에디토리얼",
-        auto: `이미지 색상(${mainColor}) 기반으로 어울리는 톤 자동 결정`,
-      }[designStyle] || "";
-
       const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel}
-특징:${features.slice(0, 300)}${extraLines ? ` 추가:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
+특징:${features.slice(0, 400)}${extraLines ? ` 추가정보:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
+추출색상:${mainColor}
 
-디자인스타일: ${DESIGN_STYLES.find(s => s.key === designStyle)?.label || "자동"} — ${styleGuide}
+이 제품의 쇼핑몰 상세페이지를 ${sectionCount}개 섹션 JSON배열로 만들어줘.
 
-상세페이지 ${sectionCount}섹션 JSON배열을 만들어줘.
-각 섹션 구조: {type, bg_color, elements:[]}
-elements 타입:
-- {type:"text", role:"subtitle|title|body|badge|price|review_name|review_text|star", content, fontSize(숫자만), fontWeight:"400|700|900", color:"hex", opacity, textAlign:"left|center|right"}
-- {type:"image", role:"product|bg|icon", placeholder:"설명"}
-- {type:"divider"} 구분선
-- {type:"badge", content:"텍스트", bg:"hex", color:"hex"} 뱃지/라벨
+각 섹션 구조:
+{
+  "type": "hero|review|concept|features|point|cert|howto|shipping|info|event|cta|ai_notice",
+  "layout": "full_image|text_over_image|left_image_right_text|right_image_left_text|centered_text|grid_2col|grid_3col|card_list|quote_box",
+  "bg_color": "#hex",
+  "image_prompt": "이 섹션에 어울리는 이미지를 AI로 생성하기 위한 영문 프롬프트 (제품/배경/소품 묘사, 50단어 이내)",
+  "elements": [
+    {type:"text", role:"subtitle|title|body|price|review_name|review_text|stat_number|stat_label", content:"", fontSize:숫자, fontWeight:"400|700|900", color:"#hex", textAlign:"left|center|right"},
+    {type:"badge", content:"텍스트", bg:"#hex", color:"#hex"},
+    {type:"divider", color:"#hex"}
+  ]
+}
 
-type종류: hero,review,concept,features,point,cert,howto,shipping,info,event,cta,ai_notice
+layout 설명:
+- full_image: 전체 이미지 위에 텍스트 오버레이 (hero에 적합)
+- text_over_image: 이미지 50% + 텍스트 오버레이
+- left_image_right_text: 좌측 이미지 + 우측 텍스트 (2컬럼)
+- right_image_left_text: 우측 이미지 + 좌측 텍스트
+- centered_text: 텍스트 중앙 정렬 (이미지 없음)
+- grid_2col: 2열 그리드 (features에 적합)
+- grid_3col: 3열 그리드 (아이콘+설명)
+- card_list: 카드형 리스트 (review에 적합)
+- quote_box: 인용/강조 박스
 
 규칙:
-- 실제 판매하는 것처럼 구체적이고 매력적인 카피
-- hero에는 반드시 캐치프레이즈 + 서브카피 + 제품이미지
-- review에는 가상 구매자 이름/별점/후기 3개 이상
-- features에는 아이콘+설명 형태
-- 색상은 디자인스타일에 맞게 통일
-- 첫=hero 마지막=ai_notice
+- 실제 판매하는 것처럼 매력적이고 구체적인 카피
+- image_prompt는 반드시 영문, 제품 사진 스타일로 (studio product photo, lifestyle, flat lay 등)
+- hero: 임팩트 있는 캐치프레이즈 + full_image 레이아웃
+- review: 실제같은 구매자 이름/별점/후기 3개 이상, card_list
+- features: grid_2col 또는 grid_3col로 특장점 나열
+- 색상은 제품 이미지 색상(${mainColor}) 기반으로 통일감 있게
+- 첫번째=hero, 마지막=ai_notice
 JSON만 출력.`;
 
-      // Gemini API 직접 호출 (OpenRouter 우회 — 타임아웃 방지)
+      // Gemini API 직접 호출
       const geminiRes = await fetch("/api/gemini-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 4000 }),
+        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
       });
       if (!geminiRes.ok) {
         const err = await geminiRes.json().catch(() => ({}));
@@ -490,28 +516,6 @@ JSON만 출력.`;
             )}
           </div>
 
-          {/* ── 5.5 디자인 스타일 선택 ── */}
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 10 }}>
-              디자인 스타일
-            </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
-              {DESIGN_STYLES.map(s => (
-                <button key={s.key} onClick={() => setDesignStyle(s.key)}
-                  style={{
-                    padding: 0, borderRadius: 10, border: `2px solid ${designStyle === s.key ? acc : bdr}`,
-                    background: "transparent", cursor: "pointer", overflow: "hidden", textAlign: "left",
-                    transition: "border-color 0.2s",
-                  }}>
-                  <div style={{ height: 40, background: s.preview, borderRadius: "8px 8px 0 0" }} />
-                  <div style={{ padding: "8px 10px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: designStyle === s.key ? acc : text }}>{s.label}</div>
-                    <div style={{ fontSize: 9, color: muted, marginTop: 1, lineHeight: 1.3 }}>{s.desc}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* ── 구분선 ── */}
           <div style={{ height: 1, background: bdr, margin: "0 0 24px" }} />
@@ -818,6 +822,20 @@ JSON만 출력.`;
 
       {/* 캔버스 영역 */}
       <div style={{ flex: 1, overflowY: "auto", background: D ? "rgba(0,0,0,0.15)" : "#e5e5e5", padding: "20px" }}>
+        {/* 상단 액션 바 */}
+        <div style={{ maxWidth: 860, margin: "0 auto 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: muted }}>{sections.length}개 섹션 · {Object.values(sectionImages).filter(v => v?.url).length}개 이미지 생성됨</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={generateAllImages}
+              style={{ padding: "7px 16px", borderRadius: 8, background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              ✦ 전체 AI 이미지 생성
+            </button>
+            <button onClick={() => setPhase("input")}
+              style={{ padding: "7px 16px", borderRadius: 8, background: "transparent", color: muted, border: `1px solid ${bdr}`, fontSize: 11, cursor: "pointer" }}>
+              ← 다시 입력
+            </button>
+          </div>
+        </div>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           {sections.map((sec, i) => (
             <div key={sec.id}
@@ -827,18 +845,20 @@ JSON만 출력.`;
                 border: activeSection === i ? `2px solid ${acc}` : "2px solid transparent",
                 borderRadius: 4, cursor: "pointer",
               }}>
-              {/* 섹션 렌더링 */}
-              <div style={{
-                width: "100%", minHeight: 400, background: sec.bg_color || "#fff",
-                padding: "40px", boxSizing: "border-box", position: "relative",
-              }}>
-                {(sec.elements || []).map((el, ei) => {
+              {/* 섹션 렌더링 — layout 기반 */}
+              {(() => {
+                const secImg = sectionImages[sec.id];
+                const imgSrc = secImg?.url || (images.length > 0 ? images[0].preview : null);
+                const layout = sec.layout || "centered_text";
+                const bgCol = sec.bg_color || "#fff";
+                const isDarkBg = bgCol && parseInt(bgCol.replace("#", "").slice(0, 2), 16) < 100;
+
+                // 텍스트 요소 렌더링 헬퍼
+                const renderEl = (el, ei) => {
                   if (el.type === "text") {
                     const fs = typeof el.fontSize === "string" ? parseInt(el.fontSize) : (el.fontSize || 16);
                     return (
-                      <div key={ei}
-                        contentEditable
-                        suppressContentEditableWarning
+                      <div key={ei} contentEditable suppressContentEditableWarning
                         onBlur={e => {
                           const val = e.currentTarget.textContent;
                           setSections(prev => prev.map((s, si) => si !== i ? s : {
@@ -846,53 +866,126 @@ JSON만 출력.`;
                           }));
                         }}
                         style={{
-                          fontSize: fs, fontWeight: el.fontWeight || "400",
-                          color: el.color || "#1a1a2e", lineHeight: el.lineHeight || (fs > 30 ? 1.3 : 1.7),
-                          opacity: el.opacity || 1, marginBottom: el.role === "title" ? 16 : 8,
-                          outline: "none", whiteSpace: "pre-wrap", cursor: "text",
-                          textAlign: el.textAlign || "left",
-                          ...(el.role === "star" ? { letterSpacing: 4 } : {}),
+                          fontSize: Math.min(fs, 48), fontWeight: el.fontWeight || "400",
+                          color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"),
+                          lineHeight: fs > 30 ? 1.3 : 1.7, opacity: el.opacity || 1,
+                          marginBottom: el.role === "title" ? 14 : 6, outline: "none",
+                          whiteSpace: "pre-wrap", cursor: "text", textAlign: el.textAlign || "left",
+                          ...(el.role === "star" ? { letterSpacing: 4, color: "#fbbf24" } : {}),
+                          ...(el.role === "stat_number" ? { fontSize: Math.min(fs, 56), fontWeight: "900" } : {}),
                         }}>
                         {el.role === "star" ? "★".repeat(parseInt(el.content) || 5) : el.content}
                       </div>
                     );
                   }
                   if (el.type === "badge") return (
-                    <span key={ei}
-                      contentEditable suppressContentEditableWarning
-                      onBlur={e => {
-                        setSections(prev => prev.map((s, si) => si !== i ? s : {
-                          ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: e.currentTarget.textContent } : elem),
-                        }));
-                      }}
-                      style={{
-                        display: "inline-block", padding: "6px 16px", borderRadius: 20,
-                        background: el.bg || acc, color: el.color || "#fff",
-                        fontSize: 12, fontWeight: 700, marginBottom: 12, cursor: "text", outline: "none",
-                      }}>
+                    <span key={ei} contentEditable suppressContentEditableWarning
+                      onBlur={e => setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, elements: s.elements.map((elem, j) => j === ei ? { ...elem, content: e.currentTarget.textContent } : elem) }))}
+                      style={{ display: "inline-block", padding: "6px 16px", borderRadius: 20, background: el.bg || acc, color: el.color || "#fff", fontSize: 12, fontWeight: 700, marginBottom: 12, cursor: "text", outline: "none" }}>
                       {el.content}
                     </span>
                   );
-                  if (el.type === "divider") return (
-                    <div key={ei} style={{ height: 1, background: el.color || "rgba(0,0,0,0.1)", margin: "16px 0" }} />
-                  );
-                  if (el.type === "image") return (
-                    <div key={ei} style={{
-                      width: "100%", height: el.h || 400,
-                      background: sec.bg_color === "#fff" || sec.bg_color === "#ffffff" ? "#f3f4f6" : "rgba(255,255,255,0.1)",
-                      borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-                      marginBottom: 12, overflow: "hidden",
-                    }}>
-                      {images.length > 0 ? (
-                        <img src={images[Math.min(el.role === "product" ? 0 : 1, images.length - 1)].preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <span style={{ color: muted, fontSize: 13 }}>{el.placeholder || "이미지 영역"}</span>
-                      )}
-                    </div>
-                  );
+                  if (el.type === "divider") return <div key={ei} style={{ height: 1, background: el.color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)"), margin: "20px 0" }} />;
                   return null;
-                })}
-              </div>
+                };
+
+                // 이미지 블록 렌더링
+                const renderImageBlock = (h = 400, style = {}) => (
+                  <div style={{ width: "100%", height: h, background: isDarkBg ? "rgba(255,255,255,0.06)" : "#f0f0f0", borderRadius: 12, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", ...style }}>
+                    {secImg?.loading && <div style={{ color: acc, fontSize: 13, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}><span style={{ display: "inline-block", width: 20, height: 20, border: `2px solid ${acc}`, borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />이미지 생성 중...</div>}
+                    {!secImg?.loading && imgSrc && <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                    {!secImg?.loading && !imgSrc && <span style={{ color: muted, fontSize: 12 }}>클릭하여 이미지 생성</span>}
+                    {!secImg?.loading && sec.image_prompt && !secImg?.url && (
+                      <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                        style={{ position: "absolute", bottom: 8, right: 8, padding: "6px 12px", borderRadius: 8, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        ✦ AI 이미지 생성
+                      </button>
+                    )}
+                  </div>
+                );
+
+                const els = sec.elements || [];
+
+                // layout별 렌더링
+                if (layout === "full_image" || layout === "text_over_image") return (
+                  <div style={{ width: "100%", minHeight: 500, position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", inset: 0 }}>{renderImageBlock(500, { borderRadius: 0 })}</div>
+                    <div style={{ position: "relative", zIndex: 1, padding: "60px 40px", minHeight: 500, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "linear-gradient(transparent 30%, rgba(0,0,0,0.6) 100%)" }}>
+                      {els.map((el, ei) => renderEl({ ...el, color: el.color || "#fff" }, ei))}
+                    </div>
+                  </div>
+                );
+
+                if (layout === "left_image_right_text") return (
+                  <div style={{ display: "flex", minHeight: 400, background: bgCol }}>
+                    <div style={{ flex: 1 }}>{renderImageBlock(400, { borderRadius: 0 })}</div>
+                    <div style={{ flex: 1, padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      {els.map(renderEl)}
+                    </div>
+                  </div>
+                );
+
+                if (layout === "right_image_left_text") return (
+                  <div style={{ display: "flex", minHeight: 400, background: bgCol }}>
+                    <div style={{ flex: 1, padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      {els.map(renderEl)}
+                    </div>
+                    <div style={{ flex: 1 }}>{renderImageBlock(400, { borderRadius: 0 })}</div>
+                  </div>
+                );
+
+                if (layout === "grid_2col") return (
+                  <div style={{ background: bgCol, padding: "40px" }}>
+                    {els.filter(e => e.role === "title" || e.role === "subtitle").map(renderEl)}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+                      {els.filter(e => e.role !== "title" && e.role !== "subtitle").map(renderEl)}
+                    </div>
+                  </div>
+                );
+
+                if (layout === "grid_3col") return (
+                  <div style={{ background: bgCol, padding: "40px" }}>
+                    {els.filter(e => e.role === "title" || e.role === "subtitle").map(renderEl)}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginTop: 16 }}>
+                      {els.filter(e => e.role !== "title" && e.role !== "subtitle").map(renderEl)}
+                    </div>
+                  </div>
+                );
+
+                if (layout === "card_list") return (
+                  <div style={{ background: bgCol, padding: "40px" }}>
+                    {els.filter(e => e.role === "title" || e.role === "subtitle" || e.type === "badge").map(renderEl)}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
+                      {els.filter(e => e.role === "review_text" || e.role === "review_name" || e.role === "star").reduce((cards, el, idx, arr) => {
+                        // 3개씩 그룹핑 (이름, 별점, 후기)
+                        if (el.role === "review_name" || (idx === 0 && el.role !== "review_name")) cards.push([]);
+                        if (cards.length > 0) cards[cards.length - 1].push(el);
+                        return cards;
+                      }, []).map((group, gi) => (
+                        <div key={gi} style={{ padding: "16px 20px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.06)" : "#f8f8f8", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}` }}>
+                          {group.map((el, ei) => renderEl(el, `${gi}_${ei}`))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+
+                if (layout === "quote_box") return (
+                  <div style={{ background: bgCol, padding: "40px" }}>
+                    <div style={{ padding: "32px", borderRadius: 16, border: `2px solid ${isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)"}`, textAlign: "center" }}>
+                      {els.map(renderEl)}
+                    </div>
+                  </div>
+                );
+
+                // centered_text (기본)
+                return (
+                  <div style={{ background: bgCol, padding: "40px", textAlign: "center" }}>
+                    {imgSrc && sec.image_prompt && renderImageBlock(300, { marginBottom: 20 })}
+                    {els.map(renderEl)}
+                  </div>
+                );
+              })()}
 
               {/* 페이지 컨트롤 (활성 시) */}
               {activeSection === i && (
