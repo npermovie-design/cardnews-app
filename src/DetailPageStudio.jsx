@@ -503,65 +503,103 @@ JSON 배열로 답해. 각 섹션:
   );
 
   // ── AI 파이프라인 진행 화면 ──────────────────────────────
+  const pipelineStepsUI = [
+    { label: "제품 사진 분석", desc: "이미지에서 색상·스타일·분위기를 읽어요", stepIdx: 2 },
+    { label: "톤앤매너 설정", desc: "브랜드에 맞는 색상과 말투를 결정해요", stepIdx: 3 },
+    { label: "섹션 구성 & 카피 작성", desc: "페이지별 레이아웃과 텍스트를 만들어요", stepIdx: 4 },
+  ];
+  const progressPct = pipeStep <= 1 ? 5 : pipeStep === 2 ? 30 : pipeStep === 3 ? 55 : pipeStep === 4 ? 80 : 100;
+
   if (phase === "generating") return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f5f5f5" }}>
-      <div style={{ maxWidth: 500, width: "100%", padding: "40px 24px", textAlign: "center" }}>
-        <h2 style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>기획 초안 작성</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 32 }}>
-          <span style={{ fontSize: 14, color: text }}>● {productName}</span>
-          <span style={{ fontSize: 12, color: muted }}>· {CATEGORIES.find(c => c.key === category)?.label}</span>
+      <div style={{ maxWidth: 460, width: "100%", padding: "40px 24px" }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+
+        {/* 상단 제품 정보 카드 */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderRadius: 14,
+          background: D ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, marginBottom: 28,
+        }}>
+          {images[0] && <img src={images[0].preview} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover" }} />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productName}</div>
+            <div style={{ fontSize: 12, color: muted }}>{CATEGORIES.find(c => c.key === category)?.label} · {mode === "fast" ? "에센셜" : "프리미엄"}</div>
+          </div>
           {pipeStep < 5 && (
-            <span style={{ fontSize: 12, color: acc, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-              생성 중...
-            </span>
+            <div style={{ padding: "5px 12px", borderRadius: 8, background: acc + "15", color: acc, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+              <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              생성 중
+            </div>
+          )}
+          {pipeStep >= 5 && (
+            <div style={{ padding: "5px 12px", borderRadius: 8, background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>완료</div>
           )}
         </div>
 
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
-        {/* 파이프라인 단계 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: "left" }}>
-          <div style={{ padding: "16px 20px", borderRadius: 12, background: cardBg, border: `1px solid ${bdr}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: text }}>입력 내용</div>
+        {/* 프로그레스 바 */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: text }}>
+              {pipeStep <= 1 ? "준비 중..." : pipeStep === 2 ? "사진 분석 중..." : pipeStep === 3 ? "톤앤매너 설정 중..." : pipeStep === 4 ? "콘텐츠 작성 중..." : "완료!"}
+            </span>
+            <span style={{ fontSize: 12, color: muted }}>{progressPct}%</span>
           </div>
-          {PIPELINE_STEPS.slice(1).map((step, i) => {
-            const stepIdx = i + 2; // 2,3,4,5
-            const isDone = pipeStep > stepIdx;
-            const isActive = pipeStep === stepIdx;
-            const isPending = pipeStep < stepIdx;
+          <div style={{ height: 6, borderRadius: 3, background: D ? "rgba(255,255,255,0.08)" : "#e5e7eb", overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${acc}, #9b6dff)`, width: `${progressPct}%`, transition: "width 0.6s ease" }} />
+          </div>
+        </div>
+
+        {/* 단계 카드 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {pipelineStepsUI.map((step, i) => {
+            const isDone = pipeStep > step.stepIdx;
+            const isActive = pipeStep === step.stepIdx;
+            const isPending = pipeStep < step.stepIdx;
             return (
-              <div key={step.id}>
-                {/* 연결선 */}
-                <div style={{ display: "flex", justifyContent: "center", padding: "2px 0" }}>
-                  <div style={{ width: 2, height: 16, background: isDone ? "#1a1a2e" : bdr }} />
-                </div>
-                <div style={{
-                  padding: "16px 20px", borderRadius: 12,
-                  background: isDone ? (D ? "rgba(255,255,255,0.06)" : "#f9fafb") : cardBg,
-                  border: `1px solid ${isActive ? acc : bdr}`,
-                  opacity: isPending ? 0.4 : 1,
-                  transition: "all 0.3s",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {isDone && <span style={{ fontSize: 16 }}>✅</span>}
-                      {isActive && <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite" }} />}
-                      <span style={{ fontSize: 14, fontWeight: 600, color: text }}>{step.label}</span>
-                    </div>
-                    {isDone && <span style={{ fontSize: 11, color: "#22c55e", fontWeight: 700, padding: "2px 10px", borderRadius: 8, background: "rgba(34,197,94,0.1)" }}>완료됨</span>}
-                    {isActive && <span style={{ fontSize: 11, color: acc, fontWeight: 700 }}>진행 중...</span>}
+              <div key={i} style={{
+                padding: "14px 18px", borderRadius: 12,
+                background: isActive ? (D ? "rgba(124,106,255,0.08)" : "#f8f7ff") : (D ? "rgba(255,255,255,0.03)" : "#fff"),
+                border: `1px solid ${isActive ? acc + "60" : bdr}`,
+                opacity: isPending ? 0.35 : 1,
+                transition: "all 0.4s ease",
+                transform: isActive ? "scale(1.02)" : "scale(1)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* 아이콘 */}
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: isDone ? "#22c55e" : isActive ? acc : (D ? "rgba(255,255,255,0.06)" : "#eee"),
+                    color: (isDone || isActive) ? "#fff" : muted, fontSize: 13, fontWeight: 900, flexShrink: 0,
+                  }}>
+                    {isDone ? "✓" : isActive ? (
+                      <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid #fff", borderColor: "#fff transparent transparent transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    ) : (i + 1)}
                   </div>
+                  {/* 텍스트 */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{step.label}</div>
+                    <div style={{ fontSize: 11, color: muted, marginTop: 1 }}>{step.desc}</div>
+                  </div>
+                  {/* 상태 */}
+                  {isDone && <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700 }}>완료</span>}
+                  {isActive && <span style={{ fontSize: 10, color: acc, fontWeight: 700, animation: "pulse 1.5s infinite" }}>처리 중</span>}
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* 예상 시간 */}
+        {pipeStep < 5 && (
+          <p style={{ textAlign: "center", fontSize: 11, color: muted, marginTop: 20 }}>
+            {mode === "fast" ? "약 30초~1분 소요됩니다" : "약 1~2분 소요됩니다"}
+          </p>
+        )}
+
         {pipeError && (
-          <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>
-            {pipeError}
-            <button onClick={() => setPhase("input")} style={{ marginLeft: 12, background: "none", border: "none", color: "#f87171", textDecoration: "underline", cursor: "pointer" }}>돌아가기</button>
+          <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>{pipeError}</span>
+            <button onClick={() => setPhase("input")} style={{ background: "none", border: "none", color: "#f87171", fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>돌아가기</button>
           </div>
         )}
       </div>
