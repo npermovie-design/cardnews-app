@@ -169,62 +169,66 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     try {
       // Step 1: 입력 정보 정리
       setPipeStep(1);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 300));
       setPipeResults(prev => ({ ...prev, input: { productName, category: catLabel, features, options, extraInfo } }));
 
-      // Step 2: 이미지 분석
+      // Step 2: 이미지 색상 추출 (프론트엔드에서 Canvas로 — AI 호출 없음)
       setPipeStep(2);
-      let imageAnalysis = null;
+      let extractedColors = [];
       if (images.length > 0) {
-        // 이미지 1장만 전송 (속도 + 타임아웃 방지)
-        const firstImg = images[0];
-        const b64data = firstImg.base64.includes(",") ? firstImg.base64.split(",")[1] : firstImg.base64;
-        if (!b64data || b64data.length < 100) { imageAnalysis = null; }
-        if (b64data && b64data.length >= 100) {
-        const result = await callAI("gemini-2.0-flash", [{
-          role: "user",
-          content: [
-            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64data}` } },
-            { type: "text", text: `이 제품 이미지를 분석해. JSON만 답해:
-{"product_type":"제품 종류","visual_style":"고급/캐주얼/자연적/모던 중","main_colors":["주요색상 hex 3개"],"mood":"분위기 한마디","suggested_bg_colors":["메인hex","그라데이션hex","밝은배경hex","어두운배경hex"]}` },
-          ],
-        }], 500);
         try {
-          const cleaned = result.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-          imageAnalysis = JSON.parse(cleaned);
-        } catch { imageAnalysis = { raw: result }; }
-        } // if imgContent.length > 0
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          await new Promise((resolve) => { img.onload = resolve; img.src = images[0].base64; });
+          const c = document.createElement("canvas");
+          c.width = 64; c.height = 64;
+          c.getContext("2d").drawImage(img, 0, 0, 64, 64);
+          const data = c.getContext("2d").getImageData(0, 0, 64, 64).data;
+          // 간단한 k-means 대용: 8x8 그리드 평균
+          const buckets = {};
+          for (let i = 0; i < data.length; i += 4) {
+            const r = Math.round(data[i] / 32) * 32;
+            const g = Math.round(data[i+1] / 32) * 32;
+            const b = Math.round(data[i+2] / 32) * 32;
+            const key = `${r},${g},${b}`;
+            buckets[key] = (buckets[key] || 0) + 1;
+          }
+          extractedColors = Object.entries(buckets)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([k]) => {
+              const [r, g, b] = k.split(",").map(Number);
+              return "#" + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, "0")).join("");
+            });
+        } catch (e) { console.warn("Color extraction failed:", e); }
       }
-      setPipeResults(prev => ({ ...prev, image: imageAnalysis }));
+      await new Promise(r => setTimeout(r, 300));
+      setPipeResults(prev => ({ ...prev, image: { colors: extractedColors } }));
 
-      // Step 3: 톤앤매너 추출
+      // Step 3: 톤앤매너 + 색상 팔레트 (텍스트만 — 빠르게)
       setPipeStep(3);
-      const tonePrompt = `제품: ${productName}
-카테고리: ${catLabel}
-특징: ${features}
-${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
-
-이 제품의 상세페이지 톤앤매너를 결정해줘. JSON으로 답해:
-{"tone":"말투 스타일(예: 프리미엄/친근한/전문적)","voice":"문체(예: ~합니다/~해요/~입니다)","color_palette":{"main":"메인 hex","gradient":"그라데이션 hex","light_bg":"밝은 배경 hex","dark_bg":"어두운 배경 hex"},"font_style":"추천 폰트 스타일(bold/elegant/minimal)","section_count":${mode === "fast" ? "8~10" : "15~20"}}`;
-
-      const toneResult = await callAI("gemini-2.0-flash", [{ role: "user", content: tonePrompt }], 600);
-      let toneData;
-      try {
-        const cleaned = toneResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-        toneData = JSON.parse(cleaned);
-      } catch { toneData = { tone: "전문적", voice: "~합니다", color_palette: { main: "#8A5E3C", gradient: "#C4A484", light_bg: "#F5F2EC", dark_bg: "#DCD5C9" }, font_style: "bold", section_count: mode === "fast" ? 8 : 15 }; }
-
+      const sectionCount = mode === "fast" ? 8 : 15;
+      const toneData = {
+        tone: "전문적", voice: "~합니다",
+        color_palette: {
+          main: extractedColors[0] || "#7c6aff",
+          gradient: extractedColors[1] || "#9b8ec4",
+          light_bg: "#f8f8f8",
+          dark_bg: extractedColors[2] || "#2d2d3a",
+        },
+        font_style: "bold", section_count: sectionCount,
+      };
       setColorPalette(toneData.color_palette);
       setPipeResults(prev => ({ ...prev, tone: toneData }));
+      await new Promise(r => setTimeout(r, 200));
 
-      // Step 4: 레이아웃 + 콘텐츠 생성
+      // Step 4: 레이아웃 + 콘텐츠 생성 (단일 AI 호출)
       setPipeStep(4);
-      const sectionCount = toneData.section_count || (mode === "fast" ? 8 : 15);
       const layoutPrompt = `제품: ${productName}
 카테고리: ${catLabel}
 특징: ${features}
 톤앤매너: ${JSON.stringify(toneData)}
-${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
+${extractedColors.length > 0 ? `제품 이미지 주요 색상: ${extractedColors.join(", ")}` : ""}
 ${options.length > 0 ? `옵션: ${options.join(", ")}` : ""}
 ${extraInfo.price ? `가격: ${extraInfo.price}` : ""}
 ${extraInfo.origin ? `원산지: ${extraInfo.origin}` : ""}
