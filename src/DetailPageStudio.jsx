@@ -58,7 +58,7 @@ function fileToBase64(file) {
   });
 }
 
-function resizeImage(dataUrl, maxW = 512) {
+function resizeImage(dataUrl, maxW = 384) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -67,8 +67,7 @@ function resizeImage(dataUrl, maxW = 512) {
       c.width = Math.round(img.width * ratio);
       c.height = Math.round(img.height * ratio);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      // 항상 jpeg로 변환하여 일관된 포맷 보장
-      resolve(c.toDataURL("image/jpeg", 0.7));
+      resolve(c.toDataURL("image/jpeg", 0.6));
     };
     img.src = dataUrl;
   });
@@ -177,23 +176,19 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       setPipeStep(2);
       let imageAnalysis = null;
       if (images.length > 0) {
-        const imgContent = [];
-        for (const img of images.slice(0, 2)) {
-          const b64 = img.base64;
-          const data = b64.includes(",") ? b64.split(",")[1] : b64;
-          if (!data || data.length < 100) continue;
-          imgContent.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } });
-        }
-        if (imgContent.length === 0) { imageAnalysis = null; }
-        if (imgContent.length > 0) {
-        const result = await callAI("claude-haiku-4-5-20251001", [{
+        // 이미지 1장만 전송 (속도 + 타임아웃 방지)
+        const firstImg = images[0];
+        const b64data = firstImg.base64.includes(",") ? firstImg.base64.split(",")[1] : firstImg.base64;
+        if (!b64data || b64data.length < 100) { imageAnalysis = null; }
+        if (b64data && b64data.length >= 100) {
+        const result = await callAI("gemini-2.5-flash", [{
           role: "user",
           content: [
-            ...imgContent,
-            { type: "text", text: `이 제품 이미지를 분석해줘. JSON으로 답해:
-{"product_type":"제품 종류","visual_style":"시각적 스타일(고급/캐주얼/자연적/모던 등)","main_colors":["주요색상 hex 3-4개"],"mood":"분위기","key_elements":["이미지에서 보이는 주요 요소들"],"suggested_bg_colors":["배경색 추천 hex 4개: 메인/그라데이션/밝은배경/어두운배경"]}` },
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64data}` } },
+            { type: "text", text: `이 제품 이미지를 분석해. JSON만 답해:
+{"product_type":"제품 종류","visual_style":"고급/캐주얼/자연적/모던 중","main_colors":["주요색상 hex 3개"],"mood":"분위기 한마디","suggested_bg_colors":["메인hex","그라데이션hex","밝은배경hex","어두운배경hex"]}` },
           ],
-        }], 800);
+        }], 500);
         try {
           const cleaned = result.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
           imageAnalysis = JSON.parse(cleaned);
@@ -212,7 +207,7 @@ ${imageAnalysis ? `이미지 분석: ${JSON.stringify(imageAnalysis)}` : ""}
 이 제품의 상세페이지 톤앤매너를 결정해줘. JSON으로 답해:
 {"tone":"말투 스타일(예: 프리미엄/친근한/전문적)","voice":"문체(예: ~합니다/~해요/~입니다)","color_palette":{"main":"메인 hex","gradient":"그라데이션 hex","light_bg":"밝은 배경 hex","dark_bg":"어두운 배경 hex"},"font_style":"추천 폰트 스타일(bold/elegant/minimal)","section_count":${mode === "fast" ? "8~10" : "15~20"}}`;
 
-      const toneResult = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: tonePrompt }], 600);
+      const toneResult = await callAI("gemini-2.5-flash", [{ role: "user", content: tonePrompt }], 600);
       let toneData;
       try {
         const cleaned = toneResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
