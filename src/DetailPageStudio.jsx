@@ -292,15 +292,42 @@ layout 설명:
 - card_list: 카드형 리스트 (review에 적합)
 - quote_box: 인용/강조 박스
 
+섹션별 필수 elements:
+
+hero (layout:full_image):
+  [{type:"text",role:"subtitle",content:"브랜드/카테고리"},{type:"text",role:"title",content:"캐치프레이즈 20자이내"},{type:"text",role:"body",content:"서브카피 40자이내"}]
+
+review (layout:card_list):
+  [{type:"text",role:"title",content:"고객 후기"},{type:"text",role:"review_name",content:"닉네임1"},{type:"text",role:"star",content:"5"},{type:"text",role:"review_text",content:"후기1"},{type:"text",role:"review_name",content:"닉네임2"},{type:"text",role:"star",content:"5"},{type:"text",role:"review_text",content:"후기2"},{type:"text",role:"review_name",content:"닉네임3"},{type:"text",role:"star",content:"4"},{type:"text",role:"review_text",content:"후기3"}]
+
+features (layout:grid_2col):
+  [{type:"text",role:"title",content:"섹션제목"},{type:"text",role:"body",content:"특징1제목",fontWeight:"700"},{type:"text",role:"body",content:"특징1설명"},{type:"text",role:"body",content:"특징2제목",fontWeight:"700"},{type:"text",role:"body",content:"특징2설명"},...]
+
+point (layout:left_image_right_text 또는 right_image_left_text, 교대):
+  [{type:"text",role:"subtitle",content:"소제목"},{type:"text",role:"title",content:"포인트제목"},{type:"text",role:"body",content:"설명"}]
+
+howto (layout:centered_text):
+  [{type:"text",role:"title",content:"사용방법"},{type:"text",role:"body",content:"Step1 제목",fontWeight:"700"},{type:"text",role:"body",content:"Step1 설명"},{type:"text",role:"body",content:"Step2 제목",fontWeight:"700"},{type:"text",role:"body",content:"Step2 설명"}]
+
+cert (layout:centered_text):
+  [{type:"text",role:"title",content:"인증제목"},{type:"text",role:"stat_number",content:"99%"},{type:"text",role:"stat_label",content:"고객만족도"},{type:"text",role:"stat_number",content:"100%"},{type:"text",role:"stat_label",content:"유기농인증"},{type:"text",role:"body",content:"설명"}]
+
+shipping (layout:centered_text):
+  [{type:"text",role:"title",content:"배송안내"},{type:"text",role:"body",content:"배송정보1"},{type:"text",role:"body",content:"배송정보2"}]
+
+cta (layout:centered_text):
+  [{type:"text",role:"subtitle",content:"한정혜택"},{type:"text",role:"title",content:"지금바로시작"},{type:"text",role:"price",content:"₩29,900"},{type:"badge",content:"무료배송",bg:"${mainColor}",color:"#fff"}]
+
+ai_notice: [{type:"text",role:"body",content:"본 페이지의 일부 콘텐츠는 AI로 생성되었습니다"}]
+
 규칙:
-- 실제 판매하는 것처럼 매력적이고 구체적인 카피
-- image_prompt는 반드시 영문, 제품 사진 스타일로 (studio product photo, lifestyle, flat lay 등)
-- hero: 임팩트 있는 캐치프레이즈 + full_image 레이아웃
-- review: 실제같은 구매자 이름/별점/후기 3개 이상, card_list
-- features: grid_2col 또는 grid_3col로 특장점 나열
-- 색상은 제품 이미지 색상(${mainColor}) 기반으로 통일감 있게
-- 첫번째=hero, 마지막=ai_notice
-JSON만 출력.`;
+- 각 섹션은 위 구조를 반드시 따를 것
+- 카피는 구체적이고 매력적으로
+- image_prompt는 영문
+- 색상은 ${mainColor} 기반 통일
+- point 섹션은 2-3개, 교대 레이아웃
+- 첫번째=hero 마지막=ai_notice
+JSON배열만 출력.`;
 
       // Gemini API 직접 호출
       const geminiRes = await fetch("/api/gemini-generate", {
