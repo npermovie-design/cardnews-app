@@ -16,7 +16,12 @@ export default async function handler(req) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: maxTokens || 4000, temperature: 0.7 },
+      generationConfig: {
+        maxOutputTokens: maxTokens || 8000,
+        temperature: 1,
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     };
 
     const res = await fetch(url, {
