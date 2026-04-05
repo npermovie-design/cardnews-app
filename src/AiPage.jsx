@@ -373,7 +373,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // 바형 헤더 공용
-  const BarHeader = ({ title, subtitle }) => (
+  function BarHeader({ title, subtitle }) { return (
     <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"12px 24px", display:"flex", alignItems:"center", gap:10 }}>
         <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
@@ -386,7 +386,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         </div>
       </div>
     </div>
-  );
+  ); }
 
   // ── 공통 도구 헤더 (아이콘 + 제목 + 뒤로가기) ──
   const TOOL_INFO = {
@@ -419,7 +419,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     canvas_direct_: { icon:"/icons3d/palette.png", label:"직접 디자인", parent:"content_create" },
   };
 
-  const ToolHeader = ({ menuId }) => {
+  function ToolHeader({ menuId }) {
     const info = TOOL_INFO[menuId?.replace("_make","")?.replace("_intro","")] || TOOL_INFO[menuId] || (menuId?.startsWith("canvas_direct_") ? TOOL_INFO["canvas_direct_"] : null);
     if (!info) return null;
     const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
@@ -442,17 +442,17 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         <span style={{ fontSize:13, fontWeight:800, color: homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{info.label}</span>
       </div>
     );
-  };
+  }
 
   // ── 도구 래퍼 (헤더 + 콘텐츠) ──
-  const ToolWrap = ({ menuId, children }) => (
+  function ToolWrap({ menuId, children }) { return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <ToolHeader menuId={menuId} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         {children}
       </div>
     </div>
-  );
+  ); }
 
   // 비즈니스 문서: 하위 도구 직접 진입
   if (aiMenu === "prompt_studio_make") {
