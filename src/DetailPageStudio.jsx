@@ -757,7 +757,7 @@ JSON배열만 출력.`;
             </div>
             <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
               placeholder={"예시)\n1. 제주 청정 환경에서 자란 흑돼지 100% 사용\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\n3. 무방부제·무색소 — 아이도 안심하고 먹는 건강 간식\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\n5. 개별 소포장으로 휴대 간편, 언제 어디서나 간편하게"}
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7, borderColor: aiFilling && !features ? acc + "60" : undefined }} />
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.8, borderColor: aiFilling && !features ? acc + "60" : undefined }} />
           </div>
 
           {/* ── 4. 옵션 ── */}
@@ -1008,7 +1008,7 @@ JSON배열만 출력.`;
             const miniSvg = layoutMini[sec.layout] || layoutMini.centered_text;
             const titleContent = sec.elements?.find(e => e.role === "title")?.content || "";
             return (
-              <div key={sec.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${enabled ? acc + "35" : bdr}`, background: enabled ? (D ? "rgba(124,106,255,0.06)" : "#faf9ff") : (D ? "rgba(255,255,255,0.02)" : "#fafafa"), marginBottom: 8, opacity: enabled ? 1 : 0.4, transition: "all 0.15s" }}>
+              <div key={sec.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${enabled ? acc + "35" : bdr}`, background: enabled ? (D ? "rgba(124,106,255,0.06)" : "#faf9ff") : (D ? "rgba(255,255,255,0.02)" : "#fafafa"), marginBottom: 14, opacity: enabled ? 1 : 0.4, transition: "all 0.15s" }}>
                 {/* 체크박스 */}
                 <button onClick={() => setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, enabled: s.enabled === false ? true : false }))}
                   style={{ width: 24, height: 24, borderRadius: 7, border: `2px solid ${enabled ? acc : bdr}`, background: enabled ? acc : "transparent", color: "#fff", fontSize: 13, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1192,7 +1192,7 @@ JSON배열만 출력.`;
               <button onClick={() => {
                 const newSec = { id: `sec_new_${Date.now()}`, type: "point", label: "새 섹션", bg_color: colorPalette?.light_bg || "#ffffff", elements: [
                   { type: "text", role: "title", content: "새 섹션 제목", x: 50, y: 200, w: 760, fontSize: 36, fontWeight: "900", color: colorPalette?.main || "#1a1a2e" },
-                  { type: "text", role: "body", content: "내용을 입력하세요", x: 50, y: 300, w: 760, fontSize: 16, fontWeight: "400", color: "#666", lineHeight: 1.7 },
+                  { type: "text", role: "body", content: "내용을 입력하세요", x: 50, y: 300, w: 760, fontSize: 16, fontWeight: "400", color: "#666", lineHeight: 1.8 },
                 ] };
                 setSections(prev => [...prev, newSec]);
                 setActiveSection(sections.length);
@@ -1528,7 +1528,7 @@ JSON배열만 출력.`;
 
                   {/* 이미지 미리보기 */}
                   <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지</div>
-                  <div style={{ width: "100%", height: 140, borderRadius: 12, overflow: "hidden", background: D ? "rgba(255,255,255,0.04)" : "#f5f5f5", marginBottom: 8, position: "relative", cursor: "pointer" }}
+                  <div style={{ width: "100%", height: 140, borderRadius: 12, overflow: "hidden", background: D ? "rgba(255,255,255,0.04)" : "#f5f5f5", marginBottom: 14, position: "relative", cursor: "pointer" }}
                     onClick={() => document.getElementById(`sidebar-img-upload-${selectedEl.secIdx}`)?.click()}>
                     {(() => {
                       const secId = sections[selectedEl.secIdx]?.id;
@@ -2618,7 +2618,7 @@ JSON배열만 출력.`;
                   const body = findEl("body");
                   const badge = els.find(e => e.type === "badge");
                   return (
-                    <div style={{ width: "100%", minHeight: 640, position: "relative", overflow: "hidden", background: "#111" }}>
+                    <div style={{ width: "100%", minHeight: 700, position: "relative", overflow: "hidden", background: "#111" }}>
                       {renderHeroImage()}
                       {/* 그라디언트 오버레이 — 더 강한 딤 */}
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.88) 100%)" }} />
@@ -2655,7 +2655,7 @@ JSON배열만 출력.`;
                           </div>
                         )}
                         {body && (
-                          <div {...editable(body)} style={eS(body, { fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520 })}>
+                          <div {...editable(body)} style={eS(body, { fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.8, maxWidth: 520 })}>
                             {body.content}
                           </div>
                         )}
@@ -2729,7 +2729,7 @@ JSON배열만 출력.`;
                   });
                   const productImg = aiImgSrc || productImgForSection || images[0]?.preview || null;
                   return (
-                    <div style={{ position: "relative", overflow: "hidden", minHeight: 600 }}>
+                    <div style={{ position: "relative", overflow: "hidden", minHeight: 640 }}>
                       {/* 풀 배경 이미지 */}
                       {productImg ? (
                         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
@@ -2740,7 +2740,7 @@ JSON배열만 출력.`;
                       )}
                       {/* 다크 오버레이 */}
                       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: productImg ? "linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.8) 100%)" : "transparent" }} />
-                      <div style={{ position: "relative", zIndex: 2, padding: "96px 56px" }}>
+                      <div style={{ position: "relative", zIndex: 2, padding: "100px 64px" }}>
                         <div style={{ textAlign: "center", marginBottom: 52 }}>
                           {subtitleEl && (
                             <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>
@@ -2770,7 +2770,7 @@ JSON배열만 출력.`;
                                   </div>
                                 )}
                                 {item.body && (
-                                  <div {...editable(item.body)} style={eS(item.body, { fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 })}>
+                                  <div {...editable(item.body)} style={eS(item.body, { fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.8 })}>
                                     {item.body.content}
                                   </div>
                                 )}
@@ -2815,7 +2815,7 @@ JSON배열만 출력.`;
                   // 각 아이템에 사용할 이미지 (제품 이미지 순환 / AI / 아이콘 이미지)
                   const getItemImg = (idx) => sec[`iconImg_${idx}`] || (images.length > 0 ? images[idx % images.length]?.preview : null);
                   return (
-                    <div style={{ background: featureBg, padding: "96px 56px", position: "relative", overflow: "hidden" }}>
+                    <div style={{ background: featureBg, padding: "100px 64px", position: "relative", overflow: "hidden" }}>
                       {/* 배경 장식 서클 */}
                       <div style={{ position: "absolute", top: -80, right: -80, width: 300, height: 300, borderRadius: "50%", background: `${mainColor}06`, pointerEvents: "none" }} />
                       <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: `${mainColor}04`, pointerEvents: "none" }} />
@@ -2826,7 +2826,7 @@ JSON배열만 출력.`;
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 12 })}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 20 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -2847,7 +2847,7 @@ JSON배열만 출력.`;
                               transition: "transform 0.2s",
                             }}>
                               {/* 이미지 영역 */}
-                              <div style={{ width: "100%", height: cols === 3 ? 160 : 200, position: "relative", overflow: "hidden", cursor: "pointer", background: `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` }}
+                              <div style={{ width: "100%", height: cols === 3 ? 200 : 260, position: "relative", overflow: "hidden", cursor: "pointer", background: `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` }}
                                 onClick={() => document.getElementById(featureIconImgId)?.click()}>
                                 {itemImg ? (
                                   <img src={itemImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -2941,7 +2941,7 @@ JSON배열만 출력.`;
                       )}
                       <div style={{ width: 48, height: 3, background: `${mainColor}30`, borderRadius: 2, marginBottom: 24 }} />
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.9, marginBottom: 12, textAlign: "left" })}>
+                        <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.8, marginBottom: 12, textAlign: "left" })}>
                           {el.content}
                         </div>
                       ))}
@@ -2954,8 +2954,8 @@ JSON배열만 출력.`;
                   );
 
                   const imageBlock = displayImgSrc ? (
-                    <div style={{ flex: "0 0 50%", minHeight: 480, position: "relative", overflow: "hidden" }}>
-                      {hasImage ? renderPlaceholder(480, { borderRadius: 0 }) : (
+                    <div style={{ flex: "0 0 50%", minHeight: 520, position: "relative", overflow: "hidden" }}>
+                      {hasImage ? renderPlaceholder(520, { borderRadius: 0 }) : (
                         <img src={displayImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                       )}
                       {/* Overlay gradient + 큰 넘버 */}
@@ -2981,7 +2981,7 @@ JSON배열만 출력.`;
                       <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   ) : (
-                    <div style={{ flex: "0 0 50%", minHeight: 480, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ flex: "0 0 50%", minHeight: 520, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 120, fontWeight: 900, color: `${mainColor}12`, fontFamily: "'Georgia', serif", lineHeight: 1, letterSpacing: -6 }}>
                           {String(pointNum).padStart(2, "0")}
@@ -3040,7 +3040,7 @@ JSON배열만 출력.`;
                   return (
                     <div style={{ background: reviewBg, position: "relative", overflow: "hidden" }}>
                       {/* 상단 이미지 띠 + 별점 오버레이 */}
-                      <div style={{ width: "100%", height: 240, position: "relative", overflow: "hidden" }}>
+                      <div style={{ width: "100%", height: 300, position: "relative", overflow: "hidden" }}>
                         {productImg ? (
                           <img src={productImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.5)" }} />
                         ) : (
@@ -3149,7 +3149,7 @@ JSON배열만 출력.`;
                   };
                   // (원형 차트 제거 — 큰 숫자 + 프로그레스 바로 대체)
                   return (
-                    <div style={{ position: "relative", overflow: "hidden", minHeight: 480 }}>
+                    <div style={{ position: "relative", overflow: "hidden", minHeight: 520 }}>
                       {/* 배경 이미지 */}
                       {productImg ? (
                         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
@@ -3184,7 +3184,7 @@ JSON배열만 출력.`;
                                   {sn.content}
                                 </div>
                                 {statLabels[si] && (
-                                  <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12 })}>
+                                  <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 20 })}>
                                     {statLabels[si].content}
                                   </div>
                                 )}
@@ -3281,12 +3281,12 @@ JSON배열만 출력.`;
                                     <span style={{ fontSize: 11, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase" }}>STEP {String(si + 1).padStart(2, "0")}</span>
                                   </div>
                                   {step.title && (
-                                    <div {...editable(step.title)} style={eS(step.title, { fontSize: 18, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 8, lineHeight: 1.4 })}>
+                                    <div {...editable(step.title)} style={eS(step.title, { fontSize: 18, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 14, lineHeight: 1.4 })}>
                                       {step.title.content}
                                     </div>
                                   )}
                                   {step.body && (
-                                    <div {...editable(step.body)} style={eS(step.body, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>
+                                    <div {...editable(step.body)} style={eS(step.body, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.8 })}>
                                       {step.body.content}
                                     </div>
                                   )}
@@ -3311,7 +3311,7 @@ JSON배열만 출력.`;
                   const bodyEls = els.filter(e => e.type === "text" && e.role === "body");
                   const hasStat = statNums.length > 0;
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
+                    <div style={{ background: bgCol, padding: "80px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
@@ -3355,7 +3355,7 @@ JSON배열만 출력.`;
                         </div>
                       )}
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={eS(el, { textAlign: "center", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7, marginTop: 16, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
+                        <div key={bi} {...editable(el)} style={eS(el, { textAlign: "center", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.8, marginTop: 16, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
                           {el.content}
                         </div>
                       ))}
@@ -3432,7 +3432,7 @@ JSON배열만 출력.`;
                   const subtitleEl = findEl("subtitle");
                   const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
+                    <div style={{ background: bgCol, padding: "80px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
@@ -3455,7 +3455,7 @@ JSON배열만 출력.`;
                           {renderPlaceholder(200, { borderRadius: 0 })}
                           {bodyEls[0] && (
                             <div style={{ padding: "16px 20px" }}>
-                              <div {...editable(bodyEls[0])} style={eS(bodyEls[0], { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>
+                              <div {...editable(bodyEls[0])} style={eS(bodyEls[0], { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.8 })}>
                                 {bodyEls[0].content}
                               </div>
                             </div>
@@ -3469,7 +3469,7 @@ JSON배열만 출력.`;
                           {renderPlaceholder(200, { borderRadius: 0 })}
                           {bodyEls[1] && (
                             <div style={{ padding: "16px 20px" }}>
-                              <div {...editable(bodyEls[1])} style={eS(bodyEls[1], { fontSize: 13, fontWeight: 600, color: isDarkBg ? "#fff" : "#333", lineHeight: 1.7 })}>
+                              <div {...editable(bodyEls[1])} style={eS(bodyEls[1], { fontSize: 13, fontWeight: 600, color: isDarkBg ? "#fff" : "#333", lineHeight: 1.8 })}>
                                 {bodyEls[1].content}
                               </div>
                             </div>
@@ -3501,7 +3501,7 @@ JSON배열만 출력.`;
                   if (plans.length === 0) {
                     const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
                     return (
-                      <div style={{ background: bgCol, padding: "64px 48px", textAlign: "center" }}>
+                      <div style={{ background: bgCol, padding: "100px 64px", textAlign: "center" }}>
                         {titleEl && (
                           <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 24 })}>
                             {titleEl.content}
@@ -3516,7 +3516,7 @@ JSON배열만 출력.`;
                     );
                   }
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
+                    <div style={{ background: bgCol, padding: "80px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
@@ -3584,7 +3584,7 @@ JSON배열만 출력.`;
                   const hasFaqRoles = questions.length > 0;
                   const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle" && e.role !== "question" && e.role !== "answer");
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
+                    <div style={{ background: bgCol, padding: "80px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
@@ -3609,14 +3609,14 @@ JSON배열만 출력.`;
                             </div>
                             {answers[qi] && (
                               <div style={{ padding: "14px 24px 16px 52px", background: isDarkBg ? "rgba(255,255,255,0.02)" : "#fff" }}>
-                                <div {...editable(answers[qi])} style={eS(answers[qi], { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 })}>
+                                <div {...editable(answers[qi])} style={eS(answers[qi], { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8 })}>
                                   {answers[qi].content}
                                 </div>
                               </div>
                             )}
                           </div>
                         )) : bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={eS(el, { padding: "14px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.7 })}>
+                          <div key={bi} {...editable(el)} style={eS(el, { padding: "14px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.8 })}>
                             {el.content}
                           </div>
                         ))}
@@ -3652,7 +3652,7 @@ JSON배열만 출력.`;
                       </div>
                       <div style={{ background: isDarkBg ? bgCol : "#f8f8fa", padding: "56px 56px 72px" }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 })}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 20 })}>
                             {subtitleEl.content}
                           </div>
                         )}
@@ -3672,14 +3672,14 @@ JSON배열만 출력.`;
                                 <div style={{ fontSize: 14, fontWeight: 900, color: mainColor, marginBottom: 10, letterSpacing: 1 }}>
                                   {String(bi + 1).padStart(2, "0")}
                                 </div>
-                                <div {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 })}>
+                                <div {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.8 })}>
                                   {el.content}
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.9, marginBottom: 8, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8, marginBottom: 14, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
@@ -3713,7 +3713,7 @@ JSON배열만 출력.`;
                   ];
                   const shippingBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   return (
-                    <div style={{ background: shippingBg, padding: "64px 48px" }}>
+                    <div style={{ background: shippingBg, padding: "80px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
@@ -3743,7 +3743,7 @@ JSON배열만 출력.`;
                                   <span {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.6 })}>{parts.slice(1).join(" | ")}</span>
                                 </div>
                               ) : (
-                                <div {...editable(el)} style={eS(el, { flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.7 })}>
+                                <div {...editable(el)} style={eS(el, { flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.8 })}>
                                   {el.content}
                                 </div>
                               )}
@@ -3793,7 +3793,7 @@ JSON배열만 출력.`;
                           </div>
                         )}
                         {bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.75)", lineHeight: 1.8, marginBottom: 14, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
@@ -3842,7 +3842,7 @@ JSON배열만 출력.`;
                           </div>
                         )}
                         {bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, marginBottom: 14, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
@@ -3909,7 +3909,7 @@ JSON배열만 출력.`;
                 // ════════════════════════════════════════
                 if (layout === "quote_box") {
                   return (
-                    <div style={{ background: bgCol, padding: "56px 48px" }}>
+                    <div style={{ background: bgCol, padding: "80px 56px" }}>
                       <div style={{ maxWidth: 600, margin: "0 auto", padding: "40px 48px", borderRadius: 20, border: `2px solid ${isDarkBg ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"}`, textAlign: "center", position: "relative" }}>
                         {/* 인용 부호 장식 */}
                         <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", width: 32, height: 32, background: bgCol, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -3984,7 +3984,7 @@ JSON배열만 출력.`;
                 const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
                 const badge = els.find(e => e.type === "badge");
                 return (
-                  <div style={{ background: bgCol, padding: "56px 48px", textAlign: "center" }}>
+                  <div style={{ background: bgCol, padding: "100px 64px", textAlign: "center" }}>
                     {badge && (
                       <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 16px", borderRadius: 20, background: `${mainColor}12`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, border: `1px solid ${mainColor}20` })}>
                         {badge.content}
@@ -4002,7 +4002,7 @@ JSON배열만 출력.`;
                     )}
                     {(titleEl || subtitleEl) && decoLine(mainColor)}
                     {bodyEls.map((el, bi) => (
-                      <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#666"), lineHeight: 1.8, marginBottom: 8, maxWidth: 560, marginLeft: "auto", marginRight: "auto" })}>
+                      <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#666"), lineHeight: 1.8, marginBottom: 14, maxWidth: 560, marginLeft: "auto", marginRight: "auto" })}>
                         {el.content}
                       </div>
                     ))}
@@ -4010,7 +4010,7 @@ JSON배열만 출력.`;
                       if (el.type === "divider") return <div key={ei} style={{ height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "16px auto", maxWidth: 100 }} />;
                       if (el.type === "badge") return null;
                       return (
-                        <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 16 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#444"), lineHeight: 1.7, marginBottom: 10 })}>
+                        <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 16 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#444"), lineHeight: 1.8, marginBottom: 10 })}>
                           {el.content}
                         </div>
                       );
@@ -4100,7 +4100,7 @@ JSON배열만 출력.`;
         <div style={{ padding: "16px", borderBottom: `1px solid ${bdr}` }}>
           {PIPELINE_STEPS.map((step, i) => {
             if (i === 0) return (
-              <div key={step.id} style={{ padding: "8px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f9fafb", marginBottom: 8, fontSize: 12, color: text, fontWeight: 600, cursor: "pointer" }}>
+              <div key={step.id} style={{ padding: "8px 12px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f9fafb", marginBottom: 14, fontSize: 12, color: text, fontWeight: 600, cursor: "pointer" }}>
                 입력한 정보
               </div>
             );
@@ -4123,7 +4123,7 @@ JSON배열만 출력.`;
 
         {/* AI 에이전트 채팅 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
             ✦ 수정도우미
           </div>
 
@@ -4148,7 +4148,7 @@ JSON배열만 출력.`;
           {/* 메시지 목록 */}
           <div style={{ flex: 1, overflowY: "auto", marginBottom: 12 }}>
             {agentMessages.map((msg, mi) => (
-              <div key={mi} style={{ marginBottom: 8, padding: "10px 12px", borderRadius: 10, background: msg.role === "user" ? `${acc}15` : (D ? "rgba(255,255,255,0.04)" : "#f8f8f8"), border: `1px solid ${msg.role === "user" ? acc + "30" : bdr}` }}>
+              <div key={mi} style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 10, background: msg.role === "user" ? `${acc}15` : (D ? "rgba(255,255,255,0.04)" : "#f8f8f8"), border: `1px solid ${msg.role === "user" ? acc + "30" : bdr}` }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: msg.role === "user" ? acc : muted, marginBottom: 4 }}>{msg.role === "user" ? "나" : "수정도우미"}</div>
                 <div style={{ fontSize: 12, color: text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.content}</div>
               </div>
