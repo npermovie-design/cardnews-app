@@ -17,12 +17,11 @@ export default async function handler(req, res) {
     const { prompt, maxTokens, imageBase64, imageMimeType } = req.body;
     if (!prompt) return res.status(400).json({ error: "prompt 필수" });
 
-    const model = "gemini-2.5-flash";
+    const model = imageBase64 ? "gemini-2.0-flash" : "gemini-2.0-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
     const genConfig = {
-      maxOutputTokens: maxTokens || 10000,
+      maxOutputTokens: maxTokens || 8000,
       temperature: 0.9,
-      responseMimeType: "application/json",
     };
 
     // 이미지가 있으면 멀티모달 요청
