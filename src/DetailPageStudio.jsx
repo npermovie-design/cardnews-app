@@ -126,6 +126,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [sectionImages, setSectionImages] = useState({}); // { secId: { url, loading, error } }
   // 텍스트 요소 선택/편집
   const [selectedEl, setSelectedEl] = useState(null); // { secIdx, elIdx, el }
+  const [templateTypeFilter, setTemplateTypeFilter] = useState("hero");
   const [agentInput, setAgentInput] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentMessages, setAgentMessages] = useState([]);
@@ -1014,86 +1015,55 @@ JSON배열만 출력.`;
           {sidebarTab === "templates" && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>섹션 템플릿</div>
-              <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>클릭하면 선택한 섹션을 교체합니다</div>
-              {Object.entries(SECTION_TEMPLATES).map(([type, templates]) => (
-                <div key={type} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: acc, marginBottom: 6, letterSpacing: 0.5, textTransform: "uppercase" }}>
-                    {SECTION_TYPE_LABELS?.[type] || type}
-                    <span style={{ fontSize: 10, color: muted, fontWeight: 500, marginLeft: 6 }}>{templates.length}종</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {templates.map((tmpl, ti) => (
-                      <button key={ti}
-                        onClick={() => {
-                          if (activeSection < sections.length) {
-                            // 선택한 섹션을 템플릿으로 교체
-                            const newSec = { ...tmpl, id: sections[activeSection].id, image_prompt: tmpl.image_prompt || sections[activeSection].image_prompt };
-                            setSections(prev => prev.map((s, si) => si === activeSection ? newSec : s));
-                          } else {
-                            // 없으면 새 섹션으로 추가
-                            setSections(prev => [...prev, { ...tmpl, id: `sec_tmpl_${Date.now()}` }]);
-                            setActiveSection(sections.length);
-                          }
-                        }}
-                        style={{
-                          width: "100%", padding: "10px 12px", borderRadius: 10,
-                          border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa",
-                          cursor: "pointer", textAlign: "left", transition: "border-color 0.15s",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = acc}
-                        onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
-                        {/* 미니 미리보기 */}
-                        <div style={{ width: "100%", height: 56, borderRadius: 6, background: tmpl.bg_color || "#f5f5f5", marginBottom: 6, overflow: "hidden", position: "relative", border: `1px solid ${bdr}` }}>
-                          {/* 레이아웃 스켈레톤 */}
-                          {tmpl.layout === "full_image" || tmpl.layout === "text_over_image" ? (
-                            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, ${tmpl.bg_color || "#333"}cc, ${tmpl.bg_color || "#333"})`, display: "flex", alignItems: "flex-end", padding: "6px 8px" }}>
-                              <div>
-                                <div style={{ width: 60, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.8)", marginBottom: 3 }} />
-                                <div style={{ width: 40, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.4)" }} />
-                              </div>
-                            </div>
-                          ) : tmpl.layout === "left_image_right_text" || tmpl.layout === "right_image_left_text" ? (
-                            <div style={{ display: "flex", height: "100%", flexDirection: tmpl.layout === "right_image_left_text" ? "row-reverse" : "row" }}>
-                              <div style={{ width: "40%", background: `${tmpl.elements?.[0]?.color || tmpl.bg_color || "#ddd"}20`, borderRight: `1px solid ${bdr}` }} />
-                              <div style={{ flex: 1, padding: "8px 6px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 3 }}>
-                                <div style={{ width: "70%", height: 4, borderRadius: 2, background: tmpl.elements?.find(e=>e.role==="title")?.color || "#333", opacity: 0.6 }} />
-                                <div style={{ width: "90%", height: 3, borderRadius: 2, background: "#999", opacity: 0.3 }} />
-                                <div style={{ width: "50%", height: 3, borderRadius: 2, background: "#999", opacity: 0.2 }} />
-                              </div>
-                            </div>
-                          ) : tmpl.layout === "grid_2col" || tmpl.layout === "grid_3col" ? (
-                            <div style={{ display: "grid", gridTemplateColumns: tmpl.layout === "grid_3col" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 3, padding: 6, height: "100%" }}>
-                              {[0,1,2,3].slice(0, tmpl.layout === "grid_3col" ? 3 : 4).map(gi => (
-                                <div key={gi} style={{ borderRadius: 4, background: `${tmpl.elements?.[0]?.color || acc}10`, border: `1px solid ${bdr}` }} />
-                              ))}
-                            </div>
-                          ) : tmpl.layout === "card_list" ? (
-                            <div style={{ display: "flex", gap: 3, padding: 6, height: "100%" }}>
-                              {[0,1,2].map(ci => (
-                                <div key={ci} style={{ flex: 1, borderRadius: 4, background: `${tmpl.elements?.[0]?.color || "#333"}08`, border: `1px solid ${bdr}` }} />
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ padding: "10px 8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 3 }}>
-                              <div style={{ width: "60%", height: 5, borderRadius: 2, background: tmpl.elements?.find(e=>e.role==="title")?.color || "#333", opacity: 0.5 }} />
-                              <div style={{ width: 20, height: 2, borderRadius: 1, background: acc, opacity: 0.6 }} />
-                              <div style={{ width: "80%", height: 3, borderRadius: 2, background: "#999", opacity: 0.2 }} />
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.label}</div>
-                        <div style={{ fontSize: 9, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.preview}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {/* 새 섹션 추가 버튼 */}
-              <div style={{ height: 1, background: bdr, margin: "8px 0 12px" }} />
+              <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>타입을 선택하고 템플릿을 클릭하면 현재 섹션이 교체됩니다</div>
+              {/* 타입 선택 드롭다운 */}
+              <select value={templateTypeFilter} onChange={e => setTemplateTypeFilter(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 700, marginBottom: 12, cursor: "pointer" }}>
+                {Object.entries(SECTION_TEMPLATES).map(([type, tmpls]) => (
+                  <option key={type} value={type}>{SECTION_TYPE_LABELS?.[type] || type} ({tmpls.length}종)</option>
+                ))}
+              </select>
+              {/* 선택된 타입의 템플릿 목록 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {(SECTION_TEMPLATES[templateTypeFilter] || []).map((tmpl, ti) => {
+                  const titleEl = tmpl.elements?.find(e => e.role === "title");
+                  const subtitleEl = tmpl.elements?.find(e => e.role === "subtitle");
+                  const bodyEl = tmpl.elements?.find(e => e.role === "body");
+                  const bgDark = tmpl.bg_color && (() => { const h = (tmpl.bg_color||"#fff").replace("#",""); return (parseInt(h.slice(0,2),16)*299+parseInt(h.slice(2,4),16)*587+parseInt(h.slice(4,6),16)*114)/1000<128; })();
+                  return (
+                    <button key={ti}
+                      onClick={() => {
+                        if (activeSection < sections.length) {
+                          const newSec = { ...tmpl, id: sections[activeSection].id, image_prompt: tmpl.image_prompt || sections[activeSection].image_prompt };
+                          setSections(prev => prev.map((s, si) => si === activeSection ? newSec : s));
+                        } else {
+                          setSections(prev => [...prev, { ...tmpl, id: `sec_tmpl_${Date.now()}` }]);
+                          setActiveSection(sections.length);
+                        }
+                      }}
+                      style={{ width: "100%", borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa", cursor: "pointer", textAlign: "left", overflow: "hidden", transition: "border-color 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = acc}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+                      {/* 실제 디자인 미리보기 */}
+                      <div style={{ width: "100%", padding: "20px 16px", background: tmpl.bg_color || "#fff", minHeight: 80 }}>
+                        {subtitleEl && <div style={{ fontSize: 8, fontWeight: 700, color: subtitleEl.color || (bgDark ? "rgba(255,255,255,0.5)" : "#999"), letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>{subtitleEl.content?.slice(0,20)}</div>}
+                        {titleEl && <div style={{ fontSize: 14, fontWeight: 900, color: titleEl.color || (bgDark ? "#fff" : "#1a1a2e"), lineHeight: 1.3, marginBottom: 6 }}>{titleEl.content?.slice(0,25)}</div>}
+                        {bodyEl && <div style={{ fontSize: 9, color: bodyEl.color || (bgDark ? "rgba(255,255,255,0.5)" : "#888"), lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{bodyEl.content?.slice(0,60)}</div>}
+                        {!titleEl && !bodyEl && <div style={{ fontSize: 10, color: bgDark ? "rgba(255,255,255,0.3)" : "#ccc" }}>{tmpl.label}</div>}
+                      </div>
+                      <div style={{ padding: "8px 12px", borderTop: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.2)" : "#fafafa" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: text }}>{tmpl.label}</div>
+                        <div style={{ fontSize: 8, color: muted }}>{tmpl.layout} / {tmpl.preview?.slice(0,30)}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ height: 1, background: bdr, margin: "12px 0" }} />
               <button onClick={() => {
-                const firstTemplate = Object.values(SECTION_TEMPLATES)[0]?.[0];
-                if (firstTemplate) {
-                  setSections(prev => [...prev, { ...firstTemplate, id: `sec_new_${Date.now()}` }]);
+                const tmpl = (SECTION_TEMPLATES[templateTypeFilter] || [])[0];
+                if (tmpl) {
+                  setSections(prev => [...prev, { ...tmpl, id: `sec_new_${Date.now()}` }]);
                   setActiveSection(sections.length);
                 }
               }}
