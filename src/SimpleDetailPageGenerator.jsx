@@ -261,6 +261,15 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const SIZE_PRESETS = getSizePresets(ko);
 
   const [wizStep, setWizStep] = useState(1);
+  const autoDownloadRef = useRef(false);
+
+  // imageMode: 자동 ZIP 다운로드
+  useEffect(() => {
+    if (autoDownloadRef.current && wizStep === 4) {
+      autoDownloadRef.current = false;
+      setTimeout(() => { saveAll(); }, 500);
+    }
+  });
 
   // URL 불러오기
   const [urlInput,   setUrlInput]   = useState("");
@@ -414,6 +423,9 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         }));
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
+      if (imageMode && slidesData.length > 0) {
+        setTimeout(() => { autoDownloadRef.current = true; }, 300);
+      }
       if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
       // 프리셋 저장
       try {

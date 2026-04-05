@@ -571,6 +571,15 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
   })();
 
   const [wizStep, setWizStep] = useState(libItem ? 4 : 1);
+  const autoDownloadRef = useRef(false);
+
+  // imageMode: 자동 ZIP 다운로드
+  useEffect(() => {
+    if (autoDownloadRef.current && wizStep === 4) {
+      autoDownloadRef.current = false;
+      setTimeout(() => { saveAll(); }, 500);
+    }
+  });
 
   // URL 불러오기
   const [urlInput,    setUrlInput]    = useState("");
@@ -849,7 +858,10 @@ export default function SimpleCardNewsGenerator({ isDark, user, theme, openFromL
       }
       setSlides(slidesData); setSted({}); setSelIdx(0); setWizStep(4);
       saveToCardLibrary(slidesData);
-      // 포인트 차감은 생성 시작 시점에 처리됨
+      // imageMode: 생성 완료 후 자동 ZIP 다운로드
+      if (imageMode && slidesData.length > 0) {
+        setTimeout(() => { autoDownloadRef.current = true; }, 300);
+      }
     } catch(e) { setSlides([]); setWizStep(3); setGenError((ko?"생성에 실패했습니다: ":"Generation failed: ") + (e.message || (ko?"다시 시도해주세요.":"Please try again."))); console.error("생성 실패:", e.message); }
     setLoading(false);
   };

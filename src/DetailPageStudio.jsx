@@ -132,6 +132,45 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentMessages, setAgentMessages] = useState([]);
 
+  // 드래그 이동 상태
+  const dragRef = useRef(null); // { type: "move"|"resize", startX, startY, origX, origY, origW, origH, handle }
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragRef.current || !selectedEl) return;
+      const dx = (e.clientX - dragRef.current.startX) / (canvasZoom / 100);
+      const dy = (e.clientY - dragRef.current.startY) / (canvasZoom / 100);
+
+      if (dragRef.current.type === "move") {
+        const newX = dragRef.current.origX + dx;
+        const newY = dragRef.current.origY + dy;
+        if (dragRef.current.isImage) {
+          // 이미지 위치 이동
+          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
+            ...s, imgProps: { ...s.imgProps, offsetX: Math.round(newX), offsetY: Math.round(newY) },
+          }));
+        } else {
+          // 텍스트 위치 이동
+          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
+            ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: Math.round(newX), offsetY: Math.round(newY) }),
+          }));
+          setSelectedEl(prev => prev ? { ...prev, el: { ...prev.el, offsetX: Math.round(newX), offsetY: Math.round(newY) } } : prev);
+        }
+      }
+    };
+    const onUp = () => { dragRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [selectedEl, canvasZoom]);
+
+  // 요소 선택 시 좌측 패널 자동 전환
+  useEffect(() => {
+    if (selectedEl && phase === "editor") {
+      setSidebarTab("text");
+    }
+  }, [selectedEl]);
+
   const handleAgentSend = async (msg) => {
     if (!msg?.trim()) return;
     setAgentMessages(prev => [...prev, { role: "user", content: msg }]);
@@ -139,8 +178,23 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     setAgentLoading(true);
     try {
       const sec = sections[activeSection];
-      const secJson = JSON.stringify(sec?.elements?.filter(e => e.type === "text").map(e => ({ role: e.role, content: e.content })) || []);
-      const prompt = `상세페이지 에디터의 AI 에이전트입니다. 현재 섹션의 텍스트 요소들:
+      const isImageEdit = selectedEl?.el?._type === "image";
+
+      if (isImageEdit) {
+        // AI 이미지 수정: 프롬프트로 새 이미지 생성
+        const secId = sec?.id;
+        const currentImg = sectionImages[secId]?.url || (images.length > 0 ? images[activeSection % images.length]?.preview : null);
+        const prompt = `상세페이지용 ${sec?.type || "제품"} 이미지를 생성해주세요. 사용자 요청: "${msg}". 배경은 깔끔하게, 상품/주제가 돋보이도록.`;
+        setAgentMessages(prev => [...prev, { role: "assistant", content: "이미지 생성 중..." }]);
+        await generateSectionImage(secId, prompt);
+        setAgentMessages(prev => {
+          const filtered = prev.filter(m => m.content !== "이미지 생성 중...");
+          return [...filtered, { role: "assistant", content: "이미지가 생성되었습니다. 캔버스에서 확인해보세요." }];
+        });
+      } else {
+        // 텍스트 수정
+        const secJson = JSON.stringify(sec?.elements?.filter(e => e.type === "text").map(e => ({ role: e.role, content: e.content })) || []);
+        const prompt = `상세페이지 에디터의 AI 에이전트입니다. 현재 섹션의 텍스트 요소들:
 ${secJson}
 
 사용자 요청: "${msg}"
@@ -148,24 +202,25 @@ ${secJson}
 위 요청에 맞게 텍스트를 수정해서 JSON 배열로 반환해줘.
 형식: [{"role":"기존role","content":"수정된텍스트"}]
 JSON배열만 출력.`;
-      const agentRes = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 2000 }) });
-      const agentData = await agentRes.json();
-      const result = agentData.text || agentData.error || "";
-      const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
-      try {
-        const updates = JSON.parse(cleaned);
-        if (Array.isArray(updates)) {
-          setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
-            ...s, elements: s.elements.map(el => {
-              if (el.type !== "text") return el;
-              const upd = updates.find(u => u.role === el.role);
-              return upd ? { ...el, content: upd.content } : el;
-            }),
-          }));
-          setAgentMessages(prev => [...prev, { role: "assistant", content: "수정 완료! 변경된 내용을 확인해보세요." }]);
+        const agentRes = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 2000 }) });
+        const agentData = await agentRes.json();
+        const result = agentData.text || agentData.error || "";
+        const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+        try {
+          const updates = JSON.parse(cleaned);
+          if (Array.isArray(updates)) {
+            setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
+              ...s, elements: s.elements.map(el => {
+                if (el.type !== "text") return el;
+                const upd = updates.find(u => u.role === el.role);
+                return upd ? { ...el, content: upd.content } : el;
+              }),
+            }));
+            setAgentMessages(prev => [...prev, { role: "assistant", content: "수정 완료! 변경된 내용을 확인해보세요." }]);
+          }
+        } catch {
+          setAgentMessages(prev => [...prev, { role: "assistant", content: cleaned }]);
         }
-      } catch {
-        setAgentMessages(prev => [...prev, { role: "assistant", content: cleaned }]);
       }
     } catch (e) {
       setAgentMessages(prev => [...prev, { role: "assistant", content: `오류: ${e.message}` }]);
@@ -1061,62 +1116,403 @@ JSON배열만 출력.`;
             </>
           )}
 
-          {sidebarTab === "text" && activeSection < sections.length && (
+          {/* 텍스트 속성 패널 — 텍스트 선택 시 자동 표시 */}
+          {sidebarTab === "text" && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>
-                페이지 {activeSection + 1} 텍스트 편집
-              </div>
-              {(sections[activeSection]?.elements || []).filter(e => e.type === "text").map((el, ei) => (
-                <div key={ei} style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 11, color: muted, marginBottom: 4, display: "block" }}>{el.role === "title" ? "제목" : el.role === "subtitle" ? "소제목" : "본문"}</label>
-                  <textarea value={el.content}
-                    onChange={e => {
+              {selectedEl?.el?._type === "text" ? (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>텍스트 편집</div>
+
+                  {/* 폰트 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>폰트</div>
+                  <select value={selectedEl.el.fontFamily || "Pretendard"} onChange={e => {
+                    const val = e.target.value;
+                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontFamily: val }) }));
+                    setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontFamily: val } }));
+                  }} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 600, marginBottom: 14, cursor: "pointer" }}>
+                    {[
+                      { id: "Pretendard", label: "Pretendard" },
+                      { id: "'Noto Sans KR'", label: "Noto Sans KR" },
+                      { id: "SBAggroB", label: "SB Aggro Bold" },
+                      { id: "'Cafe24Ssurround'", label: "Cafe24 Ssurround" },
+                      { id: "MaruBuri", label: "MaruBuri" },
+                      { id: "'GmarketSans'", label: "Gmarket Sans" },
+                      { id: "serif", label: "Serif" },
+                      { id: "monospace", label: "Monospace" },
+                    ].map(f => <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>)}
+                  </select>
+
+                  {/* 크기 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>크기</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="number" value={selectedEl.el.fontSize || 14} min={8} max={120}
+                      onChange={e => {
+                        const val = parseInt(e.target.value) || 14;
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontSize: val }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontSize: val } }));
+                      }}
+                      style={{ width: 70, padding: "8px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, fontWeight: 700, textAlign: "center" }} />
+                    <span style={{ fontSize: 11, color: muted }}>px</span>
+                  </div>
+
+                  {/* 스타일 B/I/U/S */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>스타일</div>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                    {[
+                      { key: "fontWeight", label: "B", values: ["900", "400"], style: { fontWeight: 900 } },
+                      { key: "fontStyle", label: "I", values: ["italic", "normal"], style: { fontStyle: "italic" } },
+                      { key: "textDecoration", label: "U", values: ["underline", "none"], style: { textDecoration: "underline" } },
+                      { key: "textDecoration", label: "S", values: ["line-through", "none"], style: { textDecoration: "line-through" } },
+                    ].map((s, si) => {
+                      const isActive = selectedEl.el[s.key] === s.values[0];
+                      return (
+                        <button key={si} onClick={() => {
+                          const val = isActive ? s.values[1] : s.values[0];
+                          setSections(prev => prev.map((sec, idx) => idx !== selectedEl.secIdx ? sec : { ...sec, elements: sec.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, [s.key]: val }) }));
+                          setSelectedEl(prev => ({ ...prev, el: { ...prev.el, [s.key]: val } }));
+                        }} style={{
+                          width: 36, height: 36, borderRadius: 8,
+                          border: `1.5px solid ${isActive ? "#2196F3" : bdr}`,
+                          background: isActive ? "rgba(33,150,243,0.1)" : "transparent",
+                          color: isActive ? "#2196F3" : text, fontSize: 15, cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", ...s.style,
+                        }}>{s.label}</button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 색상 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>색상</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="color" value={selectedEl.el.color || "#000000"} onChange={e => {
                       const val = e.target.value;
-                      setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
-                        ...s, elements: s.elements.map((elem, j) => {
-                          if (elem.type !== "text") return elem;
-                          const textIdx = s.elements.filter((x, k) => x.type === "text" && k <= s.elements.indexOf(elem)).length - 1;
-                          // find the matching text element index
-                          let count = 0;
-                          for (let k = 0; k < s.elements.length; k++) {
-                            if (s.elements[k].type === "text") {
-                              if (count === ei) return k === j ? { ...elem, content: val } : elem;
-                              count++;
-                            }
-                          }
-                          return elem;
-                        }),
-                      }));
-                    }}
-                    rows={el.role === "body" ? 4 : 2}
-                    style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} />
-                </div>
-              ))}
-              {/* 폰트 선택 */}
-              <div style={{ height: 1, background: bdr, margin: "12px 0" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>폰트</div>
-              {[
-                { id: "Pretendard", label: "프리텐다드", sample: "가나다 ABC 123" },
-                { id: "'Noto Sans KR'", label: "노토 산스", sample: "가나다 ABC 123" },
-                { id: "SBAggroB", label: "SB 어그로", sample: "가나다 ABC" },
-                { id: "'Cafe24Ssurround'", label: "카페24 써라운드", sample: "가나다 ABC" },
-                { id: "MaruBuri", label: "마루부리", sample: "가나다 ABC" },
-                { id: "'GmarketSans'", label: "지마켓 산스", sample: "가나다 ABC" },
-                { id: "serif", label: "세리프", sample: "가나다 ABC 123" },
-                { id: "monospace", label: "모노스페이스", sample: "가나다 ABC 123" },
-              ].map(f => (
-                <button key={f.id} onClick={() => {
-                  if (selectedEl) {
-                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontFamily: f.id }) }));
-                    setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontFamily: f.id } }));
-                  }
-                }}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${selectedEl?.el?.fontFamily === f.id ? acc : bdr}`, background: selectedEl?.el?.fontFamily === f.id ? `${acc}15` : "transparent", cursor: "pointer", marginBottom: 4, textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: text }}>{f.label}</span>
-                  <span style={{ fontSize: 11, color: muted, fontFamily: f.id }}>{f.sample}</span>
-                </button>
-              ))}
-              <div style={{ fontSize: 10, color: muted, marginTop: 8 }}>텍스트를 먼저 클릭한 후 폰트를 선택하세요</div>
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, color: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, color: val } }));
+                    }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
+                    <span style={{ fontSize: 12, color: muted, fontFamily: "monospace" }}>{selectedEl.el.color || "#000000"}</span>
+                  </div>
+
+                  {/* 정렬 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>정렬</div>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                    {[
+                      { align: "left", svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 6h8M2 9h12M2 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                      { align: "center", svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M4 6h8M2 9h12M5 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                      { align: "right", svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M6 6h8M2 9h12M8 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+                    ].map(a => (
+                      <button key={a.align} onClick={() => {
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textAlign: a.align }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textAlign: a.align } }));
+                      }} style={{
+                        width: 36, height: 36, borderRadius: 8,
+                        border: `1.5px solid ${selectedEl.el.textAlign === a.align ? "#2196F3" : bdr}`,
+                        background: selectedEl.el.textAlign === a.align ? "rgba(33,150,243,0.1)" : "transparent",
+                        color: selectedEl.el.textAlign === a.align ? "#2196F3" : muted,
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>{a.svg}</button>
+                    ))}
+                  </div>
+
+                  {/* 행간 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>행간</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="range" min="1" max="3" step="0.1" value={selectedEl.el.lineHeight || 1.5}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, lineHeight: val }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, lineHeight: val } }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: "right" }}>{(selectedEl.el.lineHeight || 1.5).toFixed(1)}</span>
+                  </div>
+
+                  {/* 자간 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>자간</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="range" min="-2" max="10" step="0.5" value={selectedEl.el.letterSpacing || 0}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, letterSpacing: val }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, letterSpacing: val } }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: "right" }}>{(selectedEl.el.letterSpacing || 0).toFixed(1)}</span>
+                  </div>
+
+                  <div style={{ height: 1, background: bdr, margin: "8px 0 14px" }} />
+
+                  {/* 그림자 / 배경박스 */}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                    <button onClick={() => {
+                      const val = selectedEl.el.textShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)";
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: val } }));
+                    }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${selectedEl.el.textShadow ? "#2196F3" : bdr}`, background: selectedEl.el.textShadow ? "rgba(33,150,243,0.1)" : "transparent", color: selectedEl.el.textShadow ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      그림자
+                    </button>
+                    <button onClick={() => {
+                      const val = !selectedEl.el.bgBox;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBox: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBox: val } }));
+                    }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${selectedEl.el.bgBox ? "#2196F3" : bdr}`, background: selectedEl.el.bgBox ? "rgba(33,150,243,0.1)" : "transparent", color: selectedEl.el.bgBox ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      배경 박스
+                    </button>
+                  </div>
+
+                  {/* 위치 미세 조정 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>위치 조정</div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                    <button onClick={() => {
+                      const val = (selectedEl.el.offsetY || 0) - 4;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetY: val } }));
+                    }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L2 7h8z" fill="currentColor"/></svg>
+                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={() => {
+                        const val = (selectedEl.el.offsetX || 0) - 4;
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: val } }));
+                      }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l5-4v8z" fill="currentColor"/></svg>
+                      </button>
+                      <button onClick={() => {
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: 0, offsetY: 0 }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: 0, offsetY: 0 } }));
+                      }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 9, cursor: "pointer", fontWeight: 700 }}>
+                        0,0
+                      </button>
+                      <button onClick={() => {
+                        const val = (selectedEl.el.offsetX || 0) + 4;
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: val } }));
+                      }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M10 6l-5-4v8z" fill="currentColor"/></svg>
+                      </button>
+                    </div>
+                    <button onClick={() => {
+                      const val = (selectedEl.el.offsetY || 0) + 4;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetY: val } }));
+                    }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 10l4-5H2z" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                </>
+              ) : selectedEl?.el?._type === "image" ? (
+                /* 이미지 속성 패널 */
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>이미지 편집</div>
+
+                  {/* 배경 색상 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 색상</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="color" value={sections[selectedEl.secIdx]?.bg_color || "#ffffff"} onChange={e => {
+                      const val = e.target.value;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, bg_color: val }));
+                    }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
+                    <span style={{ fontSize: 12, color: muted, fontFamily: "monospace" }}>{sections[selectedEl.secIdx]?.bg_color || "#ffffff"}</span>
+                  </div>
+
+                  {/* 이미지 미리보기 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지</div>
+                  <div style={{ width: "100%", height: 140, borderRadius: 12, overflow: "hidden", background: D ? "rgba(255,255,255,0.04)" : "#f5f5f5", marginBottom: 8, position: "relative", cursor: "pointer" }}
+                    onClick={() => document.getElementById(`sidebar-img-upload-${selectedEl.secIdx}`)?.click()}>
+                    {(() => {
+                      const secId = sections[selectedEl.secIdx]?.id;
+                      const imgUrl = sectionImages[secId]?.url || (images.length > 0 ? images[selectedEl.secIdx % images.length]?.preview : null);
+                      return imgUrl ? (
+                        <img src={imgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: muted, fontSize: 12 }}>클릭하여 업로드</div>
+                      );
+                    })()}
+                    <input id={`sidebar-img-upload-${selectedEl.secIdx}`} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const secId = sections[selectedEl.secIdx]?.id;
+                      const preview = URL.createObjectURL(file);
+                      setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: preview, error: null } }));
+                    }} />
+                  </div>
+
+                  {/* 배경 제거 */}
+                  <button onClick={async () => {
+                    const secId = sections[selectedEl.secIdx]?.id;
+                    const imgUrl = sectionImages[secId]?.url || (images.length > 0 ? images[selectedEl.secIdx % images.length]?.preview : null);
+                    if (!imgUrl) return;
+                    setSectionImages(prev => ({ ...prev, [secId]: { ...prev[secId], loading: true } }));
+                    try {
+                      // Canvas로 이미지 로드 후 base64 변환
+                      const img = new Image(); img.crossOrigin = "anonymous";
+                      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = imgUrl; });
+                      const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+                      const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+                      // 배경 제거: 모서리 색상 기반 chroma key
+                      const imgData = ctx.getImageData(0, 0, c.width, c.height);
+                      const d = imgData.data;
+                      // 모서리 4개 픽셀의 평균을 배경색으로 추정
+                      const corners = [0, (c.width - 1) * 4, (c.height - 1) * c.width * 4, ((c.height - 1) * c.width + c.width - 1) * 4];
+                      let bgR = 0, bgG = 0, bgB = 0;
+                      corners.forEach(ci => { bgR += d[ci]; bgG += d[ci+1]; bgB += d[ci+2]; });
+                      bgR = Math.round(bgR / 4); bgG = Math.round(bgG / 4); bgB = Math.round(bgB / 4);
+                      const threshold = 40;
+                      for (let p = 0; p < d.length; p += 4) {
+                        if (Math.abs(d[p] - bgR) < threshold && Math.abs(d[p+1] - bgG) < threshold && Math.abs(d[p+2] - bgB) < threshold) {
+                          d[p+3] = 0; // alpha to 0
+                        }
+                      }
+                      ctx.putImageData(imgData, 0, 0);
+                      const result = c.toDataURL("image/png");
+                      setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: result, error: null } }));
+                    } catch (err) {
+                      setSectionImages(prev => ({ ...prev, [secId]: { ...prev[secId], loading: false, error: err.message } }));
+                    }
+                  }}
+                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M4 7h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    {sectionImages[sections[selectedEl.secIdx]?.id]?.loading ? "처리 중..." : "배경 제거"}
+                  </button>
+
+                  <div style={{ height: 1, background: bdr, margin: "4px 0 14px" }} />
+
+                  {/* 이미지 변형 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지 변형</div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                    <button onClick={() => {
+                      const cur = sections[selectedEl.secIdx]?.imgProps?.scaleX ?? 1;
+                      const val = cur * -1;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, scaleX: val } }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, scaleX: val } }));
+                    }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: (sections[selectedEl.secIdx]?.imgProps?.scaleX ?? 1) < 0 ? "rgba(33,150,243,0.1)" : "transparent", color: (sections[selectedEl.secIdx]?.imgProps?.scaleX ?? 1) < 0 ? "#2196F3" : text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                      좌우 뒤집
+                    </button>
+                    <button onClick={() => {
+                      const cur = sections[selectedEl.secIdx]?.imgProps?.scaleY ?? 1;
+                      const val = cur * -1;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, scaleY: val } }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, scaleY: val } }));
+                    }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: (sections[selectedEl.secIdx]?.imgProps?.scaleY ?? 1) < 0 ? "rgba(33,150,243,0.1)" : "transparent", color: (sections[selectedEl.secIdx]?.imgProps?.scaleY ?? 1) < 0 ? "#2196F3" : text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                      상하 뒤집
+                    </button>
+                  </div>
+
+                  {/* 이미지 크기 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지 크기 (%)</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="range" min="10" max="200" step="5" value={sections[selectedEl.secIdx]?.imgProps?.imgScale ?? 100}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, imgScale: val } }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, imgScale: val } }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 32, textAlign: "right" }}>{sections[selectedEl.secIdx]?.imgProps?.imgScale ?? 100}%</span>
+                  </div>
+
+                  {/* 둥근 모서리 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>둥근 모서리</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="range" min="0" max="50" step="1" value={sections[selectedEl.secIdx]?.imgProps?.borderRadius ?? 14}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, borderRadius: val } }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, borderRadius: val } }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 32, textAlign: "right" }}>{sections[selectedEl.secIdx]?.imgProps?.borderRadius ?? 14}px</span>
+                  </div>
+
+                  {/* 투명도 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>투명도</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="range" min="0" max="100" step="1" value={sections[selectedEl.secIdx]?.imgProps?.opacity ?? 100}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, opacity: val } }));
+                        setSelectedEl(prev => ({ ...prev, el: { ...prev.el, opacity: val } }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 32, textAlign: "right" }}>{sections[selectedEl.secIdx]?.imgProps?.opacity ?? 100}%</span>
+                  </div>
+
+                  {/* 흑백 효과 */}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                    <button onClick={() => {
+                      const val = !sections[selectedEl.secIdx]?.imgProps?.grayscale;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, grayscale: val } }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, grayscale: val } }));
+                    }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${sections[selectedEl.secIdx]?.imgProps?.grayscale ? "#2196F3" : bdr}`, background: sections[selectedEl.secIdx]?.imgProps?.grayscale ? "rgba(33,150,243,0.1)" : "transparent", color: sections[selectedEl.secIdx]?.imgProps?.grayscale ? "#2196F3" : text, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      흑백 효과
+                    </button>
+                  </div>
+
+                  <div style={{ height: 1, background: bdr, margin: "4px 0 14px" }} />
+
+                  {/* 기존 이미지로 교체 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>기존 이미지로 교체</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
+                    <div onClick={() => document.getElementById(`sidebar-img-upload-${selectedEl.secIdx}`)?.click()}
+                      style={{ height: 60, borderRadius: 8, border: `1.5px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: muted }}>
+                      +
+                    </div>
+                    {images.map((img, idx) => (
+                      <div key={idx} onClick={() => {
+                        const secId = sections[selectedEl.secIdx]?.id;
+                        setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: img.preview, error: null } }));
+                      }}
+                        style={{ height: 60, borderRadius: 8, overflow: "hidden", cursor: "pointer", border: `1.5px solid ${bdr}` }}>
+                        <img src={img.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 위치 리셋 */}
+                  {(sections[selectedEl.secIdx]?.imgProps?.offsetX || sections[selectedEl.secIdx]?.imgProps?.offsetY) ? (
+                    <button onClick={() => {
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, offsetX: 0, offsetY: 0 } }));
+                    }} style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
+                      위치 초기화
+                    </button>
+                  ) : null}
+
+                  {/* AI 이미지 생성 */}
+                  {sections[selectedEl.secIdx]?.image_prompt && (
+                    <button onClick={() => generateSectionImage(sections[selectedEl.secIdx].id, sections[selectedEl.secIdx].image_prompt)}
+                      style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #2196F3, #7c6aff)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                      AI 이미지 생성
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* 기본: 섹션 텍스트 편집 목록 */
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 12 }}>
+                    페이지 {activeSection + 1} 텍스트
+                  </div>
+                  <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>캔버스에서 텍스트를 클릭하면 속성이 여기에 표시됩니다</div>
+                  {(sections[activeSection]?.elements || []).filter(e => e.type === "text").map((el, ei) => (
+                    <div key={ei} style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 10, color: muted, marginBottom: 3, display: "block", fontWeight: 600 }}>{el.role === "title" ? "제목" : el.role === "subtitle" ? "소제목" : el.role}</label>
+                      <textarea value={el.content}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
+                            ...s, elements: s.elements.map((elem, j) => {
+                              if (elem.type !== "text") return elem;
+                              let count = 0;
+                              for (let k = 0; k < s.elements.length; k++) {
+                                if (s.elements[k].type === "text") {
+                                  if (count === ei) return k === j ? { ...elem, content: val } : elem;
+                                  count++;
+                                }
+                              }
+                              return elem;
+                            }),
+                          }));
+                        }}
+                        rows={el.role === "body" ? 3 : 2}
+                        style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} />
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
 
@@ -1362,94 +1758,9 @@ JSON배열만 출력.`;
             </button>
           </div>
         </div>
-        {/* 텍스트 편집 툴바 */}
-        {selectedEl && (
-          <div style={{ maxWidth: 860, margin: "0 auto 8px", padding: "8px 12px", borderRadius: 10, background: D ? "rgba(0,0,0,0.6)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}>
-            {/* 폰트 크기 */}
-            <select value={selectedEl.el.fontSize || 14} onChange={e => {
-              const val = parseInt(e.target.value);
-              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontSize: val }) }));
-              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontSize: val } }));
-            }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 11, cursor: "pointer" }}>
-              {[10, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48, 56, 64].map(s => <option key={s} value={s}>{s}px</option>)}
-            </select>
-            {/* 굵기 */}
-            {["400", "600", "700", "800", "900"].map(w => (
-              <button key={w} onClick={() => {
-                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontWeight: w }) }));
-                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontWeight: w } }));
-              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${selectedEl.el.fontWeight === w ? acc : bdr}`, background: selectedEl.el.fontWeight === w ? `${acc}20` : "transparent", color: selectedEl.el.fontWeight === w ? acc : muted, fontSize: 11, fontWeight: parseInt(w), cursor: "pointer", minWidth: 28 }}>
-                {w === "400" ? "Light" : w === "700" ? "Bold" : w === "900" ? "Black" : w}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 20, background: bdr }} />
-            {/* 색상 */}
-            <div style={{ position: "relative" }}>
-              <input type="color" value={selectedEl.el.color || "#000000"} onChange={e => {
-                const val = e.target.value;
-                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, color: val }) }));
-                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, color: val } }));
-              }} style={{ width: 28, height: 28, border: `2px solid ${bdr}`, borderRadius: 6, cursor: "pointer", padding: 0 }} />
-            </div>
-            {/* 정렬 */}
-            {["left", "center", "right"].map(a => (
-              <button key={a} onClick={() => {
-                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textAlign: a }) }));
-                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textAlign: a } }));
-              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${selectedEl.el.textAlign === a ? acc : bdr}`, background: selectedEl.el.textAlign === a ? `${acc}20` : "transparent", color: selectedEl.el.textAlign === a ? acc : muted, fontSize: 11, cursor: "pointer" }}>
-                {a === "left" ? "≡" : a === "center" ? "☰" : "≡"}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 20, background: bdr }} />
-            {/* 그림자 */}
-            <button onClick={() => {
-              const hasShadow = selectedEl.el.textShadow;
-              const val = hasShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)";
-              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
-              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: val } }));
-            }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedEl.el.textShadow ? acc : bdr}`, background: selectedEl.el.textShadow ? `${acc}20` : "transparent", color: selectedEl.el.textShadow ? acc : muted, fontSize: 11, cursor: "pointer" }}>
-              그림자
-            </button>
-            {/* 배경 박스 */}
-            <button onClick={() => {
-              const hasBg = selectedEl.el.bgBox;
-              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBox: !hasBg }) }));
-              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBox: !hasBg } }));
-            }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedEl.el.bgBox ? acc : bdr}`, background: selectedEl.el.bgBox ? `${acc}20` : "transparent", color: selectedEl.el.bgBox ? acc : muted, fontSize: 11, cursor: "pointer" }}>
-              박스
-            </button>
-            <div style={{ width: 1, height: 20, background: bdr }} />
-            {/* 위치 이동 */}
-            {[
-              { label: "←", dx: -8, dy: 0 },
-              { label: "→", dx: 8, dy: 0 },
-              { label: "↑", dx: 0, dy: -8 },
-              { label: "↓", dx: 0, dy: 8 },
-            ].map((dir, di) => (
-              <button key={di} onClick={() => {
-                const newX = (selectedEl.el.offsetX || 0) + dir.dx;
-                const newY = (selectedEl.el.offsetY || 0) + dir.dy;
-                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: newX, offsetY: newY }) }));
-                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: newX, offsetY: newY } }));
-              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 13, cursor: "pointer", minWidth: 28 }}>
-                {dir.label}
-              </button>
-            ))}
-            <button onClick={() => {
-              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: 0, offsetY: 0 }) }));
-              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: 0, offsetY: 0 } }));
-            }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 10, cursor: "pointer" }}>
-              리셋
-            </button>
-            <div style={{ marginLeft: "auto" }}>
-              <button onClick={() => setSelectedEl(null)} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>
-                x 닫기
-              </button>
-            </div>
-          </div>
-        )}
+        {/* 인라인 툴바 제거 — 좌측 속성 패널로 통합됨 */}
 
-        <div style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s" }}>
+        <div onClick={() => setSelectedEl(null)} style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s" }}>
           {sections.map((sec, i) => (
             <div key={sec.id}
               onClick={() => setActiveSection(i)}
@@ -1510,25 +1821,57 @@ JSON배열만 출력.`;
                   }));
                 };
 
-                // 공통 editable props — 클릭 시 선택 + 라운딩 박스
+                // 공통 editable props — 클릭 시 선택 + 파란 핸들 시스템
                 const elIdx = (el) => els.indexOf(el);
                 const isSelected = (el) => selectedEl?.secIdx === i && selectedEl?.elIdx === elIdx(el);
+
+                // 파란 핸들 8포인트 래퍼
+                const HANDLE_SIZE = 8;
+                const HANDLE_COLOR = "#2196F3";
+                const handlePositions = [
+                  { cursor: "nw-resize", top: -HANDLE_SIZE/2, left: -HANDLE_SIZE/2 },
+                  { cursor: "n-resize", top: -HANDLE_SIZE/2, left: "50%", ml: -HANDLE_SIZE/2 },
+                  { cursor: "ne-resize", top: -HANDLE_SIZE/2, right: -HANDLE_SIZE/2 },
+                  { cursor: "w-resize", top: "50%", left: -HANDLE_SIZE/2, mt: -HANDLE_SIZE/2 },
+                  { cursor: "e-resize", top: "50%", right: -HANDLE_SIZE/2, mt: -HANDLE_SIZE/2 },
+                  { cursor: "sw-resize", bottom: -HANDLE_SIZE/2, left: -HANDLE_SIZE/2 },
+                  { cursor: "s-resize", bottom: -HANDLE_SIZE/2, left: "50%", ml: -HANDLE_SIZE/2 },
+                  { cursor: "se-resize", bottom: -HANDLE_SIZE/2, right: -HANDLE_SIZE/2 },
+                ];
+                const renderHandles = () => (
+                  <>
+                    {handlePositions.map((h, hi) => (
+                      <div key={hi} style={{
+                        position: "absolute", width: HANDLE_SIZE, height: HANDLE_SIZE,
+                        background: "#fff", border: `2px solid ${HANDLE_COLOR}`, borderRadius: 1,
+                        cursor: h.cursor, zIndex: 10,
+                        top: h.top, left: h.left, right: h.right, bottom: h.bottom,
+                        marginLeft: h.ml || 0, marginTop: h.mt || 0,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }} onMouseDown={e => e.stopPropagation()} />
+                    ))}
+                    {/* 회전 핸들 */}
+                    <div style={{
+                      position: "absolute", top: -28, left: "50%", marginLeft: -6,
+                      width: 12, height: 12, borderRadius: "50%",
+                      background: "#fff", border: `2px solid ${HANDLE_COLOR}`,
+                      cursor: "grab", zIndex: 10,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    }} onMouseDown={e => e.stopPropagation()} />
+                    <div style={{
+                      position: "absolute", top: -16, left: "50%",
+                      width: 1, height: 16, background: HANDLE_COLOR, zIndex: 9,
+                    }} />
+                  </>
+                );
+
                 const editable = (el) => ({
                   contentEditable: true,
                   suppressContentEditableWarning: true,
                   onBlur: onBlurByRef(el),
-                  onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el }); },
-                  draggable: isSelected(el),
-                  onDragStart: (e) => {
-                    if (!isSelected(el)) return;
-                    e.dataTransfer.setData("text/plain", JSON.stringify({ secIdx: i, elIdx: elIdx(el) }));
-                    e.dataTransfer.effectAllowed = "move";
-                  },
+                  onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el: { ...el, _type: "text" } }); },
                   style: {
-                    outline: "none", cursor: isSelected(el) ? "move" : "text",
-                    transition: "box-shadow 0.15s, border-radius 0.15s, margin 0.15s",
-                    borderRadius: isSelected(el) ? 6 : (el.bgBox ? 8 : 0),
-                    boxShadow: isSelected(el) ? `0 0 0 2px ${acc}, 0 0 0 4px ${acc}30` : "none",
+                    outline: "none", cursor: "text",
                     position: "relative",
                     textShadow: el.textShadow || undefined,
                     textAlign: el.textAlign || undefined,
@@ -1538,6 +1881,29 @@ JSON배열만 출력.`;
                     ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
                   },
                 });
+
+                // 선택된 요소 래퍼 (파란 핸들 표시 + 드래그 이동)
+                const SelectionWrap = ({ el, children, style = {} }) => {
+                  const selected = isSelected(el);
+                  return (
+                    <div
+                      onMouseDown={selected ? (e) => {
+                        if (e.target.closest("[data-handle]")) return;
+                        e.stopPropagation(); e.preventDefault();
+                        dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, origX: el.offsetX || 0, origY: el.offsetY || 0 };
+                      } : undefined}
+                      style={{ position: "relative", ...style, border: selected ? `2px solid ${HANDLE_COLOR}` : "2px solid transparent", borderRadius: selected ? 2 : 0, transition: "border 0.1s", cursor: selected ? "move" : "default" }}>
+                      {selected && renderHandles()}
+                      {children}
+                    </div>
+                  );
+                };
+
+                // 이미지 요소 클릭 핸들러
+                const onImageClick = (el) => (e) => {
+                  e.stopPropagation();
+                  setSelectedEl({ secIdx: i, elIdx: elIdx(el), el: { ...el, _type: "image" } });
+                };
 
                 // 장식적 라인 (섹션 제목 위/아래)
                 const decoLine = (color, width = 40) => (
@@ -1573,10 +1939,29 @@ JSON배열만 출력.`;
 
                 // 이미지 렌더 (AI 생성 > 제품 이미지 > placeholder)
                 const renderPlaceholder = (h = 280, style = {}) => {
+                  // 이미지 요소 (선택 가능 — 가상 요소)
+                  const imgEl = { type: "image", role: "section_image", secId: sec.id };
+                  const imgSelected = selectedEl?.el?._type === "image" && selectedEl?.secIdx === i;
                   const imgSrc = aiImgSrc || productImgForSection;
                   if (imgSrc) return (
-                    <div style={{ width: "100%", height: h, borderRadius: 16, overflow: "hidden", position: "relative", ...style }}>
-                      <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div onClick={(e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: -1, el: { ...imgEl, _type: "image" } }); }}
+                      onMouseDown={imgSelected ? (e) => {
+                        if (e.target.closest("[data-handle]")) return;
+                        e.stopPropagation(); e.preventDefault();
+                        dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, origX: sec.imgProps?.offsetX || 0, origY: sec.imgProps?.offsetY || 0, isImage: true };
+                      } : undefined}
+                      style={{ width: "100%", height: h, borderRadius: 16, overflow: "visible", position: "relative", ...style,
+                        border: imgSelected ? `2px solid #2196F3` : "2px solid transparent",
+                        cursor: imgSelected ? "move" : "pointer",
+                        marginTop: sec.imgProps?.offsetY || 0, marginLeft: sec.imgProps?.offsetX || 0,
+                      }}>
+                      {imgSelected && renderHandles()}
+                      <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover",
+                        borderRadius: sec.imgProps?.borderRadius ?? 14,
+                        filter: sec.imgProps?.grayscale ? "grayscale(1)" : "none",
+                        opacity: (sec.imgProps?.opacity ?? 100) / 100,
+                        transform: `scaleX(${sec.imgProps?.scaleX ?? 1}) scaleY(${sec.imgProps?.scaleY ?? 1}) scale(${(sec.imgProps?.imgScale ?? 100) / 100})`,
+                      }} />
                       {/* 이미지 교체/AI 생성 버튼 */}
                       <div style={{ position: "absolute", bottom: 8, right: 8, display: "flex", gap: 4 }}>
                         <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}

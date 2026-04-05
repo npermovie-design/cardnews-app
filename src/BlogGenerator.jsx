@@ -21,8 +21,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
   // ── remount 복원: 부모 리렌더로 unmount/remount 시 전체 상태 유지 ──
-  const _ssKey = "_bg_res_" + (initialType || "blog");
-  const _ssLoadKey = "_bg_loading_" + (initialType || "blog");
+  const _ssKey = useRef("_bg_res_" + (initialType || "blog")).current;
+  const _ssLoadKey = useRef("_bg_loading_" + (initialType || "blog")).current;
   const [result, setResult_raw] = useState(() => {
     try { return sessionStorage.getItem(_ssKey) || ""; } catch(e) { return ""; }
   });
@@ -30,7 +30,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setResult_raw(v);
     try { if (v && v.length > 10) sessionStorage.setItem(_ssKey, v); } catch(e) {}
   };
-  useEffect(() => { return () => { try { sessionStorage.removeItem(_ssKey); } catch(e) {} }; }, [_ssKey]);
+  useEffect(() => { return () => { try { sessionStorage.removeItem(_ssKey); } catch(e) {} }; }, []);
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   // loading + genStep도 sessionStorage로 복원 (unmount 시 로딩 화면 유지)
@@ -99,9 +99,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [advExtra,     setAdvExtra]     = useState(""); // 추가 지시사항
 
   // ── 진행 단계 상태 (Mirra-style) ──
-  const _ssStepKey = "_bg_step_" + (initialType || "blog");
-  const _ssStartTimeKey = "_bg_startTime_" + (initialType || "blog");
-  const _ssSavedFullKey = "_bg_savedFull_" + (initialType || "blog");
+  const _ssStepKey = useRef("_bg_step_" + (initialType || "blog")).current;
+  const _ssStartTimeKey = useRef("_bg_startTime_" + (initialType || "blog")).current;
+  const _ssSavedFullKey = useRef("_bg_savedFull_" + (initialType || "blog")).current;
   const [genStep, setGenStep_raw] = useState(() => {
     try { const v = parseInt(sessionStorage.getItem(_ssStepKey) || "0"); return isNaN(v) ? 0 : v; } catch { return 0; }
   });
@@ -140,26 +140,28 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     return () => clearInterval(interval);
   }, [loading]);
 
+  // ── loading ref (visibilitychange에서 최신 값 참조) ──
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+
   // ── 탭 복귀 시 visibilitychange 감지 → 상태 복원 ──
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
       try {
         const wasLoading = sessionStorage.getItem(_ssLoadKey) === "1";
-        const savedStep = parseInt(sessionStorage.getItem(_ssStepKey) || "0");
         const savedFull = sessionStorage.getItem(_ssSavedFullKey) || "";
         const savedResult = sessionStorage.getItem(_ssKey) || "";
+        const curLoading = loadingRef.current;
 
         // 생성이 진행 중이었는데 loading state가 꺼져 있다면 (스트리밍 끊김)
-        if (wasLoading && !loading) {
-          // 이미 결과가 있으면 그대로 표시
+        if (wasLoading && !curLoading) {
           if (savedResult && savedResult.length > 50) {
             setResult(savedResult);
             setGenStep(5);
             setLoading(false);
             return;
           }
-          // 부분 결과가 있으면 그걸로 복원
           if (savedFull && savedFull.length > 50) {
             setResult(cleanBlogText(savedFull));
             setGenStep(5);
@@ -169,7 +171,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         }
 
         // loading 중이면 step을 elapsed time 기반으로 보정
-        if (loading) {
+        if (curLoading) {
           const startTime = genStartTimeRef.current;
           if (startTime) {
             const elapsed = Date.now() - startTime;
@@ -188,7 +190,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [loading, _ssLoadKey, _ssStepKey, _ssSavedFullKey, _ssKey]);
+  }, []);
 
   useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
   const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};

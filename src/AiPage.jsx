@@ -1015,7 +1015,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <ToolWrap menuId="detail_simple"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
   }
   if (aiMenu === "detail_simple_img") {
-    return <ToolWrap menuId="detail_simple_img"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
+    return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
   }
   if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
     return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
