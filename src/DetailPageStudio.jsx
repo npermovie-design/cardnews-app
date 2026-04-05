@@ -577,17 +577,31 @@ ai_notice: [{type:"text",role:"body",content:"본 페이지의 일부 콘텐츠�
 - 이모지 절대 사용 금지
 JSON배열만 출력.`;
 
-      // Gemini API 직접 호출 (항상 8개로 먼저 생성)
-      const geminiRes = await fetch("/api/gemini-generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
-      });
+      // Gemini API 직접 호출 (항상 8개로 먼저 생성) — 90초 타임아웃
+      const abortCtrl = new AbortController();
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 90000);
+      let geminiRes;
+      try {
+        geminiRes = await fetch("/api/gemini-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
+          signal: abortCtrl.signal,
+        });
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        throw new Error(fetchErr.name === "AbortError" ? "생성 시간 초과 (90초). 다시 시도해주세요." : fetchErr.message);
+      }
+      clearTimeout(timeoutId);
       if (!geminiRes.ok) {
         const err = await geminiRes.json().catch(() => ({}));
         throw new Error(err.error || `생성 실패 (${geminiRes.status})`);
       }
-      const { text: layoutResult } = await geminiRes.json();
+      const geminiJson = await geminiRes.json();
+      const layoutResult = geminiJson.text || "";
+      if (!layoutResult || layoutResult.length < 10) {
+        throw new Error("AI 응답이 비어있습니다. 다시 시도해주세요.");
+      }
       let layoutData;
       try {
         const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
@@ -629,7 +643,7 @@ JSON배열만 출력.`;
     } catch (e) {
       console.error("Pipeline error:", e);
       setPipeError(e.message || "생성 중 오류가 발생했습니다.");
-      setPhase("input");
+      // generating 화면에서 에러를 보여줌 (input으로 바로 안 돌림)
     }
   };
 
@@ -1006,9 +1020,33 @@ JSON배열만 출력.`;
             style={{ flex: 1, padding: "14px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>
             ← 다시 입력
           </button>
-          <button onClick={() => {
+          <button onClick={async () => {
             setSections(prev => prev.filter(s => s.enabled !== false));
             setPhase("editor");
+            // 자동 스톡 이미지 채우기 (image_prompt에서 키워드 추출)
+            const enabledSecs = sections.filter(s => s.enabled !== false);
+            const pixKey = import.meta.env.VITE_PIXABAY_KEY || "";
+            const pexKey = import.meta.env.VITE_PEXELS_KEY || "";
+            if (!pixKey && !pexKey) return;
+            for (const sec of enabledSecs) {
+              if (sec.type === "hero" || sec.type === "ai_notice" || !sec.image_prompt) continue;
+              if (sectionImages[sec.id]?.url) continue;
+              try {
+                const kw = (sec.image_prompt || "").split(" ").slice(0, 3).join(" ");
+                let imgUrl = null;
+                if (pixKey) {
+                  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://pixabay.com/api/?key=${pixKey}&q=${encodeURIComponent(kw)}&image_type=photo&per_page=3`)}`);
+                  const data = await res.json();
+                  if (data.hits?.length) imgUrl = data.hits[Math.floor(Math.random() * data.hits.length)].webformatURL;
+                }
+                if (!imgUrl && pexKey) {
+                  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://api.pexels.com/v1/search?query=${encodeURIComponent(kw)}&per_page=3`)}&headers=${encodeURIComponent(JSON.stringify({ Authorization: pexKey }))}`);
+                  const data = await res.json();
+                  if (data.photos?.length) imgUrl = data.photos[Math.floor(Math.random() * data.photos.length)].src.medium;
+                }
+                if (imgUrl) setSectionImages(prev => ({ ...prev, [sec.id]: { loading: false, url: imgUrl, error: null } }));
+              } catch {}
+            }
           }}
             style={{ flex: 2, padding: "14px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 16px ${acc}40` }}>
             편집 시작 ({sections.filter(s => s.enabled !== false).length}개 섹션) →
@@ -1852,22 +1890,35 @@ JSON배열만 출력.`;
                   </>
                 );
 
-                const editable = (el) => ({
-                  contentEditable: true,
-                  suppressContentEditableWarning: true,
-                  onBlur: onBlurByRef(el),
-                  onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el: { ...el, _type: "text" } }); },
-                  style: {
-                    outline: "none", cursor: "text",
-                    position: "relative",
-                    textShadow: el.textShadow || undefined,
-                    textAlign: el.textAlign || undefined,
-                    fontFamily: el.fontFamily || undefined,
-                    marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
-                    marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
-                    ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
-                  },
-                });
+                const editable = (el) => {
+                  const selected = isSelected(el);
+                  return {
+                    contentEditable: true,
+                    suppressContentEditableWarning: true,
+                    onBlur: onBlurByRef(el),
+                    onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el: { ...el, _type: "text" } }); },
+                    onMouseDown: selected ? (e) => {
+                      if (e.target.closest("[data-handle]")) return;
+                      dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, origX: el.offsetX || 0, origY: el.offsetY || 0 };
+                    } : undefined,
+                    style: {
+                      outline: "none", cursor: selected ? "move" : "text",
+                      position: "relative",
+                      borderRadius: 6,
+                      border: selected ? `2px solid #2196F3` : "2px solid transparent",
+                      boxShadow: selected ? "0 0 0 2px rgba(33,150,243,0.2)" : "none",
+                      transition: "border 0.15s, box-shadow 0.15s",
+                      textShadow: el.textShadow || undefined,
+                      textAlign: el.textAlign || undefined,
+                      fontFamily: el.fontFamily || undefined,
+                      lineHeight: el.lineHeight || undefined,
+                      letterSpacing: el.letterSpacing ? `${el.letterSpacing}px` : undefined,
+                      marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
+                      marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
+                      ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
+                    },
+                  };
+                };
 
                 // 선택된 요소 래퍼 (파란 핸들 표시 + 드래그 이동)
                 const SelectionWrap = ({ el, children, style = {} }) => {
