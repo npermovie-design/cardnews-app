@@ -136,6 +136,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
 
   // 드래그 이동 상태
   const dragRef = useRef(null); // { type: "move"|"resize", startX, startY, origX, origY, origW, origH, handle }
+  const [snapGuide, setSnapGuide] = useState(null); // { x, y } — 스냅 가이드라인 위치
 
   useEffect(() => {
     const onMove = (e) => {
@@ -152,15 +153,23 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
             ...s, imgProps: { ...s.imgProps, offsetX: Math.round(newX), offsetY: Math.round(newY) },
           }));
         } else {
-          // 텍스트 위치 이동
+          // 텍스트 위치 이동 + 스냅 가이드
+          const snapThreshold = 8;
+          let snappedX = Math.round(newX), snappedY = Math.round(newY);
+          let guide = null;
+          // 중앙 스냅 (offsetX = 0 → 가운데)
+          if (Math.abs(snappedX) < snapThreshold) { snappedX = 0; guide = { ...guide, x: true }; }
+          // Y=0 스냅 (기본 위치)
+          if (Math.abs(snappedY) < snapThreshold) { snappedY = 0; guide = { ...guide, y: true }; }
+          setSnapGuide(guide);
           setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
-            ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: Math.round(newX), offsetY: Math.round(newY) }),
+            ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: snappedX, offsetY: snappedY }),
           }));
-          setSelectedEl(prev => prev ? { ...prev, el: { ...prev.el, offsetX: Math.round(newX), offsetY: Math.round(newY) } } : prev);
+          setSelectedEl(prev => prev ? { ...prev, el: { ...prev.el, offsetX: snappedX, offsetY: snappedY } } : prev);
         }
       }
     };
-    const onUp = () => { dragRef.current = null; };
+    const onUp = () => { dragRef.current = null; setSnapGuide(null); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
@@ -1076,18 +1085,26 @@ JSON배열만 출력.`;
                 }
               }
             } catch (e) { console.log("Stock image auto-fill skipped:", e.message); }
-            // AI 이미지 생성 (로그인 필요)
+            // AI 이미지 자동 생성 (로그인 필요, 모든 섹션)
             if (!user) return;
-            for (const sec of enabledSecs) {
-              if (sec.type === "ai_notice" || !sec.image_prompt) continue;
+            const secsToGenerate = enabledSecs.filter(sec => sec.type !== "ai_notice" && sec.type !== "shipping" && sec.image_prompt);
+            // 모든 대상 섹션에 로딩 표시
+            const loadingImgs = {};
+            secsToGenerate.forEach(sec => {
+              if (!sectionImages[sec.id]?.url) {
+                loadingImgs[sec.id] = { loading: true, url: null, error: null };
+              }
+            });
+            if (Object.keys(loadingImgs).length > 0) {
+              setSectionImages(prev => ({ ...prev, ...loadingImgs }));
+            }
+            for (const sec of secsToGenerate) {
               if (sectionImages[sec.id]?.url) continue;
-              // 업로드 이미지 기반 컨텍스트 추가
               const productContext = productName ? ` for "${productName}"` : "";
               const enhancedPrompt = sec.type === "hero"
                 ? `Professional hero banner image${productContext}. ${sec.image_prompt}. High quality product photography, studio lighting, clean background.`
                 : `${sec.image_prompt}${productContext}. Professional product photography style, clean and modern.`;
               generateSectionImage(sec.id, enhancedPrompt);
-              // 동시 요청 부하 분산 (1.5초 간격)
               await new Promise(r => setTimeout(r, 1500));
             }
           }}
@@ -2168,7 +2185,10 @@ JSON배열만 출력.`;
         </div>
         {/* 인라인 툴바 제거 — 좌측 속성 패널로 통합됨 */}
 
-        <div onClick={() => setSelectedEl(null)} style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s" }}>
+        <div onClick={() => setSelectedEl(null)} style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s", position: "relative" }}>
+          {/* 정렬 스냅 가이드라인 */}
+          {snapGuide?.x && <div style={{ position: "fixed", top: 0, bottom: 0, left: "50%", width: 1, background: "#2196F3", zIndex: 100, pointerEvents: "none", opacity: 0.6 }} />}
+          {snapGuide?.y && <div style={{ position: "fixed", left: 0, right: 0, top: "50%", height: 1, background: "#2196F3", zIndex: 100, pointerEvents: "none", opacity: 0.6 }} />}
           {sections.map((sec, i) => (
             <div key={sec.id}
               onClick={() => setActiveSection(i)}
@@ -2832,7 +2852,7 @@ JSON배열만 출력.`;
                   const displayImgSrc = hasImage ? (aiImgSrc || productImgForSection) : fallbackImg;
 
                   const textBlock = (
-                    <div style={{ flex: "0 0 40%", padding: "72px 56px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+                    <div style={{ flex: "0 0 50%", padding: "56px 40px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
                       {/* POINT 넘버 라인 강화 */}
                       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
                         <div style={{ width: 48, height: 2, background: mainColor }} />
@@ -2870,8 +2890,8 @@ JSON배열만 출력.`;
                   );
 
                   const imageBlock = displayImgSrc ? (
-                    <div style={{ flex: "0 0 60%", minHeight: 500, position: "relative", overflow: "hidden" }}>
-                      {hasImage ? renderPlaceholder(500, { borderRadius: 0 }) : (
+                    <div style={{ flex: "0 0 50%", minHeight: 480, position: "relative", overflow: "hidden" }}>
+                      {hasImage ? renderPlaceholder(480, { borderRadius: 0 }) : (
                         <img src={displayImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                       )}
                       {/* Overlay gradient + 큰 넘버 */}
@@ -2897,7 +2917,7 @@ JSON배열만 출력.`;
                       <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   ) : (
-                    <div style={{ flex: "0 0 60%", minHeight: 500, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ flex: "0 0 50%", minHeight: 480, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 120, fontWeight: 900, color: `${mainColor}12`, fontFamily: "'Georgia', serif", lineHeight: 1, letterSpacing: -6 }}>
                           {String(pointNum).padStart(2, "0")}
@@ -3063,19 +3083,7 @@ JSON배열만 출력.`;
                     if (num > 100) return Math.min(100, (num / 10000) * 100 || 75);
                     return Math.min(100, num);
                   };
-                  // 원형 차트 SVG
-                  const CircleChart = ({ pct, color, size = 100 }) => {
-                    const r = (size - 10) / 2;
-                    const c = 2 * Math.PI * r;
-                    const offset = c - (pct / 100) * c;
-                    return (
-                      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-                        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
-                          strokeDasharray={c} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 1s ease" }} />
-                      </svg>
-                    );
-                  };
+                  // (원형 차트 제거 — 큰 숫자 + 프로그레스 바로 대체)
                   return (
                     <div style={{ position: "relative", overflow: "hidden", minHeight: 480 }}>
                       {/* 배경 이미지 */}
@@ -3107,14 +3115,9 @@ JSON배열만 출력.`;
                             const gradColor = si % 2 === 0 ? mainColor : (colorPalette?.gradient || "#9b8ec4");
                             return (
                               <div key={si} style={{ textAlign: "center", minWidth: 160, flex: "1 1 160px", maxWidth: 220 }}>
-                                {/* 원형 차트 + 숫자 오버레이 */}
-                                <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 16px" }}>
-                                  <CircleChart pct={pct} color={gradColor} size={80} />
-                                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <div {...editable(sn)} style={eS(sn, { fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, transform: "rotate(0deg)" })}>
-                                      {sn.content}
-                                    </div>
-                                  </div>
+                                {/* 큰 숫자 */}
+                                <div {...editable(sn)} style={eS(sn, { fontSize: 52, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 12, letterSpacing: -2 })}>
+                                  {sn.content}
                                 </div>
                                 {statLabels[si] && (
                                   <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12 })}>
