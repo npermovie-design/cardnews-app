@@ -512,13 +512,17 @@ JSON만 출력.`, maxTokens: 200 }),
 레이아웃:${seed.layout}
 히어로 스타일:${seed.hero}
 
-상세페이지 ${sectionCount}개 섹션 JSON배열. 순서: hero→pain_points→features→point(2개 교대)→stats_highlight→review→guarantee→cta→ai_notice.
+한국 쇼핑몰 상세페이지 ${sectionCount}개 섹션 JSON배열.
+순서: hero→pain_points→features→point(2개)→stats_highlight→review→guarantee→cta→ai_notice.
 
-각 섹션: {"type":"","layout":"","bg_color":"#hex","image_prompt":"영문30단어","elements":[{"type":"text","role":"","content":"","fontSize":숫자,"fontWeight":"400|700|900","color":"#hex"}]}
+형식: [{"type":"","layout":"","bg_color":"#hex 또는 linear-gradient(방향, #색1, #색2)","image_prompt":"제품 관련 영문 프롬프트 40단어, 구체적 묘사","elements":[{"type":"text","role":"","content":"","fontSize":숫자,"fontWeight":"400|700|900","color":"#hex"}]}]
 
-레이아웃: hero=full_image, pain_points=centered_text, features=grid_2col, point=left_image_right_text/right_image_left_text교대, stats=centered_text, review=card_list, cta=centered_text.
+layout: hero=full_image, pain_points=centered_text, features=grid_2col, point=left_image_right_text/right_image_left_text교대, stats=centered_text, review=card_list, cta=centered_text.
 role: subtitle,title,body,price,stat_number,stat_label,review_name,star,review_text,question,answer.
-bg_color 밝은/어두운 교차. 카피는 구체적 쇼핑몰 수준. ${mainColor} 기반.
+bg_color는 그라데이션 적극 사용(linear-gradient). 밝은/어두운 교차.
+image_prompt는 제품 실사진 스타일로 구체적으로(조명, 앵글, 배경, 소품 묘사).
+카피는 실제 쇼핑몰 수준, 구체적 수치 포함. ${mainColor} 기반.
+JSON배열만 출력.
 - point 섹션은 2-3개, 교대 레이아웃
 - 첫번째=hero 마지막=ai_notice
 - 이모지 절대 사용 금지
@@ -1960,7 +1964,9 @@ JSON배열만 출력.`;
                 const aiImgSrc = secImg?.url || null;
                 const els = sec.elements || [];
                 const bgCol = sec.bg_color || "#fff";
-                const hexClean = (bgCol || "#fff").replace("#", "");
+                // linear-gradient 지원: 첫 번째 색상 추출
+                const firstHex = bgCol.startsWith("linear-gradient") ? ((bgCol.match(/#[0-9a-fA-F]{3,8}/) || ["#fff"])[0]) : bgCol;
+                const hexClean = (firstHex || "#fff").replace("#", "");
                 const bgR = parseInt(hexClean.slice(0, 2), 16) || 255;
                 const bgG = parseInt(hexClean.slice(2, 4), 16) || 255;
                 const bgB = parseInt(hexClean.slice(4, 6), 16) || 255;
@@ -2247,48 +2253,60 @@ JSON배열만 출력.`;
                   const body = findEl("body");
                   const badge = els.find(e => e.type === "badge");
                   return (
-                    <div style={{ width: "100%", minHeight: 560, position: "relative", overflow: "hidden", background: "#111" }}>
+                    <div style={{ width: "100%", minHeight: 640, position: "relative", overflow: "hidden", background: "#111" }}>
                       {renderHeroImage()}
-                      {/* 그라디언트 오버레이 */}
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.02) 30%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.85) 100%)" }} />
-                      {/* 배지 - 좌측 상단 */}
+                      {/* 그라디언트 오버레이 — 더 강한 딤 */}
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.88) 100%)" }} />
+                      {/* 상단 브랜드 로고 영역 */}
+                      <div style={{ position: "absolute", top: 28, left: 32, zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.15)" }}>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>{(productName || "M")[0]}</span>
+                        </div>
+                        {extraInfo?.brand && (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", letterSpacing: 1 }}>{extraInfo.brand}</span>
+                        )}
+                      </div>
+                      {/* 배지 - 우측 상단 */}
                       {badge && (
-                        <div style={{ position: "absolute", top: 24, left: 28, zIndex: 2 }}>
-                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "8px 20px", borderRadius: 24, background: mainColor, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: 0.5, boxShadow: "0 2px 12px rgba(0,0,0,0.2)" }}>
+                        <div style={{ position: "absolute", top: 28, right: 80, zIndex: 2 }}>
+                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "8px 22px", borderRadius: 24, background: mainColor, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: 0.5, boxShadow: `0 4px 16px ${mainColor}50` }}>
                             {badge.content}
                           </span>
                         </div>
                       )}
+                      {/* 코너 프레임 장식 */}
+                      <div style={{ position: "absolute", top: 24, left: 24, width: 60, height: 60, borderTop: "2px solid rgba(255,255,255,0.15)", borderLeft: "2px solid rgba(255,255,255,0.15)", zIndex: 1, borderRadius: "4px 0 0 0" }} />
+                      <div style={{ position: "absolute", bottom: 24, right: 24, width: 60, height: 60, borderBottom: "2px solid rgba(255,255,255,0.15)", borderRight: "2px solid rgba(255,255,255,0.15)", zIndex: 1, borderRadius: "0 0 4px 0" }} />
                       {/* 콘텐츠 */}
-                      <div style={{ position: "relative", zIndex: 1, padding: "80px 48px 56px", minHeight: 560, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                      <div style={{ position: "relative", zIndex: 1, padding: "100px 56px 72px", minHeight: 640, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                         {subtitle && (
-                          <div {...editable(subtitle)} style={{ ...editable(subtitle).style, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 12 }}>
+                          <div {...editable(subtitle)} style={{ ...editable(subtitle).style, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 }}>
                             {subtitle.content}
                           </div>
                         )}
                         {title && (
-                          <div {...editable(title)} style={{ ...editable(title).style, fontSize: 38, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 16, letterSpacing: -0.5, textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
+                          <div {...editable(title)} style={{ ...editable(title).style, fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 18, letterSpacing: -0.5, textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>
                             {title.content}
                           </div>
                         )}
                         {body && (
-                          <div {...editable(body)} style={{ ...editable(body).style, fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 500 }}>
+                          <div {...editable(body)} style={{ ...editable(body).style, fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520 }}>
                             {body.content}
                           </div>
                         )}
                         {!subtitle && !title && !body && els.filter(e => e.type === "text").slice(0, 3).map((el, ei) => (
-                          <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: ei === 0 ? 14 : ei === 1 ? 38 : 16, fontWeight: ei === 1 ? 900 : ei === 0 ? 600 : 400, color: "#fff", lineHeight: ei === 1 ? 1.25 : 1.7, marginBottom: ei === 1 ? 16 : 8, letterSpacing: ei === 0 ? 3 : 0 }}>
+                          <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: ei === 0 ? 14 : ei === 1 ? 42 : 16, fontWeight: ei === 1 ? 900 : ei === 0 ? 600 : 400, color: "#fff", lineHeight: ei === 1 ? 1.2 : 1.7, marginBottom: ei === 1 ? 18 : 8, letterSpacing: ei === 0 ? 4 : 0 }}>
                             {el.content}
                           </div>
                         ))}
-                        {/* 통계 블록 (Figma 패턴) */}
+                        {/* 통계 블록 */}
                         {findEls("stat_number").length > 0 && (
-                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(findEls("stat_number").length, 4)}, 1fr)`, gap: 12, marginTop: 28, maxWidth: 480 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(findEls("stat_number").length, 4)}, 1fr)`, gap: 12, marginTop: 32, maxWidth: 500 }}>
                             {findEls("stat_number").map((sn, si) => (
-                              <div key={si} style={{ textAlign: "center", padding: "14px 8px", borderRadius: 12, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
-                                <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>{sn.content}</div>
+                              <div key={si} style={{ textAlign: "center", padding: "16px 10px", borderRadius: 14, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>{sn.content}</div>
                                 {findEls("stat_label")[si] && (
-                                  <div {...editable(findEls("stat_label")[si])} style={{ ...editable(findEls("stat_label")[si]).style, fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{findEls("stat_label")[si].content}</div>
+                                  <div {...editable(findEls("stat_label")[si])} style={{ ...editable(findEls("stat_label")[si]).style, fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>{findEls("stat_label")[si].content}</div>
                                 )}
                               </div>
                             ))}
@@ -2296,17 +2314,23 @@ JSON배열만 출력.`;
                         )}
                         {/* CTA 버튼 */}
                         {findEl("price") && (
-                          <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 16 }}>
-                            <div style={{ padding: "16px 32px", borderRadius: 14, background: mainColor, color: "#fff", fontSize: 16, fontWeight: 800, boxShadow: `0 4px 20px ${mainColor}40` }}>
+                          <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 16 }}>
+                            <div style={{ padding: "18px 36px", borderRadius: 14, background: mainColor, color: "#fff", fontSize: 17, fontWeight: 800, boxShadow: `0 6px 24px ${mainColor}50`, letterSpacing: 0.5 }}>
                               {findEl("price") && <span {...editable(findEl("price"))} style={{ ...editable(findEl("price")).style }}>{findEl("price").content}</span>}
                               {" "}구매하기
                             </div>
                           </div>
                         )}
+                        {/* SCROLL DOWN 애니메이션 화살표 */}
                         {!findEl("price") && (
-                          <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.3)" }} />
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: 2, fontWeight: 500 }}>SCROLL DOWN</span>
+                          <div style={{ marginTop: 36, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 1, height: 32, background: "rgba(255,255,255,0.3)" }} />
+                              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: 3, fontWeight: 500 }}>SCROLL DOWN</span>
+                            </div>
+                            <div style={{ marginLeft: 0, marginTop: 4, animation: "heroArrowBounce 2s ease-in-out infinite" }}>
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 7l6 6 6-6" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2316,6 +2340,7 @@ JSON배열만 출력.`;
                           style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>교체</label>
                       </div>
                       <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
+                      <style>{`@keyframes heroArrowBounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(8px);opacity:1} }`}</style>
                     </div>
                   );
                 }
@@ -2337,41 +2362,48 @@ JSON배열만 출력.`;
                       items.push({ title: el, body: null });
                     }
                   });
+                  // 밝은 컬러 블록 배경
+                  const sectionBg = bgCol.startsWith("linear-gradient") ? bgCol : (isDarkBg ? bgCol : `linear-gradient(180deg, ${mainColor}06 0%, ${mainColor}12 100%)`);
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
-                      <div style={{ textAlign: "center", marginBottom: 40 }}>
-                        {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
-                            {subtitleEl.content}
-                          </div>
-                        )}
-                        {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 8 }}>
-                            {titleEl.content}
-                          </div>
-                        )}
-                        {decoLine(mainColor, 40)}
-                      </div>
-                      <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
-                        {items.map((item, pi) => (
-                          <div key={pi} style={{ display: "flex", gap: 16, padding: "20px 24px", borderRadius: 14, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, boxShadow: "0 1px 6px rgba(0,0,0,0.03)" }}>
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${mainColor}20` }}>
-                              <span style={{ fontSize: 14, fontWeight: 900, color: mainColor }}>?</span>
+                    <div style={{ background: sectionBg, padding: "72px 48px", position: "relative", overflow: "hidden" }}>
+                      {/* 배경 장식 패턴 */}
+                      <div style={{ position: "absolute", top: 0, right: 0, width: 200, height: 200, borderRadius: "50%", background: `${mainColor}06`, transform: "translate(40%, -40%)" }} />
+                      <div style={{ position: "absolute", bottom: 0, left: 0, width: 160, height: 160, borderRadius: "50%", background: `${mainColor}04`, transform: "translate(-30%, 30%)" }} />
+                      <div style={{ position: "relative", zIndex: 1 }}>
+                        <div style={{ textAlign: "center", marginBottom: 44 }}>
+                          {subtitleEl && (
+                            <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
+                              {subtitleEl.content}
                             </div>
-                            <div style={{ flex: 1 }}>
-                              {item.title && (
-                                <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: 15, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: item.body ? 6 : 0, lineHeight: 1.4 }}>
-                                  {item.title.content}
-                                </div>
-                              )}
-                              {item.body && (
-                                <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 }}>
-                                  {item.body.content}
-                                </div>
-                              )}
+                          )}
+                          {titleEl && (
+                            <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 8 }}>
+                              {titleEl.content}
                             </div>
-                          </div>
-                        ))}
+                          )}
+                          {decoLine(mainColor, 40)}
+                        </div>
+                        <div style={{ maxWidth: 580, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+                          {items.map((item, pi) => (
+                            <div key={pi} style={{ display: "flex", gap: 18, padding: "24px 28px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.85)", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"}`, boxShadow: isDarkBg ? "none" : "0 2px 16px rgba(0,0,0,0.04)", backdropFilter: "blur(4px)", backgroundImage: isDarkBg ? "none" : `linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.6) 100%)` }}>
+                              <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${mainColor}18, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1.5px solid ${mainColor}25` }}>
+                                <span style={{ fontSize: 18, fontWeight: 900, color: mainColor }}>?</span>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                {item.title && (
+                                  <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: 15, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: item.body ? 8 : 0, lineHeight: 1.4 }}>
+                                    {item.title.content}
+                                  </div>
+                                )}
+                                {item.body && (
+                                  <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.7 }}>
+                                    {item.body.content}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
@@ -2385,7 +2417,6 @@ JSON배열만 출력.`;
                   const subtitleEl = findEl("subtitle");
                   const gridEls = els.filter(e => e.role !== "title" && e.role !== "subtitle" && e.type !== "divider" && e.type !== "badge");
                   const cols = layout === "grid_3col" ? 3 : 2;
-                  // group grid elements: pair title+body
                   const items = [];
                   for (let g = 0; g < gridEls.length; g++) {
                     if (gridEls[g].fontWeight === "700" || gridEls[g].fontWeight === "900" || gridEls[g].role === "body" && items.length === 0) {
@@ -2395,10 +2426,11 @@ JSON배열만 출력.`;
                       items.push({ title: gridEls[g], body: null });
                     }
                   }
+                  const hasAnyImage = aiImgSrc || productImgForSection;
+                  const featureBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
-                      {/* 섹션 타이틀 */}
-                      <div style={{ textAlign: "center", marginBottom: 40 }}>
+                    <div style={{ background: featureBg, padding: "72px 48px" }}>
+                      <div style={{ textAlign: "center", marginBottom: 48 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
                             {subtitleEl.content}
@@ -2411,27 +2443,41 @@ JSON배열만 출력.`;
                         )}
                         {decoLine(mainColor, 40)}
                       </div>
-                      {/* 그리드 */}
-                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: cols === 3 ? 20 : 28 }}>
-                        {items.length > 0 ? items.map((item, gi) => (
-                          <div key={gi} style={{ textAlign: "center", padding: cols === 3 ? "28px 16px" : "36px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 20px rgba(0,0,0,0.04)", transition: "transform 0.2s, box-shadow 0.2s" }}>
-                            {iconCircle(gi, cols === 3 ? 52 : 64)}
-                            {item.title && (
-                              <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: cols === 3 ? 14 : 16, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 }}>
-                                {item.title.content}
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: cols === 3 ? 20 : 24 }}>
+                        {(items.length > 0 ? items : gridEls.map(el => ({ title: el, body: null }))).map((item, gi) => (
+                          <div key={gi} style={{
+                            borderRadius: 18, overflow: "hidden",
+                            background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff",
+                            border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+                            boxShadow: isDarkBg ? "0 4px 20px rgba(0,0,0,0.2)" : "0 6px 28px rgba(0,0,0,0.06)",
+                            minHeight: cols === 3 ? 220 : 260,
+                            display: "flex", flexDirection: "column",
+                          }}>
+                            {hasAnyImage ? (
+                              <div style={{ height: cols === 3 ? 140 : 170, position: "relative", overflow: "hidden", background: `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` }}>
+                                {(aiImgSrc || productImgForSection) && (
+                                  <img src={aiImgSrc || productImgForSection} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ height: cols === 3 ? 100 : 120, display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(145deg, ${mainColor}10, ${mainColor}04)`, position: "relative" }}>
+                                <span style={{ fontSize: cols === 3 ? 48 : 56, fontWeight: 900, color: `${mainColor}18`, fontFamily: "'Georgia', serif", letterSpacing: -2 }}>
+                                  {String(gi + 1).padStart(2, "0")}
+                                </span>
+                                <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 40, height: 3, borderRadius: 2, background: mainColor }} />
                               </div>
                             )}
-                            {item.body && (
-                              <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7 }}>
-                                {item.body.content}
-                              </div>
-                            )}
-                          </div>
-                        )) : gridEls.map((el, gi) => (
-                          <div key={gi} style={{ textAlign: "center", padding: cols === 3 ? "28px 16px" : "36px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 20px rgba(0,0,0,0.04)" }}>
-                            {iconCircle(gi, cols === 3 ? 52 : 64)}
-                            <div {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "700" || el.fontWeight === "900" ? 16 : 13, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.6 }}>
-                              {el.content}
+                            <div style={{ padding: cols === 3 ? "20px 18px" : "24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}>
+                              {item.title && (
+                                <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: cols === 3 ? 15 : 17, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.35 }}>
+                                  {item.title.content}
+                                </div>
+                              )}
+                              {item.body && (
+                                <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7 }}>
+                                  {item.body.content}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -2454,13 +2500,14 @@ JSON배열만 출력.`;
                     const pts = sections.filter((s, si) => si <= i && (s.type === "point" || s.type === "concept"));
                     return pts.length;
                   })();
+                  const hasImage = aiImgSrc || productImgForSection;
 
                   const textBlock = (
-                    <div style={{ flex: 1, padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-                      {/* POINT 넘버 라인 */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                        <div style={{ width: 32, height: 2, background: mainColor }} />
-                        <span style={{ fontSize: 11, fontWeight: 800, color: mainColor, letterSpacing: 4, textTransform: "uppercase" }}>
+                    <div style={{ flex: "0 0 40%", padding: "64px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+                      {/* POINT 넘버 라인 강화 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                        <div style={{ width: 40, height: 2, background: mainColor }} />
+                        <span style={{ fontSize: 12, fontWeight: 900, color: mainColor, letterSpacing: 5, textTransform: "uppercase" }}>
                           POINT {String(pointNum).padStart(2, "0")}
                         </span>
                       </div>
@@ -2479,6 +2526,8 @@ JSON배열만 출력.`;
                           {titleEl.content}
                         </div>
                       )}
+                      {/* 장식 라인 */}
+                      <div style={{ width: 48, height: 3, background: `${mainColor}30`, borderRadius: 2, marginBottom: 20 }} />
                       {bodyEls.map((el, bi) => (
                         <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.8, marginBottom: 10, textAlign: "left" }}>
                           {el.content}
@@ -2492,14 +2541,41 @@ JSON배열만 출력.`;
                     </div>
                   );
 
-                  const imageBlock = (
-                    <div style={{ flex: 1, minHeight: 420, position: "relative", overflow: "hidden" }}>
-                      {renderPlaceholder(420, { borderRadius: 0 })}
+                  const imageBlock = hasImage ? (
+                    <div style={{ flex: "0 0 60%", minHeight: 460, position: "relative", overflow: "hidden" }}>
+                      {renderPlaceholder(460, { borderRadius: 0 })}
+                    </div>
+                  ) : (
+                    <div style={{ flex: "0 0 60%", minHeight: 460, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {/* 이미지 없을 때: 그라데이션 블록 + 큰 넘버링 */}
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 120, fontWeight: 900, color: `${mainColor}12`, fontFamily: "'Georgia', serif", lineHeight: 1, letterSpacing: -6 }}>
+                          {String(pointNum).padStart(2, "0")}
+                        </div>
+                        <div style={{ width: 60, height: 3, background: mainColor, margin: "16px auto 0", borderRadius: 2 }} />
+                      </div>
+                      {/* 배경 패턴 장식 */}
+                      <div style={{ position: "absolute", top: 30, right: 30, width: 100, height: 100, border: `1px solid ${mainColor}10`, borderRadius: "50%" }} />
+                      <div style={{ position: "absolute", bottom: 40, left: 40, width: 60, height: 60, border: `1px solid ${mainColor}08`, borderRadius: "50%" }} />
+                      {/* 이미지 업로드/생성 버튼 */}
+                      <div style={{ position: "absolute", bottom: 16, right: 16, display: "flex", gap: 4 }}>
+                        <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
+                          style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.15)", color: isDarkBg ? "#fff" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          + 이미지
+                        </label>
+                        {sec.image_prompt && (
+                          <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                            style={{ padding: "6px 12px", borderRadius: 8, background: acc, color: "#fff", border: "none", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            AI 생성
+                          </button>
+                        )}
+                      </div>
+                      <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   );
 
                   return (
-                    <div style={{ display: "flex", minHeight: 420, background: bgCol, flexDirection: imgLeft ? "row" : "row-reverse" }}>
+                    <div style={{ display: "flex", minHeight: 460, background: bgCol.startsWith("linear-gradient") ? bgCol : bgCol, flexDirection: imgLeft ? "row" : "row-reverse" }}>
                       {imageBlock}
                       {textBlock}
                     </div>
@@ -2514,7 +2590,6 @@ JSON배열만 출력.`;
                   const subtitleEl = findEl("subtitle");
                   const badge = els.find(e => e.type === "badge");
                   const reviewEls = els.filter(e => e.role === "review_text" || e.role === "review_name" || e.role === "star");
-                  // group reviews
                   const cards = [];
                   reviewEls.forEach(el => {
                     if (el.role === "review_name" || (cards.length === 0)) {
@@ -2522,9 +2597,12 @@ JSON배열만 출력.`;
                     }
                     cards[cards.length - 1].push(el);
                   });
+                  // 프로필 색상 배열
+                  const profileColors = [mainColor, "#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9"];
+                  const reviewBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
-                      <div style={{ textAlign: "center", marginBottom: 40 }}>
+                    <div style={{ background: reviewBg, padding: "72px 48px" }}>
+                      <div style={{ textAlign: "center", marginBottom: 44 }}>
                         {badge && (
                           <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 18px", borderRadius: 20, background: mainColor, color: "#fff", fontSize: 11, fontWeight: 800, marginBottom: 14, letterSpacing: 2 }}>
                             {badge.content}
@@ -2544,35 +2622,42 @@ JSON배열만 출력.`;
                         )}
                         {decoLineLong()}
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: cards.length > 2 ? "1fr 1fr" : "1fr", gap: 16, maxWidth: 700, margin: "0 auto" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: cards.length > 2 ? "1fr 1fr" : "1fr", gap: 18, maxWidth: 720, margin: "0 auto" }}>
                         {cards.map((group, gi) => (
-                          <div key={gi} style={{ padding: "24px 28px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 2px 12px rgba(0,0,0,0.04)" }}>
-                            {/* 별점 */}
-                            {(() => {
-                              const star = group.find(e => e.role === "star");
-                              return star ? (
-                                <div style={{ color: "#fbbf24", fontSize: 14, letterSpacing: 2, marginBottom: 10 }}>
-                                  {"★".repeat(parseInt(star.content) || 5)}
-                                </div>
-                              ) : (
-                                <div style={{ color: "#fbbf24", fontSize: 14, letterSpacing: 2, marginBottom: 10 }}>★★★★★</div>
-                              );
-                            })()}
-                            {/* 후기 텍스트 */}
-                            {group.filter(e => e.role === "review_text").map((el, ri) => (
-                              <div key={ri} {...editable(el)} style={{ ...editable(el).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.65, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                                {el.content}
-                              </div>
-                            ))}
-                            {/* 리뷰어 이름 */}
+                          <div key={gi} style={{ padding: "28px 28px", borderRadius: 18, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, boxShadow: isDarkBg ? "0 2px 12px rgba(0,0,0,0.2)" : "0 4px 20px rgba(0,0,0,0.05)", position: "relative" }}>
+                            {/* 따옴표 장식 */}
+                            <div style={{ position: "absolute", top: 16, right: 20, fontSize: 48, color: isDarkBg ? "rgba(255,255,255,0.04)" : `${mainColor}08`, fontFamily: "Georgia, serif", lineHeight: 1 }}>"</div>
+                            {/* 프로필 + 이름 상단 */}
                             {group.filter(e => e.role === "review_name").map((el, ni) => (
-                              <div key={ni} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${mainColor}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: mainColor }}>
+                              <div key={ni} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${profileColors[gi % profileColors.length]}, ${profileColors[(gi + 2) % profileColors.length]}40)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", boxShadow: `0 2px 8px ${profileColors[gi % profileColors.length]}30` }}>
                                   {(el.content || "?")[0]}
                                 </div>
-                                <div {...editable(el)} style={{ ...editable(el).style, fontSize: 13, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#888" }}>
-                                  {el.content}
+                                <div>
+                                  <div {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 700, color: isDarkBg ? "#fff" : "#333", marginBottom: 2 }}>
+                                    {el.content}
+                                  </div>
+                                  {/* 별점 시각화 */}
+                                  {(() => {
+                                    const star = group.find(e => e.role === "star");
+                                    const count = star ? (parseInt(star.content) || 5) : 5;
+                                    return (
+                                      <div style={{ display: "flex", gap: 1 }}>
+                                        {Array.from({ length: 5 }, (_, si) => (
+                                          <span key={si} style={{ fontSize: 12, color: si < count ? "#fbbf24" : (isDarkBg ? "rgba(255,255,255,0.1)" : "#e0e0e0") }}>
+                                            {String.fromCharCode(9733)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
+                              </div>
+                            ))}
+                            {/* 후기 텍스트 */}
+                            {group.filter(e => e.role === "review_text").map((el, ri) => (
+                              <div key={ri} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                {el.content}
                               </div>
                             ))}
                           </div>
@@ -2590,34 +2675,52 @@ JSON배열만 출력.`;
                   const subtitleEl = findEl("subtitle");
                   const statNums = findEls("stat_number");
                   const statLabels = findEls("stat_label");
+                  // 다크 배경 기본
+                  const statBg = bgCol.startsWith("linear-gradient") ? bgCol : (isDarkBg ? bgCol : `linear-gradient(135deg, #1a1a2e 0%, #2d2d3a 100%)`);
+                  const statIsDark = true; // 항상 다크 스타일
+                  // 숫자에서 퍼센트값 추출 (프로그레스 바용)
+                  const extractPercent = (content) => {
+                    const num = parseFloat((content || "").replace(/[^0-9.]/g, ""));
+                    if (isNaN(num)) return 75;
+                    if (num > 100) return Math.min(100, (num / 10000) * 100 || 75);
+                    return Math.min(100, num);
+                  };
                   return (
-                    <div style={{ background: bgCol, padding: "72px 48px" }}>
-                      <div style={{ textAlign: "center", marginBottom: 48 }}>
+                    <div style={{ background: statBg, padding: "80px 48px" }}>
+                      <div style={{ textAlign: "center", marginBottom: 56 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1.3 }}>
                             {titleEl.content}
                           </div>
                         )}
-                        {decoLineLong()}
+                        {decoLineLong("rgba(255,255,255,0.15)")}
                       </div>
-                      <div style={{ display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
-                        {statNums.map((sn, si) => (
-                          <div key={si} style={{ textAlign: "center", minWidth: 160, padding: "32px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 24px rgba(0,0,0,0.04)" }}>
-                            <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 56, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 10, letterSpacing: -2 }}>
-                              {sn.content}
-                            </div>
-                            {statLabels[si] && (
-                              <div {...editable(statLabels[si])} style={{ ...editable(statLabels[si]).style, fontSize: 13, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888" }}>
-                                {statLabels[si].content}
+                      {/* 인라인 flex 스타일 */}
+                      <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap", maxWidth: 800, margin: "0 auto" }}>
+                        {statNums.map((sn, si) => {
+                          const pct = extractPercent(sn.content);
+                          return (
+                            <div key={si} style={{ textAlign: "center", minWidth: 140, flex: "1 1 140px", maxWidth: 200 }}>
+                              <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 52, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 10, letterSpacing: -2 }}>
+                                {sn.content}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                              {statLabels[si] && (
+                                <div {...editable(statLabels[si])} style={{ ...editable(statLabels[si]).style, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>
+                                  {statLabels[si].content}
+                                </div>
+                              )}
+                              {/* 프로그레스 바 */}
+                              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                                <div style={{ height: "100%", borderRadius: 2, background: `linear-gradient(90deg, ${mainColor}, ${colorPalette?.gradient || "#9b8ec4"})`, width: `${pct}%`, transition: "width 1s ease" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -3002,32 +3105,58 @@ JSON배열만 출력.`;
                   const subtitleEl = findEl("subtitle");
                   const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
                   const badge = els.find(e => e.type === "badge");
+                  const guaranteeBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px", textAlign: "center" }}>
-                      {/* 방패 아이콘 */}
-                      <div style={{ width: 72, height: 72, borderRadius: "50%", background: `${mainColor}10`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", border: `2px solid ${mainColor}25` }}>
-                        <span style={{ fontSize: 28, fontWeight: 900, color: mainColor }}>&#10003;</span>
+                    <div style={{ background: guaranteeBg, padding: "72px 48px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                      {/* 미세한 배경 패턴 */}
+                      <div style={{ position: "absolute", inset: 0, opacity: 0.03, backgroundImage: `radial-gradient(circle at 25% 25%, ${mainColor} 1px, transparent 1px), radial-gradient(circle at 75% 75%, ${mainColor} 1px, transparent 1px)`, backgroundSize: "40px 40px", pointerEvents: "none" }} />
+                      <div style={{ position: "relative", zIndex: 1 }}>
+                        {/* 큰 체크 SVG 아이콘 */}
+                        <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", border: `2px solid ${mainColor}25` }}>
+                          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                            <path d="M8 18l7 7L28 11" stroke={mainColor} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        {subtitleEl && (
+                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
+                            {subtitleEl.content}
+                          </div>
+                        )}
+                        {titleEl && (
+                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 24 }}>
+                            {titleEl.content}
+                          </div>
+                        )}
+                        {/* 보증 항목 가로 나열 */}
+                        {bodyEls.length > 1 ? (
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 0, flexWrap: "wrap", marginBottom: 16 }}>
+                            {bodyEls.map((el, bi) => (
+                              <div key={bi} style={{ display: "flex", alignItems: "center" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 24px" }}>
+                                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                    <path d="M4 9l3.5 3.5L14 6" stroke={mainColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                  <span {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444" }}>
+                                    {el.content}
+                                  </span>
+                                </div>
+                                {bi < bodyEls.length - 1 && (
+                                  <div style={{ width: 1, height: 20, background: isDarkBg ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }} />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : bodyEls.map((el, bi) => (
+                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8, marginBottom: 8, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+                            {el.content}
+                          </div>
+                        ))}
+                        {badge && (
+                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "10px 28px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 14, fontWeight: 800, marginTop: 16, border: `1.5px solid ${mainColor}30` }}>
+                            {badge.content}
+                          </span>
+                        )}
                       </div>
-                      {subtitleEl && (
-                        <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
-                          {subtitleEl.content}
-                        </div>
-                      )}
-                      {titleEl && (
-                        <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 16 }}>
-                          {titleEl.content}
-                        </div>
-                      )}
-                      {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8, marginBottom: 8, maxWidth: 480, marginLeft: "auto", marginRight: "auto" }}>
-                          {el.content}
-                        </div>
-                      ))}
-                      {badge && (
-                        <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "10px 28px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 14, fontWeight: 800, marginTop: 20, border: `1.5px solid ${mainColor}30` }}>
-                          {badge.content}
-                        </span>
-                      )}
                     </div>
                   );
                 }
@@ -3039,9 +3168,20 @@ JSON배열만 출력.`;
                   const titleEl = findEl("title");
                   const subtitleEl = findEl("subtitle");
                   const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
-                  const shippingSymbols = ["*", "+", "~", "#", "=", ">", "-", "&"];
+                  // SVG 아이콘 배열 (shipping/info/contact용)
+                  const shippingIcons = [
+                    <svg key="ship" width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="5" width="10" height="8" rx="1" stroke={mainColor} strokeWidth="1.5"/><path d="M11 8h3l2 3v2h-5V8z" stroke={mainColor} strokeWidth="1.5" strokeLinejoin="round"/><circle cx="4.5" cy="14.5" r="1.5" stroke={mainColor} strokeWidth="1.5"/><circle cx="13.5" cy="14.5" r="1.5" stroke={mainColor} strokeWidth="1.5"/></svg>,
+                    <svg key="box" width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="12" rx="1" stroke={mainColor} strokeWidth="1.5"/><path d="M2 8h14M9 4v12" stroke={mainColor} strokeWidth="1.5"/></svg>,
+                    <svg key="clock" width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke={mainColor} strokeWidth="1.5"/><path d="M9 5v4l3 2" stroke={mainColor} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+                    <svg key="loc" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2C6.24 2 4 4.24 4 7c0 4.5 5 9 5 9s5-4.5 5-9c0-2.76-2.24-5-5-5z" stroke={mainColor} strokeWidth="1.5"/><circle cx="9" cy="7" r="1.5" stroke={mainColor} strokeWidth="1.5"/></svg>,
+                    <svg key="phone" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 2h3l1.5 4-2 1.5a10 10 0 004 4L12 10l4 1.5V15a1 1 0 01-1 1C8 16 2 10 2 3a1 1 0 011-1z" stroke={mainColor} strokeWidth="1.5"/></svg>,
+                    <svg key="mail" width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="10" rx="1" stroke={mainColor} strokeWidth="1.5"/><path d="M2 4l7 5 7-5" stroke={mainColor} strokeWidth="1.5"/></svg>,
+                    <svg key="info2" width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke={mainColor} strokeWidth="1.5"/><path d="M9 8v5M9 5.5v.5" stroke={mainColor} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+                    <svg key="star2" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2l2 4.5 5 .5-3.5 3.5 1 5L9 13l-4.5 2.5 1-5L2 7l5-.5z" stroke={mainColor} strokeWidth="1.5" strokeLinejoin="round"/></svg>,
+                  ];
+                  const shippingBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   return (
-                    <div style={{ background: bgCol, padding: "64px 48px" }}>
+                    <div style={{ background: shippingBg, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
@@ -3055,17 +3195,29 @@ JSON배열만 출력.`;
                         )}
                         {decoLine(mainColor)}
                       </div>
-                      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-                        {bodyEls.map((el, bi) => (
-                          <div key={bi} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 0", borderBottom: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 10, background: `${mainColor}10`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16 }}>
-                              {shippingSymbols[bi % shippingSymbols.length]}
+                      {/* 테이블 형태 정돈 */}
+                      <div style={{ maxWidth: 620, margin: "0 auto", borderRadius: 14, overflow: "hidden", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+                        {bodyEls.map((el, bi) => {
+                          const parts = (el.content || "").split("|").map(s => s.trim());
+                          const hasLabel = parts.length > 1;
+                          return (
+                            <div key={bi} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", borderBottom: bi < bodyEls.length - 1 ? `1px solid ${isDarkBg ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` : "none", background: bi % 2 === 0 ? (isDarkBg ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)") : "transparent" }}>
+                              <div style={{ width: 36, height: 36, borderRadius: 10, background: `${mainColor}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                {shippingIcons[bi % shippingIcons.length]}
+                              </div>
+                              {hasLabel ? (
+                                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", minWidth: 80 }}>{parts[0]}</span>
+                                  <span {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.6 }}>{parts.slice(1).join(" | ")}</span>
+                                </div>
+                              ) : (
+                                <div {...editable(el)} style={{ ...editable(el).style, flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.7 }}>
+                                  {el.content}
+                                </div>
+                              )}
                             </div>
-                            <div {...editable(el)} style={{ ...editable(el).style, flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.7, paddingTop: 6 }}>
-                              {el.content}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -3119,51 +3271,64 @@ JSON배열만 출력.`;
                   const priceEl = findEl("price");
                   const bodyEls = els.filter(e => e.type === "text" && e.role === "body");
                   const badge = els.find(e => e.type === "badge");
+                  // 브랜드 컬러 블록 배경
+                  const ctaBg = bgCol.startsWith("linear-gradient") ? bgCol : `linear-gradient(135deg, ${mainColor}, ${colorPalette?.gradient || "#9b8ec4"})`;
                   return (
-                    <div style={{ background: bgCol, padding: "72px 48px", textAlign: "center" }}>
-                      {subtitleEl && (
-                        <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 10, letterSpacing: 2 }}>
-                          {subtitleEl.content}
-                        </div>
-                      )}
-                      {titleEl && (
-                        <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 20 }}>
-                          {titleEl.content}
-                        </div>
-                      )}
-                      {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7, marginBottom: 8, maxWidth: 480, marginLeft: "auto", marginRight: "auto" }}>
-                          {el.content}
-                        </div>
-                      ))}
-                      {priceEl && (
-                        <div style={{ marginTop: 24, marginBottom: 28 }}>
-                          <div {...editable(priceEl)} style={{ ...editable(priceEl).style, fontSize: 36, fontWeight: 900, color: mainColor }}>
-                            {priceEl.content}
+                    <div style={{ background: ctaBg, padding: "80px 48px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                      {/* 배경 장식 */}
+                      <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+                      <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+                      <div style={{ position: "relative", zIndex: 1 }}>
+                        {subtitleEl && (
+                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 10, letterSpacing: 2 }}>
+                            {subtitleEl.content}
                           </div>
-                        </div>
-                      )}
-                      {badge && (
-                        <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `${mainColor}10`, color: mainColor, fontSize: 12, fontWeight: 700, marginBottom: 24, border: `1px solid ${mainColor}25` }}>
-                          {badge.content}
-                        </span>
-                      )}
-                      <div>
-                        <div style={{ display: "inline-block", padding: "18px 64px", borderRadius: 60, background: `linear-gradient(135deg, ${mainColor}, ${colorPalette?.gradient || "#9b8ec4"})`, color: "#fff", fontSize: 18, fontWeight: 900, boxShadow: `0 6px 24px ${mainColor}35`, letterSpacing: 1 }}>
-                          지금 바로 구매하기
-                        </div>
-                      </div>
-                      {/* 신뢰 배지 */}
-                      <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 28 }}>
-                        {["무료배송", "100% 정품", "안전결제"].map((t, ti) => (
-                          <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <div style={{ width: 16, height: 16, borderRadius: "50%", background: `${mainColor}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ fontSize: 8, color: mainColor }}>✓</span>
-                            </div>
-                            <span style={{ fontSize: 11, color: isDarkBg ? "rgba(255,255,255,0.4)" : "#999", fontWeight: 500 }}>{t}</span>
+                        )}
+                        {titleEl && (
+                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 20, textShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
+                            {titleEl.content}
+                          </div>
+                        )}
+                        {bodyEls.map((el, bi) => (
+                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, marginBottom: 8, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+                            {el.content}
                           </div>
                         ))}
+                        {/* 가격 영역 — 할인 스타일 */}
+                        {priceEl && (
+                          <div style={{ marginTop: 28, marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                            <div {...editable(priceEl)} style={{ ...editable(priceEl).style, fontSize: 42, fontWeight: 900, color: "#fff" }}>
+                              {priceEl.content}
+                            </div>
+                            {badge && (
+                              <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 16px", borderRadius: 8, background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 14, fontWeight: 800, backdropFilter: "blur(4px)" }}>
+                                {badge.content}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {!priceEl && badge && (
+                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 12, fontWeight: 700, marginBottom: 24, border: "1px solid rgba(255,255,255,0.2)" }}>
+                            {badge.content}
+                          </span>
+                        )}
+                        {/* CTA 버튼 — 펄스 애니메이션 */}
+                        <div>
+                          <div style={{ display: "inline-block", padding: "20px 72px", borderRadius: 60, background: "#fff", color: mainColor, fontSize: 18, fontWeight: 900, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", letterSpacing: 1, animation: "ctaPulse 2s ease-in-out infinite" }}>
+                            지금 바로 구매하기
+                          </div>
+                        </div>
+                        {/* 하단 태그 나열 */}
+                        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
+                          {["무료배송", "당일출고", "100% 정품", "안전결제"].map((t, ti) => (
+                            <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>{t}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                      <style>{`@keyframes ctaPulse { 0%,100%{transform:scale(1);box-shadow:0 8px 32px rgba(0,0,0,0.15)} 50%{transform:scale(1.03);box-shadow:0 12px 40px rgba(0,0,0,0.2)} }`}</style>
                     </div>
                   );
                 }
@@ -3173,19 +3338,16 @@ JSON배열만 출력.`;
                 // ════════════════════════════════════════
                 if (secType === "ai_notice") {
                   return (
-                    <div style={{ background: bgCol || (isDarkBg ? "#1a1a1a" : "#fafafa"), padding: "28px 48px", textAlign: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
-                        <div style={{ width: 4, height: 4, borderRadius: "50%", background: isDarkBg ? "rgba(255,255,255,0.15)" : "#ccc" }} />
-                        <div style={{ width: 4, height: 4, borderRadius: "50%", background: isDarkBg ? "rgba(255,255,255,0.15)" : "#ccc" }} />
-                        <div style={{ width: 4, height: 4, borderRadius: "50%", background: isDarkBg ? "rgba(255,255,255,0.15)" : "#ccc" }} />
-                      </div>
+                    <div style={{ background: bgCol || (isDarkBg ? "#1a1a1a" : "#fafafa"), padding: "24px 48px", textAlign: "center" }}>
+                      {/* 미세한 구분선 */}
+                      <div style={{ width: 60, height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "0 auto 12px" }} />
                       {els.filter(e => e.type === "text").map((el, ei) => (
-                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: 11, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.25)" : "#bbb", lineHeight: 1.6 }}>
+                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: 10, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 }}>
                           {el.content}
                         </div>
                       ))}
                       {els.filter(e => e.type === "text").length === 0 && (
-                        <div style={{ fontSize: 11, color: isDarkBg ? "rgba(255,255,255,0.25)" : "#bbb", lineHeight: 1.6 }}>
+                        <div style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 }}>
                           본 페이지의 일부 콘텐츠는 AI로 생성되었습니다
                         </div>
                       )}
