@@ -1206,19 +1206,47 @@ JSON배열만 출력.`;
                       <span style={{ fontSize: 10, color: text, flex: 1 }}>섹션 이미지</span>
                     </div>
                   )}
-                  {/* 텍스트/배지 요소 레이어 */}
-                  {(sections[activeSection]?.elements || []).map((el, ei) => (
-                    <div key={ei} onClick={() => setSelectedEl({ secIdx: activeSection, elIdx: ei, el: { ...el, _type: el.type === "badge" ? "text" : "text" } })}
-                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, marginBottom: 3, cursor: "pointer", background: selectedEl?.secIdx === activeSection && selectedEl?.elIdx === ei ? `${acc}15` : "transparent", border: `1px solid ${selectedEl?.secIdx === activeSection && selectedEl?.elIdx === ei ? acc : "transparent"}` }}>
-                      <span style={{ fontSize: 9, color: acc, fontWeight: 700, width: 16, flexShrink: 0 }}>
-                        {el.type === "badge" ? "B" : el.type === "divider" ? "—" : "T"}
-                      </span>
-                      <span style={{ fontSize: 10, color: text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {el.content?.slice(0, 25) || el.role || el.type}
-                      </span>
-                      <span style={{ fontSize: 8, color: muted }}>{el.role}</span>
-                    </div>
-                  ))}
+                  {/* 텍스트/배지/도형 요소 레이어 */}
+                  {(sections[activeSection]?.elements || []).map((el, ei) => {
+                    const isActive = selectedEl?.secIdx === activeSection && selectedEl?.elIdx === ei;
+                    const elCount = sections[activeSection]?.elements?.length || 0;
+                    return (
+                      <div key={ei} onClick={() => setSelectedEl({ secIdx: activeSection, elIdx: ei, el: { ...el, _type: el.type === "shape" ? "shape" : "text" } })}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 6, marginBottom: 3, cursor: "pointer", background: isActive ? `${acc}15` : "transparent", border: `1px solid ${isActive ? acc : "transparent"}` }}>
+                        <span style={{ fontSize: 9, color: acc, fontWeight: 700, width: 16, flexShrink: 0 }}>
+                          {el.type === "badge" ? "B" : el.type === "divider" ? "—" : el.type === "shape" ? "S" : "T"}
+                        </span>
+                        <span style={{ fontSize: 10, color: text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {el.content?.slice(0, 20) || el.shape || el.role || el.type}
+                        </span>
+                        {/* 순서 변경 + 삭제 */}
+                        <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                          {ei > 0 && (
+                            <button onClick={() => {
+                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.map((e, idx) => idx === ei - 1 ? s.elements[ei] : idx === ei ? s.elements[ei - 1] : e) }));
+                              if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei - 1 }));
+                            }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="위로">
+                              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 2L2 6h6z" fill="currentColor"/></svg>
+                            </button>
+                          )}
+                          {ei < elCount - 1 && (
+                            <button onClick={() => {
+                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.map((e, idx) => idx === ei ? s.elements[ei + 1] : idx === ei + 1 ? s.elements[ei] : e) }));
+                              if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei + 1 }));
+                            }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="아래로">
+                              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 8L2 4h6z" fill="currentColor"/></svg>
+                            </button>
+                          )}
+                          <button onClick={() => {
+                            setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.filter((_, idx) => idx !== ei) }));
+                            if (isActive) setSelectedEl(null);
+                          }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer", padding: 0 }} title="삭제">
+                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -1711,12 +1739,40 @@ JSON배열만 출력.`;
                       style={{ width: "100%", borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa", cursor: "pointer", textAlign: "left", overflow: "hidden", transition: "border-color 0.15s" }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = acc}
                       onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
-                      {/* 실제 디자인 미리보기 */}
-                      <div style={{ width: "100%", padding: "20px 16px", background: tmpl.bg_color || "#fff", minHeight: 80 }}>
-                        {subtitleEl && <div style={{ fontSize: 8, fontWeight: 700, color: subtitleEl.color || (bgDark ? "rgba(255,255,255,0.5)" : "#999"), letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>{subtitleEl.content?.slice(0,20)}</div>}
-                        {titleEl && <div style={{ fontSize: 14, fontWeight: 900, color: titleEl.color || (bgDark ? "#fff" : "#1a1a2e"), lineHeight: 1.3, marginBottom: 6 }}>{titleEl.content?.slice(0,25)}</div>}
-                        {bodyEl && <div style={{ fontSize: 9, color: bodyEl.color || (bgDark ? "rgba(255,255,255,0.5)" : "#888"), lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{bodyEl.content?.slice(0,60)}</div>}
-                        {!titleEl && !bodyEl && <div style={{ fontSize: 10, color: bgDark ? "rgba(255,255,255,0.3)" : "#ccc" }}>{tmpl.label}</div>}
+                      {/* 미리보기 이미지 + 텍스트 */}
+                      <div style={{ width: "100%", position: "relative", background: tmpl.bg_color || "#fff", minHeight: 100, overflow: "hidden" }}>
+                        {/* Unsplash 샘플 이미지 (섹션 타입별) */}
+                        {(() => {
+                          const imgMap = {
+                            hero: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop",
+                            pain_points: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&h=200&fit=crop",
+                            features: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=200&fit=crop",
+                            point: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=200&fit=crop",
+                            stats_highlight: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=200&fit=crop",
+                            review: "https://images.unsplash.com/photo-1556742111-a301076d9d18?w=400&h=200&fit=crop",
+                            comparison: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&h=200&fit=crop",
+                            guarantee: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=200&fit=crop",
+                            cert: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=200&fit=crop",
+                            cta: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&h=200&fit=crop",
+                            howto: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=200&fit=crop",
+                            before_after: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop",
+                            event: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&h=200&fit=crop",
+                            faq: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=200&fit=crop",
+                          };
+                          const imgUrl = imgMap[tmpl.type];
+                          if (!imgUrl) return null;
+                          return (
+                            <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+                              <img src={imgUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: bgDark ? 0.4 : 0.2 }} />
+                            </div>
+                          );
+                        })()}
+                        <div style={{ position: "relative", zIndex: 1, padding: "20px 16px" }}>
+                          {subtitleEl && <div style={{ fontSize: 8, fontWeight: 700, color: subtitleEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#999"), letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>{subtitleEl.content?.slice(0,20)}</div>}
+                          {titleEl && <div style={{ fontSize: 14, fontWeight: 900, color: titleEl.color || (bgDark ? "#fff" : "#1a1a2e"), lineHeight: 1.3, marginBottom: 6, textShadow: bgDark ? "0 1px 4px rgba(0,0,0,0.3)" : "none" }}>{titleEl.content?.slice(0,25)}</div>}
+                          {bodyEl && <div style={{ fontSize: 9, color: bodyEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#888"), lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{bodyEl.content?.slice(0,60)}</div>}
+                          {!titleEl && !bodyEl && <div style={{ fontSize: 10, color: bgDark ? "rgba(255,255,255,0.3)" : "#ccc" }}>{tmpl.label}</div>}
+                        </div>
                       </div>
                       <div style={{ padding: "8px 12px", borderTop: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.2)" : "#fafafa" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: text }}>{tmpl.label}</div>
@@ -1805,7 +1861,48 @@ JSON배열만 출력.`;
 
               {(mediaSubTab || "photo") === "video" && (
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>동영상 추가</div>
+                  {/* 스톡 영상 검색 */}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>무료 영상 검색</div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                    <input placeholder="영상 검색 (예: nature, food)" id="stock-video-search"
+                      onKeyDown={e => { if (e.key === "Enter") document.getElementById("stock-video-btn")?.click(); }}
+                      style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
+                    <button id="stock-video-btn" onClick={async () => {
+                      const q = document.getElementById("stock-video-search")?.value || category || "product";
+                      const pixKey = import.meta.env.VITE_PIXABAY_KEY || "";
+                      if (!pixKey) return;
+                      try {
+                        const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://pixabay.com/api/videos/?key=${pixKey}&q=${encodeURIComponent(q)}&per_page=8&lang=ko`)}`);
+                        const data = await res.json();
+                        const videos = (data.hits || []).map(v => ({ id: v.id, thumb: `https://i.vimeocdn.com/video/${v.picture_id}_295x166.jpg`, url: v.videos?.medium?.url || v.videos?.small?.url, tags: v.tags }));
+                        setStockImages(prev => videos); // 임시 재활용
+                      } catch {}
+                    }}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      검색
+                    </button>
+                  </div>
+                  {stockImages.length > 0 && stockImages[0]?.url?.includes("video") && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
+                      {stockImages.map((v, vi) => (
+                        <div key={vi} style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${bdr}`, cursor: "pointer", position: "relative" }}
+                          onClick={() => {
+                            if (activeSection < sections.length && v.url) {
+                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, videoUrl: v.url }));
+                            }
+                          }}>
+                          {v.thumb && <img src={v.thumb} alt="" style={{ width: "100%", height: 60, objectFit: "cover" }} />}
+                          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ color: "#fff", fontSize: 10 }}>▶</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ height: 1, background: bdr, margin: "8px 0 12px" }} />
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>직접 추가</div>
                   <button onClick={() => {
                     const input = document.createElement("input");
                     input.type = "file"; input.accept = "video/*";
@@ -1818,10 +1915,9 @@ JSON배열만 출력.`;
                     };
                     input.click();
                   }}
-                    style={{ width: "100%", padding: "14px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginBottom: 12 }}>
+                    style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginBottom: 10 }}>
                     + 동영상 파일 업로드
                   </button>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>또는 URL 입력</div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <input placeholder="유튜브/영상 URL" id="video-url-input"
                       style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
@@ -2181,6 +2277,51 @@ JSON배열만 출력.`;
                 };
                 // 섹션 기본 스타일 + 사용자 편집값 병합 (사용자 fontSize/fontWeight/color 우선)
                 const eS = (el, defaults) => ({ ...defaults, ...editable(el).style });
+
+                // 도형(shape) 렌더링 — 섹션 위에 오버레이
+                const renderShapes = () => {
+                  const shapes = els.filter(e => e.type === "shape");
+                  if (shapes.length === 0) return null;
+                  return shapes.map((sh, si) => {
+                    const shIdx = els.indexOf(sh);
+                    const shSelected = selectedEl?.secIdx === i && selectedEl?.elIdx === shIdx;
+                    const svgMap = {
+                      rect: `<rect x="2" y="2" width="${(sh.width||120)-4}" height="${(sh.height||80)-4}" rx="2" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      rect_round: `<rect x="2" y="2" width="${(sh.width||120)-4}" height="${(sh.height||80)-4}" rx="12" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      circle: `<circle cx="${(sh.width||120)/2}" cy="${(sh.height||80)/2}" r="${Math.min(sh.width||120,sh.height||80)/2-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      ellipse: `<ellipse cx="${(sh.width||120)/2}" cy="${(sh.height||80)/2}" rx="${(sh.width||120)/2-4}" ry="${(sh.height||80)/2-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      triangle: `<polygon points="${(sh.width||120)/2},4 ${(sh.width||120)-4},${(sh.height||80)-4} 4,${(sh.height||80)-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      diamond: `<polygon points="${(sh.width||120)/2},4 ${(sh.width||120)-4},${(sh.height||80)/2} ${(sh.width||120)/2},${(sh.height||80)-4} 4,${(sh.height||80)/2}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      star: `<polygon points="${(sh.width||120)/2},4 ${(sh.width||120)*0.62},${(sh.height||80)*0.38} ${(sh.width||120)-4},${(sh.height||80)*0.38} ${(sh.width||120)*0.68},${(sh.height||80)*0.58} ${(sh.width||120)*0.8},${(sh.height||80)-4} ${(sh.width||120)/2},${(sh.height||80)*0.72} ${(sh.width||120)*0.2},${(sh.height||80)-4} ${(sh.width||120)*0.32},${(sh.height||80)*0.58} 4,${(sh.height||80)*0.38} ${(sh.width||120)*0.38},${(sh.height||80)*0.38}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      hexagon: `<polygon points="${(sh.width||120)/2},4 ${(sh.width||120)-4},${(sh.height||80)*0.28} ${(sh.width||120)-4},${(sh.height||80)*0.72} ${(sh.width||120)/2},${(sh.height||80)-4} 4,${(sh.height||80)*0.72} 4,${(sh.height||80)*0.28}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                      line_h: `<line x1="4" y1="${(sh.height||80)/2}" x2="${(sh.width||120)-4}" y2="${(sh.height||80)/2}" stroke="${sh.stroke||mainColor}" stroke-width="3"/>`,
+                      line_v: `<line x1="${(sh.width||120)/2}" y1="4" x2="${(sh.width||120)/2}" y2="${(sh.height||80)-4}" stroke="${sh.stroke||mainColor}" stroke-width="3"/>`,
+                      arrow_r: `<line x1="4" y1="${(sh.height||80)/2}" x2="${(sh.width||120)-12}" y2="${(sh.height||80)/2}" stroke="${sh.stroke||mainColor}" stroke-width="2.5"/><polygon points="${(sh.width||120)-16},${(sh.height||80)/2-6} ${(sh.width||120)-4},${(sh.height||80)/2} ${(sh.width||120)-16},${(sh.height||80)/2+6}" fill="${sh.stroke||mainColor}"/>`,
+                      badge_pill: `<rect x="2" y="${(sh.height||80)/2-12}" width="${(sh.width||120)-4}" height="24" rx="12" fill="${sh.stroke||mainColor}"/><text x="${(sh.width||120)/2}" y="${(sh.height||80)/2+4}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">BADGE</text>`,
+                    };
+                    return (
+                      <div key={`shape-${si}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: shIdx, el: { ...sh, _type: "shape" } }); }}
+                        onMouseDown={shSelected ? (e) => {
+                          if (e.target.closest("[data-handle]")) return;
+                          e.stopPropagation(); e.preventDefault();
+                          dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, origX: sh.offsetX || 0, origY: sh.offsetY || 0, isShape: true, shapeIdx: shIdx };
+                        } : undefined}
+                        style={{
+                          position: "absolute", zIndex: 10,
+                          left: sh.offsetX || 20, top: sh.offsetY || 20,
+                          width: sh.width || 120, height: sh.height || 80,
+                          cursor: shSelected ? "move" : "pointer",
+                          border: shSelected ? "2px solid #2196F3" : "2px solid transparent",
+                          borderRadius: 4,
+                        }}>
+                        {shSelected && renderHandles()}
+                        <svg width={sh.width || 120} height={sh.height || 80} viewBox={`0 0 ${sh.width||120} ${sh.height||80}`}
+                          dangerouslySetInnerHTML={{ __html: svgMap[sh.shape] || svgMap.rect }} />
+                      </div>
+                    );
+                  });
+                };
 
                 // 선택된 요소 래퍼 (파란 핸들 표시 + 드래그 이동)
                 const SelectionWrap = ({ el, children, style = {} }) => {
@@ -3770,6 +3911,39 @@ JSON배열만 출력.`;
                     })}
                   </div>
                 );
+              })()}
+              {/* 도형 오버레이 렌더링 */}
+              {(() => {
+                const els = sec.elements || [];
+                const shapeEls = els.filter(e => e.type === "shape");
+                if (shapeEls.length === 0) return null;
+                const mainColor = colorPalette?.main || acc;
+                return shapeEls.map((sh, si) => {
+                  const shIdx = els.indexOf(sh);
+                  const shSelected = selectedEl?.secIdx === i && selectedEl?.elIdx === shIdx;
+                  const w = sh.width || 120, h = sh.height || 80;
+                  const svgMap = {
+                    rect: `<rect x="2" y="2" width="${w-4}" height="${h-4}" rx="2" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                    rect_round: `<rect x="2" y="2" width="${w-4}" height="${h-4}" rx="12" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                    circle: `<circle cx="${w/2}" cy="${h/2}" r="${Math.min(w,h)/2-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                    ellipse: `<ellipse cx="${w/2}" cy="${h/2}" rx="${w/2-4}" ry="${h/2-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`,
+                    line_h: `<line x1="4" y1="${h/2}" x2="${w-4}" y2="${h/2}" stroke="${sh.stroke||mainColor}" stroke-width="3"/>`,
+                    line_v: `<line x1="${w/2}" y1="4" x2="${w/2}" y2="${h-4}" stroke="${sh.stroke||mainColor}" stroke-width="3"/>`,
+                    badge_pill: `<rect x="2" y="${h/2-12}" width="${w-4}" height="24" rx="12" fill="${sh.stroke||mainColor}"/>`,
+                  };
+                  svgMap.triangle = `<polygon points="${w/2},4 ${w-4},${h-4} 4,${h-4}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`;
+                  svgMap.diamond = `<polygon points="${w/2},4 ${w-4},${h/2} ${w/2},${h-4} 4,${h/2}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`;
+                  svgMap.star = `<polygon points="${w/2},4 ${w*0.62},${h*0.38} ${w-4},${h*0.38} ${w*0.68},${h*0.58} ${w*0.8},${h-4} ${w/2},${h*0.72} ${w*0.2},${h-4} ${w*0.32},${h*0.58} 4,${h*0.38} ${w*0.38},${h*0.38}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`;
+                  svgMap.hexagon = `<polygon points="${w/2},4 ${w-4},${h*0.28} ${w-4},${h*0.72} ${w/2},${h-4} 4,${h*0.72} 4,${h*0.28}" fill="${sh.fill||'transparent'}" stroke="${sh.stroke||mainColor}" stroke-width="2"/>`;
+                  svgMap.arrow_r = `<line x1="4" y1="${h/2}" x2="${w-12}" y2="${h/2}" stroke="${sh.stroke||mainColor}" stroke-width="2.5"/><polygon points="${w-16},${h/2-6} ${w-4},${h/2} ${w-16},${h/2+6}" fill="${sh.stroke||mainColor}"/>`;
+                  return (
+                    <div key={`shape-${si}`}
+                      onClick={(e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: shIdx, el: { ...sh, _type: "shape" } }); }}
+                      style={{ position: "absolute", zIndex: 10, left: sh.offsetX || 20, top: sh.offsetY || 20, width: w, height: h, cursor: shSelected ? "move" : "pointer", border: shSelected ? "2px solid #2196F3" : "2px solid transparent", borderRadius: 4 }}>
+                      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} dangerouslySetInnerHTML={{ __html: svgMap[sh.shape] || svgMap.rect }} />
+                    </div>
+                  );
+                });
               })()}
 
               {/* 페이지 컨트롤 (활성 시) */}

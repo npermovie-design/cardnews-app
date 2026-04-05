@@ -202,6 +202,90 @@ export const SECTION_TEMPLATES = {
         { type: "badge", content: "30일 무조건 환불", bg: "#4CAF50", color: "#fff" },
       ],
     },
+    {
+      type: "guarantee", layout: "centered_text", bg_color: "#1a1a2e",
+      label: "다크 보증 + 3분할",
+      preview: "다크 배경 + 인증 마크 3개",
+      elements: [
+        { type: "text", role: "title", content: "신뢰할 수 있는 품질", fontSize: 28, fontWeight: "900", color: "#fff" },
+        { type: "text", role: "body", content: "HACCP 인증 완료", fontWeight: "700", color: "#c9a961" },
+        { type: "text", role: "body", content: "ISO 9001 품질 경영", fontWeight: "700", color: "#c9a961" },
+        { type: "text", role: "body", content: "100% 국내산 원료", fontWeight: "700", color: "#c9a961" },
+        { type: "badge", content: "품질 보증", bg: "#c9a961", color: "#1a1a2e" },
+      ],
+    },
+  ],
+
+  cert: [
+    {
+      type: "cert", layout: "centered_text", bg_color: "#fff",
+      label: "인증서/수상 그리드",
+      preview: "인증 마크 + 수상 내역 카드형",
+      elements: [
+        { type: "text", role: "title", content: "인증 및 수상 내역", fontSize: 24, fontWeight: "900", color: "#1a1a1a" },
+        { type: "text", role: "body", content: "HACCP 식품안전관리인증", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "ISO 22000 국제 인증", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "대한민국 브랜드 대상 수상", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "소비자 만족도 1위 선정", fontWeight: "700", color: "#333" },
+      ],
+    },
+    {
+      type: "cert", layout: "centered_text", bg_color: "#1a1a2e",
+      label: "다크 인증 + 숫자",
+      preview: "다크 배경 + 큰 숫자 통계형",
+      elements: [
+        { type: "text", role: "title", content: "검증된 신뢰", fontSize: 28, fontWeight: "900", color: "#fff" },
+        { type: "text", role: "stat_number", content: "15+", fontSize: 36, fontWeight: "900", color: "#c9a961" },
+        { type: "text", role: "stat_label", content: "보유 인증", fontSize: 12, color: "rgba(255,255,255,0.5)" },
+        { type: "text", role: "stat_number", content: "28년", fontSize: 36, fontWeight: "900", color: "#c9a961" },
+        { type: "text", role: "stat_label", content: "업력", fontSize: 12, color: "rgba(255,255,255,0.5)" },
+        { type: "text", role: "stat_number", content: "1위", fontSize: 36, fontWeight: "900", color: "#c9a961" },
+        { type: "text", role: "stat_label", content: "업계 점유율", fontSize: 12, color: "rgba(255,255,255,0.5)" },
+      ],
+    },
+  ],
+
+  howto: [
+    {
+      type: "howto", layout: "centered_text", bg_color: "#fff",
+      label: "이미지 교차 사용법",
+      preview: "좌우 교차 이미지 + 스텝 설명",
+      elements: [
+        { type: "text", role: "title", content: "간편한 사용법", fontSize: 24, fontWeight: "900", color: "#1a1a1a" },
+        { type: "text", role: "body", content: "제품을 개봉합니다", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "간단한 준비로 바로 시작할 수 있습니다", color: "#666" },
+        { type: "text", role: "body", content: "설명서대로 사용합니다", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "누구나 쉽게 따라할 수 있는 단계별 안내", color: "#666" },
+        { type: "text", role: "body", content: "효과를 확인합니다", fontWeight: "700", color: "#333" },
+        { type: "text", role: "body", content: "꾸준히 사용하면 놀라운 변화를 경험합니다", color: "#666" },
+      ],
+    },
+  ],
+
+  before_after: [
+    {
+      type: "before_after", layout: "centered_text", bg_color: "#1a1a2e",
+      label: "다크 비포/애프터",
+      preview: "다크 배경 + 변화 비교",
+      elements: [
+        { type: "text", role: "title", content: "놀라운 변화", fontSize: 28, fontWeight: "900", color: "#fff" },
+        { type: "text", role: "body", content: "사용 전: 기존 방식의 불편함", color: "rgba(255,255,255,0.6)" },
+        { type: "text", role: "body", content: "사용 후: 확연히 달라진 결과", fontWeight: "700", color: "#c9a961" },
+      ],
+    },
+  ],
+
+  event: [
+    {
+      type: "event", layout: "centered_text", bg_color: "#7c6aff",
+      label: "풀 이미지 이벤트",
+      preview: "배경 이미지 + 이벤트 텍스트",
+      elements: [
+        { type: "badge", content: "EVENT", bg: "rgba(255,255,255,0.2)", color: "#fff" },
+        { type: "text", role: "title", content: "특별 이벤트 진행중", fontSize: 32, fontWeight: "900", color: "#fff" },
+        { type: "text", role: "body", content: "지금 구매하시면 사은품을 드립니다", fontSize: 16, color: "rgba(255,255,255,0.8)" },
+      ],
+    },
   ],
 
   cta: [
@@ -264,6 +348,10 @@ export const SECTION_TYPE_LABELS = {
   comparison: "비교",
   review: "고객 후기",
   guarantee: "신뢰/보증",
+  cert: "인증/수상",
+  howto: "사용법/프로세스",
+  before_after: "비포/애프터",
+  event: "이벤트/프로모션",
   faq: "자주 묻는 질문",
   cta: "구매 유도 (CTA)",
   shipping: "배송/교환/반품",
