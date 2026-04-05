@@ -270,11 +270,27 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       const mainColor = toneData.color_palette.main;
       const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
 
+      // 디자인 다양성: 랜덤 스타일 시드
+      const styleSeeds = [
+        { tone: "깔끔하고 미니멀한", palette: "밝고 화이트 베이스", layout: "여백 많은 심플" },
+        { tone: "고급스럽고 프리미엄한", palette: "어두운 톤 + 골드 포인트", layout: "대비 강한 럭셔리" },
+        { tone: "따뜻하고 친근한", palette: "파스텔 베이지/크림", layout: "라운드 카드형" },
+        { tone: "모던하고 트렌디한", palette: "블랙+네온 포인트", layout: "그리드 기반 정렬" },
+        { tone: "자연친화적이고 건강한", palette: "그린/어스톤 자연색", layout: "오가닉 곡선형" },
+        { tone: "활기차고 에너지 넘치는", palette: "비비드 그라데이션", layout: "다이나믹 비대칭" },
+        { tone: "신뢰감 있는 전문적인", palette: "네이비/그레이 차분한", layout: "정돈된 정보형" },
+        { tone: "감성적이고 스토리텔링", palette: "모노톤 + 포인트 컬러", layout: "매거진 편집 스타일" },
+      ];
+      const seed = styleSeeds[Math.floor(Math.random() * styleSeeds.length)];
+
       const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel}
 특징:${features.slice(0, 400)}${extraLines ? ` 추가정보:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
 추출색상:${mainColor}
+디자인 톤:${seed.tone} / 색상방향:${seed.palette} / 레이아웃:${seed.layout}
 
 이 제품의 쇼핑몰 상세페이지를 ${sectionCount}개 섹션 JSON배열로 만들어줘.
+디자인 톤에 맞춰 bg_color, 폰트 크기, 여백, 레이아웃을 다양하게 구성해.
+매번 새로운 카피라이팅과 구성으로 만들어 — 같은 패턴 반복 금지.
 
 각 섹션 구조:
 {
@@ -907,6 +923,10 @@ JSON배열만 출력.`;
                 const secImg = sectionImages[sec.id];
                 const heroImgSrc = images.length > 0 ? images[0].preview : null;
                 const aiImgSrc = secImg?.url || null;
+                // 제품 이미지 자동 분배 — 섹션 인덱스에 따라 다른 제품 사진 할당
+                const productImgForSection = images.length > 0
+                  ? images[i % images.length]?.preview || images[0]?.preview
+                  : null;
                 const layout = sec.layout || "centered_text";
                 const bgCol = sec.bg_color || "#fff";
                 const isDarkBg = bgCol && (() => {
@@ -971,11 +991,35 @@ JSON배열만 출력.`;
                   </div>
                 );
 
-                // 컬러 플레이스홀더 (hero 이외 섹션)
+                // 섹션별 이미지 교체 핸들러
+                const sectionImgInputId = `sec-img-${sec.id}`;
+                const handleSectionImageChange = async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const preview = URL.createObjectURL(file);
+                  setSectionImages(prev => ({ ...prev, [sec.id]: { loading: false, url: preview, error: null } }));
+                };
+
+                // 이미지 렌더 (AI 생성 > 제품 이미지 > placeholder)
                 const renderPlaceholder = (h = 280, style = {}) => {
-                  if (aiImgSrc) return (
-                    <div style={{ width: "100%", height: h, borderRadius: 16, overflow: "hidden", ...style }}>
-                      <img src={aiImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  const imgSrc = aiImgSrc || productImgForSection;
+                  if (imgSrc) return (
+                    <div style={{ width: "100%", height: h, borderRadius: 16, overflow: "hidden", position: "relative", ...style }}>
+                      <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      {/* 이미지 교체/AI 생성 버튼 */}
+                      <div style={{ position: "absolute", bottom: 8, right: 8, display: "flex", gap: 4 }}>
+                        <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
+                          style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}>
+                          교체
+                        </label>
+                        {sec.image_prompt && (
+                          <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                            style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(124,106,255,0.85)", color: "#fff", border: "none", fontSize: 10, fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}>
+                            AI 생성
+                          </button>
+                        )}
+                      </div>
+                      <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   );
                   if (secImg?.loading) return (
@@ -990,15 +1034,19 @@ JSON배열만 출력.`;
                     <div style={{ width: "100%", height: h, borderRadius: 16, position: "relative", overflow: "hidden",
                       background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`,
                       border: `1px solid ${mainColor}20`, ...style }}>
-                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 80, height: 80, borderRadius: "50%", background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: `${mainColor}20` }} />
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                        <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
+                          style={{ padding: "8px 16px", borderRadius: 10, background: isDarkBg ? "rgba(255,255,255,0.1)" : "#f0f0f0", color: isDarkBg ? "#fff" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${bdr}` }}>
+                          + 이미지 추가
+                        </label>
+                        {sec.image_prompt && (
+                          <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                            style={{ padding: "8px 16px", borderRadius: 10, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            AI 이미지 생성
+                          </button>
+                        )}
                       </div>
-                      {sec.image_prompt && !secImg?.url && (
-                        <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
-                          style={{ position: "absolute", bottom: 12, right: 12, padding: "8px 16px", borderRadius: 10, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(124,106,255,0.3)" }}>
-                          ✦ AI 이미지 생성
-                        </button>
-                      )}
+                      <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   );
                 };
@@ -1973,22 +2021,26 @@ JSON배열만 출력.`;
                 //  FULL IMAGE / TEXT OVER IMAGE (non-hero)
                 // ════════════════════════════════════════
                 if (layout === "full_image" || layout === "text_over_image") {
+                  const bgImgSrc = aiImgSrc || productImgForSection;
                   return (
                     <div style={{ width: "100%", minHeight: 400, position: "relative", overflow: "hidden", background: bgCol }}>
                       <div style={{ position: "absolute", inset: 0 }}>
-                        {aiImgSrc ? (
-                          <img src={aiImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        {bgImgSrc ? (
+                          <img src={bgImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
                           <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${mainColor}20, ${mainColor}08)` }} />
                         )}
                       </div>
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 20%, rgba(0,0,0,0.5) 100%)" }} />
-                      {!aiImgSrc && sec.image_prompt && !secImg?.url && !secImg?.loading && (
-                        <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
-                          style={{ position: "absolute", top: 16, right: 16, zIndex: 3, padding: "8px 16px", borderRadius: 10, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                          ✦ AI 이미지 생성
-                        </button>
-                      )}
+                      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 3, display: "flex", gap: 4 }}>
+                        <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
+                          style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>교체</label>
+                        {sec.image_prompt && (
+                          <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                            style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(124,106,255,0.8)", color: "#fff", border: "none", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>AI 생성</button>
+                        )}
+                      </div>
+                      <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                       <div style={{ position: "relative", zIndex: 1, padding: "60px 48px", minHeight: 400, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                         {els.map((el, ei) => {
                           if (el.type === "badge") return (
