@@ -315,14 +315,15 @@ JSON배열만 출력.`;
     if (!productName.trim() && images.length === 0) return;
     setAiFilling(true);
     try {
-      // Gemini로 카테고리 + 특징 자동 분석 (텍스트 기반)
-      const prompt = `상품명: "${productName || "(이미지 업로드됨 — 일반 제품으로 추정)"}"
-이 상품에 대해 다음 JSON을 만들어줘:
+      const prompt = `상품명: "${productName || "(제품 이미지 기반으로 추정해줘)"}"
+이 상품을 분석해서 JSON으로 응답해줘:
 {
-  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 가장 적합한 것",
-  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 실제 쇼핑몰 수준의 구체적 표현)",
-  "productName": "상품명이 비어있으면 추정한 상품명"
+  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 하나",
+  "productName": "상품명이 비어있으면 추정한 상품명",
+  "features": "줄바꿈으로 구분된 5가지 제품 특징 (번호 포함, 자연스러운 한국어 문장, 쇼핑몰 상세페이지 수준)"
 }
+features 예시:
+"1. 제주 청정 환경에서 자란 흑돼지 100% 사용\\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\\n3. 무방부제, 무색소 — 아이도 안심하고 먹는 건강 간식\\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\\n5. 개별 소포장으로 휴대 간편, 어디서나 가볍게 즐기세요"
 JSON만 출력.`;
       const geminiRes = await fetch("/api/gemini-generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -334,7 +335,8 @@ JSON만 출력.`;
       try {
         const parsed = JSON.parse(cleaned);
         if (parsed.features) {
-          const featText = parsed.features.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
+          // \\n → 실제 줄바꿈, 마크다운 제거
+          const featText = parsed.features.replace(/\\n/g, "\n").replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
           setFeatures(featText);
         }
         if (parsed.category && CATEGORIES.find(c => c.key === parsed.category)) {
@@ -344,8 +346,7 @@ JSON만 출력.`;
           setProductName(parsed.productName);
         }
       } catch {
-        // JSON 파싱 실패 시 텍스트로 처리
-        const text = cleaned.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
+        const text = cleaned.replace(/\\n/g, "\n").replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
         setFeatures(text);
       }
     } catch (e) { console.error("AI 분석 실패:", e); }
@@ -712,22 +713,35 @@ JSON배열만 출력.`;
           {/* ── 구분선 ── */}
           <div style={{ height: 1, background: bdr, margin: "4px 0 24px" }} />
 
+          {/* AI 분석 중 배너 */}
+          {aiFilling && (
+            <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 12, background: `linear-gradient(135deg, ${acc}08, ${acc}15)`, border: `1px solid ${acc}30`, display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ display: "inline-block", width: 16, height: 16, border: "2.5px solid", borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 1s linear infinite", flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: acc }}>AI가 제품을 분석하고 있습니다</div>
+                <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>상품명, 카테고리, 제품 특징이 자동으로 채워집니다</div>
+              </div>
+            </div>
+          )}
+
           {/* ── 2. 상품명 + 카테고리 (한 줄) ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12, marginBottom: 20 }}>
-            <div>
+            <div style={{ position: "relative" }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
                 상품명 <span style={{ color: "#ef4444" }}>*</span>
+                {aiFilling && !productName && <span style={{ fontSize: 11, color: acc, fontWeight: 600, marginLeft: 8 }}>분석 중...</span>}
               </label>
               <input value={productName} onChange={e => setProductName(e.target.value)}
-                placeholder="예) 제주 흑돼지 육포 선물세트" style={inputStyle} />
+                placeholder="예) 제주 흑돼지 육포 선물세트" style={{ ...inputStyle, borderColor: aiFilling && !productName ? acc + "60" : undefined }} />
             </div>
-            <div>
+            <div style={{ position: "relative" }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: text, display: "block", marginBottom: 6 }}>
                 카테고리 <span style={{ color: "#ef4444" }}>*</span>
+                {aiFilling && !category && <span style={{ fontSize: 11, color: acc, fontWeight: 600, marginLeft: 4 }}>분석 중...</span>}
               </label>
               <div style={{ position: "relative" }}>
                 <select value={category} onChange={e => setCategory(e.target.value)}
-                  style={{ ...inputStyle, cursor: "pointer", appearance: "none", paddingRight: 32 }}>
+                  style={{ ...inputStyle, cursor: "pointer", appearance: "none", paddingRight: 32, borderColor: aiFilling && !category ? acc + "60" : undefined }}>
                   <option value="">선택</option>
                   {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
@@ -741,6 +755,7 @@ JSON배열만 출력.`;
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: text }}>
                 제품 특징 / 셀링포인트 <span style={{ color: "#ef4444" }}>*</span>
+                {aiFilling && !features && <span style={{ fontSize: 11, color: acc, fontWeight: 600, marginLeft: 8 }}>AI 작성 중...</span>}
               </label>
               <button onClick={autoFillWithAI} disabled={!productName.trim() || aiFilling}
                 style={{
@@ -756,7 +771,7 @@ JSON배열만 출력.`;
             </div>
             <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
               placeholder={"예시)\n1. 제주 청정 환경에서 자란 흑돼지 100% 사용\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\n3. 무방부제·무색소 — 아이도 안심하고 먹는 건강 간식\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\n5. 개별 소포장으로 휴대 간편, 언제 어디서나 간편하게"}
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7, borderColor: aiFilling && !features ? acc + "60" : undefined }} />
           </div>
 
           {/* ── 4. 옵션 ── */}
@@ -980,32 +995,52 @@ JSON배열만 출력.`;
         </div>
 
         <div>
-          <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>총 {sections.filter(s => s.enabled !== false).length}/{sections.length}개 섹션 선택됨</div>
+          <div style={{ fontSize: 12, color: muted, marginBottom: 12 }}>총 {sections.filter(s => s.enabled !== false).length}/{sections.length}개 섹션 선택됨</div>
           {sections.map((sec, i) => {
             const sType = SECTION_TYPES.find(t => t.id === sec.type);
+            const enabled = sec.enabled !== false;
+            // 섹션 타입별 미니 레이아웃 프리뷰 SVG
+            const layoutMini = {
+              full_image: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#e8e0f0"} opacity="0.5"/><rect x="8" y="18" width="32" height="3" rx="1" fill={acc}/><rect x="14" y="23" width="20" height="2" rx="1" fill={acc} opacity="0.4"/></svg>,
+              centered_text: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="12" y="8" width="24" height="3" rx="1" fill={acc}/><rect x="8" y="14" width="32" height="2" rx="1" fill={muted} opacity="0.3"/><rect x="10" y="19" width="28" height="2" rx="1" fill={muted} opacity="0.3"/><rect x="14" y="24" width="20" height="2" rx="1" fill={muted} opacity="0.2"/></svg>,
+              left_image_right_text: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="3" y="4" width="18" height="24" rx="3" fill={acc} opacity="0.2"/><rect x="25" y="8" width="18" height="3" rx="1" fill={acc}/><rect x="25" y="14" width="16" height="2" rx="1" fill={muted} opacity="0.3"/><rect x="25" y="19" width="14" height="2" rx="1" fill={muted} opacity="0.3"/></svg>,
+              right_image_left_text: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="27" y="4" width="18" height="24" rx="3" fill={acc} opacity="0.2"/><rect x="3" y="8" width="18" height="3" rx="1" fill={acc}/><rect x="3" y="14" width="16" height="2" rx="1" fill={muted} opacity="0.3"/><rect x="3" y="19" width="14" height="2" rx="1" fill={muted} opacity="0.3"/></svg>,
+              grid_2col: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="3" y="4" width="20" height="12" rx="3" fill={acc} opacity="0.15"/><rect x="25" y="4" width="20" height="12" rx="3" fill={acc} opacity="0.15"/><rect x="3" y="19" width="20" height="9" rx="3" fill={acc} opacity="0.1"/><rect x="25" y="19" width="20" height="9" rx="3" fill={acc} opacity="0.1"/></svg>,
+              grid_3col: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="2" y="6" width="13" height="20" rx="2" fill={acc} opacity="0.15"/><rect x="17" y="6" width="14" height="20" rx="2" fill={acc} opacity="0.15"/><rect x="33" y="6" width="13" height="20" rx="2" fill={acc} opacity="0.15"/></svg>,
+              card_list: <svg width="48" height="32" viewBox="0 0 48 32"><rect width="48" height="32" rx="3" fill={sec.bg_color || "#f8f8f8"} opacity="0.3"/><rect x="3" y="4" width="42" height="7" rx="2" fill={acc} opacity="0.12"/><rect x="3" y="13" width="42" height="7" rx="2" fill={acc} opacity="0.12"/><rect x="3" y="22" width="42" height="7" rx="2" fill={acc} opacity="0.12"/></svg>,
+            };
+            const miniSvg = layoutMini[sec.layout] || layoutMini.centered_text;
+            const titleContent = sec.elements?.find(e => e.role === "title")?.content || "";
             return (
-              <div key={sec.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: `1px solid ${sec.enabled !== false ? acc + "40" : bdr}`, background: sec.enabled !== false ? (D ? "rgba(124,106,255,0.06)" : "#faf9ff") : (D ? "rgba(255,255,255,0.02)" : "#fafafa"), marginBottom: 6, opacity: sec.enabled !== false ? 1 : 0.5 }}>
+              <div key={sec.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${enabled ? acc + "35" : bdr}`, background: enabled ? (D ? "rgba(124,106,255,0.06)" : "#faf9ff") : (D ? "rgba(255,255,255,0.02)" : "#fafafa"), marginBottom: 8, opacity: enabled ? 1 : 0.4, transition: "all 0.15s" }}>
                 {/* 체크박스 */}
                 <button onClick={() => setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, enabled: s.enabled === false ? true : false }))}
-                  style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${sec.enabled !== false ? acc : bdr}`, background: sec.enabled !== false ? acc : "transparent", color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {sec.enabled !== false ? "v" : ""}
+                  style={{ width: 24, height: 24, borderRadius: 7, border: `2px solid ${enabled ? acc : bdr}`, background: enabled ? acc : "transparent", color: "#fff", fontSize: 13, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {enabled && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </button>
                 {/* 순서 변경 */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
                   <button onClick={() => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1],a[i]]=[a[i],a[i-1]]; return a; }); }}
-                    style={{ width: 18, height: 14, border: "none", background: "transparent", color: muted, fontSize: 8, cursor: "pointer", padding: 0 }}>▲</button>
+                    style={{ width: 20, height: 14, border: "none", background: "transparent", color: muted, fontSize: 9, cursor: "pointer", padding: 0, opacity: i === 0 ? 0.2 : 0.7 }}>▲</button>
                   <button onClick={() => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i],a[i+1]]=[a[i+1],a[i]]; return a; }); }}
-                    style={{ width: 18, height: 14, border: "none", background: "transparent", color: muted, fontSize: 8, cursor: "pointer", padding: 0 }}>▼</button>
+                    style={{ width: 20, height: 14, border: "none", background: "transparent", color: muted, fontSize: 9, cursor: "pointer", padding: 0, opacity: i === sections.length-1 ? 0.2 : 0.7 }}>▼</button>
+                </div>
+                {/* 레이아웃 미니 프리뷰 */}
+                <div style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fff" }}>
+                  {miniSvg}
                 </div>
                 {/* 섹션 정보 */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{sType?.label || sec.type}</div>
                   <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {sec.elements?.find(e => e.role === "title")?.content || sType?.desc || ""}
+                    {titleContent || sType?.desc || ""}
                   </div>
                 </div>
-                {/* 레이아웃 */}
-                <span style={{ fontSize: 9, color: muted, background: D ? "rgba(255,255,255,0.06)" : "#f0f0f0", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{sec.layout}</span>
+                {/* 배경색 + 번호 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: 4, background: sec.bg_color || "#f8f8f8", border: `1px solid ${bdr}` }} />
+                  <span style={{ fontSize: 10, color: muted, fontWeight: 600, fontFamily: "monospace" }}>{i + 1}</span>
+                </div>
               </div>
             );
           })}
@@ -1021,31 +1056,22 @@ JSON배열만 출력.`;
             ← 다시 입력
           </button>
           <button onClick={async () => {
-            setSections(prev => prev.filter(s => s.enabled !== false));
-            setPhase("editor");
-            // 자동 스톡 이미지 채우기 (image_prompt에서 키워드 추출)
             const enabledSecs = sections.filter(s => s.enabled !== false);
-            const pixKey = import.meta.env.VITE_PIXABAY_KEY || "";
-            const pexKey = import.meta.env.VITE_PEXELS_KEY || "";
-            if (!pixKey && !pexKey) return;
+            setSections(enabledSecs);
+            setPhase("editor");
+            // 모든 섹션 AI 이미지 자동 생성 (히어로 포함)
+            if (!user) return; // AI 이미지 생성은 로그인 필요
             for (const sec of enabledSecs) {
-              if (sec.type === "hero" || sec.type === "ai_notice" || !sec.image_prompt) continue;
+              if (sec.type === "ai_notice" || !sec.image_prompt) continue;
               if (sectionImages[sec.id]?.url) continue;
-              try {
-                const kw = (sec.image_prompt || "").split(" ").slice(0, 3).join(" ");
-                let imgUrl = null;
-                if (pixKey) {
-                  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://pixabay.com/api/?key=${pixKey}&q=${encodeURIComponent(kw)}&image_type=photo&per_page=3`)}`);
-                  const data = await res.json();
-                  if (data.hits?.length) imgUrl = data.hits[Math.floor(Math.random() * data.hits.length)].webformatURL;
-                }
-                if (!imgUrl && pexKey) {
-                  const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://api.pexels.com/v1/search?query=${encodeURIComponent(kw)}&per_page=3`)}&headers=${encodeURIComponent(JSON.stringify({ Authorization: pexKey }))}`);
-                  const data = await res.json();
-                  if (data.photos?.length) imgUrl = data.photos[Math.floor(Math.random() * data.photos.length)].src.medium;
-                }
-                if (imgUrl) setSectionImages(prev => ({ ...prev, [sec.id]: { loading: false, url: imgUrl, error: null } }));
-              } catch {}
+              // 업로드 이미지 기반 컨텍스트 추가
+              const productContext = productName ? ` for "${productName}"` : "";
+              const enhancedPrompt = sec.type === "hero"
+                ? `Professional hero banner image${productContext}. ${sec.image_prompt}. High quality product photography, studio lighting, clean background.`
+                : `${sec.image_prompt}${productContext}. Professional product photography style, clean and modern.`;
+              generateSectionImage(sec.id, enhancedPrompt);
+              // 동시 요청 부하 분산 (1.5초 간격)
+              await new Promise(r => setTimeout(r, 1500));
             }
           }}
             style={{ flex: 2, padding: "14px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 16px ${acc}40` }}>
