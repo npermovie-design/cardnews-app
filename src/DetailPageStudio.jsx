@@ -123,6 +123,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [colorPalette, setColorPalette] = useState(null);
   const [activeSection, setActiveSection] = useState(0);
   const [sidebarTab, setSidebarTab] = useState("pages");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sectionImages, setSectionImages] = useState({}); // { secId: { url, loading, error } }
   // 텍스트 요소 선택/편집
   const [selectedEl, setSelectedEl] = useState(null); // { secIdx, elIdx, el }
@@ -1039,8 +1040,38 @@ JSON배열만 출력.`;
             const enabledSecs = sections.filter(s => s.enabled !== false);
             setSections(enabledSecs);
             setPhase("editor");
-            // 모든 섹션 AI 이미지 자동 생성 (히어로 포함)
-            if (!user) return; // AI 이미지 생성은 로그인 필요
+            // 스톡 이미지 자동 채움 (로그인 불필요)
+            try {
+              const searchTerm = category || productName || "product";
+              const pixKey = import.meta.env.VITE_PIXABAY_KEY || "";
+              if (pixKey) {
+                const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://pixabay.com/api/?key=${pixKey}&q=${encodeURIComponent(searchTerm)}&image_type=photo&per_page=20&lang=ko`)}`);
+                const data = await res.json();
+                const stockUrls = (data.hits || []).map(h => h.webformatURL).filter(Boolean);
+                if (stockUrls.length > 0) {
+                  const updatedSecs = enabledSecs.map((sec, idx) => {
+                    if (sec.type === "ai_notice" || sec.type === "shipping") return sec;
+                    // 이미지가 이미 있으면 스킵
+                    if (sectionImages[sec.id]?.url) return sec;
+                    const imgUrl = stockUrls[idx % stockUrls.length];
+                    return { ...sec, _stockImg: imgUrl };
+                  });
+                  setSections(updatedSecs);
+                  // sectionImages에도 등록
+                  const newImgs = {};
+                  updatedSecs.forEach((sec, idx) => {
+                    if (sec._stockImg && !sectionImages[sec.id]?.url) {
+                      newImgs[sec.id] = { url: sec._stockImg, loading: false, error: null };
+                    }
+                  });
+                  if (Object.keys(newImgs).length > 0) {
+                    setSectionImages(prev => ({ ...prev, ...newImgs }));
+                  }
+                }
+              }
+            } catch (e) { console.log("Stock image auto-fill skipped:", e.message); }
+            // AI 이미지 생성 (로그인 필요)
+            if (!user) return;
             for (const sec of enabledSecs) {
               if (sec.type === "ai_notice" || !sec.image_prompt) continue;
               if (sectionImages[sec.id]?.url) continue;
@@ -1066,7 +1097,12 @@ JSON배열만 출력.`;
   if (phase === "editor") return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* 왼쪽 사이드바 */}
-      <div style={{ width: 280, borderRight: `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff" }}>
+      <div style={{ width: sidebarCollapsed ? 0 : 280, minWidth: sidebarCollapsed ? 0 : 280, borderRight: sidebarCollapsed ? "none" : `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff", transition: "width 0.2s, min-width 0.2s", overflow: "hidden", position: "relative" }}>
+        {/* 사이드바 접기 토글 */}
+        <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title={sidebarCollapsed ? "패널 열기" : "패널 접기"}
+          style={{ position: "absolute", top: 12, right: sidebarCollapsed ? -32 : -14, zIndex: 20, width: 28, height: 28, borderRadius: "50%", border: `1px solid ${bdr}`, background: D ? "#1a1a2e" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 12, color: muted }}>
+          {sidebarCollapsed ? "→" : "←"}
+        </button>
         {/* 사이드바 탭 아이콘 */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0", borderBottom: `1px solid ${bdr}` }}>
           {[
@@ -1311,8 +1347,8 @@ JSON배열만 출력.`;
 
                   <div style={{ height: 1, background: bdr, margin: "8px 0 14px" }} />
 
-                  {/* 그림자 / 배경박스 */}
-                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                  {/* 그림자 / 배경박스 토글 */}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                     <button onClick={() => {
                       const val = selectedEl.el.textShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)";
                       setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
@@ -1328,6 +1364,60 @@ JSON배열만 출력.`;
                       배경 박스
                     </button>
                   </div>
+                  {/* 그림자 세부 조정 */}
+                  {selectedEl.el.textShadow && (
+                    <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>그림자 스타일</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+                        {[
+                          { label: "약하게", val: "0 1px 4px rgba(0,0,0,0.15)" },
+                          { label: "보통", val: "0 2px 8px rgba(0,0,0,0.3)" },
+                          { label: "강하게", val: "0 4px 16px rgba(0,0,0,0.5)" },
+                          { label: "네온", val: `0 0 12px ${acc}, 0 0 24px ${acc}60` },
+                          { label: "입체", val: "2px 2px 0 rgba(0,0,0,0.3)" },
+                          { label: "글로우", val: "0 0 20px rgba(255,255,255,0.5)" },
+                        ].map((sh, si) => (
+                          <button key={si} onClick={() => {
+                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: sh.val }) }));
+                            setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: sh.val } }));
+                          }} style={{ padding: "6px 4px", borderRadius: 6, border: `1px solid ${selectedEl.el.textShadow === sh.val ? "#2196F3" : bdr}`, background: "transparent", color: text, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                            {sh.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* 배경박스 세부 조정 */}
+                  {selectedEl.el.bgBox && (
+                    <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>배경 색상</div>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+                        {[
+                          { color: "rgba(0,0,0,0.04)", label: "연한" },
+                          { color: "rgba(0,0,0,0.15)", label: "중간" },
+                          { color: "rgba(0,0,0,0.4)", label: "진한" },
+                          { color: `${acc}15`, label: "포인트 연" },
+                          { color: `${acc}30`, label: "포인트" },
+                          { color: acc, label: "포인트 진" },
+                          { color: "rgba(255,255,255,0.1)", label: "화이트" },
+                          { color: "rgba(255,255,255,0.25)", label: "화이트 진" },
+                        ].map((bg, bi) => (
+                          <button key={bi} onClick={() => {
+                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxColor: bg.color }) }));
+                            setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBoxColor: bg.color } }));
+                          }} style={{ width: 28, height: 28, borderRadius: 6, background: bg.color, border: `1.5px solid ${selectedEl.el.bgBoxColor === bg.color ? "#2196F3" : bdr}`, cursor: "pointer" }} title={bg.label} />
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 6 }}>둥글기</div>
+                      <input type="range" min="0" max="24" value={selectedEl.el.bgBoxRadius || 8}
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxRadius: val }) }));
+                          setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBoxRadius: val } }));
+                        }}
+                        style={{ width: "100%", accentColor: acc }} />
+                    </div>
+                  )}
 
                   {/* 위치 미세 조정 */}
                   <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>위치 조정</div>
@@ -2055,6 +2145,28 @@ JSON배열만 출력.`;
 
                 const editable = (el) => {
                   const selected = isSelected(el);
+                  const rawStyle = {
+                    outline: "none", cursor: selected ? "move" : "text",
+                    position: "relative",
+                    borderRadius: 8,
+                    padding: selected ? "6px 10px" : "2px 4px",
+                    border: selected ? `2px solid #2196F3` : "2px solid transparent",
+                    boxShadow: selected ? "0 0 0 3px rgba(33,150,243,0.15), 0 2px 8px rgba(33,150,243,0.1)" : "none",
+                    background: selected ? (isDarkBg ? "rgba(33,150,243,0.08)" : "rgba(33,150,243,0.04)") : undefined,
+                    transition: "border 0.15s, box-shadow 0.15s, background 0.15s, padding 0.15s",
+                    textShadow: el.textShadow || undefined,
+                    textAlign: el.textAlign || "center",
+                    fontFamily: el.fontFamily || undefined,
+                    fontSize: el.fontSize ? el.fontSize : undefined,
+                    fontWeight: el.fontWeight || undefined,
+                    lineHeight: el.lineHeight || undefined,
+                    letterSpacing: el.letterSpacing ? `${el.letterSpacing}px` : undefined,
+                    marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
+                    marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
+                    ...(el.bgBox ? { background: el.bgBoxColor || (isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)"), padding: "8px 14px", borderRadius: el.bgBoxRadius ?? 8 } : {}),
+                  };
+                  // undefined 값 제거 → 섹션 기본값이 살아남도록
+                  const style = Object.fromEntries(Object.entries(rawStyle).filter(([_, v]) => v !== undefined));
                   return {
                     contentEditable: true,
                     suppressContentEditableWarning: true,
@@ -2064,26 +2176,11 @@ JSON배열만 출력.`;
                       if (e.target.closest("[data-handle]")) return;
                       dragRef.current = { type: "move", startX: e.clientX, startY: e.clientY, origX: el.offsetX || 0, origY: el.offsetY || 0 };
                     } : undefined,
-                    style: {
-                      outline: "none", cursor: selected ? "move" : "text",
-                      position: "relative",
-                      borderRadius: 8,
-                      padding: selected ? "6px 10px" : "2px 4px",
-                      border: selected ? `2px solid #2196F3` : "2px solid transparent",
-                      boxShadow: selected ? "0 0 0 3px rgba(33,150,243,0.15), 0 2px 8px rgba(33,150,243,0.1)" : "none",
-                      background: selected ? (isDarkBg ? "rgba(33,150,243,0.08)" : "rgba(33,150,243,0.04)") : undefined,
-                      transition: "border 0.15s, box-shadow 0.15s, background 0.15s, padding 0.15s",
-                      textShadow: el.textShadow || undefined,
-                      textAlign: el.textAlign || "center",
-                      fontFamily: el.fontFamily || undefined,
-                      lineHeight: el.lineHeight || undefined,
-                      letterSpacing: el.letterSpacing ? `${el.letterSpacing}px` : undefined,
-                      marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
-                      marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
-                      ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
-                    },
+                    style,
                   };
                 };
+                // 섹션 기본 스타일 + 사용자 편집값 병합 (사용자 fontSize/fontWeight/color 우선)
+                const eS = (el, defaults) => ({ ...defaults, ...editable(el).style });
 
                 // 선택된 요소 래퍼 (파란 핸들 표시 + 드래그 이동)
                 const SelectionWrap = ({ el, children, style = {} }) => {
@@ -2257,19 +2354,19 @@ JSON배열만 출력.`;
                       {renderHeroImage()}
                       {/* 그라디언트 오버레이 — 더 강한 딤 */}
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.88) 100%)" }} />
-                      {/* 상단 브랜드 로고 영역 */}
-                      <div style={{ position: "absolute", top: 28, left: 32, zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.15)" }}>
-                          <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>{(productName || "M")[0]}</span>
-                        </div>
-                        {extraInfo?.brand && (
+                      {/* 상단 브랜드 로고 — 브랜드명이 있을 때만 표시 */}
+                      {extraInfo?.brand && (
+                        <div style={{ position: "absolute", top: 28, left: 32, zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.15)" }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>{extraInfo.brand[0]}</span>
+                          </div>
                           <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", letterSpacing: 1 }}>{extraInfo.brand}</span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       {/* 배지 - 우측 상단 */}
                       {badge && (
                         <div style={{ position: "absolute", top: 28, right: 80, zIndex: 2 }}>
-                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "8px 22px", borderRadius: 24, background: mainColor, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: 0.5, boxShadow: `0 4px 16px ${mainColor}50` }}>
+                          <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "8px 22px", borderRadius: 24, background: mainColor, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: 0.5, boxShadow: `0 4px 16px ${mainColor}50` })}>
                             {badge.content}
                           </span>
                         </div>
@@ -2280,22 +2377,22 @@ JSON배열만 출력.`;
                       {/* 콘텐츠 */}
                       <div style={{ position: "relative", zIndex: 1, padding: "100px 56px 72px", minHeight: 640, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                         {subtitle && (
-                          <div {...editable(subtitle)} style={{ ...editable(subtitle).style, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 }}>
+                          <div {...editable(subtitle)} style={eS(subtitle, { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>
                             {subtitle.content}
                           </div>
                         )}
                         {title && (
-                          <div {...editable(title)} style={{ ...editable(title).style, fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 18, letterSpacing: -0.5, textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>
+                          <div {...editable(title)} style={eS(title, { fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 18, letterSpacing: -0.5, textShadow: "0 2px 24px rgba(0,0,0,0.4)" })}>
                             {title.content}
                           </div>
                         )}
                         {body && (
-                          <div {...editable(body)} style={{ ...editable(body).style, fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520 }}>
+                          <div {...editable(body)} style={eS(body, { fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, maxWidth: 520 })}>
                             {body.content}
                           </div>
                         )}
                         {!subtitle && !title && !body && els.filter(e => e.type === "text").slice(0, 3).map((el, ei) => (
-                          <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: ei === 0 ? 14 : ei === 1 ? 42 : 16, fontWeight: ei === 1 ? 900 : ei === 0 ? 600 : 400, color: "#fff", lineHeight: ei === 1 ? 1.2 : 1.7, marginBottom: ei === 1 ? 18 : 8, letterSpacing: ei === 0 ? 4 : 0 }}>
+                          <div key={ei} {...editable(el)} style={eS(el, { fontSize: ei === 0 ? 14 : ei === 1 ? 42 : 16, fontWeight: ei === 1 ? 900 : ei === 0 ? 600 : 400, color: "#fff", lineHeight: ei === 1 ? 1.2 : 1.7, marginBottom: ei === 1 ? 18 : 8, letterSpacing: ei === 0 ? 4 : 0 })}>
                             {el.content}
                           </div>
                         ))}
@@ -2304,7 +2401,7 @@ JSON배열만 출력.`;
                           <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(findEls("stat_number").length, 4)}, 1fr)`, gap: 12, marginTop: 32, maxWidth: 500 }}>
                             {findEls("stat_number").map((sn, si) => (
                               <div key={si} style={{ textAlign: "center", padding: "16px 10px", borderRadius: 14, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>{sn.content}</div>
+                                <div {...editable(sn)} style={eS(sn, { fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 })}>{sn.content}</div>
                                 {findEls("stat_label")[si] && (
                                   <div {...editable(findEls("stat_label")[si])} style={{ ...editable(findEls("stat_label")[si]).style, fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>{findEls("stat_label")[si].content}</div>
                                 )}
@@ -2378,12 +2475,12 @@ JSON배열만 출력.`;
                       <div style={{ position: "relative", zIndex: 2, padding: "96px 56px" }}>
                         <div style={{ textAlign: "center", marginBottom: 52 }}>
                           {subtitleEl && (
-                            <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 }}>
+                            <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>
                               {subtitleEl.content}
                             </div>
                           )}
                           {titleEl && (
-                            <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 12, textShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>
+                            <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 12, textShadow: "0 2px 16px rgba(0,0,0,0.3)" })}>
                               {titleEl.content}
                             </div>
                           )}
@@ -2400,12 +2497,12 @@ JSON배열만 출력.`;
                               </div>
                               <div style={{ flex: 1 }}>
                                 {item.title && (
-                                  <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: item.body ? 6 : 0, lineHeight: 1.5 }}>
+                                  <div {...editable(item.title)} style={eS(item.title, { fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: item.body ? 6 : 0, lineHeight: 1.5 })}>
                                     {item.title.content}
                                   </div>
                                 )}
                                 {item.body && (
-                                  <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 }}>
+                                  <div {...editable(item.body)} style={eS(item.body, { fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 })}>
                                     {item.body.content}
                                   </div>
                                 )}
@@ -2456,12 +2553,12 @@ JSON배열만 출력.`;
                       <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: `${mainColor}04`, pointerEvents: "none" }} />
                       <div style={{ textAlign: "center", marginBottom: 64, position: "relative", zIndex: 1 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 12 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 12 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -2513,12 +2610,12 @@ JSON배열만 출력.`;
                               {/* 텍스트 영역 */}
                               <div style={{ padding: cols === 3 ? "20px 18px 24px" : "24px 24px 28px" }}>
                                 {item.title && (
-                                  <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: cols === 3 ? 17 : 20, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 }}>
+                                  <div {...editable(item.title)} style={eS(item.title, { fontSize: cols === 3 ? 17 : 20, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 })}>
                                     {item.title.content}
                                   </div>
                                 )}
                                 {item.body && (
-                                  <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.8 }}>
+                                  <div {...editable(item.body)} style={eS(item.body, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.8 })}>
                                     {item.body.content}
                                   </div>
                                 )}
@@ -2560,28 +2657,28 @@ JSON배열만 출력.`;
                         </span>
                       </div>
                       {badge && (
-                        <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 16px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 18, alignSelf: "flex-start", border: `1px solid ${mainColor}20` }}>
+                        <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 16px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 18, alignSelf: "flex-start", border: `1px solid ${mainColor}20` })}>
                           {badge.content}
                         </span>
                       )}
                       {subtitleEl && (
-                        <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 12, letterSpacing: 1, textAlign: "left" }}>
+                        <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 12, letterSpacing: 1, textAlign: "left" })}>
                           {subtitleEl.content}
                         </div>
                       )}
                       {titleEl && (
-                        <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 24, textAlign: "left" }}>
+                        <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 24, textAlign: "left" })}>
                           {titleEl.content}
                         </div>
                       )}
                       <div style={{ width: 48, height: 3, background: `${mainColor}30`, borderRadius: 2, marginBottom: 24 }} />
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.9, marginBottom: 12, textAlign: "left" }}>
+                        <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.9, marginBottom: 12, textAlign: "left" })}>
                           {el.content}
                         </div>
                       ))}
                       {!subtitleEl && !titleEl && bodyEls.length === 0 && els.filter(e => e.type === "text").map((el, ei) => (
-                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "900" ? 32 : el.fontWeight === "700" ? 16 : 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: el.fontWeight === "900" ? 1.25 : 1.9, marginBottom: el.fontWeight === "900" ? 24 : 12, textAlign: "left" }}>
+                        <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.fontWeight === "900" ? 32 : el.fontWeight === "700" ? 16 : 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: el.fontWeight === "900" ? 1.25 : 1.9, marginBottom: el.fontWeight === "900" ? 24 : 12, textAlign: "left" })}>
                           {el.content}
                         </div>
                       ))}
@@ -2686,17 +2783,17 @@ JSON배열만 출력.`;
                         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 56px", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
                           <div>
                             {badge && (
-                              <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 18px", borderRadius: 20, background: mainColor, color: "#fff", fontSize: 11, fontWeight: 800, marginBottom: 12, letterSpacing: 2 }}>
+                              <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 18px", borderRadius: 20, background: mainColor, color: "#fff", fontSize: 11, fontWeight: 800, marginBottom: 12, letterSpacing: 2 })}>
                                 {badge.content}
                               </span>
                             )}
                             {subtitleEl && (
-                              <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 8 }}>
+                              <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 8 })}>
                                 {subtitleEl.content}
                               </div>
                             )}
                             {titleEl ? (
-                              <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 32, fontWeight: 900, color: "#fff", lineHeight: 1.25, textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+                              <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: "#fff", lineHeight: 1.25, textShadow: "0 2px 12px rgba(0,0,0,0.3)" })}>
                                 {titleEl.content}
                               </div>
                             ) : (
@@ -2734,7 +2831,7 @@ JSON배열만 출력.`;
                                     {(el.content || "?")[0]}
                                   </div>
                                   <div>
-                                    <div {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 700, color: isDarkBg ? "#fff" : "#333", marginBottom: 3 }}>
+                                    <div {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 700, color: isDarkBg ? "#fff" : "#333", marginBottom: 3 })}>
                                       {el.content}
                                     </div>
                                     {(() => {
@@ -2755,7 +2852,7 @@ JSON배열만 출력.`;
                               ))}
                               {/* 후기 텍스트 */}
                               {group.filter(e => e.role === "review_text").map((el, ri) => (
-                                <div key={ri} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.8, display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                                <div key={ri} {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.75)" : "#444", lineHeight: 1.8, display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" })}>
                                   {el.content}
                                 </div>
                               ))}
@@ -2809,12 +2906,12 @@ JSON배열만 출력.`;
                       <div style={{ position: "relative", zIndex: 2, padding: "100px 56px" }}>
                         <div style={{ textAlign: "center", marginBottom: 64 }}>
                           {subtitleEl && (
-                            <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 5, textTransform: "uppercase", marginBottom: 14 }}>
+                            <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 5, textTransform: "uppercase", marginBottom: 14 })}>
                               {subtitleEl.content}
                             </div>
                           )}
                           {titleEl && (
-                            <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.25 }}>
+                            <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.25 })}>
                               {titleEl.content}
                             </div>
                           )}
@@ -2830,13 +2927,13 @@ JSON배열만 출력.`;
                                 <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 20px" }}>
                                   <CircleChart pct={pct} color={gradColor} size={120} />
                                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, transform: "rotate(0deg)" }}>
+                                    <div {...editable(sn)} style={eS(sn, { fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, transform: "rotate(0deg)" })}>
                                       {sn.content}
                                     </div>
                                   </div>
                                 </div>
                                 {statLabels[si] && (
-                                  <div {...editable(statLabels[si])} style={{ ...editable(statLabels[si]).style, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>
+                                  <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12 })}>
                                     {statLabels[si].content}
                                   </div>
                                 )}
@@ -2881,12 +2978,12 @@ JSON배열만 출력.`;
                     <div style={{ background: bgCol, padding: "80px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 56 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl ? (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         ) : (
@@ -2933,12 +3030,12 @@ JSON배열만 출력.`;
                                     <span style={{ fontSize: 11, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase" }}>STEP {String(si + 1).padStart(2, "0")}</span>
                                   </div>
                                   {step.title && (
-                                    <div {...editable(step.title)} style={{ ...editable(step.title).style, fontSize: 18, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 8, lineHeight: 1.4 }}>
+                                    <div {...editable(step.title)} style={eS(step.title, { fontSize: 18, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 8, lineHeight: 1.4 })}>
                                       {step.title.content}
                                     </div>
                                   )}
                                   {step.body && (
-                                    <div {...editable(step.body)} style={{ ...editable(step.body).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 }}>
+                                    <div {...editable(step.body)} style={eS(step.body, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>
                                       {step.body.content}
                                     </div>
                                   )}
@@ -2966,12 +3063,12 @@ JSON배열만 출력.`;
                     <div style={{ background: bgCol, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -2981,11 +3078,11 @@ JSON배열만 출력.`;
                         <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap", marginBottom: bodyEls.length ? 32 : 0 }}>
                           {statNums.map((sn, si) => (
                             <div key={si} style={{ textAlign: "center", minWidth: 120 }}>
-                              <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 52, fontWeight: 900, color: mainColor, lineHeight: 1.1, marginBottom: 8 }}>
+                              <div {...editable(sn)} style={eS(sn, { fontSize: 52, fontWeight: 900, color: mainColor, lineHeight: 1.1, marginBottom: 8 })}>
                                 {sn.content}
                               </div>
                               {statLabels[si] && (
-                                <div {...editable(statLabels[si])} style={{ ...editable(statLabels[si]).style, fontSize: 13, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888" }}>
+                                <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 13, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888" })}>
                                   {statLabels[si].content}
                                 </div>
                               )}
@@ -2999,7 +3096,7 @@ JSON배열만 출력.`;
                               <div style={{ width: 40, height: 40, borderRadius: 10, background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                                 <span style={{ fontSize: 18, color: mainColor }}>✓</span>
                               </div>
-                              <div {...editable(el)} style={{ ...editable(el).style, fontSize: 13, fontWeight: el.fontWeight || "600", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.6 }}>
+                              <div {...editable(el)} style={eS(el, { fontSize: 13, fontWeight: el.fontWeight || "600", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.6 })}>
                                 {el.content}
                               </div>
                             </div>
@@ -3007,7 +3104,7 @@ JSON배열만 출력.`;
                         </div>
                       )}
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, textAlign: "center", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7, marginTop: 16, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+                        <div key={bi} {...editable(el)} style={eS(el, { textAlign: "center", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7, marginTop: 16, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
                           {el.content}
                         </div>
                       ))}
@@ -3038,12 +3135,12 @@ JSON배열만 출력.`;
                         )}
                         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                           {subtitleEl && (
-                            <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: productImg ? "#fff" : mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
+                            <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: productImg ? "#fff" : mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
                               {subtitleEl.content}
                             </div>
                           )}
                           {titleEl && (
-                            <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: productImg ? "#fff" : (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.3, textShadow: productImg ? "0 2px 12px rgba(0,0,0,0.3)" : "none" }}>
+                            <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: productImg ? "#fff" : (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.3, textShadow: productImg ? "0 2px 12px rgba(0,0,0,0.3)" : "none" })}>
                               {titleEl.content}
                             </div>
                           )}
@@ -3059,7 +3156,7 @@ JSON배열만 출력.`;
                           </div>
                           {rows.map((row, ri) => (
                             <div key={ri} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "16px 24px", borderTop: `1px solid ${isDarkBg ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, alignItems: "center" }}>
-                              <span {...editable(row.el)} style={{ ...editable(row.el).style, fontSize: 14, fontWeight: 600, color: isDarkBg ? "#fff" : "#333" }}>{row.label}</span>
+                              <span {...editable(row.el)} style={eS(row.el, { fontSize: 14, fontWeight: 600, color: isDarkBg ? "#fff" : "#333" })}>{row.label}</span>
                               <div style={{ textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg>
                                 <span style={{ fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.35)" : "#bbb" }}>{row.before}</span>
@@ -3087,12 +3184,12 @@ JSON배열만 출력.`;
                     <div style={{ background: bgCol, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -3107,7 +3204,7 @@ JSON배열만 출력.`;
                           {renderPlaceholder(200, { borderRadius: 0 })}
                           {bodyEls[0] && (
                             <div style={{ padding: "16px 20px" }}>
-                              <div {...editable(bodyEls[0])} style={{ ...editable(bodyEls[0]).style, fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 }}>
+                              <div {...editable(bodyEls[0])} style={eS(bodyEls[0], { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>
                                 {bodyEls[0].content}
                               </div>
                             </div>
@@ -3121,7 +3218,7 @@ JSON배열만 출력.`;
                           {renderPlaceholder(200, { borderRadius: 0 })}
                           {bodyEls[1] && (
                             <div style={{ padding: "16px 20px" }}>
-                              <div {...editable(bodyEls[1])} style={{ ...editable(bodyEls[1]).style, fontSize: 13, fontWeight: 600, color: isDarkBg ? "#fff" : "#333", lineHeight: 1.7 }}>
+                              <div {...editable(bodyEls[1])} style={eS(bodyEls[1], { fontSize: 13, fontWeight: 600, color: isDarkBg ? "#fff" : "#333", lineHeight: 1.7 })}>
                                 {bodyEls[1].content}
                               </div>
                             </div>
@@ -3155,12 +3252,12 @@ JSON배열만 출력.`;
                     return (
                       <div style={{ background: bgCol, padding: "64px 48px", textAlign: "center" }}>
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 24 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 24 })}>
                             {titleEl.content}
                           </div>
                         )}
                         {bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.65)" : "#666", lineHeight: 1.8, marginBottom: 8 }}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.65)" : "#666", lineHeight: 1.8, marginBottom: 8 })}>
                             {el.content}
                           </div>
                         ))}
@@ -3171,12 +3268,12 @@ JSON배열만 출력.`;
                     <div style={{ background: bgCol, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -3192,17 +3289,17 @@ JSON배열만 출력.`;
                               )}
                               <div style={{ padding: "28px 24px", textAlign: "center" }}>
                                 {plan.name && (
-                                  <div {...editable(plan.name)} style={{ ...editable(plan.name).style, fontSize: 16, fontWeight: 800, color: isDarkBg ? "#fff" : "#333", marginBottom: 8 }}>
+                                  <div {...editable(plan.name)} style={eS(plan.name, { fontSize: 16, fontWeight: 800, color: isDarkBg ? "#fff" : "#333", marginBottom: 8 })}>
                                     {plan.name.content}
                                   </div>
                                 )}
                                 {plan.price && (
-                                  <div {...editable(plan.price)} style={{ ...editable(plan.price).style, fontSize: 32, fontWeight: 900, color: mainColor, marginBottom: 8 }}>
+                                  <div {...editable(plan.price)} style={eS(plan.price, { fontSize: 32, fontWeight: 900, color: mainColor, marginBottom: 8 })}>
                                     {plan.price.content}
                                   </div>
                                 )}
                                 {plan.desc && (
-                                  <div {...editable(plan.desc)} style={{ ...editable(plan.desc).style, fontSize: 12, color: isDarkBg ? "rgba(255,255,255,0.45)" : "#999", marginBottom: 20 }}>
+                                  <div {...editable(plan.desc)} style={eS(plan.desc, { fontSize: 12, color: isDarkBg ? "rgba(255,255,255,0.45)" : "#999", marginBottom: 20 })}>
                                     {plan.desc.content}
                                   </div>
                                 )}
@@ -3210,7 +3307,7 @@ JSON배열만 출력.`;
                                 {plan.features.map((feat, fi) => (
                                   <div key={fi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, justifyContent: "flex-start", paddingLeft: 8 }}>
                                     <span style={{ fontSize: 10, color: mainColor, fontWeight: 900 }}>+</span>
-                                    <span {...editable(feat)} style={{ ...editable(feat).style, fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555" }}>
+                                    <span {...editable(feat)} style={eS(feat, { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555" })}>
                                       {feat.content}
                                     </span>
                                   </div>
@@ -3239,12 +3336,12 @@ JSON배열만 출력.`;
                     <div style={{ background: bgCol, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -3255,20 +3352,20 @@ JSON배열만 출력.`;
                           <div key={qi} style={{ borderRadius: 14, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, overflow: "hidden" }}>
                             <div style={{ padding: "16px 24px", background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", display: "flex", alignItems: "center", gap: 12 }}>
                               <span style={{ fontSize: 14, fontWeight: 900, color: mainColor }}>Q</span>
-                              <div {...editable(q)} style={{ ...editable(q).style, fontSize: 15, fontWeight: 700, color: isDarkBg ? "#fff" : "#1a1a2e", flex: 1 }}>
+                              <div {...editable(q)} style={eS(q, { fontSize: 15, fontWeight: 700, color: isDarkBg ? "#fff" : "#1a1a2e", flex: 1 })}>
                                 {q.content}
                               </div>
                             </div>
                             {answers[qi] && (
                               <div style={{ padding: "14px 24px 16px 52px", background: isDarkBg ? "rgba(255,255,255,0.02)" : "#fff" }}>
-                                <div {...editable(answers[qi])} style={{ ...editable(answers[qi]).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 }}>
+                                <div {...editable(answers[qi])} style={eS(answers[qi], { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 })}>
                                   {answers[qi].content}
                                 </div>
                               </div>
                             )}
                           </div>
                         )) : bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, padding: "14px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.7 }}>
+                          <div key={bi} {...editable(el)} style={eS(el, { padding: "14px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.7 })}>
                             {el.content}
                           </div>
                         ))}
@@ -3308,12 +3405,12 @@ JSON배열만 출력.`;
                       </div>
                       <div style={{ background: isDarkBg ? bgCol : "#f8f8fa", padding: "52px 56px 72px" }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 48 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 48 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -3328,19 +3425,19 @@ JSON배열만 출력.`;
                                 <div style={{ fontSize: 14, fontWeight: 900, color: mainColor, marginBottom: 10, letterSpacing: 1 }}>
                                   {String(bi + 1).padStart(2, "0")}
                                 </div>
-                                <div {...editable(el)} style={{ ...editable(el).style, fontSize: 15, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
+                                <div {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 })}>
                                   {el.content}
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.9, marginBottom: 8, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.9, marginBottom: 8, maxWidth: 500, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
                         {badge && (
-                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "12px 32px", borderRadius: 28, background: mainColor, color: "#fff", fontSize: 15, fontWeight: 800, marginTop: 36, boxShadow: `0 4px 16px ${mainColor}30`, letterSpacing: 0.5 }}>
+                          <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "12px 32px", borderRadius: 28, background: mainColor, color: "#fff", fontSize: 15, fontWeight: 800, marginTop: 36, boxShadow: `0 4px 16px ${mainColor}30`, letterSpacing: 0.5 })}>
                             {badge.content}
                           </span>
                         )}
@@ -3372,12 +3469,12 @@ JSON배열만 출력.`;
                     <div style={{ background: shippingBg, padding: "64px 48px" }}>
                       <div style={{ textAlign: "center", marginBottom: 40 }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 24, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 24, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>
                             {titleEl.content}
                           </div>
                         )}
@@ -3396,10 +3493,10 @@ JSON배열만 출력.`;
                               {hasLabel ? (
                                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
                                   <span style={{ fontSize: 13, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", minWidth: 80 }}>{parts[0]}</span>
-                                  <span {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.6 }}>{parts.slice(1).join(" | ")}</span>
+                                  <span {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.6 })}>{parts.slice(1).join(" | ")}</span>
                                 </div>
                               ) : (
-                                <div {...editable(el)} style={{ ...editable(el).style, flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.7 }}>
+                                <div {...editable(el)} style={eS(el, { flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.7 })}>
                                   {el.content}
                                 </div>
                               )}
@@ -3434,22 +3531,22 @@ JSON배열만 출력.`;
                       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: productImg ? `linear-gradient(135deg, ${mainColor}cc, rgba(0,0,0,0.7))` : "transparent" }} />
                       <div style={{ position: "relative", zIndex: 2, padding: "80px 48px" }}>
                         {badge && (
-                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "10px 28px", borderRadius: 24, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 14, fontWeight: 800, marginBottom: 24, border: "1px solid rgba(255,255,255,0.2)", letterSpacing: 1 }}>
+                          <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "10px 28px", borderRadius: 24, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 14, fontWeight: 800, marginBottom: 24, border: "1px solid rgba(255,255,255,0.2)", letterSpacing: 1 })}>
                             {badge.content}
                           </span>
                         )}
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)", marginBottom: 12, letterSpacing: 3 }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)", marginBottom: 12, letterSpacing: 3 })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 20, textShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 20, textShadow: "0 2px 16px rgba(0,0,0,0.3)" })}>
                             {titleEl.content}
                           </div>
                         )}
                         {bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 16, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
@@ -3488,35 +3585,35 @@ JSON배열만 출력.`;
                       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: productImg ? "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.78) 100%)" : "transparent" }} />
                       <div style={{ position: "relative", zIndex: 2, padding: "100px 56px" }}>
                         {subtitleEl && (
-                          <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 14, letterSpacing: 4, textTransform: "uppercase" }}>
+                          <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 14, letterSpacing: 4, textTransform: "uppercase" })}>
                             {subtitleEl.content}
                           </div>
                         )}
                         {titleEl && (
-                          <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 38, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 24, textShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>
+                          <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 38, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 24, textShadow: "0 2px 16px rgba(0,0,0,0.3)" })}>
                             {titleEl.content}
                           </div>
                         )}
                         {bodyEls.map((el, bi) => (
-                          <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 16, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
+                          <div key={bi} {...editable(el)} style={eS(el, { fontSize: 16, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, marginBottom: 8, maxWidth: 520, marginLeft: "auto", marginRight: "auto" })}>
                             {el.content}
                           </div>
                         ))}
                         {/* 가격 — 매우 크게 */}
                         {priceEl && (
                           <div style={{ marginTop: 36, marginBottom: 36, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
-                            <div {...editable(priceEl)} style={{ ...editable(priceEl).style, fontSize: 48, fontWeight: 900, color: "#fff", letterSpacing: -1 }}>
+                            <div {...editable(priceEl)} style={eS(priceEl, { fontSize: 48, fontWeight: 900, color: "#fff", letterSpacing: -1 })}>
                               {priceEl.content}
                             </div>
                             {badge && (
-                              <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "8px 18px", borderRadius: 8, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 15, fontWeight: 800, backdropFilter: "blur(4px)" }}>
+                              <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "8px 18px", borderRadius: 8, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 15, fontWeight: 800, backdropFilter: "blur(4px)" })}>
                                 {badge.content}
                               </span>
                             )}
                           </div>
                         )}
                         {!priceEl && badge && (
-                          <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "8px 20px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 28, border: "1px solid rgba(255,255,255,0.2)" }}>
+                          <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "8px 20px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 28, border: "1px solid rgba(255,255,255,0.2)" })}>
                             {badge.content}
                           </span>
                         )}
@@ -3547,7 +3644,7 @@ JSON배열만 출력.`;
                       {/* 미세한 구분선 */}
                       <div style={{ width: 60, height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "0 auto 12px" }} />
                       {els.filter(e => e.type === "text").map((el, ei) => (
-                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: 10, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 }}>
+                        <div key={ei} {...editable(el)} style={eS(el, { fontSize: 10, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 })}>
                           {el.content}
                         </div>
                       ))}
@@ -3573,13 +3670,13 @@ JSON배열만 출력.`;
                         </div>
                         {els.map((el, ei) => {
                           if (el.type === "badge") return (
-                            <span key={ei} {...editable(el)} style={{ ...editable(el).style, display: "inline-block", padding: "5px 14px", borderRadius: 16, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, border: `1px solid ${mainColor}20` }}>
+                            <span key={ei} {...editable(el)} style={eS(el, { display: "inline-block", padding: "5px 14px", borderRadius: 16, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, border: `1px solid ${mainColor}20` })}>
                               {el.content}
                             </span>
                           );
                           if (el.type === "divider") return <div key={ei} style={{ height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "20px auto", maxWidth: 100 }} />;
                           return (
-                            <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.role === "title" ? 22 : 14, fontWeight: el.role === "title" ? 900 : 400, color: el.color || (isDarkBg ? (el.role === "title" ? "#fff" : "rgba(255,255,255,0.6)") : (el.role === "title" ? "#1a1a2e" : "#666")), lineHeight: el.role === "title" ? 1.35 : 1.8, marginBottom: el.role === "title" ? 12 : 6 }}>
+                            <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.role === "title" ? 22 : 14, fontWeight: el.role === "title" ? 900 : 400, color: el.color || (isDarkBg ? (el.role === "title" ? "#fff" : "rgba(255,255,255,0.6)") : (el.role === "title" ? "#1a1a2e" : "#666")), lineHeight: el.role === "title" ? 1.35 : 1.8, marginBottom: el.role === "title" ? 12 : 6 })}>
                               {el.content}
                             </div>
                           );
@@ -3616,13 +3713,13 @@ JSON배열만 출력.`;
                       <div style={{ position: "relative", zIndex: 1, padding: "60px 48px", minHeight: 400, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                         {els.map((el, ei) => {
                           if (el.type === "badge") return (
-                            <span key={ei} {...editable(el)} style={{ ...editable(el).style, display: "inline-block", padding: "6px 16px", borderRadius: 20, background: el.bg || mainColor, color: "#fff", fontSize: 12, fontWeight: 700, marginBottom: 12, alignSelf: "flex-start" }}>
+                            <span key={ei} {...editable(el)} style={eS(el, { display: "inline-block", padding: "6px 16px", borderRadius: 20, background: el.bg || mainColor, color: "#fff", fontSize: 12, fontWeight: 700, marginBottom: 12, alignSelf: "flex-start" })}>
                               {el.content}
                             </span>
                           );
                           if (el.type === "divider") return <div key={ei} style={{ height: 1, background: "rgba(255,255,255,0.2)", margin: "16px 0", maxWidth: 60 }} />;
                           return (
-                            <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.role === "title" ? 30 : el.role === "subtitle" ? 13 : 15, fontWeight: el.role === "title" ? 900 : el.role === "subtitle" ? 600 : 400, color: "#fff", lineHeight: el.role === "title" ? 1.3 : 1.7, marginBottom: el.role === "title" ? 14 : 6, letterSpacing: el.role === "subtitle" ? 2 : 0, opacity: el.role === "subtitle" ? 0.7 : 1 }}>
+                            <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.role === "title" ? 30 : el.role === "subtitle" ? 13 : 15, fontWeight: el.role === "title" ? 900 : el.role === "subtitle" ? 600 : 400, color: "#fff", lineHeight: el.role === "title" ? 1.3 : 1.7, marginBottom: el.role === "title" ? 14 : 6, letterSpacing: el.role === "subtitle" ? 2 : 0, opacity: el.role === "subtitle" ? 0.7 : 1 })}>
                               {el.content}
                             </div>
                           );
@@ -3642,23 +3739,23 @@ JSON배열만 출력.`;
                 return (
                   <div style={{ background: bgCol, padding: "56px 48px", textAlign: "center" }}>
                     {badge && (
-                      <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 16px", borderRadius: 20, background: `${mainColor}12`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, border: `1px solid ${mainColor}20` }}>
+                      <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 16px", borderRadius: 20, background: `${mainColor}12`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, border: `1px solid ${mainColor}20` })}>
                         {badge.content}
                       </span>
                     )}
                     {subtitleEl && (
-                      <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>
+                      <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
                         {subtitleEl.content}
                       </div>
                     )}
                     {titleEl && (
-                      <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 26, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.35, marginBottom: 16 }}>
+                      <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 26, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.35, marginBottom: 16 })}>
                         {titleEl.content}
                       </div>
                     )}
                     {(titleEl || subtitleEl) && decoLine(mainColor)}
                     {bodyEls.map((el, bi) => (
-                      <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#666"), lineHeight: 1.8, marginBottom: 8, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+                      <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#666"), lineHeight: 1.8, marginBottom: 8, maxWidth: 560, marginLeft: "auto", marginRight: "auto" })}>
                         {el.content}
                       </div>
                     ))}
@@ -3666,7 +3763,7 @@ JSON배열만 출력.`;
                       if (el.type === "divider") return <div key={ei} style={{ height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "16px auto", maxWidth: 100 }} />;
                       if (el.type === "badge") return null;
                       return (
-                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 16 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#444"), lineHeight: 1.7, marginBottom: 10 }}>
+                        <div key={ei} {...editable(el)} style={eS(el, { fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 16 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#444"), lineHeight: 1.7, marginBottom: 10 })}>
                           {el.content}
                         </div>
                       );
