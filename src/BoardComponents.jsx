@@ -308,6 +308,8 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 /* ─── 리치 텍스트 에디터 ───────────────────────────────────── */
 function RichEditor({ value, onChange, isDark }) {
   const editorRef = useRef(null);
+  const imgInputRef = useRef(null);
+  const [imgUploading, setImgUploading] = useState(false);
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -342,7 +344,51 @@ function RichEditor({ value, onChange, isDark }) {
     exec("insertHTML", html);
   };
 
+  // 이미지 직접 업로드 (파일 선택 or 드래그&드롭)
+  const handleImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    setImgUploading(true);
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 20 * 1024 * 1024) { alert(`${file.name}: 이미지는 20MB 이하만 가능합니다.`); continue; }
+      try {
+        // WebP 변환 (GIF 제외)
+        let uploadFile = file;
+        if (file.type !== "image/gif") {
+          uploadFile = await new Promise(resolve => {
+            const img = new Image();
+            const objUrl = URL.createObjectURL(file);
+            img.onload = () => {
+              const MAX = 1600;
+              let w = img.width, h = img.height;
+              if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+              const canvas = document.createElement("canvas");
+              canvas.width = w; canvas.height = h;
+              canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+              canvas.toBlob(blob => {
+                URL.revokeObjectURL(objUrl);
+                resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
+              }, "image/webp", 0.82);
+            };
+            img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+            img.src = objUrl;
+          });
+        }
+        const path = `posts/${Date.now()}_${safeName(uploadFile.name)}`;
+        const url = await uploadFileToStorage(uploadFile, path);
+        editorRef.current.focus();
+        document.execCommand("insertHTML", false, `<img src="${url}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);
+        onChange(editorRef.current.innerHTML);
+      } catch (e) { alert(`이미지 업로드 실패: ${e.message}`); }
+    }
+    setImgUploading(false);
+  };
+
   const insertImage = () => {
+    imgInputRef.current?.click();
+  };
+
+  const insertImageByUrl = () => {
     const url = prompt("이미지 URL을 입력하세요:");
     if (url) exec("insertHTML", `<img src="${url}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);
   };
@@ -416,7 +462,9 @@ function RichEditor({ value, onChange, isDark }) {
         <ToolBtn onClick={()=>exec("insertOrderedList")} title="번호 목록">1. 목록</ToolBtn>
         <Divider/>
         {/* 삽입 */}
-        <ToolBtn onClick={insertImage} title="이미지 삽입">IMG</ToolBtn>
+        <ToolBtn onClick={insertImage} title="사진 업로드">{imgUploading ? "..." : "IMG"}</ToolBtn>
+        <ToolBtn onClick={insertImageByUrl} title="이미지 URL">URL</ToolBtn>
+        <input ref={imgInputRef} type="file" multiple accept="image/*" style={{display:"none"}} onChange={e=>{handleImageUpload(e.target.files);e.target.value="";}}/>
         <ToolBtn onClick={insertVideo} title="유튜브 동영상">▶</ToolBtn>
         <ToolBtn onClick={insertLink} title="링크 삽입">🔗</ToolBtn>
         <ToolBtn onClick={insertTable} title="표 삽입">⊞</ToolBtn>
@@ -448,7 +496,22 @@ function RichEditor({ value, onChange, isDark }) {
       <div ref={editorRef} contentEditable suppressContentEditableWarning
         onInput={e=>onChange(e.currentTarget.innerHTML)}
         onClick={()=>setShowEmoji(false)}
-        data-placeholder="내용을 입력해주세요..."
+        onDrop={e=>{
+          const files = e.dataTransfer?.files;
+          if (files && Array.from(files).some(f=>f.type.startsWith("image/"))) {
+            e.preventDefault(); e.stopPropagation();
+            handleImageUpload(Array.from(files).filter(f=>f.type.startsWith("image/")));
+          }
+        }}
+        onPaste={e=>{
+          const items = e.clipboardData?.items;
+          if (items) {
+            const imgFiles = [];
+            for (const item of items) { if (item.type.startsWith("image/")) imgFiles.push(item.getAsFile()); }
+            if (imgFiles.length > 0) { e.preventDefault(); handleImageUpload(imgFiles); }
+          }
+        }}
+        data-placeholder="내용을 입력해주세요... (이미지를 드래그하거나 붙여넣기 할 수 있어요)"
         style={{minHeight:280,padding:"16px 18px",color:edTxt,fontSize:15,lineHeight:1.8,outline:"none",
           wordBreak:"break-word",overflowY:"auto"}}
       />
@@ -660,7 +723,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
                   style={{flex:1,padding:"10px 16px",borderRadius:10,border:`2px solid ${priceType===v?c:bdr}`,
                     background:priceType===v?c+"15":"transparent",
                     color:priceType===v?c:C.muted,fontSize:13,fontWeight:priceType===v?800:500,cursor:"pointer",transition:"all 0.15s"}}>
-                  {v==="free"?"🆓 ":"💰 "}{l}
+                  {l}
                 </button>
               ))}
             </div>

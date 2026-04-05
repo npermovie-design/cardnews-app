@@ -66,6 +66,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
   const [archiveEditPost, setArchiveEditPost] = useState(null);
   const [archiveEditForm, setArchiveEditForm] = useState({ title: "", desc: "", tag: "" });
+  const [archiveThumb, setArchiveThumb] = useState(null); // 썸네일 이미지 파일 (비이미지 자료용)
+  const archiveThumbRef = useRef(null);
 
   // 뒤로가기 시 게시글 상세→목록으로 복원
   useEffect(() => {
@@ -964,7 +966,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
             {/* 자료실 파일 input (숨김) */}
             {subCat==="archive" && (
-              <input ref={archiveFileRef} type="file" multiple accept="image/*,video/*,audio/*,.gif" style={{display:"none"}} onChange={e=>{
+              <input ref={archiveFileRef} type="file" multiple accept="image/*,video/*,audio/*,.gif,.zip,.rar,.7z,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.hwp,.txt" style={{display:"none"}} onChange={e=>{
                 handleArchiveUpload(e.target.files);
                 e.target.value="";
               }}/>
@@ -972,7 +974,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
             {/* 자료 업로드 상세 설정 모달 */}
             {showArchiveModal && archiveUploadFile && (
-              <div onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);}} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+              <div onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);setArchiveThumb(null);}} style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
                 <div onClick={e=>e.stopPropagation()} style={{width:"min(480px,95vw)",background:isDark?"#1a1730":"#fff",borderRadius:20,padding:"28px 24px",boxShadow:"0 24px 64px rgba(0,0,0,0.4)",border:`1px solid ${bdr}`}}>
                   <div style={{fontSize:18,fontWeight:900,color:C.text,marginBottom:16}}>자료 등록</div>
                   {/* 썸네일 미리보기 */}
@@ -984,6 +986,24 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   {archiveUploadFile && archiveUploadFile.type?.startsWith("video") && (
                     <div style={{marginBottom:12,borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,maxHeight:180,background:"#000"}}>
                       <video src={URL.createObjectURL(archiveUploadFile)} controls muted style={{maxWidth:"100%",maxHeight:180,display:"block",margin:"0 auto"}}/>
+                    </div>
+                  )}
+                  {/* 비이미지/비영상 파일: 썸네일 추가 */}
+                  {archiveUploadFile && !archiveUploadFile.type?.startsWith("image") && !archiveUploadFile.type?.startsWith("video") && (
+                    <div style={{marginBottom:12}}>
+                      <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:6}}>썸네일 이미지 <span style={{fontWeight:400}}>(선택)</span></div>
+                      {archiveThumb ? (
+                        <div style={{position:"relative",borderRadius:12,overflow:"hidden",border:`1px solid ${bdr}`,maxHeight:160,display:"flex",justifyContent:"center",background:isDark?"rgba(255,255,255,0.03)":"#f8f8fb"}}>
+                          <img src={URL.createObjectURL(archiveThumb)} alt="" style={{maxWidth:"100%",maxHeight:160,objectFit:"contain"}} onLoad={e=>URL.revokeObjectURL(e.target.src)}/>
+                          <button onClick={()=>setArchiveThumb(null)} style={{position:"absolute",top:6,right:6,width:22,height:22,borderRadius:"50%",border:"none",background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button>
+                        </div>
+                      ) : (
+                        <button onClick={()=>archiveThumbRef.current?.click()}
+                          style={{width:"100%",padding:"16px",borderRadius:12,border:`2px dashed ${bdr}`,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer",textAlign:"center"}}>
+                          + 썸네일 이미지 추가 (드래그 또는 클릭)
+                        </button>
+                      )}
+                      <input ref={archiveThumbRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files[0])setArchiveThumb(e.target.files[0]);e.target.value="";}}/>
                     </div>
                   )}
                   <div style={{marginBottom:12}}>
@@ -1001,7 +1021,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${bdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box",resize:"vertical"}}/>
                   </div>
                   <div style={{display:"flex",gap:8,marginBottom:12}}>
-                    {[["free","🆓 무료","#22c55e"],["paid","💰 유료","#f59e0b"]].map(([v,l,c])=>(
+                    {[["free","무료","#22c55e"],["paid","유료","#f59e0b"]].map(([v,l,c])=>(
                       <button key={v} onClick={()=>{ if(v==="paid" && user?.role!=="admin"){ alert("유료 자료는 관리자만 등록할 수 있습니다."); return; } setArchiveForm(p=>({...p,priceType:v})); }}
                         style={{flex:1,padding:"10px",borderRadius:10,border:`2px solid ${archiveForm.priceType===v?c:bdr}`,background:archiveForm.priceType===v?c+"15":"transparent",color:archiveForm.priceType===v?c:C.muted,fontSize:13,fontWeight:archiveForm.priceType===v?800:500,cursor:"pointer",opacity:v==="paid"&&user?.role!=="admin"?0.4:1}}>{l}</button>
                     ))}
@@ -1031,23 +1051,32 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     ))}
                   </div>
                   <div style={{display:"flex",gap:10}}>
-                    <button onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);}} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer"}}>취소</button>
+                    <button onClick={()=>{setShowArchiveModal(false);setArchiveUploadFile(null);setArchiveThumb(null);}} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${bdr}`,background:"transparent",color:C.muted,fontSize:14,cursor:"pointer"}}>취소</button>
                     <button onClick={async()=>{
                       const file = archiveUploadFile;
                       try {
                         const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
                         const url = await uploadFileToStorage(file, path);
                         const type = file.type.startsWith("video")?"video":file.type.startsWith("image")?"image":"file";
+                        const images = [url];
+                        // 썸네일 이미지가 있으면 업로드해서 첫번째에 추가
+                        if (archiveThumb) {
+                          try {
+                            const thumbPath = `archive/thumb_${Date.now()}_${archiveThumb.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+                            const thumbUrl = await uploadFileToStorage(archiveThumb, thumbPath);
+                            images.unshift(thumbUrl);
+                          } catch(te) { console.warn("썸네일 업로드 실패:", te); }
+                        }
                         await submitPost({
                           title: archiveForm.title || file.name.replace(/\.[^.]+$/,""),
                           body: `<p>${archiveForm.desc || type+" 자료"}</p>`,
-                          subCat:"archive", tag: archiveForm.tag || "", images:[url],
+                          subCat:"archive", tag: archiveForm.tag || "", images,
                           priceType: archiveForm.priceType, price: archiveForm.price,
                         });
                         showToast("자료가 등록됐어요!","success");
                         try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
                       } catch(e){ alert("업로드 실패: "+e.message); }
-                      setShowArchiveModal(false); setArchiveUploadFile(null);
+                      setShowArchiveModal(false); setArchiveUploadFile(null); setArchiveThumb(null);
                       setArchiveForm({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
                     }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>등록하기</button>
                   </div>
@@ -1082,7 +1111,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>📁</div>
+                        <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.4, color: C.muted }}>+</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: dragOver ? "#7c6aff" : C.text, marginBottom: 4 }}>
                           파일을 여기에 드래그하거나 클릭하세요
                         </div>
