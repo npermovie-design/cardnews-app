@@ -165,6 +165,26 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, [selectedEl, canvasZoom]);
 
+  // Delete 키로 선택된 요소 삭제
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!selectedEl || phase !== "editor") return;
+      // contentEditable 안에서 타이핑 중이면 무시
+      if (document.activeElement?.contentEditable === "true") return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        if (selectedEl.elIdx >= 0) {
+          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
+            ...s, elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx),
+          }));
+        }
+        setSelectedEl(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedEl, phase]);
+
   // 요소 선택 시 좌측 패널 자동 전환
   useEffect(() => {
     if (selectedEl && phase === "editor") {
@@ -1179,6 +1199,47 @@ JSON배열만 출력.`;
                 }}>
                 + 섹션 추가
               </button>
+
+              {/* 레이어 패널 — 선택된 섹션의 오브젝트 */}
+              {activeSection < sections.length && (
+                <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${bdr}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>
+                    페이지 {activeSection + 1} 레이어
+                  </div>
+                  {/* 배경 이미지 레이어 */}
+                  {sections[activeSection]?.bgImage && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, marginBottom: 4, background: D ? "rgba(255,255,255,0.03)" : "#f9f9f9", border: `1px solid ${bdr}` }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 4, overflow: "hidden", flexShrink: 0 }}>
+                        <img src={sections[activeSection].bgImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: muted, flex: 1 }}>배경 이미지</span>
+                    </div>
+                  )}
+                  {/* 이미지 레이어 */}
+                  {sectionImages[sections[activeSection]?.id]?.url && (
+                    <div onClick={() => setSelectedEl({ secIdx: activeSection, elIdx: -1, el: { type: "image", _type: "image", role: "section_image" } })}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, marginBottom: 4, cursor: "pointer", background: selectedEl?.el?._type === "image" && selectedEl?.secIdx === activeSection ? `${acc}15` : (D ? "rgba(255,255,255,0.03)" : "#f9f9f9"), border: `1px solid ${selectedEl?.el?._type === "image" && selectedEl?.secIdx === activeSection ? acc : bdr}` }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 4, overflow: "hidden", flexShrink: 0 }}>
+                        <img src={sectionImages[sections[activeSection].id].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: text, flex: 1 }}>섹션 이미지</span>
+                    </div>
+                  )}
+                  {/* 텍스트/배지 요소 레이어 */}
+                  {(sections[activeSection]?.elements || []).map((el, ei) => (
+                    <div key={ei} onClick={() => setSelectedEl({ secIdx: activeSection, elIdx: ei, el: { ...el, _type: el.type === "badge" ? "text" : "text" } })}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, marginBottom: 3, cursor: "pointer", background: selectedEl?.secIdx === activeSection && selectedEl?.elIdx === ei ? `${acc}15` : "transparent", border: `1px solid ${selectedEl?.secIdx === activeSection && selectedEl?.elIdx === ei ? acc : "transparent"}` }}>
+                      <span style={{ fontSize: 9, color: acc, fontWeight: 700, width: 16, flexShrink: 0 }}>
+                        {el.type === "badge" ? "B" : el.type === "divider" ? "—" : "T"}
+                      </span>
+                      <span style={{ fontSize: 10, color: text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {el.content?.slice(0, 25) || el.role || el.type}
+                      </span>
+                      <span style={{ fontSize: 8, color: muted }}>{el.role}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
