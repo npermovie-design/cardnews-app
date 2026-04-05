@@ -289,8 +289,17 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
 디자인 톤:${seed.tone} / 색상방향:${seed.palette} / 레이아웃:${seed.layout}
 
 이 제품의 쇼핑몰 상세페이지를 ${sectionCount}개 섹션 JSON배열로 만들어줘.
-디자인 톤에 맞춰 bg_color, 폰트 크기, 여백, 레이아웃을 다양하게 구성해.
-매번 새로운 카피라이팅과 구성으로 만들어 — 같은 패턴 반복 금지.
+
+섹션 흐름 (내러티브 순서 참고):
+히어로 → 고민/공감 → 솔루션(특장점) → 포인트 상세(2-3개) → 숫자 강조/비교 → 후기 → 스펙/배송 → 보증/신뢰 → CTA → AI 고지
+
+디자인 톤에 맞춰 bg_color를 섹션마다 다양하게:
+- 밝은 섹션(#fff, #f8f8f8, #fafafa)과 어두운 섹션(메인컬러 기반, #1a1a2e, #111) 교차
+- rgba 투명도 활용: 메인컬러의 05~15% 배경도 적극 사용
+- 동일 bg_color 연속 2개 이상 금지
+
+매번 새로운 카피라이팅, 구성, 색상 조합으로 만들어 — 같은 패턴 반복 금지.
+카피는 구체적이고 설득력 있게 — 실제 쇼핑몰 수준의 퀄리티.
 
 각 섹션 구조:
 {
@@ -1104,12 +1113,41 @@ JSON배열만 출력.`;
                             {el.content}
                           </div>
                         ))}
-                        {/* 하단 스크롤 유도 */}
-                        <div style={{ marginTop: 32, display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.3)" }} />
-                          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: 2, fontWeight: 500 }}>SCROLL DOWN</span>
-                        </div>
+                        {/* 통계 블록 (Figma 패턴) */}
+                        {findEls("stat_number").length > 0 && (
+                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(findEls("stat_number").length, 4)}, 1fr)`, gap: 12, marginTop: 28, maxWidth: 480 }}>
+                            {findEls("stat_number").map((sn, si) => (
+                              <div key={si} style={{ textAlign: "center", padding: "14px 8px", borderRadius: 12, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
+                                <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>{sn.content}</div>
+                                {findEls("stat_label")[si] && (
+                                  <div {...editable(findEls("stat_label")[si])} style={{ ...editable(findEls("stat_label")[si]).style, fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{findEls("stat_label")[si].content}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* CTA 버튼 */}
+                        {findEl("price") && (
+                          <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 16 }}>
+                            <div style={{ padding: "16px 32px", borderRadius: 14, background: mainColor, color: "#fff", fontSize: 16, fontWeight: 800, boxShadow: `0 4px 20px ${mainColor}40` }}>
+                              {findEl("price") && <span {...editable(findEl("price"))} style={{ ...editable(findEl("price")).style }}>{findEl("price").content}</span>}
+                              {" "}구매하기
+                            </div>
+                          </div>
+                        )}
+                        {!findEl("price") && (
+                          <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.3)" }} />
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: 2, fontWeight: 500 }}>SCROLL DOWN</span>
+                          </div>
+                        )}
                       </div>
+                      {/* 이미지 교체 */}
+                      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 3, display: "flex", gap: 4 }}>
+                        <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
+                          style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>교체</label>
+                      </div>
+                      <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   );
                 }
