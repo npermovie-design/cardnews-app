@@ -356,7 +356,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const isKo = _lang === "ko";
   const _s = (ko, en) => isKo ? ko : en;
 
-  const AiFooter = () => null;
+  function AiFooter() { return null; }
 
   // 글쓰기 탭 state (sessionStorage 기반 → React state로 전환)
   const [writeTabState, setWriteTabState] = useState(() => { try { return sessionStorage.getItem("_blog_write_tab") || "manual"; } catch { return "manual"; } });
@@ -706,7 +706,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 인트로 소개 화면 컴포넌트 (블로그 + SNS 이미지 공용) ─────
-  const IntroScreen = ({ icon, title, subtitle, badge, color, steps, features, cta, onStart }) => {
+  function IntroScreen({ icon, title, subtitle, badge, color, steps, features, cta, onStart }) {
     const D = isDark;
     const t = D?"#fff":"#1a1a2e";
     const m = D?"rgba(255,255,255,0.5)":"#888";
@@ -755,7 +755,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         </div>
       </div>
     );
-  };
+  }
 
   // ── 블로그 인트로 데이터 (다국어) ─────────────────────────
   const BLOG_INTRO = {
