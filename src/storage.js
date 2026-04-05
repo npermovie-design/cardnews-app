@@ -341,15 +341,7 @@ export async function fetchUser(uid) {
 export async function changePoints(uid, delta, reason) {
   if (!uid) { console.warn("changePoints: uid 없음"); return 0; }
   try {
-    // RPC가 있으면 원자적 처리 시도
-    try {
-      const { data: rpcResult, error: rpcErr } = await supabase.rpc("change_points", {
-        p_uid: uid, p_delta: delta, p_reason: reason || "",
-      });
-      if (!rpcErr && rpcResult !== null && rpcResult !== undefined) return rpcResult;
-    } catch {}
-
-    // RPC 없으면 폴백: 읽기 + 쓰기 (레이스 컨디션 가능하나 최선)
+    // 읽기 + 쓰기
     const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
     const currentPoints = row?.points || 0;
 
