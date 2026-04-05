@@ -127,6 +127,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // 텍스트 요소 선택/편집
   const [selectedEl, setSelectedEl] = useState(null); // { secIdx, elIdx, el }
   const [templateTypeFilter, setTemplateTypeFilter] = useState("hero");
+  const [canvasZoom, setCanvasZoom] = useState(100);
   const [agentInput, setAgentInput] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentMessages, setAgentMessages] = useState([]);
@@ -557,14 +558,14 @@ JSON배열만 출력.`;
       setPipeResults(prev => ({ ...prev, layout: layoutData }));
       setPipeStep(5); // 완료
 
-      // 섹션 데이터 설정 → 에디터로 전환
-      setSections(layoutData.map((s, i) => ({ ...s, id: `sec_${i}_${Date.now()}` })));
+      // 섹션 데이터 설정 → 아웃라인 확인 단계
+      setSections(layoutData.map((s, i) => ({ ...s, id: `sec_${i}_${Date.now()}`, enabled: true })));
       setActiveSection(0);
 
       // 포인트 차감
       if (user) await changePoints(user.uid, -10, "상세페이지 생성");
 
-      setTimeout(() => setPhase("editor"), 800);
+      setTimeout(() => setPhase("outline"), 800);
 
     } catch (e) {
       console.error("Pipeline error:", e);
@@ -895,6 +896,65 @@ JSON배열만 출력.`;
     </div>
   );
 
+  // ── 아웃라인 확인 (Phase 1.5) ──────────────────────────
+  if (phase === "outline") return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f5f5f5" }}>
+      <div style={{ maxWidth: 600, width: "100%", padding: "40px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 6 }}>섹션 구성 확인</div>
+          <div style={{ fontSize: 13, color: muted }}>포함할 섹션을 선택하고 순서를 변경하세요</div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>총 {sections.filter(s => s.enabled !== false).length}/{sections.length}개 섹션 선택됨</div>
+          {sections.map((sec, i) => {
+            const sType = SECTION_TYPES.find(t => t.id === sec.type);
+            return (
+              <div key={sec.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: `1px solid ${sec.enabled !== false ? acc + "40" : bdr}`, background: sec.enabled !== false ? (D ? "rgba(124,106,255,0.06)" : "#faf9ff") : (D ? "rgba(255,255,255,0.02)" : "#fafafa"), marginBottom: 6, opacity: sec.enabled !== false ? 1 : 0.5 }}>
+                {/* 체크박스 */}
+                <button onClick={() => setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, enabled: s.enabled === false ? true : false }))}
+                  style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${sec.enabled !== false ? acc : bdr}`, background: sec.enabled !== false ? acc : "transparent", color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {sec.enabled !== false ? "v" : ""}
+                </button>
+                {/* 순서 변경 */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+                  <button onClick={() => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1],a[i]]=[a[i],a[i-1]]; return a; }); }}
+                    style={{ width: 18, height: 14, border: "none", background: "transparent", color: muted, fontSize: 8, cursor: "pointer", padding: 0 }}>▲</button>
+                  <button onClick={() => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i],a[i+1]]=[a[i+1],a[i]]; return a; }); }}
+                    style={{ width: 18, height: 14, border: "none", background: "transparent", color: muted, fontSize: 8, cursor: "pointer", padding: 0 }}>▼</button>
+                </div>
+                {/* 섹션 정보 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{sType?.label || sec.type}</div>
+                  <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {sec.elements?.find(e => e.role === "title")?.content || sType?.desc || ""}
+                  </div>
+                </div>
+                {/* 레이아웃 */}
+                <span style={{ fontSize: 9, color: muted, background: D ? "rgba(255,255,255,0.06)" : "#f0f0f0", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{sec.layout}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => { setPhase("generating"); setPipeStep(4); }}
+            style={{ flex: 1, padding: "14px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>
+            ← 다시 생성
+          </button>
+          <button onClick={() => {
+            // 비활성화된 섹션 제거 후 에디터로
+            setSections(prev => prev.filter(s => s.enabled !== false));
+            setPhase("editor");
+          }}
+            style={{ flex: 2, padding: "14px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 16px ${acc}40` }}>
+            편집 시작 ({sections.filter(s => s.enabled !== false).length}개 섹션) →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── 에디터 (Phase 2) ────────────────────────────────────
   if (phase === "editor") return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -1011,6 +1071,31 @@ JSON배열만 출력.`;
                     style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} />
                 </div>
               ))}
+              {/* 폰트 선택 */}
+              <div style={{ height: 1, background: bdr, margin: "12px 0" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>폰트</div>
+              {[
+                { id: "Pretendard", label: "프리텐다드", sample: "가나다 ABC 123" },
+                { id: "'Noto Sans KR'", label: "노토 산스", sample: "가나다 ABC 123" },
+                { id: "SBAggroB", label: "SB 어그로", sample: "가나다 ABC" },
+                { id: "'Cafe24Ssurround'", label: "카페24 써라운드", sample: "가나다 ABC" },
+                { id: "MaruBuri", label: "마루부리", sample: "가나다 ABC" },
+                { id: "'GmarketSans'", label: "지마켓 산스", sample: "가나다 ABC" },
+                { id: "serif", label: "세리프", sample: "가나다 ABC 123" },
+                { id: "monospace", label: "모노스페이스", sample: "가나다 ABC 123" },
+              ].map(f => (
+                <button key={f.id} onClick={() => {
+                  if (selectedEl) {
+                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontFamily: f.id }) }));
+                    setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontFamily: f.id } }));
+                  }
+                }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${selectedEl?.el?.fontFamily === f.id ? acc : bdr}`, background: selectedEl?.el?.fontFamily === f.id ? `${acc}15` : "transparent", cursor: "pointer", marginBottom: 4, textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: text }}>{f.label}</span>
+                  <span style={{ fontSize: 11, color: muted, fontFamily: f.id }}>{f.sample}</span>
+                </button>
+              ))}
+              <div style={{ fontSize: 10, color: muted, marginTop: 8 }}>텍스트를 먼저 클릭한 후 폰트를 선택하세요</div>
             </div>
           )}
 
@@ -1241,7 +1326,7 @@ JSON배열만 출력.`;
       </div>
 
       {/* 캔버스 영역 */}
-      <div style={{ flex: 1, overflowY: "auto", background: D ? "rgba(0,0,0,0.15)" : "#e5e5e5", padding: "20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", background: D ? "rgba(0,0,0,0.15)" : "#e5e5e5", padding: "20px", position: "relative" }}>
         {/* 상단 액션 바 */}
         <div style={{ maxWidth: 860, margin: "0 auto 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 12, color: muted }}>{sections.length}개 섹션 · {Object.values(sectionImages).filter(v => v?.url).length}개 이미지 생성됨</span>
@@ -1343,7 +1428,7 @@ JSON배열만 출력.`;
           </div>
         )}
 
-        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s" }}>
           {sections.map((sec, i) => (
             <div key={sec.id}
               onClick={() => setActiveSection(i)}
@@ -1426,6 +1511,7 @@ JSON배열만 출력.`;
                     position: "relative",
                     textShadow: el.textShadow || undefined,
                     textAlign: el.textAlign || undefined,
+                    fontFamily: el.fontFamily || undefined,
                     marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
                     marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
                     ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
@@ -2634,6 +2720,17 @@ JSON배열만 출력.`;
               )}
             </div>
           ))}
+        </div>
+
+        {/* 줌 컨트롤 */}
+        <div style={{ position: "sticky", bottom: 12, display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, background: D ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.95)", border: `1px solid ${bdr}`, boxShadow: "0 2px 12px rgba(0,0,0,0.1)", pointerEvents: "auto" }}>
+            <button onClick={() => setCanvasZoom(z => Math.max(30, z - 10))} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", color: text, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+            <span style={{ fontSize: 11, fontWeight: 700, color: text, minWidth: 36, textAlign: "center" }}>{canvasZoom}%</span>
+            <button onClick={() => setCanvasZoom(z => Math.min(150, z + 10))} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", color: text, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            <div style={{ width: 1, height: 16, background: bdr, margin: "0 4px" }} />
+            <button onClick={() => setCanvasZoom(100)} style={{ padding: "2px 8px", borderRadius: 6, border: "none", background: canvasZoom === 100 ? `${acc}20` : "transparent", color: canvasZoom === 100 ? acc : muted, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>맞춤</button>
+          </div>
         </div>
       </div>
 
