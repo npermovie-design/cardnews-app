@@ -1132,13 +1132,13 @@ JSON배열만 출력.`;
                 const secImg = sectionImages[sec.id];
                 const heroImgSrc = images.length > 0 ? images[0].preview : null;
                 const aiImgSrc = secImg?.url || null;
+                const layout = sec.layout || "centered_text";
                 // 제품 이미지 자동 분배 — 이미지가 필요한 레이아웃에만 배치 (같은 사진 반복 방지)
                 const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
                 const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
                 const productImgForSection = (needsImage && images.length > 0)
                   ? images[i % images.length]?.preview || null
                   : null;
-                const layout = sec.layout || "centered_text";
                 const bgCol = sec.bg_color || "#fff";
                 const isDarkBg = bgCol && (() => {
                   const hex = bgCol.replace("#", "");
