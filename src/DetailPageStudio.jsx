@@ -618,8 +618,52 @@ JSON배열만 출력.`;
       setPipeResults(prev => ({ ...prev, layout: layoutData }));
       setPipeStep(5); // 완료
 
-      // 섹션 데이터 설정 → 아웃라인 확인 단계
-      setSections(layoutData.map((s, i) => ({ ...s, id: `sec_${i}_${Date.now()}`, enabled: true })));
+      // 섹션 데이터 설정 → 레이아웃 다양성 강제 적용 + 배경색 교차
+      const layoutVariants = {
+        hero: ["full_image", "left_image_right_text", "centered_text"],
+        pain_points: ["centered_text", "grid_2col", "left_image_right_text"],
+        features: ["grid_2col", "grid_3col"],
+        point: ["left_image_right_text", "right_image_left_text", "full_image"],
+        stats_highlight: ["centered_text"],
+        review: ["card_list"],
+        comparison: ["centered_text"],
+        guarantee: ["centered_text"],
+        cta: ["centered_text", "left_image_right_text"],
+        faq: ["centered_text"],
+        howto: ["centered_text"],
+        before_after: ["centered_text"],
+        event: ["centered_text"],
+      };
+      const bgPattern = ["#fff", "#f9f6f2", "#1a1a2e", "#fff", "#f5f5f5", "#1a1a2e", "#f9f6f2", "#fff", "#1a1a2e", "#f9f6f2"];
+      let pointIdx = 0;
+      const diversified = layoutData.map((s, i) => {
+        const type = s.type || "point";
+        const variants = layoutVariants[type];
+        let newLayout = s.layout;
+        // point 섹션은 교대 배치
+        if (type === "point") {
+          newLayout = pointIdx % 2 === 0 ? "left_image_right_text" : "right_image_left_text";
+          // 3번째 point는 full_image
+          if (pointIdx === 2) newLayout = "full_image";
+          pointIdx++;
+        } else if (variants && variants.length > 1) {
+          // 같은 타입 내에서 랜덤 선택 (이전과 다르게)
+          newLayout = variants[Math.floor(Math.random() * variants.length)];
+        }
+        // 배경색 교차 강제 (hero/cta/stats는 다크, 나머지는 패턴)
+        let newBg = s.bg_color;
+        if (type === "hero") newBg = "#111";
+        else if (type === "cta") newBg = "#1a1a2e";
+        else if (type === "stats_highlight") newBg = "#1a1a2e";
+        else if (type === "ai_notice") newBg = "#fafafa";
+        else if (type === "shipping") newBg = "#f5f5f5";
+        else {
+          // 밝은/어두운 교차 — 연속 같은 배경 방지
+          newBg = bgPattern[i % bgPattern.length];
+        }
+        return { ...s, id: `sec_${i}_${Date.now()}`, enabled: true, layout: newLayout, bg_color: newBg };
+      });
+      setSections(diversified);
       setActiveSection(0);
 
       // 포인트 차감 (실패해도 진행)

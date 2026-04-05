@@ -10,7 +10,7 @@
     <xhtml:link rel="alternate" hreflang="ja" href="https://snsmakeit.com/?lang=ja"/>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://snsmakeit.com/?lang=zh"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://snsmakeit.com/"/>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -18,7 +18,7 @@
   <!-- 소개 -->
   <url>
     <loc>https://snsmakeit.com/about</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -26,7 +26,7 @@
   <!-- 이용방법 -->
   <url>
     <loc>https://snsmakeit.com/howto</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -34,7 +34,7 @@
   <!-- AI 생성기 -->
   <url>
     <loc>https://snsmakeit.com/ai</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -42,7 +42,7 @@
   <!-- 가격정책 -->
   <url>
     <loc>https://snsmakeit.com/pricing</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -50,7 +50,7 @@
   <!-- SNS뉴스 -->
   <url>
     <loc>https://snsmakeit.com/snsnews</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -58,7 +58,7 @@
   <!-- SEO 분석기 -->
   <url>
     <loc>https://snsmakeit.com/analyzer</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -66,7 +66,7 @@
   <!-- 커뮤니티 - 정보공유 -->
   <url>
     <loc>https://snsmakeit.com/community/info</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -74,7 +74,7 @@
   <!-- 커뮤니티 - 질문답변 -->
   <url>
     <loc>https://snsmakeit.com/community/qna</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -82,7 +82,7 @@
   <!-- 커뮤니티 - 자유게시판 -->
   <url>
     <loc>https://snsmakeit.com/community/free</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -90,7 +90,7 @@
   <!-- 커뮤니티 - 사용후기 -->
   <url>
     <loc>https://snsmakeit.com/community/review</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -98,7 +98,7 @@
   <!-- 커뮤니티 - 자료실 -->
   <url>
     <loc>https://snsmakeit.com/community/archive</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -106,7 +106,7 @@
   <!-- 고객사례 -->
   <url>
     <loc>https://snsmakeit.com/cases</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -114,7 +114,7 @@
   <!-- 이벤트 -->
   <url>
     <loc>https://snsmakeit.com/event</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -122,7 +122,7 @@
   <!-- 문의하기 -->
   <url>
     <loc>https://snsmakeit.com/contact</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -130,8 +130,40 @@
   <!-- 약관 -->
   <url>
     <loc>https://snsmakeit.com/legal</loc>
-    <lastmod>2026-03-30</lastmod>
+    <lastmod>2026-04-05</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+
+  <!-- AI 상세페이지 스튜디오 -->
+  <url>
+    <loc>https://snsmakeit.com/ai/detail-simple</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- AI 이미지 생성 -->
+  <url>
+    <loc>https://snsmakeit.com/ai/image</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- AI 영상 생성 -->
+  <url>
+    <loc>https://snsmakeit.com/ai/video</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- AI 블로그 글쓰기 -->
+  <url>
+    <loc>https://snsmakeit.com/ai/blog</loc>
+    <lastmod>2026-04-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>
