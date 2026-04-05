@@ -20,8 +20,9 @@ export default async function handler(req, res) {
     const model = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
     const genConfig = {
-      maxOutputTokens: maxTokens || 8000,
-      temperature: 1,
+      maxOutputTokens: maxTokens || 10000,
+      temperature: 0.9,
+      responseMimeType: "application/json",
     };
 
     // 이미지가 있으면 멀티모달 요청

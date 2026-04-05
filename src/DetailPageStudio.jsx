@@ -625,7 +625,7 @@ JSON배열만 출력.`;
         geminiRes = await fetch("/api/gemini-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
+          body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 10000 }),
           signal: abortCtrl.signal,
         });
       } catch (fetchErr) {
@@ -658,7 +658,7 @@ JSON배열만 출력.`;
         try {
           const retryRes = await fetch("/api/gemini-generate", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
+            body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 10000 }),
           });
           const retryData = await retryRes.json();
           const retryText = (retryData.text || "").replace(/```json?\n?/g, "").replace(/```/g, "").trim();
