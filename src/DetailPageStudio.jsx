@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react"
 import { callAI } from "./aiClient";
 import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useI18n } from "./i18n.jsx";
+import { SECTION_TEMPLATES, SECTION_TYPE_LABELS } from "./detailTemplates.js";
 
 /* ══════════════════════════════════════════════════════════════
    DetailPageStudio — Hookable 스타일 상세페이지 생성기
@@ -891,6 +892,7 @@ JSON배열만 출력.`;
           {[
             { key: "pages", icon: "☰", label: "페이지" },
             { key: "text", icon: "T", label: "텍스트" },
+            { key: "templates", icon: "▦", label: "템플릿" },
             { key: "shapes", icon: "◇", label: "도형" },
             { key: "media", icon: "+", label: "자료" },
             { key: "color", icon: "◐", label: "색상" },
@@ -996,6 +998,69 @@ JSON배열만 출력.`;
                     style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} />
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 템플릿 탭 */}
+          {sidebarTab === "templates" && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>섹션 템플릿</div>
+              <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>클릭하면 선택한 섹션을 교체합니다</div>
+              {Object.entries(SECTION_TEMPLATES).map(([type, templates]) => (
+                <div key={type} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: acc, marginBottom: 6, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                    {SECTION_TYPE_LABELS?.[type] || type}
+                    <span style={{ fontSize: 10, color: muted, fontWeight: 500, marginLeft: 6 }}>{templates.length}종</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {templates.map((tmpl, ti) => (
+                      <button key={ti}
+                        onClick={() => {
+                          if (activeSection < sections.length) {
+                            // 선택한 섹션을 템플릿으로 교체
+                            const newSec = { ...tmpl, id: sections[activeSection].id, image_prompt: tmpl.image_prompt || sections[activeSection].image_prompt };
+                            setSections(prev => prev.map((s, si) => si === activeSection ? newSec : s));
+                          } else {
+                            // 없으면 새 섹션으로 추가
+                            setSections(prev => [...prev, { ...tmpl, id: `sec_tmpl_${Date.now()}` }]);
+                            setActiveSection(sections.length);
+                          }
+                        }}
+                        style={{
+                          width: "100%", padding: "10px 12px", borderRadius: 10,
+                          border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa",
+                          cursor: "pointer", textAlign: "left", transition: "border-color 0.15s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = acc}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 8, background: tmpl.bg_color || "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${bdr}` }}>
+                            <span style={{ fontSize: 10, fontWeight: 900, color: tmpl.bg_color && parseInt(tmpl.bg_color.replace("#","").slice(0,2),16) < 128 ? "#fff" : "#333" }}>
+                              {type.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.label}</div>
+                            <div style={{ fontSize: 10, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.preview}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {/* 새 섹션 추가 버튼 */}
+              <div style={{ height: 1, background: bdr, margin: "8px 0 12px" }} />
+              <button onClick={() => {
+                const firstTemplate = Object.values(SECTION_TEMPLATES)[0]?.[0];
+                if (firstTemplate) {
+                  setSections(prev => [...prev, { ...firstTemplate, id: `sec_new_${Date.now()}` }]);
+                  setActiveSection(sections.length);
+                }
+              }}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${bdr}`, background: "transparent", color: acc, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                + 새 섹션 추가
+              </button>
             </div>
           )}
 
