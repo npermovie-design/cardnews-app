@@ -602,15 +602,15 @@ JSON배열만 출력.`;
       setSections(layoutData.map((s, i) => ({ ...s, id: `sec_${i}_${Date.now()}`, enabled: true })));
       setActiveSection(0);
 
-      // 포인트 차감
-      if (user) await changePoints(user.uid, -10, "상세페이지 생성");
+      // 포인트 차감 (실패해도 진행)
+      try { if (user?.uid) await changePoints(user.uid, -10, "상세페이지 생성"); } catch {}
+      if (!user) try { incrementGuestUsage(); } catch {}
 
       setTimeout(() => setPhase("outline"), 800);
 
     } catch (e) {
       console.error("Pipeline error:", e);
-      setPipeError(e.message || "생성 중 오류가 발생했습니다.");
-      // generating 화면에서 에러를 보여줌 (input으로 바로 안 돌림)
+      setPipeError((e.message || "생성 중 오류가 발생했습니다.") + " — 다시 시도해주세요.");
     }
   };
 
@@ -941,9 +941,19 @@ JSON배열만 출력.`;
         )}
 
         {pipeError && (
-          <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{pipeError}</span>
-            <button onClick={() => setPhase("input")} style={{ background: "none", border: "none", color: "#f87171", fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>돌아가기</button>
+          <div style={{ marginTop: 20, padding: 20, borderRadius: 14, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <div style={{ color: "#f87171", fontSize: 14, fontWeight: 700, marginBottom: 8 }}>생성 중 문제가 발생했습니다</div>
+            <div style={{ color: "#999", fontSize: 12, marginBottom: 16, lineHeight: 1.5 }}>{pipeError}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setPipeError(""); runPipeline(); }}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: acc, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                다시 시도
+              </button>
+              <button onClick={() => setPhase("input")}
+                style={{ padding: "12px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>
+                돌아가기
+              </button>
+            </div>
           </div>
         )}
       </div>
