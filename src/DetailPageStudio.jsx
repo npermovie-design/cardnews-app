@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
-import { callAI } from "./aiClient";
+// aiClient import 제거 — Gemini 직접 호출로 통일
 import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { SECTION_TEMPLATES, SECTION_TYPE_LABELS } from "./detailTemplates.js";
@@ -315,34 +315,21 @@ JSON배열만 출력.`;
     if (!productName.trim() && images.length === 0) return;
     setAiFilling(true);
     try {
-      // 이미지가 있으면 비전 분석으로 카테고리 + 특징 + 셀링포인트 동시 추출
-      let messages;
-      if (images.length > 0 && images[0].base64) {
-        const imgData = images[0].base64.split(",")[1] || images[0].base64;
-        const mimeType = images[0].file?.type || "image/jpeg";
-        messages = [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: mimeType, data: imgData } },
-          { type: "text", text: `이 제품 이미지를 분석해서 다음 JSON을 만들어줘.
-상품명: "${productName || "(이미지에서 추정)"}"
-
-{
-  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 하나",
-  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 구체적인 쇼핑몰 표현)",
-  "productName": "상품명이 비어있으면 이미지에서 추정한 상품명"
-}
-
-JSON만 출력.` }
-        ]}];
-      } else {
-        messages = [{ role: "user", content: `상품명: "${productName}"
+      // Gemini로 카테고리 + 특징 자동 분석 (텍스트 기반)
+      const prompt = `상품명: "${productName || "(이미지 업로드됨 — 일반 제품으로 추정)"}"
 이 상품에 대해 다음 JSON을 만들어줘:
 {
   "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 가장 적합한 것",
-  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 실제 쇼핑몰 수준의 구체적 표현)"
+  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 실제 쇼핑몰 수준의 구체적 표현)",
+  "productName": "상품명이 비어있으면 추정한 상품명"
 }
-JSON만 출력.` }];
-      }
-      const result = await callAI("claude-haiku-4-5-20251001", messages, 800);
+JSON만 출력.`;
+      const geminiRes = await fetch("/api/gemini-generate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, maxTokens: 800 }),
+      });
+      const geminiData = await geminiRes.json();
+      const result = geminiData.text || "";
       const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
       try {
         const parsed = JSON.parse(cleaned);
