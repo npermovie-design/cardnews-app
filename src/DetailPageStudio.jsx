@@ -2876,7 +2876,7 @@ JSON배열만 출력.`;
                                 }} />
                               </div>
                               {/* 텍스트 영역 */}
-                              <div style={{ padding: cols === 3 ? "20px 18px 24px" : "24px 24px 28px" }}>
+                              <div style={{ padding: cols === 3 ? "24px 20px 28px" : "28px 28px 32px" }}>
                                 {item.title && (
                                   <div {...editable(item.title)} style={eS(item.title, { fontSize: cols === 3 ? 17 : 20, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 })}>
                                     {item.title.content}
@@ -2917,12 +2917,15 @@ JSON배열만 출력.`;
 
                   const textBlock = (
                     <div style={{ flex: "0 0 50%", padding: "56px 40px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-                      {/* POINT 넘버 라인 강화 */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-                        <div style={{ width: 48, height: 2, background: mainColor }} />
-                        <span style={{ fontSize: 12, fontWeight: 900, color: mainColor, letterSpacing: 5, textTransform: "uppercase" }}>
-                          POINT {String(pointNum).padStart(2, "0")}
+                      {/* 대형 POINT 넘버 */}
+                      <div style={{ marginBottom: 24 }}>
+                        <span style={{ fontSize: 64, fontWeight: 900, color: `${mainColor}12`, fontFamily: "Georgia, serif", lineHeight: 1, letterSpacing: -3, display: "block" }}>
+                          {String(pointNum).padStart(2, "0")}
                         </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: -8 }}>
+                          <div style={{ width: 32, height: 2, background: mainColor }} />
+                          <span style={{ fontSize: 11, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase" }}>POINT</span>
+                        </div>
                       </div>
                       {badge && (
                         <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 16px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 18, alignSelf: "flex-start", border: `1px solid ${mainColor}20` })}>
@@ -2935,7 +2938,7 @@ JSON배열만 출력.`;
                         </div>
                       )}
                       {titleEl && (
-                        <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 24, textAlign: "left" })}>
+                        <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.3, marginBottom: 20, textAlign: "left" })}>
                           {titleEl.content}
                         </div>
                       )}
@@ -3173,29 +3176,45 @@ JSON배열만 출력.`;
                           )}
                           {decoLineLong("rgba(255,255,255,0.12)")}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap", maxWidth: 840, margin: "0 auto" }}>
-                          {statNums.map((sn, si) => {
-                            const pct = extractPercent(sn.content);
-                            const gradColor = si % 2 === 0 ? mainColor : (colorPalette?.gradient || "#9b8ec4");
-                            return (
-                              <div key={si} style={{ textAlign: "center", minWidth: 160, flex: "1 1 160px", maxWidth: 220 }}>
-                                {/* 큰 숫자 */}
-                                <div {...editable(sn)} style={eS(sn, { fontSize: 52, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 12, letterSpacing: -2 })}>
-                                  {sn.content}
-                                </div>
-                                {statLabels[si] && (
-                                  <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 20 })}>
-                                    {statLabels[si].content}
-                                  </div>
-                                )}
-                                {/* 프로그레스 바 */}
-                                <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden", maxWidth: 120, margin: "0 auto" }}>
-                                  <div style={{ height: "100%", borderRadius: 2, background: `linear-gradient(90deg, ${mainColor}, ${colorPalette?.gradient || "#9b8ec4"})`, width: `${pct}%`, transition: "width 1s ease" }} />
-                                </div>
+                        {/* 숫자가 1개면 대형 포커스, 2개 이상이면 가로 나열 */}
+                        {statNums.length === 1 ? (
+                          <div style={{ textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
+                            <div {...editable(statNums[0])} style={eS(statNums[0], { fontSize: 96, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 16, letterSpacing: -4 })}>
+                              {statNums[0].content}
+                            </div>
+                            {statLabels[0] && (
+                              <div {...editable(statLabels[0])} style={eS(statLabels[0], { fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 40 })}>
+                                {statLabels[0].content}
                               </div>
-                            );
-                          })}
-                        </div>
+                            )}
+                            {/* 하단 보조 텍스트 */}
+                            {findEls("body").map((el, bi) => (
+                              <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: "rgba(255,255,255,0.4)", lineHeight: 1.8, marginBottom: 14 })}>
+                                {el.content}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", justifyContent: "center", gap: 0, maxWidth: 800, margin: "0 auto" }}>
+                            {statNums.map((sn, si) => {
+                              const pct = extractPercent(sn.content);
+                              return (
+                                <div key={si} style={{ textAlign: "center", flex: 1, padding: "40px 24px", borderRight: si < statNums.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                                  <div {...editable(sn)} style={eS(sn, { fontSize: 56, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 16, letterSpacing: -2 })}>
+                                    {sn.content}
+                                  </div>
+                                  {statLabels[si] && (
+                                    <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.5)" })}>
+                                      {statLabels[si].content}
+                                    </div>
+                                  )}
+                                  {/* 하단 얇은 라인 */}
+                                  <div style={{ width: 40, height: 2, background: `${mainColor}40`, margin: "20px auto 0", borderRadius: 1 }} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       {/* 이미지 교체 */}
                       <div style={{ position: "absolute", top: 12, right: 12, zIndex: 3, display: "flex", gap: 4 }}>
