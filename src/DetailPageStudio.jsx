@@ -1768,40 +1768,90 @@ JSON배열만 출력.`;
             </div>
           )}
 
-          {sidebarTab === "color" && colorPalette && (
+          {sidebarTab === "color" && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>색상 모드</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[
-                  { key: "main", label: "메인", color: colorPalette.main },
-                  { key: "gradient", label: "그라데이션", color: colorPalette.gradient },
-                  { key: "light_bg", label: "밝은 배경", color: colorPalette.light_bg },
-                  { key: "dark_bg", label: "어두운 배경", color: colorPalette.dark_bg },
-                ].map(c => (
-                  <div key={c.key} style={{ textAlign: "center" }}>
-                    <div style={{ width: "100%", height: 48, borderRadius: 8, background: c.color, border: `1px solid ${bdr}` }} />
-                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{c.label}</div>
-                    <div style={{ fontSize: 10, color: text, fontWeight: 600 }}>{c.color}</div>
-                  </div>
+              {/* 현재 섹션 배경 편집 */}
+              <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 14 }}>
+                페이지 {activeSection + 1} 배경
+              </div>
+
+              {/* 배경색 */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 색상</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                <input type="color" value={sections[activeSection]?.bg_color || "#ffffff"} onChange={e => {
+                  const val = e.target.value;
+                  setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bg_color: val }));
+                }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
+                <span style={{ fontSize: 12, color: muted, fontFamily: "monospace" }}>{sections[activeSection]?.bg_color || "#ffffff"}</span>
+              </div>
+
+              {/* 빠른 배경색 선택 */}
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 14 }}>
+                {["#ffffff", "#f8f8f8", "#fafafa", "#1a1a2e", "#111111", "#0d1117",
+                  colorPalette?.main, colorPalette?.gradient, colorPalette?.light_bg, colorPalette?.dark_bg,
+                  "#fff5f5", "#f0fff4", "#eff6ff", "#fef3c7", "#fdf2f8",
+                ].filter(Boolean).map((c, ci) => (
+                  <div key={ci} onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bg_color: c }))}
+                    style={{ width: 24, height: 24, borderRadius: 6, background: c, border: `2px solid ${sections[activeSection]?.bg_color === c ? "#2196F3" : bdr}`, cursor: "pointer" }} />
                 ))}
               </div>
-              <button onClick={() => {
-                // 전체 색상 적용
-                if (!colorPalette) return;
-                setSections(prev => prev.map((s, i) => ({
-                  ...s,
-                  bg_color: i === 0 ? colorPalette.main : (i % 2 === 0 ? colorPalette.light_bg : "#ffffff"),
-                })));
-              }}
-                style={{ ...btnPrimary, marginTop: 16, padding: "10px", fontSize: 13, background: "#1a1a2e", maxWidth: "100%" }}>
-                색상 적용
-              </button>
-              <button onClick={() => {
-                setSections(prev => prev.map(s => ({ ...s, bg_color: "#ffffff" })));
-              }}
-                style={{ ...btnPrimary, marginTop: 8, padding: "10px", fontSize: 13, background: "transparent", color: text, border: `1px solid ${bdr}`, maxWidth: "100%" }}>
-                초기화
-              </button>
+
+              {/* 배경 이미지 */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 이미지</div>
+              {sections[activeSection]?.bgImage ? (
+                <div style={{ position: "relative", marginBottom: 14 }}>
+                  <img src={sections[activeSection].bgImage} alt="" style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: `1px solid ${bdr}` }} />
+                  <button onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bgImage: null }))}
+                    style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer" }}>x</button>
+                </div>
+              ) : (
+                <label style={{ display: "block", padding: "14px", borderRadius: 10, border: `1.5px dashed ${bdr}`, textAlign: "center", cursor: "pointer", marginBottom: 14, fontSize: 12, color: muted }}>
+                  + 배경 이미지 추가
+                  <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bgImage: url }));
+                    }
+                  }} />
+                </label>
+              )}
+              {sections[activeSection]?.bgImage && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 투명도</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="range" min="10" max="100" step="5" value={sections[activeSection]?.bgImageOpacity ?? 30}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bgImageOpacity: val }));
+                      }} style={{ flex: 1, accentColor: "#2196F3" }} />
+                    <span style={{ fontSize: 11, color: muted, minWidth: 30 }}>{sections[activeSection]?.bgImageOpacity ?? 30}%</span>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ height: 1, background: bdr, margin: "14px 0" }} />
+
+              {/* 전체 색상 팔레트 */}
+              {colorPalette && (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>전체 팔레트</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
+                    {[
+                      { label: "메인", color: colorPalette.main },
+                      { label: "서브", color: colorPalette.gradient },
+                      { label: "밝은", color: colorPalette.light_bg },
+                      { label: "어두운", color: colorPalette.dark_bg },
+                    ].map(c => (
+                      <div key={c.label} onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bg_color: c.color }))}
+                        style={{ textAlign: "center", cursor: "pointer", padding: 6, borderRadius: 8, border: `1px solid ${bdr}` }}>
+                        <div style={{ width: "100%", height: 28, borderRadius: 6, background: c.color, border: `1px solid ${bdr}` }} />
+                        <div style={{ fontSize: 9, color: muted, marginTop: 3 }}>{c.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1833,7 +1883,14 @@ JSON배열만 출력.`;
                 position: "relative", marginBottom: 4,
                 border: activeSection === i ? `2px solid ${acc}` : "2px solid transparent",
                 borderRadius: 4, cursor: "pointer",
+                overflow: "hidden",
               }}>
+              {/* 배경 이미지 레이어 */}
+              {sec.bgImage && (
+                <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+                  <img src={sec.bgImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: (sec.bgImageOpacity ?? 30) / 100 }} />
+                </div>
+              )}
               {/* 섹션 렌더링 — 한국 쇼핑몰 스타일 템플릿 */}
               {(() => {
                 const secType = sec.type || "point";
