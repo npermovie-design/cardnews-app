@@ -189,20 +189,69 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     setImages(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // ── AI로 내용 채우기 ──────────────────────────────────
+  // ── AI로 내용 채우기 (이미지 비전 분석 포함) ──────────────
   const autoFillWithAI = async () => {
-    if (!productName.trim()) return;
+    if (!productName.trim() && images.length === 0) return;
     setAiFilling(true);
     try {
-      const prompt = `상품명: "${productName}"${category ? `, 카테고리: ${CATEGORIES.find(c => c.key === category)?.label}` : ""}
-이 상품의 주요 특징과 셀링포인트를 5줄로 작성해줘. 번호를 매기고, 실제 쇼핑몰에서 쓸 수 있는 구체적인 표현으로.`;
-      const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 500);
-      // 마크다운 제거 (#, **, *, ` 등)
-      const cleaned = result.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/^[-•]\s*/gm, "").trim();
-      setFeatures(cleaned);
-    } catch (e) { console.error(e); }
+      // 이미지가 있으면 비전 분석으로 카테고리 + 특징 + 셀링포인트 동시 추출
+      let messages;
+      if (images.length > 0 && images[0].base64) {
+        const imgData = images[0].base64.split(",")[1] || images[0].base64;
+        const mimeType = images[0].file?.type || "image/jpeg";
+        messages = [{ role: "user", content: [
+          { type: "image", source: { type: "base64", media_type: mimeType, data: imgData } },
+          { type: "text", text: `이 제품 이미지를 분석해서 다음 JSON을 만들어줘.
+상품명: "${productName || "(이미지에서 추정)"}"
+
+{
+  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 하나",
+  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 구체적인 쇼핑몰 표현)",
+  "productName": "상품명이 비어있으면 이미지에서 추정한 상품명"
+}
+
+JSON만 출력.` }
+        ]}];
+      } else {
+        messages = [{ role: "user", content: `상품명: "${productName}"
+이 상품에 대해 다음 JSON을 만들어줘:
+{
+  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 가장 적합한 것",
+  "features": "제품 특징과 셀링포인트 5줄 (번호 매기기, 실제 쇼핑몰 수준의 구체적 표현)"
+}
+JSON만 출력.` }];
+      }
+      const result = await callAI("claude-haiku-4-5-20251001", messages, 800);
+      const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (parsed.features) {
+          const featText = parsed.features.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
+          setFeatures(featText);
+        }
+        if (parsed.category && CATEGORIES.find(c => c.key === parsed.category)) {
+          setCategory(parsed.category);
+        }
+        if (parsed.productName && !productName.trim()) {
+          setProductName(parsed.productName);
+        }
+      } catch {
+        // JSON 파싱 실패 시 텍스트로 처리
+        const text = cleaned.replace(/#{1,6}\s*/g, "").replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
+        setFeatures(text);
+      }
+    } catch (e) { console.error("AI 분석 실패:", e); }
     setAiFilling(false);
   };
+
+  // 이미지 업로드 후 자동 분석 트리거
+  useEffect(() => {
+    if (images.length > 0 && !features && !aiFilling && phase === "input") {
+      // 이미지 업로드되면 0.5초 후 자동 분석 시작
+      const timer = setTimeout(() => autoFillWithAI(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [images.length]);
 
   // ── AI 파이프라인 실행 ────────────────────────────────
   const runPipeline = async () => {
@@ -224,11 +273,13 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       await new Promise(r => setTimeout(r, 300));
       setPipeResults(prev => ({ ...prev, input: { productName, category: catLabel, features, options, extraInfo } }));
 
-      // Step 2: 이미지 색상 추출 (프론트엔드에서 Canvas로 — AI 호출 없음)
+      // Step 2: 이미지 분석 + 색상 추출
       setPipeStep(2);
       let extractedColors = [];
+      let aiToneResult = null;
       if (images.length > 0) {
         try {
+          // Canvas 색상 추출
           const img = new Image();
           img.crossOrigin = "anonymous";
           await new Promise((resolve) => { img.onload = resolve; img.src = images[0].base64; });
@@ -236,7 +287,6 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
           c.width = 64; c.height = 64;
           c.getContext("2d").drawImage(img, 0, 0, 64, 64);
           const data = c.getContext("2d").getImageData(0, 0, 64, 64).data;
-          // 간단한 k-means 대용: 8x8 그리드 평균
           const buckets = {};
           for (let i = 0; i < data.length; i += 4) {
             const r = Math.round(data[i] / 32) * 32;
@@ -253,15 +303,29 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
               return "#" + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, "0")).join("");
             });
         } catch (e) { console.warn("Color extraction failed:", e); }
-      }
-      await new Promise(r => setTimeout(r, 300));
-      setPipeResults(prev => ({ ...prev, image: { colors: extractedColors } }));
 
-      // Step 3: 톤앤매너 + 색상 팔레트 (텍스트만 — 빠르게)
+        // AI 톤앤매너 분석 (Gemini)
+        try {
+          const toneRes = await fetch("/api/gemini-generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: `제품:"${productName}" 카테고리:${CATEGORIES.find(c=>c.key===category)?.label||"일반"} 추출색상:${extractedColors.join(",")}
+이 제품에 어울리는 톤앤매너를 JSON으로 출력해줘:
+{"tone":"톤(예:전문적/따뜻한/고급스러운/활기찬)","voice":"말투(예:~합니다/~해요/~이다)","mood":"분위기 한 줄"}
+JSON만 출력.`, maxTokens: 200 }),
+          });
+          const toneData2 = await toneRes.json();
+          const toneParsed = JSON.parse((toneData2.text || "{}").replace(/```json?\s*/g, "").replace(/```/g, "").trim());
+          aiToneResult = toneParsed;
+        } catch { /* 실패해도 진행 */ }
+      }
+      setPipeResults(prev => ({ ...prev, image: { colors: extractedColors, tone: aiToneResult } }));
+
+      // Step 3: 톤앤매너 + 색상 팔레트
       setPipeStep(3);
       const sectionCount = mode === "fast" ? 8 : 15;
       const toneData = {
-        tone: "전문적", voice: "~합니다",
+        tone: aiToneResult?.tone || "전문적", voice: aiToneResult?.voice || "~합니다",
         color_palette: {
           main: extractedColors[0] || "#7c6aff",
           gradient: extractedColors[1] || "#9b8ec4",
