@@ -131,6 +131,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [agentInput, setAgentInput] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentMessages, setAgentMessages] = useState([]);
+  const [mediaSubTab, setMediaSubTab] = useState("photo");
 
   // 드래그 이동 상태
   const dragRef = useRef(null); // { type: "move"|"resize", startX, startY, origX, origY, origW, origH, handle }
@@ -1696,8 +1697,63 @@ JSON배열만 출력.`;
           {/* 자료 탭 */}
           {sidebarTab === "media" && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>자료 추가</div>
+              {/* 사진 / 동영상 서브탭 */}
+              <div style={{ display: "flex", gap: 0, marginBottom: 14, borderRadius: 8, overflow: "hidden", border: `1px solid ${bdr}` }}>
+                {[{ key: "photo", label: "사진" }, { key: "video", label: "동영상" }].map(tab => (
+                  <button key={tab.key} onClick={() => setMediaSubTab(tab.key)}
+                    style={{ flex: 1, padding: "8px", border: "none", background: (mediaSubTab || "photo") === tab.key ? acc : "transparent", color: (mediaSubTab || "photo") === tab.key ? "#fff" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
+              {(mediaSubTab || "photo") === "video" && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>동영상 추가</div>
+                  <button onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file"; input.accept = "video/*";
+                    input.onchange = (e) => {
+                      const file = e.target.files?.[0];
+                      if (file && activeSection < sections.length) {
+                        const url = URL.createObjectURL(file);
+                        setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, videoUrl: url }));
+                      }
+                    };
+                    input.click();
+                  }}
+                    style={{ width: "100%", padding: "14px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginBottom: 12 }}>
+                    + 동영상 파일 업로드
+                  </button>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>또는 URL 입력</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input placeholder="유튜브/영상 URL" id="video-url-input"
+                      style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
+                    <button onClick={() => {
+                      const url = document.getElementById("video-url-input")?.value;
+                      if (url && activeSection < sections.length) {
+                        setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, videoUrl: url }));
+                      }
+                    }}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      적용
+                    </button>
+                  </div>
+                  {sections[activeSection]?.videoUrl && (
+                    <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f8f8f8", border: `1px solid ${bdr}` }}>
+                      <div style={{ fontSize: 11, color: text, fontWeight: 600, marginBottom: 4 }}>현재 섹션 동영상</div>
+                      <div style={{ fontSize: 10, color: muted, wordBreak: "break-all" }}>{sections[activeSection].videoUrl.slice(0, 60)}...</div>
+                      <button onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, videoUrl: null }))}
+                        style={{ marginTop: 6, padding: "4px 10px", borderRadius: 6, border: `1px solid #ef4444`, background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer" }}>
+                        제거
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(mediaSubTab || "photo") === "photo" && (
+                <>
               {/* 업로드한 제품 이미지 */}
               <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>업로드 이미지</div>
               {images.length > 0 ? (
@@ -1764,6 +1820,8 @@ JSON배열만 출력.`;
                     </div>
                   ))}
                 </div>
+              )}
+                </>
               )}
             </div>
           )}
@@ -3321,7 +3379,7 @@ JSON배열만 출력.`;
         {/* AI 에이전트 채팅 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px" }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            ✦ AI 에이전트
+            ✦ 수정도우미
           </div>
 
           {/* 빠른 프롬프트 */}
@@ -3346,7 +3404,7 @@ JSON배열만 출력.`;
           <div style={{ flex: 1, overflowY: "auto", marginBottom: 12 }}>
             {agentMessages.map((msg, mi) => (
               <div key={mi} style={{ marginBottom: 8, padding: "10px 12px", borderRadius: 10, background: msg.role === "user" ? `${acc}15` : (D ? "rgba(255,255,255,0.04)" : "#f8f8f8"), border: `1px solid ${msg.role === "user" ? acc + "30" : bdr}` }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: msg.role === "user" ? acc : muted, marginBottom: 4 }}>{msg.role === "user" ? "나" : "AI 에이전트"}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: msg.role === "user" ? acc : muted, marginBottom: 4 }}>{msg.role === "user" ? "나" : "수정도우미"}</div>
                 <div style={{ fontSize: 12, color: text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.content}</div>
               </div>
             ))}
