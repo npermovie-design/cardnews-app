@@ -1,17 +1,21 @@
-// Gemini API 직접 호출 — OpenRouter 우회로 타임아웃 방지
-export const config = { runtime: "edge", maxDuration: 60 };
+// Gemini API 직접 호출 — 이미지 비전 분석 지원
+export const config = { maxDuration: 60 };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return res.status(200).end();
   }
+  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_KEY) return new Response(JSON.stringify({ error: "Gemini API key not configured" }), { status: 500 });
+  if (!GEMINI_KEY) return res.status(500).json({ error: "Gemini API key not configured" });
 
   try {
-    const { prompt, maxTokens, imageBase64, imageMimeType } = await req.json();
-    if (!prompt) return new Response(JSON.stringify({ error: "prompt 필수" }), { status: 400 });
+    const { prompt, maxTokens, imageBase64, imageMimeType } = req.body;
+    if (!prompt) return res.status(400).json({ error: "prompt 필수" });
 
     const model = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
@@ -21,35 +25,36 @@ export default async function handler(req) {
       responseMimeType: "application/json",
       thinkingConfig: { thinkingBudget: 0 },
     };
+
     // 이미지가 있으면 멀티모달 요청
     const parts = [];
     if (imageBase64) {
       parts.push({ inlineData: { mimeType: imageMimeType || "image/jpeg", data: imageBase64 } });
     }
     parts.push({ text: prompt });
+
     const body = {
       contents: [{ parts }],
       generationConfig: genConfig,
     };
 
-    const res = await fetch(url, {
+    const geminiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    if (!res.ok) {
-      const err = await res.text().catch(() => "");
-      return new Response(JSON.stringify({ error: `Gemini 오류 ${res.status}: ${err.slice(0, 200)}` }), { status: res.status });
+    if (!geminiRes.ok) {
+      const err = await geminiRes.text().catch(() => "");
+      return res.status(geminiRes.status).json({ error: `Gemini 오류 ${geminiRes.status}: ${err.slice(0, 200)}` });
     }
 
-    const data = await res.json();
+    const data = await geminiRes.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    return new Response(JSON.stringify({ text }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-    });
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    return res.status(200).json({ text });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    return res.status(500).json({ error: e.message });
   }
 }

@@ -353,12 +353,15 @@ features는 줄바꿈(\\n)으로 구분. JSON만 출력.`
   "features": "제품 특징 5가지 (번호 포함, 자연스러운 한국어, 쇼핑몰 수준)"
 }
 features는 줄바꿈(\\n)으로 구분. JSON만 출력.`;
-      // 이미지가 있으면 base64도 함께 전송 (Gemini 비전)
+      // 이미지가 있으면 base64도 함께 전송 (Gemini 비전) — 512px로 축소
       const reqBody = { prompt, maxTokens: 800 };
       if (hasImage) {
-        const raw = images[0].base64;
-        reqBody.imageBase64 = raw.includes(",") ? raw.split(",")[1] : raw;
-        reqBody.imageMimeType = images[0].file?.type || "image/jpeg";
+        try {
+          const smallBase64 = await resizeImage(images[0].base64, 512);
+          const raw = smallBase64;
+          reqBody.imageBase64 = raw.includes(",") ? raw.split(",")[1] : raw;
+          reqBody.imageMimeType = images[0].file?.type || "image/jpeg";
+        } catch { /* 리사이즈 실패 시 이미지 없이 진행 */ }
       }
       const geminiRes = await fetch("/api/gemini-generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -414,7 +417,7 @@ features는 줄바꿈(\\n)으로 구분. JSON만 출력.`;
     try {
       // Step 1: 입력 정보 정리
       setPipeStep(1);
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 1200));
       setPipeResults(prev => ({ ...prev, input: { productName, category: catLabel, features, options, extraInfo } }));
 
       // Step 2: 이미지 분석 + 색상 추출
@@ -464,6 +467,7 @@ JSON만 출력.`, maxTokens: 200 }),
         } catch { /* 실패해도 진행 */ }
       }
       setPipeResults(prev => ({ ...prev, image: { colors: extractedColors, tone: aiToneResult } }));
+      await new Promise(r => setTimeout(r, 1000));
 
       // Step 3: 톤앤매너 + 색상 팔레트
       setPipeStep(3);
@@ -480,7 +484,7 @@ JSON만 출력.`, maxTokens: 200 }),
       };
       setColorPalette(toneData.color_palette);
       setPipeResults(prev => ({ ...prev, tone: toneData }));
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 1500));
 
       // Step 4: 레이아웃 + 콘텐츠 생성 (단일 AI 호출)
       setPipeStep(4);
