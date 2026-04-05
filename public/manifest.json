@@ -23,8 +23,8 @@
     }
   ],
   "scope_extensions": [
-    { "origin": "https://www.snsmakeit.com" },
-    { "origin": "https://snsmakeit.com" }
+    { "type": "origin", "origin": "https://www.snsmakeit.com" },
+    { "type": "origin", "origin": "https://snsmakeit.com" }
   ],
   "launch_handler": {
     "client_mode": "navigate-existing"
@@ -90,7 +90,8 @@
   ],
   "share_target": {
     "action": "/",
-    "method": "GET",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",

@@ -436,6 +436,15 @@ JSON만 출력.`, maxTokens: 200 }),
 매번 새로운 카피라이팅, 구성, 색상 조합으로 만들어 — 같은 패턴 반복 금지.
 카피는 구체적이고 설득력 있게 — 실제 쇼핑몰 수준의 퀄리티.
 
+레이아웃 다양성 규칙:
+- point 섹션은 left_image_right_text와 right_image_left_text를 교대 사용
+- features는 grid_2col 또는 grid_3col 중 랜덤
+- review는 card_list 필수
+- hero는 full_image 필수
+- 같은 layout이 연속 3개 이상 나오면 안 됨
+- centered_text만 반복되는 것은 절대 금지 — 다양한 layout 혼합 필수
+- 전체 ${sectionCount}개 중 최소 4종류 이상의 layout 사용
+
 각 섹션 구조:
 {
   "type": "hero|pain_points|review|concept|features|point|stats_highlight|process_steps|comparison|before_after|pricing|faq|cert|shipping|info|event|guarantee|cta|ai_notice",
@@ -1033,17 +1042,47 @@ JSON배열만 출력.`;
                         }}
                         onMouseEnter={e => e.currentTarget.style.borderColor = acc}
                         onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 8, background: tmpl.bg_color || "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${bdr}` }}>
-                            <span style={{ fontSize: 10, fontWeight: 900, color: tmpl.bg_color && parseInt(tmpl.bg_color.replace("#","").slice(0,2),16) < 128 ? "#fff" : "#333" }}>
-                              {type.slice(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.label}</div>
-                            <div style={{ fontSize: 10, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.preview}</div>
-                          </div>
+                        {/* 미니 미리보기 */}
+                        <div style={{ width: "100%", height: 56, borderRadius: 6, background: tmpl.bg_color || "#f5f5f5", marginBottom: 6, overflow: "hidden", position: "relative", border: `1px solid ${bdr}` }}>
+                          {/* 레이아웃 스켈레톤 */}
+                          {tmpl.layout === "full_image" || tmpl.layout === "text_over_image" ? (
+                            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, ${tmpl.bg_color || "#333"}cc, ${tmpl.bg_color || "#333"})`, display: "flex", alignItems: "flex-end", padding: "6px 8px" }}>
+                              <div>
+                                <div style={{ width: 60, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.8)", marginBottom: 3 }} />
+                                <div style={{ width: 40, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.4)" }} />
+                              </div>
+                            </div>
+                          ) : tmpl.layout === "left_image_right_text" || tmpl.layout === "right_image_left_text" ? (
+                            <div style={{ display: "flex", height: "100%", flexDirection: tmpl.layout === "right_image_left_text" ? "row-reverse" : "row" }}>
+                              <div style={{ width: "40%", background: `${tmpl.elements?.[0]?.color || tmpl.bg_color || "#ddd"}20`, borderRight: `1px solid ${bdr}` }} />
+                              <div style={{ flex: 1, padding: "8px 6px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 3 }}>
+                                <div style={{ width: "70%", height: 4, borderRadius: 2, background: tmpl.elements?.find(e=>e.role==="title")?.color || "#333", opacity: 0.6 }} />
+                                <div style={{ width: "90%", height: 3, borderRadius: 2, background: "#999", opacity: 0.3 }} />
+                                <div style={{ width: "50%", height: 3, borderRadius: 2, background: "#999", opacity: 0.2 }} />
+                              </div>
+                            </div>
+                          ) : tmpl.layout === "grid_2col" || tmpl.layout === "grid_3col" ? (
+                            <div style={{ display: "grid", gridTemplateColumns: tmpl.layout === "grid_3col" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 3, padding: 6, height: "100%" }}>
+                              {[0,1,2,3].slice(0, tmpl.layout === "grid_3col" ? 3 : 4).map(gi => (
+                                <div key={gi} style={{ borderRadius: 4, background: `${tmpl.elements?.[0]?.color || acc}10`, border: `1px solid ${bdr}` }} />
+                              ))}
+                            </div>
+                          ) : tmpl.layout === "card_list" ? (
+                            <div style={{ display: "flex", gap: 3, padding: 6, height: "100%" }}>
+                              {[0,1,2].map(ci => (
+                                <div key={ci} style={{ flex: 1, borderRadius: 4, background: `${tmpl.elements?.[0]?.color || "#333"}08`, border: `1px solid ${bdr}` }} />
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ padding: "10px 8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 3 }}>
+                              <div style={{ width: "60%", height: 5, borderRadius: 2, background: tmpl.elements?.find(e=>e.role==="title")?.color || "#333", opacity: 0.5 }} />
+                              <div style={{ width: 20, height: 2, borderRadius: 1, background: acc, opacity: 0.6 }} />
+                              <div style={{ width: "80%", height: 3, borderRadius: 2, background: "#999", opacity: 0.2 }} />
+                            </div>
+                          )}
                         </div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.label}</div>
+                        <div style={{ fontSize: 9, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.preview}</div>
                       </button>
                     ))}
                   </div>
@@ -1300,6 +1339,29 @@ JSON배열만 출력.`;
             }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedEl.el.bgBox ? acc : bdr}`, background: selectedEl.el.bgBox ? `${acc}20` : "transparent", color: selectedEl.el.bgBox ? acc : muted, fontSize: 11, cursor: "pointer" }}>
               박스
             </button>
+            <div style={{ width: 1, height: 20, background: bdr }} />
+            {/* 위치 이동 */}
+            {[
+              { label: "←", dx: -8, dy: 0 },
+              { label: "→", dx: 8, dy: 0 },
+              { label: "↑", dx: 0, dy: -8 },
+              { label: "↓", dx: 0, dy: 8 },
+            ].map((dir, di) => (
+              <button key={di} onClick={() => {
+                const newX = (selectedEl.el.offsetX || 0) + dir.dx;
+                const newY = (selectedEl.el.offsetY || 0) + dir.dy;
+                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: newX, offsetY: newY }) }));
+                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: newX, offsetY: newY } }));
+              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 13, cursor: "pointer", minWidth: 28 }}>
+                {dir.label}
+              </button>
+            ))}
+            <button onClick={() => {
+              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: 0, offsetY: 0 }) }));
+              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: 0, offsetY: 0 } }));
+            }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 10, cursor: "pointer" }}>
+              리셋
+            </button>
             <div style={{ marginLeft: "auto" }}>
               <button onClick={() => setSelectedEl(null)} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>
                 x 닫기
@@ -1377,13 +1439,22 @@ JSON배열만 출력.`;
                   suppressContentEditableWarning: true,
                   onBlur: onBlurByRef(el),
                   onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el }); },
+                  draggable: isSelected(el),
+                  onDragStart: (e) => {
+                    if (!isSelected(el)) return;
+                    e.dataTransfer.setData("text/plain", JSON.stringify({ secIdx: i, elIdx: elIdx(el) }));
+                    e.dataTransfer.effectAllowed = "move";
+                  },
                   style: {
-                    outline: "none", cursor: "text", transition: "box-shadow 0.15s, border-radius 0.15s",
+                    outline: "none", cursor: isSelected(el) ? "move" : "text",
+                    transition: "box-shadow 0.15s, border-radius 0.15s, margin 0.15s",
                     borderRadius: isSelected(el) ? 6 : (el.bgBox ? 8 : 0),
                     boxShadow: isSelected(el) ? `0 0 0 2px ${acc}, 0 0 0 4px ${acc}30` : "none",
                     position: "relative",
                     textShadow: el.textShadow || undefined,
                     textAlign: el.textAlign || undefined,
+                    marginTop: el.offsetY ? `${el.offsetY}px` : undefined,
+                    marginLeft: el.offsetX ? `${el.offsetX}px` : undefined,
                     ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
                   },
                 });
