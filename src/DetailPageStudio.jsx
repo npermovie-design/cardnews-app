@@ -123,6 +123,14 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [activeSection, setActiveSection] = useState(0);
   const [sidebarTab, setSidebarTab] = useState("pages");
   const [sectionImages, setSectionImages] = useState({}); // { secId: { url, loading, error } }
+  const [stockImages, setStockImages] = useState([]);
+  const fetchStockImages = async (query) => {
+    try {
+      const res = await fetch(`https://pixabay.com/api/?key=46981993-a50990452475c64e225775a&q=${encodeURIComponent(query)}&image_type=photo&per_page=12&lang=ko`);
+      const data = await res.json();
+      setStockImages((data.hits || []).map(h => ({ url: h.webformatURL, thumb: h.previewURL, title: h.tags })));
+    } catch { setStockImages([]); }
+  };
 
   // ── 섹션별 AI 이미지 생성 ──────────────────────────────
   const generateSectionImage = async (secId, prompt) => {
@@ -757,6 +765,8 @@ JSON배열만 출력.`;
           {[
             { key: "pages", icon: "☰", label: "페이지" },
             { key: "text", icon: "T", label: "텍스트" },
+            { key: "shapes", icon: "◇", label: "도형" },
+            { key: "media", icon: "+", label: "자료" },
             { key: "color", icon: "◐", label: "색상" },
           ].map(tab => (
             <button key={tab.key} onClick={() => setSidebarTab(tab.key)}
@@ -863,6 +873,131 @@ JSON배열만 출력.`;
             </div>
           )}
 
+          {/* 도형 탭 */}
+          {sidebarTab === "shapes" && activeSection < sections.length && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>도형 삽입</div>
+              <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>선택한 섹션에 도형을 추가합니다</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                {[
+                  { shape: "rect", label: "사각형", svg: `<rect x="4" y="8" width="32" height="24" rx="2" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "rect_round", label: "둥근 사각형", svg: `<rect x="4" y="8" width="32" height="24" rx="8" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "circle", label: "원형", svg: `<circle cx="20" cy="20" r="14" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "ellipse", label: "타원", svg: `<ellipse cx="20" cy="20" rx="16" ry="10" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "triangle", label: "삼각형", svg: `<polygon points="20,4 36,36 4,36" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "diamond", label: "마름모", svg: `<polygon points="20,4 36,20 20,36 4,20" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "star", label: "별", svg: `<polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "hexagon", label: "육각형", svg: `<polygon points="20,2 35,10 35,26 20,34 5,26 5,10" fill="${acc}20" stroke="${acc}"/>` },
+                  { shape: "line_h", label: "가로선", svg: `<line x1="4" y1="20" x2="36" y2="20" stroke="${acc}" stroke-width="3"/>` },
+                  { shape: "line_v", label: "세로선", svg: `<line x1="20" y1="4" x2="20" y2="36" stroke="${acc}" stroke-width="3"/>` },
+                  { shape: "arrow_r", label: "화살표 →", svg: `<line x1="4" y1="20" x2="32" y2="20" stroke="${acc}" stroke-width="2.5"/><polygon points="28,14 36,20 28,26" fill="${acc}"/>` },
+                  { shape: "badge_pill", label: "필", svg: `<rect x="2" y="12" width="36" height="16" rx="8" fill="${acc}" /><text x="20" y="23" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">BADGE</text>` },
+                ].map((s, si) => (
+                  <button key={si} title={s.label}
+                    onClick={() => {
+                      const newEl = { type: "shape", shape: s.shape, fill: `${acc}20`, stroke: acc, width: 120, height: 80 };
+                      setSections(prev => prev.map((sec, idx) => idx !== activeSection ? sec : {
+                        ...sec, elements: [...sec.elements, newEl],
+                      }));
+                    }}
+                    style={{ padding: "8px 4px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" dangerouslySetInnerHTML={{ __html: s.svg }} />
+                    <span style={{ fontSize: 9, color: muted }}>{s.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* 구분선 */}
+              <div style={{ height: 1, background: bdr, margin: "16px 0" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>빠른 삽입</div>
+              {[
+                { label: "구분선 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "divider", color: acc }] })) },
+                { label: "배지 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "badge", content: "NEW", bg: acc, color: "#fff" }] })) },
+                { label: "텍스트 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "text", role: "body", content: "새 텍스트를 입력하세요", fontSize: 14, fontWeight: "400", color: "#333" }] })) },
+              ].map((item, ii) => (
+                <button key={ii} onClick={item.action}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 6, textAlign: "left" }}>
+                  + {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* 자료 탭 */}
+          {sidebarTab === "media" && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>자료 추가</div>
+
+              {/* 업로드한 제품 이미지 */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>업로드 이미지</div>
+              {images.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 16 }}>
+                  {images.map((img, ii) => (
+                    <div key={ii} style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${bdr}`, cursor: "pointer", aspectRatio: "1" }}
+                      onClick={() => {
+                        if (activeSection < sections.length) {
+                          setSectionImages(prev => ({ ...prev, [sections[activeSection].id]: { loading: false, url: img.preview, error: null } }));
+                        }
+                      }}>
+                      <img src={img.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: "16px", borderRadius: 10, border: `1px dashed ${bdr}`, textAlign: "center", color: muted, fontSize: 11, marginBottom: 16 }}>
+                  업로드된 이미지 없음
+                </div>
+              )}
+
+              {/* 추가 이미지 업로드 */}
+              <button onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file"; input.accept = "image/*"; input.multiple = true;
+                input.onchange = (e) => {
+                  const files = Array.from(e.target.files || []);
+                  files.forEach(async (file) => {
+                    const preview = URL.createObjectURL(file);
+                    const raw = await fileToBase64(file);
+                    const base64 = await resizeImage(raw, 800);
+                    setImages(prev => [...prev, { file, preview, base64 }]);
+                  });
+                };
+                input.click();
+              }}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: acc, fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
+                + 이미지 추가 업로드
+              </button>
+
+              <div style={{ height: 1, background: bdr, margin: "0 0 16px" }} />
+
+              {/* 무료 스톡 이미지 검색 */}
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>무료 스톡 이미지</div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                <input placeholder="키워드 검색..." id="stock-search-input"
+                  onKeyDown={e => { if (e.key === "Enter") { const q = e.target.value; if (q) fetchStockImages(q); } }}
+                  style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
+                <button onClick={() => { const q = document.getElementById("stock-search-input")?.value; if (q) fetchStockImages(q); }}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                  검색
+                </button>
+              </div>
+              {stockImages.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {stockImages.slice(0, 12).map((img, ii) => (
+                    <div key={ii} style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${bdr}`, cursor: "pointer", aspectRatio: "3/2" }}
+                      onClick={() => {
+                        if (activeSection < sections.length) {
+                          setSectionImages(prev => ({ ...prev, [sections[activeSection].id]: { loading: false, url: img.url, error: null } }));
+                        }
+                      }}>
+                      <img src={img.thumb || img.url} alt={img.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {sidebarTab === "color" && colorPalette && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>색상 모드</div>
@@ -932,9 +1067,11 @@ JSON배열만 출력.`;
                 const secImg = sectionImages[sec.id];
                 const heroImgSrc = images.length > 0 ? images[0].preview : null;
                 const aiImgSrc = secImg?.url || null;
-                // 제품 이미지 자동 분배 — 섹션 인덱스에 따라 다른 제품 사진 할당
-                const productImgForSection = images.length > 0
-                  ? images[i % images.length]?.preview || images[0]?.preview
+                // 제품 이미지 자동 분배 — 이미지가 필요한 레이아웃에만 배치 (같은 사진 반복 방지)
+                const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
+                const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
+                const productImgForSection = (needsImage && images.length > 0)
+                  ? images[i % images.length]?.preview || null
                   : null;
                 const layout = sec.layout || "centered_text";
                 const bgCol = sec.bg_color || "#fff";
