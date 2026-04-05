@@ -1129,16 +1129,12 @@ JSON배열만 출력.`;
               }}>
               {/* 섹션 렌더링 — 한국 쇼핑몰 스타일 템플릿 */}
               {(() => {
+                const secType = sec.type || "point";
+                const layout = sec.layout || "centered_text";
                 const secImg = sectionImages[sec.id];
                 const heroImgSrc = images.length > 0 ? images[0].preview : null;
                 const aiImgSrc = secImg?.url || null;
-                const layout = sec.layout || "centered_text";
-                // 제품 이미지 자동 분배 — 이미지가 필요한 레이아웃에만 배치 (같은 사진 반복 방지)
-                const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
-                const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
-                const productImgForSection = (needsImage && images.length > 0)
-                  ? images[i % images.length]?.preview || null
-                  : null;
+                const els = sec.elements || [];
                 const bgCol = sec.bg_color || "#fff";
                 const isDarkBg = bgCol && (() => {
                   const hex = bgCol.replace("#", "");
@@ -1147,8 +1143,12 @@ JSON배열만 출력.`;
                   const b = parseInt(hex.slice(4, 6), 16);
                   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
                 })();
-                const secType = sec.type || "point";
-                const els = sec.elements || [];
+                // 제품 이미지 자동 분배 — 이미지가 필요한 레이아웃에만 배치 (같은 사진 반복 방지)
+                const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
+                const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
+                const productImgForSection = (needsImage && images.length > 0)
+                  ? images[i % images.length]?.preview || null
+                  : null;
                 const mainColor = colorPalette?.main || acc;
 
                 // 요소 찾기 헬퍼
