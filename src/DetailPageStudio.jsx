@@ -406,23 +406,26 @@ JSON만 출력.`, maxTokens: 200 }),
       const mainColor = toneData.color_palette.main;
       const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
 
-      // 디자인 다양성: 랜덤 스타일 시드
+      // 디자인 다양성: 랜덤 스타일 시드 (74개 실제 상세페이지 분석 기반)
       const styleSeeds = [
-        { tone: "깔끔하고 미니멀한", palette: "밝고 화이트 베이스", layout: "여백 많은 심플" },
-        { tone: "고급스럽고 프리미엄한", palette: "어두운 톤 + 골드 포인트", layout: "대비 강한 럭셔리" },
-        { tone: "따뜻하고 친근한", palette: "파스텔 베이지/크림", layout: "라운드 카드형" },
-        { tone: "모던하고 트렌디한", palette: "블랙+네온 포인트", layout: "그리드 기반 정렬" },
-        { tone: "자연친화적이고 건강한", palette: "그린/어스톤 자연색", layout: "오가닉 곡선형" },
-        { tone: "활기차고 에너지 넘치는", palette: "비비드 그라데이션", layout: "다이나믹 비대칭" },
-        { tone: "신뢰감 있는 전문적인", palette: "네이비/그레이 차분한", layout: "정돈된 정보형" },
-        { tone: "감성적이고 스토리텔링", palette: "모노톤 + 포인트 컬러", layout: "매거진 편집 스타일" },
+        { tone: "미니멀 모던", palette: "#fff/#f8f8f8 화이트 베이스, 1가지 포인트 컬러만", layout: "여백 넉넉한 심플, 중앙정렬 헤드라인, 좌우 분할", hero: "full_image 위에 작은 텍스트 오버레이" },
+        { tone: "소프트 페미닌", palette: "블러시 핑크#f5e6e0/세이지 그린#e8efe0/라벤더#e8e0f0, 크림 배경", layout: "둥근 카드, 소프트 그림자, 원형 이미지", hero: "파스텔 그라데이션 배경 + 중앙 타이틀" },
+        { tone: "볼드 바이브", palette: "비비드 마젠타#e91e63/코랄#ff6f61/딥그린#2e7d32, 화이트 대비", layout: "컬러 블록 섹션, 큰 타이포그래피, 강한 CTA", hero: "풀 블리드 이미지 + 큰 굵은 타이틀" },
+        { tone: "내추럴 오가닉", palette: "테라코타#c4a882/웜베이지#f5f0eb/초콜릿브라운#5d4037, 크림", layout: "자연 질감, 부드러운 곡선, 보태니컬 요소", hero: "어스톤 배경 + 심플 캐치프레이즈" },
+        { tone: "럭셔리 프리미엄", palette: "딥 네이비#1a237e/골드#c9a961/화이트, 다크 배경 중심", layout: "와이드 여백, 세리프 느낌 타이포, 금선 디테일", hero: "다크 배경 + 골드 텍스트 + 미니멀" },
+        { tone: "캐주얼 플레이풀", palette: "오렌지#ff9800/스카이블루#03a9f4/라임#cddc39, 밝은 배경", layout: "일러스트 요소, 재미있는 타이포, 비정형 레이아웃", hero: "컬러풀 배경 + 큰 제품 사진 + 활기찬 카피" },
+        { tone: "클린 프로페셔널", palette: "네이비#263238/그레이#607d8b/화이트, 차분한 중성톤", layout: "정돈된 그리드, 정보형 테이블, 아이콘+텍스트", hero: "깔끔한 화이트 배경 + 제품 중심 + 데이터 뱃지" },
+        { tone: "매거진 에디토리얼", palette: "모노톤#222/#666/#f0f0f0 + 1가지 액센트 컬러", layout: "매거진 그리드, 큰 이미지+작은 텍스트, 비대칭", hero: "풀 블리드 사진 + 에디토리얼 타이틀" },
       ];
       const seed = styleSeeds[Math.floor(Math.random() * styleSeeds.length)];
 
       const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel}
 특징:${features.slice(0, 400)}${extraLines ? ` 추가정보:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
 추출색상:${mainColor}
-디자인 톤:${seed.tone} / 색상방향:${seed.palette} / 레이아웃:${seed.layout}
+디자인 톤:${seed.tone}
+색상방향:${seed.palette}
+레이아웃:${seed.layout}
+히어로 스타일:${seed.hero}
 
 이 제품의 쇼핑몰 상세페이지를 ${sectionCount}개 섹션 JSON배열로 만들어줘.
 
