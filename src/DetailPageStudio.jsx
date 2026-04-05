@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { callAI } from "./aiClient";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useI18n } from "./i18n.jsx";
 
 /* ══════════════════════════════════════════════════════════════
@@ -129,7 +129,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     if (!prompt) return;
     setSectionImages(prev => ({ ...prev, [secId]: { loading: true, url: null, error: null } }));
     try {
-      const token = (await import("./storage")).getAuthToken?.() || "";
+      const token = await getAuthToken() || "";
       const res = await fetch("/api/image?action=generate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -363,7 +363,7 @@ JSON배열만 출력.`;
       const geminiRes = await fetch("/api/gemini-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
+        body: JSON.stringify({ prompt: layoutPrompt, maxTokens: mode === "precise" ? 12000 : 6000 }),
       });
       if (!geminiRes.ok) {
         const err = await geminiRes.json().catch(() => ({}));
@@ -1194,7 +1194,7 @@ JSON배열만 출력.`;
                   const imgLeft = layout === "left_image_right_text" || (!layout?.includes("right") && isOdd);
                   const subtitleEl = findEl("subtitle");
                   const titleEl = findEl("title");
-                  const bodyEl = findEl("body");
+                  const bodyEls = findEls("body");
                   const badge = els.find(e => e.type === "badge");
                   const pointNum = (() => {
                     const pts = sections.filter((s, si) => si <= i && (s.type === "point" || s.type === "concept"));
@@ -1222,12 +1222,12 @@ JSON배열만 출력.`;
                           {titleEl.content}
                         </div>
                       )}
-                      {bodyEl && (
-                        <div {...editable(bodyEl)} style={{ ...editable(bodyEl).style, fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8 }}>
-                          {bodyEl.content}
+                      {bodyEls.map((el, bi) => (
+                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.6)" : "#666"), lineHeight: 1.8, marginBottom: 8 }}>
+                          {el.content}
                         </div>
-                      )}
-                      {!subtitleEl && !titleEl && !bodyEl && els.filter(e => e.type === "text").map((el, ei) => (
+                      ))}
+                      {!subtitleEl && !titleEl && bodyEls.length === 0 && els.filter(e => e.type === "text").map((el, ei) => (
                         <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 15 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: el.fontWeight === "900" ? 1.35 : 1.8, marginBottom: el.fontWeight === "900" ? 16 : 8 }}>
                           {el.content}
                         </div>
