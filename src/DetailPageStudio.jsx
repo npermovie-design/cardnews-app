@@ -2483,7 +2483,7 @@ JSON배열만 출력.`;
                       <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
                     </div>
                   );
-                );
+                };
 
                 // 히어로 이미지 영역 (제품 이미지 사용 — hero만)
                 const renderHeroImage = () => (
