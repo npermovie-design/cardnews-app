@@ -472,7 +472,7 @@ JSON만 출력.`, maxTokens: 200 }),
 
       // Step 3: 톤앤매너 + 색상 팔레트
       setPipeStep(3);
-      const sectionCount = mode === "fast" ? 8 : 15;
+      const sectionCount = mode === "fast" ? 8 : 10;
       const toneData = {
         tone: aiToneResult?.tone || "전문적", voice: aiToneResult?.voice || "~합니다",
         color_palette: {
@@ -492,41 +492,47 @@ JSON만 출력.`, maxTokens: 200 }),
       const mainColor = toneData.color_palette.main;
       const extraLines = [extraInfo.price, extraInfo.origin, extraInfo.target, extraInfo.shipping, extraInfo.brand, extraInfo.usp].filter(Boolean).join(", ");
 
-      // 디자인 다양성: 랜덤 스타일 시드 (74개 실제 상세페이지 분석 기반)
-      const styleSeeds = [
-        { tone: "미니멀 모던", palette: "#fff/#f8f8f8 화이트 베이스, 1가지 포인트 컬러만", layout: "여백 넉넉한 심플, 중앙정렬 헤드라인, 좌우 분할", hero: "full_image 위에 작은 텍스트 오버레이" },
-        { tone: "소프트 페미닌", palette: "블러시 핑크#f5e6e0/세이지 그린#e8efe0/라벤더#e8e0f0, 크림 배경", layout: "둥근 카드, 소프트 그림자, 원형 이미지", hero: "파스텔 그라데이션 배경 + 중앙 타이틀" },
-        { tone: "볼드 바이브", palette: "비비드 마젠타#e91e63/코랄#ff6f61/딥그린#2e7d32, 화이트 대비", layout: "컬러 블록 섹션, 큰 타이포그래피, 강한 CTA", hero: "풀 블리드 이미지 + 큰 굵은 타이틀" },
-        { tone: "내추럴 오가닉", palette: "테라코타#c4a882/웜베이지#f5f0eb/초콜릿브라운#5d4037, 크림", layout: "자연 질감, 부드러운 곡선, 보태니컬 요소", hero: "어스톤 배경 + 심플 캐치프레이즈" },
-        { tone: "럭셔리 프리미엄", palette: "딥 네이비#1a237e/골드#c9a961/화이트, 다크 배경 중심", layout: "와이드 여백, 세리프 느낌 타이포, 금선 디테일", hero: "다크 배경 + 골드 텍스트 + 미니멀" },
-        { tone: "캐주얼 플레이풀", palette: "오렌지#ff9800/스카이블루#03a9f4/라임#cddc39, 밝은 배경", layout: "일러스트 요소, 재미있는 타이포, 비정형 레이아웃", hero: "컬러풀 배경 + 큰 제품 사진 + 활기찬 카피" },
-        { tone: "클린 프로페셔널", palette: "네이비#263238/그레이#607d8b/화이트, 차분한 중성톤", layout: "정돈된 그리드, 정보형 테이블, 아이콘+텍스트", hero: "깔끔한 화이트 배경 + 제품 중심 + 데이터 뱃지" },
-        { tone: "매거진 에디토리얼", palette: "모노톤#222/#666/#f0f0f0 + 1가지 액센트 컬러", layout: "매거진 그리드, 큰 이미지+작은 텍스트, 비대칭", hero: "풀 블리드 사진 + 에디토리얼 타이틀" },
-      ];
-      const seed = styleSeeds[Math.floor(Math.random() * styleSeeds.length)];
+      // 톤앤매너 통일: 카테고리 기반 색상 테마 (참고자료 76개 분석 기반)
+      // 원칙: 1) 한 페이지에 1-2색만, 2) 배경은 흰색/크림/다크만, 3) 원색 배경 절대 금지
+      const categoryThemes = {
+        "식품": { tone: "내추럴 프리미엄", palette: `메인${mainColor}/화이트#fff/크림#f9f6f2/차콜#2c2c2c — 원색배경 절대금지, 크림+다크만 교차`, layout: "풀블리드 이미지 중심, 텍스트는 보조, 이미지 80%+" },
+        "뷰티": { tone: "소프트 클린", palette: `메인${mainColor}/화이트#fff/블러시#f8f5f2/다크#1a1a2e — 파스텔만, 원색금지`, layout: "깔끔한 여백, 제품 클로즈업 중심" },
+        "패션": { tone: "매거진 에디토리얼", palette: `메인${mainColor}/화이트#fff/라이트그레이#f5f5f5/블랙#111 — 모노톤+포인트1색`, layout: "큰 이미지+작은 텍스트, 비대칭 그리드" },
+        "가전": { tone: "클린 프로페셔널", palette: `메인${mainColor}/화이트#fff/쿨그레이#f0f2f5/네이비#1a1a2e — 차분한 중성톤만`, layout: "정돈된 그리드, 정보형, 아이콘+텍스트" },
+        "건강": { tone: "내추럴 오가닉", palette: `메인${mainColor}/화이트#fff/웜베이지#f5f0eb/차콜#333 — 어스톤만`, layout: "자연 질감, 부드러운 곡선" },
+        "default": { tone: "미니멀 모던", palette: `메인${mainColor}/화이트#fff/라이트#f8f8f8/다크#1a1a2e — 포인트1색+흰+다크만`, layout: "여백 넉넉, 중앙정렬, 좌우 분할" },
+      };
+      const catKey = ["식품","음료","건강식품","간식"].some(k => catLabel.includes(k)) ? "식품"
+        : ["뷰티","화장품","스킨케어","향수"].some(k => catLabel.includes(k)) ? "뷰티"
+        : ["패션","의류","가방","신발","주얼리"].some(k => catLabel.includes(k)) ? "패션"
+        : ["가전","전자","IT","디지털"].some(k => catLabel.includes(k)) ? "가전"
+        : ["건강","영양","비타민","운동"].some(k => catLabel.includes(k)) ? "건강" : "default";
+      const seed = categoryThemes[catKey];
 
       const layoutPrompt = `제품:"${productName}" 카테고리:${catLabel}
 특징:${features.slice(0, 400)}${extraLines ? ` 추가정보:${extraLines}` : ""}${options.length ? ` 옵션:${options.join("/")}` : ""}
-추출색상:${mainColor}
+메인컬러:${mainColor}
 디자인 톤:${seed.tone}
-색상방향:${seed.palette}
-레이아웃:${seed.layout}
-히어로 스타일:${seed.hero}
 
-한국 쇼핑몰 상세페이지 ${sectionCount}개 섹션 JSON배열.
-순서: hero→pain_points→features→point(2개)→stats_highlight→review→guarantee→cta→ai_notice.
+한국 프리미엄 상세페이지 ${sectionCount}개 섹션 JSON배열.
+순서: hero→pain_points→features→point(2-3개,교대)→stats_highlight→review→guarantee→cta→ai_notice.
 
-형식: [{"type":"","layout":"","bg_color":"#hex 또는 linear-gradient(방향, #색1, #색2)","image_prompt":"제품 관련 영문 프롬프트 40단어, 구체적 묘사","elements":[{"type":"text","role":"","content":"","fontSize":숫자,"fontWeight":"400|700|900","color":"#hex"}]}]
+[중요] 색상 규칙 — 절대 준수:
+- bg_color는 반드시 다음 5가지 중에서만 선택: "#fff", "#f9f6f2", "#f5f5f5", "#1a1a2e", "${mainColor}"
+- 하늘색/연두색/노란색/분홍색 같은 원색 배경 절대 금지
+- 밝은 배경(#fff, #f9f6f2)과 다크 배경(#1a1a2e) 교차 배치
+- 텍스트 color도 배경에 맞게: 밝은배경="#1a1a2e", 다크배경="#fff"
+- 포인트 컬러는 ${mainColor} 하나만 사용
+
+형식: [{"type":"","layout":"","bg_color":"#hex","image_prompt":"제품 관련 영문 프롬프트 40단어, 구체적 묘사","elements":[{"type":"text","role":"","content":"","fontSize":숫자,"fontWeight":"400|700|900","color":"#hex"}]}]
 
 layout: hero=full_image, pain_points=centered_text, features=grid_2col, point=left_image_right_text/right_image_left_text교대, stats=centered_text, review=card_list, cta=centered_text.
 role: subtitle,title,body,price,stat_number,stat_label,review_name,star,review_text,question,answer.
-bg_color는 그라데이션 적극 사용(linear-gradient). 밝은/어두운 교차.
-image_prompt는 제품 실사진 스타일로 구체적으로(조명, 앵글, 배경, 소품 묘사).
-카피는 실제 쇼핑몰 수준, 구체적 수치 포함. ${mainColor} 기반.
-JSON배열만 출력.
-- point 섹션은 2-3개, 교대 레이아웃
+image_prompt는 제품 실사진 스타일(조명,앵글,배경,소품 묘사). 모든 섹션에 image_prompt 필수.
+카피는 실제 쇼핑몰 수준, 제품 카테고리(${catLabel})에 맞는 전문적 멘트. 구체적 수치/성분 포함.
 - 첫번째=hero 마지막=ai_notice
 - 이모지 절대 사용 금지
+- 모든 elements에 content가 반드시 있어야 함
 JSON배열만 출력.`;
 
       // Gemini API 직접 호출 (항상 8개로 먼저 생성) — 90초 타임아웃
@@ -2082,10 +2088,47 @@ JSON배열만 출력.`;
 
               <div style={{ height: 1, background: bdr, margin: "14px 0" }} />
 
+              {/* 추천 테마 */}
+              <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>이런 테마를 추천드립니다</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {[
+                  { name: "내추럴 크림", main: "#8B7355", gradient: "#A69279", light: "#f9f6f2", dark: "#2c2c2c", desc: "따뜻한 크림톤" },
+                  { name: "모던 다크", main: "#c9a961", gradient: "#b8956a", light: "#f5f5f5", dark: "#1a1a2e", desc: "고급 다크+골드" },
+                  { name: "클린 화이트", main: colorPalette?.main || "#7c6aff", gradient: colorPalette?.gradient || "#9b8ec4", light: "#ffffff", dark: "#111111", desc: "깔끔한 모노톤" },
+                ].map((theme, ti) => (
+                  <button key={ti} onClick={() => {
+                    const newPalette = { main: theme.main, gradient: theme.gradient, light_bg: theme.light, dark_bg: theme.dark };
+                    setColorPalette(newPalette);
+                    // 모든 섹션 배경색을 테마에 맞게 자동 조정
+                    setSections(prev => prev.map((s, si) => {
+                      if (s.type === "hero" || s.type === "cta") return { ...s, bg_color: theme.dark };
+                      if (s.type === "stats_highlight") return { ...s, bg_color: theme.dark };
+                      if (s.type === "pain_points") return { ...s, bg_color: theme.dark };
+                      if (si % 3 === 0) return { ...s, bg_color: theme.light };
+                      if (si % 3 === 1) return { ...s, bg_color: "#fff" };
+                      return { ...s, bg_color: theme.light };
+                    }));
+                  }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.03)" : "#fafafa", cursor: "pointer", textAlign: "left" }}>
+                    <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                      {[theme.main, theme.gradient, theme.light, theme.dark].map((c, ci) => (
+                        <div key={ci} style={{ width: 16, height: 16, borderRadius: 4, background: c, border: `1px solid ${bdr}` }} />
+                      ))}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: text }}>{theme.name}</div>
+                      <div style={{ fontSize: 9, color: muted }}>{theme.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ height: 1, background: bdr, margin: "0 0 14px" }} />
+
               {/* 전체 색상 팔레트 */}
               {colorPalette && (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>전체 팔레트</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>현재 팔레트</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {[
                       { label: "메인", color: colorPalette.main },
@@ -3065,8 +3108,8 @@ JSON배열만 출력.`;
                             return (
                               <div key={si} style={{ textAlign: "center", minWidth: 160, flex: "1 1 160px", maxWidth: 220 }}>
                                 {/* 원형 차트 + 숫자 오버레이 */}
-                                <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 20px" }}>
-                                  <CircleChart pct={pct} color={gradColor} size={120} />
+                                <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 16px" }}>
+                                  <CircleChart pct={pct} color={gradColor} size={80} />
                                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     <div {...editable(sn)} style={eS(sn, { fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, transform: "rotate(0deg)" })}>
                                       {sn.content}
@@ -3539,12 +3582,8 @@ JSON배열만 출력.`;
                           <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${mainColor}20, #1a1a2e)` }} />
                         )}
                         <div style={{ position: "absolute", inset: 0, background: `linear-gradient(transparent, ${isDarkBg ? bgCol : "#f8f8fa"})` }} />
-                        {/* 방패 아이콘 오버레이 */}
-                        <div style={{ position: "absolute", bottom: -32, left: "50%", transform: "translateX(-50%)", width: 72, height: 72, borderRadius: "50%", background: isDarkBg ? "#1a1a2e" : "#f8f8fa", display: "flex", alignItems: "center", justifyContent: "center", border: `3px solid ${mainColor}30`, boxShadow: `0 4px 24px ${mainColor}20` }}>
-                          <svg width="32" height="32" viewBox="0 0 36 36" fill="none"><path d="M18 3L5 9v9c0 8.3 5.5 16 13 18 7.5-2 13-9.7 13-18V9L18 3z" stroke={mainColor} strokeWidth="2.5" fill={`${mainColor}15`}/><path d="M13 18l3 3 7-7" stroke={mainColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
                       </div>
-                      <div style={{ background: isDarkBg ? bgCol : "#f8f8fa", padding: "52px 56px 72px" }}>
+                      <div style={{ background: isDarkBg ? bgCol : "#f8f8fa", padding: "56px 56px 72px" }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 })}>
                             {subtitleEl.content}
