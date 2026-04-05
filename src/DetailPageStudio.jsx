@@ -315,19 +315,33 @@ JSON배열만 출력.`;
     if (!productName.trim() && images.length === 0) return;
     setAiFilling(true);
     try {
-      const prompt = `상품명: "${productName || "(제품 이미지 기반으로 추정해줘)"}"
+      const hasImage = images.length > 0 && images[0].base64;
+      const prompt = hasImage
+        ? `이 제품 사진을 분석해서 JSON으로 응답해줘.${productName ? ` 참고 상품명: "${productName}"` : ""}
+{
+  "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 하나",
+  "productName": "사진에서 파악한 상품명 (한국어)",
+  "features": "사진에서 보이는 제품 특징 5가지 (번호 포함, 자연스러운 한국어, 쇼핑몰 수준)"
+}
+features는 줄바꿈(\\n)으로 구분. JSON만 출력.`
+        : `상품명: "${productName}"
 이 상품을 분석해서 JSON으로 응답해줘:
 {
   "category": "food|farm|tech|living|fashion|beauty|health|education|pet|kids 중 하나",
-  "productName": "상품명이 비어있으면 추정한 상품명",
-  "features": "줄바꿈으로 구분된 5가지 제품 특징 (번호 포함, 자연스러운 한국어 문장, 쇼핑몰 상세페이지 수준)"
+  "productName": "${productName}",
+  "features": "제품 특징 5가지 (번호 포함, 자연스러운 한국어, 쇼핑몰 수준)"
 }
-features 예시:
-"1. 제주 청정 환경에서 자란 흑돼지 100% 사용\\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\\n3. 무방부제, 무색소 — 아이도 안심하고 먹는 건강 간식\\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\\n5. 개별 소포장으로 휴대 간편, 어디서나 가볍게 즐기세요"
-JSON만 출력.`;
+features는 줄바꿈(\\n)으로 구분. JSON만 출력.`;
+      // 이미지가 있으면 base64도 함께 전송 (Gemini 비전)
+      const reqBody = { prompt, maxTokens: 800 };
+      if (hasImage) {
+        const raw = images[0].base64;
+        reqBody.imageBase64 = raw.includes(",") ? raw.split(",")[1] : raw;
+        reqBody.imageMimeType = images[0].file?.type || "image/jpeg";
+      }
       const geminiRes = await fetch("/api/gemini-generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, maxTokens: 800 }),
+        body: JSON.stringify(reqBody),
       });
       const geminiData = await geminiRes.json();
       const result = geminiData.text || "";

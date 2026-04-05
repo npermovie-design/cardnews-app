@@ -10,7 +10,7 @@ export default async function handler(req) {
   if (!GEMINI_KEY) return new Response(JSON.stringify({ error: "Gemini API key not configured" }), { status: 500 });
 
   try {
-    const { prompt, maxTokens } = await req.json();
+    const { prompt, maxTokens, imageBase64, imageMimeType } = await req.json();
     if (!prompt) return new Response(JSON.stringify({ error: "prompt 필수" }), { status: 400 });
 
     const model = "gemini-2.5-flash";
@@ -21,8 +21,14 @@ export default async function handler(req) {
       responseMimeType: "application/json",
       thinkingConfig: { thinkingBudget: 0 },
     };
+    // 이미지가 있으면 멀티모달 요청
+    const parts = [];
+    if (imageBase64) {
+      parts.push({ inlineData: { mimeType: imageMimeType || "image/jpeg", data: imageBase64 } });
+    }
+    parts.push({ text: prompt });
     const body = {
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: genConfig,
     };
 
