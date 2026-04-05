@@ -135,6 +135,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── 섹션별 AI 이미지 생성 ──────────────────────────────
   const generateSectionImage = async (secId, prompt) => {
     if (!prompt) return;
+    if (!user) { alert("이미지 생성은 로그인 후 이용 가능합니다."); return; }
     setSectionImages(prev => ({ ...prev, [secId]: { loading: true, url: null, error: null } }));
     try {
       const token = await getAuthToken() || "";
@@ -1174,6 +1175,16 @@ JSON배열만 출력.`;
                         <span style={{ display: "inline-block", width: 20, height: 20, border: `2px solid ${acc}`, borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                         이미지 생성 중...
                       </div>
+                    </div>
+                  );
+                  if (secImg?.error) return (
+                    <div style={{ width: "100%", height: h, borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff5f5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid #fca5a5", ...style }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>이미지 생성 실패</div>
+                      <div style={{ fontSize: 10, color: "#999", maxWidth: "80%", textAlign: "center", lineHeight: 1.5 }}>{secImg.error.slice(0, 100)}</div>
+                      <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
+                        style={{ padding: "6px 16px", borderRadius: 8, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
+                        다시 시도
+                      </button>
                     </div>
                   );
                   return (

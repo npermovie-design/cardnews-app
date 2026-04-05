@@ -46,9 +46,9 @@ async function handleGenerate(req, res) {
 
   // ── 방법 1: Gemini generateContent (이미지 생성 가능 모델) ──
   const MODELS = [
-    "gemini-2.5-flash-image",
-    "gemini-3.1-flash-image-preview",
-    "gemini-3-pro-image-preview",
+    "gemini-2.0-flash-exp",
+    "gemini-2.5-flash-preview-04-17",
+    "gemini-2.0-flash-001",
   ];
 
   const parts = [];
@@ -105,8 +105,8 @@ async function handleGenerate(req, res) {
 
   // ── 방법 2: Imagen 4 (텍스트→이미지 전용) ──
   const IMAGEN_MODELS = [
-    "imagen-4.0-fast-generate-001",
-    "imagen-4.0-generate-001",
+    "imagen-3.0-generate-002",
+    "imagen-3.0-fast-generate-001",
   ];
 
   for (const imgModel of IMAGEN_MODELS) {
