@@ -1693,6 +1693,60 @@ JSON배열만 출력.`;
                     </button>
                   )}
                 </>
+              ) : selectedEl?.el?._type === "shape" ? (
+                /* 도형 속성 패널 */
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>도형 편집</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>채우기 색상</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="color" value={(selectedEl.el.fill || "#7c6aff").replace(/[0-9a-f]{2}$/i, "")} onChange={e => {
+                      const val = e.target.value + "33";
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fill: val } }));
+                    }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
+                    <button onClick={() => {
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: "transparent" }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fill: "transparent" } }));
+                    }} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>투명</button>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>테두리 색상</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <input type="color" value={selectedEl.el.stroke || "#7c6aff"} onChange={e => {
+                      const val = e.target.value;
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, stroke: val }) }));
+                      setSelectedEl(prev => ({ ...prev, el: { ...prev.el, stroke: val } }));
+                    }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>크기</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                    <div>
+                      <span style={{ fontSize: 9, color: muted }}>너비</span>
+                      <input type="number" value={selectedEl.el.width || 120} min="20" max="800" step="10"
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 120;
+                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, width: val }) }));
+                          setSelectedEl(prev => ({ ...prev, el: { ...prev.el, width: val } }));
+                        }}
+                        style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 9, color: muted }}>높이</span>
+                      <input type="number" value={selectedEl.el.height || 80} min="20" max="800" step="10"
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 80;
+                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, height: val }) }));
+                          setSelectedEl(prev => ({ ...prev, el: { ...prev.el, height: val } }));
+                        }}
+                        style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx) }));
+                    setSelectedEl(null);
+                  }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid #ef4444`, background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    도형 삭제
+                  </button>
+                </>
               ) : (
                 /* 기본: 섹션 텍스트 편집 목록 */
                 <>
@@ -2186,9 +2240,9 @@ JSON배열만 출력.`;
         {/* 인라인 툴바 제거 — 좌측 속성 패널로 통합됨 */}
 
         <div onClick={() => setSelectedEl(null)} style={{ maxWidth: 860, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s", position: "relative" }}>
-          {/* 정렬 스냅 가이드라인 */}
-          {snapGuide?.x && <div style={{ position: "fixed", top: 0, bottom: 0, left: "50%", width: 1, background: "#2196F3", zIndex: 100, pointerEvents: "none", opacity: 0.6 }} />}
-          {snapGuide?.y && <div style={{ position: "fixed", left: 0, right: 0, top: "50%", height: 1, background: "#2196F3", zIndex: 100, pointerEvents: "none", opacity: 0.6 }} />}
+          {/* 정렬 스냅 가이드라인 — 캔버스 중앙 기준 */}
+          {snapGuide?.x && <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "#2196F3", zIndex: 100, pointerEvents: "none", opacity: 0.7 }} />}
+          {snapGuide?.x && <div style={{ position: "absolute", top: 0, bottom: 0, left: "calc(50% - 1px)", width: 3, background: "rgba(33,150,243,0.15)", zIndex: 99, pointerEvents: "none" }} />}
           {sections.map((sec, i) => (
             <div key={sec.id}
               onClick={() => setActiveSection(i)}
@@ -2410,15 +2464,25 @@ JSON배열만 출력.`;
                 };
 
                 // 장식적 라인 (섹션 제목 위/아래)
-                const decoLine = (color, width = 40) => (
-                  <div style={{ width, height: 2, background: color || mainColor, margin: "0 auto 16px", borderRadius: 1 }} />
-                );
-                const decoLineLong = (color) => (
-                  <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "0 auto 24px", justifyContent: "center", maxWidth: 200 }}>
-                    <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: mainColor }} />
-                    <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
-                  </div>
+                const decoLine = (color, width = 40) => {
+                  if (sec._hideDecoLine) return null;
+                  return (
+                    <div onClick={e => { e.stopPropagation(); setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _hideDecoLine: true })); }}
+                      title="클릭하여 제거" style={{ width, height: 2, background: color || mainColor, margin: "0 auto 16px", borderRadius: 1, cursor: "pointer", transition: "opacity 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = "0.4"} onMouseLeave={e => e.currentTarget.style.opacity = "1"} />
+                  );
+                };
+                const decoLineLong = (color) => {
+                  if (sec._hideDecoLine) return null;
+                  return (
+                    <div onClick={e => { e.stopPropagation(); setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _hideDecoLine: true })); }}
+                      title="클릭하여 제거" style={{ display: "flex", alignItems: "center", gap: 16, margin: "0 auto 24px", justifyContent: "center", maxWidth: 200, cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = "0.4"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                      <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: mainColor }} />
+                      <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
+                    </div>
+                  );
                 );
 
                 // 히어로 이미지 영역 (제품 이미지 사용 — hero만)
