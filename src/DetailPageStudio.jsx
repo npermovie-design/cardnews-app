@@ -126,9 +126,26 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [stockImages, setStockImages] = useState([]);
   const fetchStockImages = async (query) => {
     try {
-      const res = await fetch(`https://pixabay.com/api/?key=46981993-a50990452475c64e225775a&q=${encodeURIComponent(query)}&image_type=photo&per_page=12&lang=ko`);
-      const data = await res.json();
-      setStockImages((data.hits || []).map(h => ({ url: h.webformatURL, thumb: h.previewURL, title: h.tags })));
+      const pixKey = import.meta.env.VITE_PIXABAY_KEY || "";
+      const pexKey = import.meta.env.VITE_PEXELS_KEY || "";
+      const results = [];
+      // Pixabay
+      if (pixKey) {
+        try {
+          const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://pixabay.com/api/?key=${pixKey}&q=${query}&image_type=photo&per_page=8&lang=ko`)}`);
+          const data = await res.json();
+          (data.hits || []).forEach(h => results.push({ url: h.webformatURL, thumb: h.previewURL, title: h.tags, src: "Pixabay" }));
+        } catch {}
+      }
+      // Pexels
+      if (pexKey) {
+        try {
+          const res = await fetch(`/api/proxy?url=${encodeURIComponent(`https://api.pexels.com/v1/search?query=${query}&per_page=8&locale=ko-KR`)}&headers=${encodeURIComponent(JSON.stringify({ Authorization: pexKey }))}`);
+          const data = await res.json();
+          (data.photos || []).forEach(p => results.push({ url: p.src.medium, thumb: p.src.small, title: p.alt || "", src: "Pexels" }));
+        } catch {}
+      }
+      setStockImages(results.length > 0 ? results : []);
     } catch { setStockImages([]); }
   };
 
@@ -1136,19 +1153,27 @@ JSON배열만 출력.`;
                 const aiImgSrc = secImg?.url || null;
                 const els = sec.elements || [];
                 const bgCol = sec.bg_color || "#fff";
-                const isDarkBg = bgCol && (() => {
-                  const hex = bgCol.replace("#", "");
-                  const r = parseInt(hex.slice(0, 2), 16);
-                  const g = parseInt(hex.slice(2, 4), 16);
-                  const b = parseInt(hex.slice(4, 6), 16);
-                  return (r * 299 + g * 587 + b * 114) / 1000 < 128;
-                })();
-                // 제품 이미지 자동 분배 — 이미지가 필요한 레이아웃에만 배치 (같은 사진 반복 방지)
+                const hexClean = (bgCol || "#fff").replace("#", "");
+                const bgR = parseInt(hexClean.slice(0, 2), 16) || 255;
+                const bgG = parseInt(hexClean.slice(2, 4), 16) || 255;
+                const bgB = parseInt(hexClean.slice(4, 6), 16) || 255;
+                const isDarkBg = (bgR * 299 + bgG * 587 + bgB * 114) / 1000 < 128;
+                // 제품 이미지 자동 분배 — 중복 최소화
                 const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
                 const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
-                const productImgForSection = (needsImage && images.length > 0)
-                  ? images[i % images.length]?.preview || null
-                  : null;
+                let productImgForSection = null;
+                if (needsImage && images.length > 0) {
+                  if (images.length >= 2) {
+                    // 2장 이상이면 순환 배치
+                    productImgForSection = images[i % images.length]?.preview || null;
+                  } else {
+                    // 1장이면 hero + 첫 point에만 배치
+                    const imgSectionCount = sections.filter((s, si) => si < i && (imgLayouts.includes(s.layout) || s.type === "hero")).length;
+                    if (secType === "hero" || imgSectionCount < 1) {
+                      productImgForSection = images[0]?.preview || null;
+                    }
+                  }
+                }
                 const mainColor = colorPalette?.main || acc;
 
                 // 요소 찾기 헬퍼

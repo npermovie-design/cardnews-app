@@ -13,15 +13,19 @@ export default async function handler(req) {
     const { prompt, maxTokens } = await req.json();
     if (!prompt) return new Response(JSON.stringify({ error: "prompt 필수" }), { status: 400 });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+    // 토큰이 많으면 더 빠른 모델 사용
+    const model = (maxTokens && maxTokens > 8000) ? "gemini-2.0-flash" : "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+    const genConfig = {
+      maxOutputTokens: maxTokens || 8000,
+      temperature: 1,
+      responseMimeType: "application/json",
+    };
+    // 2.5-flash만 thinking 설정 지원
+    if (model.includes("2.5")) genConfig.thinkingConfig = { thinkingBudget: 0 };
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        maxOutputTokens: maxTokens || 8000,
-        temperature: 1,
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 },
-      },
+      generationConfig: genConfig,
     };
 
     const res = await fetch(url, {
