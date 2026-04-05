@@ -123,6 +123,50 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [activeSection, setActiveSection] = useState(0);
   const [sidebarTab, setSidebarTab] = useState("pages");
   const [sectionImages, setSectionImages] = useState({}); // { secId: { url, loading, error } }
+  // 텍스트 요소 선택/편집
+  const [selectedEl, setSelectedEl] = useState(null); // { secIdx, elIdx, el }
+  const [agentInput, setAgentInput] = useState("");
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentMessages, setAgentMessages] = useState([]);
+
+  const handleAgentSend = async (msg) => {
+    if (!msg?.trim()) return;
+    setAgentMessages(prev => [...prev, { role: "user", content: msg }]);
+    setAgentInput("");
+    setAgentLoading(true);
+    try {
+      const sec = sections[activeSection];
+      const secJson = JSON.stringify(sec?.elements?.filter(e => e.type === "text").map(e => ({ role: e.role, content: e.content })) || []);
+      const prompt = `상세페이지 에디터의 AI 에이전트입니다. 현재 섹션의 텍스트 요소들:
+${secJson}
+
+사용자 요청: "${msg}"
+
+위 요청에 맞게 텍스트를 수정해서 JSON 배열로 반환해줘.
+형식: [{"role":"기존role","content":"수정된텍스트"}]
+JSON배열만 출력.`;
+      const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 1000);
+      const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+      try {
+        const updates = JSON.parse(cleaned);
+        if (Array.isArray(updates)) {
+          setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
+            ...s, elements: s.elements.map(el => {
+              if (el.type !== "text") return el;
+              const upd = updates.find(u => u.role === el.role);
+              return upd ? { ...el, content: upd.content } : el;
+            }),
+          }));
+          setAgentMessages(prev => [...prev, { role: "assistant", content: "수정 완료! 변경된 내용을 확인해보세요." }]);
+        }
+      } catch {
+        setAgentMessages(prev => [...prev, { role: "assistant", content: cleaned }]);
+      }
+    } catch (e) {
+      setAgentMessages(prev => [...prev, { role: "assistant", content: `오류: ${e.message}` }]);
+    }
+    setAgentLoading(false);
+  };
   const [stockImages, setStockImages] = useState([]);
   const fetchStockImages = async (query) => {
     try {
@@ -1135,6 +1179,70 @@ JSON배열만 출력.`;
             </button>
           </div>
         </div>
+        {/* 텍스트 편집 툴바 */}
+        {selectedEl && (
+          <div style={{ maxWidth: 860, margin: "0 auto 8px", padding: "8px 12px", borderRadius: 10, background: D ? "rgba(0,0,0,0.6)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}>
+            {/* 폰트 크기 */}
+            <select value={selectedEl.el.fontSize || 14} onChange={e => {
+              const val = parseInt(e.target.value);
+              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontSize: val }) }));
+              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontSize: val } }));
+            }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 11, cursor: "pointer" }}>
+              {[10, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48, 56, 64].map(s => <option key={s} value={s}>{s}px</option>)}
+            </select>
+            {/* 굵기 */}
+            {["400", "600", "700", "800", "900"].map(w => (
+              <button key={w} onClick={() => {
+                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontWeight: w }) }));
+                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontWeight: w } }));
+              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${selectedEl.el.fontWeight === w ? acc : bdr}`, background: selectedEl.el.fontWeight === w ? `${acc}20` : "transparent", color: selectedEl.el.fontWeight === w ? acc : muted, fontSize: 11, fontWeight: parseInt(w), cursor: "pointer", minWidth: 28 }}>
+                {w === "400" ? "Light" : w === "700" ? "Bold" : w === "900" ? "Black" : w}
+              </button>
+            ))}
+            <div style={{ width: 1, height: 20, background: bdr }} />
+            {/* 색상 */}
+            <div style={{ position: "relative" }}>
+              <input type="color" value={selectedEl.el.color || "#000000"} onChange={e => {
+                const val = e.target.value;
+                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, color: val }) }));
+                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, color: val } }));
+              }} style={{ width: 28, height: 28, border: `2px solid ${bdr}`, borderRadius: 6, cursor: "pointer", padding: 0 }} />
+            </div>
+            {/* 정렬 */}
+            {["left", "center", "right"].map(a => (
+              <button key={a} onClick={() => {
+                setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textAlign: a }) }));
+                setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textAlign: a } }));
+              }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${selectedEl.el.textAlign === a ? acc : bdr}`, background: selectedEl.el.textAlign === a ? `${acc}20` : "transparent", color: selectedEl.el.textAlign === a ? acc : muted, fontSize: 11, cursor: "pointer" }}>
+                {a === "left" ? "≡" : a === "center" ? "☰" : "≡"}
+              </button>
+            ))}
+            <div style={{ width: 1, height: 20, background: bdr }} />
+            {/* 그림자 */}
+            <button onClick={() => {
+              const hasShadow = selectedEl.el.textShadow;
+              const val = hasShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)";
+              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
+              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: val } }));
+            }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedEl.el.textShadow ? acc : bdr}`, background: selectedEl.el.textShadow ? `${acc}20` : "transparent", color: selectedEl.el.textShadow ? acc : muted, fontSize: 11, cursor: "pointer" }}>
+              그림자
+            </button>
+            {/* 배경 박스 */}
+            <button onClick={() => {
+              const hasBg = selectedEl.el.bgBox;
+              setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBox: !hasBg }) }));
+              setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBox: !hasBg } }));
+            }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedEl.el.bgBox ? acc : bdr}`, background: selectedEl.el.bgBox ? `${acc}20` : "transparent", color: selectedEl.el.bgBox ? acc : muted, fontSize: 11, cursor: "pointer" }}>
+              박스
+            </button>
+            <div style={{ marginLeft: "auto" }}>
+              <button onClick={() => setSelectedEl(null)} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>
+                x 닫기
+              </button>
+            </div>
+          </div>
+        )}
+
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           {sections.map((sec, i) => (
             <div key={sec.id}
@@ -1196,12 +1304,23 @@ JSON배열만 출력.`;
                   }));
                 };
 
-                // 공통 editable props
+                // 공통 editable props — 클릭 시 선택 + 라운딩 박스
+                const elIdx = (el) => els.indexOf(el);
+                const isSelected = (el) => selectedEl?.secIdx === i && selectedEl?.elIdx === elIdx(el);
                 const editable = (el) => ({
                   contentEditable: true,
                   suppressContentEditableWarning: true,
                   onBlur: onBlurByRef(el),
-                  style: { outline: "none", cursor: "text" },
+                  onClick: (e) => { e.stopPropagation(); setSelectedEl({ secIdx: i, elIdx: elIdx(el), el }); },
+                  style: {
+                    outline: "none", cursor: "text", transition: "box-shadow 0.15s, border-radius 0.15s",
+                    borderRadius: isSelected(el) ? 6 : (el.bgBox ? 8 : 0),
+                    boxShadow: isSelected(el) ? `0 0 0 2px ${acc}, 0 0 0 4px ${acc}30` : "none",
+                    position: "relative",
+                    textShadow: el.textShadow || undefined,
+                    textAlign: el.textAlign || undefined,
+                    ...(el.bgBox ? { background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", padding: "8px 14px", borderRadius: 8 } : {}),
+                  },
                 });
 
                 // 장식적 라인 (섹션 제목 위/아래)
@@ -2436,41 +2555,60 @@ JSON배열만 출력.`;
           })}
         </div>
 
-        {/* AI 채팅 */}
+        {/* AI 에이전트 채팅 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            ✦ 에이전트 활용 방법
-          </div>
-          <div style={{
-            padding: "14px 16px", borderRadius: 12, border: `1px solid ${acc}40`,
-            background: D ? "rgba(124,106,255,0.05)" : "#f8f7ff", marginBottom: 12,
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>빠른 프롬프트 예시</div>
-            <div style={{ fontSize: 11, color: muted, marginBottom: 4 }}>클릭하면 입력창에 자동으로 채워집니다.</div>
-            {[
-              "내 제품 정보 알려줘",
-              "선택한 이미지에서 내 제품 색깔로 바꿔줘",
-              "선택한 텍스트를 더 짧고 설득력 있게 다듬어줘",
-              "선택한 페이지 카피라이팅을 더 신뢰도 있게 수정해줘",
-              "선택한 페이지 톤앤매너를 피란색 톤으로 맞춰줘",
-            ].map((prompt, i) => (
-              <div key={i} style={{
-                padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`,
-                background: D ? "rgba(255,255,255,0.04)" : "#fff", marginBottom: 4,
-                fontSize: 12, color: text, cursor: "pointer",
-              }}
-                onClick={() => {/* TODO: AI 채팅 연동 */ }}>
-                {prompt}
-              </div>
-            ))}
+          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            ✦ AI 에이전트
           </div>
 
-          <div style={{ marginTop: "auto" }}>
-            <div style={{ position: "relative" }}>
-              <input placeholder="메시지를 입력하세요"
-                style={{ ...inputStyle, paddingRight: 40, fontSize: 12 }} />
-              <button style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: acc, fontSize: 16, cursor: "pointer" }}>➤</button>
+          {/* 빠른 프롬프트 */}
+          {agentMessages.length === 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: muted, marginBottom: 6 }}>빠른 명령 (클릭하면 실행)</div>
+              {[
+                { label: "선택한 텍스트를 더 설득력 있게", prompt: "선택한 텍스트를 더 짧고 설득력 있게 다듬어줘" },
+                { label: "카피라이팅 개선", prompt: "이 섹션의 카피라이팅을 더 신뢰도 있게 수정해줘" },
+                { label: "톤앤매너 변경", prompt: "이 섹션의 톤앤매너를 더 따뜻하고 친근하게 바꿔줘" },
+                { label: "전체 텍스트 축약", prompt: "이 섹션의 모든 텍스트를 30% 더 짧게 줄여줘" },
+              ].map((item, qi) => (
+                <button key={qi} onClick={() => { setAgentInput(item.prompt); handleAgentSend(item.prompt); }}
+                  style={{ display: "block", width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.04)" : "#fff", marginBottom: 4, fontSize: 11, color: text, cursor: "pointer", textAlign: "left" }}>
+                  {item.label}
+                </button>
+              ))}
             </div>
+          )}
+
+          {/* 메시지 목록 */}
+          <div style={{ flex: 1, overflowY: "auto", marginBottom: 12 }}>
+            {agentMessages.map((msg, mi) => (
+              <div key={mi} style={{ marginBottom: 8, padding: "10px 12px", borderRadius: 10, background: msg.role === "user" ? `${acc}15` : (D ? "rgba(255,255,255,0.04)" : "#f8f8f8"), border: `1px solid ${msg.role === "user" ? acc + "30" : bdr}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: msg.role === "user" ? acc : muted, marginBottom: 4 }}>{msg.role === "user" ? "나" : "AI 에이전트"}</div>
+                <div style={{ fontSize: 12, color: text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.content}</div>
+              </div>
+            ))}
+            {agentLoading && (
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: D ? "rgba(255,255,255,0.04)" : "#f8f8f8", border: `1px solid ${bdr}` }}>
+                <div style={{ fontSize: 11, color: acc, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ display: "inline-block", width: 12, height: 12, border: `2px solid ${acc}`, borderColor: `${acc} transparent transparent transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  AI가 수정하고 있어요...
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 입력 */}
+          <div style={{ position: "relative" }}>
+            <input value={agentInput} onChange={e => setAgentInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && agentInput.trim()) handleAgentSend(agentInput); }}
+              placeholder="AI에게 요청하세요..."
+              disabled={agentLoading}
+              style={{ ...inputStyle, paddingRight: 40, fontSize: 12 }} />
+            <button onClick={() => { if (agentInput.trim()) handleAgentSend(agentInput); }}
+              disabled={agentLoading || !agentInput.trim()}
+              style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: agentInput.trim() ? acc : muted, fontSize: 16, cursor: agentInput.trim() ? "pointer" : "default" }}>
+              ➤
+            </button>
           </div>
         </div>
 
