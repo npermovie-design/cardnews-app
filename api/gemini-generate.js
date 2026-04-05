@@ -22,8 +22,6 @@ export default async function handler(req, res) {
     const genConfig = {
       maxOutputTokens: maxTokens || 8000,
       temperature: 1,
-      responseMimeType: "application/json",
-      thinkingConfig: { thinkingBudget: 0 },
     };
 
     // 이미지가 있으면 멀티모달 요청

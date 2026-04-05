@@ -644,13 +644,33 @@ JSON배열만 출력.`;
       }
       let layoutData;
       try {
-        const cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        let cleaned = layoutResult.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        // JSON 배열이 아닌 경우 배열 부분만 추출 시도
+        if (!cleaned.startsWith("[")) {
+          const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+          if (arrMatch) cleaned = arrMatch[0];
+        }
         layoutData = JSON.parse(cleaned);
+        if (!Array.isArray(layoutData)) throw new Error("배열이 아닌 응답");
       } catch (e) {
-        console.error("Layout parse error:", e, layoutResult);
-        setPipeError("레이아웃 생성 실패. 다시 시도해주세요.");
-        setPhase("input");
-        return;
+        console.error("Layout parse error:", e, layoutResult?.slice(0, 500));
+        // 한번 더 재시도
+        try {
+          const retryRes = await fetch("/api/gemini-generate", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: layoutPrompt, maxTokens: 6000 }),
+          });
+          const retryData = await retryRes.json();
+          const retryText = (retryData.text || "").replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+          const retryArr = retryText.startsWith("[") ? retryText : (retryText.match(/\[[\s\S]*\]/) || [""])[0];
+          layoutData = JSON.parse(retryArr);
+          if (!Array.isArray(layoutData)) throw new Error("재시도 실패");
+          console.log("Layout parse 재시도 성공");
+        } catch (e2) {
+          console.error("Layout parse 재시도 실패:", e2);
+          setPipeError("레이아웃 생성 실패. 다시 시도해주세요. (JSON 파싱 오류)");
+          return; // generating 화면에서 에러 표시, input으로 안 돌림
+        }
       }
 
       // 프리미엄: 추가 섹션 2차 생성
