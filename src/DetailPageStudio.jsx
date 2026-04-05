@@ -2471,25 +2471,25 @@ JSON배열만 출력.`;
                         {decoLine(mainColor, 40)}
                       </div>
                       {/* 그리드 */}
-                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 24 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: cols === 3 ? 20 : 28 }}>
                         {items.length > 0 ? items.map((item, gi) => (
-                          <div key={gi} style={{ textAlign: "center", padding: "32px 20px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, transition: "box-shadow 0.2s", boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}>
-                            {iconCircle(gi, 56)}
+                          <div key={gi} style={{ textAlign: "center", padding: cols === 3 ? "28px 16px" : "36px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 20px rgba(0,0,0,0.04)", transition: "transform 0.2s, box-shadow 0.2s" }}>
+                            {iconCircle(gi, cols === 3 ? 52 : 64)}
                             {item.title && (
-                              <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: 15, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 8, lineHeight: 1.4 }}>
+                              <div {...editable(item.title)} style={{ ...editable(item.title).style, fontSize: cols === 3 ? 14 : 16, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 }}>
                                 {item.title.content}
                               </div>
                             )}
                             {item.body && (
-                              <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 }}>
+                              <div {...editable(item.body)} style={{ ...editable(item.body).style, fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", lineHeight: 1.7 }}>
                                 {item.body.content}
                               </div>
                             )}
                           </div>
                         )) : gridEls.map((el, gi) => (
-                          <div key={gi} style={{ textAlign: "center", padding: "32px 20px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}>
-                            {iconCircle(gi, 56)}
-                            <div {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "700" || el.fontWeight === "900" ? 15 : 13, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.6 }}>
+                          <div key={gi} style={{ textAlign: "center", padding: cols === 3 ? "28px 16px" : "36px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 20px rgba(0,0,0,0.04)" }}>
+                            {iconCircle(gi, cols === 3 ? 52 : 64)}
+                            <div {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "700" || el.fontWeight === "900" ? 16 : 13, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: 1.6 }}>
                               {el.content}
                             </div>
                           </div>
@@ -2515,51 +2515,50 @@ JSON배열만 출력.`;
                   })();
 
                   const textBlock = (
-                    <div style={{ flex: 1, padding: "48px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      {/* POINT 넘버 */}
-                      <div style={{ fontSize: 11, fontWeight: 800, color: mainColor, letterSpacing: 4, marginBottom: 12, textTransform: "uppercase" }}>
-                        POINT {String(pointNum).padStart(2, "0")}
+                    <div style={{ flex: 1, padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+                      {/* POINT 넘버 라인 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                        <div style={{ width: 32, height: 2, background: mainColor }} />
+                        <span style={{ fontSize: 11, fontWeight: 800, color: mainColor, letterSpacing: 4, textTransform: "uppercase" }}>
+                          POINT {String(pointNum).padStart(2, "0")}
+                        </span>
                       </div>
                       {badge && (
-                        <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "5px 14px", borderRadius: 20, background: `${mainColor}12`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 14, alignSelf: "flex-start", border: `1px solid ${mainColor}25` }}>
+                        <span {...editable(badge)} style={{ ...editable(badge).style, display: "inline-block", padding: "6px 16px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 16, alignSelf: "flex-start", border: `1px solid ${mainColor}20` }}>
                           {badge.content}
                         </span>
                       )}
                       {subtitleEl && (
-                        <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 8, letterSpacing: 1 }}>
+                        <div {...editable(subtitleEl)} style={{ ...editable(subtitleEl).style, fontSize: 14, fontWeight: 600, color: mainColor, marginBottom: 10, letterSpacing: 1, textAlign: "left" }}>
                           {subtitleEl.content}
                         </div>
                       )}
                       {titleEl && (
-                        <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 26, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.35, marginBottom: 16 }}>
+                        <div {...editable(titleEl)} style={{ ...editable(titleEl).style, fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3, marginBottom: 20, textAlign: "left" }}>
                           {titleEl.content}
                         </div>
                       )}
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.6)" : "#666"), lineHeight: 1.8, marginBottom: 8 }}>
+                        <div key={bi} {...editable(el)} style={{ ...editable(el).style, fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.8, marginBottom: 10, textAlign: "left" }}>
                           {el.content}
                         </div>
                       ))}
                       {!subtitleEl && !titleEl && bodyEls.length === 0 && els.filter(e => e.type === "text").map((el, ei) => (
-                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "900" ? 26 : el.fontWeight === "700" ? 15 : 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: el.fontWeight === "900" ? 1.35 : 1.8, marginBottom: el.fontWeight === "900" ? 16 : 8 }}>
+                        <div key={ei} {...editable(el)} style={{ ...editable(el).style, fontSize: el.fontWeight === "900" ? 28 : el.fontWeight === "700" ? 16 : 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "#fff" : "#1a1a2e"), lineHeight: el.fontWeight === "900" ? 1.3 : 1.8, marginBottom: el.fontWeight === "900" ? 20 : 10, textAlign: "left" }}>
                           {el.content}
                         </div>
                       ))}
-                      {/* 장식 점선 */}
-                      <div style={{ display: "flex", gap: 4, marginTop: 20 }}>
-                        {[...Array(3)].map((_, di) => <div key={di} style={{ width: 4, height: 4, borderRadius: "50%", background: `${mainColor}30` }} />)}
-                      </div>
                     </div>
                   );
 
                   const imageBlock = (
-                    <div style={{ flex: 1, padding: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {renderPlaceholder(320)}
+                    <div style={{ flex: 1, minHeight: 420, position: "relative", overflow: "hidden" }}>
+                      {renderPlaceholder(420, { borderRadius: 0 })}
                     </div>
                   );
 
                   return (
-                    <div style={{ display: "flex", minHeight: 400, background: bgCol, flexDirection: imgLeft ? "row" : "row-reverse" }}>
+                    <div style={{ display: "flex", minHeight: 420, background: bgCol, flexDirection: imgLeft ? "row" : "row-reverse" }}>
                       {imageBlock}
                       {textBlock}
                     </div>
@@ -2665,10 +2664,10 @@ JSON배열만 출력.`;
                         )}
                         {decoLineLong()}
                       </div>
-                      <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
                         {statNums.map((sn, si) => (
-                          <div key={si} style={{ textAlign: "center", minWidth: 140, padding: "24px 20px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
-                            <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 48, fontWeight: 900, color: mainColor, lineHeight: 1.1, marginBottom: 8 }}>
+                          <div key={si} style={{ textAlign: "center", minWidth: 160, padding: "32px 24px", borderRadius: 20, background: isDarkBg ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "none" : "0 4px 24px rgba(0,0,0,0.04)" }}>
+                            <div {...editable(sn)} style={{ ...editable(sn).style, fontSize: 56, fontWeight: 900, color: mainColor, lineHeight: 1, marginBottom: 10, letterSpacing: -2 }}>
                               {sn.content}
                             </div>
                             {statLabels[si] && (
