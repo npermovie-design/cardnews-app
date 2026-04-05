@@ -148,7 +148,9 @@ ${secJson}
 위 요청에 맞게 텍스트를 수정해서 JSON 배열로 반환해줘.
 형식: [{"role":"기존role","content":"수정된텍스트"}]
 JSON배열만 출력.`;
-      const result = await callAI("claude-haiku-4-5-20251001", [{ role: "user", content: prompt }], 1000);
+      const agentRes = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 2000 }) });
+      const agentData = await agentRes.json();
+      const result = agentData.text || agentData.error || "";
       const cleaned = result.replace(/```json?\s*/g, "").replace(/```/g, "").trim();
       try {
         const updates = JSON.parse(cleaned);
@@ -898,14 +900,15 @@ JSON배열만 출력.`;
 
   // ── 아웃라인 확인 (Phase 1.5) ──────────────────────────
   if (phase === "outline") return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f5f5f5" }}>
-      <div style={{ maxWidth: 600, width: "100%", padding: "40px 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: D ? "transparent" : "#f5f5f5", overflow: "hidden" }}>
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center", padding: "24px 24px 0" }}>
+        <div style={{ maxWidth: 600, width: "100%" }}>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 6 }}>섹션 구성 확인</div>
           <div style={{ fontSize: 13, color: muted }}>포함할 섹션을 선택하고 순서를 변경하세요</div>
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div>
           <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>총 {sections.filter(s => s.enabled !== false).length}/{sections.length}개 섹션 선택됨</div>
           {sections.map((sec, i) => {
             const sType = SECTION_TYPES.find(t => t.id === sec.type);
@@ -937,13 +940,16 @@ JSON배열만 출력.`;
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => { setPhase("generating"); setPipeStep(4); }}
+        </div>
+      </div>
+      {/* 하단 고정 버튼 */}
+      <div style={{ flexShrink: 0, padding: "16px 24px", borderTop: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.3)" : "#fff", display: "flex", justifyContent: "center" }}>
+        <div style={{ maxWidth: 600, width: "100%", display: "flex", gap: 10 }}>
+          <button onClick={() => { setPhase("input"); }}
             style={{ flex: 1, padding: "14px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer" }}>
-            ← 다시 생성
+            ← 다시 입력
           </button>
           <button onClick={() => {
-            // 비활성화된 섹션 제거 후 에디터로
             setSections(prev => prev.filter(s => s.enabled !== false));
             setPhase("editor");
           }}
@@ -1614,9 +1620,23 @@ JSON배열만 출력.`;
                 // 아이콘 원형 (features 그리드용)
                 const iconCircle = (idx, size = 60) => {
                   const icons = ["✦", "◆", "●", "★", "▲", "♦", "◉", "⬟", "⬡"];
+                  const iconImgId = `icon-img-${sec.id}-${idx}`;
+                  const iconImg = sec[`iconImg_${idx}`];
                   return (
-                    <div style={{ width: size, height: size, borderRadius: "50%", background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", border: `1.5px solid ${mainColor}25` }}>
-                      <span style={{ fontSize: size * 0.35, color: mainColor }}>{icons[idx % icons.length]}</span>
+                    <div style={{ width: size, height: size, borderRadius: "50%", background: iconImg ? "transparent" : `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", border: iconImg ? "none" : `1.5px solid ${mainColor}25`, overflow: "hidden", cursor: "pointer", position: "relative" }}
+                      onClick={e => { e.stopPropagation(); document.getElementById(iconImgId)?.click(); }}>
+                      {iconImg ? (
+                        <img src={iconImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: size * 0.35, color: mainColor }}>{icons[idx % icons.length]}</span>
+                      )}
+                      <input id={iconImgId} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = URL.createObjectURL(file);
+                          setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, [`iconImg_${idx}`]: url }));
+                        }
+                      }} />
                     </div>
                   );
                 };
