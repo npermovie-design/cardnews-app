@@ -449,13 +449,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 도구 래퍼 (헤더 + 콘텐츠 — 배경 통일) ──
+  // ── 도구 래퍼 (헤더 + 콘텐츠 통으로 스크롤) ──
   function ToolWrap({ menuId, children }) { return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+    <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
       <ToolHeader menuId={menuId} />
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        {children}
-      </div>
+      {children}
     </div>
   ); }
 
@@ -1210,17 +1208,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 자동발행
   if (aiMenu === "auto_publish") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(16,185,129,0.1)", fontSize:12, fontWeight:700, color:"#10b981", marginBottom:14 }}>자동 글쓰기</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>설정한 시간에 자동으로<br/>블로그 글이 발행됩니다</div>
             <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>키워드와 플랫폼을 설정하면 AI가 자동으로 글을 작성하고 발행합니다.</div>
           </div>
         </div>
-        <div style={{ flex:1, overflow:"auto" }}>
-          <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />
-        </div>
+        <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
   }
@@ -1258,34 +1254,30 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   if (aiMenu === "yt_analyzer") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>유튜브 분석</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 채널을 분석하고<br/>성장 전략을 제안해드려요</div>
             <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>채널 URL을 입력하면 구독자, 조회수, 콘텐츠를 AI가 분석합니다.</div>
           </div>
         </div>
-        <div style={{ flex:1, overflow:"auto" }}>
-          <YouTubeAnalyzer isDark={isDark} />
-        </div>
+        <YouTubeAnalyzer isDark={isDark} />
       </div>
     );
   }
 
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>숏폼 자동편집</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 영상을 넣으면<br/>AI가 숏폼을 만들어드려요</div>
             <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>유튜브 URL을 입력하면 자동으로 하이라이트를 추출하고 편집합니다.</div>
           </div>
         </div>
-        <div style={{ flex:1, overflow:"auto" }}>
-          <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
-        </div>
+        <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
       </div>
     );
   }
