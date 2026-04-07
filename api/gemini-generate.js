@@ -1,5 +1,5 @@
 // Gemini API — Edge Runtime (타임아웃 관대) + 이미지 비전 지원
-export const config = { runtime: "edge", maxDuration: 60 };
+export const config = { runtime: "edge", maxDuration: 120 };
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
@@ -30,11 +30,15 @@ export default async function handler(req) {
 
     const body = { contents: [{ parts }], generationConfig: genConfig };
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 100000); // 100초
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
 
     if (!res.ok) {
       const err = await res.text().catch(() => "");

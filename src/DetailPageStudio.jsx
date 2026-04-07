@@ -612,10 +612,11 @@ ${sectionCount <= 8 ? shortFlow : longFlow}
 - 기능 나열이 아니라 "사용 후 변화" 강조
 
 [중요] 색상 규칙:
-- bg_color: "#fff", "#f9f6f2", "#f5f5f5", "#1a1a2e", "#f5f0eb" 중에서만 선택
+- bg_color: "#ffffff", "#f9f6f2", "#f5f5f5", "#1a1a2e", "#f5f0eb" 중에서만 선택 (반드시 6자리 hex)
 - 원색 배경(하늘/연두/노랑/분홍) 절대 금지
 - 밝은 배경과 다크 배경 교차 배치
-- 밝은배경 텍스트="#1a1a1a", 다크배경 텍스트="#fff"
+- 밝은배경 텍스트="#1a1a1a", 다크배경 텍스트="#ffffff"
+- 모든 color 값은 반드시 #rrggbb 6자리 형식 사용
 - 포인트 컬러: ${mainColor}
 
 형식: [{"type":"","layout":"","bg_color":"#hex","image_prompt":"제품 관련 영문 프롬프트 40단어","elements":[{"type":"text","role":"","content":"","fontSize":숫자,"fontWeight":"400|700|900","color":"#hex"}]}]
@@ -629,9 +630,9 @@ image_prompt는 제품 실사진 스타일. 모든 섹션에 image_prompt 필수
 - 모든 elements에 content 필수
 JSON배열만 출력.`;
 
-      // Gemini API 직접 호출 (항상 8개로 먼저 생성) — 90초 타임아웃
+      // Gemini API 직접 호출 — 110초 타임아웃
       const abortCtrl = new AbortController();
-      const timeoutId = setTimeout(() => abortCtrl.abort(), 90000);
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 110000);
       let geminiRes;
       try {
         geminiRes = await fetch("/api/gemini-generate", {
@@ -642,7 +643,7 @@ JSON배열만 출력.`;
         });
       } catch (fetchErr) {
         clearTimeout(timeoutId);
-        throw new Error(fetchErr.name === "AbortError" ? "생성 시간 초과 (90초). 다시 시도해주세요." : fetchErr.message);
+        throw new Error(fetchErr.name === "AbortError" ? "생성 시간 초과. 다시 시도해주세요." : fetchErr.message);
       }
       clearTimeout(timeoutId);
       if (!geminiRes.ok) {
@@ -736,7 +737,7 @@ JSON배열만 출력.`;
       };
       // 배경색: 흰색/크림 기본, 다크는 hero/cta/stats만
       // 배경색 패턴: 밝은 배경 중심, 다크는 최소
-      const bgPattern = ["#fff", "#f5f5f5", "#f9f6f2", "#fff", "#f5f0eb", "#f5f5f5", "#fff", "#f9f6f2", "#1a1a2e", "#fff", "#f5f5f5", "#f9f6f2", "#fff", "#f5f0eb"];
+      const bgPattern = ["#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb", "#f5f5f5", "#ffffff", "#f9f6f2", "#1a1a2e", "#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb"];
       let pointIdx = 0;
       const diversified = layoutData.map((s, i) => {
         const type = s.type || "point";
@@ -1248,7 +1249,7 @@ JSON배열만 출력.`;
           <button onClick={() => {
             const newSec = {
               id: `sec_add_${Date.now()}`, type: "point", layout: "centered_text",
-              bg_color: "#fff", enabled: true, designVariant: Math.floor(Math.random() * 6),
+              bg_color: "#ffffff", enabled: true, designVariant: Math.floor(Math.random() * 6),
               elements: [
                 { type: "text", role: "title", content: "새 섹션 제목", fontSize: 28, fontWeight: "900", color: "#1a1a1a" },
                 { type: "text", role: "body", content: "내용을 입력하세요", fontSize: 15, color: "#666" },
@@ -2445,10 +2446,12 @@ JSON배열만 출력.`;
                 const heroImgSrc = images.length > 0 ? images[0].preview : null;
                 const aiImgSrc = secImg?.url || null;
                 const els = sec.elements || [];
-                const bgCol = sec.bg_color || "#fff";
+                // 3자리 hex → 6자리 변환
+                const normHex = (c) => { if (!c || !c.startsWith("#")) return c || "#ffffff"; const h = c.slice(1); if (h.length === 3) return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`; return c; };
+                const bgCol = normHex(sec.bg_color) || "#ffffff";
                 // linear-gradient 지원: 첫 번째 색상 추출
-                const firstHex = bgCol.startsWith("linear-gradient") ? ((bgCol.match(/#[0-9a-fA-F]{3,8}/) || ["#fff"])[0]) : bgCol;
-                const hexClean = (firstHex || "#fff").replace("#", "");
+                const firstHex = bgCol.startsWith("linear-gradient") ? normHex((bgCol.match(/#[0-9a-fA-F]{3,8}/) || ["#ffffff"])[0]) : bgCol;
+                const hexClean = (firstHex || "#ffffff").replace("#", "");
                 const bgR = parseInt(hexClean.slice(0, 2), 16) || 255;
                 const bgG = parseInt(hexClean.slice(2, 4), 16) || 255;
                 const bgB = parseInt(hexClean.slice(4, 6), 16) || 255;
@@ -4889,7 +4892,7 @@ JSON배열만 출력.`;
                     { icon: "▲", label: "위로", action: () => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1], a[i]] = [a[i], a[i-1]]; return a; }); setActiveSection(i-1); } },
                     { icon: "▼", label: "아래로", action: () => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; }); setActiveSection(i+1); } },
                     { icon: "⧉", label: "복제", action: () => { setSections(prev => [...prev.slice(0,i+1), { ...sec, id: `sec_dup_${Date.now()}` }, ...prev.slice(i+1)]); setActiveSection(i+1); } },
-                    { icon: "+", label: "추가", action: () => { const n = { id:`sec_add_${Date.now()}`, type:"point", bg_color:"#fff", elements:[{type:"text",role:"title",content:"새 섹션",fontSize:36,fontWeight:"900",color:"#1a1a2e"}] }; setSections(prev=>[...prev.slice(0,i+1),n,...prev.slice(i+1)]); setActiveSection(i+1); } },
+                    { icon: "+", label: "추가", action: () => { const n = { id:`sec_add_${Date.now()}`, type:"point", bg_color:"#ffffff", elements:[{type:"text",role:"title",content:"새 섹션",fontSize:36,fontWeight:"900",color:"#1a1a2e"}] }; setSections(prev=>[...prev.slice(0,i+1),n,...prev.slice(i+1)]); setActiveSection(i+1); } },
                     { icon: "×", label: "삭제", action: () => { if (sections.length <= 1) return; setSections(prev => prev.filter((_,j) => j !== i)); setActiveSection(Math.max(0, i-1)); } },
                   ].map((ctrl, ci) => (
                     <button key={ci} onClick={e => { e.stopPropagation(); ctrl.action(); }}
