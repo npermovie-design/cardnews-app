@@ -2869,6 +2869,61 @@ JSON배열만 출력.`;
                   const statNums = findEls("stat_number");
                   const statLabels = findEls("stat_label");
 
+                  // ═══ 변형: 2톤 분할 히어로 (ARMAND 레퍼런스 — 밝은 상단 + 다크 하단 + 브랜드 타이포) ═══
+                  if (dv % 6 === 5) {
+                    const heroImg = aiImgSrc || productImgForSection || images[0]?.preview;
+                    const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle" && e.role !== "stat_number" && e.role !== "stat_label");
+                    return (
+                      <div>
+                        {/* 상단: 밝은 배경 + 제품 이미지 + 특징 텍스트 */}
+                        <div style={{ background: colorPalette?.light_bg || "#f5f0eb", position: "relative", padding: "60px 48px 80px", display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 32, flexDirection: isMobile ? "column" : "row", minHeight: isMobile ? "auto" : 500 }}>
+                          {/* 좌측 특징 텍스트 */}
+                          <div style={{ flex: "0 0 35%", display: "flex", flexDirection: "column", gap: 16 }}>
+                            {bodyEls.slice(0, 4).map((el, bi) => (
+                              <div key={bi} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: mainColor, flexShrink: 0, marginTop: 2 }}>{bi + 1}.</span>
+                                <div {...editable(el)} style={eS(el, { fontSize: 12, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#666", lineHeight: 1.6 })}>{el.content}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* 우측 제품 이미지 */}
+                          <div style={{ flex: 1, display: "flex", justifyContent: "center", position: "relative" }}>
+                            {heroImg ? (
+                              <img src={heroImg} alt="" style={{ maxWidth: "100%", maxHeight: 420, objectFit: "contain", filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.08))" }} />
+                            ) : (
+                              <div style={{ width: 320, height: 360, borderRadius: 16, background: `linear-gradient(135deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <span style={{ fontSize: 60, color: `${mainColor}15`, fontWeight: 900 }}>+</span>
+                              </div>
+                            )}
+                            {imgButtons({ top: 8, right: 8 })}
+                          </div>
+                        </div>
+                        {/* 하단: 다크 배경 + 브랜드 타이포 + 캐치프레이즈 */}
+                        <div style={{ background: "#1a1a2e", padding: isMobile ? "60px 24px" : "80px 56px", position: "relative", overflow: "hidden" }}>
+                          {/* 세로 브랜드 타이포 배경 */}
+                          <div style={{ position: "absolute", left: isMobile ? -20 : 40, top: "50%", transform: "translateY(-50%) rotate(-90deg)", transformOrigin: "center", fontSize: isMobile ? 48 : 80, fontWeight: 900, color: "rgba(255,255,255,0.04)", letterSpacing: 8, whiteSpace: "nowrap", pointerEvents: "none", textTransform: "uppercase" }}>
+                            {(productName || "BRAND").toUpperCase()}
+                          </div>
+                          <div style={{ position: "relative", zIndex: 1, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+                            {subtitle && <div {...editable(subtitle)} style={eS(subtitle, { fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: 2, marginBottom: 16 })}>{subtitle.content}</div>}
+                            {title && <div {...editable(title)} style={eS(title, { fontSize: isMobile ? 28 : 38, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 20 })}>{title.content}</div>}
+                            {/* 인증/수상 배지 */}
+                            {statNums.length > 0 && (
+                              <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 28, flexWrap: "wrap" }}>
+                                {statNums.map((sn, si) => (
+                                  <div key={si} style={{ textAlign: "center", padding: "12px 20px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div {...editable(sn)} style={eS(sn, { fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1 })}>{sn.content}</div>
+                                    {statLabels[si] && <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginTop: 6 })}>{statLabels[si].content}</div>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   // ═══ 변형: 라이프스타일 히어로 (풀배경 + 좌상단 로고 + 좌측 타이틀 + 우측 뱃지 + 하단 아이콘) ═══
                   if (dv % 6 === 3) {
                     const heroImg = aiImgSrc || productImgForSection || images[0]?.preview;
