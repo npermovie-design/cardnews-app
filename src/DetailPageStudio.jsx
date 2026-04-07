@@ -1041,18 +1041,10 @@ JSON배열만 출력.`;
               </button>
             ))}
           </div>
-          {/* ── 페이지 수 조절 ── */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: text }}>페이지 수</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: acc }}>{pageCount}페이지</span>
-            </div>
-            <input type="range" min={5} max={20} value={pageCount} onChange={e => setPageCount(Number(e.target.value))}
-              style={{ width: "100%", accentColor: acc, height: 4, cursor: "pointer" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-              <span style={{ fontSize: 10, color: muted }}>5 (간단)</span>
-              <span style={{ fontSize: 10, color: muted }}>20 (상세)</span>
-            </div>
+          {/* ── 페이지 수 표시 (모드에 따라 자동 설정) ── */}
+          <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: muted }}>생성 페이지:</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: acc }}>{pageCount}페이지</span>
           </div>
 
           <button onClick={runPipeline}
