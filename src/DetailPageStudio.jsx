@@ -2426,11 +2426,11 @@ JSON배열만 출력.`;
             <div key={sec.id}
               onClick={() => setActiveSection(i)}
               style={{
-                position: "relative", marginBottom: 4,
+                position: "relative", marginBottom: 0,
                 border: activeSection === i ? `2px solid ${acc}` : "2px solid transparent",
-                borderRadius: 4, cursor: "pointer",
+                borderRadius: 0, cursor: "pointer",
                 overflow: "hidden",
-                background: sec.bg_color?.startsWith("linear-gradient") ? sec.bg_color : undefined,
+                background: sec.bg_color?.startsWith("linear-gradient") ? sec.bg_color : (sec.bg_color || "#ffffff"),
               }}>
               {/* 배경 이미지 레이어 */}
               {sec.bgImage && (
@@ -3215,7 +3215,7 @@ JSON배열만 출력.`;
                   }
 
                   // ── 기본 카드 스타일 ──
-                  const cs = { radius: 16, shadow: "0 4px 24px rgba(0,0,0,0.06)", imgH: cols === 3 ? 280 : 380, showImg: true, showNum: true, numStyle: "badge", padTop: "120px", decoType: "circle" };
+                  const cs = { radius: 16, shadow: "0 4px 24px rgba(0,0,0,0.06)", imgH: cols === 3 ? 200 : 260, showImg: true, showNum: true, numStyle: "badge", padTop: "120px", decoType: "circle" };
 
                   // 기본: 이미지 카드 그리드
                   return (
@@ -3312,7 +3312,7 @@ JSON배열만 출력.`;
                     return (
                       <div style={{ background: `linear-gradient(180deg, ${mainColor}12 0%, ${mainColor}20 40%, ${mainColor}30 100%)`, position: "relative", overflow: "hidden", minHeight: 1260 }}>
                         {/* 배경 워터마크 */}
-                        <div style={{ position: "absolute", top: 60, left: "50%", transform: "translateX(-50)", fontSize: 100, fontWeight: 900, color: "rgba(255,255,255,0.3)", letterSpacing: 8, whiteSpace: "nowrap", pointerEvents: "none", zIndex: 0 }}>
+                        <div style={{ position: "absolute", top: 60, left: "50%", transform: "translateX(-50%)", fontSize: 80, fontWeight: 900, color: "rgba(255,255,255,0.15)", letterSpacing: 8, whiteSpace: "nowrap", pointerEvents: "none", zIndex: 0 }}>
                           {(productName || "BRAND").toUpperCase()}
                         </div>
                         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "80px 48px 60px" }}>
@@ -3588,11 +3588,13 @@ JSON배열만 출력.`;
                   const reviewEls = els.filter(e => e.role === "review_text" || e.role === "review_name" || e.role === "star");
                   const cards = [];
                   reviewEls.forEach(el => {
-                    if (el.role === "review_name" || (cards.length === 0)) {
+                    if (el.role === "review_name" || cards.length === 0) {
                       cards.push([]);
                     }
-                    cards[cards.length - 1].push(el);
+                    if (cards.length > 0) cards[cards.length - 1].push(el);
                   });
+                  // 빈 카드 제거
+                  const filteredCards = cards.filter(c => c.some(e => e.role === "review_name"));
                   const profileColors = [mainColor, "#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9"];
                   const reviewBg = bgCol.startsWith("linear-gradient") ? bgCol : bgCol;
                   const productImg = aiImgSrc || productImgForSection || images[0]?.preview || null;
@@ -3639,7 +3641,7 @@ JSON배열만 출력.`;
                                 <span key={si} style={{ fontSize: 16, color: si < Math.round(parseFloat(avgStar)) ? "#fbbf24" : "rgba(255,255,255,0.2)" }}>{String.fromCharCode(9733)}</span>
                               ))}
                             </div>
-                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 4, fontWeight: 600 }}>{cards.length}개 리뷰</div>
+                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 4, fontWeight: 600 }}>{filteredCards.length}개 리뷰</div>
                           </div>
                         </div>
                         {/* 이미지 교체 버튼 */}
@@ -3651,8 +3653,8 @@ JSON배열만 출력.`;
                       </div>
                       {/* 리뷰 카드 그리드 */}
                       <div style={{ padding: isMobile ? "40px 20px 60px" : "60px 56px 80px" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (cards.length >= 3 ? "repeat(3, 1fr)" : cards.length === 2 ? "1fr 1fr" : "1fr"), gap: 20, maxWidth: 820, margin: "0 auto" }}>
-                          {cards.map((group, gi) => (
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (filteredCards.length >= 3 ? "repeat(3, 1fr)" : filteredCards.length === 2 ? "1fr 1fr" : "1fr"), gap: 20, maxWidth: 820, margin: "0 auto" }}>
+                          {filteredCards.map((group, gi) => (
                             <div key={gi} style={{ padding: "28px 24px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", boxShadow: isDarkBg ? "0 2px 12px rgba(0,0,0,0.2)" : "0 4px 20px rgba(0,0,0,0.06)", position: "relative", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}` }}>
                               {/* 따옴표 장식 */}
                               <div style={{ position: "absolute", top: 16, right: 20, fontSize: 36, color: `${mainColor}15`, fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none" }}>"</div>
@@ -3788,15 +3790,15 @@ JSON배열만 출력.`;
                         {statNums.length === 1 ? (
                           <div style={{ textAlign: "center", maxWidth: 600, margin: "0 auto" }}>
                             {/* 원형 프로그레스 */}
-                            <div style={{ width: 200, height: 200, margin: "0 auto 32px", position: "relative" }}>
-                              <svg width="200" height="200" viewBox="0 0 200 200" style={{ transform: "rotate(-90deg)" }}>
-                                <circle cx="100" cy="100" r="85" fill="none" stroke={isDarkBg ? "rgba(255,255,255,0.06)" : "#f0f0f0"} strokeWidth="12" />
-                                <circle cx="100" cy="100" r="85" fill="none" stroke={mainColor} strokeWidth="12"
-                                  strokeDasharray={`${2 * Math.PI * 85 * extractPercent(statNums[0].content) / 100} ${2 * Math.PI * 85}`}
+                            <div style={{ width: 260, height: 260, margin: "0 auto 32px", position: "relative" }}>
+                              <svg width="260" height="260" viewBox="0 0 260 260" style={{ transform: "rotate(-90deg)" }}>
+                                <circle cx="130" cy="130" r="110" fill="none" stroke={isDarkBg ? "rgba(255,255,255,0.06)" : "#f0f0f0"} strokeWidth="14" />
+                                <circle cx="130" cy="130" r="110" fill="none" stroke={mainColor} strokeWidth="14"
+                                  strokeDasharray={`${2 * Math.PI * 110 * extractPercent(statNums[0].content) / 100} ${2 * Math.PI * 110}`}
                                   strokeLinecap="round" style={{ transition: "stroke-dasharray 1s ease" }} />
                               </svg>
                               <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                <div {...editable(statNums[0])} style={eS(statNums[0], { fontSize: 48, fontWeight: 900, color: mainColor, lineHeight: 1 })}>
+                                <div {...editable(statNums[0])} style={eS(statNums[0], { fontSize: 36, fontWeight: 900, color: mainColor, lineHeight: 1 })}>
                                   {statNums[0].content}
                                 </div>
                               </div>

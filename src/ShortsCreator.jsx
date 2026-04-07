@@ -757,7 +757,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 65000 });
       await doAnalyzeAfterDownload(d.file_id);
     } catch (e1) {
-      // 서버 실패 → 즉시 다운로드 도우미 + 백그라운드 대체 시도
+      // 서버 실패 → 다운로드 도우미로 전환 (사용자가 직접 업로드)
+      console.log("YouTube download fallback:", e1.message);
       let ytTitle = "";
       try {
         const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(parsed.url)}`);
