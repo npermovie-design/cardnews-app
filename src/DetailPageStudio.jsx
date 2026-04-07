@@ -1049,17 +1049,22 @@ JSON배열만 출력.`;
           </div>
 
           <button onClick={runPipeline}
-            disabled={!productName.trim() || !category || images.length === 0}
+            disabled={!productName.trim() || !category}
             style={{
               ...btnPrimary,
-              opacity: (!productName.trim() || !category || images.length === 0) ? 0.35 : 1,
+              opacity: (!productName.trim() || !category) ? 0.35 : 1,
               width: "100%", maxWidth: "100%",
             }}>
             ✦ 상세페이지 생성하기
           </button>
-          {(!productName.trim() || !category || images.length === 0) && (
+          {(!productName.trim() || !category) && (
             <p style={{ fontSize: 11, color: muted, marginTop: 8, textAlign: "center" }}>
-              {!images.length ? "제품 사진을 먼저 올려주세요" : !productName.trim() ? "상품명을 입력해주세요" : "카테고리를 선택해주세요"}
+              {!productName.trim() ? "상품명을 입력해주세요" : "카테고리를 선택해주세요"}
+            </p>
+          )}
+          {productName.trim() && category && images.length === 0 && (
+            <p style={{ fontSize: 11, color: "#f59e0b", marginTop: 8, textAlign: "center" }}>
+              사진 없이도 생성 가능해요. 스톡 이미지로 자동 채워집니다.
             </p>
           )}
         </div>
