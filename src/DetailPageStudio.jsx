@@ -3041,7 +3041,7 @@ JSON배열만 출력.`;
                     if (dv % 6 === 3) {
                       // 변형 3: 대형 인용문 중앙
                       return (
-                        <div style={{ background: painBg, padding: "200px 64px", textAlign: "center" }}>
+                        <div style={{ background: painBg, padding: "100px 64px", textAlign: "center" }}>
                           <div style={{ fontSize: 80, color: `${mainColor}15`, fontFamily: "Georgia, serif", lineHeight: 1, marginBottom: -20 }}>"</div>
                           {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: painTxtCol, lineHeight: 1.4, marginBottom: 32, maxWidth: 560, marginLeft: "auto", marginRight: "auto" })}>{titleEl.content}</div>}
                           {painEls.map((el, bi) => (
@@ -3053,7 +3053,7 @@ JSON배열만 출력.`;
 
                     // 변형 2,4,5: 세로 체크리스트
                     return (
-                      <div style={{ background: painBg, padding: "180px 64px" }}>
+                      <div style={{ background: painBg, padding: "100px 64px" }}>
                         <div style={{ textAlign: "center", marginBottom: 56 }}>
                           {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 10 })}>{subtitleEl.content}</div>}
                           {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 900, color: painTxtCol, lineHeight: 1.3, marginBottom: 16 })}>{titleEl.content}</div>}
@@ -3078,7 +3078,7 @@ JSON배열만 출력.`;
 
                   // 변형 0,1: 다크 배경 (기존 스타일)
                   return (
-                    <div style={{ position: "relative", overflow: "hidden", minHeight: 1260 }}>
+                    <div style={{ position: "relative", overflow: "hidden" }}>
                       {productImg ? (
                         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
                           <img src={productImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "blur(2px) brightness(0.35)" }} />
@@ -3087,7 +3087,7 @@ JSON배열만 출력.`;
                         <div style={{ position: "absolute", inset: 0, zIndex: 0, background: `linear-gradient(135deg, #1a1a2e 0%, ${mainColor}30 100%)` }} />
                       )}
                       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: productImg ? "linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.8) 100%)" : "transparent" }} />
-                      <div style={{ position: "relative", zIndex: 2, padding: "180px 64px" }}>
+                      <div style={{ position: "relative", zIndex: 2, padding: "100px 64px" }}>
                         <div style={{ textAlign: "center", marginBottom: 56 }}>
                           {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>{subtitleEl.content}</div>}
                           {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 12 })}>{titleEl.content}</div>}
@@ -3251,16 +3251,16 @@ JSON배열만 출력.`;
                               border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`,
                             }}>
                               {cs.showImg && (
-                                <div style={{ width: "100%", height: cs.imgH, position: "relative", overflow: "hidden", cursor: "pointer", background: `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` }}
+                                <div style={{ width: "100%", height: itemImg ? cs.imgH : 100, position: "relative", overflow: "hidden", cursor: "pointer", background: itemImg ? `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` : `${mainColor}06` }}
                                   onClick={() => document.getElementById(featureIconImgId)?.click()}>
                                   {itemImg ? (
                                     <img src={itemImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                   ) : (
-                                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                                      <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${mainColor}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        <span style={{ fontSize: 24, fontWeight: 900, color: mainColor }}>{String(gi + 1).padStart(2, "0")}</span>
+                                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                                      <div style={{ width: 48, height: 48, borderRadius: 14, background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", border: `1.5px solid ${mainColor}20` }}>
+                                        <span style={{ fontSize: 20, fontWeight: 900, color: mainColor }}>{gi + 1}</span>
                                       </div>
-                                      <span style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.3)" : "#bbb", fontWeight: 600 }}>+ 이미지 추가</span>
+                                      <span style={{ fontSize: 11, color: isDarkBg ? "rgba(255,255,255,0.3)" : "#bbb", fontWeight: 600 }}>이미지 추가</span>
                                     </div>
                                   )}
                                   {itemImg && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 50%, rgba(0,0,0,0.4) 100%)" }} />}
@@ -3318,7 +3318,7 @@ JSON배열만 출력.`;
                   // 변형: 소프트컬러 배경 + 중앙 타이틀 + 태그 뱃지 + 대형 제품 (레퍼런스 기반)
                   if (dv % 6 === 2) {
                     return (
-                      <div style={{ background: `linear-gradient(180deg, ${mainColor}12 0%, ${mainColor}20 40%, ${mainColor}30 100%)`, position: "relative", overflow: "hidden", minHeight: 1260 }}>
+                      <div style={{ background: `linear-gradient(180deg, ${mainColor}12 0%, ${mainColor}20 40%, ${mainColor}30 100%)`, position: "relative", overflow: "hidden" }}>
                         {/* 배경 워터마크 */}
                         <div style={{ position: "absolute", top: 60, left: "50%", transform: "translateX(-50%)", fontSize: 80, fontWeight: 900, color: "rgba(255,255,255,0.15)", letterSpacing: 8, whiteSpace: "nowrap", pointerEvents: "none", zIndex: 0 }}>
                           {(productName || "BRAND").toUpperCase()}
@@ -3553,7 +3553,7 @@ JSON배열만 출력.`;
                       <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
                     </div>
                   ) : (
-                    <div style={{ flex: "0 0 50%", minHeight: 1260, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ flex: "0 0 50%", minHeight: 600, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 120, fontWeight: 900, color: `${mainColor}12`, fontFamily: "'Georgia', serif", lineHeight: 1, letterSpacing: -6 }}>
                           {String(pointNum).padStart(2, "0")}
@@ -4538,7 +4538,7 @@ JSON배열만 출력.`;
 
                   // ═══ 기본 이벤트 렌더러 ═══
                   return (
-                    <div style={{ textAlign: "center", position: "relative", overflow: "hidden", minHeight: 1260 }}>
+                    <div style={{ textAlign: "center", position: "relative", overflow: "hidden" }}>
                       {/* 풀 배경 이미지 */}
                       {productImg ? (
                         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
@@ -4549,7 +4549,7 @@ JSON배열만 출력.`;
                       )}
                       {/* 오버레이 */}
                       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: productImg ? `linear-gradient(135deg, ${mainColor}cc, rgba(0,0,0,0.7))` : "transparent" }} />
-                      <div style={{ position: "relative", zIndex: 2, padding: "0 56px", minHeight: 1260, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ position: "relative", zIndex: 2, padding: "120px 56px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                         {badge && (
                           <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "10px 28px", borderRadius: 24, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 14, fontWeight: 800, marginBottom: 24, border: "1px solid rgba(255,255,255,0.2)", letterSpacing: 1 })}>
                             {badge.content}
@@ -4799,7 +4799,7 @@ JSON배열만 출력.`;
                 const bodyEls = els.filter(e => e.type === "text" && e.role !== "title" && e.role !== "subtitle");
                 const badge = els.find(e => e.type === "badge");
                 // 세로 패딩 변형 (더 길게)
-                const defaultPad = ["200px 64px", "180px 64px", "220px 80px", "180px 56px", "200px 72px", "190px 64px"][dv % 6];
+                const defaultPad = ["100px 64px", "100px 64px", "120px 80px", "100px 56px", "100px 72px", "100px 64px"][dv % 6];
                 // 제목 크기 변형
                 const defaultTitleSize = [36, 34, 40, 32, 38, 34][dv % 6];
                 // body 텍스트 변형: 카드형 vs 플레인
