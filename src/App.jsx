@@ -728,7 +728,7 @@ export default function App() {
               </DropMenu>
             )}
           </div>
-          <NavBtn id="archive" label="자료실" onClick={() => navigateBoard("archive")} />
+          <NavBtn id="archive" label={t("archiveMenu")} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>

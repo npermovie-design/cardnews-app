@@ -105,6 +105,19 @@ const T = {
     analyzing: "파일 분석 중...",
     selectType: "글 타입 선택", exampleTopics: "예시 글감",
     selectTone: "글 톤", selectLength: "분량",
+    // 도구 헤더
+    toolBlogBadge: "AI 글쓰기", toolBlogTitle: "주제를 입력하면\nAI가 글을 작성해드려요", toolBlogDesc: "원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.",
+    toolProductBadge: "AI 제품컷", toolProductTitle: "제품 사진을 올리면\nAI가 프로 촬영컷을 만들어요", toolProductDesc: "배경, 조명, 각도를 자동으로 변환하여 상업용 제품 이미지를 생성합니다.",
+    toolLogoBadge: "AI 로고", toolLogoTitle: "브랜드명만 입력하면\nAI가 로고를 디자인해요", toolLogoDesc: "다양한 스타일의 로고를 AI가 자동으로 생성합니다.",
+    toolMockupBadge: "AI 목업", toolMockupTitle: "디자인을 올리면\nAI가 목업을 만들어줘요", toolMockupDesc: "디바이스, 패키지 등 다양한 목업에 디자인을 자동 합성합니다.",
+    toolModelBadge: "AI 모델", toolModelTitle: "제품 사진을 올리면\nAI 모델이 착용해요", toolModelDesc: "실제 모델 촬영 없이 AI가 제품 착용 이미지를 생성합니다.",
+    toolSkinBadge: "피부 보정", toolSkinTitle: "사진을 올리면\nAI가 피부를 보정해요", toolSkinDesc: "자연스러운 피부 보정으로 프로필, 상세페이지 이미지를 개선합니다.",
+    toolFaceBadge: "얼굴 교체", toolFaceTitle: "두 장의 사진으로\nAI가 얼굴을 교체해요", toolFaceDesc: "소스 얼굴을 타깃 이미지에 자연스럽게 합성합니다.",
+    toolOutfitBadge: "의상 교체", toolOutfitTitle: "의상 사진을 올리면\nAI가 교체해줘요", toolOutfitDesc: "모델 사진과 의상 사진을 합성하여 가상 피팅 이미지를 생성합니다.",
+    toolOutpaintBadge: "여백 늘리기", toolOutpaintTitle: "이미지를 올리면\nAI가 여백을 확장해요", toolOutpaintDesc: "이미지 바깥 영역을 AI가 자연스럽게 채워줍니다.",
+    toolYtBadge: "유튜브 분석기", toolYtTitle: "유튜브 채널을 분석하면\nAI가 인사이트를 알려줘요", toolYtDesc: "구독자, 조회수, 콘텐츠 트렌드를 AI가 분석합니다.",
+    // 네비게이션 추가
+    archiveMenu: "자료실",
   },
 
   en: {
@@ -187,6 +200,17 @@ const T = {
     analyzing: "Analyzing file...",
     selectType: "Post Type", exampleTopics: "Example Topics",
     selectTone: "Tone", selectLength: "Length",
+    toolBlogBadge: "AI Writing", toolBlogTitle: "Enter a topic and\nAI writes for you", toolBlogDesc: "Choose your SNS platform, topic, and style.",
+    toolProductBadge: "AI Product Shot", toolProductTitle: "Upload a product photo\nAI creates pro shots", toolProductDesc: "Automatically transform background, lighting, and angle for commercial images.",
+    toolLogoBadge: "AI Logo", toolLogoTitle: "Enter your brand name\nAI designs your logo", toolLogoDesc: "AI automatically generates logos in various styles.",
+    toolMockupBadge: "AI Mockup", toolMockupTitle: "Upload your design\nAI creates mockups", toolMockupDesc: "Automatically composite your design onto device and package mockups.",
+    toolModelBadge: "AI Model", toolModelTitle: "Upload a product photo\nAI model wears it", toolModelDesc: "Generate product-wearing images without real model shoots.",
+    toolSkinBadge: "Skin Retouch", toolSkinTitle: "Upload a photo\nAI retouches skin", toolSkinDesc: "Natural skin retouching for profile and product images.",
+    toolFaceBadge: "Face Swap", toolFaceTitle: "With two photos\nAI swaps faces", toolFaceDesc: "Naturally composite source face onto target image.",
+    toolOutfitBadge: "Outfit Swap", toolOutfitTitle: "Upload outfit photo\nAI swaps it", toolOutfitDesc: "Create virtual fitting images by compositing model and outfit photos.",
+    toolOutpaintBadge: "Outpaint", toolOutpaintTitle: "Upload an image\nAI extends the canvas", toolOutpaintDesc: "AI naturally fills the area outside your image.",
+    toolYtBadge: "YouTube Analyzer", toolYtTitle: "Analyze YouTube channels\nAI reveals insights", toolYtDesc: "AI analyzes subscribers, views, and content trends.",
+    archiveMenu: "Resources",
   },
 
   ja: {
@@ -261,6 +285,17 @@ const T = {
     urlImportLabel: "URL取り込み", volumeLabel: "文量",
     viewCompact: "コンパクト", viewGallery: "ギャラリー", viewList: "リスト",
     withAttach: "添付あり", writePost: "投稿する",
+    toolBlogBadge: "AIライティング", toolBlogTitle: "テーマを入力すると\nAIが記事を作成します", toolBlogDesc: "SNSプラットフォーム、テーマ、スタイルを選んでください。",
+    toolProductBadge: "AI商品写真", toolProductTitle: "商品写真をアップすると\nAIがプロ撮影風に仕上げます", toolProductDesc: "背景、照明、アングルを自動変換して商用画像を生成します。",
+    toolLogoBadge: "AIロゴ", toolLogoTitle: "ブランド名を入力すると\nAIがロゴをデザインします", toolLogoDesc: "様々なスタイルのロゴをAIが自動生成します。",
+    toolMockupBadge: "AIモックアップ", toolMockupTitle: "デザインをアップすると\nAIがモックアップを作成します", toolMockupDesc: "デバイスやパッケージなど様々なモックアップにデザインを合成します。",
+    toolModelBadge: "AIモデル", toolModelTitle: "商品写真をアップすると\nAIモデルが着用します", toolModelDesc: "実際のモデル撮影なしでAIが着用画像を生成します。",
+    toolSkinBadge: "肌補正", toolSkinTitle: "写真をアップすると\nAIが肌を補正します", toolSkinDesc: "自然な肌補正でプロフィール画像を改善します。",
+    toolFaceBadge: "顔交換", toolFaceTitle: "2枚の写真で\nAIが顔を入れ替えます", toolFaceDesc: "ソース顔をターゲット画像に自然に合成します。",
+    toolOutfitBadge: "衣装交換", toolOutfitTitle: "衣装写真をアップすると\nAIが交換します", toolOutfitDesc: "モデルと衣装の写真を合成してバーチャルフィッティング画像を作成します。",
+    toolOutpaintBadge: "余白拡張", toolOutpaintTitle: "画像をアップすると\nAIが余白を拡張します", toolOutpaintDesc: "画像の外側をAIが自然に埋めます。",
+    toolYtBadge: "YouTube分析", toolYtTitle: "YouTubeチャンネルを分析すると\nAIがインサイトを教えます", toolYtDesc: "登録者数、再生回数、コンテンツトレンドをAIが分析します。",
+    archiveMenu: "資料室",
   },
 
   zh: {
@@ -335,6 +370,17 @@ const T = {
     urlImportLabel: "URL导入", volumeLabel: "篇幅",
     viewCompact: "紧凑", viewGallery: "画廊", viewList: "列表",
     withAttach: "有附件", writePost: "发帖",
+    toolBlogBadge: "AI写作", toolBlogTitle: "输入主题\nAI为您撰写文章", toolBlogDesc: "选择SNS平台、主题和风格。",
+    toolProductBadge: "AI产品图", toolProductTitle: "上传产品照片\nAI创建专业拍摄图", toolProductDesc: "自动变换背景、灯光和角度，生成商业图片。",
+    toolLogoBadge: "AI Logo", toolLogoTitle: "输入品牌名\nAI设计Logo", toolLogoDesc: "AI自动生成多种风格的Logo。",
+    toolMockupBadge: "AI样机", toolMockupTitle: "上传设计\nAI创建样机", toolMockupDesc: "将设计自动合成到设备和包装样机上。",
+    toolModelBadge: "AI模特", toolModelTitle: "上传产品照片\nAI模特穿戴展示", toolModelDesc: "无需真实拍摄，AI生成产品穿戴图。",
+    toolSkinBadge: "皮肤美化", toolSkinTitle: "上传照片\nAI美化皮肤", toolSkinDesc: "自然的皮肤美化，改善个人资料和产品图片。",
+    toolFaceBadge: "换脸", toolFaceTitle: "两张照片\nAI换脸", toolFaceDesc: "将源脸自然合成到目标图片上。",
+    toolOutfitBadge: "换装", toolOutfitTitle: "上传服装照片\nAI换装", toolOutfitDesc: "合成模特和服装照片，创建虚拟试穿图。",
+    toolOutpaintBadge: "扩展边距", toolOutpaintTitle: "上传图片\nAI扩展画布", toolOutpaintDesc: "AI自然填充图片外部区域。",
+    toolYtBadge: "YouTube分析", toolYtTitle: "分析YouTube频道\nAI提供洞察", toolYtDesc: "AI分析订阅者、播放量和内容趋势。",
+    archiveMenu: "资料室",
   },
 };
 
