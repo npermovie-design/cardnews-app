@@ -2585,7 +2585,7 @@ JSON배열만 출력.`;
                 };
                 // 섹션 기본 스타일 + 사용자 편집값 병합 + 가독성 자동 보정
                 const eS = (el, defaults) => {
-                  const merged = { ...defaults, ...editable(el).style };
+                  const merged = { wordBreak: "keep-all", ...defaults, ...editable(el).style };
                   // 가독성 보정: 밝은 배경에 흰 글씨 / 어두운 배경에 검은 글씨 방지
                   const c = (merged.color || "").toLowerCase();
                   if (!isDarkBg && (c === "#fff" || c === "#ffffff" || c === "white")) {
@@ -2948,7 +2948,7 @@ JSON배열만 출력.`;
                           </div>
                         )}
                         {title && (
-                          <div {...editable(title)} style={eS(title, { fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 18, letterSpacing: -0.5, textShadow: "0 2px 24px rgba(0,0,0,0.4)" })}>
+                          <div {...editable(title)} style={eS(title, { fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 18, letterSpacing: -0.5, textShadow: "0 2px 24px rgba(0,0,0,0.4)", wordBreak: "keep-all" })}>
                             {title.content}
                           </div>
                         )}
@@ -3611,6 +3611,47 @@ JSON배열만 출력.`;
                     const stars = reviewEls.filter(e => e.role === "star").map(e => parseInt(e.content) || 5);
                     return stars.length ? (stars.reduce((a, b) => a + b, 0) / stars.length).toFixed(1) : "4.9";
                   })();
+                  // ═══ 변형: 심플 세로 리뷰 (이미지 없음, 인용문 스타일) ═══
+                  if (dv % 6 >= 3) {
+                    return (
+                      <div style={{ background: reviewBg, padding: isMobile ? "80px 24px" : "100px 64px" }}>
+                        <div style={{ textAlign: "center", marginBottom: 48 }}>
+                          {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 })}>{subtitleEl.content}</div>}
+                          {titleEl ? <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 28 : 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.25 })}>{titleEl.content}</div> : <div style={{ fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a" }}>REAL REVIEW</div>}
+                          {/* 평균 별점 */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
+                            <span style={{ fontSize: 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a" }}>{avgStar}</span>
+                            <div style={{ display: "flex", gap: 2 }}>
+                              {Array.from({ length: 5 }, (_, si) => <span key={si} style={{ fontSize: 18, color: si < Math.round(parseFloat(avgStar)) ? "#fbbf24" : (isDarkBg ? "rgba(255,255,255,0.15)" : "#e0e0e0") }}>{String.fromCharCode(9733)}</span>)}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+                          {filteredCards.map((group, gi) => (
+                            <div key={gi} style={{ padding: "28px 32px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, position: "relative" }}>
+                              <div style={{ position: "absolute", top: 20, right: 24, fontSize: 40, color: `${mainColor}12`, fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none" }}>"</div>
+                              {group.filter(e => e.role === "review_text").map((el, ri) => (
+                                <div key={ri} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.8, marginBottom: 16 })}>{el.content}</div>
+                              ))}
+                              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                {group.filter(e => e.role === "review_name").map((el, ni) => (
+                                  <div key={ni} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${profileColors[gi % profileColors.length]}, ${profileColors[(gi + 2) % profileColors.length]}40)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff" }}>{(el.content || "?")[0]}</div>
+                                    <div>
+                                      <div {...editable(el)} style={eS(el, { fontSize: 13, fontWeight: 700, color: isDarkBg ? "#fff" : "#333" })}>{el.content}</div>
+                                      <div style={{ display: "flex", gap: 1 }}>{Array.from({ length: 5 }, (_, si) => <span key={si} style={{ fontSize: 11, color: si < 5 ? "#fbbf24" : "#e0e0e0" }}>{String.fromCharCode(9733)}</span>)}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ═══ 기본 리뷰 (이미지 배너 + 카드 그리드) ═══
                   return (
                     <div style={{ background: reviewBg, position: "relative", overflow: "hidden" }}>
                       {/* 상단 이미지 띠 + 별점 오버레이 */}
@@ -3868,8 +3909,37 @@ JSON배열만 출력.`;
                     }
                   });
                   const getStepImg = (idx) => sec[`iconImg_${idx}`] || (images.length > 0 ? images[idx % images.length]?.preview : null);
+                  // ═══ 변형: 세로 타임라인 (dv >= 3) ═══
+                  if (dv % 6 >= 3) {
+                    return (
+                      <div style={{ background: bgCol, padding: isMobile ? "80px 24px" : "100px 56px" }}>
+                        <div style={{ textAlign: "center", marginBottom: 48 }}>
+                          {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>{subtitleEl.content}</div>}
+                          {titleEl ? <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 24 : 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>{titleEl.content}</div> : <div style={{ fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e" }}>HOW TO USE</div>}
+                          {decoLine(mainColor)}
+                        </div>
+                        <div style={{ maxWidth: 560, margin: "0 auto", position: "relative" }}>
+                          {/* 세로 타임라인 */}
+                          <div style={{ position: "absolute", left: 24, top: 0, bottom: 0, width: 2, background: isDarkBg ? "rgba(255,255,255,0.08)" : `${mainColor}15` }} />
+                          {steps.map((step, si) => (
+                            <div key={si} style={{ display: "flex", gap: 24, marginBottom: 32, position: "relative" }}>
+                              <div style={{ width: 50, height: 50, borderRadius: "50%", background: mainColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1, boxShadow: `0 4px 12px ${mainColor}30` }}>
+                                <span style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{si + 1}</span>
+                              </div>
+                              <div style={{ paddingTop: 8 }}>
+                                {step.title && <div {...editable(step.title)} style={eS(step.title, { fontSize: 17, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a1a", marginBottom: 6 })}>{step.title.content}</div>}
+                                {step.body && <div {...editable(step.body)} style={eS(step.body, { fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 })}>{step.body.content}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ═══ 기본 howto (좌우 교차) ═══
                   return (
-                    <div style={{ background: bgCol, padding: "160px 56px" }}>
+                    <div style={{ background: bgCol, padding: isMobile ? "80px 24px" : "100px 56px" }}>
                       <div style={{ textAlign: "center", marginBottom: 56 }}>
                         {subtitleEl && (
                           <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 })}>
