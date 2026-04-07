@@ -238,9 +238,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
     <div style={{ flex:1, overflowY:"auto" }}>
       <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 18px 80px" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:22 }}>
-          <div style={{ fontSize:18, fontWeight:900, color:text }}>목업 생성기</div>
-        </div>
+        {/* 제목은 ToolHeader에서 표시 */}
 
         {/* 로고 입력 */}
         <div style={{ marginBottom:22 }}>

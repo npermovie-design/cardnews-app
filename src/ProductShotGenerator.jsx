@@ -403,30 +403,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
       <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:620, margin:"0 auto" }}>
 
-        {/* 상단 헤더 — 상세페이지 스타일 */}
-        <div style={{ marginBottom:32 }}>
-          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:`${accent}15`, fontSize:11, fontWeight:700, color:accent, marginBottom:12 }}>AI 이미지</div>
-          <div style={{ fontSize:"clamp(18px, 4vw, 24px)", fontWeight:900, color:text, lineHeight:1.3, marginBottom:6 }}>
-            제품 이미지를 업로드하면<br/>AI가 광고컷을 만들어드려요
-          </div>
-          <div style={{ fontSize:13, color:muted, marginBottom:16 }}>제품 사진을 기반으로 배경, 모델, 분위기를 자동 생성합니다.</div>
-          {/* 이미지 도구 드롭다운 */}
-          <select value="product_shot" onChange={e => { if (onMenuChange && e.target.value !== "product_shot") onMenuChange(e.target.value); }}
-            style={{ padding:"8px 32px 8px 12px", borderRadius:10, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:13, fontWeight:600, cursor:"pointer", appearance:"none", width:"100%", maxWidth:320, backgroundImage:`url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat:"no-repeat", backgroundPosition:"right 12px center" }}>
-            <optgroup label="이미지 생성">
-              <option value="product_shot">제품컷 생성</option>
-              <option value="logo_gen">로고 생성</option>
-              <option value="mockup_gen">목업 생성</option>
-              <option value="model_gen">모델 이미지</option>
-            </optgroup>
-            <optgroup label="이미지 수정">
-              <option value="skin_retouch">피부 보정</option>
-              <option value="face_swap">얼굴 교체</option>
-              <option value="outfit_swap">의상 교체</option>
-              <option value="outpaint">여백 늘리기</option>
-            </optgroup>
-          </select>
-        </div>
+        {/* 제목+드롭다운은 ToolHeader에서 표시 */}
 
         {/* ─── ① 제품 이미지 업로드 ─── */}
         <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:16, padding:"20px", marginBottom:14 }}>
