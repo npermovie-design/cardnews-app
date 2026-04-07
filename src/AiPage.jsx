@@ -417,9 +417,33 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     canvas_direct_: { icon:"/icons3d/palette.png", label:"직접 디자인", parent:"content_create" },
   };
 
+  // 도구별 헤더 정보 (상세페이지 스타일)
+  const TOOL_HEADERS = {
+    blog_write:    { badge: "AI 글쓰기", title: "주제를 입력하면\nAI가 글을 작성해드려요", desc: "원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요." },
+    blog_naver:    { badge: "AI 글쓰기", title: "주제를 입력하면\nAI가 글을 작성해드려요", desc: "원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요." },
+    shorts_create: { badge: "숏폼 자동편집", title: "유튜브 영상을 넣으면\nAI가 숏폼을 만들어드려요", desc: "유튜브 URL을 입력하면 자동으로 하이라이트를 추출하고 편집합니다." },
+    product_shot:  { badge: "AI 제품컷", title: "제품 사진을 올리면\nAI가 프로 촬영컷을 만들어요", desc: "배경, 조명, 각도를 자동으로 변환하여 상업용 제품 이미지를 생성합니다." },
+    logo_gen:      { badge: "AI 로고", title: "브랜드명만 입력하면\nAI가 로고를 디자인해요", desc: "다양한 스타일의 로고를 AI가 자동으로 생성합니다." },
+    mockup_gen:    { badge: "AI 목업", title: "디자인을 올리면\nAI가 목업을 만들어줘요", desc: "디바이스, 패키지 등 다양한 목업에 디자인을 자동 합성합니다." },
+    model_gen:     { badge: "AI 모델", title: "제품 사진을 올리면\nAI 모델이 착용해요", desc: "실제 모델 촬영 없이 AI가 제품 착용 이미지를 생성합니다." },
+    skin_retouch:  { badge: "피부 보정", title: "사진을 올리면\nAI가 피부를 보정해요", desc: "자연스러운 피부 보정으로 프로필, 상세페이지 이미지를 개선합니다." },
+    face_swap:     { badge: "얼굴 교체", title: "두 장의 사진으로\nAI가 얼굴을 교체해요", desc: "소스 얼굴을 타깃 이미지에 자연스럽게 합성합니다." },
+    outfit_swap:   { badge: "의상 교체", title: "의상 사진을 올리면\nAI가 교체해줘요", desc: "모델 사진과 의상 사진을 합성하여 가상 피팅 이미지를 생성합니다." },
+    outpaint:      { badge: "여백 늘리기", title: "이미지를 올리면\nAI가 여백을 확장해요", desc: "이미지 바깥 영역을 AI가 자연스럽게 채워줍니다." },
+    yt_analyzer:   { badge: "유튜브 분석기", title: "유튜브 채널을 분석하면\nAI가 인사이트를 알려줘요", desc: "구독자, 조회수, 콘텐츠 트렌드를 AI가 분석합니다." },
+  };
   function ToolHeader({ menuId }) {
-    // 헤더 제거 — 각 도구에서 자체 헤더 사용
-    return null;
+    const h = TOOL_HEADERS[menuId] || TOOL_HEADERS[menuId?.replace("_make","")];
+    if (!h) return null;
+    return (
+      <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"32px 24px 24px" }}>
+        <div style={{ maxWidth:700, margin:"0 auto" }}>
+          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:"#7c6aff", marginBottom:12 }}>{h.badge}</div>
+          <div style={{ fontSize:"clamp(22px,4vw,28px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.35, marginBottom:6, whiteSpace:"pre-line" }}>{h.title}</div>
+          <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#888" }}>{h.desc}</div>
+        </div>
+      </div>
+    );
   }
 
   // ── 도구 래퍼 (헤더 + 콘텐츠) ──
