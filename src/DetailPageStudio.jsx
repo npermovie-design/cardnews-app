@@ -3466,25 +3466,17 @@ JSON배열만 출력.`;
                     );
                   }
 
-                  // ═══ 변형 0: 기본 50:50 좌우 분할 (기존) ═══
-
-                  // 포인트 넘버 표시 스타일 변형
-                  const pointNumStyles = [
-                    // 0: 대형 워터마크 넘버 + 가로선+POINT 라벨
-                    () => (<div style={{ marginBottom: 24 }}>
-                      <span style={{ fontSize: 64, fontWeight: 900, color: `${mainColor}12`, fontFamily: "Georgia, serif", lineHeight: 1, letterSpacing: -3, display: "block" }}>{String(pointNum).padStart(2, "0")}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: -8 }}><div style={{ width: 32, height: 2, background: mainColor }} /><span style={{ fontSize: 11, fontWeight: 700, color: mainColor, letterSpacing: 4 }}>POINT</span></div>
-                    </div>),
-                    // 1: 사각 배지
-                    () => (<div style={{ marginBottom: 20 }}>
-                      <span style={{ display: "inline-block", padding: "8px 20px", borderRadius: 8, background: mainColor, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: 2 }}>POINT {String(pointNum).padStart(2, "0")}</span>
-                    </div>),
-                  ];
+                  // ═══ 변형 0: "Choice XX" 스타일 (A;ROUND 레퍼런스) ═══
+                  // 50:50 — 왼쪽 제품 이미지(깔끔) + 오른쪽 Choice 넘버링 + 영문 타이틀 + 한글 설명
 
                   const textBlock = (
-                    <div style={{ flex: "0 0 50%", padding: "80px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-                      {/* 디자인 변형에 따른 POINT 넘버 */}
-                      {pointNumStyles[dv % pointNumStyles.length]()}
+                    <div style={{ flex: "0 0 50%", padding: isMobile ? "48px 24px" : "80px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+                      {/* Choice 넘버링 */}
+                      <div style={{ marginBottom: 20 }}>
+                        <span style={{ fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.4)" : "#aaa", letterSpacing: 1, fontFamily: "'Georgia', serif" }}>
+                          Choice {String(pointNum).padStart(2, "0")}.
+                        </span>
+                      </div>
                       {badge && (
                         <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "6px 16px", borderRadius: 24, background: `${mainColor}10`, color: mainColor, fontSize: 11, fontWeight: 700, marginBottom: 18, alignSelf: "flex-start", border: `1px solid ${mainColor}20` })}>
                           {badge.content}
@@ -3495,14 +3487,21 @@ JSON배열만 출력.`;
                           {subtitleEl.content}
                         </div>
                       )}
+                      {/* 타이틀 — 큰 볼드 */}
                       {titleEl && (
-                        <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.3, marginBottom: 20, textAlign: "left" })}>
+                        <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 24 : 30, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.25, marginBottom: 12, textAlign: "left", letterSpacing: -0.5 })}>
                           {titleEl.content}
                         </div>
                       )}
-                      <div style={{ width: 48, height: 3, background: `${mainColor}30`, borderRadius: 2, marginBottom: 24 }} />
+                      {/* 서브타이틀 */}
+                      {subtitleEl && (
+                        <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 500, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#999", marginBottom: 20, textAlign: "left", lineHeight: 1.6 })}>
+                          {subtitleEl.content}
+                        </div>
+                      )}
+                      {/* 설명 텍스트 */}
                       {bodyEls.map((el, bi) => (
-                        <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"), lineHeight: 1.8, marginBottom: 12, textAlign: "left" })}>
+                        <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.6)" : "#666"), lineHeight: 1.8, marginBottom: 10, textAlign: "left" })}>
                           {el.content}
                         </div>
                       ))}
@@ -3514,17 +3513,10 @@ JSON배열만 출력.`;
                     </div>
                   );
 
-                  // 이미지 블록 변형: 높이, 오버레이, 넘버 표시
-                  const imgMinH = [1100, 1000, 1200, 900, 1100, 1000][dv % 6];
-                  const showImgNum = dv % 3 !== 1; // 일부 변형에서 이미지 위 넘버 숨김
-                  const imgOverlay = [
-                    imgLeft ? "linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 50%)" : "linear-gradient(to left, rgba(0,0,0,0.35) 0%, transparent 50%)",
-                    "linear-gradient(transparent 60%, rgba(0,0,0,0.3) 100%)",
-                    "none",
-                    imgLeft ? "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, transparent 60%)" : "linear-gradient(-135deg, rgba(0,0,0,0.4) 0%, transparent 60%)",
-                    `linear-gradient(transparent 40%, ${bgCol}ee 100%)`,
-                    "linear-gradient(transparent 70%, rgba(0,0,0,0.25) 100%)",
-                  ][dv % 6];
+                  // 이미지 블록 — 레퍼런스 스타일: 깔끔한 제품 이미지, 오버레이 최소화
+                  const imgMinH = 700;
+                  const showImgNum = false;
+                  const imgOverlay = "none";
 
                   const imageBlock = displayImgSrc ? (
                     <div style={{ flex: "0 0 50%", minHeight: imgMinH, position: "relative", overflow: "hidden" }}>
