@@ -432,7 +432,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     outpaint:      { badge: "여백 늘리기", title: "이미지를 올리면\nAI가 여백을 확장해요", desc: "이미지 바깥 영역을 AI가 자연스럽게 채워줍니다." },
     yt_analyzer:   { badge: "유튜브 분석기", title: "유튜브 채널을 분석하면\nAI가 인사이트를 알려줘요", desc: "구독자, 조회수, 콘텐츠 트렌드를 AI가 분석합니다." },
   };
+  // 자체 헤더가 있는 도구는 ToolHeader 건너뜀
+  const SELF_HEADER_TOOLS = ["product_shot", "detail_simple", "detail_simple_img"];
   function ToolHeader({ menuId }) {
+    if (SELF_HEADER_TOOLS.includes(menuId)) return null;
     const h = TOOL_HEADERS[menuId] || TOOL_HEADERS[menuId?.replace("_make","")];
     if (!h) return null;
     return (
