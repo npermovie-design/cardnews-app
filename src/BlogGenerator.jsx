@@ -828,47 +828,48 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               const file = e.dataTransfer?.files?.[0];
               if (file && file.type.startsWith("image/")) {
                 const reader = new FileReader();
-                reader.onload = ev => {
-                  const img = document.createElement("img");
-                  img.src = ev.target.result;
-                  img.style.maxWidth = "100%";
-                  img.style.borderRadius = "12px";
-                  img.style.margin = "12px 0";
-                  img.style.display = "block";
-                  // 드롭 위치에 이미지 삽입
-                  const sel = window.getSelection();
-                  if (sel.rangeCount) {
-                    const range = sel.getRangeAt(0);
-                    range.insertNode(img);
-                    range.collapse(false);
-                  } else {
-                    e.currentTarget.appendChild(img);
+                reader.onload = async (ev) => {
+                  const dataUri = ev.target.result;
+                  const placeholder = `![uploading...](${dataUri})`;
+                  setResult(prev => prev + `\n\n${placeholder}\n\n`);
+                  try {
+                    const { uploadFileToStorage } = await import("./storage");
+                    const ext = file.name?.split(".").pop() || "png";
+                    const path = `blog-images/${Date.now()}.${ext}`;
+                    const publicUrl = await uploadFileToStorage(file, path);
+                    setResult(prev => prev.replace(placeholder, `![image](${publicUrl})`));
+                  } catch {
+                    setResult(prev => prev.replace("![uploading...]", "![image]"));
                   }
                 };
                 reader.readAsDataURL(file);
               }
             }}
             onPaste={e => {
-              // 모바일/PC 이미지 붙여넣기 지원
+              // 모바일/PC 이미지 붙여넣기 → Supabase 업로드 후 URL 삽입
               const items = e.clipboardData?.items;
               if (items) {
                 for (const item of items) {
                   if (item.type.startsWith("image/")) {
                     e.preventDefault();
                     const blob = item.getAsFile();
+                    if (!blob) break;
+                    // 즉시 base64로 미리보기 표시
                     const reader = new FileReader();
-                    reader.onload = ev => {
-                      const img = document.createElement("img");
-                      img.src = ev.target.result;
-                      img.style.maxWidth = "100%";
-                      img.style.borderRadius = "12px";
-                      img.style.margin = "12px 0";
-                      img.style.display = "block";
-                      const sel = window.getSelection();
-                      if (sel.rangeCount) {
-                        const range = sel.getRangeAt(0);
-                        range.insertNode(img);
-                        range.collapse(false);
+                    reader.onload = async (ev) => {
+                      const dataUri = ev.target.result;
+                      const placeholder = `![uploading...](${dataUri})`;
+                      setResult(prev => prev + `\n\n${placeholder}\n\n`);
+                      // Supabase 업로드 시도 → 공개 URL로 교체
+                      try {
+                        const { uploadFileToStorage } = await import("./storage");
+                        const ext = blob.type.split("/")[1] || "png";
+                        const path = `blog-images/${Date.now()}.${ext}`;
+                        const publicUrl = await uploadFileToStorage(blob, path);
+                        setResult(prev => prev.replace(placeholder, `![image](${publicUrl})`));
+                      } catch {
+                        // 업로드 실패 시 base64 유지
+                        setResult(prev => prev.replace("![uploading...]", "![image]"));
                       }
                     };
                     reader.readAsDataURL(blob);
