@@ -818,10 +818,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const goToEdit = () => {
     const clips = selectedSegs.map(i => {
       const s = segments[i];
+      const mainTitle = s.hook || s.hook_text || s.title || "";
+      const sub = s.title || s.seo_title || "";
       return {
         ...s,
-        title: s.hook || s.hook_text || s.title || "",
-        subtitle_text: s.title || s.seo_title || "",
+        title: mainTitle,
+        subtitle_text: (sub && sub !== mainTitle && !mainTitle.includes(sub)) ? sub : "",
         script: s.script || "",
         subtitles: s.subtitles || (s.script ? s.script.match(/.{1,30}/g)?.map((t, j) => ({ start: j * 3, end: (j + 1) * 3, text: t })) || [] : []),
       };

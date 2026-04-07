@@ -439,7 +439,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const h = TOOL_HEADERS[menuId] || TOOL_HEADERS[menuId?.replace("_make","")];
     if (!h) return null;
     return (
-      <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"36px 24px 28px" }}>
+      <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
         <div style={{ maxWidth:700, margin:"0 auto" }}>
           <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>{h.badge}</div>
           <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8, whiteSpace:"pre-line" }}>{h.title}</div>
@@ -449,9 +449,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // ── 도구 래퍼 (헤더 + 콘텐츠) ──
+  // ── 도구 래퍼 (헤더 + 콘텐츠 — 배경 통일) ──
   function ToolWrap({ menuId, children }) { return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
       <ToolHeader menuId={menuId} />
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         {children}
@@ -564,9 +564,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       } catch (e) { console.error("Newsletter sub error:", e); alert("구독 처리 중 오류가 발생했습니다."); }
     };
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
         {/* 상단 헤더 + 뉴스레터 구독 */}
-        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"36px 24px 28px" }}>
+        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(239,68,68,0.1)", fontSize:12, fontWeight:700, color:"#ef4444", marginBottom:14 }}>SNS 뉴스</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:6 }}>SNS 마케팅 최신 뉴스를<br/>한눈에 확인하세요</div>
@@ -1210,8 +1210,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 자동발행
   if (aiMenu === "auto_publish") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(16,185,129,0.1)", fontSize:12, fontWeight:700, color:"#10b981", marginBottom:14 }}>자동 글쓰기</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>설정한 시간에 자동으로<br/>블로그 글이 발행됩니다</div>
@@ -1258,8 +1258,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   if (aiMenu === "yt_analyzer") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>유튜브 분석</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 채널을 분석하고<br/>성장 전략을 제안해드려요</div>
@@ -1275,8 +1275,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"36px 24px 28px" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>숏폼 자동편집</div>
             <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 영상을 넣으면<br/>AI가 숏폼을 만들어드려요</div>
