@@ -1039,6 +1039,26 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
   // thumbnail_gen, ppt_gen 렌더링 제거됨
 
+  // ── 보관함에서 템플릿 열기 ──
+  if (aiMenu === "cardnews_simple_open") {
+    let openData = null;
+    try { openData = JSON.parse(localStorage.getItem("nper_open_card") || "null"); } catch {}
+    const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
+    return (
+      <ToolWrap menuId="cardnews_simple">
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>에디터 로딩 중...</div>}>
+          <UnifiedCanvasEditorLazy
+            slides={openData?.slides || [{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
+            width={1080} height={1080} mode="cardnews"
+            presetKey={openData?.gs?.key} presetLabel={openData?.gs?.label}
+            onSave={() => {}} onClose={() => setAiMenu("home")}
+            inline
+          />
+        </React.Suspense>
+      </ToolWrap>
+    );
+  }
+
   // ── 콘텐츠 제작: 직접 디자인 (빈 캔버스 바로 진입) ──
   if (aiMenu.startsWith("canvas_direct_")) {
     const m = aiMenu.replace("canvas_direct_","").split("x");
