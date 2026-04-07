@@ -371,6 +371,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     // Supabase 저장 (실패해도 localStorage에 이미 있으므로 무시)
     try {
       await savePostToDB(p);
+      // 검색엔진 자동 색인 (IndexNow — 비동기, 실패해도 무시)
+      fetch(`/api/seo?action=index-now&url=/community/${cat}/post-${p.id}`).catch(() => {});
     } catch(e) {
       console.warn("Supabase 저장 실패, localStorage에만 저장됨:", e?.message);
     }
