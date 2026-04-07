@@ -36,7 +36,7 @@ function useOnlineCount() {
 
 
 
-function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigate, onLogout }) {
+function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigate, onLogout, onCollapse }) {
   const { t } = useI18n();
   const isDark = theme === "dark";
   const sideBg   = isDark ? "rgba(0,0,0,0.45)"           : "#f0f0f8";
@@ -87,14 +87,15 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   // 메뉴 정의
   const menuItems = [
     { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png" },
-    { id:"social_planner", label:t("sidePlanner")||"소셜 플래너", icon:"/icons3d/sns-heart.png" },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
     { sep:true },
-    { id:"yt_analyzer", label:"분석기", icon:"/icons3d/sns-app.png", ids:["yt_analyzer"], badge:"NEW" },
-    { id:"blog_write", label:t("sideWrite")||"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","auto_publish"] },
-    { id:"content_create", label:t("sideContent")||"콘텐츠 제작", icon:"/icons3d/palette.png", ids:["cardnews_simple","cardnews_make","cardnews_simple_make","detail_simple","detail_simple_make","thumbnail_gen","thumbnail_gen_make","ppt_gen","canvas_direct_"] },
-    { id:"image_tools", label:t("sideImage")||"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
-    { id:"video_edit", label:t("sideVideo")||"영상", icon:"/icons3d/sns-app.png", ids:["shorts_make"], badge:"NEW" },
+    { id:"content_create", label:"상세페이지", icon:"/icons3d/palette.png", ids:["detail_simple","detail_simple_make","canvas_direct_"] },
+    { id:"blog_naver", label:"수동 글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
+    { id:"auto_publish", label:"자동 글쓰기", icon:"/icons3d/blog-write.png", ids:["auto_publish"] },
+    { id:"product_shot", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
+    { id:"shorts_make", label:"숏폼 자동편집", icon:"/icons3d/sns-app.png", ids:["shorts_make","video_edit"] },
+    { sep:true },
+    { id:"yt_analyzer", label:"유튜브 분석기", icon:"/icons3d/sns-app.png", ids:["yt_analyzer"] },
   ];
 
   const isActive = (item) => {
@@ -176,6 +177,20 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           마이페이지
         </button>
+        {onCollapse && (
+          <button onClick={onCollapse}
+            style={{
+              width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer",
+              display:"flex", alignItems:"center", gap:8, background:"transparent",
+              color: itemText, fontSize:12, fontWeight:500, marginTop:4,
+              transition:"background 0.12s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.03)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            메뉴 접기
+          </button>
+        )}
       </div>
       {/* 리사이즈 핸들 */}
       <div ref={dragRef} onMouseDown={handleMouseDown}

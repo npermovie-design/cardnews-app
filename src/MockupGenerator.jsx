@@ -229,48 +229,9 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
   };
 
   const reset = () => {
-    setStep(0); setLogoText(""); setLogoB64(null); setLogoMime(null);
+    setStep(1); setLogoText(""); setLogoB64(null); setLogoMime(null);
     setLogoPreview(null); setSelTypes([]); setResults({}); setError("");
   };
-
-  // ── STEP 0: 인트로
-  if (step === 0) return (
-    <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
-      <div style={{ maxWidth:560, width:"100%", textAlign:"center" }}>
-        <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:`rgba(124,58,237,0.15)`, border:`1px solid rgba(124,58,237,0.3)`, fontSize:12, fontWeight:700, color:ACC, marginBottom:14 }}>
-          AI 목업 생성 · 16가지 제품 지원
-        </div>
-        <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:10 }}>목업 생성기</div>
-        <div style={{ fontSize:13, color:muted, lineHeight:1.9, marginBottom:28 }}>
-          로고 파일이나 브랜드명을 입력하면<br/>
-          명함·간판·잡지·빌보드 등 다양한 제품에<br/>
-          적용된 고품질 목업 이미지를 생성해요.
-        </div>
-
-        {/* 종합 목업 강조 */}
-        <div style={{ padding:"14px 18px", borderRadius:14, border:"2px solid rgba(245,158,11,0.4)", background:"rgba(245,158,11,0.08)", marginBottom:16, textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
-          <span style={{ fontSize:28 }}>✨</span>
-          <div>
-            <div style={{ fontSize:13, fontWeight:900, color:"#f59e0b", marginBottom:2 }}>종합 브랜드 목업 — 한 장에 모두!</div>
-            <div style={{ fontSize:11, color:muted }}>명함·봉투·노트·폰 등 여러 아이템을 한 이미지에 담아요</div>
-          </div>
-        </div>
-
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:16 }}>
-          {[...MOCKUP_CATEGORIES.flatMap(c=>c.items)].slice(0,10).map(t => (
-            <div key={t.id} style={{ padding:"10px 4px", borderRadius:10, border:`1px solid ${bdr}`, background:cardBg, textAlign:"center" }}>
-              <div style={{ fontSize:18, marginBottom:2 }}>{t.icon}</div>
-              <div style={{ fontSize:9, fontWeight:700, color:text }}>{t.label}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ fontSize:11, color:muted, marginBottom:24 }}>+ 빌보드, 잡지, 배너, 쇼핑백, 앞치마, 우산 등 총 29종</div>
-        <button onClick={() => setStep(1)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#6d28d9)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:"0 8px 24px rgba(124,58,237,0.3)" }}>
-          🎨 목업 만들기 시작 →
-        </button>
-      </div>
-    </div>
-  );
 
   // ── STEP 1: 설정
   if (step === 1) return (
@@ -278,8 +239,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
       <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:22 }}>
-          <button onClick={() => setStep(0)} style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>← 소개</button>
-          <div style={{ fontSize:18, fontWeight:900, color:text }}>🎨 목업 생성기</div>
+          <div style={{ fontSize:18, fontWeight:900, color:text }}>목업 생성기</div>
         </div>
 
         {/* 로고 입력 */}

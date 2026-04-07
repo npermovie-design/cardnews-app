@@ -9,13 +9,13 @@ const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
 const PAYMENT_ENABLED = false;
 
 const COMMON_FEATURES = [
+  "AI 상세페이지 생성 (전환율 최적화형)",
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
-  "뉴스·유튜브로 블로그 글쓰기",
-  "심플·이미지 카드뉴스 생성",
-  "심플·이미지 상세페이지 생성",
+  "AI 이미지 생성 (제품컷/로고/목업/모델)",
+  "숏폼 자동 편집",
+  "유튜브 채널 분석",
+  "뉴스레터 구독",
   "커뮤니티 · 자료실 이용",
-  "게시글 작성 시 +2P 적립",
-  "출석체크 시 +3P 적립",
 ];
 
 const SUB_PLANS = [
@@ -25,7 +25,7 @@ const SUB_PLANS = [
     points: 100, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 보너스 100P 지급", ...COMMON_FEATURES],
+    features: ["가입 보너스 100P 지급", "상세페이지 생성 약 10회", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
@@ -35,7 +35,7 @@ const SUB_PLANS = [
     points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 1,800P 충전", "AI 글쓰기 약 180회", "이미지 생성 약 36회", ...COMMON_FEATURES],
+    features: ["매월 1,800P 충전", "상세페이지 생성 약 180회", "AI 글쓰기 약 180회", "이미지 생성 약 36회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
@@ -44,7 +44,7 @@ const SUB_PLANS = [
     points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 3,800P 충전", "AI 글쓰기 약 380회", "이미지 생성 약 76회", "영상 제작 약 47회", ...COMMON_FEATURES],
+    features: ["매월 3,800P 충전", "상세페이지 생성 약 380회", "AI 글쓰기 약 380회", "이미지 생성 약 76회", "숏폼 편집 약 47회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
   {
@@ -53,7 +53,7 @@ const SUB_PLANS = [
     points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
-    features: ["매월 7,000P 충전", "AI 글쓰기 약 700회", "이미지 생성 약 140회", "영상 제작 약 87회", ...COMMON_FEATURES],
+    features: ["매월 7,000P 충전", "상세페이지 생성 약 700회", "AI 글쓰기 약 700회", "이미지 생성 약 140회", "숏폼 편집 약 87회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
     btnLabel: "시작하기",
   },
 ];

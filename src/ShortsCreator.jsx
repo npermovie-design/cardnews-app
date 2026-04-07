@@ -913,11 +913,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       )}
 
-      {/* 헤더 - 글쓰기 스타일 */}
-      <div style={{ textAlign: "center", padding: "32px 20px 0" }}>
-        <div style={{ fontSize: 22, fontWeight: 900, color: text, letterSpacing: -0.5 }}>영상 제작</div>
-        <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>유튜브 링크 또는 영상 파일로 AI가 쇼츠를 자동 제작해요</div>
-      </div>
+      {/* 헤더는 AiPage에서 렌더링 */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
         {/* 탭 */}
         <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 24, border: `1px solid ${bdr}` }}>

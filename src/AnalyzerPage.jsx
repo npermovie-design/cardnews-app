@@ -201,10 +201,7 @@ export default function AnalyzerPage({ C, theme, user, navigate, onUserUpdate, i
           {menu === "home" && (
             <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 60px" }}>
               <div style={{ maxWidth: 800, margin: "0 auto" }}>
-                <div style={{ textAlign:"center", marginBottom:28 }}>
-                  <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:6 }}>AI 분석기</div>
-                  <div style={{ fontSize:14, color:muted, lineHeight:1.7 }}>실시간 트렌드와 인플루언서 랭킹을 AI로 분석해드려요</div>
-                </div>
+                {/* 헤더는 AiPage에서 렌더링 */}
 
                 {/* 오늘의 핫키워드 추천 */}
                 <HotKeywordBox isDark={isDark} text={text} muted={muted} bdr={bdr} cardBg={cardBg} accent={accent} onGoTrend={() => safeSetMenu("seo_home")} />

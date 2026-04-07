@@ -402,7 +402,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
-        {[["stats","📊 통계"], ["members","👥 회원 관리"], ["guest","🌐 비회원 관리"], ["posts","📋 게시글 관리"], ["board","📂 게시판 관리"], ["templates","🎨 템플릿 관리"], ["inquiries","📩 문의 관리"], ["videos","🎬 영상 관리"]].map(([t,l]) => (
+        {[["stats","통계"], ["members","회원 관리"], ["newsletter","뉴스레터"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["templates","템플릿 관리"], ["inquiries","문의 관리"], ["videos","영상 관리"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -773,6 +773,65 @@ export default function AdminPage({ C, user: adminUser }) {
           })}
         </div>
       )}
+
+      {/* ─────────────── 뉴스레터 구독자 관리 ─────────────── */}
+      {tab === "newsletter" && (() => {
+        const [nlSubs, setNlSubs] = React.useState([]);
+        const [nlLoading, setNlLoading] = React.useState(true);
+        React.useEffect(() => {
+          (async () => {
+            try {
+              const { data } = await adminApi("newsletter_subscribers", "select", "*", "subscribed_at.desc");
+              setNlSubs(data || []);
+            } catch (e) { console.error(e); }
+            setNlLoading(false);
+          })();
+        }, []);
+        return (
+          <div style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#fff", borderRadius: 14, border: `1px solid ${C.bdr}`, padding: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 4 }}>뉴스레터 구독자</div>
+                <div style={{ fontSize: 12, color: C.muted }}>총 {nlSubs.length}명</div>
+              </div>
+              <button onClick={async () => {
+                try {
+                  const res = await fetch("/api/cron-briefing");
+                  const data = await res.json();
+                  alert(`뉴스레터 생성: ${JSON.stringify(data)}`);
+                } catch (e) { alert("오류: " + e.message); }
+              }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#7c6aff", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                수동 발송 테스트
+              </button>
+            </div>
+            {nlLoading ? <div style={{ color: C.muted, fontSize: 13 }}>로딩 중...</div> : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${C.bdr}` }}>
+                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>#</th>
+                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>이메일</th>
+                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>구독일</th>
+                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>소스</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nlSubs.map((sub, i) => (
+                      <tr key={sub.email} style={{ borderBottom: `1px solid ${C.bdr}` }}>
+                        <td style={{ padding: "10px 12px", color: C.muted }}>{i + 1}</td>
+                        <td style={{ padding: "10px 12px", color: C.text, fontWeight: 600 }}>{sub.email}</td>
+                        <td style={{ padding: "10px 12px", color: C.muted }}>{sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString("ko") : "-"}</td>
+                        <td style={{ padding: "10px 12px", color: C.muted }}>{sub.source || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {nlSubs.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.muted }}>구독자가 없습니다</div>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ─────────────── 비회원 관리 ─────────────── */}
       {tab === "guest" && (

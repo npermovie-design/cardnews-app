@@ -47,7 +47,7 @@ async function handleGenerate(req, res) {
   // ── 방법 1: Gemini generateContent (이미지 생성 가능 모델) ──
   const MODELS = [
     "gemini-2.0-flash-exp",
-    "gemini-2.5-flash-preview-04-17",
+    "gemini-2.0-flash-preview-image-generation",
     "gemini-2.0-flash-001",
   ];
 

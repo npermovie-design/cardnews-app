@@ -11,17 +11,17 @@ import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
 import BlogGenerator from "./BlogGenerator";
 import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
-import ThumbnailGenerator from "./ThumbnailGenerator";
+// ThumbnailGenerator 제거됨
 import SeoAnalyzer from "./SeoAnalyzer";
 import AnalyzerPage from "./AnalyzerPage";
 import ViralityAnalyzer from "./ViralityAnalyzer";
 import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
 import DetailPageStudio from "./DetailPageStudio";
-import SimpleCardNewsGenerator from "./SimpleCardNewsGenerator";
+// SimpleCardNewsGenerator 제거됨
 import LogoGenerator from "./LogoGenerator";
 import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
-import PptGenerator from "./PptGenerator";
+// PptGenerator 제거됨
 import ShortsCreator from "./ShortsCreator";
 import YouTubeAnalyzer from "./YouTubeAnalyzer";
 import AutoPublisher from "./AutoPublisher";
@@ -51,17 +51,12 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
 
   // 편집 AI: 글씨 수정 가능한 에디터
   const editAiTools = [
-    { id:"cardnews_simple", label:"카드뉴스", img:"/icons3d/sns-content.png", desc:"텍스트 편집 가능 · AI 자동 구성", size:"1080×1080" },
     { id:"detail_simple", label:"상세페이지", img:"/icons3d/memo.png", desc:"텍스트 편집 가능 · 상품 설명", size:"860×1100" },
-    { id:"thumbnail_gen", label:"썸네일", img:"/icons3d/instagram-cam.png", desc:"텍스트 편집 가능 · 유튜브/블로그", size:"1280×720" },
-    { id:"ppt_gen", label:"PPT 슬라이드", img:"/icons3d/ppt.png", desc:"텍스트 편집 가능 · 프레젠테이션", size:"1920×1080" },
   ];
 
   // 이미지 AI: 같은 콘텐츠를 이미지로 바로 생성
   const imageAiTools = [
-    { id:"cardnews_simple_img", img:"/icons3d/sns-content.png", label:"카드뉴스", desc:"완성된 이미지로 바로 생성", size:"1080×1080" },
     { id:"detail_simple_img", img:"/icons3d/memo.png", label:"상세페이지", desc:"완성된 이미지로 바로 생성", size:"860×1100" },
-    { id:"thumbnail_gen_img", img:"/icons3d/instagram-cam.png", label:"썸네일", desc:"완성된 이미지로 바로 생성", size:"1280×720" },
   ];
 
   const renderToolCard = (t) => (
@@ -400,10 +395,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     blog_news:    { icon:"/icons3d/news.png", label:"뉴스 → 블로그", parent:"blog_write" },
     blog_yt_blog: { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
     // 콘텐츠 제작
-    cardnews_simple: { icon:"/icons3d/sns-content.png", label:"카드뉴스", parent:"content_create" },
+    // cardnews_simple 제거됨
     detail_simple:   { icon:"/icons3d/memo.png", label:"상세페이지", parent:"content_create" },
-    thumbnail_gen:   { icon:"/icons3d/instagram-cam.png", label:"썸네일", parent:"content_create" },
-    ppt_gen:         { icon:"/icons3d/ppt.png", label:"PPT 슬라이드", parent:"content_create" },
+    // thumbnail_gen, ppt_gen 제거됨
     // 이미지
     product_shot:  { icon:"/icons3d/camera.png", label:"제품컷", parent:"image_tools" },
     logo_gen:      { icon:"/icons3d/palette.png", label:"로고", parent:"image_tools" },
@@ -420,28 +414,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   };
 
   function ToolHeader({ menuId }) {
-    const info = TOOL_INFO[menuId?.replace("_make","")?.replace("_intro","")] || TOOL_INFO[menuId] || (menuId?.startsWith("canvas_direct_") ? TOOL_INFO["canvas_direct_"] : null);
-    if (!info) return null;
-    const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-    return (
-      <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.12)" : "#fff", borderBottom:`1px solid ${bdr}`, padding:"8px 12px", display:"flex", alignItems:"center", gap:8, minHeight:40 }}>
-        <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
-          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px", color: isDark?"#a5b4fc":"#7c6aff", display:"none", alignItems:"center" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <button onClick={() => setAiMenu(info.parent)}
-          className="tool-header-back"
-          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, color: isDark ? "#a5b4fc" : "#7c6aff", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s", flexShrink:0 }}
-          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)"}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          <span>뒤로</span>
-        </button>
-        <div style={{ width:1, height:18, background:bdr, flexShrink:0 }} />
-        <img src={info.icon} alt="" loading="lazy" decoding="async" style={{ width:22, height:22, borderRadius:4, objectFit:"contain", flexShrink:0 }} />
-        <span style={{ fontSize:13, fontWeight:800, color: homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{info.label}</span>
-      </div>
-    );
+    // 헤더 제거 — 각 도구에서 자체 헤더 사용
+    return null;
   }
 
   // ── 도구 래퍼 (헤더 + 콘텐츠) ──
@@ -545,11 +519,47 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
 
-  // SNS 뉴스
+  // SNS 뉴스 + 뉴스레터 구독
   if (aiMenu === "hot_keyword") {
+    const [nlEmail, setNlEmail] = React.useState("");
+    const [nlSent, setNlSent] = React.useState(false);
+    const handleNewsletterSub = async () => {
+      if (!nlEmail || !nlEmail.includes("@")) { alert("올바른 이메일을 입력해주세요."); return; }
+      try {
+        const sb = (await import("@supabase/supabase-js")).createClient(
+          import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
+          import.meta.env.VITE_SUPABASE_KEY || ""
+        );
+        await sb.from("newsletter_subscribers").upsert({ email: nlEmail, subscribed_at: new Date().toISOString(), source: "sns_news" }, { onConflict: "email" });
+        setNlSent(true);
+      } catch (e) { console.error("Newsletter sub error:", e); alert("구독 처리 중 오류가 발생했습니다."); }
+    };
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <BarHeader title="SNS 뉴스" subtitle="SNS 마케팅 관련 최신 뉴스를 확인하세요" />
+        {/* 상단 헤더 + 뉴스레터 구독 */}
+        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"28px 24px 20px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+          <div style={{ maxWidth:620, margin:"0 auto" }}>
+            <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:"rgba(239,68,68,0.1)", fontSize:11, fontWeight:700, color:"#ef4444", marginBottom:10 }}>SNS 뉴스</div>
+            <div style={{ fontSize:"clamp(18px,4vw,22px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:4 }}>SNS 마케팅 최신 뉴스를<br/>한눈에 확인하세요</div>
+            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999", marginBottom:20 }}>매일 업데이트되는 SNS 마케팅 트렌드와 팁을 받아보세요.</div>
+            {/* 뉴스레터 구독 */}
+            {nlSent ? (
+              <div style={{ padding:"14px 20px", borderRadius:12, background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)", fontSize:13, fontWeight:600, color:"#10b981" }}>
+                구독이 완료되었습니다! 매일 최신 뉴스를 이메일로 보내드립니다.
+              </div>
+            ) : (
+              <div style={{ display:"flex", gap:8 }}>
+                <input value={nlEmail} onChange={e => setNlEmail(e.target.value)} placeholder="이메일 주소를 입력하세요"
+                  style={{ flex:1, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:isDark?"#fff":"#1a1a1a", fontSize:13, outline:"none" }}
+                  onKeyDown={e => e.key === "Enter" && handleNewsletterSub()} />
+                <button onClick={handleNewsletterSub}
+                  style={{ padding:"12px 24px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}>
+                  구독하기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
           <SnsNewsFeed isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} renderFooter={() => <AiFooter />} />
         </div>
@@ -561,9 +571,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const TOOL_ICONS = {
     blog_write: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
     blog_link: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
-    cardnews_simple: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="28" height="28" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
+    // cardnews_simple 아이콘 제거됨
     detail_simple: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-    thumbnail_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="28" height="28" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    // thumbnail_gen 아이콘 제거됨
     product_shot: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
     logo_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
     mockup_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
@@ -602,16 +612,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {keywords:["인스타","인스타그램","릴스"],menu:"blog_insta",label:"인스타그램 글쓰기"},
               {keywords:["유튜브","youtube","영상"],menu:"blog_youtube",label:"유튜브 글쓰기"},
               {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
-              {keywords:["카드뉴스","카드","콘텐츠"],menu:"cardnews_simple",label:"카드뉴스 제작"},
+              // 카드뉴스 제거됨
               {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
-              {keywords:["썸네일","thumbnail"],menu:"thumbnail_gen",label:"썸네일 제작"},
-              {keywords:["ppt","프레젠테이션","슬라이드"],menu:"ppt_gen",label:"PPT 슬라이드"},
+              // 썸네일, PPT 제거됨
               {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
               {keywords:["로고","logo"],menu:"logo_gen",label:"로고 생성"},
               {keywords:["목업","mockup"],menu:"mockup_gen",label:"목업 생성"},
               {keywords:["제품","상품","촬영"],menu:"product_shot",label:"제품 사진"},
               {keywords:["쇼츠","shorts","숏폼","영상편집"],menu:"shorts_make",label:"쇼츠 자동 편집"},
-              {keywords:["소셜","플래너","일정","캘린더"],menu:"social_planner",label:"소셜 플래너"},
+              // 소셜 플래너 제거됨
               {keywords:["티스토리","tistory"],menu:"blog_tistory",label:"티스토리 글쓰기"},
               {keywords:["카페","cafe"],menu:"blog_cafe",label:"카페 글쓰기"},
               {keywords:["뉴스","기사","news"],menu:"blog_news",label:"뉴스 글쓰기"},
@@ -620,7 +629,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {keywords:["얼굴","face"],menu:"face_swap",label:"얼굴 교체"},
               {keywords:["발행","자동","auto"],menu:"auto_publish",label:"자동 발행"},
             ];
-            const popularKeywords = ["블로그 글쓰기","카드뉴스","이미지 생성","쇼츠 편집","썸네일","인스타그램"];
+            const popularKeywords = ["블로그 글쓰기","상세페이지","이미지 생성","쇼츠 편집","인스타그램","로고 생성"];
             const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
             return (
               <div style={{ position:"relative", maxWidth:480, margin:"0 auto 24px", width:"100%" }}>
@@ -885,23 +894,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 글쓰기: 선택 화면 (수동발행 / 자동발행 탭)
   if (aiMenu === "blog_write") {
-    const writeTab = writeTabState;
-    const setWriteTab = (t) => { setWriteTabState(t); try { sessionStorage.setItem("_blog_write_tab", t); } catch {} };
-    const isAutoTab = writeTab === "auto";
-    const showAutoTab = user?.role === "admin"; // 관리자만 자동발행 탭 표시
-    const writeItems = [
-      { category: "직접 작성", items: [
-        { id:"blog_naver", icon:"/icon-naver-blog.png", label:"네이버 블로그", desc:"네이버 블로그 글쓰기" },
-        { id:"blog_cafe", icon:"/icon-naver-cafe.webp", label:"네이버 카페", desc:"카페 커뮤니티 글" },
-        { id:"blog_tistory", icon:"/icon-tistory.png", label:"티스토리", desc:"티스토리 포스트" },
-        { id:"blog_insta", icon:"/icon-instagram.webp", label:"인스타그램", desc:"인스타 캡션 생성" },
-        { id:"blog_thread", icon:"/icon-threads.png", label:"스레드", desc:"스레드 게시물" },
-      ]},
-      { category: "링크에서 변환", items: [
-        { id:"blog_link", icon:"/icon-youtube.png", label:"유튜브 → 블로그", desc:"유튜브 영상을 글로 변환" },
-        { id:"blog_news", icon:"/icons3d/news.png", label:"뉴스 → 블로그", desc:"뉴스 기사를 글로 변환" },
-      ]},
-    ];
+    // 수동글쓰기 선택화면 → 바로 네이버 블로그로 진입
+    setAiMenu("blog_naver"); return null;
+  }
+  if (aiMenu === "_blog_write_old_unused") {
+    const writeItems = [];
     const tabStyle = (active) => ({
       flex:1, padding:"12px 0", borderRadius:12, border:"none", cursor:"pointer",
       background: active ? "#7c6aff" : "transparent",
@@ -917,19 +914,16 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <div style={{ fontSize:13, color:homeMuted }}>AI가 글을 작성하고 원하는 플랫폼에 발행합니다</div>
             </div>
             {/* 수동/자동 탭 */}
-            {showAutoTab && (
-              <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background: isDark ? "rgba(255,255,255,0.06)" : "#e8e8f0", marginBottom:28 }}>
-                <button onClick={() => setWriteTab("manual")} style={tabStyle(!isAutoTab)}>
-                  수동발행
-                </button>
-                <button onClick={() => setWriteTab("auto")} style={tabStyle(isAutoTab)}>
-                  자동발행
-                  <span style={{ marginLeft:6, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: isAutoTab ? "rgba(255,255,255,0.2)" : "rgba(16,185,129,0.15)", color: isAutoTab ? "#fff" : "#10b981", verticalAlign:"middle" }}>NEW</span>
-                </button>
-              </div>
-            )}
+            <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background: isDark ? "rgba(255,255,255,0.06)" : "#e8e8f0", marginBottom:28 }}>
+              <button onClick={() => setWriteTab("manual")} style={tabStyle(!isAutoTab)}>
+                수동발행
+              </button>
+              <button onClick={() => setWriteTab("auto")} style={tabStyle(isAutoTab)}>
+                자동발행
+              </button>
+            </div>
             {/* 자동발행 탭 → AutoPublisher 렌더 */}
-            {isAutoTab && showAutoTab ? (
+            {isAutoTab ? (
               <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} embedded />
             ) : (
               <>
@@ -987,13 +981,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // 보관함에서 심플 카드뉴스 열기
-  if (aiMenu === "cardnews_simple_open") {
-    return (
-      <div key="cn_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
-  }
 
   // 보관함에서 심플 상세페이지 열기
   if (aiMenu === "detail_simple_open") {
@@ -1005,27 +992,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
-  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_make" || aiMenu === "cardnews_simple_make") {
-    return <ToolWrap menuId="cardnews_simple"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  }
-  if (aiMenu === "cardnews_simple_img") {
-    return <ToolWrap menuId="cardnews_simple_img"><SimpleCardNewsGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
-  }
+  // cardnews 렌더링 제거됨
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
     return <ToolWrap menuId="detail_simple"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
   }
   if (aiMenu === "detail_simple_img") {
     return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
   }
-  if (aiMenu === "thumbnail_gen" || aiMenu === "thumbnail_gen_make") {
-    return <ToolWrap menuId="thumbnail_gen"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  }
-  if (aiMenu === "thumbnail_gen_img") {
-    return <ToolWrap menuId="thumbnail_gen_img"><ThumbnailGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
-  }
-  if (aiMenu === "ppt_gen") {
-    return <ToolWrap menuId="ppt_gen"><PptGenerator isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  }
+  // thumbnail_gen, ppt_gen 렌더링 제거됨
 
   // ── 콘텐츠 제작: 직접 디자인 (빈 캔버스 바로 진입) ──
   if (aiMenu.startsWith("canvas_direct_")) {
@@ -1048,35 +1022,27 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // ── 콘텐츠 제작: 선택 화면 (미리캔버스 스타일 - 탭+접이식) ──
   if (aiMenu === "content_create") {
-    return <ContentCreateSelector isDark={isDark} homeText={homeText} homeMuted={homeMuted} setAiMenu={setAiMenu} />;
+    // 상세페이지로 바로 진입
+    setAiMenu("detail_simple"); return null;
   }
 
   // ── 이미지: 하위 도구 직접 진입 ──
-  if (aiMenu === "product_shot") return <ToolWrap menuId="product_shot"><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "logo_gen") return <ToolWrap menuId="logo_gen"><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "mockup_gen") return <ToolWrap menuId="mockup_gen"><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ToolWrap menuId="model_gen"><ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "skin_retouch") return <ToolWrap menuId="skin_retouch"><SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <ToolWrap menuId="face_swap"><FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <ToolWrap menuId="outfit_swap"><OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
-  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <ToolWrap menuId="outpaint"><OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} /></ToolWrap>;
+  if (aiMenu === "product_shot") return <ToolWrap menuId="product_shot"><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "logo_gen") return <ToolWrap menuId="logo_gen"><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "mockup_gen") return <ToolWrap menuId="mockup_gen"><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ToolWrap menuId="model_gen"><ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "skin_retouch") return <ToolWrap menuId="skin_retouch"><SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <ToolWrap menuId="face_swap"><FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <ToolWrap menuId="outfit_swap"><OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
+  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <ToolWrap menuId="outpaint"><OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
 
   // ── 이미지: 선택 화면 (이미지 생성 + 수정 통합) ──
   if (aiMenu === "image_tools" || aiMenu === "image_create" || aiMenu === "image_edit") {
-    const imgItems = [
-      { category: "이미지 생성", items: [
-        { id:"product_shot", img:"/icons3d/camera.png", label:"제품컷", desc:"AI 제품 사진 생성" },
-        { id:"logo_gen", img:"/icons3d/palette.png", label:"로고", desc:"브랜드 로고 생성" },
-        { id:"mockup_gen", img:"/icons3d/sns-app.png", label:"목업", desc:"제품 목업 생성" },
-        { id:"model_gen", img:"/icons3d/char-standing.png", label:"모델", desc:"AI 모델 이미지" },
-      ]},
-      { category: "이미지 수정", items: [
-        { id:"skin_retouch", img:"/icons3d/thumbsup.png", label:"피부 보정", desc:"AI 피부 리터칭" },
-        { id:"face_swap", img:"/icons3d/char-headphone.png", label:"얼굴 교체", desc:"얼굴 합성·교체" },
-        { id:"outfit_swap", img:"/icons3d/char-scarf.png", label:"의상 교체", desc:"가상 피팅" },
-        { id:"outpaint", img:"/icons3d/cloud-upload.png", label:"여백 늘리기", desc:"이미지 확장" },
-      ]},
-    ];
+    // 바로 제품컷으로 진입
+    setAiMenu("product_shot"); return null;
+  }
+  if (aiMenu === "_image_tools_old_unused") {
+    const imgItems = [];
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
@@ -1212,15 +1178,28 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <RepurposePage isDark={isDark} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />;
   }
 
-  // 자동발행 (관리자 전용)
+  // 자동발행
   if (aiMenu === "auto_publish") {
-    return <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />;
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"28px 24px 20px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+          <div style={{ maxWidth:620, margin:"0 auto" }}>
+            <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:"rgba(16,185,129,0.1)", fontSize:11, fontWeight:700, color:"#10b981", marginBottom:10 }}>자동 글쓰기</div>
+            <div style={{ fontSize:"clamp(18px,4vw,22px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:4 }}>설정한 시간에 자동으로<br/>블로그 글이 발행됩니다</div>
+            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999" }}>키워드와 플랫폼을 설정하면 AI가 자동으로 글을 작성하고 발행합니다.</div>
+          </div>
+        </div>
+        <div style={{ flex:1, overflow:"auto" }}>
+          <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />
+        </div>
+      </div>
+    );
   }
 
   // 소셜 플래너
   if (aiMenu === "social_planner") {
-    const SocialPlanner = React.lazy(() => import("./SocialPlanner"));
-    return <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}><SocialPlanner isDark={isDark} user={user} theme={theme} /></React.Suspense>;
+    // 소셜 플래너 제거 — 홈으로 리다이렉트
+    setAiMenu("home"); return null;
   }
 
   // 영상 편집 — 포인트 차감 (추후 Pro 전용 전환 예정)
@@ -1249,11 +1228,37 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   if (aiMenu === "yt_analyzer") {
-    return <YouTubeAnalyzer isDark={isDark} />;
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"28px 24px 20px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+          <div style={{ maxWidth:620, margin:"0 auto" }}>
+            <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:"#7c6aff", marginBottom:10 }}>유튜브 분석</div>
+            <div style={{ fontSize:"clamp(18px,4vw,22px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:4 }}>유튜브 채널을 분석하고<br/>성장 전략을 제안해드려요</div>
+            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999" }}>채널 URL을 입력하면 구독자, 조회수, 콘텐츠를 AI가 분석합니다.</div>
+          </div>
+        </div>
+        <div style={{ flex:1, overflow:"auto" }}>
+          <YouTubeAnalyzer isDark={isDark} />
+        </div>
+      </div>
+    );
   }
 
   if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-    return <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => { if (st === "edit") { /* 프로 전환 예정 배너는 ShortsCreator 내부에서 처리 */ } }} />;
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flexShrink:0, background: isDark?"rgba(255,255,255,0.02)":"#fff", padding:"28px 24px 20px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
+          <div style={{ maxWidth:620, margin:"0 auto" }}>
+            <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:"#7c6aff", marginBottom:10 }}>숏폼 자동편집</div>
+            <div style={{ fontSize:"clamp(18px,4vw,22px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:4 }}>유튜브 영상을 넣으면<br/>AI가 숏폼을 만들어드려요</div>
+            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999" }}>유튜브 URL을 입력하면 자동으로 하이라이트를 추출하고 편집합니다.</div>
+          </div>
+        </div>
+        <div style={{ flex:1, overflow:"auto" }}>
+          <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
+        </div>
+      </div>
+    );
   }
 
 
@@ -1289,6 +1294,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const _s = (ko, en) => _pageLang === "ko" ? ko : en;
   const [localMenu, setLocalMenu] = useState(aiMenuProp || "home");
   const [sideOpen, setSideOpen] = useState(false);
+  const [sideCollapsed, setSideCollapsed] = useState(false);
   // isGenerating은 state 대신 전역 변수로 (리렌더 방지 — BlogGenerator unmount 원인)
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
@@ -1542,6 +1548,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
           .ai-home-container{padding:24px 16px 60px!important}
           .ai-home-title{font-size:22px!important}
           .ai-home-2col{grid-template-columns:1fr!important}
+          .ai-content-pad{padding:16px 12px 60px!important}
+          .tool-header-back{padding:4px 8px!important}
         }
         @media(max-width:640px){
           .ai-content-pad{padding:16px 10px 60px!important}
@@ -1578,9 +1586,18 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       `}</style>
 
       {/* 데스크톱 사이드바 */}
-      <div className="ai-sidebar-desktop">
-        <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} navigate={navigate} onLogout={onLogout} />
-      </div>
+      {sideCollapsed ? (
+        <div className="ai-sidebar-desktop" style={{ width: 48, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 12, background: isDark ? "rgba(0,0,0,0.35)" : "#fff", borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "#e5e3f5"}` }}>
+          <button onClick={() => setSideCollapsed(false)} title="메뉴 열기"
+            style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: isDark ? "#a5b4fc" : "#6366f1" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+      ) : (
+        <div className="ai-sidebar-desktop">
+          <AiSidebar aiMenu={aiMenu} setAiMenu={setAiMenu} user={user} onQna={() => navigate("qna")} theme={theme} onlineCount={onlineCount} navigate={navigate} onLogout={onLogout} onCollapse={() => setSideCollapsed(true)} />
+        </div>
+      )}
 
       {/* 모바일 사이드바 오버레이 */}
       {sideOpen && (

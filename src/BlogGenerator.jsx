@@ -11,7 +11,19 @@ import KeywordInsightPanel from "./KeywordInsightPanel";
 import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS, SPEECH_STYLES } from "./BlogUtils.jsx";
 
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
-  const cfg = PLATFORMS[initialType] || PLATFORMS.blog_naver;
+  // SNS 플랫폼 드롭다운 (폼 내에서 선택)
+  const SNS_OPTIONS = [
+    { id: "blog_naver", label: "네이버 블로그", icon: "/icon-naver-blog.png" },
+    { id: "blog_cafe", label: "네이버 카페", icon: "/icon-naver-cafe.webp" },
+    { id: "blog_tistory", label: "티스토리", icon: "/icon-tistory.png" },
+    { id: "blog_insta", label: "인스타그램", icon: "/icon-instagram.webp" },
+    { id: "blog_thread", label: "스레드", icon: "/icon-threads.png" },
+    { id: "blog_youtube", label: "유튜브", icon: "/icon-youtube.png" },
+    { id: "blog_link", label: "유튜브 → 블로그 변환", icon: "/icon-youtube.png" },
+    { id: "blog_news", label: "뉴스 → 블로그 변환", icon: "/icons3d/news.png" },
+  ];
+  const [platformId, setPlatformId] = useState(initialType || "blog_naver");
+  const cfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
   const isDark = isDarkTheme(theme) || (!theme && !!embedded);
   const { t } = useI18n();
 
@@ -20,6 +32,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [tone,       setTone]       = useState(cfg.tones[0].id);
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
+  // 플랫폼 변경 시 설정 리셋
+  useEffect(() => {
+    const newCfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
+    setSubtype(newCfg.subtypes[0].id);
+    setTone(newCfg.tones[0].id);
+    setWordCount(newCfg.wordCounts[1]?.id || newCfg.wordCounts[0].id);
+    setFields({});
+  }, [platformId]);
   // ── remount 복원: 부모 리렌더로 unmount/remount 시 전체 상태 유지 ──
   const _ssKey = useRef("_bg_res_" + (initialType || "blog")).current;
   const _ssLoadKey = useRef("_bg_loading_" + (initialType || "blog")).current;
@@ -1011,6 +1031,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           .bl-gen-btn{position:sticky!important;bottom:0!important;z-index:10!important;margin:0 -14px!important;padding:16px 14px!important;border-radius:0!important;background:linear-gradient(135deg,#7c6aff,#8b5cf6)!important}
           .bl-result-header{padding:6px 12px!important;gap:4px!important}
           .bl-result-header>div{flex-wrap:wrap!important}
+          .bl-sns-platform-group{gap:6px!important}
+          .bl-sns-platform-group button{padding:6px 10px!important;font-size:11px!important}
         }
         @media(max-width:480px){
           .bl-form-wrap{padding:12px 10px 20px!important}
@@ -1018,6 +1040,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           .bl-tone-group{gap:4px!important}
           .bl-tone-group button{padding:5px 10px!important;font-size:11px!important;min-height:36px!important}
           .bl-gen-btn{font-size:14px!important;padding:14px!important}
+          .bl-sns-platform-group{gap:4px!important}
+          .bl-sns-platform-group button{padding:5px 8px!important;font-size:10px!important}
         }
       `}</style>
       {/* 단계 없음 - 자동 전환 */}
@@ -1344,8 +1368,52 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   if (embedded) return <div style={{flex:1,display:"flex",overflow:"hidden",fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",background:isDark?"transparent":"#f4f4f8",color:text}}>{content}</div>;
   return (
     <div style={{minHeight:"100vh",background:isDark?"#0f0c29":"#f8f9fa",fontFamily:"'Pretendard','Noto Sans KR',sans-serif"}}>
-      <div style={{background:isDark?"rgba(255,255,255,0.05)":"#fff",borderBottom:`1px solid ${border}`,padding:"16px 24px"}}>
-        <div style={{fontSize:20,fontWeight:800,color:text}}>✍️ {cfg.title}</div>
+      <div style={{background:isDark?"rgba(255,255,255,0.02)":"#fff",padding:"32px 24px 24px"}}>
+        <div style={{maxWidth:620,margin:"0 auto"}}>
+          <div style={{display:"inline-block",padding:"4px 12px",borderRadius:16,background:"rgba(124,106,255,0.1)",fontSize:11,fontWeight:700,color:"#7c6aff",marginBottom:12}}>AI 글쓰기</div>
+          <div style={{fontSize:22,fontWeight:900,color:text,lineHeight:1.3,marginBottom:6}}>주제를 입력하면<br/>AI가 글을 작성해드려요</div>
+          <div style={{fontSize:13,color:isDark?"rgba(255,255,255,0.5)":"#999",marginBottom:16}}>원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.</div>
+          {/* SNS 플랫폼 선택 */}
+          <div className="bl-sns-platform-group" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {[
+              {id:"blog_naver",label:"네이버 블로그",icon:"/icon-naver-blog.png"},
+              {id:"blog_cafe",label:"네이버 카페",icon:"/icon-naver-cafe.webp"},
+              {id:"blog_tistory",label:"티스토리",icon:"/icon-tistory.png"},
+              {id:"blog_insta",label:"인스타그램",icon:"/icon-instagram.webp"},
+              {id:"blog_thread",label:"스레드",icon:"/icon-threads.png"},
+              {id:"blog_youtube",label:"유튜브",icon:"/icon-youtube.png"},
+              {id:"blog_link",label:"유튜브→블로그",icon:"/icon-youtube.png"},
+              {id:"blog_news",label:"뉴스→블로그",icon:"/icons3d/news.png"},
+            ].map(p => (
+              <button key={p.id} onClick={() => setPlatformId(p.id)}
+                style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:platformId===p.id?700:500,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),transition:"all 0.15s"}}>
+                <img src={p.icon} alt="" style={{width:16,height:16,borderRadius:3,objectFit:"contain"}} />
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* 기존 select 제거 — 위 버튼으로 대체 */}
+      <div style={{display:"none"}}>
+        <select value={platformId} onChange={e => setPlatformId(e.target.value)}>
+          <optgroup label="직접 작성">
+            <option value="blog_naver">네이버 블로그</option>
+            <option value="blog_cafe">네이버 카페</option>
+            <option value="blog_tistory">티스토리</option>
+            <option value="blog_insta">인스타그램</option>
+            <option value="blog_thread">스레드</option>
+            <option value="blog_youtube">유튜브</option>
+          </optgroup>
+          <optgroup label="해외 SNS">
+            <option value="blog_insta">Instagram</option>
+            <option value="blog_thread">Threads</option>
+          </optgroup>
+          <optgroup label="링크 변환">
+            <option value="blog_link">유튜브 → 블로그</option>
+            <option value="blog_news">뉴스 → 블로그</option>
+          </optgroup>
+        </select>
       </div>
       <div style={{height:"calc(100vh - 80px)",display:"flex"}}>{content}</div>
     </div>

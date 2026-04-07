@@ -133,7 +133,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
   ].filter(Boolean).join(" ");
 }
 
-export default function ProductShotGenerator({ isDark, user, onUserUpdate, showPointConfirm }) {
+export default function ProductShotGenerator({ isDark, user, onUserUpdate, showPointConfirm, onMenuChange }) {
   const C      = THEMES[isDark ? "dark" : "light"];
   const D      = isDark;
   const text   = C.text;
@@ -271,55 +271,6 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
   );
 
   /* ══════════════════════════════════════
-     STEP 0: 인트로
-  ══════════════════════════════════════ */
-  if (step === 0) return (
-    <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
-      <div style={{ maxWidth:520, width:"100%", textAlign:"center" }}>
-        <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:`rgba(249,115,22,0.15)`, border:`1px solid rgba(249,115,22,0.3)`, fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
-          AI 광고 이미지 · 제품컷 자동 생성
-        </div>
-        <div style={{ fontSize:26, fontWeight:900, color:text, marginBottom:10 }}>AI 제품컷 생성기</div>
-        <div style={{ fontSize:14, color:muted, lineHeight:1.9, marginBottom:28 }}>
-          제품 사진 하나만 업로드하면<br/>AI가 광고용 제품컷을 자동으로 만들어드려요.
-        </div>
-
-        {/* 4단계 소개 */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24, textAlign:"left" }}>
-          {[
-            ["1","제품 이미지 업로드","JPG·PNG·WEBP 제품 사진 첨부"],
-            ["2","모드 선택","제품만 or 모델과 함께"],
-            ["3","분위기·색감 설정","스튜디오·자연·럭셔리 등 8가지"],
-            ["4","AI 생성 & 다운로드","PNG 파일로 바로 저장"],
-          ].map(([n,l,d]) => (
-            <div key={n} style={{ padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
-              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4 }}>
-                <div style={{ width:20, height:20, borderRadius:6, background:`rgba(249,115,22,0.2)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:accent }}>{n}</div>
-                <span style={{ fontSize:12, fontWeight:800, color:text }}>{l}</span>
-              </div>
-              <div style={{ fontSize:11, color:muted }}>{d}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* 배지 */}
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
-          {["📦 제품만 생성","🧍 모델과 함께","🎬 8가지 분위기","🎨 6가지 색감 톤","10P"].map(b => (
-            <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
-          ))}
-        </div>
-
-        <button onClick={() => setStep(1)}
-          style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", cursor:"pointer",
-            background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:15, fontWeight:900,
-            boxShadow:`0 8px 24px rgba(249,115,22,0.35)` }}>
-          🛍 제품컷 만들기 시작 →
-        </button>
-      </div>
-    </div>
-  );
-
-  /* ══════════════════════════════════════
      STEP 2: 로딩
   ══════════════════════════════════════ */
   if (step === 2) return (
@@ -452,13 +403,29 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
       <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:620, margin:"0 auto" }}>
 
-        {/* 헤더 */}
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24 }}>
-          <button onClick={() => setStep(0)}
-            style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
-            ← 소개
-          </button>
-          <div style={{ fontSize:18, fontWeight:900, color:text }}>🛍 AI 제품컷 생성기</div>
+        {/* 상단 헤더 — 상세페이지 스타일 */}
+        <div style={{ marginBottom:32 }}>
+          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:16, background:`${accent}15`, fontSize:11, fontWeight:700, color:accent, marginBottom:12 }}>AI 이미지</div>
+          <div style={{ fontSize:"clamp(18px, 4vw, 24px)", fontWeight:900, color:text, lineHeight:1.3, marginBottom:6 }}>
+            제품 이미지를 업로드하면<br/>AI가 광고컷을 만들어드려요
+          </div>
+          <div style={{ fontSize:13, color:muted, marginBottom:16 }}>제품 사진을 기반으로 배경, 모델, 분위기를 자동 생성합니다.</div>
+          {/* 이미지 도구 드롭다운 */}
+          <select value="product_shot" onChange={e => { if (onMenuChange && e.target.value !== "product_shot") onMenuChange(e.target.value); }}
+            style={{ padding:"8px 32px 8px 12px", borderRadius:10, border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:text, fontSize:13, fontWeight:600, cursor:"pointer", appearance:"none", width:"100%", maxWidth:320, backgroundImage:`url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat:"no-repeat", backgroundPosition:"right 12px center" }}>
+            <optgroup label="이미지 생성">
+              <option value="product_shot">제품컷 생성</option>
+              <option value="logo_gen">로고 생성</option>
+              <option value="mockup_gen">목업 생성</option>
+              <option value="model_gen">모델 이미지</option>
+            </optgroup>
+            <optgroup label="이미지 수정">
+              <option value="skin_retouch">피부 보정</option>
+              <option value="face_swap">얼굴 교체</option>
+              <option value="outfit_swap">의상 교체</option>
+              <option value="outpaint">여백 늘리기</option>
+            </optgroup>
+          </select>
         </div>
 
         {/* ─── ① 제품 이미지 업로드 ─── */}

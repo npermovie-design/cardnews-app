@@ -148,45 +148,11 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
   };
 
   const reset = () => {
-    setStep(0); setResults([]); setError("");
+    setStep(1); setResults([]); setError("");
     setSelStyle(null); setName(""); setIndustry("");
     setDesc(""); setColorPref(""); setBgColor("white");
     setRefImage(null); setRefMime(null);
   };
-
-  // ── STEP 0: 인트로
-  if (step === 0) return (
-    <div style={{ flex:1, overflowY:"auto", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
-      <div style={{ maxWidth:540, width:"100%", textAlign:"center" }}>
-        <div style={{ display:"inline-block", padding:"4px 16px", borderRadius:20, background:"rgba(6,182,212,0.15)", border:"1px solid rgba(6,182,212,0.3)", fontSize:12, fontWeight:700, color:"#06b6d4", marginBottom:14 }}>
-          AI 로고 생성 · 4가지 버전 동시 제작
-        </div>
-        <div style={{ fontSize:26, fontWeight:900, color:text, marginBottom:10 }}>AI 로고 생성기</div>
-        <div style={{ fontSize:14, color:muted, lineHeight:1.9, marginBottom:28 }}>
-          브랜드 이름과 스타일만 선택하면<br/>AI가 로고 4가지 버전을 자동으로 만들어줘요.
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
-          {[["1","스타일 선택","11가지 로고 스타일 중 선택"],["2","정보 입력","브랜드명, 업종, 설명 입력"],["3","AI 생성","4가지 버전 자동 생성"],["4","PNG 저장","마음에 드는 버전 다운로드"]].map(([n,l,d]) => (
-            <div key={n} style={{ padding:"12px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, textAlign:"left" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4 }}>
-                <div style={{ width:20, height:20, borderRadius:6, background:"rgba(6,182,212,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#06b6d4" }}>{n}</div>
-                <span style={{ fontSize:12, fontWeight:800, color:text }}>{l}</span>
-              </div>
-              <div style={{ fontSize:11, color:muted }}>{d}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center", marginBottom:28 }}>
-          {[`✨ 11가지 스타일`,`${genCount * 10}P`,`📎 참고이미지 업로드`,`📥 PNG 다운로드`].map(b => (
-            <span key={b} style={{ padding:"4px 10px", borderRadius:14, border:`1px solid ${bdr}`, background:cardBg, fontSize:11, color:muted }}>{b}</span>
-          ))}
-        </div>
-        <button onClick={() => setStep(1)} style={{ width:"100%", padding:"15px", borderRadius:14, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#06b6d4,#0891b2)", color:"#fff", fontSize:15, fontWeight:900, boxShadow:"0 8px 24px rgba(6,182,212,0.3)" }}>
-          🏷 로고 만들기 시작 →
-        </button>
-      </div>
-    </div>
-  );
 
   // ── STEP 1: 설정
   if (step === 1) return (
@@ -194,8 +160,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
       <StepBar steps={STEPS} current={1} isDark={isDark} />
       <div style={{ maxWidth:820, margin:"0 auto", padding:"24px 18px 80px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-          <button onClick={() => setStep(0)} style={{ padding:"5px 11px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>← 소개</button>
-          <div style={{ fontSize:18, fontWeight:900, color:text }}>🏷 AI 로고 생성기</div>
+          <div style={{ fontSize:18, fontWeight:900, color:text }}>AI 로고 생성기</div>
         </div>
 
         {/* 스타일 */}
