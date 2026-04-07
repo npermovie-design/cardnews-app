@@ -1069,7 +1069,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ ...cardStyle, marginTop: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>세부 설정</div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>⏱ 쇼츠 길이</div>
-          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {LENGTHS.map(l => (
               <button key={l.id} onClick={() => setShortsLength(l.id)}
                 style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${shortsLength === l.id ? acc : bdr}`, background: shortsLength === l.id ? `${acc}15` : "transparent", color: shortsLength === l.id ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
@@ -1079,7 +1079,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>📝 자막 글자수</div>
-          <div className="ai-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {[[0, "자동"], [8, "8자"], [15, "15자"], [25, "25자"]].map(([v, l]) => (
               <button key={v} onClick={() => setMaxChars(v)}
                 style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -1088,7 +1088,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>🎬 쇼츠 생성 개수</div>
-          <div className="ai-grid-5" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(3,1fr)" : "repeat(5,1fr)", gap: 6 }}>
             {[1,2,3,4,5].map(n => (
               <button key={n} onClick={() => setMaxSegments(n)}
                 style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
