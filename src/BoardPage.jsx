@@ -1341,9 +1341,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {viewMode==="list" && pageItems.length>0 && <>
               {!isMobile && (
                 <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 12px",
-                  display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px 36px",
+                  display:"grid",gridTemplateColumns:"46px 1fr 90px 76px 50px 46px 36px",
                   fontSize:11,fontWeight:700,color:C.muted,alignItems:"center"}}>
-                  <span style={{textAlign:"center"}}>{t("colNo")}</span>
                   <span style={{textAlign:"center"}}>{t("colImage")}</span>
                   <span style={{paddingLeft:6}}>{t("colTitle")}</span>
                   <span style={{textAlign:"center"}}>{t("colAuthor")}</span>
@@ -1387,12 +1386,12 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"2px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:10,cursor:"pointer",fontWeight:700}}>⬇ 다운</button>}
                           </div>
                         </div>
-                        <span style={{fontSize:11,color:C.muted,flexShrink:0,paddingTop:2}}>#{num}</span>
+                        {/* 번호 제거 */}
                       </div>
                     </div>
                   ) : (
                     <div key={p.id} onClick={()=>openPost(p)}
-                      style={{display:"grid",gridTemplateColumns:"48px 46px 1fr 90px 76px 50px 46px 36px",
+                      style={{display:"grid",gridTemplateColumns:"46px 1fr 90px 76px 50px 46px 36px",
                         padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
                       onMouseEnter={e=>{
                         e.currentTarget.style.background=hover;
@@ -1414,7 +1413,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       }}
                       onMouseMove={e=>{const x=e.clientX+18,y=e.clientY-10,popW=280,popH=thumb?220:100;const pos={x:x+popW>window.innerWidth?e.clientX-popW-10:x,y:y+popH>window.innerHeight?e.clientY-popH:y};setHoverPreview(prev=>prev?.post?.id===p.id?{...prev,...pos}:prev);}}
                       onMouseLeave={e=>{e.currentTarget.style.background="transparent";setHoverPreview(null);}}>
-                      <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{num}</span>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
                         {thumb && <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>}
                       </div>

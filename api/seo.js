@@ -39,7 +39,7 @@ async function handleSitemap(req, res) {
       console.log("Sitemap: Supabase env vars missing");
       return;
     }
-    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(500);
+    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(2000);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
       postUrls = posts.map(p => ({
@@ -212,6 +212,34 @@ async function handleIndexNow(req, res) {
   return res.status(200).json({ success: true, url: fullUrl, results });
 }
 
+// ── 대량 IndexNow 제출 (모든 게시글) ──
+async function handleBulkIndex(req, res) {
+  const SITE = "https://snsmakeit.com";
+  const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9";
+  try {
+    const sb = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
+    const { data: posts } = await sb.from("posts").select("id,subCat").order("id", { ascending: false }).limit(2000);
+    if (!posts?.length) return res.status(200).json({ message: "게시글 없음" });
+    const urlList = posts.map(p => `${SITE}/community/${p.subCat || "info"}/post-${p.id}`);
+    // IndexNow는 최대 10,000개씩 전송 가능
+    const batchSize = 500;
+    const results = [];
+    for (let i = 0; i < urlList.length; i += batchSize) {
+      const batch = urlList.slice(i, i + batchSize);
+      try {
+        const r = await fetch("https://api.indexnow.org/indexnow", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: batch }),
+        });
+        results.push({ batch: Math.floor(i / batchSize) + 1, count: batch.length, status: r.status });
+      } catch (e) { results.push({ batch: Math.floor(i / batchSize) + 1, error: e.message }); }
+    }
+    // Google sitemap ping
+    try { await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(SITE + "/sitemap.xml")}`); } catch {}
+    return res.status(200).json({ success: true, totalUrls: urlList.length, batches: results });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   const action = req.query.action;
@@ -227,8 +255,10 @@ export default async function handler(req, res) {
       return handleCronBriefing(req, res);
     case "index-now":
       return handleIndexNow(req, res);
+    case "bulk-index":
+      return handleBulkIndex(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now|bulk-index" });
   }
 }
 

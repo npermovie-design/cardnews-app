@@ -725,10 +725,10 @@ export default function App() {
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
                 <DropItem id="community" label={t("free")}    onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("review")}  onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
-                <DropItem id="community" label={t("archive")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
+          <NavBtn id="archive" label="자료실" onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
