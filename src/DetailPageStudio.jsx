@@ -339,7 +339,10 @@ JSON배열만 출력.`;
   // 스톡 이미지 자동 채우기
   const fillStockImages = async () => {
     try {
-      const searchTerm = productName || category || "product";
+      // 카테고리 라벨 + 상품명의 첫 2단어로 검색 (긴 상품명은 검색 결과가 나쁨)
+      const catLabel = CATEGORIES.find(c => c.key === category)?.label || "";
+      const shortName = (productName || "").split(/\s+/).slice(0, 2).join(" ");
+      const searchTerm = shortName || catLabel || "product";
       let stockUrls = [];
       // 서버 proxy API 사용 (PIXABAY_KEY가 서버에 있음)
       try {
