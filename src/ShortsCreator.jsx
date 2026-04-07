@@ -699,13 +699,36 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ── API 호출 ────────────────────────
   const apiCall = async (path, opts = {}) => {
     const timeout = opts.timeout || 60000;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-    try {
-      const r = await fetch(`${API}${path}`, { ...opts, signal: controller.signal, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
-      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `요청 실패 (${r.status})`); }
-      return r.json();
-    } finally { clearTimeout(timer); }
+    const maxRetries = path.includes("/analyze") ? 2 : 0;
+    let lastErr;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      try {
+        const r = await fetch(`${API}${path}`, { ...opts, signal: controller.signal, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          const msg = e.detail || `요청 실패 (${r.status})`;
+          // 500 에러: 서버 API 키 문제일 가능성
+          if (r.status === 500 && attempt < maxRetries) {
+            clearTimeout(timer);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+          throw new Error(r.status === 500 ? "서버 내부 오류 — 잠시 후 다시 시도해주세요 (AI API 키 확인 필요)" : msg);
+        }
+        clearTimeout(timer);
+        return r.json();
+      } catch (err) {
+        clearTimeout(timer);
+        lastErr = err;
+        if (attempt < maxRetries && !err.message.includes("abort")) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+      }
+    }
+    throw lastErr;
   };
 
   // 유튜브 링크 분석

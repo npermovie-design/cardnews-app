@@ -91,6 +91,9 @@ export default function AdminPage({ C, user: adminUser }) {
   const [postSearch, setPostSearch] = useState("");
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
+  // 뉴스레터 구독자 관리 state (조건부 렌더링 밖에 선언)
+  const [nlSubs, setNlSubs] = useState([]);
+  const [nlLoading, setNlLoading] = useState(true);
 
   // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
   const adminApi = async (action, extra = "") => {
@@ -99,6 +102,18 @@ export default function AdminPage({ C, user: adminUser }) {
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
     return r.json();
   };
+
+  // 뉴스레터 구독자 로딩
+  useEffect(() => {
+    if (tab !== "newsletter") return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/admin?action=newsletter_subscribers&admin_uid=${encodeURIComponent(adminUser?.uid || "")}&extra=select&order=subscribed_at.desc`);
+        if (r.ok) { const d = await r.json(); setNlSubs(d.data || []); }
+      } catch (e) { console.error(e); }
+      setNlLoading(false);
+    })();
+  }, [tab]);
 
   // 최근 7일간 일별 신규 가입자 수
   const loadDailySignups = async () => {
@@ -775,19 +790,7 @@ export default function AdminPage({ C, user: adminUser }) {
       )}
 
       {/* ─────────────── 뉴스레터 구독자 관리 ─────────────── */}
-      {tab === "newsletter" && (() => {
-        const [nlSubs, setNlSubs] = React.useState([]);
-        const [nlLoading, setNlLoading] = React.useState(true);
-        React.useEffect(() => {
-          (async () => {
-            try {
-              const { data } = await adminApi("newsletter_subscribers", "select", "*", "subscribed_at.desc");
-              setNlSubs(data || []);
-            } catch (e) { console.error(e); }
-            setNlLoading(false);
-          })();
-        }, []);
-        return (
+      {tab === "newsletter" && (
           <div style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#fff", borderRadius: 14, border: `1px solid ${C.bdr}`, padding: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
@@ -830,8 +833,7 @@ export default function AdminPage({ C, user: adminUser }) {
               </div>
             )}
           </div>
-        );
-      })()}
+      )}
 
       {/* ─────────────── 비회원 관리 ─────────────── */}
       {tab === "guest" && (

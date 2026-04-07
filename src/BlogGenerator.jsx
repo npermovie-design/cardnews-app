@@ -50,7 +50,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setResult_raw(v);
     try { if (v && v.length > 10) sessionStorage.setItem(_ssKey, v); } catch(e) {}
   };
-  useEffect(() => { return () => { try { sessionStorage.removeItem(_ssKey); } catch(e) {} }; }, []);
+  // unmount 시: 로딩 중이면 sessionStorage 유지, 아니면 정리
+  const loadingForCleanup = useRef(false);
+  useEffect(() => {
+    return () => {
+      try {
+        if (!loadingForCleanup.current) {
+          sessionStorage.removeItem(_ssKey);
+        }
+      } catch(e) {}
+    };
+  }, []);
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   // loading + genStep도 sessionStorage로 복원 (unmount 시 로딩 화면 유지)
@@ -163,6 +173,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // ── loading ref (visibilitychange에서 최신 값 참조) ──
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
+  loadingForCleanup.current = loading;
 
   // ── 탭 복귀 시 visibilitychange 감지 → 상태 복원 ──
   useEffect(() => {

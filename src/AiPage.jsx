@@ -359,6 +359,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // AI도구 홈 검색 state
   const [homeSearch, setHomeSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+
+  // 뉴스레터 구독 state (조건부 렌더링 밖에 선언 — React hooks 규칙)
+  const [nlEmail, setNlEmail] = React.useState("");
+  const [nlSent, setNlSent] = React.useState(false);
   // 온보딩 state (조건부 호출 방지)
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -521,8 +525,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // SNS 뉴스 + 뉴스레터 구독
   if (aiMenu === "hot_keyword") {
-    const [nlEmail, setNlEmail] = React.useState("");
-    const [nlSent, setNlSent] = React.useState(false);
     const handleNewsletterSub = async () => {
       if (!nlEmail || !nlEmail.includes("@")) { alert("올바른 이메일을 입력해주세요."); return; }
       try {

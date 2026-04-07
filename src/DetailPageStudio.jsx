@@ -2692,13 +2692,41 @@ JSON배열만 출력.`;
                 };
                 const decoLineLong = (color) => {
                   if (sec._hideDecoLine) return null;
+                  const lineColor = color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)");
+                  const decoVariant = dv % 3;
+                  const commonProps = {
+                    onClick: e => { e.stopPropagation(); setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _hideDecoLine: true })); },
+                    title: "클릭하여 제거",
+                    onMouseEnter: e => e.currentTarget.style.opacity = "0.4",
+                    onMouseLeave: e => e.currentTarget.style.opacity = "1",
+                    style: { cursor: "pointer", transition: "opacity 0.15s" },
+                  };
+                  if (decoVariant === 1) {
+                    // 도트 구분선
+                    return (
+                      <div {...commonProps} style={{ ...commonProps.style, display: "flex", gap: 6, justifyContent: "center", margin: "0 auto 24px" }}>
+                        {Array.from({ length: 5 }, (_, di) => (
+                          <div key={di} style={{ width: di === 2 ? 8 : 4, height: di === 2 ? 8 : 4, borderRadius: "50%", background: di === 2 ? mainColor : lineColor }} />
+                        ))}
+                      </div>
+                    );
+                  }
+                  if (decoVariant === 2) {
+                    // 웨이브 구분선
+                    return (
+                      <div {...commonProps} style={{ ...commonProps.style, margin: "0 auto 24px", textAlign: "center" }}>
+                        <svg width="80" height="12" viewBox="0 0 80 12" fill="none" style={{ display: "inline-block" }}>
+                          <path d="M0 6 Q10 0 20 6 T40 6 T60 6 T80 6" stroke={mainColor} strokeWidth="1.5" fill="none" opacity="0.5" />
+                        </svg>
+                      </div>
+                    );
+                  }
+                  // 기본: 라인 + 원형 도트
                   return (
-                    <div onClick={e => { e.stopPropagation(); setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _hideDecoLine: true })); }}
-                      title="클릭하여 제거" style={{ display: "flex", alignItems: "center", gap: 16, margin: "0 auto 24px", justifyContent: "center", maxWidth: 200, cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = "0.4"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                      <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
+                    <div {...commonProps} style={{ ...commonProps.style, display: "flex", alignItems: "center", gap: 16, margin: "0 auto 24px", justifyContent: "center", maxWidth: 200 }}>
+                      <div style={{ flex: 1, height: 1, background: lineColor }} />
                       <div style={{ width: 6, height: 6, borderRadius: "50%", background: mainColor }} />
-                      <div style={{ flex: 1, height: 1, background: color || (isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)") }} />
+                      <div style={{ flex: 1, height: 1, background: lineColor }} />
                     </div>
                   );
                 };
@@ -3375,6 +3403,66 @@ JSON배열만 출력.`;
                     );
                   }
 
+                  // ═══ 변형 4: 중앙 정렬 카드 (이미지 위 + 텍스트 아래, 배경 패턴) ═══
+                  if (dv % 6 === 4) {
+                    return (
+                      <div style={{ background: bgCol, padding: isMobile ? "80px 24px" : "120px 64px", position: "relative", overflow: "hidden" }}>
+                        {/* 미세한 도트 패턴 배경 */}
+                        <div style={{ position: "absolute", inset: 0, opacity: 0.03, pointerEvents: "none", backgroundImage: `radial-gradient(${isDarkBg ? "#fff" : "#000"} 1px, transparent 1px)`, backgroundSize: "20px 20px" }} />
+                        <div style={{ maxWidth: 620, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+                          {/* 넘버 배지 */}
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
+                            <div style={{ width: 40, height: 1, background: isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4 }}>POINT {String(pointNum).padStart(2, "0")}</span>
+                            <div style={{ width: 40, height: 1, background: isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)" }} />
+                          </div>
+                          {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 12, letterSpacing: 1 })}>{subtitleEl.content}</div>}
+                          {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 26 : 34, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.3, marginBottom: 20 })}>{titleEl.content}</div>}
+                          {bodyEls.map((el, bi) => (
+                            <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8, marginBottom: 10 })}>{el.content}</div>
+                          ))}
+                          {/* 둥근 모서리 이미지 카드 */}
+                          <div style={{ marginTop: 40, borderRadius: 20, overflow: "hidden", boxShadow: isDarkBg ? "0 8px 32px rgba(0,0,0,0.3)" : "0 8px 32px rgba(0,0,0,0.08)", position: "relative" }}>
+                            {displayImgSrc ? (
+                              <img src={displayImgSrc} alt="" style={{ width: "100%", height: isMobile ? 300 : 450, objectFit: "cover" }} />
+                            ) : renderPlaceholder(isMobile ? 300 : 450, { borderRadius: 0 })}
+                            {imgButtons()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ═══ 변형 5: 숫자 강조형 (대형 넘버 + 설명 + 하단 이미지 스트립) ═══
+                  if (dv % 6 === 5) {
+                    return (
+                      <div style={{ background: bgCol, padding: isMobile ? "80px 24px" : "120px 64px", position: "relative" }}>
+                        <div style={{ maxWidth: 700, margin: "0 auto" }}>
+                          {/* 대형 넘버 */}
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 20 : 40, marginBottom: 48 }}>
+                            <span style={{ fontSize: isMobile ? 72 : 100, fontWeight: 900, color: mainColor, lineHeight: 1, fontFamily: "Georgia, serif", flexShrink: 0, opacity: 0.8 }}>
+                              {String(pointNum).padStart(2, "0")}
+                            </span>
+                            <div style={{ paddingTop: isMobile ? 8 : 16 }}>
+                              {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: mainColor, marginBottom: 8, letterSpacing: 1 })}>{subtitleEl.content}</div>}
+                              {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 24 : 32, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.3, marginBottom: 16 })}>{titleEl.content}</div>}
+                              {bodyEls.map((el, bi) => (
+                                <div key={bi} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8, marginBottom: 8 })}>{el.content}</div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* 풀 너비 이미지 */}
+                          <div style={{ borderRadius: 16, overflow: "hidden", position: "relative" }}>
+                            {displayImgSrc ? (
+                              <img src={displayImgSrc} alt="" style={{ width: "100%", height: isMobile ? 280 : 400, objectFit: "cover" }} />
+                            ) : renderPlaceholder(isMobile ? 280 : 400, { borderRadius: 0 })}
+                            {imgButtons()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   // ═══ 변형 0: 기본 50:50 좌우 분할 (기존) ═══
 
                   // 포인트 넘버 표시 스타일 변형
@@ -3488,7 +3576,7 @@ JSON배열만 출력.`;
                   );
 
                   return (
-                    <div style={{ display: "flex", minHeight: 1260, background: bgCol.startsWith("linear-gradient") ? bgCol : bgCol, flexDirection: imgLeft ? "row" : "row-reverse" }}>
+                    <div style={{ display: "flex", minHeight: isMobile ? "auto" : 1260, background: bgCol.startsWith("linear-gradient") ? bgCol : bgCol, flexDirection: isMobile ? "column" : (imgLeft ? "row" : "row-reverse") }}>
                       {imageBlock}
                       {textBlock}
                     </div>
