@@ -366,7 +366,7 @@ JSON 형식으로 응답:
     <div style={{maxWidth:900,margin:"0 auto",padding:"32px 20px 60px"}}>
       {/* 헤더 */}
       <div style={{marginBottom:24}}>
-        <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:12,fontWeight:700,color:acc}}>소셜분석기</span>
+        <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:12,fontWeight:700,color:acc}}>SNS분석</span>
         <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
         <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>운영 중인 SNS 프로필 링크를 입력하면 AI가 분석하고 30일 콘텐츠 플랜을 제공합니다.</div>
       </div>
