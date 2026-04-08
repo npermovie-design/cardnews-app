@@ -190,33 +190,67 @@ export default function SocialAnalyzer({ isDark }) {
 
 ${details}
 
-한국어로 작성. 이모지/특수기호 금지. 추정이 아닌 데이터 기반 분석.
+한국어로 작성. 이모지/특수기호 금지. 데이터 기반 분석.
+표(테이블)를 적극 활용하세요. 마크다운 테이블 형식: | 항목 | 값 |
 
-## 채널 진단
-각 계정별:
-- 콘텐츠 카테고리와 주제
-- 강점 3가지 (데이터 근거 포함)
-- 약점 3가지 (데이터 근거 포함)
-- 콘텐츠 품질 등급 (S/A/B/C/D)
+## 채널 종합 진단
 
-## 경쟁 채널 분석
-각 플랫폼별 동일 카테고리의 성공 채널 5개:
-- 채널명 (실제 존재하는 채널)
-- 구독자/팔로워 규모
-- 벤치마킹 포인트
-- 참고할 콘텐츠 예시 2개
+각 채널별 아래 형식으로 표로 정리:
 
-## 성장 액션 플랜 (우선순위순)
-1순위부터 10순위까지 구체적 액션:
-- 각 액션의 예상 효과
-- 실행 난이도 (상/중/하)
-- 소요 시간
+| 항목 | 분석 결과 |
+|---|---|
+| 콘텐츠 카테고리 | (구체적 카테고리) |
+| 주요 주제 | (상위 3개 주제) |
+| 콘텐츠 등급 | (S/A/B/C/D 중 하나와 근거) |
+| 업로드 빈도 | (주 N회 등) |
+| 타겟 오디언스 | (구체적 타겟) |
+| 강점 | (3가지) |
+| 약점 | (3가지) |
 
-## 콘텐츠 전략
-- 추천 콘텐츠 주제 10개 (구체적 제목)
-- 최적 업로드 시간과 빈도
-- 추천 해시태그/키워드 20개
-- 썸네일/커버 전략`;
+## 경쟁 채널 비교 분석
+
+동일 카테고리의 성공 채널을 표로 비교:
+
+| 채널명 | 플랫폼 | 구독자/팔로워 | URL | 벤치마킹 포인트 |
+|---|---|---|---|---|
+| (실제 채널명) | (유튜브 등) | (실제 규모) | (실제 URL) | (배울 점) |
+
+최소 5개 채널. 실제 존재하는 채널만.
+
+## 성장 액션 플랜
+
+우선순위 테이블:
+
+| 순위 | 액션 | 예상 효과 | 난이도 | 소요시간 |
+|---|---|---|---|---|
+| 1 | (구체적 액션) | (예상 효과) | 하 | 1일 |
+
+10개 액션을 우선순위순으로.
+
+## 콘텐츠 아이디어
+
+| 번호 | 콘텐츠 제목 | 형식 | 예상 반응 |
+|---|---|---|---|
+| 1 | (구체적 제목) | (숏폼/롱폼/카드뉴스 등) | (높음/보통) |
+
+10개 아이디어.
+
+## 키워드/해시태그 전략
+
+추천 키워드를 카테고리별로 정리:
+- 핵심 키워드 5개
+- 롱테일 키워드 5개
+- 해시태그 10개
+
+## 업로드 전략
+
+| 항목 | 추천 |
+|---|---|
+| 최적 업로드 요일 | (요일) |
+| 최적 업로드 시간 | (시간대) |
+| 주간 업로드 빈도 | (횟수) |
+| 썸네일 전략 | (구체적 가이드) |
+| 제목 전략 | (구체적 가이드) |`;
 
       const r = await fetch("/api/gemini-generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -352,6 +386,80 @@ ${details}
     </div>
   );
 
+  // ── 등급 배지 ──
+  const GradeBadge = ({ grade }) => {
+    const colors = { S: "#7c6aff", A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#ef4444" };
+    const g = (grade || "").toUpperCase().charAt(0);
+    const c = colors[g] || muted;
+    return <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 10, background: `${c}15`, border: `2px solid ${c}40`, fontSize: 16, fontWeight: 900, color: c }}>{g || "?"}</span>;
+  };
+
+  // ── 텍스트 안 URL → 링크화 ──
+  const linkify = (str) => {
+    if (!str) return str;
+    const parts = str.split(/(https?:\/\/[^\s|)]+)/g);
+    return parts.map((p, pi) => {
+      if (/^https?:\/\//.test(p)) {
+        const isYt = /youtube\.com|youtu\.be/.test(p);
+        return <a key={pi} href={p} target="_blank" rel="noopener noreferrer" style={{ color: isYt ? "#FF0000" : acc, fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 2 }}>{p.replace(/https?:\/\/(www\.)?/, "").slice(0, 40)}{p.length > 50 ? "..." : ""}</a>;
+      }
+      return p;
+    });
+  };
+
+  // ── 볼드 + 링크 파싱 ──
+  const parseLine = (str) => {
+    if (!str) return null;
+    // 등급 감지 (S등급, A등급 등)
+    const gradeMatch = str.match(/([SABCD])등급/);
+    const parts = str.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((p, pi) => {
+      if (p.startsWith("**") && p.endsWith("**")) {
+        const inner = p.slice(2, -2);
+        return <strong key={pi} style={{ fontWeight: 800, color: text }}>{linkify(inner)}</strong>;
+      }
+      return <span key={pi}>{linkify(p)}</span>;
+    });
+  };
+
+  // ── 마크다운 테이블 → HTML 테이블 ──
+  const renderTable = (tableLines) => {
+    const rows = tableLines.map(l => l.split("|").map(c => c.trim()).filter(Boolean));
+    if (rows.length < 2) return null;
+    const header = rows[0];
+    const dataRows = rows.filter((_, i) => i > 0 && !rows[i].every(c => /^[-:]+$/.test(c)));
+    return (
+      <div style={{ overflowX: "auto", marginBottom: 16 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr>{header.map((h, hi) => (
+              <th key={hi} style={{ padding: "10px 14px", background: isDark ? "rgba(124,106,255,0.08)" : `${acc}08`, borderBottom: `2px solid ${acc}30`, textAlign: "left", fontWeight: 800, color: text, fontSize: 12, whiteSpace: "nowrap" }}>{h}</th>
+            ))}</tr>
+          </thead>
+          <tbody>
+            {dataRows.map((row, ri) => (
+              <tr key={ri} style={{ background: ri % 2 === 0 ? "transparent" : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)") }}>
+                {row.map((cell, ci) => {
+                  // 등급 배지 감지
+                  const gradeMatch = cell.match(/^([SABCD])등급?$/i) || cell.match(/^([SABCD])$/i);
+                  // 난이도 배지
+                  const diffMatch = cell.match(/^(상|중|하)$/);
+                  return (
+                    <td key={ci} style={{ padding: "10px 14px", borderBottom: `1px solid ${bdr}`, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.6, verticalAlign: "top" }}>
+                      {gradeMatch ? <GradeBadge grade={gradeMatch[1]} /> :
+                       diffMatch ? <span style={{ padding: "3px 10px", borderRadius: 6, background: diffMatch[1] === "하" ? "#22c55e15" : diffMatch[1] === "중" ? "#f59e0b15" : "#ef444415", color: diffMatch[1] === "하" ? "#22c55e" : diffMatch[1] === "중" ? "#f59e0b" : "#ef4444", fontSize: 11, fontWeight: 700 }}>{cell}</span> :
+                       parseLine(cell)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // ── 마크다운 → 시각적 섹션 렌더링 ──
   const renderReport = (md) => {
     if (!md) return null;
@@ -359,49 +467,72 @@ ${details}
     return sections.map((sec, si) => {
       const lines = sec.split("\n");
       const title = lines[0]?.replace(/\*\*/g, "").trim();
-      const body = lines.slice(1).join("\n").trim();
+      const bodyLines = lines.slice(1);
+
+      // 테이블과 일반 콘텐츠 분리 렌더링
+      const elements = [];
+      let tableBuffer = [];
+      let key = 0;
+
+      const flushTable = () => {
+        if (tableBuffer.length >= 2) {
+          elements.push(<div key={`t${key++}`}>{renderTable(tableBuffer)}</div>);
+        }
+        tableBuffer = [];
+      };
+
+      bodyLines.forEach((line) => {
+        const t = line.trim();
+        // 테이블 행 감지
+        if (t.startsWith("|") && t.endsWith("|")) {
+          tableBuffer.push(t);
+          return;
+        }
+        // 테이블 끝
+        if (tableBuffer.length > 0) flushTable();
+
+        if (!t) { elements.push(<div key={`s${key++}`} style={{ height: 6 }} />); return; }
+        if (t.startsWith("### ")) { elements.push(<div key={`h${key++}`} style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 8 }}>{t.replace(/^###\s*/, "").replace(/\*\*/g, "")}</div>); return; }
+
+        if (t.startsWith("- ") || t.startsWith("* ")) {
+          const content = t.replace(/^[-*]\s*/, "");
+          elements.push(
+            <div key={`l${key++}`} style={{ display: "flex", gap: 8, marginBottom: 5, paddingLeft: 4 }}>
+              <span style={{ color: acc, fontSize: 7, marginTop: 7, flexShrink: 0 }}>●</span>
+              <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>{parseLine(content)}</span>
+            </div>
+          );
+          return;
+        }
+
+        if (/^\d+[\.\)]\s/.test(t)) {
+          const num = t.match(/^(\d+)/)[1];
+          const content = t.replace(/^\d+[\.\)]\s*/, "");
+          elements.push(
+            <div key={`n${key++}`} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "10px 14px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}` }}>
+              <span style={{ width: 26, height: 26, borderRadius: 8, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: acc, flexShrink: 0 }}>{num}</span>
+              <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7, flex: 1 }}>{parseLine(content)}</span>
+            </div>
+          );
+          return;
+        }
+
+        elements.push(
+          <div key={`p${key++}`} style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.8, marginBottom: 3 }}>{parseLine(t)}</div>
+        );
+      });
+      if (tableBuffer.length > 0) flushTable();
+
+      const sectionColors = ["#7c6aff", "#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+      const sColor = sectionColors[si % sectionColors.length];
+
       return (
-        <div key={si} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px 20px", marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 900, color: text, marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${acc}20`, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 4, height: 20, borderRadius: 2, background: acc }} />
+        <div key={si} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px 20px", marginBottom: 16, boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.03)" }}>
+          <div style={{ fontSize: 17, fontWeight: 900, color: text, marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${sColor}30`, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 4, height: 22, borderRadius: 2, background: sColor }} />
             {title}
           </div>
-          {body.split("\n").map((line, li) => {
-            const t = line.trim();
-            if (!t) return <div key={li} style={{ height: 8 }} />;
-            if (t.startsWith("### ")) return <div key={li} style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 8 }}>{t.replace(/^###\s*/, "").replace(/\*\*/g, "")}</div>;
-            if (t.startsWith("- ") || t.startsWith("* ")) {
-              const content = t.replace(/^[-*]\s*/, "");
-              const parts = content.split(/(\*\*[^*]+\*\*)/g);
-              return (
-                <div key={li} style={{ display: "flex", gap: 8, marginBottom: 5, paddingLeft: 4 }}>
-                  <span style={{ color: acc, fontSize: 8, marginTop: 6 }}>●</span>
-                  <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
-                    {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
-                  </span>
-                </div>
-              );
-            }
-            if (/^\d+[\.\)]\s/.test(t)) {
-              const num = t.match(/^(\d+)/)[1];
-              const content = t.replace(/^\d+[\.\)]\s*/, "");
-              const parts = content.split(/(\*\*[^*]+\*\*)/g);
-              return (
-                <div key={li} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "10px 14px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}` }}>
-                  <span style={{ width: 26, height: 26, borderRadius: 8, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: acc, flexShrink: 0 }}>{num}</span>
-                  <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
-                    {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
-                  </span>
-                </div>
-              );
-            }
-            const parts = t.split(/(\*\*[^*]+\*\*)/g);
-            return (
-              <div key={li} style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.8, marginBottom: 3 }}>
-                {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
-              </div>
-            );
-          })}
+          {elements}
         </div>
       );
     });
