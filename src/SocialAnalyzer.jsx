@@ -6,711 +6,298 @@ const SNS_PLATFORMS = [
   { id: "tiktok", label: "틱톡", placeholder: "https://www.tiktok.com/@username", color: "#010101", match: /tiktok\.com/ },
   { id: "naver_blog", label: "네이버 블로그", placeholder: "https://blog.naver.com/username", color: "#03C75A", match: /blog\.naver\.com/ },
   { id: "threads", label: "스레드", placeholder: "https://www.threads.net/@username", color: "#000000", match: /threads\.net/ },
-  { id: "x", label: "X (트위터)", placeholder: "https://x.com/username", color: "#000000", match: /x\.com|twitter\.com/ },
+  { id: "x", label: "X", placeholder: "https://x.com/username", color: "#000000", match: /x\.com|twitter\.com/ },
   { id: "facebook", label: "페이스북", placeholder: "https://www.facebook.com/page", color: "#1877F2", match: /facebook\.com/ },
   { id: "tistory", label: "티스토리", placeholder: "https://example.tistory.com", color: "#FF6B35", match: /tistory\.com/ },
-  { id: "linkedin", label: "링크드인", placeholder: "https://www.linkedin.com/in/username", color: "#0A66C2", match: /linkedin\.com/ },
-  { id: "other", label: "기타 SNS", placeholder: "https://...", color: "#888", match: null },
+  { id: "other", label: "기타", placeholder: "https://...", color: "#888", match: null },
 ];
-
-function detectPlatform(url) {
-  for (const p of SNS_PLATFORMS) { if (p.match && p.match.test(url)) return p; }
-  return SNS_PLATFORMS[SNS_PLATFORMS.length - 1];
-}
-
-function fmtNum(n) {
-  if (!n && n !== 0) return "-";
-  const num = typeof n === "string" ? parseInt(n.replace(/[^0-9]/g, "")) : n;
-  if (isNaN(num)) return "-";
-  if (num >= 100000000) return (num / 100000000).toFixed(1) + "억";
-  if (num >= 10000) return (num / 10000).toFixed(1) + "만";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "천";
-  return num.toLocaleString();
-}
-
-function fmtDate(d) {
-  if (!d) return "";
-  const date = new Date(d);
-  return `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,"0")}.${String(date.getDate()).padStart(2,"0")}`;
-}
-
-function parseDuration(iso) {
-  if (!iso) return "";
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return "";
-  const h = parseInt(m[1] || "0"), mi = parseInt(m[2] || "0"), s = parseInt(m[3] || "0");
-  if (h > 0) return `${h}:${String(mi).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  return `${mi}:${String(s).padStart(2,"0")}`;
-}
+function detectPlatform(url) { for (const p of SNS_PLATFORMS) { if (p.match && p.match.test(url)) return p; } return SNS_PLATFORMS[SNS_PLATFORMS.length - 1]; }
+function fmtNum(n) { if (!n && n !== 0) return "-"; const num = typeof n === "string" ? parseInt(n.replace(/[^0-9]/g, "")) : n; if (isNaN(num)) return "-"; if (num >= 100000000) return (num / 100000000).toFixed(1) + "억"; if (num >= 10000) return (num / 10000).toFixed(1) + "만"; if (num >= 1000) return (num / 1000).toFixed(1) + "천"; return num.toLocaleString(); }
+function fmtDate(d) { if (!d) return ""; const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; }
+function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); if (!m) return ""; const h = parseInt(m[1]||"0"), mi = parseInt(m[2]||"0"), s = parseInt(m[3]||"0"); return h > 0 ? `${h}:${String(mi).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${mi}:${String(s).padStart(2,"0")}`; }
 
 export default function SocialAnalyzer({ isDark }) {
   const [links, setLinks] = useState([""]);
   const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
-  const [channelData, setChannelData] = useState([]); // 플랫폼별 수집 데이터
-  const reportRef = useRef(null);
+  const [channels, setChannels] = useState([]); // 수집 데이터
+  const [report, setReport] = useState(null); // AI 리포트 (플랫폼별 분리)
+  const [activeTab, setActiveTab] = useState("overview"); // 탭
 
-  const acc = "#7c6aff";
-  const text = isDark ? "#fff" : "#1a1a1a";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
-  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const acc = "#7c6aff"; const text = isDark ? "#fff" : "#1a1a1a"; const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff"; const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
-
-  const addLink = () => { if (links.length < 10) setLinks([...links, ""]); };
-  const removeLink = (idx) => { if (links.length > 1) setLinks(links.filter((_, i) => i !== idx)); };
-  const updateLink = (idx, val) => { const n = [...links]; n[idx] = val; setLinks(n); };
   const validLinks = links.filter(l => l.trim());
+  const addLink = () => { if (links.length < 10) setLinks([...links, ""]); };
+  const removeLink = (i) => { if (links.length > 1) setLinks(links.filter((_, j) => j !== i)); };
+  const updateLink = (i, v) => { const n = [...links]; n[i] = v; setLinks(n); };
 
-  // ── 유튜브 채널 데이터 + 최근 영상 ──
-  const fetchYoutubeChannel = async (url) => {
+  // ── 유튜브 채널 데이터 ──
+  const fetchYoutube = async (url) => {
     try {
-      const handleMatch = url.match(/@([a-zA-Z0-9_.-]+)/);
-      const channelIdMatch = url.match(/channel\/([a-zA-Z0-9_-]+)/);
-      let channelId = channelIdMatch ? channelIdMatch[1] : null;
-      let channelInfo = null;
-
-      // forHandle로 직접 조회
-      if (handleMatch) {
-        const r = await fetch(`/api/youtube-search?action=channel-detail&forHandle=${handleMatch[1]}`);
-        if (r.ok) {
-          const d = await r.json();
-          if (d?.items?.[0]) { channelInfo = d.items[0]; channelId = channelInfo.id; }
-        }
-      }
-      // channelId로 조회
-      if (!channelInfo && channelId) {
-        const r = await fetch(`/api/youtube-search?action=channel-detail&channelId=${channelId}`);
-        if (r.ok) { const d = await r.json(); if (d?.items?.[0]) channelInfo = d.items[0]; }
-      }
-      // 검색 fallback
-      if (!channelInfo && handleMatch) {
-        const sr = await fetch(`/api/youtube-search?action=channel-search&q=${encodeURIComponent("@" + handleMatch[1])}`);
-        if (sr.ok) {
-          const sd = await sr.json();
-          channelId = sd?.items?.[0]?.channelId;
-          if (channelId) {
-            const r = await fetch(`/api/youtube-search?action=channel-detail&channelId=${channelId}`);
-            if (r.ok) { const d = await r.json(); if (d?.items?.[0]) channelInfo = d.items[0]; }
-          }
-        }
-      }
-      if (!channelInfo) return null;
-
-      const stats = channelInfo.statistics || {};
-      const snippet = channelInfo.snippet || {};
-      const subs = parseInt(stats.subscriberCount) || 0;
-      const views = parseInt(stats.viewCount) || 0;
-      const vids = parseInt(stats.videoCount) || 0;
-
-      // 최근 영상 10개 (콘텐츠 주제 파악에 충분한 수)
-      let recentVideos = [];
-      if (channelId) {
-        const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${channelId}&maxResults=10`);
-        if (vr.ok) { const vd = await vr.json(); recentVideos = vd.videos || []; }
-      }
-
-      return {
-        type: "youtube",
-        name: snippet.title || "",
-        thumbnail: snippet.thumbnails?.medium?.url || "",
-        banner: channelInfo.brandingSettings?.image?.bannerExternalUrl || "",
-        subscribers: subs,
-        totalViews: views,
-        videoCount: vids,
-        avgViews: vids > 0 ? Math.round(views / vids) : 0,
-        description: (snippet.description || "").slice(0, 500),
-        createdAt: snippet.publishedAt || "",
-        recentVideos,
-        // 계산 지표
-        engagementRate: recentVideos.length > 0
-          ? (recentVideos.reduce((s, v) => s + v.likeCount + v.commentCount, 0) / recentVideos.reduce((s, v) => s + v.viewCount, 0) * 100).toFixed(2)
-          : 0,
-        avgRecentViews: recentVideos.length > 0
-          ? Math.round(recentVideos.reduce((s, v) => s + v.viewCount, 0) / recentVideos.length)
-          : 0,
-      };
+      const h = url.match(/@([a-zA-Z0-9_.-]+)/); const cid = url.match(/channel\/([a-zA-Z0-9_-]+)/);
+      let info = null;
+      if (h) { const r = await fetch(`/api/youtube-search?action=channel-detail&forHandle=${h[1]}`); if (r.ok) { const d = await r.json(); if (d?.items?.[0]) info = d.items[0]; } }
+      if (!info && cid) { const r = await fetch(`/api/youtube-search?action=channel-detail&channelId=${cid[1]}`); if (r.ok) { const d = await r.json(); if (d?.items?.[0]) info = d.items[0]; } }
+      if (!info && h) { const sr = await fetch(`/api/youtube-search?action=channel-search&q=${encodeURIComponent("@"+h[1])}`); if (sr.ok) { const sd = await sr.json(); const id = sd?.items?.[0]?.channelId; if (id) { const r = await fetch(`/api/youtube-search?action=channel-detail&channelId=${id}`); if (r.ok) { const d = await r.json(); if (d?.items?.[0]) info = d.items[0]; } } } }
+      if (!info) return null;
+      const s = info.statistics || {}; const sn = info.snippet || {};
+      const subs = parseInt(s.subscriberCount)||0, views = parseInt(s.viewCount)||0, vids = parseInt(s.videoCount)||0;
+      let recent = [];
+      if (info.id) { const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${info.id}&maxResults=10`); if (vr.ok) { const vd = await vr.json(); recent = vd.videos || []; } }
+      const avgRecent = recent.length > 0 ? Math.round(recent.reduce((a,v)=>a+v.viewCount,0)/recent.length) : 0;
+      const engage = recent.length > 0 ? (recent.reduce((a,v)=>a+v.likeCount+v.commentCount,0) / Math.max(1, recent.reduce((a,v)=>a+v.viewCount,0)) * 100).toFixed(2) : "0";
+      return { type:"youtube", name: sn.title||"", thumb: sn.thumbnails?.medium?.url||"", subs, views, vids, avgViews: vids>0?Math.round(views/vids):0, avgRecent, engage, desc: (sn.description||"").slice(0,500), created: sn.publishedAt||"", recent };
     } catch { return null; }
   };
 
-  // ── SNS 프로필 크롤링 (메타태그 + JSON-LD + 본문) ──
-  const fetchSnsProfile = async (url) => {
+  // ── SNS 프로필 크롤링 ──
+  const fetchProfile = async (url) => {
     try {
-      const r = await fetch("/api/content?action=sns-profile", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }),
-      });
-      if (!r.ok) return null;
-      return await r.json();
+      const r = await fetch("/api/content?action=sns-profile", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({url}) });
+      if (!r.ok) return null; return await r.json();
     } catch { return null; }
   };
 
-  // ── 분석 실행 ──
+  // ── 분석 ──
   const analyze = async () => {
-    if (validLinks.length === 0) return;
-    setLoading(true); setError(null); setReport(null); setChannelData([]);
-
+    if (!validLinks.length) return;
+    setLoading(true); setError(null); setChannels([]); setReport(null); setActiveTab("overview");
     try {
-      setProgress("SNS 계정에 직접 접속하여 데이터를 수집 중...");
       const collected = [];
-
-      for (let idx = 0; idx < validLinks.length; idx++) {
-        const url = validLinks[idx];
-        const platform = detectPlatform(url);
-        setProgress(`${platform?.label || "SNS"} 데이터 수집 중... (${idx + 1}/${validLinks.length})`);
-
-        if (platform?.id === "youtube") {
-          const yt = await fetchYoutubeChannel(url);
-          collected.push({ url, platform, data: yt, pageText: null });
-        } else {
-          // SNS 프로필 전용 크롤러 (메타태그 + JSON-LD + 본문 추출)
-          const profile = await fetchSnsProfile(url);
-          collected.push({ url, platform, data: null, pageText: null, profile });
-        }
+      for (let i = 0; i < validLinks.length; i++) {
+        const url = validLinks[i]; const plat = detectPlatform(url);
+        setProgress(`${plat?.label} 데이터 수집 중... (${i+1}/${validLinks.length})`);
+        if (plat?.id === "youtube") { collected.push({ url, plat, yt: await fetchYoutube(url) }); }
+        else { collected.push({ url, plat, profile: await fetchProfile(url) }); }
       }
+      setChannels(collected);
+      setProgress("AI 분석 리포트 생성 중...");
 
-      setChannelData(collected);
-      setProgress("AI가 수집된 데이터를 분석하고 리포트를 작성 중...");
+      // AI 프롬프트
+      const info = collected.map((c,i) => {
+        let t = `[계정${i+1}] ${c.plat?.label} | ${c.url}`;
+        if (c.yt) { const d=c.yt; t+=`\n채널명:${d.name}\n구독자:${d.subs}\n총조회수:${d.views}\n영상수:${d.vids}\n평균조회수:${d.avgViews}\n최근평균:${d.avgRecent}\n참여율:${d.engage}%\n설명:${d.desc}`; if(d.recent?.length){t+="\n최근영상:"; d.recent.forEach((v,vi)=>{t+=`\n${vi+1}."${v.title}"|조회${v.viewCount}|좋아요${v.likeCount}|댓글${v.commentCount}|${fmtDate(v.publishedAt)}`;});} }
+        if (c.profile) { const m=c.profile.meta||{}; if(m["og:title"])t+=`\n이름:${m["og:title"]}`; if(m["og:description"])t+=`\n설명:${m["og:description"]}`; if(m._visitors)t+=`\n방문자:${m._visitors}`; if(m._postCount)t+=`\n게시글:${m._postCount}`; if(c.profile.texts?.length)t+=`\n콘텐츠:${c.profile.texts.slice(0,15).join(" | ")}`; }
+        return t;
+      }).join("\n---\n");
 
-      // AI 분석 프롬프트 구성
-      const details = collected.map((c, i) => {
-        let info = `[계정 ${i+1}] ${c.platform?.label} | ${c.url}`;
-        if (c.data) {
-          const d = c.data;
-          info += `\n채널명: ${d.name}`;
-          info += `\n구독자: ${d.subscribers.toLocaleString()}명`;
-          info += `\n총 조회수: ${d.totalViews.toLocaleString()}회`;
-          info += `\n영상 수: ${d.videoCount}개`;
-          info += `\n평균 조회수: ${d.avgViews.toLocaleString()}회`;
-          info += `\n최근 평균 조회수: ${d.avgRecentViews.toLocaleString()}회`;
-          info += `\n참여율: ${d.engagementRate}%`;
-          info += `\n채널 설명: ${d.description}`;
-          if (d.recentVideos?.length) {
-            info += "\n\n=== 최근 업로드 영상 목록 (이것이 이 채널의 실제 콘텐츠입니다) ===";
-            d.recentVideos.forEach((v, vi) => {
-              info += `\n${vi+1}. 제목: "${v.title}"`;
-              info += `   | 조회수: ${v.viewCount.toLocaleString()} | 좋아요: ${v.likeCount.toLocaleString()} | 댓글: ${v.commentCount.toLocaleString()} | 날짜: ${fmtDate(v.publishedAt)}`;
-            });
-            info += "\n=== 영상 목록 끝 ===";
-          }
-        }
-        if (c.profile) {
-          const p = c.profile;
-          const m = p.meta || {};
-          info += "\n\n=== 페이지에서 직접 크롤링한 실제 데이터 ===";
-          if (m["og:title"]) info += `\n프로필 제목: ${m["og:title"]}`;
-          if (m["og:description"]) info += `\n프로필 설명: ${m["og:description"]}`;
-          if (m._title) info += `\n페이지 타이틀: ${m._title}`;
-          if (m["description"]) info += `\n메타 설명: ${m["description"]}`;
-          if (m._visitors) info += `\n방문자 수: ${m._visitors}`;
-          if (m._neighbors) info += `\n이웃 수: ${m._neighbors}`;
-          if (m._postCount) info += `\n게시글 수: ${m._postCount}`;
-          if (m["al:ios:url"]) info += `\n앱 링크: ${m["al:ios:url"]}`;
-          // JSON-LD 구조화 데이터 (팔로워 수 등)
-          if (p.jsonLd?.length) {
-            info += "\n\n구조화 데이터 (JSON-LD):";
-            p.jsonLd.forEach(ld => {
-              if (ld.name) info += `\n이름: ${ld.name}`;
-              if (ld.description) info += `\n설명: ${String(ld.description).slice(0, 300)}`;
-              if (ld.author?.name) info += `\n작성자: ${ld.author.name}`;
-              if (ld.interactionStatistic) {
-                const stats = Array.isArray(ld.interactionStatistic) ? ld.interactionStatistic : [ld.interactionStatistic];
-                stats.forEach(s => {
-                  if (s.userInteractionCount) info += `\n${s.interactionType?.replace("http://schema.org/", "") || "상호작용"}: ${s.userInteractionCount}`;
-                });
-              }
-              if (ld.mainEntityOfPage) info += `\n메인 엔티티: ${typeof ld.mainEntityOfPage === "string" ? ld.mainEntityOfPage : ld.mainEntityOfPage?.["@id"] || ""}`;
-            });
-          }
-          // 본문 텍스트
-          if (p.texts?.length) {
-            info += `\n\n페이지 본문 (${p.texts.length}개 문장):`;
-            p.texts.slice(0, 20).forEach((t, ti) => { info += `\n${ti+1}. ${t}`; });
-          }
-          info += "\n=== 크롤링 데이터 끝 ===";
-        }
-        return info;
-      }).join("\n\n===========================\n\n");
+      const prompt = `SNS 전문 분석가로서 실제 수집 데이터를 분석하세요.
+[핵심] 채널명/URL이 아닌 영상 제목, 크롤링 텍스트 등 실제 콘텐츠 기반으로 판단하세요.
 
-      const prompt = `SNS 마케팅 전문가로서 다음 계정들을 분석하세요.
+${info}
 
-[중요 지시사항]
-- 채널명이나 URL로 카테고리를 추측하지 마세요
-- 반드시 "최근 업로드 영상 목록"의 실제 영상 제목들을 읽고 그 내용을 기반으로 카테고리와 주제를 판단하세요
-- 크롤링된 텍스트가 있으면 그 실제 내용을 기반으로 분석하세요
-- "추정", "추측", "예상되는" 같은 표현 대신 "영상 제목 분석 결과", "콘텐츠 분석 결과" 등으로 표현하세요
+한국어. 이모지/특수기호 금지. 마크다운 테이블 적극 사용.
 
-${details}
-
-한국어로 작성. 이모지/특수기호 금지.
-표(테이블)를 적극 활용하세요. 마크다운 테이블 형식: | 항목 | 값 |
-
-## 채널 종합 진단
-
-각 채널별 아래 형식으로 표로 정리:
-
-| 항목 | 분석 결과 |
+## 종합 진단
+각 계정을 아래 표로:
+| 항목 | 결과 |
 |---|---|
-| 콘텐츠 카테고리 | (구체적 카테고리) |
-| 주요 주제 | (상위 3개 주제) |
-| 콘텐츠 등급 | (S/A/B/C/D 중 하나와 근거) |
-| 업로드 빈도 | (주 N회 등) |
-| 타겟 오디언스 | (구체적 타겟) |
+| 카테고리 | (실제 콘텐츠 기반) |
+| 등급 | (S/A/B/C/D) |
 | 강점 | (3가지) |
 | 약점 | (3가지) |
 
-## 경쟁 채널 비교 분석
-
-동일 카테고리의 성공 채널을 표로 비교:
-
-| 채널명 | 플랫폼 | 구독자/팔로워 | URL | 벤치마킹 포인트 |
+## 경쟁 채널
+| 채널명 | 플랫폼 | 규모 | URL | 참고 포인트 |
 |---|---|---|---|---|
-| (실제 채널명) | (유튜브 등) | (실제 규모) | (실제 URL) | (배울 점) |
+5개 이상. 실제 존재하는 채널.
 
-최소 5개 채널. 실제 존재하는 채널만.
-
-## 성장 액션 플랜
-
-우선순위 테이블:
-
-| 순위 | 액션 | 예상 효과 | 난이도 | 소요시간 |
+## 액션 플랜
+| 순위 | 액션 | 효과 | 난이도 | 기간 |
 |---|---|---|---|---|
-| 1 | (구체적 액션) | (예상 효과) | 하 | 1일 |
-
-10개 액션을 우선순위순으로.
+10개. 우선순위순.
 
 ## 콘텐츠 아이디어
-
-| 번호 | 콘텐츠 제목 | 형식 | 예상 반응 |
+| 번호 | 제목 | 형식 | 예상반응 |
 |---|---|---|---|
-| 1 | (구체적 제목) | (숏폼/롱폼/카드뉴스 등) | (높음/보통) |
+10개.
 
-10개 아이디어.
-
-## 키워드/해시태그 전략
-
-추천 키워드를 카테고리별로 정리:
-- 핵심 키워드 5개
-- 롱테일 키워드 5개
-- 해시태그 10개
+## 키워드 전략
+핵심 5개, 롱테일 5개, 해시태그 10개
 
 ## 업로드 전략
-
 | 항목 | 추천 |
 |---|---|
-| 최적 업로드 요일 | (요일) |
-| 최적 업로드 시간 | (시간대) |
-| 주간 업로드 빈도 | (횟수) |
-| 썸네일 전략 | (구체적 가이드) |
-| 제목 전략 | (구체적 가이드) |`;
+최적 요일/시간/빈도/썸네일/제목 전략`;
 
-      const r = await fetch("/api/gemini-generate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, maxTokens: 4000 }),
-      });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "AI 분석 실패");
+      const r = await fetch("/api/gemini-generate", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({prompt, maxTokens:4000}) });
+      if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || "AI 실패");
       const rd = await r.json();
-      const aiText = rd?.text || "";
-      if (!aiText) throw new Error("AI 응답 없음");
-
-      setReport({ text: aiText, date: new Date().toLocaleString("ko-KR") });
+      setReport(rd?.text || "");
       setProgress("");
-      setTimeout(() => reportRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
-    } catch (e) {
-      setError(e.message);
-      setProgress("");
-    } finally { setLoading(false); }
+      setActiveTab(collected.length > 0 ? "ch0" : "overview");
+    } catch (e) { setError(e.message); setProgress(""); } finally { setLoading(false); }
   };
 
-  // ════════════════════════════════════════
-  //  시각적 컴포넌트
-  // ════════════════════════════════════════
-
-  // 지표 카드
-  const Stat = ({ label, value, sub, color, big }) => (
-    <div style={{ flex: 1, minWidth: 110, padding: big ? "20px 16px" : "14px 12px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.03)" : "#f8f9fb", border: `1px solid ${bdr}`, textAlign: "center" }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: muted, marginBottom: 6, letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: big ? 28 : 20, fontWeight: 900, color: color || text, letterSpacing: -0.5 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{sub}</div>}
+  // ════════════════════════════════
+  //  컴포넌트
+  // ════════════════════════════════
+  const Card = ({children, style:s}) => <div style={{background:cardBg, borderRadius:14, border:`1px solid ${bdr}`, padding:"20px 18px", ...s}}>{children}</div>;
+  const Stat = ({label,value,sub,color}) => (
+    <div style={{textAlign:"center",flex:1,minWidth:80}}>
+      <div style={{fontSize:10,fontWeight:600,color:muted,marginBottom:4}}>{label}</div>
+      <div style={{fontSize:22,fontWeight:900,color:color||text,letterSpacing:-0.5}}>{value}</div>
+      {sub&&<div style={{fontSize:9,color:muted,marginTop:2}}>{sub}</div>}
     </div>
   );
+  const Grade = ({g}) => { const c={S:"#7c6aff",A:"#22c55e",B:"#3b82f6",C:"#f59e0b",D:"#ef4444"}[g]||muted; return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:10,background:`${c}15`,border:`2px solid ${c}40`,fontSize:18,fontWeight:900,color:c}}>{g}</span>; };
+  const Bar = ({value,max,color,label}) => { const pct=max>0?Math.min(100,value/max*100):0; return (
+    <div style={{marginBottom:6}}>
+      {label&&<div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:3}}><span style={{color:isDark?"rgba(255,255,255,0.6)":"#666",fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginRight:8}}>{label}</span><span style={{color:color||acc,fontWeight:700,flexShrink:0}}>{fmtNum(value)}</span></div>}
+      <div style={{height:6,borderRadius:3,background:isDark?"rgba(255,255,255,0.06)":"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,borderRadius:3,background:color||acc,transition:"width 0.6s"}}/></div>
+    </div>
+  );};
 
-  // 프로그레스 바
-  const ProgressBar = ({ value, max, color, label }) => {
-    const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-    return (
-      <div style={{ marginBottom: 8 }}>
-        {label && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-          <span style={{ color: isDark ? "rgba(255,255,255,0.6)" : "#666", fontWeight: 600 }}>{label}</span>
-          <span style={{ color: color || acc, fontWeight: 700 }}>{fmtNum(value)}</span>
-        </div>}
-        <div style={{ height: 8, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#eee", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, borderRadius: 4, background: `linear-gradient(90deg, ${color || acc}, ${color || acc}aa)`, transition: "width 0.8s ease" }} />
+  // ── 유튜브 탭 ──
+  const YtTab = ({d}) => { const mx = Math.max(...d.recent.map(v=>v.viewCount),1); return (
+    <div>
+      {/* 상단: 프로필 + 핵심 지표 */}
+      <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:20}}>
+        {d.thumb&&<img src={d.thumb} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",border:"2px solid #FF000020"}}/>}
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,fontWeight:900,color:text}}>{d.name}</div>
+          <div style={{fontSize:11,color:muted}}>개설일 {fmtDate(d.created)}</div>
         </div>
       </div>
-    );
-  };
-
-  // ── 유튜브 대시보드 ──
-  const renderYoutubeDashboard = (d) => {
-    const maxView = Math.max(...d.recentVideos.map(v => v.viewCount), 1);
-    return (
-      <>
-        {/* 채널 헤더 */}
-        <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24 }}>
-          {d.thumbnail && <img src={d.thumbnail} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover", border: "3px solid #FF000020" }} />}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 20, fontWeight: 900, color: text }}>{d.name}</div>
-            <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>채널 개설일: {fmtDate(d.createdAt)}</div>
-          </div>
-          <div style={{ padding: "6px 16px", borderRadius: 10, background: "#22c55e15", border: "1px solid #22c55e30", fontSize: 12, fontWeight: 700, color: "#22c55e" }}>API 데이터 수집 완료</div>
-        </div>
-
-        {/* 핵심 지표 카드 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 24 }}>
-          <Stat label="구독자" value={fmtNum(d.subscribers)} color="#FF0000" big />
-          <Stat label="총 조회수" value={fmtNum(d.totalViews)} color="#FF4444" big />
-          <Stat label="영상 수" value={fmtNum(d.videoCount)} color="#FF6666" big />
-          <Stat label="평균 조회수" value={fmtNum(d.avgViews)} sub="영상당 전체" />
-          <Stat label="최근 평균" value={fmtNum(d.avgRecentViews)} sub="최근 6개 영상" />
-          <Stat label="참여율" value={`${d.engagementRate}%`} sub="좋아요+댓글/조회" />
-        </div>
-
-        {/* 최근 영상 조회수 차트 */}
-        {d.recentVideos.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>최근 영상 조회수</div>
-            {d.recentVideos.map((v, vi) => (
-              <ProgressBar key={vi} value={v.viewCount} max={maxView} color="#FF0000" label={v.title.length > 40 ? v.title.slice(0, 40) + "..." : v.title} />
-            ))}
-          </div>
-        )}
-
-        {/* 최근 영상 썸네일 그리드 */}
-        {d.recentVideos.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>최근 업로드 영상</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-              {d.recentVideos.map((v, vi) => (
-                <a key={vi} href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
-                  <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${bdr}`, background: cardBg }}>
-                    <div style={{ position: "relative" }}>
-                      <img src={v.thumbnail} alt="" style={{ width: "100%", height: 120, objectFit: "cover" }} />
-                      <div style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>{parseDuration(v.duration)}</div>
-                    </div>
-                    <div style={{ padding: "10px 12px" }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: text, lineHeight: 1.4, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
-                      <div style={{ display: "flex", gap: 12, fontSize: 10, color: muted }}>
-                        <span>조회 {fmtNum(v.viewCount)}</span>
-                        <span>좋아요 {fmtNum(v.likeCount)}</span>
-                        <span>댓글 {fmtNum(v.commentCount)}</span>
-                      </div>
-                      <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{fmtDate(v.publishedAt)}</div>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  // ── 크롤링 프로필 대시보드 ──
-  const renderCrawlDashboard = (c) => {
-    const p = c.profile;
-    const m = p?.meta || {};
-    const ogTitle = m["og:title"] || m._title || "";
-    const ogDesc = m["og:description"] || m["description"] || "";
-    const ogImage = m["og:image"] || "";
-    const visitors = m._visitors;
-    const neighbors = m._neighbors;
-    const postCount = m._postCount;
-    const hasData = ogTitle || ogDesc || visitors || p?.jsonLd?.length || p?.texts?.length;
-
-    // JSON-LD에서 팔로워 수 추출
-    let followers = null;
-    if (p?.jsonLd) {
-      for (const ld of p.jsonLd) {
-        const stats = Array.isArray(ld.interactionStatistic) ? ld.interactionStatistic : (ld.interactionStatistic ? [ld.interactionStatistic] : []);
-        for (const s of stats) {
-          if (s.interactionType?.includes("Follow") && s.userInteractionCount) followers = s.userInteractionCount;
-        }
-      }
-    }
-
-    return (
-      <div>
-        {/* 헤더 */}
-        <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 20 }}>
-          {ogImage ? (
-            <img src={ogImage} alt="" style={{ width: 56, height: 56, borderRadius: 14, objectFit: "cover", border: `2px solid ${c.platform?.color || acc}25` }}
-              onError={e => { e.target.style.display = "none"; }} />
-          ) : (
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: `${c.platform?.color || acc}12`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${c.platform?.color || acc}25` }}>
-              <span style={{ fontSize: 20, fontWeight: 900, color: c.platform?.color || acc }}>{c.platform?.label?.[0] || "?"}</span>
-            </div>
-          )}
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ padding: "3px 10px", borderRadius: 8, background: `${c.platform?.color || acc}12`, fontSize: 10, fontWeight: 700, color: c.platform?.color || acc }}>{c.platform?.label}</span>
-              {hasData && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#22c55e12", fontSize: 10, fontWeight: 700, color: "#22c55e" }}>크롤링 완료</span>}
-            </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: text, marginTop: 4 }}>{ogTitle || c.url.replace(/https?:\/\/(www\.)?/, "").split("/").slice(0, 2).join("/")}</div>
-            {ogDesc && <div style={{ fontSize: 12, color: muted, marginTop: 4, lineHeight: 1.5 }}>{ogDesc.slice(0, 150)}{ogDesc.length > 150 ? "..." : ""}</div>}
-          </div>
-        </div>
-
-        {/* 수집된 지표 카드 */}
-        {(visitors || neighbors || postCount || followers) && (
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-            {visitors && <Stat label="방문자" value={visitors} color={c.platform?.color} />}
-            {followers && <Stat label="팔로워" value={fmtNum(followers)} color={c.platform?.color} />}
-            {neighbors && <Stat label="이웃" value={neighbors} color={c.platform?.color} />}
-            {postCount && <Stat label="게시글" value={postCount} color={c.platform?.color} />}
-          </div>
-        )}
-
-        {/* 크롤링된 콘텐츠 미리보기 */}
-        {p?.texts?.length > 0 && (
-          <div style={{ padding: "14px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}`, maxHeight: 160, overflow: "hidden" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>페이지 콘텐츠 ({p.texts.length}개 문장 수집)</div>
-            {p.texts.slice(0, 5).map((t, ti) => (
-              <div key={ti} style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.6, marginBottom: 4 }}>
-                {t.slice(0, 120)}{t.length > 120 ? "..." : ""}
+      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",background:isDark?"rgba(255,255,255,0.02)":"#f8f9fb",borderRadius:12,padding:"16px 12px",border:`1px solid ${bdr}`}}>
+        <Stat label="구독자" value={fmtNum(d.subs)} color="#FF0000"/>
+        <Stat label="총 조회수" value={fmtNum(d.views)} color="#FF4444"/>
+        <Stat label="영상 수" value={fmtNum(d.vids)}/>
+        <Stat label="최근 평균" value={fmtNum(d.avgRecent)} sub="최근10개"/>
+        <Stat label="참여율" value={`${d.engage}%`} sub="좋아요+댓글"/>
+      </div>
+      {/* 2열: 조회수 차트 + 최근 영상 */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <Card><div style={{fontSize:13,fontWeight:800,color:text,marginBottom:12}}>영상별 조회수</div>
+          {d.recent.slice(0,6).map((v,i)=><Bar key={i} value={v.viewCount} max={mx} color="#FF0000" label={v.title.length>25?v.title.slice(0,25)+"...":v.title}/>)}
+        </Card>
+        <Card><div style={{fontSize:13,fontWeight:800,color:text,marginBottom:12}}>최근 업로드</div>
+          {d.recent.slice(0,4).map((v,i)=>(
+            <a key={i} href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",gap:10,marginBottom:10,textDecoration:"none",color:"inherit"}}>
+              <img src={v.thumbnail} alt="" style={{width:80,height:45,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
+              <div style={{flex:1,overflow:"hidden"}}>
+                <div style={{fontSize:11,fontWeight:700,color:text,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{v.title}</div>
+                <div style={{fontSize:9,color:muted,marginTop:3}}>조회 {fmtNum(v.viewCount)} | {fmtDate(v.publishedAt)}</div>
               </div>
-            ))}
-          </div>
-        )}
+            </a>
+          ))}
+        </Card>
       </div>
-    );
-  };
+    </div>
+  );};
 
-  // ── 등급 배지 ──
-  const GradeBadge = ({ grade }) => {
-    const colors = { S: "#7c6aff", A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#ef4444" };
-    const g = (grade || "").toUpperCase().charAt(0);
-    const c = colors[g] || muted;
-    return <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 10, background: `${c}15`, border: `2px solid ${c}40`, fontSize: 16, fontWeight: 900, color: c }}>{g || "?"}</span>;
-  };
-
-  // ── 텍스트 안 URL → 링크화 ──
-  const linkify = (str) => {
-    if (!str) return str;
-    const parts = str.split(/(https?:\/\/[^\s|)]+)/g);
-    return parts.map((p, pi) => {
-      if (/^https?:\/\//.test(p)) {
-        const isYt = /youtube\.com|youtu\.be/.test(p);
-        return <a key={pi} href={p} target="_blank" rel="noopener noreferrer" style={{ color: isYt ? "#FF0000" : acc, fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 2 }}>{p.replace(/https?:\/\/(www\.)?/, "").slice(0, 40)}{p.length > 50 ? "..." : ""}</a>;
-      }
-      return p;
-    });
-  };
-
-  // ── 볼드 + 링크 파싱 ──
-  const parseLine = (str) => {
-    if (!str) return null;
-    // 등급 감지 (S등급, A등급 등)
-    const gradeMatch = str.match(/([SABCD])등급/);
-    const parts = str.split(/(\*\*[^*]+\*\*)/g);
-    return parts.map((p, pi) => {
-      if (p.startsWith("**") && p.endsWith("**")) {
-        const inner = p.slice(2, -2);
-        return <strong key={pi} style={{ fontWeight: 800, color: text }}>{linkify(inner)}</strong>;
-      }
-      return <span key={pi}>{linkify(p)}</span>;
-    });
-  };
-
-  // ── 마크다운 테이블 → HTML 테이블 ──
-  const renderTable = (tableLines) => {
-    const rows = tableLines.map(l => l.split("|").map(c => c.trim()).filter(Boolean));
-    if (rows.length < 2) return null;
-    const header = rows[0];
-    const dataRows = rows.filter((_, i) => i > 0 && !rows[i].every(c => /^[-:]+$/.test(c)));
-    return (
-      <div style={{ overflowX: "auto", marginBottom: 16 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr>{header.map((h, hi) => (
-              <th key={hi} style={{ padding: "10px 14px", background: isDark ? "rgba(124,106,255,0.08)" : `${acc}08`, borderBottom: `2px solid ${acc}30`, textAlign: "left", fontWeight: 800, color: text, fontSize: 12, whiteSpace: "nowrap" }}>{h}</th>
-            ))}</tr>
-          </thead>
-          <tbody>
-            {dataRows.map((row, ri) => (
-              <tr key={ri} style={{ background: ri % 2 === 0 ? "transparent" : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)") }}>
-                {row.map((cell, ci) => {
-                  // 등급 배지 감지
-                  const gradeMatch = cell.match(/^([SABCD])등급?$/i) || cell.match(/^([SABCD])$/i);
-                  // 난이도 배지
-                  const diffMatch = cell.match(/^(상|중|하)$/);
-                  return (
-                    <td key={ci} style={{ padding: "10px 14px", borderBottom: `1px solid ${bdr}`, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.6, verticalAlign: "top" }}>
-                      {gradeMatch ? <GradeBadge grade={gradeMatch[1]} /> :
-                       diffMatch ? <span style={{ padding: "3px 10px", borderRadius: 6, background: diffMatch[1] === "하" ? "#22c55e15" : diffMatch[1] === "중" ? "#f59e0b15" : "#ef444415", color: diffMatch[1] === "하" ? "#22c55e" : diffMatch[1] === "중" ? "#f59e0b" : "#ef4444", fontSize: 11, fontWeight: 700 }}>{cell}</span> :
-                       parseLine(cell)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  // ── 프로필 탭 (비유튜브) ──
+  const ProfileTab = ({c}) => { const m = c.profile?.meta||{}; const ogT=m["og:title"]||m._title||""; const ogD=m["og:description"]||m.description||""; const ogI=m["og:image"]||""; return (
+    <div>
+      <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:20}}>
+        {ogI?<img src={ogI} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",border:`2px solid ${c.plat?.color||acc}20`}} onError={e=>{e.target.style.display="none"}}/>:
+          <div style={{width:56,height:56,borderRadius:14,background:`${c.plat?.color||acc}12`,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:22,fontWeight:900,color:c.plat?.color||acc}}>{c.plat?.label?.[0]}</span></div>}
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,fontWeight:900,color:text}}>{ogT||c.url.replace(/https?:\/\/(www\.)?/,"").split("/").slice(0,2).join("/")}</div>
+          {ogD&&<div style={{fontSize:12,color:muted,marginTop:4,lineHeight:1.5}}>{ogD.slice(0,120)}{ogD.length>120?"...":""}</div>}
+        </div>
       </div>
-    );
-  };
+      {(m._visitors||m._neighbors||m._postCount)&&(
+        <div style={{display:"flex",gap:8,marginBottom:16,background:isDark?"rgba(255,255,255,0.02)":"#f8f9fb",borderRadius:12,padding:"16px 12px",border:`1px solid ${bdr}`}}>
+          {m._visitors&&<Stat label="방문자" value={m._visitors} color={c.plat?.color}/>}
+          {m._neighbors&&<Stat label="이웃" value={m._neighbors} color={c.plat?.color}/>}
+          {m._postCount&&<Stat label="게시글" value={m._postCount} color={c.plat?.color}/>}
+        </div>
+      )}
+      {c.profile?.texts?.length>0&&(
+        <Card><div style={{fontSize:12,fontWeight:700,color:text,marginBottom:10}}>수집된 콘텐츠 ({c.profile.texts.length}개)</div>
+          {c.profile.texts.slice(0,8).map((t,i)=><div key={i} style={{fontSize:11,color:isDark?"rgba(255,255,255,0.6)":"#666",lineHeight:1.6,marginBottom:4,paddingLeft:8,borderLeft:`2px solid ${c.plat?.color||acc}30`}}>{t.slice(0,100)}</div>)}
+        </Card>
+      )}
+      {!c.profile?.texts?.length&&!m._visitors&&!ogD&&(
+        <Card style={{textAlign:"center",padding:"40px 20px"}}>
+          <div style={{fontSize:14,fontWeight:700,color:muted,marginBottom:8}}>데이터 수집 제한</div>
+          <div style={{fontSize:12,color:muted,lineHeight:1.6}}>이 플랫폼은 서버 크롤링이 제한되어 수집 가능한 데이터가 적습니다.<br/>AI가 URL과 플랫폼 특성을 기반으로 분석합니다.</div>
+        </Card>
+      )}
+    </div>
+  );};
 
-  // ── 마크다운 → 시각적 섹션 렌더링 ──
+  // ── 리포트 렌더 ──
   const renderReport = (md) => {
     if (!md) return null;
     const sections = md.split(/^## /m).filter(Boolean);
-    return sections.map((sec, si) => {
-      const lines = sec.split("\n");
-      const title = lines[0]?.replace(/\*\*/g, "").trim();
-      const bodyLines = lines.slice(1);
-
-      // 테이블과 일반 콘텐츠 분리 렌더링
-      const elements = [];
-      let tableBuffer = [];
-      let key = 0;
-
-      const flushTable = () => {
-        if (tableBuffer.length >= 2) {
-          elements.push(<div key={`t${key++}`}>{renderTable(tableBuffer)}</div>);
-        }
-        tableBuffer = [];
-      };
-
-      bodyLines.forEach((line) => {
-        const t = line.trim();
-        // 테이블 행 감지
-        if (t.startsWith("|") && t.endsWith("|")) {
-          tableBuffer.push(t);
-          return;
-        }
-        // 테이블 끝
-        if (tableBuffer.length > 0) flushTable();
-
-        if (!t) { elements.push(<div key={`s${key++}`} style={{ height: 6 }} />); return; }
-        if (t.startsWith("### ")) { elements.push(<div key={`h${key++}`} style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 8 }}>{t.replace(/^###\s*/, "").replace(/\*\*/g, "")}</div>); return; }
-
-        if (t.startsWith("- ") || t.startsWith("* ")) {
-          const content = t.replace(/^[-*]\s*/, "");
-          elements.push(
-            <div key={`l${key++}`} style={{ display: "flex", gap: 8, marginBottom: 5, paddingLeft: 4 }}>
-              <span style={{ color: acc, fontSize: 7, marginTop: 7, flexShrink: 0 }}>●</span>
-              <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>{parseLine(content)}</span>
-            </div>
-          );
-          return;
-        }
-
-        if (/^\d+[\.\)]\s/.test(t)) {
-          const num = t.match(/^(\d+)/)[1];
-          const content = t.replace(/^\d+[\.\)]\s*/, "");
-          elements.push(
-            <div key={`n${key++}`} style={{ display: "flex", gap: 10, marginBottom: 8, padding: "10px 14px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}` }}>
-              <span style={{ width: 26, height: 26, borderRadius: 8, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: acc, flexShrink: 0 }}>{num}</span>
-              <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7, flex: 1 }}>{parseLine(content)}</span>
-            </div>
-          );
-          return;
-        }
-
-        elements.push(
-          <div key={`p${key++}`} style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.8, marginBottom: 3 }}>{parseLine(t)}</div>
-        );
-      });
-      if (tableBuffer.length > 0) flushTable();
-
-      const sectionColors = ["#7c6aff", "#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
-      const sColor = sectionColors[si % sectionColors.length];
-
-      return (
-        <div key={si} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px 20px", marginBottom: 16, boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.03)" }}>
-          <div style={{ fontSize: 17, fontWeight: 900, color: text, marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${sColor}30`, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 4, height: 22, borderRadius: 2, background: sColor }} />
-            {title}
-          </div>
-          {elements}
-        </div>
-      );
+    const sColors = ["#7c6aff","#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
+    return sections.map((sec,si) => {
+      const lines = sec.split("\n"); const title = lines[0]?.replace(/\*\*/g,"").trim();
+      const body = lines.slice(1); const elements = []; let tbl = []; let k = 0;
+      const flush = () => { if (tbl.length>=2) { const rows=tbl.map(l=>l.split("|").map(c=>c.trim()).filter(Boolean)); const hdr=rows[0]; const data=rows.filter((_,i)=>i>0&&!rows[i].every(c=>/^[-:]+$/.test(c)));
+        elements.push(<div key={`t${k++}`} style={{overflowX:"auto",marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{hdr.map((h,i)=><th key={i} style={{padding:"8px 12px",background:isDark?`${sColors[si%7]}10`:`${sColors[si%7]}08`,borderBottom:`2px solid ${sColors[si%7]}25`,textAlign:"left",fontWeight:800,color:text,fontSize:11,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead><tbody>{data.map((row,ri)=><tr key={ri} style={{background:ri%2?isDark?"rgba(255,255,255,0.01)":"rgba(0,0,0,0.01)":"transparent"}}>{row.map((cell,ci)=>{const gm=cell.match(/^([SABCD])등급?$/i); const dm=cell.match(/^(상|중|하)$/); return <td key={ci} style={{padding:"8px 12px",borderBottom:`1px solid ${bdr}`,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.5,verticalAlign:"top"}}>{gm?<Grade g={gm[1]}/>:dm?<span style={{padding:"2px 8px",borderRadius:4,background:dm[1]==="하"?"#22c55e15":dm[1]==="중"?"#f59e0b15":"#ef444415",color:dm[1]==="하"?"#22c55e":dm[1]==="중"?"#f59e0b":"#ef4444",fontSize:10,fontWeight:700}}>{cell}</span>:linkify(cell)}</td>;})}</tr>)}</tbody></table></div>);
+      } tbl=[]; };
+      const linkify = (s) => { if (!s) return s; return s.split(/(https?:\/\/[^\s|)]+)/g).map((p,i)=>/^https?:\/\//.test(p)?<a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{color:acc,fontWeight:700,textDecoration:"underline"}}>{p.replace(/https?:\/\/(www\.)?/,"").slice(0,35)}</a>:p.split(/(\*\*[^*]+\*\*)/g).map((q,j)=>q.startsWith("**")&&q.endsWith("**")?<strong key={j} style={{fontWeight:800,color:text}}>{q.slice(2,-2)}</strong>:q)); };
+      body.forEach(line => { const t=line.trim(); if(t.startsWith("|")&&t.endsWith("|")){tbl.push(t);return;} if(tbl.length)flush();
+        if(!t){elements.push(<div key={`s${k++}`} style={{height:4}}/>);return;}
+        if(t.startsWith("### ")){elements.push(<div key={`h${k++}`} style={{fontSize:13,fontWeight:800,color:text,marginTop:14,marginBottom:6}}>{t.replace(/^###\s*/,"").replace(/\*\*/g,"")}</div>);return;}
+        if(t.startsWith("- ")||t.startsWith("* ")){elements.push(<div key={`l${k++}`} style={{display:"flex",gap:6,marginBottom:4,paddingLeft:4}}><span style={{color:sColors[si%7],fontSize:6,marginTop:6}}>●</span><span style={{fontSize:12,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^[-*]\s*/,""))}</span></div>);return;}
+        if(/^\d+[\.\)]/.test(t)){const n=t.match(/^(\d+)/)[1];elements.push(<div key={`n${k++}`} style={{display:"flex",gap:8,marginBottom:6,padding:"8px 10px",borderRadius:8,background:isDark?"rgba(255,255,255,0.02)":"#f9fafb",border:`1px solid ${bdr}`}}><span style={{width:22,height:22,borderRadius:6,background:`${sColors[si%7]}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:sColors[si%7],flexShrink:0}}>{n}</span><span style={{fontSize:12,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^\d+[\.\)]\s*/,""))}</span></div>);return;}
+        elements.push(<div key={`p${k++}`} style={{fontSize:12,color:isDark?"rgba(255,255,255,0.7)":"#555",lineHeight:1.7,marginBottom:2}}>{linkify(t)}</div>);
+      }); if(tbl.length)flush();
+      return <Card key={si} style={{marginBottom:14}}><div style={{fontSize:15,fontWeight:900,color:text,marginBottom:14,paddingBottom:10,borderBottom:`2px solid ${sColors[si%7]}25`,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:18,borderRadius:2,background:sColors[si%7]}}/>{title}</div>{elements}</Card>;
     });
   };
 
-  // ════════════════════════════════════════
+  // ════════════════════════════════
   //  메인 렌더
-  // ════════════════════════════════════════
+  // ════════════════════════════════
+  const hasData = channels.length > 0;
+
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", padding: "36px 24px 60px" }}>
+    <div style={{maxWidth:900,margin:"0 auto",padding:"32px 20px 60px"}}>
       {/* 헤더 */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: `${acc}15`, fontSize: 12, fontWeight: 700, color: acc, marginBottom: 12 }}>소셜분석기</div>
-        <div style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 900, color: text, lineHeight: 1.3, marginBottom: 6 }}>SNS 계정을 분석하고<br/>성장 전략을 제안해드려요</div>
-        <div style={{ fontSize: 13, color: muted, lineHeight: 1.6 }}>SNS 프로필 링크를 입력하면 실제 데이터를 수집하여 분석합니다.</div>
+      <div style={{marginBottom:24}}>
+        <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:11,fontWeight:700,color:acc}}>소셜분석기</span>
+        <div style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
       </div>
 
-      {/* 입력 영역 */}
-      <div style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px 20px", marginBottom: 24 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 16 }}>SNS 링크 입력</div>
-        {links.map((link, idx) => {
-          const det = link.trim() ? detectPlatform(link) : null;
-          return (
-            <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: det ? `${det.color}12` : (isDark ? "rgba(255,255,255,0.04)" : "#f5f5f5"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1.5px solid ${det ? det.color + "30" : bdr}` }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: det?.color || muted }}>{det ? det.label.slice(0, 2) : idx + 1}</span>
-              </div>
-              <input value={link} onChange={e => updateLink(idx, e.target.value)} placeholder="SNS 프로필 URL" style={{ flex: 1, padding: "9px 14px", borderRadius: 10, border: `1.5px solid ${det ? det.color + "35" : bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none" }} />
-              {links.length > 1 && <button onClick={() => removeLink(idx)} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>}
+      {/* 입력 */}
+      {!hasData && (
+        <Card style={{marginBottom:20}}>
+          <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:14}}>SNS 링크 입력</div>
+          {links.map((l,i) => { const d=l.trim()?detectPlatform(l):null; return (
+            <div key={i} style={{display:"flex",gap:6,marginBottom:8}}>
+              <div style={{width:32,height:32,borderRadius:8,background:d?`${d.color}12`:"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1.5px solid ${d?d.color+"30":bdr}`}}><span style={{fontSize:9,fontWeight:800,color:d?.color||muted}}>{d?d.label.slice(0,2):i+1}</span></div>
+              <input value={l} onChange={e=>updateLink(i,e.target.value)} placeholder="SNS 프로필 URL" style={{flex:1,padding:"8px 12px",borderRadius:8,border:`1.5px solid ${d?d.color+"30":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none"}}/>
+              {links.length>1&&<button onClick={()=>removeLink(i)} style={{width:28,height:28,borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer"}}>x</button>}
             </div>
-          );
-        })}
-        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-          {links.length < 10 && <button onClick={addLink} style={{ padding: "9px 18px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ 추가</button>}
-          <button onClick={analyze} disabled={loading || !validLinks.length}
-            style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none", background: validLinks.length ? `linear-gradient(135deg, ${acc}, #8b5cf6)` : "#e5e7eb", color: validLinks.length ? "#fff" : muted, fontSize: 14, fontWeight: 800, cursor: validLinks.length ? "pointer" : "default" }}>
-            {loading ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />{progress}</span> : `분석 시작 (${validLinks.length}개)`}
-          </button>
-        </div>
-        {error && <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fca5a520", fontSize: 13, color: "#dc2626", fontWeight: 600 }}>{error}</div>}
-      </div>
-
-      {/* 수집 데이터 대시보드 */}
-      {channelData.map((c, i) => (
-        <div key={i} style={{ background: cardBg, borderRadius: 20, border: `1px solid ${bdr}`, padding: "28px 24px", marginBottom: 20, boxShadow: isDark ? "none" : "0 2px 16px rgba(0,0,0,0.03)" }}>
-          {c.data ? renderYoutubeDashboard(c.data) : renderCrawlDashboard(c)}
-        </div>
-      ))}
-
-      {/* AI 분석 리포트 */}
-      {report && (
-        <div ref={reportRef}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, marginTop: 8 }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: text }}>AI 분석 리포트</div>
-              <div style={{ fontSize: 11, color: muted }}>{report.date}</div>
-            </div>
-            <button onClick={() => navigator.clipboard.writeText(report.text)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>텍스트 복사</button>
+          );})}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            {links.length<10&&<button onClick={addLink} style={{padding:"8px 16px",borderRadius:8,border:`1.5px dashed ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>+ 추가</button>}
+            <button onClick={analyze} disabled={loading||!validLinks.length} style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:validLinks.length?`linear-gradient(135deg,${acc},#8b5cf6)`:"#e5e7eb",color:validLinks.length?"#fff":muted,fontSize:13,fontWeight:800,cursor:validLinks.length?"pointer":"default"}}>
+              {loading?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><span style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}}/>{progress}</span>:`분석 시작 (${validLinks.length}개)`}
+            </button>
           </div>
-          {renderReport(report.text)}
-        </div>
+          {error&&<div style={{marginTop:12,padding:"10px 14px",borderRadius:8,background:"#fef2f2",border:"1px solid #fca5a520",fontSize:12,color:"#dc2626",fontWeight:600}}>{error}</div>}
+        </Card>
       )}
 
-      {/* 플랫폼 안내 (초기 상태) */}
-      {!channelData.length && !loading && (
-        <div style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "20px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 12 }}>지원 플랫폼</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            {SNS_PLATFORMS.filter(p => p.id !== "other").map(p => (
-              <span key={p.id} style={{ padding: "5px 12px", borderRadius: 16, background: `${p.color}10`, border: `1px solid ${p.color}20`, fontSize: 10, fontWeight: 600, color: p.color }}>{p.label}</span>
-            ))}
+      {/* 탭 네비게이션 */}
+      {hasData && (
+        <>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:16,padding:"4px",background:isDark?"rgba(255,255,255,0.03)":"#f3f4f6",borderRadius:12}}>
+            {channels.map((c,i) => {
+              const isActive = activeTab === `ch${i}`;
+              return <button key={i} onClick={()=>setActiveTab(`ch${i}`)} style={{padding:"8px 16px",borderRadius:10,border:"none",background:isActive?cardBg:"transparent",color:isActive?c.plat?.color||acc:muted,fontSize:12,fontWeight:isActive?800:500,cursor:"pointer",boxShadow:isActive?(isDark?"none":"0 1px 4px rgba(0,0,0,0.08)"):"none",display:"flex",alignItems:"center",gap:6,transition:"all 0.15s"}}>
+                <span style={{width:8,height:8,borderRadius:4,background:c.plat?.color||acc,opacity:isActive?1:0.3}}/>
+                {c.plat?.label}
+              </button>;
+            })}
+            {report && <button onClick={()=>setActiveTab("report")} style={{padding:"8px 16px",borderRadius:10,border:"none",background:activeTab==="report"?cardBg:"transparent",color:activeTab==="report"?acc:muted,fontSize:12,fontWeight:activeTab==="report"?800:500,cursor:"pointer",boxShadow:activeTab==="report"?(isDark?"none":"0 1px 4px rgba(0,0,0,0.08)"):"none"}}>AI 리포트</button>}
+            <button onClick={()=>{setChannels([]);setReport(null);setActiveTab("overview");}} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>다시 분석</button>
           </div>
-          <div style={{ fontSize: 11, color: muted, lineHeight: 1.6 }}>
-            유튜브: YouTube Data API로 구독자/조회수/영상수/최근 영상 실제 수집 | 기타: 페이지 크롤링 + AI 분석
-          </div>
-        </div>
+
+          {/* 탭 콘텐츠 */}
+          {channels.map((c,i) => activeTab===`ch${i}` && (
+            <div key={i}>{c.yt ? <YtTab d={c.yt}/> : <ProfileTab c={c}/>}</div>
+          ))}
+          {activeTab==="report" && report && <div>{renderReport(report)}</div>}
+        </>
       )}
     </div>
   );
