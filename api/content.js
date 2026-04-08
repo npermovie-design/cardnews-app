@@ -595,7 +595,110 @@ const ACTION_HANDLERS = {
   "trending-videos": handleTrendingVideos,
   "keyword-analysis": handleKeywordAnalysis,
   "trends": handleTrends,
+  "sns-profile": handleSnsProfile,
 };
+
+// ── Action: sns-profile (SNS 프로필 크롤링 — 메타태그/구조화 데이터 추출) ──
+async function handleSnsProfile(req, res) {
+  setCors(req, res, { methods: "POST,OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용" });
+
+  const { url } = req.body || {};
+  if (!url) return res.status(400).json({ error: "url 필요" });
+  if (isBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL" });
+
+  const result = { url, meta: {}, texts: [], jsonLd: null };
+
+  try {
+    // 1) 인스타그램: oEmbed API 먼저 시도
+    if (url.includes("instagram.com")) {
+      try {
+        const oembedUrl = `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&access_token=${process.env.META_APP_TOKEN || ""}`;
+        if (process.env.META_APP_TOKEN) {
+          const oe = await fetch(oembedUrl, { signal: AbortSignal.timeout(8000) });
+          if (oe.ok) {
+            const oed = await oe.json();
+            result.meta.title = oed.author_name || "";
+            result.meta.description = oed.title || "";
+            result.meta.image = oed.thumbnail_url || "";
+            result.meta.provider = "instagram_oembed";
+          }
+        }
+      } catch {}
+    }
+
+    // 2) HTML 크롤링
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+    };
+
+    const r = await fetch(url, { headers, redirect: "follow", signal: AbortSignal.timeout(12000) });
+    if (!r.ok) return res.status(200).json({ ...result, error: `HTTP ${r.status}` });
+
+    const html = await r.text();
+
+    // 3) 모든 meta 태그 추출
+    const metaRegex = /<meta[^>]*>/gi;
+    let match;
+    while ((match = metaRegex.exec(html)) !== null) {
+      const tag = match[0];
+      const name = (tag.match(/(?:property|name)=["']([^"']*)["']/i) || [])[1];
+      const content = (tag.match(/content=["']([^"']*)["']/i) || [])[1];
+      if (name && content) {
+        result.meta[name] = content.slice(0, 500);
+      }
+    }
+
+    // 4) title 태그
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    if (titleMatch) result.meta._title = titleMatch[1].slice(0, 300);
+
+    // 5) JSON-LD 구조화 데이터 추출 (가장 중요! 팔로워/포스트수 등 포함)
+    const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    const jsonLds = [];
+    while ((match = jsonLdRegex.exec(html)) !== null) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        jsonLds.push(parsed);
+      } catch {}
+    }
+    if (jsonLds.length > 0) result.jsonLd = jsonLds;
+
+    // 6) 네이버 블로그 특화: 방문자 수, 이웃 수 등
+    if (url.includes("blog.naver.com")) {
+      const visitorMatch = html.match(/방문자[^\d]*(\d[\d,]+)/);
+      if (visitorMatch) result.meta._visitors = visitorMatch[1];
+      const neighborMatch = html.match(/이웃[^\d]*(\d[\d,]+)/);
+      if (neighborMatch) result.meta._neighbors = neighborMatch[1];
+      const postCountMatch = html.match(/게시[글물][^\d]*(\d[\d,]+)/);
+      if (postCountMatch) result.meta._postCount = postCountMatch[1];
+    }
+
+    // 7) 본문 텍스트 추출 (태그 제거, 중요 텍스트만)
+    let bodyText = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+      .replace(/&#\d+;/g, "").replace(/&[a-z]+;/gi, " ")
+      .replace(/\s+/g, " ").trim();
+
+    // 의미 있는 문장만
+    const sentences = bodyText.match(/[가-힣a-zA-Z][^.!?]{10,}[.!?]?/g) || [];
+    result.texts = sentences.slice(0, 30).map(s => s.trim());
+
+    return res.status(200).json(result);
+  } catch (e) {
+    return res.status(200).json({ ...result, error: e.message?.slice(0, 200) });
+  }
+}
 
 export default async function handler(req, res) {
   const { action } = req.query;

@@ -135,13 +135,14 @@ export default function SocialAnalyzer({ isDark }) {
     } catch { return null; }
   };
 
-  // ── 페이지 크롤링 (비유튜브) ──
-  const fetchPageCrawl = async (url) => {
+  // ── SNS 프로필 크롤링 (메타태그 + JSON-LD + 본문) ──
+  const fetchSnsProfile = async (url) => {
     try {
-      const r = await fetch("/api/crawl", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      const r = await fetch("/api/content?action=sns-profile", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }),
+      });
       if (!r.ok) return null;
-      const d = await r.json();
-      return d.text || null;
+      return await r.json();
     } catch { return null; }
   };
 
@@ -162,36 +163,10 @@ export default function SocialAnalyzer({ isDark }) {
         if (platform?.id === "youtube") {
           const yt = await fetchYoutubeChannel(url);
           collected.push({ url, platform, data: yt, pageText: null });
-        } else if (platform?.id === "naver_blog") {
-          // 네이버 블로그: RSS 피드로 최근 글 목록 가져오기
-          const blogId = url.match(/blog\.naver\.com\/([a-zA-Z0-9_]+)/)?.[1];
-          let pageText = null;
-          if (blogId) {
-            const rssUrl = `https://rss.blog.naver.com/${blogId}.xml`;
-            try {
-              const rssRes = await fetch("/api/crawl", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: rssUrl }) });
-              if (rssRes.ok) {
-                const rssData = await rssRes.json();
-                pageText = rssData.text || null;
-              }
-            } catch {}
-            if (!pageText) pageText = await fetchPageCrawl(url);
-          } else {
-            pageText = await fetchPageCrawl(url);
-          }
-          collected.push({ url, platform, data: null, pageText });
         } else {
-          // 일반 크롤링 + 모바일 페이지 시도 (인스타 등은 모바일에서 더 많은 정보 제공)
-          let pageText = await fetchPageCrawl(url);
-          if (!pageText || pageText.length < 100) {
-            // m. 도메인으로 재시도
-            const mobileUrl = url.replace("www.", "m.");
-            if (mobileUrl !== url) {
-              const mText = await fetchPageCrawl(mobileUrl);
-              if (mText && mText.length > (pageText?.length || 0)) pageText = mText;
-            }
-          }
-          collected.push({ url, platform, data: null, pageText });
+          // SNS 프로필 전용 크롤러 (메타태그 + JSON-LD + 본문 추출)
+          const profile = await fetchSnsProfile(url);
+          collected.push({ url, platform, data: null, pageText: null, profile });
         }
       }
 
@@ -220,10 +195,40 @@ export default function SocialAnalyzer({ isDark }) {
             info += "\n=== 영상 목록 끝 ===";
           }
         }
-        if (c.pageText) {
-          info += `\n\n=== 페이지에서 크롤링한 실제 텍스트 (이것이 이 계정의 실제 콘텐츠입니다) ===`;
-          info += `\n${c.pageText.slice(0, 2500)}`;
-          info += `\n=== 크롤링 텍스트 끝 ===`;
+        if (c.profile) {
+          const p = c.profile;
+          const m = p.meta || {};
+          info += "\n\n=== 페이지에서 직접 크롤링한 실제 데이터 ===";
+          if (m["og:title"]) info += `\n프로필 제목: ${m["og:title"]}`;
+          if (m["og:description"]) info += `\n프로필 설명: ${m["og:description"]}`;
+          if (m._title) info += `\n페이지 타이틀: ${m._title}`;
+          if (m["description"]) info += `\n메타 설명: ${m["description"]}`;
+          if (m._visitors) info += `\n방문자 수: ${m._visitors}`;
+          if (m._neighbors) info += `\n이웃 수: ${m._neighbors}`;
+          if (m._postCount) info += `\n게시글 수: ${m._postCount}`;
+          if (m["al:ios:url"]) info += `\n앱 링크: ${m["al:ios:url"]}`;
+          // JSON-LD 구조화 데이터 (팔로워 수 등)
+          if (p.jsonLd?.length) {
+            info += "\n\n구조화 데이터 (JSON-LD):";
+            p.jsonLd.forEach(ld => {
+              if (ld.name) info += `\n이름: ${ld.name}`;
+              if (ld.description) info += `\n설명: ${String(ld.description).slice(0, 300)}`;
+              if (ld.author?.name) info += `\n작성자: ${ld.author.name}`;
+              if (ld.interactionStatistic) {
+                const stats = Array.isArray(ld.interactionStatistic) ? ld.interactionStatistic : [ld.interactionStatistic];
+                stats.forEach(s => {
+                  if (s.userInteractionCount) info += `\n${s.interactionType?.replace("http://schema.org/", "") || "상호작용"}: ${s.userInteractionCount}`;
+                });
+              }
+              if (ld.mainEntityOfPage) info += `\n메인 엔티티: ${typeof ld.mainEntityOfPage === "string" ? ld.mainEntityOfPage : ld.mainEntityOfPage?.["@id"] || ""}`;
+            });
+          }
+          // 본문 텍스트
+          if (p.texts?.length) {
+            info += `\n\n페이지 본문 (${p.texts.length}개 문장):`;
+            p.texts.slice(0, 20).forEach((t, ti) => { info += `\n${ti+1}. ${t}`; });
+          }
+          info += "\n=== 크롤링 데이터 끝 ===";
         }
         return info;
       }).join("\n\n===========================\n\n");
@@ -413,26 +418,75 @@ ${details}
     );
   };
 
-  // ── 크롤링 데이터 대시보드 ──
-  const renderCrawlDashboard = (c) => (
-    <div>
-      <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 16 }}>
-        <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.platform?.color || acc}12`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${c.platform?.color || acc}25` }}>
-          <span style={{ fontSize: 20, fontWeight: 900, color: c.platform?.color || acc }}>{c.platform?.label?.[0] || "?"}</span>
+  // ── 크롤링 프로필 대시보드 ──
+  const renderCrawlDashboard = (c) => {
+    const p = c.profile;
+    const m = p?.meta || {};
+    const ogTitle = m["og:title"] || m._title || "";
+    const ogDesc = m["og:description"] || m["description"] || "";
+    const ogImage = m["og:image"] || "";
+    const visitors = m._visitors;
+    const neighbors = m._neighbors;
+    const postCount = m._postCount;
+    const hasData = ogTitle || ogDesc || visitors || p?.jsonLd?.length || p?.texts?.length;
+
+    // JSON-LD에서 팔로워 수 추출
+    let followers = null;
+    if (p?.jsonLd) {
+      for (const ld of p.jsonLd) {
+        const stats = Array.isArray(ld.interactionStatistic) ? ld.interactionStatistic : (ld.interactionStatistic ? [ld.interactionStatistic] : []);
+        for (const s of stats) {
+          if (s.interactionType?.includes("Follow") && s.userInteractionCount) followers = s.userInteractionCount;
+        }
+      }
+    }
+
+    return (
+      <div>
+        {/* 헤더 */}
+        <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 20 }}>
+          {ogImage ? (
+            <img src={ogImage} alt="" style={{ width: 56, height: 56, borderRadius: 14, objectFit: "cover", border: `2px solid ${c.platform?.color || acc}25` }}
+              onError={e => { e.target.style.display = "none"; }} />
+          ) : (
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: `${c.platform?.color || acc}12`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${c.platform?.color || acc}25` }}>
+              <span style={{ fontSize: 20, fontWeight: 900, color: c.platform?.color || acc }}>{c.platform?.label?.[0] || "?"}</span>
+            </div>
+          )}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ padding: "3px 10px", borderRadius: 8, background: `${c.platform?.color || acc}12`, fontSize: 10, fontWeight: 700, color: c.platform?.color || acc }}>{c.platform?.label}</span>
+              {hasData && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#22c55e12", fontSize: 10, fontWeight: 700, color: "#22c55e" }}>크롤링 완료</span>}
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: text, marginTop: 4 }}>{ogTitle || c.url.replace(/https?:\/\/(www\.)?/, "").split("/").slice(0, 2).join("/")}</div>
+            {ogDesc && <div style={{ fontSize: 12, color: muted, marginTop: 4, lineHeight: 1.5 }}>{ogDesc.slice(0, 150)}{ogDesc.length > 150 ? "..." : ""}</div>}
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: text }}>{c.platform?.label || "SNS"}</div>
-          <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{c.url}</div>
-        </div>
-        {c.pageText && <div style={{ padding: "5px 12px", borderRadius: 8, background: `${acc}10`, fontSize: 11, fontWeight: 700, color: acc }}>페이지 크롤링 완료</div>}
+
+        {/* 수집된 지표 카드 */}
+        {(visitors || neighbors || postCount || followers) && (
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+            {visitors && <Stat label="방문자" value={visitors} color={c.platform?.color} />}
+            {followers && <Stat label="팔로워" value={fmtNum(followers)} color={c.platform?.color} />}
+            {neighbors && <Stat label="이웃" value={neighbors} color={c.platform?.color} />}
+            {postCount && <Stat label="게시글" value={postCount} color={c.platform?.color} />}
+          </div>
+        )}
+
+        {/* 크롤링된 콘텐츠 미리보기 */}
+        {p?.texts?.length > 0 && (
+          <div style={{ padding: "14px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}`, maxHeight: 160, overflow: "hidden" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>페이지 콘텐츠 ({p.texts.length}개 문장 수집)</div>
+            {p.texts.slice(0, 5).map((t, ti) => (
+              <div key={ti} style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.6, marginBottom: 4 }}>
+                {t.slice(0, 120)}{t.length > 120 ? "..." : ""}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      {c.pageText && (
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb", border: `1px solid ${bdr}`, fontSize: 12, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7, maxHeight: 200, overflow: "hidden" }}>
-          {c.pageText.slice(0, 500)}...
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   // ── 등급 배지 ──
   const GradeBadge = ({ grade }) => {
