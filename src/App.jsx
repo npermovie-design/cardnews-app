@@ -151,6 +151,7 @@ function updateOgMeta(title, description, path, image) {
 
 export default function App() {
   const [page,       setPage]       = useState("home");
+  const [aiVisited,  setAiVisited]  = useState(false);
   const [user,       setUserState]  = useState(getUser);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
@@ -266,6 +267,7 @@ export default function App() {
       setAiMenu(segments[1]);
     }
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
+    if (mainSeg === "ai") setAiVisited(true);
   }, []);
 
   // popstate - 뒤로가기: URL에서 상태 복원
@@ -305,6 +307,7 @@ export default function App() {
       }
 
       setPage(mainSeg); setOpenMenu(null); setMobileOpen(false);
+      if (mainSeg === "ai") setAiVisited(true);
     };
     window.addEventListener("popstate", fn);
     return () => window.removeEventListener("popstate", fn);
@@ -328,6 +331,7 @@ export default function App() {
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
     setPage(target); setOpenMenu(null); setMobileOpen(false);
+    if (target === "ai") setAiVisited(true);
     if (target === "legal" && extra) setLegalTab(extra);
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
@@ -368,7 +372,7 @@ export default function App() {
     if (!(await confirmGuard())) return;
     setAiMenu(menu);
     window.history.pushState(null, "", "/ai/" + menu);
-    setPage("ai"); setOpenMenu(null); setMobileOpen(false);
+    setPage("ai"); setAiVisited(true); setOpenMenu(null); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -476,7 +480,7 @@ export default function App() {
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
     if (page === "archive")  { navigateBoard("archive"); return null; }
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (page === "ai")       return <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={stableOnLoginRequest} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={stableOnUserUpdate} />;
+    if (page === "ai")       return null; /* AiPage는 keep-alive로 별도 렌더 */
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
@@ -1043,11 +1047,22 @@ export default function App() {
       )}
 
       {/* ── 페이지 ── */}
-      <div style={{ paddingTop: 60 }} className={page !== "ai" ? "page-anim" : ""} key={page === "ai" ? "ai" : page}>
-        <Suspense fallback={<PageLoader />}>
-          {renderPage()}
-        </Suspense>
-      </div>
+      {/* AI 페이지 — keep-alive: 한번 방문하면 항상 마운트, display로 숨김 */}
+      {aiVisited && (
+        <div style={{ paddingTop: 60, display: page === "ai" ? "block" : "none" }}>
+          <Suspense fallback={<PageLoader />}>
+            <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={stableOnLoginRequest} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={stableOnUserUpdate} />
+          </Suspense>
+        </div>
+      )}
+      {/* 일반 페이지 — AI가 아닐 때만 표시 */}
+      {page !== "ai" && (
+        <div style={{ paddingTop: 60 }} className="page-anim" key={page}>
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </div>
+      )}
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
       {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
