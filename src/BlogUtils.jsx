@@ -274,13 +274,14 @@ const PLATFORMS = {
       const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnd = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 금지. 자연스럽게 끝낼 것`;
       const noSp = `\n\n[필수] 이모티콘·이모지·특수기호(★●■)·마크다운(##·###·**·~~) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      const imgRule = `\n\n[이미지 필수] 소제목마다 [image: 영문 2~3단어] 1개. 해당 문단의 구체적 사물/장면을 영어로 (예: laptop typing hands, korean street food, morning coffee desk). 추상적 단어(nature, life, beauty) 금지`;
       const tail = sp + noEnd + noSp;
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임${tail}`;
-      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공${tail}`;
-      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함${tail}`;
-      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도${tail}`;
-      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (SEO 키워드 포함 제목)\n부제목: (핵심 한 줄 요약)\n\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용${tail}`;
-      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반${tail}`;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}${imgRule}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임${tail}`;
+      if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}${imgRule}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공${tail}`;
+      if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}${imgRule}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함${tail}`;
+      if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${imgRule}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도${tail}`;
+      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${imgRule}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (SEO 키워드 포함 제목)\n부제목: (핵심 한 줄 요약)\n\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용${tail}`;
+      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}${imgRule}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반${tail}`;
       return "";
     },
   },
@@ -492,8 +493,9 @@ const PLATFORMS = {
       const sp = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnd = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며" 같은 진부한 마무리 표현 금지. 자연스럽게 끝낼 것`;
       const noSp = `\n\n[필수] 이모티콘·특수기호·마크다운(##·**) 절대 사용 금지. 순수 한글 문장만`;
+      const imgRule = wc !== "short" ? `\n\n[이미지] 문단마다 [image: 영문 2~3단어] 1개. 해당 내용의 구체적 사물/장면 (예: fresh fruit basket, cozy reading corner). 추상적 단어 금지` : "";
       const tail = sp + noEnd + noSp;
-      if(sub==="info")     return `네이버 카페 정보 게시글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"카페 회원"}\n${f.extra||""}\n\n- 핵심 정보를 친근하게 전달\n- 소제목 없이 자연스러운 문단 구성${tail}`;
+      if(sub==="info")     return `네이버 카페 정보 게시글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"카페 회원"}\n${f.extra||""}${imgRule}\n\n- 핵심 정보를 친근하게 전달\n- 소제목 없이 자연스러운 문단 구성${tail}`;
       if(sub==="review")   return `네이버 카페 후기 게시글 (${w}, ${t})\n대상: ${f.keyword} / 제품명: ${f.productName||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매/방문 동기부터 솔직 후기까지\n- 장단점 균형 있게\n- 추천 대상 언급${tail}`;
       if(sub==="question") return `네이버 카페 질문 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 상황 설명 후 궁금한 점 명확히\n- 카페 회원들에게 도움 요청하는 자연스러운 글${tail}`;
       if(sub==="free")     return `네이버 카페 자유 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 가볍고 친근한 일상 공유\n- 카페 분위기에 맞는 짧고 자연스러운 글${tail}`;
@@ -608,7 +610,7 @@ const PLATFORMS = {
       const w={short:"1,500~2,500자",medium:"3,000~4,000자",long:"5,000자 이상"}[wc];
       const t={literary:"문학적이고 서정적인",reflective:"성찰적이고 깊이 있는",casual:"편안하고 자연스러운"}[tone];
       const sp = speech ? `\n- 말투: ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
-      const imgRule = `\n\n[이미지] 각 소제목마다 [image: 영문 키워드 2~4단어] 1개씩`;
+      const imgRule = `\n\n[이미지 필수] 소제목마다 [image: 영문 2~3단어] 1개. 해당 문단의 구체적 사물/장면을 영어로 (예: coffee latte art, sunset beach walk, fresh vegetable basket). 추상적 단어(nature, beauty, life) 절대 금지`;
       return `브런치 ${sub} (${w}, ${t})\n주제: ${f.keyword}\n${f.mood?`분위기: ${f.mood}`:""}\n${f.mainPoint?`핵심: ${f.mainPoint}`:""}\n${f.extra||""}\n\n[필수] 글 첫줄에 추천 제목\n- 브런치 특유의 감성적이고 깊이 있는 문체\n- 이모지·마크다운 금지${imgRule}${sp}`;
     },
   },
@@ -734,7 +736,7 @@ const PLATFORMS = {
       const w={short:"800~1,200자",medium:"1,500~2,500자"}[wc];
       const t={professional:"전문적이고 깔끔한",friendly:"친근하고 읽기 쉬운"}[tone];
       const sp = speech ? `\n- 말투: ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
-      const imgRule = `\n\n[이미지] 소제목마다 [image: 영문 키워드 2~4단어] 1개씩`;
+      const imgRule = `\n\n[이미지 필수] 소제목마다 [image: 영문 2~3단어] 1개. 해당 문단의 구체적 사물/장면을 영어로 (예: laptop coding screen, yoga mat stretching, korean bbq grill). 추상적 단어 금지`;
       return `네이버 포스트 ${sub} (${w}, ${t})\n주제: ${f.keyword}\n${f.target?`대상: ${f.target}`:""}\n${f.mainPoint?`핵심: ${f.mainPoint}`:""}\n${f.extra||""}\n\n[필수] 이모지 금지, 카드뉴스형 구조${imgRule}${sp}`;
     },
   },
@@ -808,7 +810,7 @@ const PLATFORMS = {
       const w={short:"500~1,000자",medium:"1,500~2,500자",long:"3,000자 이상"}[wc];
       const t={professional:"전문적이고 신뢰감 있는",friendly:"친근하고 읽기 쉬운",luxurious:"프리미엄하고 세련된"}[tone];
       const sp = speech ? `\n- 말투: ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
-      const imgRule = `\n\n[이미지] 섹션마다 [image: 영문 키워드 2~4단어] 1개씩`;
+      const imgRule = `\n\n[이미지 필수] 섹션마다 [image: 영문 2~3단어] 1개. 해당 섹션의 구체적 사물/장면을 영어로. 추상적 단어 금지`;
       if(sub==="about")   return `홈페이지 회사/서비스 소개 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 비전/미션, 핵심 가치, 팀 소개 구조\n- 신뢰감 있는 웹 카피라이팅${imgRule}${sp}`;
       if(sub==="landing") return `랜딩페이지 카피 (${w}, ${t})\n서비스: ${f.productName||f.keyword}\n${f.extra||""}\n\n- 헤드라인 → 문제 제기 → 해결책 → 혜택 → CTA 구조\n- 전환율 높은 카피라이팅${imgRule}${sp}`;
       if(sub==="blog")    return `웹사이트 블로그 글 (${w}, ${t})\n주제: ${f.keyword}\n대상: ${f.target||"일반 방문자"}\n${f.extra||""}\n\n- SEO 최적화 구조\n- 소제목 활용한 체계적 구성${imgRule}${sp}`;
