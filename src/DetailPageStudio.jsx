@@ -206,11 +206,11 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     }
   }, [selectedEl]);
 
-  // 에디터 진입 시 AI 이미지 자동 생성 (로그인 시) / 스톡 이미지 자동 채우기 (비로그인 시)
+  // 에디터 진입 시 스톡 이미지 자동 채우기 (AI 이미지는 버튼으로 수동 생성)
   useEffect(() => {
     if (phase === "editor" && sections.length > 0 && !stockFilledRef.current) {
       stockFilledRef.current = true;
-      generateAllImages();
+      fillStockImages();
     }
     if (phase !== "editor") stockFilledRef.current = false;
   }, [phase]);

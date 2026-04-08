@@ -14,12 +14,11 @@ export default async function handler(req) {
     const { prompt, maxTokens, imageBase64, imageMimeType } = await req.json();
     if (!prompt) return new Response(JSON.stringify({ error: "prompt 필수" }), { status: 400 });
 
-    const model = "gemini-2.5-flash";
+    const model = "gemini-2.0-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
     const genConfig = {
       maxOutputTokens: maxTokens || 8000,
       temperature: 0.9,
-      thinkingConfig: { thinkingBudget: 0 },
     };
 
     const parts = [];
