@@ -23,6 +23,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     { id: "blog_news", label: "뉴스 → 블로그 변환", icon: "/icons3d/news.png" },
   ];
   const [platformId, setPlatformId] = useState(initialType || "blog_naver");
+  const [snsCat, setSnsCat] = useState("all");
   const cfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
   const isDark = isDarkTheme(theme) || (!theme && !!embedded);
   const { t } = useI18n();
@@ -1385,48 +1386,85 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           <div style={{display:"inline-block",padding:"4px 12px",borderRadius:16,background:"rgba(124,106,255,0.1)",fontSize:11,fontWeight:700,color:"#7c6aff",marginBottom:12}}>AI 글쓰기</div>
           <div style={{fontSize:22,fontWeight:900,color:text,lineHeight:1.3,marginBottom:6}}>주제를 입력하면<br/>AI가 글을 작성해드려요</div>
           <div style={{fontSize:13,color:isDark?"rgba(255,255,255,0.5)":"#999",marginBottom:16}}>원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.</div>
-          {/* SNS 플랫폼 선택 */}
-          <div className="bl-sns-platform-group" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {[
-              {id:"blog_naver",label:"네이버 블로그",icon:"/icon-naver-blog.png"},
-              {id:"blog_cafe",label:"네이버 카페",icon:"/icon-naver-cafe.webp"},
-              {id:"blog_tistory",label:"티스토리",icon:"/icon-tistory.png"},
-              {id:"blog_insta",label:"인스타그램",icon:"/icon-instagram.webp"},
-              {id:"blog_thread",label:"스레드",icon:"/icon-threads.png"},
-              {id:"blog_youtube",label:"유튜브",icon:"/icon-youtube.png"},
-              {id:"blog_link",label:"유튜브→블로그",icon:"/icon-youtube.png"},
-              {id:"blog_news",label:"뉴스→블로그",icon:"/icons3d/news.png"},
-            ].map(p => (
-              <button key={p.id} onClick={() => setPlatformId(p.id)}
-                style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:platformId===p.id?700:500,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),transition:"all 0.15s"}}>
-                <img src={p.icon} alt="" style={{width:16,height:16,borderRadius:3,objectFit:"contain"}} />
-                {p.label}
-              </button>
-            ))}
-          </div>
+          {/* SNS 플랫폼 선택 — 카테고리 탭 + 버튼 */}
+          {(() => {
+            const SNS_CATS = [
+              {id:"all",label:"전체"},
+              {id:"korea_blog",label:"블로그"},
+              {id:"korea_sns",label:"한국 SNS"},
+              {id:"global_sns",label:"글로벌 SNS"},
+              {id:"video",label:"영상"},
+              {id:"commerce",label:"커머스"},
+              {id:"newsletter",label:"뉴스레터"},
+              {id:"convert",label:"변환"},
+            ];
+            const SNS_LIST = [
+              // 블로그
+              {id:"blog_naver",label:"네이버 블로그",icon:"/icon-naver-blog.png",cat:"korea_blog"},
+              {id:"blog_cafe",label:"네이버 카페",icon:"/icon-naver-cafe.webp",cat:"korea_blog"},
+              {id:"blog_naverpost",label:"네이버 포스트",icon:"/icon-naver-blog.png",cat:"korea_blog"},
+              {id:"blog_tistory",label:"티스토리",icon:"/icon-tistory.png",cat:"korea_blog"},
+              {id:"blog_brunch",label:"브런치",icon:"/icon-tistory.png",cat:"korea_blog"},
+              {id:"blog_homepage",label:"홈페이지/웹사이트",icon:"/icon-tistory.png",cat:"korea_blog"},
+              // 한국 SNS
+              {id:"blog_insta",label:"인스타그램",icon:"/icon-instagram.webp",cat:"korea_sns"},
+              {id:"blog_thread",label:"스레드",icon:"/icon-threads.png",cat:"korea_sns"},
+              {id:"blog_kakaostory",label:"카카오스토리",icon:"/icon-naver-cafe.webp",cat:"korea_sns"},
+              {id:"blog_band",label:"네이버 밴드",icon:"/icon-naver-cafe.webp",cat:"korea_sns"},
+              {id:"blog_weverse",label:"위버스",icon:"/icon-threads.png",cat:"korea_sns"},
+              // 글로벌 SNS
+              {id:"blog_x",label:"X (트위터)",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_facebook",label:"페이스북",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_linkedin",label:"링크드인",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_bluesky",label:"Bluesky",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_mastodon",label:"Mastodon",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_pinterest",label:"핀터레스트",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_reddit",label:"레딧",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_medium",label:"Medium",icon:"/icon-threads.png",cat:"global_sns"},
+              {id:"blog_telegram",label:"텔레그램",icon:"/icon-threads.png",cat:"global_sns"},
+              // 영상
+              {id:"blog_youtube",label:"유튜브",icon:"/icon-youtube.png",cat:"video"},
+              {id:"blog_tiktok",label:"틱톡",icon:"/icon-youtube.png",cat:"video"},
+              // 커머스
+              {id:"blog_daangn",label:"당근마켓",icon:"/icon-naver-cafe.webp",cat:"commerce"},
+              {id:"blog_bunjang",label:"번장",icon:"/icon-naver-cafe.webp",cat:"commerce"},
+              {id:"blog_coupang",label:"쿠팡 상품설명",icon:"/icon-naver-cafe.webp",cat:"commerce"},
+              {id:"blog_smartstore",label:"스마트스토어",icon:"/icon-naver-blog.png",cat:"commerce"},
+              // 뉴스레터
+              {id:"blog_substack",label:"Substack",icon:"/icons3d/news.png",cat:"newsletter"},
+              // 변환
+              {id:"blog_link",label:"유튜브 > 블로그",icon:"/icon-youtube.png",cat:"convert"},
+              {id:"blog_news",label:"뉴스 > 블로그",icon:"/icons3d/news.png",cat:"convert"},
+            ];
+            const filtered = snsCat === "all" ? SNS_LIST : SNS_LIST.filter(p => p.cat === snsCat);
+            const tabStyle = (active) => ({
+              padding:"5px 12px",borderRadius:16,border:"none",
+              background:active?(isDark?"rgba(124,106,255,0.15)":"#7c6aff"):"transparent",
+              color:active?"#fff":(isDark?"rgba(255,255,255,0.45)":"#888"),
+              fontSize:11,fontWeight:active?700:500,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",
+            });
+            return (
+              <>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+                  {SNS_CATS.map(c => (
+                    <button key={c.id} onClick={() => setSnsCat(c.id)} style={tabStyle(snsCat===c.id)}>{c.label}</button>
+                  ))}
+                </div>
+                <div className="bl-sns-platform-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {filtered.map(p => (
+                    <button key={p.id} onClick={() => setPlatformId(p.id)}
+                      style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:platformId===p.id?700:500,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),transition:"all 0.15s"}}>
+                      <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:3,objectFit:"contain"}} />
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
-      {/* 기존 select 제거 — 위 버튼으로 대체 */}
-      <div style={{display:"none"}}>
-        <select value={platformId} onChange={e => setPlatformId(e.target.value)}>
-          <optgroup label="직접 작성">
-            <option value="blog_naver">네이버 블로그</option>
-            <option value="blog_cafe">네이버 카페</option>
-            <option value="blog_tistory">티스토리</option>
-            <option value="blog_insta">인스타그램</option>
-            <option value="blog_thread">스레드</option>
-            <option value="blog_youtube">유튜브</option>
-          </optgroup>
-          <optgroup label="해외 SNS">
-            <option value="blog_insta">Instagram</option>
-            <option value="blog_thread">Threads</option>
-          </optgroup>
-          <optgroup label="링크 변환">
-            <option value="blog_link">유튜브 → 블로그</option>
-            <option value="blog_news">뉴스 → 블로그</option>
-          </optgroup>
-        </select>
-      </div>
+      {/* 기존 select 제거됨 — 위 카테고리 탭 + 버튼으로 대체 */}
       <div style={{height:"calc(100vh - 80px)",display:"flex"}}>{content}</div>
     </div>
   );
