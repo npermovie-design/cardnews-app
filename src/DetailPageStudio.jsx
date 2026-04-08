@@ -206,11 +206,11 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     }
   }, [selectedEl]);
 
-  // 에디터 진입 시 스톡 이미지 자동 채우기
+  // 에디터 진입 시 AI 이미지 자동 생성 (로그인 시) / 스톡 이미지 자동 채우기 (비로그인 시)
   useEffect(() => {
     if (phase === "editor" && sections.length > 0 && !stockFilledRef.current) {
       stockFilledRef.current = true;
-      fillStockImages();
+      generateAllImages();
     }
     if (phase !== "editor") stockFilledRef.current = false;
   }, [phase]);
@@ -1976,8 +1976,8 @@ JSON배열만 출력.`;
                   <option key={type} value={type}>{SECTION_TYPE_LABELS?.[type] || type} ({tmpls.length}종)</option>
                 ))}
               </select>
-              {/* 선택된 타입의 템플릿 목록 */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {/* 선택된 타입의 템플릿 목록 — 2열 그리드 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {(SECTION_TEMPLATES[templateTypeFilter] || []).map((tmpl, ti) => {
                   const titleEl = tmpl.elements?.find(e => e.role === "title");
                   const subtitleEl = tmpl.elements?.find(e => e.role === "subtitle");
@@ -2027,7 +2027,7 @@ JSON배열만 출력.`;
                       onMouseEnter={e => e.currentTarget.style.borderColor = acc}
                       onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
                       {/* 미리보기 이미지 + 텍스트 */}
-                      <div style={{ width: "100%", position: "relative", background: tmpl.bg_color || "#fff", minHeight: 100, overflow: "hidden" }}>
+                      <div style={{ width: "100%", position: "relative", background: tmpl.bg_color || "#fff", minHeight: 60, maxHeight: 100, overflow: "hidden" }}>
                         {/* Unsplash 샘플 이미지 (섹션 타입별) */}
                         {(() => {
                           const imgMap = {
@@ -2054,16 +2054,16 @@ JSON배열만 출력.`;
                             </div>
                           );
                         })()}
-                        <div style={{ position: "relative", zIndex: 1, padding: "20px 16px" }}>
-                          {subtitleEl && <div style={{ fontSize: 8, fontWeight: 700, color: subtitleEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#999"), letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>{subtitleEl.content?.slice(0,20)}</div>}
-                          {titleEl && <div style={{ fontSize: 14, fontWeight: 900, color: titleEl.color || (bgDark ? "#fff" : "#1a1a2e"), lineHeight: 1.3, marginBottom: 6, textShadow: bgDark ? "0 1px 4px rgba(0,0,0,0.3)" : "none" }}>{titleEl.content?.slice(0,25)}</div>}
-                          {bodyEl && <div style={{ fontSize: 9, color: bodyEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#888"), lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{bodyEl.content?.slice(0,60)}</div>}
-                          {!titleEl && !bodyEl && <div style={{ fontSize: 10, color: bgDark ? "rgba(255,255,255,0.3)" : "#ccc" }}>{tmpl.label}</div>}
+                        <div style={{ position: "relative", zIndex: 1, padding: "10px 10px" }}>
+                          {subtitleEl && <div style={{ fontSize: 7, fontWeight: 700, color: subtitleEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#999"), letterSpacing: 1, textTransform: "uppercase", marginBottom: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{subtitleEl.content?.slice(0,15)}</div>}
+                          {titleEl && <div style={{ fontSize: 11, fontWeight: 900, color: titleEl.color || (bgDark ? "#fff" : "#1a1a2e"), lineHeight: 1.2, marginBottom: 3, textShadow: bgDark ? "0 1px 4px rgba(0,0,0,0.3)" : "none", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{titleEl.content?.slice(0,20)}</div>}
+                          {bodyEl && <div style={{ fontSize: 8, color: bodyEl.color || (bgDark ? "rgba(255,255,255,0.7)" : "#888"), lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>{bodyEl.content?.slice(0,30)}</div>}
+                          {!titleEl && !bodyEl && <div style={{ fontSize: 9, color: bgDark ? "rgba(255,255,255,0.3)" : "#ccc" }}>{tmpl.label}</div>}
                         </div>
                       </div>
-                      <div style={{ padding: "8px 12px", borderTop: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.2)" : "#fafafa" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: text }}>{tmpl.label}</div>
-                        <div style={{ fontSize: 8, color: muted }}>{tmpl.layout} / {tmpl.preview?.slice(0,30)}</div>
+                      <div style={{ padding: "5px 8px", borderTop: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.2)" : "#fafafa" }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: text, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{tmpl.label}</div>
+                        <div style={{ fontSize: 7, color: muted, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{tmpl.layout}</div>
                       </div>
                     </button>
                   );
@@ -3747,7 +3747,11 @@ JSON배열만 출력.`;
                                 {/* 텍스트 */}
                                 <div style={{ flex: "0 0 45%", padding: isLeft ? "0 0 0 20px" : "0 20px 0 0", textAlign: isLeft ? "left" : "right" }}>
                                   {item.title && <div {...editable(item.title)} style={eS(item.title, { fontSize: 18, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a1a", marginBottom: 8, lineHeight: 1.5 })}>{item.title.content}</div>}
-                                  {item.body && <div {...editable(item.body)} style={eS(item.body, { fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>{item.body.content}</div>}
+                                  {item.body ? (
+                                    <div {...editable(item.body)} style={eS(item.body, { fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>{item.body.content}</div>
+                                  ) : (
+                                    <div style={{ fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.25)" : "#ccc", lineHeight: 1.7, fontStyle: "italic" }}>설명을 입력하세요</div>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -3816,9 +3820,13 @@ JSON배열만 출력.`;
                                     {item.title.content}
                                   </div>
                                 )}
-                                {item.body && (
+                                {item.body ? (
                                   <div {...editable(item.body)} style={eS(item.body, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.8 })}>
                                     {item.body.content}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#ccc", lineHeight: 1.8, fontStyle: "italic" }}>
+                                    설명을 입력하세요
                                   </div>
                                 )}
                               </div>
