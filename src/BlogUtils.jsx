@@ -214,7 +214,7 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc, speech) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 해당 단락과 직접 관련된 구체적 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 해당 단락의 핵심 소재를 2~4단어로 구체적으로 묘사 (한국어 또는 영문 모두 가능)\n   예시: 혈당 관련 → [image: 혈당측정기 사용], 카페 후기 → [image: 라떼아트 카페], 여행 → [image: 제주 해변 풍경], 운동 → [image: 홈트레이닝 스쿼트]\n4. 절대 추상적/일반적 키워드 금지 (기술, 비즈니스, 자연 같은 포괄적 단어 금지)\n5. 소제목은 3~5개 정도`;
+      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 3~5개 정도`;
       const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
       const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
