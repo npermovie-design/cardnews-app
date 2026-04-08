@@ -77,19 +77,28 @@ export default function SocialAnalyzer({ isDark }) {
       if (c.profile.texts?.length) data += `\n\n=== 크롤링된 콘텐츠 ===\n${c.profile.texts.slice(0, 15).join("\n")}`;
     }
 
+    const isInsta = c.plat?.id === "instagram";
+    const instaExtra = isInsta ? `
+[인스타그램 특별 지시]
+데이터 수집이 제한되더라도 반드시 아래 내용을 모두 작성하세요:
+- URL에서 계정명 "@${c.url.match(/instagram\.com\/([^/?]+)/)?.[1] || ""}"를 분석
+- 이 계정명과 설명에서 파악 가능한 카테고리/분야를 기반으로 분석
+- 인스타그램 해당 분야의 성공 공식, 트렌드, 콘텐츠 전략을 상세히 제시
+- "데이터 부족" 같은 변명 없이 전문가 관점에서 최대한 분석` : "";
+
     return `SNS 전문 분석가로서 이 ${c.plat?.label} 계정을 분석하세요.
 [핵심] 채널명/URL이 아닌, 영상 제목이나 크롤링 텍스트 등 실제 콘텐츠 기반으로 판단하세요.
+${instaExtra}
 
 ${data}
 
 한국어. 이모지/특수기호 금지. 마크다운 테이블 사용.
-크롤링 데이터가 부족해도 URL의 계정명과 플랫폼 특성을 활용해 최대한 분석하세요.
-인스타그램의 경우 계정명으로 유추 가능한 카테고리를 분석하고 해당 분야의 전략을 제시하세요.
+모든 섹션을 빠짐없이 작성하세요.
 
 ## 채널 진단
 | 항목 | 분석 결과 |
 |---|---|
-| 콘텐츠 카테고리 | (영상 제목/콘텐츠 기반) |
+| 콘텐츠 카테고리 | (실제 콘텐츠 기반) |
 | 등급 | (S/A/B/C/D) |
 | 강점 | (3가지) |
 | 약점 | (3가지) |
@@ -98,12 +107,16 @@ ${data}
 ## 유사 성공 계정 5개
 | 채널명 | 규모 | URL | 참고할 점 |
 |---|---|---|---|
-실제 존재하는 같은 카테고리 계정만.
+실제 존재하는 같은 카테고리의 ${c.plat?.label} 계정만.
 
-## 콘텐츠 아이디어
-| 번호 | 제목 | 형식 | 예상반응 |
-|---|---|---|---|
-10개. 이 플랫폼에 맞는 구체적 아이디어.
+## 30일 콘텐츠 플랜
+이 계정에 맞는 한 달간 매일 올릴 콘텐츠 주제를 제시하세요:
+
+| 일차 | 콘텐츠 제목 | 형식 |
+|---|---|---|
+| Day 1 | (구체적 제목) | (릴스/피드/스토리/숏폼/롱폼/카드뉴스 등) |
+| Day 2 | ... | ... |
+...Day 30까지 30개 모두 작성. 반복 없이 다양하게.
 
 ## 키워드/해시태그
 - 핵심 키워드 5개
@@ -111,18 +124,18 @@ ${data}
 - 해시태그 10개
 
 ## 성장 로드맵
-| 기간 | 목표 | 구체적 액션 |
+| 기간 | 팔로워/구독자 목표 | 핵심 전략 |
 |---|---|---|
-| 1주 | (단기 목표) | (바로 실행할 액션 3가지) |
-| 1개월 | (월간 목표) | (구체적 전략) |
-| 3개월 | (분기 목표) | (성장 전략) |
-| 6개월 | (반기 목표) | (확장 전략) |
-| 1년 | (연간 목표) | (장기 비전) |`;
+| 1주 | (목표) | (구체적 액션 3가지) |
+| 1개월 | (목표) | (전략 + 주제 방향) |
+| 3개월 | (목표) | (확장 전략) |
+| 6개월 | (목표) | (브랜딩 전략) |
+| 1년 | (목표) | (장기 비전) |`;
   };
 
   const fetchAiReport = async (c) => {
     const prompt = buildPrompt(c);
-    const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 3000 }) });
+    const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 6000 }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "AI 실패");
     const rd = await r.json();
     return rd?.text || "";
@@ -194,7 +207,31 @@ ${data}
         <Stat label="최근 평균" value={fmtNum(d.avgRecent)} sub="최근10개"/>
         <Stat label="참여율" value={`${d.engage}%`} sub="좋아요+댓글"/>
       </div>
-      {/* 2열: 조회수 차트 + 최근 영상 */}
+      {/* 조회수 추이 차트 (SVG) */}
+      {d.recent.length >= 3 && (() => {
+        const sorted = [...d.recent].sort((a,b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+        const maxV = Math.max(...sorted.map(v => v.viewCount), 1);
+        const W = 760, H = 140, padL = 50, padR = 20, padT = 10, padB = 30;
+        const chartW = W - padL - padR, chartH = H - padT - padB;
+        const points = sorted.map((v, i) => ({ x: padL + (i / (sorted.length - 1)) * chartW, y: padT + chartH - (v.viewCount / maxV) * chartH, v }));
+        const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+        const areaD = pathD + ` L${points[points.length-1].x},${padT+chartH} L${points[0].x},${padT+chartH} Z`;
+        return (
+          <Card style={{marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:12}}>조회수 추이</div>
+            <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block"}}>
+              <defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF0000" stopOpacity="0.15"/><stop offset="100%" stopColor="#FF0000" stopOpacity="0"/></linearGradient></defs>
+              {[0, 0.25, 0.5, 0.75, 1].map((r, i) => <line key={i} x1={padL} y1={padT + chartH * (1-r)} x2={W-padR} y2={padT + chartH * (1-r)} stroke={isDark?"rgba(255,255,255,0.06)":"#eee"} strokeWidth="1"/>)}
+              <path d={areaD} fill="url(#vg)"/>
+              <path d={pathD} fill="none" stroke="#FF0000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              {points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" fill="#FF0000" stroke="#fff" strokeWidth="2"/>)}
+              {points.map((p, i) => <text key={`l${i}`} x={p.x} y={padT + chartH + 18} textAnchor="middle" fontSize="9" fill={isDark?"rgba(255,255,255,0.4)":"#999"}>{fmtDate(p.v.publishedAt).slice(5)}</text>)}
+              {[0, 0.5, 1].map((r, i) => <text key={`y${i}`} x={padL - 6} y={padT + chartH * (1-r) + 4} textAnchor="end" fontSize="9" fill={isDark?"rgba(255,255,255,0.4)":"#999"}>{fmtNum(Math.round(maxV * r))}</text>)}
+            </svg>
+          </Card>
+        );
+      })()}
+      {/* 2열: 조회수 바 차트 + 최근 영상 */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         <Card><div style={{fontSize:13,fontWeight:800,color:text,marginBottom:12}}>영상별 조회수</div>
           {d.recent.slice(0,6).map((v,i)=><Bar key={i} value={v.viewCount} max={mx} color="#FF0000" label={v.title.length>25?v.title.slice(0,25)+"...":v.title}/>)}
@@ -257,7 +294,7 @@ ${data}
       const flush = () => { if (tbl.length>=2) { const rows=tbl.map(l=>l.split("|").map(c=>c.trim()).filter(Boolean)); const hdr=rows[0]; const data=rows.filter((_,i)=>i>0&&!rows[i].every(c=>/^[-:]+$/.test(c)));
         elements.push(<div key={`t${k++}`} style={{overflowX:"auto",marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{hdr.map((h,i)=><th key={i} style={{padding:"8px 12px",background:isDark?`${sColors[si%7]}10`:`${sColors[si%7]}08`,borderBottom:`2px solid ${sColors[si%7]}25`,textAlign:"left",fontWeight:800,color:text,fontSize:11,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead><tbody>{data.map((row,ri)=><tr key={ri} style={{background:ri%2?isDark?"rgba(255,255,255,0.01)":"rgba(0,0,0,0.01)":"transparent"}}>{row.map((cell,ci)=>{const gm=cell.match(/^([SABCD])등급?$/i); const dm=cell.match(/^(상|중|하)$/); return <td key={ci} style={{padding:"8px 12px",borderBottom:`1px solid ${bdr}`,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.5,verticalAlign:"top"}}>{gm?<Grade g={gm[1]}/>:dm?<span style={{padding:"2px 8px",borderRadius:4,background:dm[1]==="하"?"#22c55e15":dm[1]==="중"?"#f59e0b15":"#ef444415",color:dm[1]==="하"?"#22c55e":dm[1]==="중"?"#f59e0b":"#ef4444",fontSize:10,fontWeight:700}}>{cell}</span>:linkify(cell)}</td>;})}</tr>)}</tbody></table></div>);
       } tbl=[]; };
-      const linkify = (s) => { if (!s) return s; return s.split(/(https?:\/\/[^\s|)]+)/g).map((p,i)=>/^https?:\/\//.test(p)?<a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{color:acc,fontWeight:700,textDecoration:"underline"}}>{p.replace(/https?:\/\/(www\.)?/,"").slice(0,35)}</a>:p.split(/(\*\*[^*]+\*\*)/g).map((q,j)=>q.startsWith("**")&&q.endsWith("**")?<strong key={j} style={{fontWeight:800,color:text}}>{q.slice(2,-2)}</strong>:q)); };
+      const linkify = (s) => { if (!s) return s; const clean = s.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, ""); return clean.split(/(https?:\/\/[^\s|)]+)/g).map((p,i)=>/^https?:\/\//.test(p)?<a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{color:acc,fontWeight:700,textDecoration:"underline"}}>{p.replace(/https?:\/\/(www\.)?/,"").slice(0,35)}</a>:p.split(/(\*\*[^*]+\*\*)/g).map((q,j)=>q.startsWith("**")&&q.endsWith("**")?<strong key={j} style={{fontWeight:800,color:text}}>{q.slice(2,-2)}</strong>:q)); };
       body.forEach(line => { const t=line.trim(); if(t.startsWith("|")&&t.endsWith("|")){tbl.push(t);return;} if(tbl.length)flush();
         if(!t){elements.push(<div key={`s${k++}`} style={{height:4}}/>);return;}
         if(t.startsWith("### ")){elements.push(<div key={`h${k++}`} style={{fontSize:13,fontWeight:800,color:text,marginTop:14,marginBottom:6}}>{t.replace(/^###\s*/,"").replace(/\*\*/g,"")}</div>);return;}
