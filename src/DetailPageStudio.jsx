@@ -1305,7 +1305,7 @@ JSON배열만 출력.`;
   if (phase === "editor") return (
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* 왼쪽 사이드바 */}
-      <div style={{ width: sidebarCollapsed ? 0 : 280, minWidth: sidebarCollapsed ? 0 : 280, borderRight: sidebarCollapsed ? "none" : `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff", transition: "width 0.2s, min-width 0.2s", overflow: "hidden", position: "relative" }}>
+      <div style={{ width: sidebarCollapsed ? 0 : 280, minWidth: sidebarCollapsed ? 0 : 280, borderRight: sidebarCollapsed ? "none" : `1px solid ${bdr}`, display: "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff", transition: "width 0.2s, min-width 0.2s", overflow: "hidden", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         {/* 사이드바 탭 아이콘 */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0", borderBottom: `1px solid ${bdr}` }}>
           {[
@@ -3464,8 +3464,8 @@ JSON배열만 출력.`;
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: items.length >= 4 ? "1fr 1fr" : "1fr", gap: 16, maxWidth: 680, margin: "0 auto" }}>
                           {items.map((item, pi) => (
-                            <div key={pi} style={{ display: "flex", gap: 20, padding: "32px 28px", borderRadius: 16, background: "rgba(255,255,255,0.06)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                              <div style={{ width: 44, height: 44, borderRadius: 12, background: dv === 1 ? `${mainColor}20` : "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <div key={pi} style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: "32px 28px", borderRadius: 16, background: "rgba(255,255,255,0.06)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                              <div style={{ width: 44, height: 44, borderRadius: 12, background: dv === 1 ? `${mainColor}20` : "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
                                 {dv === 1 ? (
                                   <span style={{ fontSize: 16, fontWeight: 900, color: mainColor }}>{String(pi + 1).padStart(2, "0")}</span>
                                 ) : (
@@ -4099,8 +4099,11 @@ JSON배열만 출력.`;
                   const bodyEls = findEls("body");
                   const badge = els.find(e => e.type === "badge");
                   const pointNum = (() => {
-                    const pts = sections.filter((s, si) => si <= i && (s.type === "point" || s.type === "concept"));
-                    return pts.length;
+                    // point 타입만 필터링하여 순서 번호 부여 (concept 제외)
+                    const pointOnly = sections.filter((s, si) => si <= i && s.type === "point");
+                    if (pointOnly.length > 0) return pointOnly.length;
+                    // point 타입이 없으면 concept 포함하여 카운트
+                    return sections.filter((s, si) => si <= i && (s.type === "point" || s.type === "concept")).length;
                   })();
                   const hasImage = aiImgSrc || productImgForSection;
                   const fallbackImg = images[0]?.preview || null;
@@ -5758,7 +5761,7 @@ JSON배열만 출력.`;
                               <div key={bi} {...editable(el)} style={eS(el, { fontSize: 14, color: accentTxt, lineHeight: 1.9, marginBottom: 6, maxWidth: 420, marginLeft: "auto", marginRight: "auto" })}>{el.content}</div>
                             ))}
                             {/* 중앙 제품 이미지 */}
-                            <div style={{ width: 300, height: 280, margin: "36px auto 0", borderRadius: 20, overflow: "hidden", position: "relative", background: `linear-gradient(135deg, ${mainColor}15, ${mainColor}08)`, boxShadow: "0 12px 48px rgba(0,0,0,0.08)" }}>
+                            <div style={{ width: "100%", maxWidth: 500, height: 400, margin: "36px auto 0", borderRadius: 12, overflow: "hidden", position: "relative", background: `linear-gradient(135deg, ${mainColor}15, ${mainColor}08)`, boxShadow: "0 12px 48px rgba(0,0,0,0.08)" }}>
                               {productImg ? (
                                 <img src={productImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                               ) : (
@@ -5883,7 +5886,7 @@ JSON배열만 출력.`;
                           ))}
                           {/* 제품 이미지 */}
                           {productImg && (
-                            <div style={{ width: isMobile ? 200 : 280, height: isMobile ? 200 : 280, margin: "32px auto", borderRadius: 24, overflow: "hidden", boxShadow: `0 16px 48px ${mainColor}20`, position: "relative" }}>
+                            <div style={{ width: isMobile ? "90%" : "80%", height: isMobile ? 320 : 400, margin: "32px auto", borderRadius: 16, overflow: "hidden", boxShadow: `0 16px 48px ${mainColor}20`, position: "relative" }}>
                               <img src={productImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                               {imgButtons({ bottom: 8, right: 8 })}
                             </div>
@@ -6206,7 +6209,7 @@ JSON배열만 출력.`;
       </div>
 
       {/* 오른쪽 AI 패널 */}
-      <div style={{ width: isMobile ? 0 : 300, borderLeft: isMobile ? "none" : `1px solid ${bdr}`, display: isMobile ? "none" : "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff" }}>
+      <div style={{ width: isMobile ? 0 : 300, borderLeft: isMobile ? "none" : `1px solid ${bdr}`, display: isMobile ? "none" : "flex", flexDirection: "column", background: D ? "rgba(0,0,0,0.2)" : "#fff", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         {/* 파이프라인 결과 요약 */}
         <div style={{ padding: "16px", borderBottom: `1px solid ${bdr}` }}>
           {PIPELINE_STEPS.map((step, i) => {
