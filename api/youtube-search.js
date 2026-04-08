@@ -128,6 +128,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ items: [{ channelId: ch.snippet?.channelId || ch.id?.channelId, title: ch.snippet?.title, thumbnail: ch.snippet?.thumbnails?.medium?.url }] });
     }
 
+    // 채널 최근 영상 목록 (소셜분석기용)
+    if (action === "channel-videos") {
+      const channelId = req.query.channelId || "";
+      if (!channelId) return res.status(400).json({ error: "channelId 필요" });
+      const maxResults = Math.min(10, parseInt(req.query.maxResults) || 6);
+      const searchParams = new URLSearchParams({ part: "snippet", channelId, type: "video", order: "date", maxResults: String(maxResults), key: apiKey });
+      const sr = await fetch(`${BASE}/search?${searchParams}`);
+      const sd = await sr.json();
+      if (sd.error) return res.status(400).json({ error: sd.error.message });
+      const videoIds = (sd.items || []).map(i => i.id?.videoId).filter(Boolean);
+      if (videoIds.length === 0) return res.status(200).json({ videos: [] });
+      const vr = await fetch(`${BASE}/videos?part=statistics,contentDetails,snippet&id=${videoIds.join(",")}&key=${apiKey}`);
+      const vd = await vr.json();
+      const videos = (vd.items || []).map(v => ({
+        videoId: v.id,
+        title: v.snippet?.title || "",
+        thumbnail: v.snippet?.thumbnails?.medium?.url || "",
+        publishedAt: v.snippet?.publishedAt || "",
+        viewCount: parseInt(v.statistics?.viewCount || "0"),
+        likeCount: parseInt(v.statistics?.likeCount || "0"),
+        commentCount: parseInt(v.statistics?.commentCount || "0"),
+        duration: v.contentDetails?.duration || "",
+      }));
+      return res.status(200).json({ videos });
+    }
+
     if (action === "categories") {
       const regionCode = req.query.regionCode || "KR";
       const r = await fetch(`${BASE}/videoCategories?part=snippet&regionCode=${regionCode}&key=${apiKey}`);
