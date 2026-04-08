@@ -628,6 +628,12 @@ async function handleSnsProfile(req, res) {
       } catch {}
     }
 
+    // 2) 네이버 블로그: 모바일 URL로 변환 (PC는 JS렌더링이라 크롤링 안됨)
+    let fetchUrl = url;
+    if (url.includes("blog.naver.com") && !url.includes("m.blog.naver.com")) {
+      fetchUrl = url.replace("blog.naver.com", "m.blog.naver.com");
+    }
+
     // 2) HTML 크롤링
     const headers = {
       "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
@@ -637,10 +643,17 @@ async function handleSnsProfile(req, res) {
       "Sec-Fetch-Site": "none",
     };
 
-    const r = await fetch(url, { headers, redirect: "follow", signal: AbortSignal.timeout(12000) });
+    const r = await fetch(fetchUrl, { headers, redirect: "follow", signal: AbortSignal.timeout(12000) });
     if (!r.ok) return res.status(200).json({ ...result, error: `HTTP ${r.status}` });
 
     const html = await r.text();
+
+    // HTML 엔티티 디코딩 헬퍼
+    const decodeEntities = (s) => s
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(parseInt(d)))
+      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, " ");
 
     // 3) 모든 meta 태그 추출
     const metaRegex = /<meta[^>]*>/gi;
@@ -650,7 +663,7 @@ async function handleSnsProfile(req, res) {
       const name = (tag.match(/(?:property|name)=["']([^"']*)["']/i) || [])[1];
       const content = (tag.match(/content=["']([^"']*)["']/i) || [])[1];
       if (name && content) {
-        result.meta[name] = content.slice(0, 500);
+        result.meta[name] = decodeEntities(content.slice(0, 500));
       }
     }
 
