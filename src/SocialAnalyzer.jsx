@@ -105,10 +105,10 @@ export default function SocialAnalyzer({ isDark }) {
       const views = parseInt(stats.viewCount) || 0;
       const vids = parseInt(stats.videoCount) || 0;
 
-      // 최근 영상 6개
+      // 최근 영상 10개 (콘텐츠 주제 파악에 충분한 수)
       let recentVideos = [];
       if (channelId) {
-        const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${channelId}&maxResults=6`);
+        const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${channelId}&maxResults=10`);
         if (vr.ok) { const vd = await vr.json(); recentVideos = vd.videos || []; }
       }
 
@@ -162,8 +162,35 @@ export default function SocialAnalyzer({ isDark }) {
         if (platform?.id === "youtube") {
           const yt = await fetchYoutubeChannel(url);
           collected.push({ url, platform, data: yt, pageText: null });
+        } else if (platform?.id === "naver_blog") {
+          // 네이버 블로그: RSS 피드로 최근 글 목록 가져오기
+          const blogId = url.match(/blog\.naver\.com\/([a-zA-Z0-9_]+)/)?.[1];
+          let pageText = null;
+          if (blogId) {
+            const rssUrl = `https://rss.blog.naver.com/${blogId}.xml`;
+            try {
+              const rssRes = await fetch("/api/crawl", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: rssUrl }) });
+              if (rssRes.ok) {
+                const rssData = await rssRes.json();
+                pageText = rssData.text || null;
+              }
+            } catch {}
+            if (!pageText) pageText = await fetchPageCrawl(url);
+          } else {
+            pageText = await fetchPageCrawl(url);
+          }
+          collected.push({ url, platform, data: null, pageText });
         } else {
-          const pageText = await fetchPageCrawl(url);
+          // 일반 크롤링 + 모바일 페이지 시도 (인스타 등은 모바일에서 더 많은 정보 제공)
+          let pageText = await fetchPageCrawl(url);
+          if (!pageText || pageText.length < 100) {
+            // m. 도메인으로 재시도
+            const mobileUrl = url.replace("www.", "m.");
+            if (mobileUrl !== url) {
+              const mText = await fetchPageCrawl(mobileUrl);
+              if (mText && mText.length > (pageText?.length || 0)) pageText = mText;
+            }
+          }
           collected.push({ url, platform, data: null, pageText });
         }
       }
@@ -176,21 +203,42 @@ export default function SocialAnalyzer({ isDark }) {
         let info = `[계정 ${i+1}] ${c.platform?.label} | ${c.url}`;
         if (c.data) {
           const d = c.data;
-          info += `\n채널명: ${d.name}\n구독자: ${d.subscribers.toLocaleString()}명\n총 조회수: ${d.totalViews.toLocaleString()}회\n영상 수: ${d.videoCount}개\n평균 조회수: ${d.avgViews.toLocaleString()}회\n최근 평균 조회수: ${d.avgRecentViews.toLocaleString()}회\n참여율: ${d.engagementRate}%\n채널 설명: ${d.description}`;
+          info += `\n채널명: ${d.name}`;
+          info += `\n구독자: ${d.subscribers.toLocaleString()}명`;
+          info += `\n총 조회수: ${d.totalViews.toLocaleString()}회`;
+          info += `\n영상 수: ${d.videoCount}개`;
+          info += `\n평균 조회수: ${d.avgViews.toLocaleString()}회`;
+          info += `\n최근 평균 조회수: ${d.avgRecentViews.toLocaleString()}회`;
+          info += `\n참여율: ${d.engagementRate}%`;
+          info += `\n채널 설명: ${d.description}`;
           if (d.recentVideos?.length) {
-            info += "\n\n최근 영상:";
-            d.recentVideos.forEach((v, vi) => { info += `\n${vi+1}. "${v.title}" - 조회수 ${v.viewCount.toLocaleString()} / 좋아요 ${v.likeCount.toLocaleString()} / 댓글 ${v.commentCount.toLocaleString()} (${fmtDate(v.publishedAt)})`; });
+            info += "\n\n=== 최근 업로드 영상 목록 (이것이 이 채널의 실제 콘텐츠입니다) ===";
+            d.recentVideos.forEach((v, vi) => {
+              info += `\n${vi+1}. 제목: "${v.title}"`;
+              info += `   | 조회수: ${v.viewCount.toLocaleString()} | 좋아요: ${v.likeCount.toLocaleString()} | 댓글: ${v.commentCount.toLocaleString()} | 날짜: ${fmtDate(v.publishedAt)}`;
+            });
+            info += "\n=== 영상 목록 끝 ===";
           }
         }
-        if (c.pageText) info += `\n\n크롤링된 페이지 내용:\n${c.pageText.slice(0, 2000)}`;
+        if (c.pageText) {
+          info += `\n\n=== 페이지에서 크롤링한 실제 텍스트 (이것이 이 계정의 실제 콘텐츠입니다) ===`;
+          info += `\n${c.pageText.slice(0, 2500)}`;
+          info += `\n=== 크롤링 텍스트 끝 ===`;
+        }
         return info;
-      }).join("\n\n===\n\n");
+      }).join("\n\n===========================\n\n");
 
-      const prompt = `SNS 마케팅 전문가로서 다음 계정들의 실제 수집 데이터를 분석하세요.
+      const prompt = `SNS 마케팅 전문가로서 다음 계정들을 분석하세요.
+
+[중요 지시사항]
+- 채널명이나 URL로 카테고리를 추측하지 마세요
+- 반드시 "최근 업로드 영상 목록"의 실제 영상 제목들을 읽고 그 내용을 기반으로 카테고리와 주제를 판단하세요
+- 크롤링된 텍스트가 있으면 그 실제 내용을 기반으로 분석하세요
+- "추정", "추측", "예상되는" 같은 표현 대신 "영상 제목 분석 결과", "콘텐츠 분석 결과" 등으로 표현하세요
 
 ${details}
 
-한국어로 작성. 이모지/특수기호 금지. 데이터 기반 분석.
+한국어로 작성. 이모지/특수기호 금지.
 표(테이블)를 적극 활용하세요. 마크다운 테이블 형식: | 항목 | 값 |
 
 ## 채널 종합 진단
