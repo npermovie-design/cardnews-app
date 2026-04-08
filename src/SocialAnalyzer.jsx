@@ -16,7 +16,7 @@ function fmtNum(n) { if (!n && n !== 0) return "-"; const num = typeof n === "st
 function fmtDate(d) { if (!d) return ""; const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; }
 function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); if (!m) return ""; const h = parseInt(m[1]||"0"), mi = parseInt(m[2]||"0"), s = parseInt(m[3]||"0"); return h > 0 ? `${h}:${String(mi).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${mi}:${String(s).padStart(2,"0")}`; }
 
-export default function SocialAnalyzer({ isDark }) {
+export default function SocialAnalyzer({ isDark, user }) {
   const [links, setLinks] = useState([""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
