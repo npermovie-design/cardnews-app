@@ -104,33 +104,33 @@ ${data}
 | 약점 | (3가지) |
 | 타겟 | (구체적 오디언스) |
 
-## 유사 성공 계정 5개
-| 채널명 | 규모 | URL | 참고할 점 |
+## 참고할 유사 성공 계정
+| 채널명 | 규모 | 링크 | 배울 점 |
 |---|---|---|---|
-실제 존재하는 같은 카테고리의 ${c.plat?.label} 계정만.
+실제 존재하는 같은 카테고리의 ${c.plat?.label} 계정 5개. URL을 반드시 포함하세요.
 
-## 30일 콘텐츠 플랜
-이 계정에 맞는 한 달간 매일 올릴 콘텐츠 주제를 제시하세요:
+## 30일 콘텐츠 주제
+한 달간 매일 올릴 구체적 주제 30개:
 
-| 일차 | 콘텐츠 제목 | 형식 |
-|---|---|---|
-| Day 1 | (구체적 제목) | (릴스/피드/스토리/숏폼/롱폼/카드뉴스 등) |
-| Day 2 | ... | ... |
-...Day 30까지 30개 모두 작성. 반복 없이 다양하게.
+| 일차 | 주제 |
+|---|---|
+| 1일 | (구체적 주제) |
+| 2일 | (구체적 주제) |
+...30일까지 모두 작성. 반복 금지.
 
 ## 키워드/해시태그
 - 핵심 키워드 5개
 - 롱테일 키워드 5개
-- 해시태그 10개
+- 추천 해시태그 10개
 
 ## 성장 로드맵
-| 기간 | 팔로워/구독자 목표 | 핵심 전략 |
+| 기간 | 목표 | 핵심 전략 |
 |---|---|---|
-| 1주 | (목표) | (구체적 액션 3가지) |
-| 1개월 | (목표) | (전략 + 주제 방향) |
-| 3개월 | (목표) | (확장 전략) |
-| 6개월 | (목표) | (브랜딩 전략) |
-| 1년 | (목표) | (장기 비전) |`;
+| 1주 | (목표) | (바로 실행 액션 3가지) |
+| 1개월 | (목표) | (전략) |
+| 3개월 | (목표) | (전략) |
+| 6개월 | (목표) | (전략) |
+| 1년 | (목표) | (전략) |`;
   };
 
   const fetchAiReport = async (c) => {
@@ -241,7 +241,7 @@ ${data}
             <a key={i} href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",gap:10,marginBottom:10,textDecoration:"none",color:"inherit"}}>
               <img src={v.thumbnail} alt="" style={{width:80,height:45,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
               <div style={{flex:1,overflow:"hidden"}}>
-                <div style={{fontSize:11,fontWeight:700,color:text,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{v.title}</div>
+                <div style={{fontSize:13,fontWeight:700,color:text,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{v.title}</div>
                 <div style={{fontSize:9,color:muted,marginTop:3}}>조회 {fmtNum(v.viewCount)} | {fmtDate(v.publishedAt)}</div>
               </div>
             </a>
@@ -298,9 +298,9 @@ ${data}
       body.forEach(line => { const t=line.trim(); if(t.startsWith("|")&&t.endsWith("|")){tbl.push(t);return;} if(tbl.length)flush();
         if(!t){elements.push(<div key={`s${k++}`} style={{height:4}}/>);return;}
         if(t.startsWith("### ")){elements.push(<div key={`h${k++}`} style={{fontSize:13,fontWeight:800,color:text,marginTop:14,marginBottom:6}}>{t.replace(/^###\s*/,"").replace(/\*\*/g,"")}</div>);return;}
-        if(t.startsWith("- ")||t.startsWith("* ")){elements.push(<div key={`l${k++}`} style={{display:"flex",gap:6,marginBottom:4,paddingLeft:4}}><span style={{color:sColors[si%7],fontSize:6,marginTop:6}}>●</span><span style={{fontSize:12,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^[-*]\s*/,""))}</span></div>);return;}
-        if(/^\d+[\.\)]/.test(t)){const n=t.match(/^(\d+)/)[1];elements.push(<div key={`n${k++}`} style={{display:"flex",gap:8,marginBottom:6,padding:"8px 10px",borderRadius:8,background:isDark?"rgba(255,255,255,0.02)":"#f9fafb",border:`1px solid ${bdr}`}}><span style={{width:22,height:22,borderRadius:6,background:`${sColors[si%7]}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:sColors[si%7],flexShrink:0}}>{n}</span><span style={{fontSize:12,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^\d+[\.\)]\s*/,""))}</span></div>);return;}
-        elements.push(<div key={`p${k++}`} style={{fontSize:12,color:isDark?"rgba(255,255,255,0.7)":"#555",lineHeight:1.7,marginBottom:2}}>{linkify(t)}</div>);
+        if(t.startsWith("- ")||t.startsWith("* ")){elements.push(<div key={`l${k++}`} style={{display:"flex",gap:6,marginBottom:4,paddingLeft:4}}><span style={{color:sColors[si%7],fontSize:6,marginTop:6}}>●</span><span style={{fontSize:14,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^[-*]\s*/,""))}</span></div>);return;}
+        if(/^\d+[\.\)]/.test(t)){const n=t.match(/^(\d+)/)[1];elements.push(<div key={`n${k++}`} style={{display:"flex",gap:8,marginBottom:6,padding:"8px 10px",borderRadius:8,background:isDark?"rgba(255,255,255,0.02)":"#f9fafb",border:`1px solid ${bdr}`}}><span style={{width:22,height:22,borderRadius:6,background:`${sColors[si%7]}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:sColors[si%7],flexShrink:0}}>{n}</span><span style={{fontSize:14,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^\d+[\.\)]\s*/,""))}</span></div>);return;}
+        elements.push(<div key={`p${k++}`} style={{fontSize:14,color:isDark?"rgba(255,255,255,0.7)":"#555",lineHeight:1.7,marginBottom:2}}>{linkify(t)}</div>);
       }); if(tbl.length)flush();
       return <Card key={si} style={{marginBottom:14}}><div style={{fontSize:15,fontWeight:900,color:text,marginBottom:14,paddingBottom:10,borderBottom:`2px solid ${sColors[si%7]}25`,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:18,borderRadius:2,background:sColors[si%7]}}/>{title}</div>{elements}</Card>;
     });
@@ -315,14 +315,37 @@ ${data}
     <div style={{maxWidth:900,margin:"0 auto",padding:"32px 20px 60px"}}>
       {/* 헤더 */}
       <div style={{marginBottom:24}}>
-        <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:11,fontWeight:700,color:acc}}>소셜분석기</span>
-        <div style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
+        <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:12,fontWeight:700,color:acc}}>소셜분석기</span>
+        <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
+        <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>운영 중인 SNS 프로필 링크를 입력하면 AI가 분석하고 30일 콘텐츠 플랜을 제공합니다.</div>
       </div>
+
+      {/* 사용 가이드 */}
+      {!hasData && !loading && (
+        <Card style={{marginBottom:16,background:isDark?"rgba(124,106,255,0.04)":`${acc}04`,border:`1px solid ${acc}15`}}>
+          <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:10}}>사용 방법</div>
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            {[
+              {n:"1",t:"SNS 프로필 링크 입력",d:"유튜브, 블로그, 인스타 등 분석할 계정 URL을 입력하세요"},
+              {n:"2",t:"AI가 데이터 수집",d:"유튜브는 구독자/조회수/영상 데이터를 실시간 수집합니다"},
+              {n:"3",t:"분석 리포트 확인",d:"채널 진단, 경쟁 분석, 30일 콘텐츠 플랜을 받아보세요"},
+            ].map((s,i) => (
+              <div key={i} style={{flex:1,minWidth:160}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <span style={{width:24,height:24,borderRadius:8,background:`${acc}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,color:acc}}>{s.n}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:text}}>{s.t}</span>
+                </div>
+                <div style={{fontSize:12,color:muted,lineHeight:1.5,paddingLeft:32}}>{s.d}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* 입력 */}
       {!hasData && (
         <Card style={{marginBottom:20}}>
-          <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:14}}>SNS 링크 입력</div>
+          <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:14}}>SNS 링크 입력</div>
           {links.map((l,i) => { const d=l.trim()?detectPlatform(l):null; return (
             <div key={i} style={{display:"flex",gap:6,marginBottom:8}}>
               <div style={{width:32,height:32,borderRadius:8,background:d?`${d.color}12`:"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1.5px solid ${d?d.color+"30":bdr}`}}><span style={{fontSize:9,fontWeight:800,color:d?.color||muted}}>{d?d.label.slice(0,2):i+1}</span></div>
@@ -351,7 +374,10 @@ ${data}
                 {c.plat?.label}
               </button>;
             })}
-            <button onClick={()=>{setChannels([]);setReports({});setActiveTab("overview");}} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>다시 분석</button>
+            <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+              <button onClick={()=>window.print()} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>PDF 저장</button>
+              <button onClick={()=>{setChannels([]);setReports({});setActiveTab("overview");}} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>다시 분석</button>
+            </div>
           </div>
 
           {/* 탭 콘텐츠: 대시보드 + 해당 플랫폼 AI 리포트 */}
