@@ -51,15 +51,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setResult_raw(v);
     try { if (v && v.length > 10) sessionStorage.setItem(_ssKey, v); } catch(e) {}
   };
-  // unmount 시: 로딩 중이면 sessionStorage 유지, 아니면 정리
+  // unmount 시: sessionStorage 유지 (다른 메뉴 갔다 돌아와도 결과 보존)
   const loadingForCleanup = useRef(false);
   useEffect(() => {
     return () => {
-      try {
-        if (!loadingForCleanup.current) {
-          sessionStorage.removeItem(_ssKey);
-        }
-      } catch(e) {}
+      // sessionStorage 삭제하지 않음 — 결과 보존
     };
   }, []);
   const [htmlResult, setHtmlResult] = useState("");
@@ -473,23 +469,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const keywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
     const uniqueKeywords = [...new Set(keywords)];
 
-    // 단일 키워드 이미지 검색 (Unsplash → Pexels → Pixabay → Picsum)
+    // 단일 키워드 이미지 검색 (Pixabay 한국어 → Pexels → Unsplash → Picsum)
     const searchOne = async (kw, idx) => {
       const q = encodeURIComponent(kw.trim());
-      // 1) Unsplash
+      // 1) Pixabay (한국어 지원, 관련성 높음)
       try {
-        const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`);
-        if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; }
+        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=8&safesearch=true&image_type=photo&lang=ko`);
+        if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
       } catch {}
       // 2) Pexels
       try {
-        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=5&orientation=landscape`);
+        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=8&orientation=landscape`);
         if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[idx % d.photos.length].src.large; }
       } catch {}
-      // 3) Pixabay
+      // 3) Unsplash
       try {
-        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=5&safesearch=true&image_type=photo`);
-        if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
+        const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`);
+        if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; }
       } catch {}
       // 4) Picsum 최종 폴백
       return `https://picsum.photos/seed/${encodeURIComponent(kw.slice(0, 20))}/800/450`;

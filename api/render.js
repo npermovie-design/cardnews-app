@@ -33,9 +33,11 @@ export default async function handler(req) {
   }
 
   let fullBody = "";
+  let postData = null; // 구조화 데이터용
   if (segments[2] && segments[2].startsWith("post-")) {
     const postId = segments[2].replace("post-", "");
     const post = await sbQuery("posts", `select=title,content,images,author,created_at&id=eq.${postId}`);
+    canonicalUrl = `${SITE_URL}/community/${segments[1] || "info"}/post-${postId}`;
     if (post) {
       const bodyText = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 300);
       fullBody = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 2000);
@@ -43,13 +45,48 @@ export default async function handler(req) {
       description = bodyText || description;
       const imgs = Array.isArray(post.images) ? post.images : [];
       if (imgs.length > 0) image = imgs[0];
-      canonicalUrl = `${SITE_URL}/community/${segments[1] || "info"}/post-${postId}`;
+      postData = post;
+    } else {
+      // Supabase 실패 시에도 URL 기반 최소 정보 제공
+      title = `게시글 #${postId} - SNS메이킷`;
+      description = `SNS메이킷 ${catNames[segments[1]] || "커뮤니티"} 게시글입니다. 자세한 내용은 사이트에서 확인하세요.`;
     }
   }
 
   // 봇/크롤러 판별
   const ua = (req.headers.get("user-agent") || "").toLowerCase();
   const isBot = /bot|crawl|spider|slurp|facebookexternalhit|kakaotalk-scrap|twitterbot|linkedinbot|telegram|whatsapp|discord|preview|fetcher|curl|wget|python|go-http/i.test(ua);
+
+  // Article JSON-LD 구조화 데이터
+  let jsonLd = "";
+  if (postData) {
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: (postData.title || "").substring(0, 110),
+      description: (description || "").substring(0, 300),
+      image: image,
+      datePublished: postData.created_at || new Date().toISOString(),
+      author: {
+        "@type": "Person",
+        name: postData.author || "SNS메이킷 사용자",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "SNS메이킷",
+        url: SITE_URL,
+        logo: {
+          "@type": "ImageObject",
+          url: `${SITE_URL}/og-image.png`,
+        },
+      },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+      },
+    };
+    jsonLd = `<script type="application/ld+json">${JSON.stringify(schema)}</script>`;
+  }
 
   let html;
   if (isBot) {
@@ -73,6 +110,7 @@ export default async function handler(req) {
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(image)}">
+${jsonLd}
 </head>
 <body>
 <h1>${esc(title)}</h1>
@@ -107,6 +145,13 @@ ${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
       // fallback: index.html 가져오기 실패 시 리다이렉트
       return new Response(null, { status: 302, headers: { Location: canonicalUrl } });
     }
+  }
+
+  // IndexNow: 검색엔진에 URL 색인 요청 (비동기, 결과 무시)
+  if (isBot && postData) {
+    const indexNowKey = process.env.INDEXNOW_KEY || "default";
+    fetch(`https://api.indexnow.org/indexnow?url=${encodeURIComponent(canonicalUrl)}&key=${indexNowKey}`)
+      .catch(() => {});
   }
 
   return new Response(html, {
