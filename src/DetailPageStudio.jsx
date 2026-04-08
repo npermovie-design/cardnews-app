@@ -652,7 +652,7 @@ JSON배열만 출력.`;
       clearTimeout(timeoutId);
       if (!geminiRes.ok) {
         const err = await geminiRes.json().catch(() => ({}));
-        throw new Error(err.error || `생성 실패 (${geminiRes.status})`);
+        throw new Error(err.error || (geminiRes.status === 504 ? "AI 서버 응답 지연 — 잠시 후 다시 시도해주세요." : `생성 실패 (${geminiRes.status})`));
       }
       const geminiJson = await geminiRes.json();
       const layoutResult = geminiJson.text || "";
