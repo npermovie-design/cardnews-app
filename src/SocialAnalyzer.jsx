@@ -22,8 +22,9 @@ export default function SocialAnalyzer({ isDark }) {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
   const [channels, setChannels] = useState([]); // 수집 데이터
-  const [reports, setReports] = useState({}); // 플랫폼별 AI 리포트 {ch0: "...", ch1: "..."}
-  const [activeTab, setActiveTab] = useState("overview"); // 탭
+  const [reports, setReports] = useState({});
+  const [activeTab, setActiveTab] = useState("overview");
+  const [instaScreenshots, setInstaScreenshots] = useState({}); // {urlIndex: base64}
 
   const acc = "#7c6aff"; const text = isDark ? "#fff" : "#1a1a1a"; const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff"; const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
@@ -67,6 +68,19 @@ export default function SocialAnalyzer({ isDark }) {
       const d = c.yt;
       data += `\n채널명: ${d.name}\n구독자: ${d.subs.toLocaleString()}\n총조회수: ${d.views.toLocaleString()}\n영상수: ${d.vids}\n평균조회수: ${d.avgViews.toLocaleString()}\n최근평균: ${d.avgRecent.toLocaleString()}\n참여율: ${d.engage}%\n설명: ${d.desc}`;
       if (d.recent?.length) { data += "\n\n=== 최근 영상 (이 목록으로 카테고리를 판단하세요) ==="; d.recent.forEach((v,i) => { data += `\n${i+1}. "${v.title}" | 조회 ${v.viewCount.toLocaleString()} | 좋아요 ${v.likeCount} | 댓글 ${v.commentCount} | ${fmtDate(v.publishedAt)}`; }); }
+    }
+    if (c.instaVision) {
+      const v = c.instaVision;
+      data += "\n\n=== 인스타그램 스크린샷에서 추출한 실제 데이터 ===";
+      if (v.username) data += `\n계정명: @${v.username}`;
+      if (v.name) data += `\n이름: ${v.name}`;
+      if (v.followers) data += `\n팔로워: ${v.followers}`;
+      if (v.following) data += `\n팔로잉: ${v.following}`;
+      if (v.posts) data += `\n게시물: ${v.posts}`;
+      if (v.bio) data += `\n바이오: ${v.bio}`;
+      if (v.topics) data += `\n주제: ${v.topics}`;
+      if (v.rawText) data += `\n전체 텍스트: ${v.rawText}`;
+      data += "\n=== 스크린샷 데이터 끝 ===";
     }
     if (c.profile) {
       const m = c.profile.meta || {};
@@ -133,6 +147,30 @@ ${data}
 | 1년 | (목표) | (전략) |`;
   };
 
+  // ── 인스타 스크린샷 → Gemini 비전으로 지표 추출 ──
+  const analyzeInstaScreenshot = async (base64) => {
+    const prompt = `이 인스타그램 프로필 스크린샷에서 다음 정보를 정확히 추출해주세요:
+- 계정명 (아이디)
+- 이름
+- 팔로워 수
+- 팔로잉 수
+- 게시물 수
+- 프로필 설명(바이오)
+- 보이는 게시물 내용/주제
+
+JSON 형식으로 응답:
+{"username":"","name":"","followers":0,"following":0,"posts":0,"bio":"","topics":"","rawText":"화면에서 읽은 모든 텍스트"}`;
+    try {
+      const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 1000, imageBase64: base64.split(",")[1], imageMimeType: "image/png" }) });
+      if (!r.ok) return null;
+      const d = await r.json();
+      const text = d?.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      return { rawText: text };
+    } catch { return null; }
+  };
+
   const fetchAiReport = async (c) => {
     const prompt = buildPrompt(c);
     const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 6000 }) });
@@ -151,8 +189,16 @@ ${data}
       for (let i = 0; i < validLinks.length; i++) {
         const url = validLinks[i]; const plat = detectPlatform(url);
         setProgress(`${plat?.label} 데이터 수집 중... (${i + 1}/${validLinks.length})`);
-        if (plat?.id === "youtube") { collected.push({ url, plat, yt: await fetchYoutube(url) }); }
-        else { collected.push({ url, plat, profile: await fetchProfile(url) }); }
+        if (plat?.id === "youtube") {
+          collected.push({ url, plat, yt: await fetchYoutube(url) });
+        } else if (plat?.id === "instagram" && instaScreenshots[i]) {
+          // 인스타그램: 스크린샷 비전 분석
+          setProgress("인스타그램 스크린샷 분석 중...");
+          const visionData = await analyzeInstaScreenshot(instaScreenshots[i]);
+          collected.push({ url, plat, profile: null, instaVision: visionData });
+        } else {
+          collected.push({ url, plat, profile: await fetchProfile(url) });
+        }
       }
       setChannels(collected);
       setActiveTab("ch0"); // 첫 번째 탭 자동 선택
@@ -252,7 +298,7 @@ ${data}
   );};
 
   // ── 프로필 탭 (비유튜브) ──
-  const ProfileTab = ({c}) => { const m = c.profile?.meta||{}; const ogT=m["og:title"]||m._title||""; const ogD=m["og:description"]||m.description||""; const ogI=m["og:image"]||""; return (
+  const ProfileTab = ({c}) => { const m = c.profile?.meta||{}; const v = c.instaVision; const ogT=v?.name||v?.username||m["og:title"]||m._title||""; const ogD=v?.bio||m["og:description"]||m.description||""; const ogI=m["og:image"]||""; return (
     <div>
       <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:20}}>
         {ogI?<img src={ogI} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",border:`2px solid ${c.plat?.color||acc}20`}} onError={e=>{e.target.style.display="none"}}/>:
@@ -262,13 +308,18 @@ ${data}
           {ogD&&<div style={{fontSize:12,color:muted,marginTop:4,lineHeight:1.5}}>{ogD.slice(0,120)}{ogD.length>120?"...":""}</div>}
         </div>
       </div>
-      {(m._visitors||m._neighbors||m._postCount)&&(
+      {/* 지표 카드: 인스타 비전 데이터 또는 크롤링 데이터 */}
+      {(v?.followers||v?.posts||m._visitors||m._neighbors||m._postCount)&&(
         <div style={{display:"flex",gap:8,marginBottom:16,background:isDark?"rgba(255,255,255,0.02)":"#f8f9fb",borderRadius:12,padding:"16px 12px",border:`1px solid ${bdr}`}}>
+          {v?.followers&&<Stat label="팔로워" value={fmtNum(v.followers)} color={c.plat?.color}/>}
+          {v?.following&&<Stat label="팔로잉" value={fmtNum(v.following)} color={c.plat?.color}/>}
+          {v?.posts&&<Stat label="게시물" value={fmtNum(v.posts)} color={c.plat?.color}/>}
           {m._visitors&&<Stat label="방문자" value={m._visitors} color={c.plat?.color}/>}
           {m._neighbors&&<Stat label="이웃" value={m._neighbors} color={c.plat?.color}/>}
           {m._postCount&&<Stat label="게시글" value={m._postCount} color={c.plat?.color}/>}
         </div>
       )}
+      {v&&<div style={{padding:"8px 12px",borderRadius:8,background:"#22c55e10",border:"1px solid #22c55e20",fontSize:12,color:"#22c55e",fontWeight:700,marginBottom:16}}>스크린샷에서 데이터 추출 완료</div>}
       {c.profile?.texts?.length>0&&(
         <Card><div style={{fontSize:12,fontWeight:700,color:text,marginBottom:10}}>수집된 콘텐츠 ({c.profile.texts.length}개)</div>
           {c.profile.texts.slice(0,8).map((t,i)=><div key={i} style={{fontSize:11,color:isDark?"rgba(255,255,255,0.6)":"#666",lineHeight:1.6,marginBottom:4,paddingLeft:8,borderLeft:`2px solid ${c.plat?.color||acc}30`}}>{t.slice(0,100)}</div>)}
@@ -346,11 +397,31 @@ ${data}
       {!hasData && (
         <Card style={{marginBottom:20}}>
           <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:14}}>SNS 링크 입력</div>
-          {links.map((l,i) => { const d=l.trim()?detectPlatform(l):null; return (
-            <div key={i} style={{display:"flex",gap:6,marginBottom:8}}>
-              <div style={{width:32,height:32,borderRadius:8,background:d?`${d.color}12`:"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1.5px solid ${d?d.color+"30":bdr}`}}><span style={{fontSize:9,fontWeight:800,color:d?.color||muted}}>{d?d.label.slice(0,2):i+1}</span></div>
-              <input value={l} onChange={e=>updateLink(i,e.target.value)} placeholder="SNS 프로필 URL" style={{flex:1,padding:"8px 12px",borderRadius:8,border:`1.5px solid ${d?d.color+"30":bdr}`,background:inputBg,color:text,fontSize:12,outline:"none"}}/>
-              {links.length>1&&<button onClick={()=>removeLink(i)} style={{width:28,height:28,borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer"}}>x</button>}
+          {links.map((l,i) => { const d=l.trim()?detectPlatform(l):null; const isInsta=d?.id==="instagram"; return (
+            <div key={i}>
+              <div style={{display:"flex",gap:6,marginBottom:isInsta?4:8}}>
+                <div style={{width:32,height:32,borderRadius:8,background:d?`${d.color}12`:"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`1.5px solid ${d?d.color+"30":bdr}`}}><span style={{fontSize:9,fontWeight:800,color:d?.color||muted}}>{d?d.label.slice(0,2):i+1}</span></div>
+                <input value={l} onChange={e=>updateLink(i,e.target.value)} placeholder="SNS 프로필 URL" style={{flex:1,padding:"8px 12px",borderRadius:8,border:`1.5px solid ${d?d.color+"30":bdr}`,background:inputBg,color:text,fontSize:13,outline:"none"}}/>
+                {links.length>1&&<button onClick={()=>removeLink(i)} style={{width:28,height:28,borderRadius:6,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:12,cursor:"pointer"}}>x</button>}
+              </div>
+              {/* 인스타그램: 스크린샷 업로드 안내 */}
+              {isInsta && (
+                <div style={{marginLeft:38,marginBottom:10,padding:"10px 14px",borderRadius:10,background:isDark?"rgba(225,48,108,0.06)":"#fdf2f8",border:"1px solid #E1306C20"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#E1306C",marginBottom:6}}>인스타그램 프로필 스크린샷을 올려주세요</div>
+                  <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.5}}>인스타그램은 보안 정책으로 서버 수집이 불가합니다. 프로필 화면을 캡처해서 올리면 AI가 팔로워/게시물 등을 정확히 분석합니다.</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <label style={{padding:"6px 14px",borderRadius:8,background:"#E1306C",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      {instaScreenshots[i] ? "다른 스크린샷 선택" : "스크린샷 업로드"}
+                      <input type="file" accept="image/*" style={{display:"none"}} onChange={e => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const reader = new FileReader(); reader.onload = () => setInstaScreenshots(prev => ({...prev, [i]: reader.result})); reader.readAsDataURL(file);
+                      }}/>
+                    </label>
+                    {instaScreenshots[i] && <span style={{fontSize:11,color:"#22c55e",fontWeight:700}}>업로드 완료</span>}
+                  </div>
+                  {instaScreenshots[i] && <img src={instaScreenshots[i]} alt="" style={{marginTop:8,maxHeight:120,borderRadius:8,border:`1px solid ${bdr}`}}/>}
+                </div>
+              )}
             </div>
           );})}
           <div style={{display:"flex",gap:8,marginTop:12}}>
