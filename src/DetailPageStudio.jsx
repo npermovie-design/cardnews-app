@@ -3014,7 +3014,7 @@ JSON배열만 출력.`;
                                 {sec[`ecoCardImg_${di}`] ? (
                                   <img src={sec[`ecoCardImg_${di}`]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
-                                  <span style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#bbb", letterSpacing: 1 }}>DETAIL {di + 1}</span>
+                                  <span style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.3)" : "#999", letterSpacing: 1 }}>DETAIL {di + 1}</span>
                                 )}
                                 <input id={cardImgId} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
                                   const file = e.target.files?.[0];
@@ -3057,7 +3057,7 @@ JSON배열만 출력.`;
                       {sideRight && <div {...editable(sideRight)} style={eS(sideRight, { position: "absolute", right: 20, top: "50%", transform: "translateY(-50%) rotate(90deg)", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.7)", letterSpacing: 3, whiteSpace: "nowrap", zIndex: 2 })}>{sideRight.content}</div>}
 
                       {/* 중앙 이미지 */}
-                      <div style={{ width: 380, height: 460, background: "#e8d0c8", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                      <div style={{ width: 380, height: 460, background: isDarkBg ? "#2a2a2a" : "#e8d0c8", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                         {productImg ? (
                           <img src={productImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
@@ -3087,7 +3087,7 @@ JSON배열만 출력.`;
                       {/* 대형 타이틀 */}
                       <div style={{ marginBottom: 8 }}>
                         {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 48, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.15, letterSpacing: -1, fontFamily: "'Georgia','Times New Roman',serif", whiteSpace: "pre-line" })}>{titleEl.content}</div>}
-                        {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 48, fontWeight: 400, fontStyle: "italic", color: isDarkBg ? "rgba(255,255,255,0.5)" : "#c08080", lineHeight: 1.15, fontFamily: "'Georgia','Times New Roman',serif" })}>{subtitleEl.content}</div>}
+                        {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 48, fontWeight: 400, fontStyle: "italic", color: isDarkBg ? "rgba(255,255,255,0.6)" : "#a06868", lineHeight: 1.15, fontFamily: "'Georgia','Times New Roman',serif" })}>{subtitleEl.content}</div>}
                       </div>
 
                       {/* 좌이미지 + 우텍스트 */}
@@ -3346,7 +3346,7 @@ JSON배열만 출력.`;
                       {/* A */}
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 48 }}>
                         <div style={{ fontSize: 48, fontWeight: 900, color: isDarkBg ? "#7090c0" : darkAccent, marginBottom: 12 }}>A.</div>
-                        {aBubble && <div {...editable(aBubble)} style={eS(aBubble, { background: darkAccent, borderRadius: "20px 20px 4px 20px", padding: "18px 28px", fontSize: 16, fontWeight: 600, color: "#fff", maxWidth: "75%", textAlign: "center", lineHeight: 1.6 })}>{aBubble.content}</div>}
+                        {aBubble && <div {...editable(aBubble)} style={eS(aBubble, { background: isDarkBg ? "#3a5080" : darkAccent, borderRadius: "20px 20px 4px 20px", padding: "18px 28px", fontSize: 16, fontWeight: 600, color: "#fff", maxWidth: "75%", textAlign: "center", lineHeight: 1.6 })}>{aBubble.content}</div>}
                       </div>
 
                       {/* CTA 헤드라인 */}
@@ -3908,7 +3908,7 @@ JSON배열만 출력.`;
                   const renderBoldBracket = (text) => {
                     if (!text) return null;
                     return text.split(/(\[.*?\])/g).map((p, pi) => p.startsWith("[") && p.endsWith("]")
-                      ? <span key={pi} style={{ fontWeight: 900, color: "#e04040" }}>{p.slice(1, -1)}</span>
+                      ? <span key={pi} style={{ fontWeight: 900, color: isDarkBg ? "#ff8080" : "#e04040" }}>{p.slice(1, -1)}</span>
                       : <span key={pi} style={{ fontWeight: p === " 라인업" || p.includes("라인업") ? 900 : 400 }}>{p}</span>
                     );
                   };
@@ -3989,7 +3989,7 @@ JSON배열만 출력.`;
                       {/* POINT 배지 */}
                       {subtitleEl && (
                         <div style={{ textAlign: "center", marginBottom: 36 }}>
-                          <span {...editable(subtitleEl)} style={eS(subtitleEl, { display: "inline-block", padding: "8px 24px", background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.6)", borderRadius: 24, fontSize: 14, fontWeight: 800, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", letterSpacing: 2 })}>{subtitleEl.content}</span>
+                          <span {...editable(subtitleEl)} style={eS(subtitleEl, { display: "inline-block", padding: "8px 24px", background: isDarkBg ? "rgba(255,255,255,0.1)" : "#f0f0f0", borderRadius: 24, fontSize: 14, fontWeight: 800, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", letterSpacing: 2 })}>{subtitleEl.content}</span>
                         </div>
                       )}
                       {/* 헤드라인 */}
@@ -4010,7 +4010,7 @@ JSON배열만 출력.`;
                                 {sec[`picImg_${ci}`] ? (
                                   <img src={sec[`picImg_${ci}`]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
-                                  <div style={{ width: 80, height: 80, borderRadius: "50%", background: isDarkBg ? "rgba(255,255,255,0.08)" : (ci % 2 === 0 ? "linear-gradient(135deg, #d4e8d0, #b8d8b0)" : "linear-gradient(135deg, #d0e4f0, #b0d0e8)") }} />
+                                  <div style={{ width: 80, height: 80, borderRadius: "50%", background: isDarkBg ? "rgba(255,255,255,0.12)" : (ci % 2 === 0 ? "linear-gradient(135deg, #d4e8d0, #b8d8b0)" : "linear-gradient(135deg, #d0e4f0, #b0d0e8)") }} />
                                 )}
                                 <input id={imgId} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
                                   const file = e.target.files?.[0];
@@ -4063,7 +4063,7 @@ JSON배열만 출력.`;
                           <img src={productImg} alt="" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain" }} />
                         ) : (
                           <div style={{ display: "flex", alignItems: "flex-end", gap: 24 }}>
-                            <div style={{ width: 100, height: 240, background: isDarkBg ? "linear-gradient(180deg, #333, #222)" : "linear-gradient(180deg, #2a2a2a, #1a1a1a)", borderRadius: "24px 24px 8px 8px", boxShadow: `0 8px 32px rgba(0,0,0,${isDarkBg ? "0.3" : "0.12"})`, position: "relative" }}>
+                            <div style={{ width: 100, height: 240, background: isDarkBg ? "linear-gradient(180deg, #333, #222)" : "linear-gradient(180deg, #e0dcd5, #d0ccc5)", borderRadius: "24px 24px 8px 8px", boxShadow: `0 8px 32px rgba(0,0,0,${isDarkBg ? "0.3" : "0.12"})`, position: "relative" }}>
                               <div style={{ position: "absolute", top: "25%", left: "50%", transform: "translateX(-50%)", width: 50, height: 60, background: "rgba(255,255,255,0.08)", borderRadius: 4 }} />
                             </div>
                             <div style={{ width: 80, height: 260, background: isDarkBg ? "#222" : "#1a1a1a", borderRadius: 6, boxShadow: `0 8px 32px rgba(0,0,0,${isDarkBg ? "0.4" : "0.15"})`, position: "relative" }}>
@@ -4696,9 +4696,9 @@ JSON배열만 출력.`;
                   };
 
                   const stepIcons = [
-                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}80` : accentColor} strokeWidth="1.5"><circle cx="20" cy="14" r="10"/><path d="M20 24v8"/><path d="M16 28h8"/></svg>,
-                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}80` : accentColor} strokeWidth="1.5"><path d="M20 6C15 6 10 14 10 20c0 6 4.5 10 10 10s10-4 10-10c0-6-5-14-10-14z"/><path d="M14 22h12M17 26h6"/></svg>,
-                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}80` : accentColor} strokeWidth="1.5"><path d="M8 30l6-8 6 4 6-10 6 6"/><rect x="6" y="8" width="28" height="24" rx="3"/></svg>,
+                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}cc` : accentColor} strokeWidth="1.5"><circle cx="20" cy="14" r="10"/><path d="M20 24v8"/><path d="M16 28h8"/></svg>,
+                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}cc` : accentColor} strokeWidth="1.5"><path d="M20 6C15 6 10 14 10 20c0 6 4.5 10 10 10s10-4 10-10c0-6-5-14-10-14z"/><path d="M14 22h12M17 26h6"/></svg>,
+                    <svg viewBox="0 0 40 40" fill="none" stroke={isDarkBg ? `${accentColor}cc` : accentColor} strokeWidth="1.5"><path d="M8 30l6-8 6 4 6-10 6 6"/><rect x="6" y="8" width="28" height="24" rx="3"/></svg>,
                   ];
 
                   return (
@@ -4710,7 +4710,7 @@ JSON배열만 출력.`;
                         const lines = (titleEl.content || "").split("\n");
                         return (
                           <div style={{ textAlign: "center", marginBottom: 28 }}>
-                            {lines[0] && <div style={{ fontSize: 22, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#555", marginBottom: 4 }}>{lines[0]}</div>}
+                            {lines[0] && <div style={{ fontSize: 22, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#555", marginBottom: 4 }}>{lines[0]}</div>}
                             {lines[1] && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a" })}>{lines[1]}</div>}
                           </div>
                         );
@@ -4731,7 +4731,7 @@ JSON배열만 출력.`;
                             <div key={si} style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
                               {/* 넘버 */}
                               <div style={{ width: 32, height: 32, borderRadius: "50%", background: isDarkBg ? `${accentColor}cc` : accentColor, color: "#fff", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>{si + 1}</div>
-                              <div style={{ fontSize: 16, fontWeight: 800, color: isDarkBg ? `${accentColor}dd` : accentColor, marginBottom: 10 }}>{stepTitle}</div>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: accentColor, marginBottom: 10 }}>{stepTitle}</div>
                               <div {...editable(el)} style={eS(el, { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.45)" : "#777", lineHeight: 1.7, padding: "0 8px" })}>{stepDesc}</div>
                               {/* 일러스트 영역 */}
                               <div style={{ marginTop: 24, height: 160, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -5002,7 +5002,7 @@ JSON배열만 출력.`;
                                   return (
                                     <td key={ci} style={{
                                       textAlign: "center", padding: "20px 16px", verticalAlign: "middle",
-                                      fontSize: 14, color: isLast ? (isDarkBg ? "rgba(255,255,255,0.8)" : "#333") : (isDarkBg ? "rgba(255,255,255,0.5)" : "#555"),
+                                      fontSize: 14, color: isLast ? (isDarkBg ? "rgba(255,255,255,0.8)" : "#333") : (isDarkBg ? "rgba(255,255,255,0.65)" : "#555"),
                                       fontWeight: isLast ? 600 : 400, lineHeight: 1.6,
                                       borderRight: ci < cells.length - 2 ? `1px solid ${isDarkBg ? "rgba(255,255,255,0.04)" : "#f0f0f0"}` : "none",
                                       background: isLast
