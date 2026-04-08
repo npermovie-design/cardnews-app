@@ -61,6 +61,27 @@ export default function SocialAnalyzer({ isDark }) {
     } catch { return null; }
   };
 
+  // ── 인스타 Graph API (연동된 사용자) ──
+  const fetchInstaApi = async (uid) => {
+    try {
+      const r = await fetch(`/api/insta-media?uid=${uid}`);
+      if (!r.ok) return null;
+      const d = await r.json();
+      if (!d.connected) return null;
+      const media = d.media || [];
+      const totalLikes = media.reduce((s, m) => s + (m.like_count || 0), 0);
+      const totalComments = media.reduce((s, m) => s + (m.comments_count || 0), 0);
+      const avgLikes = media.length > 0 ? Math.round(totalLikes / media.length) : 0;
+      const avgComments = media.length > 0 ? Math.round(totalComments / media.length) : 0;
+      return {
+        username: d.username, userId: d.userId,
+        postCount: media.length, media,
+        totalLikes, totalComments, avgLikes, avgComments,
+        captions: media.map(m => m.caption).filter(Boolean).slice(0, 15),
+      };
+    } catch { return null; }
+  };
+
   // ── 플랫폼별 개별 AI 분석 ──
   const buildPrompt = (c) => {
     let data = `플랫폼: ${c.plat?.label}\nURL: ${c.url}`;
@@ -68,6 +89,21 @@ export default function SocialAnalyzer({ isDark }) {
       const d = c.yt;
       data += `\n채널명: ${d.name}\n구독자: ${d.subs.toLocaleString()}\n총조회수: ${d.views.toLocaleString()}\n영상수: ${d.vids}\n평균조회수: ${d.avgViews.toLocaleString()}\n최근평균: ${d.avgRecent.toLocaleString()}\n참여율: ${d.engage}%\n설명: ${d.desc}`;
       if (d.recent?.length) { data += "\n\n=== 최근 영상 (이 목록으로 카테고리를 판단하세요) ==="; d.recent.forEach((v,i) => { data += `\n${i+1}. "${v.title}" | 조회 ${v.viewCount.toLocaleString()} | 좋아요 ${v.likeCount} | 댓글 ${v.commentCount} | ${fmtDate(v.publishedAt)}`; }); }
+    }
+    if (c.instaApi) {
+      const a = c.instaApi;
+      data += "\n\n=== Instagram Graph API 실제 데이터 ===";
+      data += `\n계정명: @${a.username}`;
+      data += `\n게시물 수: ${a.postCount}`;
+      data += `\n총 좋아요: ${a.totalLikes} (평균 ${a.avgLikes}/게시물)`;
+      data += `\n총 댓글: ${a.totalComments} (평균 ${a.avgComments}/게시물)`;
+      if (a.media?.length) {
+        data += "\n\n최근 게시물:";
+        a.media.slice(0, 10).forEach((m, mi) => {
+          data += `\n${mi + 1}. [${m.media_type}] 좋아요 ${m.like_count} | 댓글 ${m.comments_count} | ${m.caption?.slice(0, 80) || "(캡션 없음)"} | ${m.timestamp?.slice(0, 10)}`;
+        });
+      }
+      data += "\n=== API 데이터 끝 ===";
     }
     if (c.instaVision) {
       const v = c.instaVision;
@@ -119,18 +155,19 @@ ${data}
 | 타겟 | (구체적 오디언스) |
 
 ## 참고할 유사 성공 계정
-| 채널명 | 규모 | 링크 | 배울 점 |
-|---|---|---|---|
-실제 존재하는 같은 카테고리의 ${c.plat?.label} 계정 5개. URL을 반드시 포함하세요.
+같은 카테고리에서 성공한 ${c.plat?.label} 계정 5개를 언급하세요:
+- 채널명과 대략적인 규모 (팔로워/구독자)
+- 왜 참고해야 하는지 구체적 이유
+- URL은 생략하고 채널명만 정확히 기재
 
 ## 30일 콘텐츠 주제
-한 달간 매일 올릴 구체적 주제 30개:
+최근 1주일 트렌드와 관심도가 높은 키워드를 반영하여, 이 계정 분야에 맞는 한 달치 주제 30개:
 
 | 일차 | 주제 |
 |---|---|
-| 1일 | (구체적 주제) |
+| 1일 | (최근 트렌드 반영 구체적 주제) |
 | 2일 | (구체적 주제) |
-...30일까지 모두 작성. 반복 금지.
+...30일까지 모두 작성. 최근 화제인 주제 우선.
 
 ## 키워드/해시태그
 - 핵심 키워드 5개
@@ -191,11 +228,22 @@ JSON 형식으로 응답:
         setProgress(`${plat?.label} 데이터 수집 중... (${i + 1}/${validLinks.length})`);
         if (plat?.id === "youtube") {
           collected.push({ url, plat, yt: await fetchYoutube(url) });
-        } else if (plat?.id === "instagram" && instaScreenshots[i]) {
-          // 인스타그램: 스크린샷 비전 분석
-          setProgress("인스타그램 스크린샷 분석 중...");
-          const visionData = await analyzeInstaScreenshot(instaScreenshots[i]);
-          collected.push({ url, plat, profile: null, instaVision: visionData });
+        } else if (plat?.id === "instagram") {
+          // 인스타: 1순위 Graph API 연동 → 2순위 스크린샷 → 3순위 크롤링
+          let instaData = null;
+          if (user?.id) {
+            setProgress("인스타그램 연동 데이터 확인 중...");
+            instaData = await fetchInstaApi(user.id);
+          }
+          if (instaData) {
+            collected.push({ url, plat, profile: null, instaApi: instaData });
+          } else if (instaScreenshots[i]) {
+            setProgress("인스타그램 스크린샷 분석 중...");
+            const visionData = await analyzeInstaScreenshot(instaScreenshots[i]);
+            collected.push({ url, plat, profile: null, instaVision: visionData });
+          } else {
+            collected.push({ url, plat, profile: await fetchProfile(url) });
+          }
         } else {
           collected.push({ url, plat, profile: await fetchProfile(url) });
         }
@@ -298,7 +346,7 @@ JSON 형식으로 응답:
   );};
 
   // ── 프로필 탭 (비유튜브) ──
-  const ProfileTab = ({c}) => { const m = c.profile?.meta||{}; const v = c.instaVision; const ogT=v?.name||v?.username||m["og:title"]||m._title||""; const ogD=v?.bio||m["og:description"]||m.description||""; const ogI=m["og:image"]||""; return (
+  const ProfileTab = ({c}) => { const m = c.profile?.meta||{}; const v = c.instaVision; const ia = c.instaApi; const ogT=ia?.username?`@${ia.username}`:(v?.name||v?.username||m["og:title"]||m._title||""); const ogD=v?.bio||m["og:description"]||m.description||""; const ogI=m["og:image"]||""; return (
     <div>
       <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:20}}>
         {ogI?<img src={ogI} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",border:`2px solid ${c.plat?.color||acc}20`}} onError={e=>{e.target.style.display="none"}}/>:
@@ -308,9 +356,10 @@ JSON 형식으로 응답:
           {ogD&&<div style={{fontSize:12,color:muted,marginTop:4,lineHeight:1.5}}>{ogD.slice(0,120)}{ogD.length>120?"...":""}</div>}
         </div>
       </div>
-      {/* 지표 카드: 인스타 비전 데이터 또는 크롤링 데이터 */}
-      {(v?.followers||v?.posts||m._visitors||m._neighbors||m._postCount)&&(
-        <div style={{display:"flex",gap:8,marginBottom:16,background:isDark?"rgba(255,255,255,0.02)":"#f8f9fb",borderRadius:12,padding:"16px 12px",border:`1px solid ${bdr}`}}>
+      {/* 지표 카드 */}
+      {(ia||v?.followers||v?.posts||m._visitors||m._neighbors||m._postCount)&&(
+        <div style={{display:"flex",gap:8,marginBottom:16,background:isDark?"rgba(255,255,255,0.02)":"#f8f9fb",borderRadius:12,padding:"16px 12px",border:`1px solid ${bdr}`,flexWrap:"wrap"}}>
+          {ia&&<><Stat label="게시물" value={fmtNum(ia.postCount)} color="#E1306C"/><Stat label="평균 좋아요" value={fmtNum(ia.avgLikes)} color="#E1306C"/><Stat label="평균 댓글" value={fmtNum(ia.avgComments)} color="#E1306C"/><Stat label="총 좋아요" value={fmtNum(ia.totalLikes)} color="#E1306C"/></>}
           {v?.followers&&<Stat label="팔로워" value={fmtNum(v.followers)} color={c.plat?.color}/>}
           {v?.following&&<Stat label="팔로잉" value={fmtNum(v.following)} color={c.plat?.color}/>}
           {v?.posts&&<Stat label="게시물" value={fmtNum(v.posts)} color={c.plat?.color}/>}
@@ -319,7 +368,16 @@ JSON 형식으로 응답:
           {m._postCount&&<Stat label="게시글" value={m._postCount} color={c.plat?.color}/>}
         </div>
       )}
-      {v&&<div style={{padding:"8px 12px",borderRadius:8,background:"#22c55e10",border:"1px solid #22c55e20",fontSize:12,color:"#22c55e",fontWeight:700,marginBottom:16}}>스크린샷에서 데이터 추출 완료</div>}
+      {ia&&<div style={{padding:"8px 12px",borderRadius:8,background:"#22c55e10",border:"1px solid #22c55e20",fontSize:13,color:"#22c55e",fontWeight:700,marginBottom:16}}>Instagram Graph API 데이터 수집 완료</div>}
+      {v&&!ia&&<div style={{padding:"8px 12px",borderRadius:8,background:"#22c55e10",border:"1px solid #22c55e20",fontSize:13,color:"#22c55e",fontWeight:700,marginBottom:16}}>스크린샷에서 데이터 추출 완료</div>}
+      {/* 인스타 API: 최근 게시물 좋아요 차트 */}
+      {ia?.media?.length >= 3 && (() => {
+        const sorted = [...ia.media].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+        const maxV = Math.max(...sorted.map(m=>m.like_count),1);
+        return <Card style={{marginBottom:16}}><div style={{fontSize:14,fontWeight:800,color:text,marginBottom:12}}>게시물 좋아요 추이</div>
+          {sorted.slice(-8).map((m,i)=><Bar key={i} value={m.like_count} max={maxV} color="#E1306C" label={(m.caption||"게시물").slice(0,30)+(m.caption?.length>30?"...":"")}/>)}
+        </Card>;
+      })()}
       {c.profile?.texts?.length>0&&(
         <Card><div style={{fontSize:12,fontWeight:700,color:text,marginBottom:10}}>수집된 콘텐츠 ({c.profile.texts.length}개)</div>
           {c.profile.texts.slice(0,8).map((t,i)=><div key={i} style={{fontSize:11,color:isDark?"rgba(255,255,255,0.6)":"#666",lineHeight:1.6,marginBottom:4,paddingLeft:8,borderLeft:`2px solid ${c.plat?.color||acc}30`}}>{t.slice(0,100)}</div>)}
