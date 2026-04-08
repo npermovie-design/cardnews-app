@@ -22,7 +22,7 @@ export default function SocialAnalyzer({ isDark }) {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
   const [channels, setChannels] = useState([]); // 수집 데이터
-  const [report, setReport] = useState(null); // AI 리포트 (플랫폼별 분리)
+  const [reports, setReports] = useState({}); // 플랫폼별 AI 리포트 {ch0: "...", ch1: "..."}
   const [activeTab, setActiveTab] = useState("overview"); // 탭
 
   const acc = "#7c6aff"; const text = isDark ? "#fff" : "#1a1a1a"; const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
@@ -60,74 +60,100 @@ export default function SocialAnalyzer({ isDark }) {
     } catch { return null; }
   };
 
-  // ── 분석 ──
-  const analyze = async () => {
-    if (!validLinks.length) return;
-    setLoading(true); setError(null); setChannels([]); setReport(null); setActiveTab("overview");
-    try {
-      const collected = [];
-      for (let i = 0; i < validLinks.length; i++) {
-        const url = validLinks[i]; const plat = detectPlatform(url);
-        setProgress(`${plat?.label} 데이터 수집 중... (${i+1}/${validLinks.length})`);
-        if (plat?.id === "youtube") { collected.push({ url, plat, yt: await fetchYoutube(url) }); }
-        else { collected.push({ url, plat, profile: await fetchProfile(url) }); }
-      }
-      setChannels(collected);
-      setProgress("AI 분석 리포트 생성 중...");
+  // ── 플랫폼별 개별 AI 분석 ──
+  const buildPrompt = (c) => {
+    let data = `플랫폼: ${c.plat?.label}\nURL: ${c.url}`;
+    if (c.yt) {
+      const d = c.yt;
+      data += `\n채널명: ${d.name}\n구독자: ${d.subs.toLocaleString()}\n총조회수: ${d.views.toLocaleString()}\n영상수: ${d.vids}\n평균조회수: ${d.avgViews.toLocaleString()}\n최근평균: ${d.avgRecent.toLocaleString()}\n참여율: ${d.engage}%\n설명: ${d.desc}`;
+      if (d.recent?.length) { data += "\n\n=== 최근 영상 (이 목록으로 카테고리를 판단하세요) ==="; d.recent.forEach((v,i) => { data += `\n${i+1}. "${v.title}" | 조회 ${v.viewCount.toLocaleString()} | 좋아요 ${v.likeCount} | 댓글 ${v.commentCount} | ${fmtDate(v.publishedAt)}`; }); }
+    }
+    if (c.profile) {
+      const m = c.profile.meta || {};
+      if (m["og:title"]) data += `\n이름: ${m["og:title"]}`;
+      if (m["og:description"]) data += `\n설명: ${m["og:description"]}`;
+      if (m._visitors) data += `\n방문자: ${m._visitors}`;
+      if (m._postCount) data += `\n게시글: ${m._postCount}`;
+      if (c.profile.texts?.length) data += `\n\n=== 크롤링된 콘텐츠 ===\n${c.profile.texts.slice(0, 15).join("\n")}`;
+    }
 
-      // AI 프롬프트
-      const info = collected.map((c,i) => {
-        let t = `[계정${i+1}] ${c.plat?.label} | ${c.url}`;
-        if (c.yt) { const d=c.yt; t+=`\n채널명:${d.name}\n구독자:${d.subs}\n총조회수:${d.views}\n영상수:${d.vids}\n평균조회수:${d.avgViews}\n최근평균:${d.avgRecent}\n참여율:${d.engage}%\n설명:${d.desc}`; if(d.recent?.length){t+="\n최근영상:"; d.recent.forEach((v,vi)=>{t+=`\n${vi+1}."${v.title}"|조회${v.viewCount}|좋아요${v.likeCount}|댓글${v.commentCount}|${fmtDate(v.publishedAt)}`;});} }
-        if (c.profile) { const m=c.profile.meta||{}; if(m["og:title"])t+=`\n이름:${m["og:title"]}`; if(m["og:description"])t+=`\n설명:${m["og:description"]}`; if(m._visitors)t+=`\n방문자:${m._visitors}`; if(m._postCount)t+=`\n게시글:${m._postCount}`; if(c.profile.texts?.length)t+=`\n콘텐츠:${c.profile.texts.slice(0,15).join(" | ")}`; }
-        return t;
-      }).join("\n---\n");
+    return `SNS 전문 분석가로서 이 ${c.plat?.label} 계정을 분석하세요.
+[핵심] 채널명/URL이 아닌, 영상 제목이나 크롤링 텍스트 등 실제 콘텐츠 기반으로 판단하세요.
 
-      const prompt = `SNS 전문 분석가로서 실제 수집 데이터를 분석하세요.
-[핵심] 채널명/URL이 아닌 영상 제목, 크롤링 텍스트 등 실제 콘텐츠 기반으로 판단하세요.
+${data}
 
-${info}
+한국어. 이모지/특수기호 금지. 마크다운 테이블 사용.
+크롤링 데이터가 부족해도 URL의 계정명과 플랫폼 특성을 활용해 최대한 분석하세요.
+인스타그램의 경우 계정명으로 유추 가능한 카테고리를 분석하고 해당 분야의 전략을 제시하세요.
 
-한국어. 이모지/특수기호 금지. 마크다운 테이블 적극 사용.
-
-## 종합 진단
-각 계정을 아래 표로:
-| 항목 | 결과 |
+## 채널 진단
+| 항목 | 분석 결과 |
 |---|---|
-| 카테고리 | (실제 콘텐츠 기반) |
+| 콘텐츠 카테고리 | (영상 제목/콘텐츠 기반) |
 | 등급 | (S/A/B/C/D) |
 | 강점 | (3가지) |
 | 약점 | (3가지) |
+| 타겟 | (구체적 오디언스) |
 
-## 경쟁 채널
-| 채널명 | 플랫폼 | 규모 | URL | 참고 포인트 |
-|---|---|---|---|---|
-5개 이상. 실제 존재하는 채널.
-
-## 액션 플랜
-| 순위 | 액션 | 효과 | 난이도 | 기간 |
-|---|---|---|---|---|
-10개. 우선순위순.
+## 유사 성공 계정 5개
+| 채널명 | 규모 | URL | 참고할 점 |
+|---|---|---|---|
+실제 존재하는 같은 카테고리 계정만.
 
 ## 콘텐츠 아이디어
 | 번호 | 제목 | 형식 | 예상반응 |
 |---|---|---|---|
-10개.
+10개. 이 플랫폼에 맞는 구체적 아이디어.
 
-## 키워드 전략
-핵심 5개, 롱테일 5개, 해시태그 10개
+## 키워드/해시태그
+- 핵심 키워드 5개
+- 롱테일 키워드 5개
+- 해시태그 10개
 
-## 업로드 전략
-| 항목 | 추천 |
-|---|---|
-최적 요일/시간/빈도/썸네일/제목 전략`;
+## 성장 로드맵
+| 기간 | 목표 | 구체적 액션 |
+|---|---|---|
+| 1주 | (단기 목표) | (바로 실행할 액션 3가지) |
+| 1개월 | (월간 목표) | (구체적 전략) |
+| 3개월 | (분기 목표) | (성장 전략) |
+| 6개월 | (반기 목표) | (확장 전략) |
+| 1년 | (연간 목표) | (장기 비전) |`;
+  };
 
-      const r = await fetch("/api/gemini-generate", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({prompt, maxTokens:4000}) });
-      if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || "AI 실패");
-      const rd = await r.json();
-      setReport(rd?.text || "");
+  const fetchAiReport = async (c) => {
+    const prompt = buildPrompt(c);
+    const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 3000 }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "AI 실패");
+    const rd = await r.json();
+    return rd?.text || "";
+  };
+
+  // ── 분석 ──
+  const analyze = async () => {
+    if (!validLinks.length) return;
+    setLoading(true); setError(null); setChannels([]); setReports({}); setActiveTab("overview");
+    try {
+      // 1단계: 데이터 수집
+      const collected = [];
+      for (let i = 0; i < validLinks.length; i++) {
+        const url = validLinks[i]; const plat = detectPlatform(url);
+        setProgress(`${plat?.label} 데이터 수집 중... (${i + 1}/${validLinks.length})`);
+        if (plat?.id === "youtube") { collected.push({ url, plat, yt: await fetchYoutube(url) }); }
+        else { collected.push({ url, plat, profile: await fetchProfile(url) }); }
+      }
+      setChannels(collected);
+      setActiveTab("ch0"); // 첫 번째 탭 자동 선택
+
+      // 2단계: 플랫폼별 개별 AI 분석 (병렬)
+      setProgress("AI 분석 리포트 생성 중...");
+      const reportPromises = collected.map((c, i) =>
+        fetchAiReport(c).then(text => ({ key: `ch${i}`, text })).catch(() => ({ key: `ch${i}`, text: "분석 중 오류가 발생했습니다." }))
+      );
+      const results = await Promise.all(reportPromises);
+      const rMap = {};
+      results.forEach(r => { rMap[r.key] = r.text; });
+      setReports(rMap);
       setProgress("");
-      setActiveTab(collected.length > 0 ? "ch0" : "overview");
     } catch (e) { setError(e.message); setProgress(""); } finally { setLoading(false); }
   };
 
@@ -288,15 +314,26 @@ ${info}
                 {c.plat?.label}
               </button>;
             })}
-            {report && <button onClick={()=>setActiveTab("report")} style={{padding:"8px 16px",borderRadius:10,border:"none",background:activeTab==="report"?cardBg:"transparent",color:activeTab==="report"?acc:muted,fontSize:12,fontWeight:activeTab==="report"?800:500,cursor:"pointer",boxShadow:activeTab==="report"?(isDark?"none":"0 1px 4px rgba(0,0,0,0.08)"):"none"}}>AI 리포트</button>}
-            <button onClick={()=>{setChannels([]);setReport(null);setActiveTab("overview");}} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>다시 분석</button>
+            <button onClick={()=>{setChannels([]);setReports({});setActiveTab("overview");}} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:8,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer"}}>다시 분석</button>
           </div>
 
-          {/* 탭 콘텐츠 */}
+          {/* 탭 콘텐츠: 대시보드 + 해당 플랫폼 AI 리포트 */}
           {channels.map((c,i) => activeTab===`ch${i}` && (
-            <div key={i}>{c.yt ? <YtTab d={c.yt}/> : <ProfileTab c={c}/>}</div>
+            <div key={i}>
+              {c.yt ? <YtTab d={c.yt}/> : <ProfileTab c={c}/>}
+              {/* 해당 플랫폼 AI 리포트 */}
+              {reports[`ch${i}`] ? (
+                <div style={{marginTop:20}}>{renderReport(reports[`ch${i}`])}</div>
+              ) : loading && (
+                <Card style={{marginTop:20,textAlign:"center",padding:"40px 20px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:acc,fontSize:13,fontWeight:700}}>
+                    <span style={{width:14,height:14,border:`2px solid ${acc}40`,borderTop:`2px solid ${acc}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}}/>
+                    AI 분석 중...
+                  </div>
+                </Card>
+              )}
+            </div>
           ))}
-          {activeTab==="report" && report && <div>{renderReport(report)}</div>}
         </>
       )}
     </div>
