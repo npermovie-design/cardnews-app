@@ -42,116 +42,84 @@ export default function SocialAnalyzer({ isDark, user }) {
 
   const validLinks = links.filter(l => l.trim());
 
-  // 프록시를 통해 페이지 메타 정보 수집
-  const fetchPageMeta = async (url) => {
-    try {
-      const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
-      if (!res.ok) return { url, error: "페이지를 불러올 수 없습니다" };
-      const html = await res.text();
-      // 메타 태그에서 정보 추출
-      const getMeta = (name) => {
-        const m = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${name}["'][^>]*content=["']([^"']*)["']`, "i"))
-          || html.match(new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*(?:property|name)=["']${name}["']`, "i"));
-        return m ? m[1] : null;
-      };
-      const title = getMeta("og:title") || (html.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || "";
-      const desc = getMeta("og:description") || getMeta("description") || "";
-      const image = getMeta("og:image") || "";
-      const siteName = getMeta("og:site_name") || "";
-      const type = getMeta("og:type") || "";
-      // followers/subscriber 정보 (일부 플랫폼 메타에 포함)
-      const followers = getMeta("profile:followers_count") || "";
-      return { url, title: title.slice(0, 300), desc: desc.slice(0, 500), image, siteName, type, followers, htmlSnippet: html.slice(0, 3000) };
-    } catch {
-      return { url, error: "네트워크 오류" };
-    }
-  };
-
   const analyze = async () => {
     if (validLinks.length === 0) return;
     setLoading(true); setError(null); setReport(null);
 
     try {
-      // 1단계: 각 링크의 메타 정보 수집
-      setProgress("SNS 페이지 정보를 수집하고 있어요...");
-      const metaResults = await Promise.all(validLinks.map(fetchPageMeta));
-
-      // 2단계: 플랫폼 감지
-      const analyzed = metaResults.map(m => ({
-        ...m,
-        platform: detectPlatform(m.url),
+      // 플랫폼 감지
+      const analyzed = validLinks.map(url => ({
+        url,
+        platform: detectPlatform(url),
       }));
 
-      // 3단계: AI 분석 요청
-      setProgress("AI가 계정을 분석하고 있어요...");
+      // AI 분석 요청 — Gemini가 URL을 직접 분석
+      setProgress("AI가 계정을 분석하고 있어요... (최대 30초 소요)");
 
       const linksInfo = analyzed.map((a, i) => {
         const p = a.platform;
-        return `[계정 ${i + 1}] ${p?.label || "미확인"}\nURL: ${a.url}\n제목: ${a.title || "N/A"}\n설명: ${a.desc || "N/A"}\n사이트: ${a.siteName || "N/A"}\n페이지 유형: ${a.type || "N/A"}\n팔로워: ${a.followers || "정보 없음"}\n페이지 미리보기:\n${a.htmlSnippet || ""}`;
-      }).join("\n\n---\n\n");
+        return `[계정 ${i + 1}] 플랫폼: ${p?.label || "미확인"}\nURL: ${a.url}`;
+      }).join("\n");
 
-      const prompt = `당신은 SNS 마케팅 전문 분석가입니다. 다음 SNS 계정들을 심층 분석해주세요.
+      const prompt = `당신은 SNS 마케팅 전문 분석가입니다. 다음 SNS 계정들의 URL을 기반으로 심층 분석해주세요.
 
+분석 대상 계정:
 ${linksInfo}
 
+각 URL의 계정명, 콘텐츠 주제, 활동 패턴 등을 당신이 알고 있는 정보와 URL 패턴으로 분석하세요.
+
 다음 형식으로 분석 보고서를 작성해주세요. 반드시 한국어로 작성하세요.
-이모지, 이모티콘 절대 사용 금지. 특수기호(★●■▶♥☆→) 사용 금지.
+이모지, 이모티콘 절대 사용 금지. 특수기호 사용 금지.
 
 ## 1. 계정 기본 분석
 각 계정별로:
 - 플랫폼 및 계정명
-- 주요 콘텐츠 주제/카테고리
+- 주요 콘텐츠 주제/카테고리 (URL과 플랫폼 특성 기반 추정)
 - 타겟 오디언스 추정
 - 콘텐츠 스타일 분석 (톤, 형식, 빈도 추정)
 - 강점과 약점
 
 ## 2. 핵심 지표 추정
-(페이지에서 확인 가능한 정보 기반으로 추정)
 - 활동 수준 (활발/보통/저조)
 - 콘텐츠 일관성
 - 브랜딩 완성도
 - 참여도 추정
+- 해당 플랫폼에서의 경쟁력
 
 ## 3. 벤치마킹 - 유사 계정 사례 5개
-각 계정의 카테고리와 비슷하지만 더 성공적인 계정들을 추천:
-- 계정명 (실제 존재하는 계정)
+각 계정의 카테고리와 비슷하지만 더 성공적인 실제 계정들을 추천:
+- 계정명과 URL (실제 존재하는 계정)
 - 왜 벤치마킹 대상인지
-- 배울 점
+- 구체적으로 배울 점
 
 ## 4. 성장 가이드라인
-- 즉시 실행 가능한 개선사항 (1주 내)
-- 중기 전략 (1~3개월)
+- 즉시 실행 가능한 개선사항 (1주 내) - 구체적 액션 3가지
+- 중기 전략 (1~3개월) - 구체적 목표와 방법
 - 장기 성장 로드맵 (3~6개월)
 - 콘텐츠 아이디어 10개 (구체적인 주제/제목 제안)
 - 최적의 포스팅 시간대와 빈도
 
 ## 5. 크로스 플랫폼 전략
-(입력된 계정이 2개 이상이면)
+${analyzed.length >= 2 ? "입력된 계정이 여러 개이므로:" : "단일 계정이지만 확장을 위해:"}
 - 플랫폼 간 시너지 방안
 - 콘텐츠 재활용 전략
 - 트래픽 유도 방법
+- 추가로 개설하면 좋을 플랫폼 추천
 
 분석은 구체적이고 실행 가능한 내용으로 작성하세요. 일반론이 아닌 해당 계정에 맞춤화된 조언을 주세요.`;
 
-      const apiKey = localStorage.getItem("gemini_api_key") || "";
-      const geminiUrl = apiKey
-        ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-        : "/api/proxy?action=gemini";
-
-      const body = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8000 },
-      };
-
-      const res = await fetch(geminiUrl, {
+      const res = await fetch("/api/gemini-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ prompt, maxTokens: 8000 }),
       });
 
-      if (!res.ok) throw new Error("AI 분석 요청 실패");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "AI 분석 요청 실패");
+      }
       const data = await res.json();
-      const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const aiText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!aiText) throw new Error("AI 응답이 비어있습니다");
 
       setReport({ text: aiText, links: analyzed, date: new Date().toLocaleString("ko-KR") });
