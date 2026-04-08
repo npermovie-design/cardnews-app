@@ -95,7 +95,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"product_shot", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
     { id:"shorts_make", label:"숏폼 자동편집", icon:"/icons3d/sns-app.png", ids:["shorts_make","video_edit"] },
     { sep:true },
-    { id:"yt_analyzer", label:"유튜브 분석기", icon:"/icons3d/sns-app.png", ids:["yt_analyzer"] },
+    { id:"social_analyzer", label:"소셜분석기", icon:"/icons3d/sns-app.png", ids:["social_analyzer"] },
   ];
 
   const isActive = (item) => {

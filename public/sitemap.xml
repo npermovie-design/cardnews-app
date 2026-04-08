@@ -162,7 +162,15 @@
   <!-- AI 블로그 글쓰기 -->
   <url>
     <loc>https://snsmakeit.com/ai/blog</loc>
-    <lastmod>2026-04-05</lastmod>
+    <lastmod>2026-04-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 소셜분석기 -->
+  <url>
+    <loc>https://snsmakeit.com/ai/social_analyzer</loc>
+    <lastmod>2026-04-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

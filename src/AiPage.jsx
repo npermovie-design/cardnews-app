@@ -23,7 +23,7 @@ import MockupGenerator from "./MockupGenerator";
 import ProductShotGenerator from "./ProductShotGenerator";
 // PptGenerator 제거됨
 import ShortsCreator from "./ShortsCreator";
-import YouTubeAnalyzer from "./YouTubeAnalyzer";
+import SocialAnalyzer from "./SocialAnalyzer";
 import AutoPublisher from "./AutoPublisher";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import SnsConnectionManager from "./SnsConnectionManager";
@@ -1291,17 +1291,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  if (aiMenu === "yt_analyzer") {
+  if (aiMenu === "social_analyzer") {
     return (
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ padding:"36px 24px 28px" }}>
-          <div style={{ maxWidth:700, margin:"0 auto" }}>
-            <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>유튜브 분석</div>
-            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 채널을 분석하고<br/>성장 전략을 제안해드려요</div>
-            <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>채널 URL을 입력하면 구독자, 조회수, 콘텐츠를 AI가 분석합니다.</div>
-          </div>
-        </div>
-        <YouTubeAnalyzer isDark={isDark} />
+        <SocialAnalyzer isDark={isDark} user={user} />
       </div>
     );
   }
