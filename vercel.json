@@ -1,5 +1,8 @@
 {
   "functions": {
+    "api/gemini-generate.js": {
+      "maxDuration": 120
+    },
     "api/ai-ppt.js": {
       "maxDuration": 60
     },
