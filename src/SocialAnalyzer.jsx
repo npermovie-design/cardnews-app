@@ -21,12 +21,23 @@ function detectPlatform(url) {
   return SNS_PLATFORMS[SNS_PLATFORMS.length - 1];
 }
 
+// 숫자 포맷 (1234 → 1,234 / 12345 → 1.2만)
+function fmtNum(n) {
+  if (!n && n !== 0) return "-";
+  const num = typeof n === "string" ? parseInt(n.replace(/[^0-9]/g, "")) : n;
+  if (isNaN(num)) return "-";
+  if (num >= 100000000) return (num / 100000000).toFixed(1) + "억";
+  if (num >= 10000) return (num / 10000).toFixed(1) + "만";
+  return num.toLocaleString();
+}
+
 export default function SocialAnalyzer({ isDark, user }) {
   const [links, setLinks] = useState([""]);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
+  const [metrics, setMetrics] = useState([]); // 플랫폼별 실제 지표
   const reportRef = useRef(null);
 
   const acc = "#7c6aff";
@@ -39,74 +50,149 @@ export default function SocialAnalyzer({ isDark, user }) {
   const addLink = () => { if (links.length < 10) setLinks([...links, ""]); };
   const removeLink = (idx) => { if (links.length > 1) setLinks(links.filter((_, i) => i !== idx)); };
   const updateLink = (idx, val) => { const n = [...links]; n[idx] = val; setLinks(n); };
-
   const validLinks = links.filter(l => l.trim());
 
+  // ── 유튜브 채널 실제 데이터 가져오기 (YouTube Data API) ──
+  const fetchYoutubeData = async (url) => {
+    try {
+      const handleMatch = url.match(/@([a-zA-Z0-9_.-]+)/);
+      const channelIdMatch = url.match(/channel\/([a-zA-Z0-9_-]+)/);
+
+      let channelId = channelIdMatch ? channelIdMatch[1] : null;
+
+      // @handle → forHandle로 직접 조회
+      if (handleMatch && !channelId) {
+        const directRes = await fetch(`/api/youtube-search?action=channel-detail&forHandle=${handleMatch[1]}`);
+        if (directRes.ok) {
+          const directData = await directRes.json();
+          if (directData?.items?.[0]) {
+            const item = directData.items[0];
+            const stats = item.statistics || {};
+            const snippet = item.snippet || {};
+            return {
+              name: snippet.title || handleMatch[1],
+              thumbnail: snippet.thumbnails?.medium?.url || "",
+              subscribers: parseInt(stats.subscriberCount) || 0,
+              totalViews: parseInt(stats.viewCount) || 0,
+              videoCount: parseInt(stats.videoCount) || 0,
+              description: (snippet.description || "").slice(0, 300),
+              avgViews: stats.viewCount && stats.videoCount ? Math.round(parseInt(stats.viewCount) / parseInt(stats.videoCount)) : 0,
+            };
+          }
+        }
+        // forHandle 실패 시 검색 fallback
+        const searchRes = await fetch(`/api/youtube-search?action=channel-search&q=${encodeURIComponent("@" + handleMatch[1])}`);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          channelId = searchData?.items?.[0]?.channelId;
+        }
+      }
+
+      if (!channelId) return null;
+
+      const detailRes = await fetch(`/api/youtube-search?action=channel-detail&channelId=${channelId}`);
+      if (!detailRes.ok) return null;
+      const detail = await detailRes.json();
+      const stats = detail?.items?.[0]?.statistics || {};
+      const snippet = detail?.items?.[0]?.snippet || {};
+      return {
+        name: snippet.title || channelId,
+        thumbnail: snippet.thumbnails?.medium?.url || "",
+        subscribers: parseInt(stats.subscriberCount) || 0,
+        totalViews: parseInt(stats.viewCount) || 0,
+        videoCount: parseInt(stats.videoCount) || 0,
+        description: (snippet.description || "").slice(0, 300),
+        avgViews: stats.viewCount && stats.videoCount ? Math.round(parseInt(stats.viewCount) / parseInt(stats.videoCount)) : 0,
+      };
+    } catch { return null; }
+  };
+
+  // ── 페이지 HTML 크롤링으로 실제 데이터 추출 ──
+  const fetchPageData = async (url) => {
+    try {
+      const res = await fetch("/api/crawl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.text || null;
+    } catch { return null; }
+  };
+
+  // ── 메인 분석 ──
   const analyze = async () => {
     if (validLinks.length === 0) return;
-    setLoading(true); setError(null); setReport(null);
+    setLoading(true); setError(null); setReport(null); setMetrics([]);
 
     try {
-      // 플랫폼 감지
-      const analyzed = validLinks.map(url => ({
-        url,
-        platform: detectPlatform(url),
-      }));
+      setProgress("SNS 계정 데이터를 수집하고 있어요...");
 
-      // AI 분석 요청 — Gemini가 URL을 직접 분석
-      setProgress("AI가 계정을 분석하고 있어요... (최대 30초 소요)");
+      // 1단계: 각 링크별 실제 데이터 수집
+      const results = [];
+      for (const url of validLinks) {
+        const platform = detectPlatform(url);
+        const entry = { url, platform, data: null, pageText: null };
 
-      const linksInfo = analyzed.map((a, i) => {
-        const p = a.platform;
-        return `[계정 ${i + 1}] 플랫폼: ${p?.label || "미확인"}\nURL: ${a.url}`;
-      }).join("\n");
+        if (platform?.id === "youtube") {
+          entry.data = await fetchYoutubeData(url);
+        }
+        // 다른 플랫폼은 크롤링으로 텍스트 수집
+        if (!entry.data) {
+          entry.pageText = await fetchPageData(url);
+        }
+        results.push(entry);
+      }
 
-      const prompt = `당신은 SNS 마케팅 전문 분석가입니다. 다음 SNS 계정들의 URL을 기반으로 심층 분석해주세요.
+      setMetrics(results);
+      setProgress("AI가 수집된 데이터를 분석하고 있어요...");
 
-분석 대상 계정:
-${linksInfo}
+      // 2단계: 수집된 실제 데이터를 포함하여 AI 분석 요청
+      const linksDetail = results.map((r, i) => {
+        const p = r.platform;
+        let info = `[계정 ${i + 1}] ${p?.label || "미확인"}\nURL: ${r.url}`;
+        if (r.data) {
+          const d = r.data;
+          info += `\n이름: ${d.name}\n구독자: ${d.subscribers?.toLocaleString()}\n총 조회수: ${d.totalViews?.toLocaleString()}\n영상 수: ${d.videoCount}\n평균 조회수: ${d.avgViews?.toLocaleString()}\n설명: ${d.description}`;
+        }
+        if (r.pageText) {
+          info += `\n페이지 내용:\n${r.pageText.slice(0, 1500)}`;
+        }
+        return info;
+      }).join("\n\n---\n\n");
 
-각 URL의 계정명, 콘텐츠 주제, 활동 패턴 등을 당신이 알고 있는 정보와 URL 패턴으로 분석하세요.
+      const prompt = `당신은 SNS 마케팅 전문 분석가입니다. 다음 SNS 계정들의 실제 수집 데이터를 기반으로 심층 분석해주세요.
 
-다음 형식으로 분석 보고서를 작성해주세요. 반드시 한국어로 작성하세요.
-이모지, 이모티콘 절대 사용 금지. 특수기호 사용 금지.
+${linksDetail}
 
-## 1. 계정 기본 분석
-각 계정별로:
-- 플랫폼 및 계정명
-- 주요 콘텐츠 주제/카테고리 (URL과 플랫폼 특성 기반 추정)
-- 타겟 오디언스 추정
-- 콘텐츠 스타일 분석 (톤, 형식, 빈도 추정)
-- 강점과 약점
+반드시 한국어로 작성. 이모지/이모티콘/특수기호 절대 금지.
+추정이나 예측이 아닌, 위 데이터에서 확인된 사실 기반으로 분석하세요.
 
-## 2. 핵심 지표 추정
-- 활동 수준 (활발/보통/저조)
-- 콘텐츠 일관성
-- 브랜딩 완성도
-- 참여도 추정
-- 해당 플랫폼에서의 경쟁력
+## 1. 계정별 현황 분석
+각 계정의 실제 데이터를 기반으로:
+- 콘텐츠 주제/카테고리
+- 콘텐츠 스타일과 톤
+- 강점 3가지, 약점 3가지
 
-## 3. 벤치마킹 - 유사 계정 사례 5개
-각 계정의 카테고리와 비슷하지만 더 성공적인 실제 계정들을 추천:
-- 계정명과 URL (실제 존재하는 계정)
-- 왜 벤치마킹 대상인지
-- 구체적으로 배울 점
+## 2. 벤치마킹 - 유사 성공 계정 추천
+각 플랫폼별로 비슷한 주제이면서 더 성공적인 실제 계정 3~5개:
+- 계정명과 URL
+- 팔로워/구독자 규모
+- 왜 벤치마킹해야 하는지
+- 구체적으로 참고할 콘텐츠 예시
 
-## 4. 성장 가이드라인
-- 즉시 실행 가능한 개선사항 (1주 내) - 구체적 액션 3가지
-- 중기 전략 (1~3개월) - 구체적 목표와 방법
-- 장기 성장 로드맵 (3~6개월)
-- 콘텐츠 아이디어 10개 (구체적인 주제/제목 제안)
-- 최적의 포스팅 시간대와 빈도
+## 3. 성장 전략 가이드라인
+- 1주 내 즉시 실행할 액션 플랜 5가지
+- 1~3개월 중기 전략
+- 콘텐츠 아이디어 10개 (구체적 제목)
+- 최적 포스팅 시간대와 빈도
+- 해시태그/키워드 전략
 
-## 5. 크로스 플랫폼 전략
-${analyzed.length >= 2 ? "입력된 계정이 여러 개이므로:" : "단일 계정이지만 확장을 위해:"}
-- 플랫폼 간 시너지 방안
-- 콘텐츠 재활용 전략
-- 트래픽 유도 방법
-- 추가로 개설하면 좋을 플랫폼 추천
-
-분석은 구체적이고 실행 가능한 내용으로 작성하세요. 일반론이 아닌 해당 계정에 맞춤화된 조언을 주세요.`;
+## 4. 크로스 플랫폼 전략
+- 플랫폼 간 콘텐츠 재활용 방법
+- 트래픽 유도 전략
+- 추가 개설 추천 플랫폼과 이유`;
 
       const res = await fetch("/api/gemini-generate", {
         method: "POST",
@@ -122,10 +208,8 @@ ${analyzed.length >= 2 ? "입력된 계정이 여러 개이므로:" : "단일 �
       const aiText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!aiText) throw new Error("AI 응답이 비어있습니다");
 
-      setReport({ text: aiText, links: analyzed, date: new Date().toLocaleString("ko-KR") });
+      setReport({ text: aiText, date: new Date().toLocaleString("ko-KR") });
       setProgress("");
-
-      // 스크롤 to 리포트
       setTimeout(() => reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     } catch (e) {
       setError(e.message || "분석 중 오류가 발생했습니다");
@@ -135,99 +219,121 @@ ${analyzed.length >= 2 ? "입력된 계정이 여러 개이므로:" : "단일 �
     }
   };
 
-  // 마크다운 → 간단 HTML 변환
+  // ── 지표 카드 렌더링 ──
+  const MetricCard = ({ label, value, sub, color }) => (
+    <div style={{ flex: 1, minWidth: 100, padding: "16px 14px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa", border: `1px solid ${bdr}`, textAlign: "center" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: muted, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: color || acc, letterSpacing: -0.5 }}>{value}</div>
+      {sub && <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+
+  // ── 플랫폼 데이터 대시보드 ──
+  const renderMetricsDashboard = () => {
+    if (metrics.length === 0) return null;
+    return (
+      <div style={{ marginBottom: 28 }}>
+        {metrics.map((m, i) => {
+          const p = m.platform;
+          const d = m.data;
+          return (
+            <div key={i} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px 20px", marginBottom: 16, boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.03)" }}>
+              {/* 플랫폼 헤더 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                {d?.thumbnail && <img src={d.thumbnail} alt="" style={{ width: 52, height: 52, borderRadius: 14, objectFit: "cover", border: `2px solid ${p?.color || acc}30` }} />}
+                {!d?.thumbnail && (
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p?.color || acc}15`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${p?.color || acc}30` }}>
+                    <span style={{ fontSize: 18, fontWeight: 900, color: p?.color || acc }}>{p?.label?.[0] || "?"}</span>
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ padding: "3px 10px", borderRadius: 8, background: `${p?.color || acc}15`, fontSize: 10, fontWeight: 700, color: p?.color || acc }}>{p?.label || "SNS"}</span>
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: text, marginTop: 4 }}>{d?.name || m.url.replace(/https?:\/\/(www\.)?/, "").split("/").slice(0, 2).join("/")}</div>
+                </div>
+                {d && <div style={{ padding: "6px 14px", borderRadius: 10, background: "#22c55e15", border: "1px solid #22c55e30", fontSize: 11, fontWeight: 700, color: "#22c55e" }}>데이터 수집 완료</div>}
+                {!d && m.pageText && <div style={{ padding: "6px 14px", borderRadius: 10, background: `${acc}10`, border: `1px solid ${acc}25`, fontSize: 11, fontWeight: 700, color: acc }}>페이지 분석 완료</div>}
+                {!d && !m.pageText && <div style={{ padding: "6px 14px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.04)" : "#f5f5f5", fontSize: 11, fontWeight: 600, color: muted }}>URL 기반 분석</div>}
+              </div>
+
+              {/* 유튜브 실제 지표 */}
+              {d && (
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <MetricCard label="구독자" value={fmtNum(d.subscribers)} color={p?.color} />
+                  <MetricCard label="총 조회수" value={fmtNum(d.totalViews)} color={p?.color} />
+                  <MetricCard label="영상 수" value={fmtNum(d.videoCount)} color={p?.color} />
+                  <MetricCard label="평균 조회수" value={fmtNum(d.avgViews)} sub="영상당" color={p?.color} />
+                </div>
+              )}
+
+              {/* 크롤링 데이터 요약 */}
+              {!d && m.pageText && (
+                <div style={{ padding: "14px 16px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", border: `1px solid ${bdr}`, fontSize: 13, color: isDark ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 }}>
+                  {m.pageText.slice(0, 300)}...
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ── 마크다운 렌더링 ──
   const renderMarkdown = (md) => {
     if (!md) return null;
-    const lines = md.split("\n");
-    const elements = [];
-    let inList = false;
-
-    lines.forEach((line, i) => {
+    return md.split("\n").map((line, i) => {
       const trimmed = line.trim();
-      if (!trimmed) { elements.push(<div key={i} style={{ height: 12 }} />); inList = false; return; }
-
-      // ## 헤더
-      if (trimmed.startsWith("## ")) {
-        inList = false;
-        elements.push(
-          <div key={i} style={{ fontSize: 20, fontWeight: 900, color: text, marginTop: 32, marginBottom: 12, paddingBottom: 8, borderBottom: `2px solid ${acc}30` }}>
-            {trimmed.replace(/^##\s*/, "").replace(/\*\*/g, "")}
-          </div>
-        );
-        return;
-      }
-      // ### 서브헤더
-      if (trimmed.startsWith("### ")) {
-        inList = false;
-        elements.push(
-          <div key={i} style={{ fontSize: 16, fontWeight: 800, color: text, marginTop: 20, marginBottom: 8 }}>
-            {trimmed.replace(/^###\s*/, "").replace(/\*\*/g, "")}
-          </div>
-        );
-        return;
-      }
-      // - 리스트
+      if (!trimmed) return <div key={i} style={{ height: 10 }} />;
+      if (trimmed.startsWith("## "))
+        return <div key={i} style={{ fontSize: 19, fontWeight: 900, color: text, marginTop: 28, marginBottom: 10, paddingBottom: 8, borderBottom: `2px solid ${acc}30` }}>{trimmed.replace(/^##\s*/, "").replace(/\*\*/g, "")}</div>;
+      if (trimmed.startsWith("### "))
+        return <div key={i} style={{ fontSize: 15, fontWeight: 800, color: text, marginTop: 18, marginBottom: 6 }}>{trimmed.replace(/^###\s*/, "").replace(/\*\*/g, "")}</div>;
       if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
         const content = trimmed.replace(/^[-*]\s*/, "");
-        // **볼드** 처리
         const parts = content.split(/(\*\*[^*]+\*\*)/g);
-        elements.push(
-          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 6, paddingLeft: 8 }}>
-            <span style={{ color: acc, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>-</span>
-            <span style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
-              {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**")
-                ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong>
-                : p
-              )}
+        return (
+          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 5, paddingLeft: 8 }}>
+            <span style={{ color: acc, fontWeight: 700, flexShrink: 0 }}>-</span>
+            <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
+              {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
             </span>
           </div>
         );
-        return;
       }
-      // 숫자 리스트
       if (/^\d+[\.\)]\s/.test(trimmed)) {
         const num = trimmed.match(/^(\d+)/)[1];
         const content = trimmed.replace(/^\d+[\.\)]\s*/, "");
         const parts = content.split(/(\*\*[^*]+\*\*)/g);
-        elements.push(
-          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8, paddingLeft: 4 }}>
-            <span style={{ color: acc, fontWeight: 800, fontSize: 14, flexShrink: 0, minWidth: 20 }}>{num}.</span>
-            <span style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
-              {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**")
-                ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong>
-                : p
-              )}
+        return (
+          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 7, paddingLeft: 4 }}>
+            <span style={{ color: acc, fontWeight: 800, fontSize: 13, flexShrink: 0, minWidth: 20 }}>{num}.</span>
+            <span style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.7 }}>
+              {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
             </span>
           </div>
         );
-        return;
       }
-      // 일반 텍스트
       const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
-      elements.push(
-        <div key={i} style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.75)" : "#555", lineHeight: 1.8, marginBottom: 4 }}>
-          {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**")
-            ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong>
-            : p
-          )}
+      return (
+        <div key={i} style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.75)" : "#555", lineHeight: 1.8, marginBottom: 3 }}>
+          {parts.map((p, pi) => p.startsWith("**") && p.endsWith("**") ? <strong key={pi} style={{ fontWeight: 800, color: text }}>{p.slice(2, -2)}</strong> : p)}
         </div>
       );
     });
-    return elements;
   };
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "36px 24px 60px" }}>
       {/* 헤더 */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: "rgba(124,106,255,0.1)", fontSize: 12, fontWeight: 700, color: acc, marginBottom: 14 }}>
-          소셜분석기
-        </div>
+        <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, background: "rgba(124,106,255,0.1)", fontSize: 12, fontWeight: 700, color: acc, marginBottom: 14 }}>소셜분석기</div>
         <div style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 900, color: text, lineHeight: 1.3, marginBottom: 8 }}>
           SNS 계정을 분석하고<br/>성장 전략을 제안해드려요
         </div>
         <div style={{ fontSize: 14, color: muted, lineHeight: 1.6 }}>
-          운영 중인 SNS 링크를 입력하면 AI가 계정을 분석하고, 유사 사례와 가이드라인을 제공합니다.
+          운영 중인 SNS 프로필 링크를 입력하면 실제 데이터를 수집하고, AI가 분석 리포트를 생성합니다.
         </div>
       </div>
 
@@ -240,107 +346,68 @@ ${analyzed.length >= 2 ? "입력된 계정이 여러 개이므로:" : "단일 �
           const detected = link.trim() ? detectPlatform(link) : null;
           return (
             <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-              {/* 플랫폼 감지 표시 */}
               <div style={{ width: 36, height: 36, borderRadius: 10, background: detected ? `${detected.color}15` : (isDark ? "rgba(255,255,255,0.04)" : "#f5f5f5"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${detected ? detected.color + "30" : bdr}` }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: detected?.color || muted }}>
-                  {detected ? detected.label.slice(0, 2) : String(idx + 1)}
-                </span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: detected?.color || muted }}>{detected ? detected.label.slice(0, 2) : String(idx + 1)}</span>
               </div>
-              <input
-                value={link}
-                onChange={e => updateLink(idx, e.target.value)}
+              <input value={link} onChange={e => updateLink(idx, e.target.value)}
                 placeholder={detected?.placeholder || "SNS 프로필 URL을 입력하세요"}
-                style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${detected ? detected.color + "40" : bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none", transition: "border 0.15s" }}
-                onFocus={e => e.target.style.borderColor = acc}
-                onBlur={e => e.target.style.borderColor = detected ? detected.color + "40" : bdr}
+                style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${detected ? detected.color + "40" : bdr}`, background: inputBg, color: text, fontSize: 13, outline: "none" }}
               />
               {links.length > 1 && (
-                <button onClick={() => removeLink(idx)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  x
-                </button>
+                <button onClick={() => removeLink(idx)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>x</button>
               )}
             </div>
           );
         })}
 
-        {/* 링크 추가 + 분석 버튼 */}
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           {links.length < 10 && (
-            <button onClick={addLink} style={{ padding: "10px 20px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              + 링크 추가
-            </button>
+            <button onClick={addLink} style={{ padding: "10px 20px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ 링크 추가</button>
           )}
-          <button
-            onClick={analyze}
-            disabled={loading || validLinks.length === 0}
-            style={{ flex: 1, padding: "12px 24px", borderRadius: 12, border: "none", background: validLinks.length > 0 ? `linear-gradient(135deg, ${acc}, #8b5cf6)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), color: validLinks.length > 0 ? "#fff" : muted, fontSize: 14, fontWeight: 800, cursor: validLinks.length > 0 ? "pointer" : "default", transition: "all 0.15s" }}
-          >
+          <button onClick={analyze} disabled={loading || validLinks.length === 0}
+            style={{ flex: 1, padding: "12px 24px", borderRadius: 12, border: "none", background: validLinks.length > 0 ? `linear-gradient(135deg, ${acc}, #8b5cf6)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), color: validLinks.length > 0 ? "#fff" : muted, fontSize: 14, fontWeight: 800, cursor: validLinks.length > 0 ? "pointer" : "default" }}>
             {loading ? (
               <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
-                분석 중...
+                {progress || "분석 중..."}
               </span>
-            ) : `AI 분석 시작 (${validLinks.length}개 계정)`}
+            ) : `분석 시작 (${validLinks.length}개 계정)`}
           </button>
         </div>
 
-        {/* 진행 상태 */}
-        {progress && (
-          <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: `${acc}08`, border: `1px solid ${acc}20`, fontSize: 13, color: acc, fontWeight: 600 }}>
-            {progress}
-          </div>
-        )}
-
-        {/* 에러 */}
         {error && (
-          <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: isDark ? "rgba(239,68,68,0.1)" : "#fef2f2", border: "1px solid rgba(239,68,68,0.2)", fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
-            {error}
-          </div>
+          <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: isDark ? "rgba(239,68,68,0.1)" : "#fef2f2", border: "1px solid rgba(239,68,68,0.2)", fontSize: 13, color: "#dc2626", fontWeight: 600 }}>{error}</div>
         )}
       </div>
 
-      {/* 지원 플랫폼 안내 */}
-      {!report && !loading && (
+      {/* 지원 플랫폼 */}
+      {!report && !loading && metrics.length === 0 && (
         <div style={{ background: cardBg, borderRadius: 16, border: `1px solid ${bdr}`, padding: "24px", marginBottom: 24 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 14 }}>지원 플랫폼</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {SNS_PLATFORMS.filter(p => p.id !== "other").map(p => (
-              <div key={p.id} style={{ padding: "6px 14px", borderRadius: 20, background: `${p.color}10`, border: `1px solid ${p.color}20`, fontSize: 11, fontWeight: 600, color: p.color }}>
-                {p.label}
-              </div>
+              <div key={p.id} style={{ padding: "6px 14px", borderRadius: 20, background: `${p.color}10`, border: `1px solid ${p.color}20`, fontSize: 11, fontWeight: 600, color: p.color }}>{p.label}</div>
             ))}
+          </div>
+          <div style={{ fontSize: 12, color: muted, marginTop: 14, lineHeight: 1.6 }}>
+            유튜브: 구독자/조회수/영상수 실제 데이터 수집 | 기타 플랫폼: 페이지 크롤링 + AI 분석
           </div>
         </div>
       )}
 
-      {/* 분석 리포트 */}
+      {/* 실제 데이터 대시보드 */}
+      {renderMetricsDashboard()}
+
+      {/* AI 분석 리포트 */}
       {report && (
         <div ref={reportRef} style={{ background: cardBg, borderRadius: 20, border: `1px solid ${bdr}`, padding: "32px 28px", marginBottom: 24, boxShadow: isDark ? "none" : "0 4px 24px rgba(0,0,0,0.04)" }}>
-          {/* 리포트 헤더 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, paddingBottom: 20, borderBottom: `1px solid ${bdr}` }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: text, marginBottom: 4 }}>SNS 분석 리포트</div>
-              <div style={{ fontSize: 12, color: muted }}>{report.date} | {report.links.length}개 계정 분석</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: text, marginBottom: 4 }}>AI 분석 리포트</div>
+              <div style={{ fontSize: 12, color: muted }}>{report.date} | 실제 데이터 기반 분석</div>
             </div>
-            <button onClick={() => { navigator.clipboard.writeText(report.text); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-              복사
-            </button>
+            <button onClick={() => navigator.clipboard.writeText(report.text)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>복사</button>
           </div>
-
-          {/* 분석된 계정 카드 */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
-            {report.links.map((l, i) => (
-              <div key={i} style={{ padding: "10px 16px", borderRadius: 12, background: `${l.platform?.color || acc}08`, border: `1px solid ${l.platform?.color || acc}20`, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: l.platform?.color || acc }} />
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{l.platform?.label || "미확인"}</div>
-                  <div style={{ fontSize: 10, color: muted, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title || l.url}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* AI 분석 본문 */}
           <div>{renderMarkdown(report.text)}</div>
         </div>
       )}

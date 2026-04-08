@@ -98,6 +98,36 @@ export default async function handler(req, res) {
       });
     }
 
+    // 채널 상세 정보 (소셜분석기용)
+    if (action === "channel-detail") {
+      const channelId = req.query.channelId || "";
+      const forHandle = req.query.forHandle || "";
+      let channelUrl;
+      if (channelId) {
+        channelUrl = `${BASE}/channels?part=snippet,statistics,brandingSettings&id=${channelId}&key=${apiKey}`;
+      } else if (forHandle) {
+        channelUrl = `${BASE}/channels?part=snippet,statistics,brandingSettings&forHandle=${forHandle}&key=${apiKey}`;
+      } else {
+        return res.status(400).json({ error: "channelId 또는 forHandle 필요" });
+      }
+      const r = await fetch(channelUrl);
+      const data = await r.json();
+      if (data.error) return res.status(400).json({ error: data.error.message });
+      return res.status(200).json(data);
+    }
+
+    // 채널 검색 (handle → channelId 변환)
+    if (action === "channel-search") {
+      const q = req.query.q || "";
+      const params = new URLSearchParams({ part: "snippet", type: "channel", q, maxResults: "1", key: apiKey });
+      const r = await fetch(`${BASE}/search?${params}`);
+      const data = await r.json();
+      if (data.error) return res.status(400).json({ error: data.error.message });
+      const ch = data.items?.[0];
+      if (!ch) return res.status(200).json({ items: [] });
+      return res.status(200).json({ items: [{ channelId: ch.snippet?.channelId || ch.id?.channelId, title: ch.snippet?.title, thumbnail: ch.snippet?.thumbnails?.medium?.url }] });
+    }
+
     if (action === "categories") {
       const regionCode = req.query.regionCode || "KR";
       const r = await fetch(`${BASE}/videoCategories?part=snippet&regionCode=${regionCode}&key=${apiKey}`);
