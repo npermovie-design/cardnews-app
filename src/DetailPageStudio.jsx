@@ -3334,24 +3334,24 @@ JSON배열만 출력.`;
                   };
 
                   return (
-                    <div style={{ background: bgCol, padding: "56px 48px 0", overflow: "hidden" }}>
+                    <div style={{ background: bgCol, padding: "40px 48px 0", overflow: "hidden" }}>
                       {/* Q */}
-                      <div style={{ fontSize: 48, fontWeight: 900, color: isDarkBg ? "#5a8ad0" : accentColor, marginBottom: 20 }}>Q.</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start", marginBottom: 32 }}>
+                      <div style={{ fontSize: 36, fontWeight: 900, color: isDarkBg ? "#5a8ad0" : accentColor, marginBottom: 12 }}>Q.</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start", marginBottom: 20 }}>
                         {qBubbles.map((el, qi) => (
-                          <div key={qi} {...editable(el)} style={eS(el, { background: isDarkBg ? "rgba(255,255,255,0.08)" : "#ffffff", borderRadius: "20px 20px 20px 4px", padding: "14px 24px", fontSize: 16, fontWeight: 500, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#333333", boxShadow: isDarkBg ? "none" : "0 2px 8px rgba(0,0,0,0.04)", maxWidth: "80%" })}>{el.content}</div>
+                          <div key={qi} {...editable(el)} style={eS(el, { background: isDarkBg ? "rgba(255,255,255,0.08)" : "#ffffff", borderRadius: "20px 20px 20px 4px", padding: "12px 20px", fontSize: 15, fontWeight: 500, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#333333", boxShadow: isDarkBg ? "none" : "0 2px 8px rgba(0,0,0,0.04)", maxWidth: "80%" })}>{el.content}</div>
                         ))}
                       </div>
 
                       {/* A */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 48 }}>
-                        <div style={{ fontSize: 48, fontWeight: 900, color: isDarkBg ? "#7090c0" : darkAccent, marginBottom: 12 }}>A.</div>
-                        {aBubble && <div {...editable(aBubble)} style={eS(aBubble, { background: isDarkBg ? "#3a5080" : darkAccent, borderRadius: "20px 20px 4px 20px", padding: "18px 28px", fontSize: 16, fontWeight: 600, color: "#ffffff", maxWidth: "75%", textAlign: "center", lineHeight: 1.6 })}>{aBubble.content}</div>}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 24 }}>
+                        <div style={{ fontSize: 36, fontWeight: 900, color: isDarkBg ? "#7090c0" : darkAccent, marginBottom: 8 }}>A.</div>
+                        {aBubble && <div {...editable(aBubble)} style={eS(aBubble, { background: isDarkBg ? "#3a5080" : darkAccent, borderRadius: "20px 20px 4px 20px", padding: "14px 24px", fontSize: 15, fontWeight: 600, color: "#ffffff", maxWidth: "75%", textAlign: "center", lineHeight: 1.6 })}>{aBubble.content}</div>}
                       </div>
 
                       {/* CTA 헤드라인 */}
                       {titleEl && (
-                        <div style={{ textAlign: "center", marginBottom: 48 }}>
+                        <div style={{ textAlign: "center", marginBottom: 24 }}>
                           <div style={{ fontSize: 36, color: isDarkBg ? "#5a8ad0" : accentColor, fontWeight: 300, marginBottom: 8 }}>"</div>
                           <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 32, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#1a1a1a", lineHeight: 1.5 })}>{renderBoldBracket(titleEl.content)}</div>
                         </div>
@@ -3554,17 +3554,17 @@ JSON배열만 출력.`;
                       </div>
 
                       {/* 제품 + 4포인트 영역 */}
-                      <div style={{ position: "relative", width: "100%", height: isMobile ? 320 : 380, marginBottom: 44 }}>
+                      <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 440, marginBottom: 44 }}>
                         {/* 점선 연결 */}
-                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 340, height: 340, pointerEvents: "none" }}>
+                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 400, height: 400, pointerEvents: "none" }}>
                           <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 0, borderTop: `1px dashed ${isDarkBg ? "rgba(255,255,255,0.1)" : "#e0d0d4"}` }} />
                           <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 0, borderLeft: `1px dashed ${isDarkBg ? "rgba(255,255,255,0.1)" : "#e0d0d4"}` }} />
                         </div>
 
                         {/* 중앙 제품 */}
-                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 220, height: 220, borderRadius: "50%", background: isDarkBg ? `radial-gradient(circle, rgba(232,121,154,0.15) 0%, rgba(232,121,154,0.05) 60%, transparent 70%)` : `radial-gradient(circle, #fce4ec 0%, #f8f0f2 60%, transparent 70%)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 300, height: 300, borderRadius: "50%", background: isDarkBg ? `radial-gradient(circle, rgba(232,121,154,0.15) 0%, rgba(232,121,154,0.05) 60%, transparent 70%)` : `radial-gradient(circle, #fce4ec 0%, #f8f0f2 60%, transparent 70%)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {productImg ? (
-                            <img src={productImg} alt="" style={{ maxWidth: "70%", maxHeight: "85%", objectFit: "contain" }} />
+                            <img src={productImg} alt="" style={{ maxWidth: "85%", maxHeight: "90%", objectFit: "contain" }} />
                           ) : (
                             <div style={{ width: 60, height: 180, background: `linear-gradient(180deg, #fce4ec 0%, #f9c4d2 30%, #fff 60%)`, borderRadius: "30px 30px 10px 10px", boxShadow: "0 8px 30px rgba(232,121,154,0.15)" }} />
                           )}
@@ -3888,8 +3888,8 @@ JSON배열만 출력.`;
                                   if (file) { const url = URL.createObjectURL(file); setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, [`ingredImg_${ii}`]: url })); }
                                 }} />
                               </div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.85)" : "#333333", marginBottom: 4 }}>{name}</div>
-                              <div {...editable(el)} style={eS(el, { fontSize: 12, color: isDarkBg ? "rgba(255,255,255,0.4)" : "#999999", lineHeight: 1.4 })}>{desc}</div>
+                              <div {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.85)" : "#333333", marginBottom: 4 })}>{name}</div>
+                              <div style={{ fontSize: 12, color: isDarkBg ? "rgba(255,255,255,0.4)" : "#999999", lineHeight: 1.4 }}>{desc}</div>
                             </div>
                           );
                         })}
