@@ -4441,6 +4441,53 @@ JSON배열만 출력.`;
                     <svg key="cert" width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="14" r="9" stroke={mainColor} strokeWidth="2" fill={`${mainColor}10`}/><path d="M14 14l3 3 5-5" stroke={mainColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 23l-2 10 6-3 6 3-2-10" stroke={mainColor} strokeWidth="2" fill={`${mainColor}08`}/></svg>,
                     <svg key="star" width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 4l4 8.5 9 1.3-6.5 6.3 1.5 9L18 25l-8 4.1 1.5-9L5 13.8l9-1.3L18 4z" stroke={mainColor} strokeWidth="2" fill={`${mainColor}10`} strokeLinejoin="round"/></svg>,
                   ];
+                  // ═══ 변형: 2열 인증 카드 (도노도노 레퍼런스 — 캐치프레이즈 + 인증서 2열) ═══
+                  if (dv % 6 >= 3) {
+                    return (
+                      <div style={{ background: isDarkBg ? bgCol : "#f5f5f5", padding: isMobile ? "80px 20px" : "100px 56px" }}>
+                        {/* 상단 캐치프레이즈 */}
+                        <div style={{ textAlign: "center", marginBottom: 48 }}>
+                          {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 13, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888", marginBottom: 10 })}>{subtitleEl.content}</div>}
+                          {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 26 : 34, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a1a", lineHeight: 1.3 })}>{titleEl.content}</div>}
+                        </div>
+                        {/* 2열 인증 카드 */}
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : bodyEls.length >= 2 ? "1fr 1fr" : "1fr", gap: 20, maxWidth: 700, margin: "0 auto" }}>
+                          {bodyEls.map((el, bi) => (
+                            <div key={bi} style={{ background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", borderRadius: 20, padding: "32px 28px", textAlign: "center", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`, boxShadow: isDarkBg ? "none" : "0 2px 16px rgba(0,0,0,0.03)" }}>
+                              {/* 아이콘 */}
+                              <div style={{ width: 56, height: 56, borderRadius: 16, background: `${mainColor}08`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: `1px solid ${mainColor}15` }}>
+                                {guaranteeIcons[bi % guaranteeIcons.length]}
+                              </div>
+                              {/* 인증 제목 */}
+                              <div style={{ fontSize: 17, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a1a", marginBottom: 8 }}>
+                                {el.content?.split(/[.!?]/)[0] || `인증 ${bi + 1}`}
+                              </div>
+                              {/* 설명 */}
+                              <div {...editable(el)} style={eS(el, { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#888", lineHeight: 1.7 })}>
+                                {el.content}
+                              </div>
+                              {/* 하단 뱃지 */}
+                              {bi === 0 && (
+                                <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+                                  {["안전 인증", "품질 검증", "시험 완료"].map((label, li) => (
+                                    <span key={li} style={{ padding: "6px 14px", borderRadius: 20, background: li === 0 ? mainColor : (li === 1 ? "#10b981" : `${mainColor}15`), color: li < 2 ? "#fff" : mainColor, fontSize: 11, fontWeight: 700 }}>{label}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {/* 하단 한 줄 텍스트 */}
+                        {badge && (
+                          <div style={{ textAlign: "center", marginTop: 32 }}>
+                            <span {...editable(badge)} style={eS(badge, { fontSize: 14, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666" })}>{badge.content}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // ═══ 기본 guarantee (이미지 헤더 + 아이콘 그리드) ═══
                   return (
                     <div style={{ position: "relative", overflow: "hidden", textAlign: "center" }}>
                       {/* 상단 이미지 배경 영역 */}
