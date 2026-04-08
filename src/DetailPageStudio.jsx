@@ -244,6 +244,7 @@ ${secJson}
 사용자 요청: "${msg}"
 
 위 요청에 맞게 텍스트를 수정해서 JSON 배열로 반환해줘.
+이모지(emoji), 이모티콘, 특수기호를 절대 사용하지 마세요. 텍스트만 작성하세요.
 형식: [{"role":"기존role","content":"수정된텍스트"}]
 JSON배열만 출력.`;
         const agentRes = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, maxTokens: 2000 }) });
@@ -629,7 +630,7 @@ layout: hero=full_image, pain_points=centered_text, features=grid_2col/grid_3col
 role: subtitle, title, body, price, stat_number, stat_label, review_name, star, review_text, question, answer.
 image_prompt는 제품 실사진 스타일. 모든 섹션에 image_prompt 필수.
 카피는 실제 쇼핑몰 수준, ${catLabel} 카테고리 전문 멘트. 구체적 수치/성분 포함.
-- 이모지 절대 사용 금지
+- 이모지(emoji), 이모티콘, 특수기호(❌, 🎊, 🎁, ✦, ★ 등)를 절대 사용하지 마세요. 텍스트만 작성하세요.
 - 모든 elements에 content 필수
 JSON배열만 출력.`;
 
@@ -701,7 +702,7 @@ JSON배열만 출력.`;
 - howto: 사용 방법 2~3단계
 - guarantee: 보증/인증/신뢰
 - before_after: 사용 전후 변화
-흐름: 기능 설득 → 신뢰 확보 → 구매 유도. 디자인 톤:${seed.tone}. 색상:${seed.palette}. JSON배열만 출력.`;
+흐름: 기능 설득 → 신뢰 확보 → 구매 유도. 디자인 톤:${seed.tone}. 색상:${seed.palette}. 이모지(emoji), 이모티콘, 특수기호를 절대 사용하지 마세요. JSON배열만 출력.`;
           const addRes = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: addPrompt, maxTokens: 5000 }) });
           if (addRes.ok) {
             const { text: addResult } = await addRes.json();
@@ -1986,7 +1987,36 @@ JSON배열만 출력.`;
                     <button key={ti}
                       onClick={() => {
                         if (activeSection < sections.length) {
-                          const newSec = { ...tmpl, id: sections[activeSection].id, image_prompt: tmpl.image_prompt || sections[activeSection].image_prompt };
+                          const oldSec = sections[activeSection];
+                          const oldEls = oldSec.elements || [];
+                          // 기존 텍스트 content를 role 기준으로 보존
+                          const mergedElements = (tmpl.elements || []).map(newEl => {
+                            if (newEl.type !== "text") return { ...newEl };
+                            // 같은 role의 기존 요소에서 content 가져오기
+                            const matchByRole = oldEls.find(o => o.type === "text" && o.role === newEl.role && o.content);
+                            if (matchByRole) {
+                              return { ...newEl, content: matchByRole.content };
+                            }
+                            // role 매칭 실패 시 같은 타입의 요소 순서대로 매칭
+                            return { ...newEl };
+                          });
+                          // role 매칭 안 된 기존 텍스트 중 content가 있는 것들을 순서대로 채우기
+                          const usedRoles = new Set(mergedElements.filter(e => e.type === "text" && oldEls.find(o => o.role === e.role)).map(e => e.role));
+                          const leftoverOld = oldEls.filter(o => o.type === "text" && o.content && !usedRoles.has(o.role));
+                          let leftoverIdx = 0;
+                          const finalElements = mergedElements.map(el => {
+                            if (el.type !== "text") return el;
+                            // 이미 기존 content가 채워진 경우 스킵
+                            const hasOldContent = oldEls.find(o => o.type === "text" && o.role === el.role && o.content);
+                            if (hasOldContent) return el;
+                            // 남은 기존 텍스트로 채우기
+                            if (leftoverIdx < leftoverOld.length) {
+                              const old = leftoverOld[leftoverIdx++];
+                              return { ...el, content: old.content };
+                            }
+                            return el;
+                          });
+                          const newSec = { ...tmpl, id: oldSec.id, image_prompt: tmpl.image_prompt || oldSec.image_prompt, elements: finalElements };
                           setSections(prev => prev.map((s, si) => si === activeSection ? newSec : s));
                         } else {
                           setSections(prev => [...prev, { ...tmpl, id: `sec_tmpl_${Date.now()}` }]);
@@ -2424,7 +2454,53 @@ JSON배열만 출력.`;
             </button>
           </div>
         </div>
-        {/* 인라인 툴바 제거 — 좌측 속성 패널로 통합됨 */}
+        {/* 텍스트 요소 선택 시 플로팅 편집 툴바 */}
+        {selectedEl && selectedEl.el?._type === "text" && (() => {
+          const currentSize = selectedEl.el.fontSize || 16;
+          const changeFontSize = (delta) => {
+            const secIdx = selectedEl.secIdx;
+            const elIdx = selectedEl.elIdx;
+            setSections(prev => prev.map((s, si) => si !== secIdx ? s : {
+              ...s,
+              elements: s.elements.map((el, ei) => ei !== elIdx ? el : {
+                ...el,
+                fontSize: (el.fontSize || 16) + delta
+              })
+            }));
+            setSelectedEl(prev => prev ? { ...prev, el: { ...prev.el, fontSize: (prev.el.fontSize || 16) + delta } } : prev);
+          };
+          const deleteSelectedElement = () => {
+            setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
+              ...s,
+              elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx)
+            }));
+            setSelectedEl(null);
+          };
+          const toolBtnStyle = { background: "none", border: "none", color: "#fff", fontSize: 12, cursor: "pointer", padding: "4px 10px", borderRadius: 4, transition: "background 0.15s" };
+          return (
+            <div style={{ maxWidth: 891, margin: "0 auto 8px", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: D ? "#1a1a2e" : "#2a2a3e", borderRadius: 8 }}>
+              <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginRight: 4 }}>텍스트</span>
+              <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.15)" }} />
+              <button onClick={() => changeFontSize(-2)} style={toolBtnStyle} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>A-</button>
+              <span style={{ color: "#fff", fontSize: 12, minWidth: 32, textAlign: "center" }}>{currentSize}px</span>
+              <button onClick={() => changeFontSize(2)} style={toolBtnStyle} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>A+</button>
+              <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.15)" }} />
+              <button onClick={() => {
+                const secIdx = selectedEl.secIdx;
+                const elIdx = selectedEl.elIdx;
+                setSections(prev => prev.map((s, si) => si !== secIdx ? s : {
+                  ...s,
+                  elements: s.elements.map((el, ei) => ei !== elIdx ? el : {
+                    ...el,
+                    fontWeight: (el.fontWeight === "700" || el.fontWeight === 700 || el.fontWeight === "900" || el.fontWeight === 900) ? "400" : "700"
+                  })
+                }));
+              }} style={{ ...toolBtnStyle, fontWeight: 700 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>B</button>
+              <div style={{ flex: 1 }} />
+              <button onClick={deleteSelectedElement} style={{ ...toolBtnStyle, color: "#ff6b6b" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,107,107,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>삭제</button>
+            </div>
+          );
+        })()}
 
         <div onClick={() => setSelectedEl(null)} style={{ maxWidth: 891, margin: "0 auto", transform: `scale(${canvasZoom/100})`, transformOrigin: "top center", transition: "transform 0.2s", position: "relative" }}>
           {/* 정렬 스냅 가이드라인 — 캔버스 중앙 기준 */}
