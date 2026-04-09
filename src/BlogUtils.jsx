@@ -45,9 +45,16 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
   const [showMenu, setShowMenu] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
   const fileRef = React.useRef(null);
+  const userReplacedRef = React.useRef(false);
+
+  // 부모에서 새 src가 오면 업데이트 (사용자가 직접 교체한 건 유지)
+  React.useEffect(() => {
+    if (src && !userReplacedRef.current) setImgSrc(src);
+  }, [src]);
 
   const replaceWithFile = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
+    userReplacedRef.current = true;
     const reader = new FileReader();
     reader.onload = e => setImgSrc(e.target.result);
     reader.readAsDataURL(file);
@@ -77,12 +84,12 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
             onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             📁 PC에서 교체
           </button>
-          <button onClick={() => { const url = prompt("이미지 URL을 입력하세요:"); if(url) setImgSrc(url); setShowMenu(false); }}
+          <button onClick={() => { const url = prompt("이미지 URL을 입력하세요:"); if(url) { userReplacedRef.current=true; setImgSrc(url); } setShowMenu(false); }}
             style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#333",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
             onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             🔗 URL로 교체
           </button>
-          <button onClick={() => { setImgSrc(`https://picsum.photos/seed/${Date.now()}/800/450`); setShowMenu(false); }}
+          <button onClick={() => { userReplacedRef.current=true; setImgSrc(`https://picsum.photos/seed/${Date.now()}/800/450`); setShowMenu(false); }}
             style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#333",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
             onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             🎲 랜덤 이미지
