@@ -603,41 +603,41 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (withImages && Object.keys(inlineImages).length > 0) {
       setCopyLoading(true);
       try {
-        // 이미지 태그에서 키워드 추출
-        const imgTags = cleaned.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
-        const descs = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
-        const uniqueDescs = [...new Set(descs)];
+        // 소제목 감지 후 이미지 삽입한 HTML 생성
+        const imgKeys = Object.keys(inlineImages);
+        const imgUrls = Object.values(inlineImages);
+        let imgIdx = 0;
 
-        // 모든 이미지를 병렬로 base64 변환
+        // 모든 이미지 base64 변환 (병렬)
         const base64Map = {};
-        const conversionResults = await Promise.allSettled(
-          uniqueDescs.map(async (desc) => {
-            const url = inlineImages[desc];
-            if (!url) return { desc, data: null };
-            const data = await imageUrlToBase64(url);
-            return { desc, data };
+        const results = await Promise.allSettled(
+          imgUrls.map(async (url, i) => {
+            try { const data = await imageUrlToBase64(url); return { idx: i, data }; }
+            catch { return { idx: i, data: null }; }
           })
         );
-        conversionResults.forEach(r => {
-          if (r.status === "fulfilled" && r.value?.data) {
-            base64Map[r.value.desc] = r.value.data;
-          }
-        });
+        results.forEach(r => { if (r.status === "fulfilled" && r.value?.data) base64Map[r.value.idx] = r.value.data; });
 
-        let html = cleaned;
-        const hasAnyImage = Object.keys(base64Map).length > 0;
-        html = html.replace(/\[(?:이미지|image):\s*([^\]]+)\]/g, (match, desc) => {
-          const trimmed = desc.trim();
-          const dataUri = base64Map[trimmed];
-          if (dataUri) {
-            return `<br/><img src="${dataUri}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
+        // 소제목 뒤에 이미지 삽입
+        const lines = cleaned.split("\n");
+        const htmlLines = [];
+        for (let li = 0; li < lines.length; li++) {
+          const trimmed = lines[li].trim();
+          if (!trimmed) { htmlLines.push("<br/>"); continue; }
+          const prevEmpty = li === 0 || !lines[li-1]?.trim();
+          const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !/^\d+\./.test(trimmed);
+          if (isHeading) {
+            htmlLines.push(`<p><b>${trimmed}</b></p>`);
+            if (imgIdx < imgUrls.length) {
+              const src = base64Map[imgIdx] || imgUrls[imgIdx];
+              if (src) htmlLines.push(`<img src="${src}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" />`);
+              imgIdx++;
+            }
+          } else {
+            htmlLines.push(`<p>${trimmed}</p>`);
           }
-          // base64 변환 실패 시 원본 URL로 폴백
-          const url = inlineImages[trimmed];
-          if (url) return `<br/><img src="${url}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" /><br/>`;
-          return match;
-        });
-        html = html.replace(/\n/g, "<br/>");
+        }
+        const html = htmlLines.join("\n");
 
         try {
           if (navigator.clipboard?.write) {
@@ -650,7 +650,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           } else { fallbackCopy(cleaned); }
         } catch { fallbackCopy(cleaned); }
       } catch {
-        // 전체 실패 시 텍스트만 복사
         try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
         catch { fallbackCopy(cleaned); }
       } finally {
