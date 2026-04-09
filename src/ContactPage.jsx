@@ -23,7 +23,7 @@ export function ContactPage({ C }) {
       await supabase.from("inquiries").insert({
         name: form.name, email: form.email, subject: form.subject, message: form.msg,
       });
-    } catch(e) { console.warn("문의 저장 실패:", e); }
+    } catch(e) { /* inquiry save failed */ }
     setSubmitting(false);
     setSent(true);
   };

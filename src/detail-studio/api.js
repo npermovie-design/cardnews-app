@@ -153,7 +153,7 @@ export async function fillStockImages(ctx) {
         setSectionImages(prev => ({ ...prev, ...newImgs }));
       }
     }
-  } catch (e) { console.log("Stock fill error:", e); }
+  } catch (e) { /* stock fill failed */ }
 }
 
 // 이미지 업로드

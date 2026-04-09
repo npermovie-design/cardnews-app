@@ -346,7 +346,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               ].map(p => (
                 <div key={p.name} className="hover-lift" style={{ background: "#fff", border: "1px solid " + (C.border), borderRadius: 16, padding: "28px 20px", textAlign: "center" }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: p.color + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                    <img src={p.icon} alt="" loading="lazy" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
+                    <img src={p.icon} alt={p.name} loading="lazy" style={{ width: 30, height: 30, objectFit: "contain", borderRadius: 6 }} />
                   </div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>{p.desc}</div>
@@ -364,8 +364,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid ${"rgba(124,106,255,0.3)"}`,
                   background: "transparent", color: "#7c6aff", fontSize: 16, fontWeight: 700, cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                {["/icon-threads.png","/icon-naver-blog.png","/icon-tistory.png"].map((ic,i)=>
-                  <img key={i} src={ic} alt="" loading="lazy" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
+                {[{src:"/icon-threads.png",alt:"Threads"},{src:"/icon-naver-blog.png",alt:"네이버 블로그"},{src:"/icon-tistory.png",alt:"티스토리"}].map((ic,i)=>
+                  <img key={i} src={ic.src} alt={ic.alt} loading="lazy" style={{ width:18, height:18, objectFit:"contain", borderRadius:3, marginLeft:i>0?-6:0 }} />
                 )}
                 {lang === "ko" ? (user ? "계정 연동하기" : "회원가입 후 연동") : (user ? "Connect accounts" : "Sign up to connect")}
               </button>

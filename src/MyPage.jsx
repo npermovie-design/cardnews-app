@@ -102,7 +102,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         if (error) throw error;
         setHistory((data || []).map(h => ({ ...h, at: h.created_at })));
       } catch(e) {
-        console.warn("point_history 로드 실패:", e.message);
+        /* point history load failed */
         setHistory([]);
       } finally {
         setHistLoading(false);

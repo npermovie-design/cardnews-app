@@ -171,7 +171,7 @@ function _handleDailyLogin(userData) {
       userData = { ...userData, points: newPoints, last_login_date: today };
     }
   } catch(e) {
-    console.warn("일일 로그인 포인트 처리 실패:", e.message);
+    /* daily login point processing failed */
   }
   return userData;
 }
@@ -340,7 +340,7 @@ export async function fetchUser(uid) {
 
 // ── DB: 포인트 변경 (Supabase RPC 함수 사용 - 단 1회 호출로 차감+내역 동시 처리) ─
 export async function changePoints(uid, delta, reason) {
-  if (!uid) { console.warn("changePoints: uid 없음"); return 0; }
+  if (!uid) { return 0; }
   try {
     // 읽기 + 쓰기
     const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
@@ -348,14 +348,14 @@ export async function changePoints(uid, delta, reason) {
 
     // 차감 시 잔액 부족하면 거부
     if (delta < 0 && currentPoints < Math.abs(delta)) {
-      console.warn("changePoints: 포인트 부족", currentPoints, delta);
+      /* insufficient points */
       return currentPoints;
     }
 
     const newPoints = Math.max(0, currentPoints + delta);
     const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", uid);
     if (error) {
-      console.warn("changePoints 업데이트 실패:", error.message);
+      /* points update failed */
       return currentPoints;
     }
 

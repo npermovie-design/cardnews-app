@@ -1137,7 +1137,7 @@ export default function AdminPage({ C, user: adminUser }) {
             try {
               const { data, error } = await supabase.from("shared_templates").select("*").order("created_at", { ascending: false });
               if (!error && data) setTemplates(data);
-            } catch (e) { console.warn("템플릿 로드 실패:", e); }
+            } catch (e) { /* template load failed */ }
             setTplLoading(false);
           };
           React.useEffect(() => { loadTemplates(); }, []);

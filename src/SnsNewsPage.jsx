@@ -291,7 +291,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     // 2단계: Supabase에서 빠르게 로드 (0.5~2초)
     (async () => {
       try {
-        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").eq("id", `briefing_${todayKey}`).single();
+        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").eq("id", `briefing_${todayKey}`).maybeSingle();
         if (!cancelled && data?.content) {
           const br = { title: data.title, content: data.content, date: todayKey };
           setBriefing(br); setBriefingLoading(false);
@@ -333,8 +333,9 @@ export default function SnsNewsPage({ C, user, navigate }) {
           }, { onConflict: "id" }).then(() => {}).catch(() => {});
           loadBriefingHistory();
         }
-      } catch (e) { console.error("브리핑 생성 실패:", e); }
-      if (!cancelled) setBriefingGenerating(false);
+      } catch (e) { console.error("브리핑 생성 실패:", e); } finally {
+        if (!cancelled) setBriefingGenerating(false);
+      }
     })();
     return () => { cancelled = true; };
   }, []);

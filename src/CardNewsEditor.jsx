@@ -181,7 +181,7 @@ export default function CardNewsEditor({
 
       // load first slide
       if (initialSlides.length) {
-        loadSlideToCanvas(fc, initialSlides[0], 0).catch(e => console.warn("slide load error", e));
+        loadSlideToCanvas(fc, initialSlides[0], 0).catch(() => {});
       }
 
       setTimeout(fitCanvas, 50);
@@ -538,7 +538,7 @@ export default function CardNewsEditor({
         });
         fc.add(img);
         fc.sendObjectToBack(img);
-      } catch (e) { console.warn("bg image load failed", e); }
+      } catch (e) { /* bg image load failed */ }
     }
 
     // load font if specified
@@ -933,7 +933,7 @@ export default function CardNewsEditor({
       setImgLibResults(prev => page === 1 ? items : [...prev, ...items]);
       setImgLibPage(page);
     } catch (e) {
-      console.warn("Image lib search failed:", e);
+      /* image lib search failed */
     }
     setImgLibLoading(false);
   }
@@ -1074,7 +1074,7 @@ export default function CardNewsEditor({
         });
         fc.add(img);
         fc.sendObjectToBack(img);
-      } catch (e) { console.warn("template bg image failed", e); }
+      } catch (e) { /* template bg image failed */ }
     } else {
       fc.backgroundColor = template.bgColor;
     }
@@ -1180,7 +1180,7 @@ export default function CardNewsEditor({
           pushHistory();
         }
       }
-    } catch (e) { console.warn("템플릿 적용 실패:", e); }
+    } catch (e) { /* template apply failed */ }
     setShowSharedTemplateModal(false);
   }
 

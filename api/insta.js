@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
-const VERIFY_TOKEN = process.env.INSTA_WEBHOOK_VERIFY_TOKEN || "snsmakeit_webhook_2026";
+const VERIFY_TOKEN = process.env.INSTA_WEBHOOK_VERIFY_TOKEN || "";
 function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 export const config = { maxDuration: 15 };

@@ -156,7 +156,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
             return { thumb, full, title: g.title || "", type: "gif", source: "Klipy" };
           }).filter(x => x.thumb);
           return { items, next: "" };
-        } catch(e) { console.warn("Klipy fetch error:", e); return { items: [], next: "" }; }
+        } catch(e) { return { items: [], next: "" }; }
       },
       giphy:    ()=>fetchGiphyData(q, 0),
       tenor:    ()=>fetchTenorData(q, ""),

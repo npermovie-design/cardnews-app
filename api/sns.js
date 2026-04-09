@@ -48,6 +48,11 @@ const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 async function handlePublish(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  // Origin check — block untrusted callers
+  const origin = req.headers.origin || req.headers.referer || "";
+  const isTrusted = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
+  if (!isTrusted) return res.status(403).json({ error: "Forbidden" });
+
   try {
     const { uid, platform, title, content, tags, visibility = "public", scheduledTime, imageUrl } = req.body;
     if (!uid || !platform || !content) return res.status(400).json({ error: "필수 파라미터 누락 (uid, platform, content)" });

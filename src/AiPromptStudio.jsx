@@ -558,7 +558,7 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
                 images: [], comments: [],
               });
             }
-          } catch (e) { console.log("브리핑 DB 저장 실패(이미 존재할 수 있음):", e); }
+          } catch (e) { /* briefing DB save may already exist */ }
         }
       } catch (e) {
         console.error("브리핑 생성 실패:", e);

@@ -56,7 +56,7 @@ export async function runPipeline(ctx) {
             const [r, g, b] = k.split(",").map(Number);
             return "#" + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, "0")).join("");
           });
-      } catch (e) { console.warn("Color extraction failed:", e); }
+      } catch (e) { /* color extraction failed */ }
 
       try {
         const toneRes = await fetch("/api/gemini-generate", {
@@ -244,7 +244,7 @@ JSON배열만 출력.`;
           const addData = JSON.parse(addCleaned);
           if (Array.isArray(addData)) layoutData = [...layoutData, ...addData];
         }
-      } catch (e2) { console.warn("프리미엄 추가 섹션 생성 실패:", e2); }
+      } catch (e2) { /* additional section generation failed */ }
     }
 
     setPipeResults(prev => ({ ...prev, layout: layoutData }));

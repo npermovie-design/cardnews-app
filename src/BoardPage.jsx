@@ -124,7 +124,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       const txt = (data.choices?.[0]?.message?.content || data.content?.[0]?.text || "").replace(/```json?\s*/g, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(txt);
       return { title: parsed.title || cleanName, desc: parsed.desc || `${typeLabel} 자료` };
-    } catch(e) { console.warn("AI 메타 생성 실패:", e); return { title: cleanName || fileName, desc: `${typeLabel} 자료` }; }
+    } catch(e) { return { title: cleanName || fileName, desc: `${typeLabel} 자료` }; }
   };
 
   const handleArchiveUpload = async (files) => {
@@ -374,7 +374,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       // 검색엔진 자동 색인 (IndexNow — 비동기, 실패해도 무시)
       fetch(`/api/seo?action=index-now&url=/community/${cat}/post-${p.id}`).catch(() => {});
     } catch(e) {
-      console.warn("Supabase 저장 실패, localStorage에만 저장됨:", e?.message);
+      /* Supabase save failed, localStorage only */
     }
     // 1P 지급
     if(user.uid){
@@ -409,7 +409,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     syncLocal(next);
     setPosts(next); // localStorage도 즉시 삭제
     setView(null); setMode("list");
-    try { await deletePostFromDB(id); } catch(e){ console.warn("DB 삭제 실패:", e?.message); }
+    try { await deletePostFromDB(id); } catch(e){ /* DB delete failed */ }
   };
 
   const openPost = async p => {
@@ -1067,7 +1067,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             const thumbPath = `archive/thumb_${Date.now()}_${archiveThumb.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
                             const thumbUrl = await uploadFileToStorage(archiveThumb, thumbPath);
                             images.unshift(thumbUrl);
-                          } catch(te) { console.warn("썸네일 업로드 실패:", te); }
+                          } catch(te) { /* thumbnail upload failed */ }
                         }
                         await submitPost({
                           title: archiveForm.title || file.name.replace(/\.[^.]+$/,""),
