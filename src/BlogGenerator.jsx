@@ -570,20 +570,52 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const blogContentRef = useRef(null);
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    if (withImages && blogContentRef.current) {
+    if (withImages && suggestedImages.length > 0 && blogContentRef.current) {
       setCopyLoading(true);
       try {
-        // 화면에 렌더된 HTML을 직접 선택하여 복사 (이미지 포함)
+        // 본문 img 태그의 src를 base64로 변환하여 HTML 복사
         const el = blogContentRef.current;
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        document.execCommand("copy");
-        sel.removeAllRanges();
+        const imgs = el.querySelectorAll("img");
+        const base64Cache = {};
+
+        // 모든 이미지를 base64로 변환
+        await Promise.allSettled(Array.from(imgs).map(async (img) => {
+          const src = img.src;
+          if (!src || src.startsWith("data:")) return;
+          try {
+            const b64 = await imageUrlToBase64(src);
+            if (b64) base64Cache[src] = b64;
+          } catch {}
+        }));
+
+        // HTML 복제본 생성 후 img src를 base64로 교체
+        const clone = el.cloneNode(true);
+        clone.querySelectorAll("img").forEach(img => {
+          const b64 = base64Cache[img.src];
+          if (b64) img.src = b64;
+        });
+        // 불필요한 UI 요소 제거 (교체 메뉴, 버튼 등)
+        clone.querySelectorAll("button, input, [style*='cursor: pointer']").forEach(n => {
+          if (n.tagName === "BUTTON" || n.tagName === "INPUT") n.remove();
+        });
+
+        const html = clone.innerHTML;
+        try {
+          await navigator.clipboard.write([new ClipboardItem({
+            "text/html": new Blob([html], {type: "text/html"}),
+            "text/plain": new Blob([cleaned], {type: "text/plain"})
+          })]);
+        } catch {
+          // ClipboardItem 실패 시 DOM 선택 복사
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          document.execCommand("copy");
+          sel.removeAllRanges();
+        }
       } catch {
-        // 실패 시 텍스트만 복사
         try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
         catch { fallbackCopy(cleaned); }
       } finally {
