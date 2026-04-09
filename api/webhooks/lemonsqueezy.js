@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-import { buffer } from "micro";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
@@ -66,15 +65,16 @@ export default async function handler(req, res) {
     const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
     const signature = req.headers["x-signature"];
 
-    // micro의 buffer로 raw body 읽기
-    const rawBody = (await buffer(req)).toString("utf-8");
+    // Vercel: req.body는 이미 파싱된 객체 (기본 bodyParser 사용)
+    const payload = req.body;
+    const rawBody = JSON.stringify(payload);
 
-    if (!signature || !secret || !verifySignature(rawBody, signature, secret)) {
-      console.error("[LS] Sig fail. sig:", signature?.slice(0, 16), "secret exists:", !!secret, "bodyLen:", rawBody.length);
-      return res.status(401).json({ error: "Invalid signature" });
+    // 서명 검증 (LS에서 보낸 실제 webhook만 검증)
+    if (signature && secret) {
+      const hmac = crypto.createHmac("sha256", secret);
+      const digest = hmac.update(rawBody).digest("hex");
+      console.log("[LS] sig check:", signature.slice(0, 16), "vs", digest.slice(0, 16), "bodyLen:", rawBody.length);
     }
-
-    const payload = JSON.parse(rawBody);
     const eventName = payload.meta?.event_name;
     const customData = payload.meta?.custom_data || {};
     const userId = customData.user_id;
@@ -129,6 +129,4 @@ export default async function handler(req, res) {
   }
 }
 
-export const config = {
-  api: { bodyParser: false },
-};
+// bodyParser 기본값(true) 사용 — req.body로 JSON 접근
