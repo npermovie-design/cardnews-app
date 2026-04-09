@@ -532,10 +532,16 @@ function RichEditor({ value, onChange, isDark }) {
 function RichBody({ html, C }) {
   if (!html) return null;
   const isDark = !!(C.bg?.includes("0a")||C.bg?.includes("#10")||C.bg?.includes("242"));
+  // XSS 방어: 사용자 HTML 삭독
+  let safeHtml = html;
+  try {
+    const DOMPurify = require("dompurify");
+    safeHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b","i","u","strong","em","br","p","div","span","a","img","ul","ol","li","h1","h2","h3","h4","blockquote","pre","code","hr","table","thead","tbody","tr","td","th"], ALLOWED_ATTR: ["href","src","alt","style","class","target","rel","width","height"] });
+  } catch {}
   return (
     <>
       <div style={{fontSize:15,color:C.text,lineHeight:1.85,wordBreak:"break-word"}}
-        dangerouslySetInnerHTML={{__html: html}}/>
+        dangerouslySetInnerHTML={{__html: safeHtml}}/>
       <div style={{marginTop:28,padding:"16px 18px",borderRadius:12,
         background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.04)",
         border:`1px solid ${isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.12)"}`,

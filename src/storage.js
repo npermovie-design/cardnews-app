@@ -465,6 +465,12 @@ export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason
 // ── 게시글 작성 / 댓글 포인트 ────────────────────────────────────────────
 export async function awardPostPoints(user, setUserState) {
   if (!user?.uid) return;
+  // 하루 10회 포인트 제한 (도배 방지)
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `nper_post_pts_${user.uid}_${today}`;
+  const count = parseInt(localStorage.getItem(key) || "0", 10);
+  if (count >= 10) return; // 일일 한도 초과
+  localStorage.setItem(key, String(count + 1));
   const newPts  = await changePoints(user.uid, POINTS.POST_WRITE, "게시글 작성");
   const newUser = { ...user, points: newPts };
   setLocalUser(newUser);

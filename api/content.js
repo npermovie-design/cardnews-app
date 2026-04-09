@@ -25,7 +25,7 @@ function isBlockedUrl(urlStr) {
 
 function setCors(req, res, { methods = "POST,OPTIONS", useWildcard = false } = {}) {
   if (useWildcard) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   } else {
     const origin = req.headers.origin || "";
     res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");

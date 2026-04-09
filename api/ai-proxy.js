@@ -26,7 +26,7 @@ function orModel(m) {
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
+    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "https://snsmakeit.com", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
   }
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST only" }), { status: 405 });
   if (!OR_KEY) return new Response(JSON.stringify({ error: "API key not configured" }), { status: 500 });
@@ -57,13 +57,13 @@ export default async function handler(req) {
 
     if (stream) {
       return new Response(orRes.body, {
-        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Access-Control-Allow-Origin": "*" },
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Access-Control-Allow-Origin": "https://snsmakeit.com" },
       });
     }
 
     const data = await orRes.json();
     return new Response(JSON.stringify(data), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "https://snsmakeit.com" },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message || "서버 오류" }), { status: 500 });

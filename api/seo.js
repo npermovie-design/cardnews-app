@@ -154,7 +154,7 @@ function detectTag(images) {
 }
 
 async function handleArchiveAutoTag(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   try {

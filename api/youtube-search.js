@@ -1,6 +1,6 @@
 // api/youtube-search.js — YouTube Data API v3 검색 대시보드
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { action } = req.query;

@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 // ============================================================
 async function handleAutoDm(req, res) {
   // CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -295,7 +295,7 @@ async function autoDm_listLogs(req, res) {
 // ── auto-reply: 인스타그램 자동 대댓글 캠페인 관리 ──
 // ============================================================
 async function handleAutoReply(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -472,7 +472,7 @@ async function autoReply_toggleCampaign(req, res) {
 // ── media: 연동된 인스타 계정의 최근 미디어 조회 ──
 // ============================================================
 async function handleMedia(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -541,7 +541,7 @@ async function handleMedia(req, res) {
 // ── webhook: Instagram Webhook — 댓글 감지 → 키워드 매칭 → 자동 DM 발송 ──
 // ============================================================
 async function handleWebhook(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
 
   // ── GET: Webhook 인증 (Hub Challenge) ──
   if (req.method === "GET") {

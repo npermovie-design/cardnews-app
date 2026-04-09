@@ -3,7 +3,7 @@ export const config = { runtime: "edge", maxDuration: 120 };
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
+    return new Response(null, { status: 200, headers: { "Access-Control-Allow-Origin": "https://snsmakeit.com", "Access-Control-Allow-Methods": "POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
   }
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST only" }), { status: 405 });
 
@@ -44,7 +44,7 @@ export default async function handler(req) {
       const err = await res.text().catch(() => "");
       return new Response(JSON.stringify({ error: `Gemini 오류 ${res.status}: ${err.slice(0, 200)}` }), {
         status: res.status,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "https://snsmakeit.com" },
       });
     }
 
@@ -52,12 +52,12 @@ export default async function handler(req) {
     const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join("") || "";
 
     return new Response(JSON.stringify({ text }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "https://snsmakeit.com" },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "https://snsmakeit.com" },
     });
   }
 }

@@ -24,8 +24,21 @@ export default async function handler(req, res) {
   const sb = getServiceClient();
   if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
 
-  // ── 인증: 요청자가 admin인지 확인 ──
-  const authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
+  // ── 인증: Supabase JWT 또는 admin_uid로 admin 확인 ──
+  let authUid = "";
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ")) {
+    // JWT 토큰에서 uid 추출 (Supabase anon client로 검증)
+    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (user) authUid = user.id;
+  }
+  // 폴백: 기존 방식 (같은 origin에서만 허용)
+  if (!authUid) {
+    const origin = req.headers.origin || req.headers.referer || "";
+    const isTrusted = origin.includes("snsmakeit.com") || origin.includes("localhost");
+    if (isTrusted) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
+  }
   if (!authUid) return res.status(403).json({ error: "관리자 인증 필요" });
   const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
   if (!adminCheck || adminCheck.role !== "admin") {

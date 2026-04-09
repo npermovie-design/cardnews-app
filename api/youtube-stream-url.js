@@ -56,7 +56,7 @@ export default async function handler(req) {
   const vid = extractId(videoUrl);
   if (!vid) return new Response(JSON.stringify({ error: "url 필요" }), { status: 400 });
 
-  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "https://snsmakeit.com" };
   const errors = [];
 
   for (const client of INNERTUBE_CLIENTS) {
