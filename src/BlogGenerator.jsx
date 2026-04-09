@@ -272,7 +272,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // 다시 생성하기 확인
   const [formStep, setFormStep] = useState(1); // 1~4 wizard steps
-  const [sourceType, setSourceType] = useState(null); // "link" | "file" | "topic"
+  const [sourceType, setSourceType] = useState("topic"); // "link" | "file" | "topic"
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
@@ -497,46 +497,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const uniqueKeywords = [...new Set(allKeywords)];
 
     const mainKeyword = fields.keyword?.trim() || "";
-    // 영문인지 판별
-    const isEnglish = (s) => /^[a-zA-Z0-9\s.,!?'-]+$/.test(s.trim());
+    const searchKeyword = mainKeyword || uniqueKeywords[0] || "";
+    if (!searchKeyword) return;
 
-    const searchOne = async (kw, idx) => {
-      // 영문 키워드(AI [image:] 태그)는 그대로 사용, 한국어는 메인키워드 조합
-      let searchQuery;
-      if (isEnglish(kw)) {
-        searchQuery = kw.trim();
-      } else {
-        const shortKw = kw.split(/\s+/).slice(0, 3).join(" ");
-        searchQuery = mainKeyword ? `${mainKeyword} ${shortKw}` : shortKw;
-      }
-      const q = encodeURIComponent(searchQuery);
+    // 하단 추천과 동일한 방식: 메인 키워드로 이미지 풀을 한번에 가져온 뒤 분배
+    const allImages = [];
+    // 1) Pixabay 한국어 (하단 추천과 완전 동일)
+    try {
+      const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKeyword)}&per_page=20&safesearch=true&image_type=photo&lang=ko`);
+      if (r.ok) { const d = await r.json(); (d.hits || []).forEach(h => allImages.push(h.webformatURL || h.largeImageURL)); }
+    } catch {}
+    // 2) Pexels 추가 (더 다양한 이미지)
+    try {
+      const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKeyword)}&per_page=15`);
+      if (r.ok) { const d = await r.json(); (d.photos || []).forEach(p => allImages.push(p.src.large)); }
+    } catch {}
 
-      // 1) Pexels (영문 검색 정확도 최고)
-      try {
-        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=10&orientation=landscape`);
-        if (r.ok) { const d = await r.json(); if (d.photos?.length > 0) return d.photos[idx % d.photos.length].src.large; }
-      } catch {}
-      // 2) Pixabay (영문이면 lang=en, 한국어면 lang=ko)
-      try {
-        const lang = isEnglish(kw) ? "en" : "ko";
-        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=10&safesearch=true&image_type=photo&lang=${lang}`);
-        if (r.ok) { const d = await r.json(); if (d.hits?.length > 0) return d.hits[idx % d.hits.length].webformatURL; }
-      } catch {}
-      // 3) 메인 키워드만으로 Pixabay 한국어 재검색 (최소한 주제는 맞추기)
-      if (mainKeyword) {
-        try {
-          const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(mainKeyword)}&per_page=20&safesearch=true&image_type=photo&lang=ko`);
-          if (r.ok) { const d = await r.json(); if (d.hits?.length > 0) return d.hits[(idx * 3 + 1) % d.hits.length].webformatURL; }
-        } catch {}
-      }
-      // 4) Picsum 최종 폴백
-      return null; // 이미지 없으면 삽입 안 함
-    };
+    if (allImages.length === 0) return;
 
-    // 병렬로 모든 키워드 검색
-    const results = await Promise.all(uniqueKeywords.map((kw, i) => searchOne(kw, i)));
+    // 키워드별로 이미지 분배 (겹치지 않게)
     const imgMap = {};
-    uniqueKeywords.forEach((kw, i) => { if (results[i]) imgMap[kw] = results[i]; });
+    uniqueKeywords.forEach((kw, i) => {
+      if (i < allImages.length) imgMap[kw] = allImages[i];
+    });
     setInlineImages(imgMap);
   };
 
