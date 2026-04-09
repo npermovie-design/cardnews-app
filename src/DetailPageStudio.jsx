@@ -1,9 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
-import { SECTION_TEMPLATES, SECTION_TYPE_LABELS } from "./detailTemplates.js";
-import { CATEGORIES, SECTION_TYPES, PIPELINE_STEPS } from "./detail-studio/constants.js";
-import { fileToBase64, resizeImage } from "./detail-studio/utils.jsx";
-import { renderSection } from "./detail-studio/renderers/SectionDispatcher.jsx";
 
 // Phase components
 import InputPhase from "./detail-studio/phases/InputPhase.jsx";
