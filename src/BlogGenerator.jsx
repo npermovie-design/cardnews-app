@@ -496,10 +496,35 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (allKeywords.length === 0) return;
     const uniqueKeywords = [...new Set(allKeywords)];
 
+    // AI로 한국어 키워드 → 영문 이미지 검색어 변환
+    let enKeywordMap = {};
+    try {
+      const kwList = uniqueKeywords.join("\n");
+      const transPrompt = `아래 한국어 키워드/소제목 각각에 대해, 스톡 이미지 검색에 적합한 구체적인 영문 검색어 1~3단어를 만들어줘.
+반드시 해당 주제를 시각적으로 잘 표현하는 구체적 키워드로 변환해.
+예시: "강아지 영양관리의 기초" → "dog healthy food bowl"
+예시: "정기적인 건강검진의 중요성" → "veterinary dog checkup"
+예시: "운동과 활동 프로그램" → "dog playing park exercise"
+
+JSON 형식으로 출력: {"원본키워드":"english search query",...}
+JSON만 출력.
+
+${kwList}`;
+      const r = await fetch("/api/gemini-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: transPrompt, maxTokens: 500 }) });
+      if (r.ok) {
+        const d = await r.json();
+        const cleaned = (d.text || "").replace(/```json?\s*/g, "").replace(/```/g, "").trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) enKeywordMap = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) { console.warn("Image keyword translation failed:", e); }
+
     // 단일 키워드 이미지 검색 (Pexels → Unsplash → Pixabay → Picsum)
     const searchOne = async (kw, idx) => {
-      const q = encodeURIComponent(kw.trim());
-      // 1) Pexels (영문 검색 정확도 높음)
+      // 영문 변환된 키워드 우선, 없으면 원본 사용
+      const enKw = enKeywordMap[kw] || kw;
+      const q = encodeURIComponent(enKw.trim());
+      // 1) Pexels
       try {
         const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=8&orientation=landscape`);
         if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[idx % d.photos.length].src.large; }
@@ -509,13 +534,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         const r = await fetch(`/api/proxy-unsplash?query=${q}&per_page=5&orientation=landscape`);
         if (r.ok) { const d = await r.json(); if (d.results?.length) return d.results[idx % d.results.length].urls.regular; }
       } catch {}
-      // 3) Pixabay (영문)
+      // 3) Pixabay
       try {
         const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=8&safesearch=true&image_type=photo&lang=en`);
         if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
       } catch {}
-      // 4) Picsum 최종 폴백
-      return `https://picsum.photos/seed/${encodeURIComponent(kw.slice(0, 20))}/800/450`;
+      // 4) 원본 한국어로 재시도 (Pixabay 한국어)
+      if (enKw !== kw) {
+        try {
+          const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(kw)}&per_page=8&safesearch=true&image_type=photo&lang=ko`);
+          if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
+        } catch {}
+      }
+      // 5) Picsum 최종 폴백
+      return `https://picsum.photos/seed/${encodeURIComponent(enKw.slice(0, 20))}/800/450`;
     };
 
     // 병렬로 모든 키워드 검색
