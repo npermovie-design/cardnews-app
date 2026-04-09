@@ -477,10 +477,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
   const fetchInlineImages = async (blogText) => {
     if (!blogText) return;
-    const imgTags = blogText.match(/\[(?:이미지|image):\s*([^\]]+)\]/g);
-    if (!imgTags || imgTags.length === 0) return;
-    const keywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
-    const uniqueKeywords = [...new Set(keywords)];
+    // 1) 기존 [이미지: 키워드] 태그에서 추출
+    const imgTags = blogText.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
+    const tagKeywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
+
+    // 2) 부제목(##, ###)에서 키워드 추출 → 이미지 태그가 없는 부제목에 자동 삽입
+    const headingRegex = /^#{2,3}\s+(.+)$/gm;
+    let match;
+    const headings = [];
+    while ((match = headingRegex.exec(blogText)) !== null) {
+      const heading = match[1].replace(/\*\*/g, "").trim();
+      if (heading && heading.length > 1 && heading.length < 60) headings.push(heading);
+    }
+    // 부제목 뒤에 이미지 태그가 없는 경우, 부제목 키워드로 이미지 검색
+    const headingKeywords = headings.filter(h => !tagKeywords.some(tk => h.includes(tk) || tk.includes(h)));
+
+    const allKeywords = [...tagKeywords, ...headingKeywords];
+    if (allKeywords.length === 0) return;
+    const uniqueKeywords = [...new Set(allKeywords)];
 
     // 단일 키워드 이미지 검색 (Pexels → Unsplash → Pixabay → Picsum)
     const searchOne = async (kw, idx) => {
@@ -723,13 +737,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             )}
             {result&&(
               <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>{setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType(null);}}
+                  style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${border}`,
+                    background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+                  ← 새로 쓰기
+                </button>
                 <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
                   disabled={copyLoading}
                   style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
                     background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
                     color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:copyLoading?"wait":"pointer",
                     display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",opacity:copyLoading?0.6:1}}>
-                  {copyLoading?"⏳ 이미지 변환 중...":copied?"✓ 복사됨":"📋 복사 (이미지 포함)"}
+                  {copyLoading?"이미지 변환 중...":copied?"복사됨":"복사 (이미지 포함)"}
                 </button>
               </div>
             )}

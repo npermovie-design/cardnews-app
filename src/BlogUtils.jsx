@@ -119,9 +119,27 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
         <ReplaceableImage key={i} src={src} desc={desc} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />
       );
     } else if (line.startsWith("### ")) {
+      const headingText = line.slice(4).replace(/\*\*/g,"").trim();
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
+      // 부제목 뒤에 매칭되는 이미지 자동 삽입
+      if (inlineImages && headingText) {
+        const imgUrl = inlineImages[headingText] || Object.entries(inlineImages).find(([k]) => headingText.includes(k) || k.includes(headingText))?.[1];
+        if (imgUrl) {
+          const fallbackSeed = encodeURIComponent(headingText.slice(0, 20));
+          elements.push(<ReplaceableImage key={`himg${i}`} src={imgUrl} desc={headingText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
+        }
+      }
     } else if (line.startsWith("## ")) {
+      const headingText = line.slice(3).replace(/\*\*/g,"").trim();
       elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);
+      // 부제목 뒤에 매칭되는 이미지 자동 삽입
+      if (inlineImages && headingText) {
+        const imgUrl = inlineImages[headingText] || Object.entries(inlineImages).find(([k]) => headingText.includes(k) || k.includes(headingText))?.[1];
+        if (imgUrl) {
+          const fallbackSeed = encodeURIComponent(headingText.slice(0, 20));
+          elements.push(<ReplaceableImage key={`himg${i}`} src={imgUrl} desc={headingText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
+        }
+      }
     } else if (line.startsWith("# ")) {
       elements.push(<h1 key={i} style={{fontSize:22,fontWeight:900,color:textColor,margin:"32px 0 12px",letterSpacing:-0.8}}>{inlineFormat(line.slice(2),accentColor)}</h1>);
     } else if (line.match(/^[-*]{3,}$/)) {
