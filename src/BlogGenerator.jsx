@@ -13,18 +13,18 @@ import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, Point
 export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
   // SNS 플랫폼 드롭다운 (폼 내에서 선택)
   const SNS_OPTIONS = [
-    { id: "blog_naver", label: "네이버 블로그", icon: "/icon-naver-blog.png" },
-    { id: "blog_cafe", label: "네이버 카페", icon: "/icon-naver-cafe.webp" },
-    { id: "blog_tistory", label: "티스토리", icon: "/icon-tistory.png" },
-    { id: "blog_insta", label: "인스타그램", icon: "/icon-instagram.webp" },
-    { id: "blog_thread", label: "스레드", icon: "/icon-threads.png" },
-    { id: "blog_youtube", label: "유튜브", icon: "/icon-youtube.png" },
-    { id: "blog_x", label: "X (Twitter)", icon: "/icon-x.png" },
-    { id: "blog_facebook", label: "페이스북", icon: "/icon-facebook.png" },
-    { id: "blog_linkedin", label: "LinkedIn", icon: "/icon-linkedin.png" },
-    { id: "blog_medium", label: "Medium", icon: "/icon-medium.png" },
-    { id: "blog_reddit", label: "Reddit", icon: "/icon-reddit.png" },
-    { id: "blog_pinterest", label: "Pinterest", icon: "/icon-pinterest.png" },
+    { id: "blog_naver", label: "네이버 블로그", icon: "/icon-naver-blog.png", color: "#03C75A" },
+    { id: "blog_cafe", label: "네이버 카페", icon: "/icon-naver-cafe.webp", color: "#03C75A" },
+    { id: "blog_tistory", label: "티스토리", icon: "/icon-tistory.png", color: "#FF6B35" },
+    { id: "blog_insta", label: "인스타그램", icon: "/icon-instagram.webp", color: "#E1306C" },
+    { id: "blog_thread", label: "스레드", icon: "/icon-threads.png", color: "#000000" },
+    { id: "blog_youtube", label: "유튜브", icon: "/icon-youtube.png", color: "#FF0000" },
+    { id: "blog_x", label: "X (Twitter)", color: "#000000", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+    { id: "blog_facebook", label: "페이스북", color: "#1877F2", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> },
+    { id: "blog_linkedin", label: "LinkedIn", color: "#0A66C2", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> },
+    { id: "blog_medium", label: "Medium", color: "#000000", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/></svg> },
+    { id: "blog_reddit", label: "Reddit", color: "#FF4500", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 01.042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 014.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 01.14-.197.35.35 0 01.238-.042l2.906.617a1.214 1.214 0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 00-.231.094.33.33 0 000 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 000-.462.342.342 0 00-.462 0c-.545.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 00-.205-.095z"/></svg> },
+    { id: "blog_pinterest", label: "Pinterest", color: "#E60023", svg: <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641 0 12.017 0z"/></svg> },
   ];
   const [platformId, setPlatformId] = useState(initialType || "blog_naver");
   const [snsCat, setSnsCat] = useState("all");
@@ -1272,7 +1272,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                           background:isA?accentBg:inputBg,
                           transition:"all 0.15s ease",display:"flex",flexDirection:"column",alignItems:"center",gap:8,
                         }}>
-                        <img src={p.icon} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"contain"}}/>
+                        <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted}}>
+                          {p.svg ? p.svg : <img src={p.icon} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
+                        </div>
                         <div style={{fontSize:12,fontWeight:isA?700:500,color:isA?accent:text}}>{p.label}</div>
                       </button>
                     );
