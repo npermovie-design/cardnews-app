@@ -598,58 +598,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
+  const blogContentRef = useRef(null);
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    if (withImages && Object.keys(inlineImages).length > 0) {
+    if (withImages && blogContentRef.current) {
       setCopyLoading(true);
       try {
-        // 소제목 감지 후 이미지 삽입한 HTML 생성
-        const imgKeys = Object.keys(inlineImages);
-        const imgUrls = Object.values(inlineImages);
-        let imgIdx = 0;
-
-        // 모든 이미지 base64 변환 (병렬)
-        const base64Map = {};
-        const results = await Promise.allSettled(
-          imgUrls.map(async (url, i) => {
-            try { const data = await imageUrlToBase64(url); return { idx: i, data }; }
-            catch { return { idx: i, data: null }; }
-          })
-        );
-        results.forEach(r => { if (r.status === "fulfilled" && r.value?.data) base64Map[r.value.idx] = r.value.data; });
-
-        // 소제목 뒤에 이미지 삽입
-        const lines = cleaned.split("\n");
-        const htmlLines = [];
-        for (let li = 0; li < lines.length; li++) {
-          const trimmed = lines[li].trim();
-          if (!trimmed) { htmlLines.push("<br/>"); continue; }
-          const prevEmpty = li === 0 || !lines[li-1]?.trim();
-          const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !/^\d+\./.test(trimmed);
-          if (isHeading) {
-            htmlLines.push(`<p><b>${trimmed}</b></p>`);
-            if (imgIdx < imgUrls.length) {
-              const src = base64Map[imgIdx] || imgUrls[imgIdx];
-              if (src) htmlLines.push(`<img src="${src}" alt="${trimmed}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" />`);
-              imgIdx++;
-            }
-          } else {
-            htmlLines.push(`<p>${trimmed}</p>`);
-          }
-        }
-        const html = htmlLines.join("\n");
-
-        try {
-          if (navigator.clipboard?.write) {
-            await navigator.clipboard.write([new ClipboardItem({
-              "text/html": new Blob([html], {type: "text/html"}),
-              "text/plain": new Blob([cleaned], {type: "text/plain"})
-            })]);
-          } else if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(cleaned);
-          } else { fallbackCopy(cleaned); }
-        } catch { fallbackCopy(cleaned); }
+        // 화면에 렌더된 HTML을 직접 선택하여 복사 (이미지 포함)
+        const el = blogContentRef.current;
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("copy");
+        sel.removeAllRanges();
       } catch {
+        // 실패 시 텍스트만 복사
         try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
         catch { fallbackCopy(cleaned); }
       } finally {
@@ -893,7 +858,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               }
             }}
             style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
-            {renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}
+            <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}</div>
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
