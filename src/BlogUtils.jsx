@@ -903,6 +903,57 @@ const PLATFORMS = {
       return "";
     },
   },
+
+  // ── WordPress ──
+  blog_wordpress: {
+    title: "WordPress 블로그 작성",
+    accentColor: "#21759B",
+    subtypes: [
+      {id:"info",icon:"",label:"정보성 글",desc:"가이드/노하우"},
+      {id:"review",icon:"",label:"리뷰",desc:"제품/서비스 리뷰"},
+      {id:"tutorial",icon:"",label:"튜토리얼",desc:"단계별 설명"},
+      {id:"opinion",icon:"",label:"칼럼/의견",desc:"전문 의견"},
+    ],
+    tones: [{id:"info",label:"친근/정보형"},{id:"diary",label:"일기형"},{id:"review",label:"리뷰형"},{id:"expert",label:"전문형"}],
+    wordCounts: [{id:"medium",label:"보통",desc:"1,000~1,500자"},{id:"long",label:"길게",desc:"2,000~3,000자"},{id:"xlong",label:"아주 길게",desc:"4,000자 이상"}],
+    fields: { info:["keyword","extra"], review:["keyword","extra"], tutorial:["keyword","extra"], opinion:["keyword","extra"] },
+    examples: { info:["워드프레스 속도 최적화 가이드"], review:["최신 노트북 비교 리뷰"], tutorial:["초보자를 위한 SEO 설정"], opinion:["AI 시대의 콘텐츠 전략"] },
+    buildPrompt(sub, f, tone, wc, speech) {
+      const t={info:"친근하고 정보를 전달하는",diary:"일상적이고 따뜻한",review:"객관적이고 분석적인",expert:"전문적이고 깊이 있는"}[tone];
+      const w={medium:"1,000~1,500자",long:"2,000~3,000자",xlong:"4,000자 이상"}[wc]||"2,000자";
+      return `WordPress 블로그 글 (${t}, ${w})\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수]\n- SEO 친화적 H2/H3 소제목 사용\n- 이모지 금지\n- [image: 키워드] 태그로 각 섹션에 이미지 삽입\n- 메타 디스크립션(150자) 포함\n- 핵심 키워드 자연스럽게 반복`;
+    },
+  },
+
+  // ── Tumblr ──
+  blog_tumblr: {
+    title: "Tumblr 게시물 작성",
+    accentColor: "#36465D",
+    subtypes: [{id:"text",icon:"",label:"텍스트 포스트",desc:"일반 글"},{id:"essay",icon:"",label:"에세이",desc:"장문 글"}],
+    tones: [{id:"casual",label:"캐주얼"},{id:"aesthetic",label:"감성적"},{id:"analytical",label:"분석적"}],
+    wordCounts: [{id:"short",label:"짧게",desc:"200~500자"},{id:"medium",label:"보통",desc:"500~1,500자"}],
+    fields: { text:["keyword","extra"], essay:["keyword","extra"] },
+    examples: { text:["오늘의 영감 한 줄","음악 추천"], essay:["창작자의 번아웃에 대하여","인터넷 문화 변천사"] },
+    buildPrompt(sub, f, tone, wc, speech) {
+      const t={casual:"가볍고 캐주얼한",aesthetic:"감성적이고 시적인",analytical:"분석적이고 깊이 있는"}[tone];
+      return `Tumblr ${sub==="essay"?"에세이":"게시물"} (${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 이모지 금지, Tumblr 특유의 자유로운 문체, 태그 5~10개`;
+    },
+  },
+
+  // ── Quora ──
+  blog_quora: {
+    title: "Quora 답변 작성",
+    accentColor: "#B92B27",
+    subtypes: [{id:"answer",icon:"",label:"답변",desc:"질문에 대한 답변"},{id:"expert",icon:"",label:"전문 답변",desc:"전문가 관점 답변"}],
+    tones: [{id:"helpful",label:"도움이 되는"},{id:"expert",label:"전문적"},{id:"personal",label:"경험 기반"}],
+    wordCounts: [{id:"short",label:"보통",desc:"500~1,000자"},{id:"medium",label:"길게",desc:"1,000~2,000자"}],
+    fields: { answer:["keyword","extra"], expert:["keyword","extra"] },
+    examples: { answer:["프로그래밍 어떻게 시작하나요?","마케팅 전략 추천"], expert:["AI가 일자리를 대체할까요?","창업 초기 가장 중요한 것"] },
+    buildPrompt(sub, f, tone, wc, speech) {
+      const t={helpful:"도움이 되는 친절한",expert:"전문적이고 권위 있는",personal:"개인 경험 기반의"}[tone];
+      return `Quora 답변 (${t})\n질문/주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 이모지 금지, 구체적 사례 포함, 읽기 쉬운 구조 (번호/불릿), 신뢰감 있는 전문가 톤`;
+    },
+  },
 };
 
 // ── 말투(문체) 옵션 — 모든 플랫폼 공통 ──
