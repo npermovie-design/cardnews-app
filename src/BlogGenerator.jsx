@@ -995,7 +995,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // 현재 단계: 1=입력, 2=생성중, 3=결과
   // genStep: 0=시작전, 1~4=생성중, 5=완료
   // loading 또는 genStep이 1~4이면 생성중 화면 유지
-  const wizStep = (loading || (genStep > 0 && genStep < 5)) ? 2 : result ? 3 : 1;
+  const wizStep = (loading || (genStep > 0 && genStep < 5)) ? 2 : (!loading && genStep === 5 && result) ? 3 : 1;
   const WSTEPS = [
     {n:1, label:t("inputStep")},
     {n:2, label:t("genStep")},
