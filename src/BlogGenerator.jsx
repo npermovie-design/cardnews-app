@@ -260,6 +260,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   }, [loading]);
 
   // 다시 생성하기 확인
+  const [formStep, setFormStep] = useState(1); // 1~4 wizard steps
+  const [sourceType, setSourceType] = useState(null); // "link" | "file" | "topic"
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
@@ -1059,313 +1061,419 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
           <div className="bl-form-wrap" style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
-            {/* StepBar 제거됨 */}
-
-            {/* URL 불러오기 */}
-            <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("urlImportLabel")}</div>
-              <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>뉴스 기사, 유튜브 링크를 붙여넣으면 주제를 자동으로 채워줘요</div>
-              <div style={{display:"flex",gap:8}}>
-                <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
-                  onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
-                  placeholder="https://... URL 붙여넣기"
-                  style={{flex:1,padding:"11px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-                <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                  style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap"}}>
-                  {urlLoading?"불러오는 중...":"불러오기"}
-                </button>
-              </div>
-              {urlResult && (
-                <div style={{marginTop:10,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:"1px solid rgba(99,102,241,0.2)",display:"flex",gap:10,alignItems:"center"}}>
-                  {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:40,height:28,objectFit:"cover",borderRadius:12,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
-                    <div style={{fontSize:11,color:muted,marginTop:1}}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} · 주제에 자동 입력됐어요</div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 파일 업로드 분석 */}
-            <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("fileImport")}</div>
-              <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
-              {/* 첨부된 파일 목록 */}
-              {fields._files && fields._files.length > 0 && (
-                <div style={{marginBottom:8,display:"flex",flexWrap:"wrap",gap:4}}>
-                  {fields._files.map((f,i) => (
-                    <span key={i} style={{fontSize:11,padding:"3px 8px",borderRadius:6,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)",color:accent,display:"inline-flex",alignItems:"center",gap:4}}>
-                      {f.name}
-                      <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:12,padding:0,lineHeight:1}}>x</button>
+            {/* ── Progress Bar ── */}
+            <div style={{marginBottom:24}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                {[1,2,3,4].map(step => (
+                  <div key={step} style={{display:"flex",alignItems:"center",gap:6,cursor:step<formStep?"pointer":"default"}} onClick={()=>{if(step<formStep)setFormStep(step);}}>
+                    <div style={{
+                      width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:12,fontWeight:700,
+                      background:formStep===step?accent:formStep>step?accent:(isDark?"rgba(255,255,255,0.08)":"#e9ecef"),
+                      color:formStep>=step?"#fff":muted,
+                      transition:"all 0.2s ease",
+                    }}>{formStep>step?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:step}</div>
+                    <span style={{fontSize:11,fontWeight:formStep===step?700:400,color:formStep===step?accent:muted,display:window.innerWidth<480&&step!==formStep?"none":"inline"}}>
+                      {step===1?"소스 선택":step===2?"플랫폼":step===3?"글타입":"스타일"}
                     </span>
-                  ))}
+                    {step<4&&<div style={{width:window.innerWidth<600?16:40,height:2,background:formStep>step?accent:(isDark?"rgba(255,255,255,0.1)":"#e0e0e0"),borderRadius:1,transition:"background 0.2s"}}/>}
+                  </div>
+                ))}
+              </div>
+              <div style={{height:3,borderRadius:2,background:isDark?"rgba(255,255,255,0.06)":"#e9ecef",overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:2,background:`linear-gradient(90deg,${accent},#8b5cf6)`,width:`${(formStep/4)*100}%`,transition:"width 0.3s ease"}}/>
+              </div>
+            </div>
+
+            {/* ══════ Step 1: Source Selection ══════ */}
+            {formStep===1 && (
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>어떤 소스로 글을 쓸까요?</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>소스를 선택하면 해당 입력창이 나타납니다</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:18}}>
+                  {[
+                    {id:"link",title:"링크로 글쓸래요?",desc:"뉴스 기사, 유튜브 링크를 넣으면 주제를 자동으로 채워줘요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="link"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
+                    {id:"file",title:"파일로 글쓸래요?",desc:"이미지, PDF, 문서 파일을 분석해서 글의 소재로 사용해요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="file"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
+                    {id:"topic",title:"주제를 입력할래요?",desc:"키워드나 주제를 직접 입력해서 글을 작성해요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="topic"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
+                  ].map(src => {
+                    const isA=sourceType===src.id;
+                    return (
+                      <button key={src.id} onClick={()=>setSourceType(src.id)}
+                        style={{
+                          padding:"20px 18px",borderRadius:14,textAlign:"left",cursor:"pointer",
+                          border:isA?`2px solid ${accent}`:`2px solid ${border}`,
+                          background:isA?accentBg:inputBg,
+                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:8,
+                        }}>
+                        <div>{src.iconSvg}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{src.title}</div>
+                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>{src.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
-                  onChange={async (e) => {
-                    const fileList = Array.from(e.target.files || []);
-                    if (!fileList.length) return;
-                    e.target.value = "";
-                    const maxSize = 10 * 1024 * 1024;
-                    const valid = fileList.filter(f => f.size <= maxSize);
-                    if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
-                    if (!valid.length) return;
 
-                    setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
-                    const prevFiles = fields._files || [];
-                    const newFiles = [...prevFiles];
-                    let allResults = "";
+                {/* Inline: Link input */}
+                {sourceType==="link" && (
+                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("urlImportLabel")}</div>
+                    <div style={{display:"flex",gap:8}}>
+                      <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
+                        placeholder="https://... URL 붙여넣기"
+                        style={{flex:1,padding:"11px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+                      <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                        style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap"}}>
+                        {urlLoading?"불러오는 중...":"불러오기"}
+                      </button>
+                    </div>
+                    {urlResult && (
+                      <div style={{marginTop:10,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:"1px solid rgba(99,102,241,0.2)",display:"flex",gap:10,alignItems:"center"}}>
+                        {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:40,height:28,objectFit:"cover",borderRadius:12,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
+                          <div style={{fontSize:11,color:muted,marginTop:1}}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} -- 주제에 자동 입력됐어요</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                    for (const file of valid) {
-                      try {
-                        if (file.type.startsWith("image/")) {
-                          const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-                          const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
-                          allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
-                          newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
-                        } else {
-                          const text2 = await file.text().catch(() => "");
-                          const summary = text2.slice(0, 2000);
-                          allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
-                          newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
-                        }
-                      } catch(err) {
-                        allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
-                      }
-                    }
-
-                    if (!fields.keyword && allResults) {
-                      const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
-                      if (firstLine) setField("keyword", firstLine);
-                    }
-                    setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
-                    setField("_files", newFiles);
-                  }}/>
-                <button onClick={() => document.getElementById("blog-file-input")?.click()}
-                  style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
-                  {t("fileSelect")}
-                </button>
-                <span style={{fontSize:11,color:muted}}>여러 파일 선택 가능 · 10MB 이하</span>
-              </div>
-            </div>
-
-            {/* 글 타입 */}
-            <div style={{marginBottom:18}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:10}}>{t("selectType")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
-                {cfg.subtypes.map(s=>{
-                  const isA=subtype===s.id;
-                  return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"12px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
-                    <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                    <div style={{fontSize:11,color:muted,marginTop:2}}>{s.desc}</div>
-                  </button>;
-                })}
-              </div>
-            </div>
-
-            {/* 예시 */}
-            {examples.length>0&&<div style={{marginBottom:16}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("exampleTopics")}</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {examples.map(ex=><button key={ex} onClick={()=>setField("keyword",ex)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${border}`,background:fields.keyword===ex?accentBg:"transparent",color:fields.keyword===ex?accent:muted,fontSize:12,cursor:"pointer"}}>{ex}</button>)}
-              </div>
-            </div>}
-
-            {/* 동적 필드 */}
-            {currentFields.map(fk=>{
-              const fl=FIELD_LABELS[fk]; if(!fl) return null;
-              return <div key={fk} style={{marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{fl.label}{fl.required&&<span style={{color:"#ef4444"}}> *</span>}</div>
-                {fl.textarea
-                  ?<textarea value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} rows={3} placeholder={fl.placeholder} style={{...IS,resize:"none",lineHeight:1.6}}/>
-                  :<input type="text" value={fields[fk]||""} onChange={e=>setField(fk,e.target.value)} onKeyDown={e=>e.key==="Enter"&&fk==="keyword"&&generate()} placeholder={fl.placeholder} style={{...IS,borderColor:(error&&fk==="keyword")?"#ef4444":inputBdr}}/>
-                }
-                {fk==="keyword" && !fields.keyword?.trim() && (
-                  <div style={{marginTop:10}}>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,marginBottom:8}}>이런 주제는 어때요?</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {["AI 콘텐츠 자동화의 미래","SaaS 성장 전략 가이드","스타트업 마케팅 실전 노하우","개인 브랜딩으로 커리어 성장하기","원격 근무 생산성 높이는 법","2026 SEO 완벽 가이드"].map(chip => (
-                        <button key={chip} onClick={() => setField("keyword", chip)}
-                          style={{
-                            padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:500,cursor:"pointer",
-                            border:`1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.25)"}`,
-                            background: isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)",
-                            color: isDark ? "#c4b5fd" : "#7c6aff",
-                            transition:"all 0.15s ease",
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.12)"; e.currentTarget.style.borderColor = "#7c6aff"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)"; e.currentTarget.style.borderColor = isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.25)"; }}
-                        >{chip}</button>
-                      ))}
+                {/* Inline: File upload */}
+                {sourceType==="file" && (
+                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("fileImport")}</div>
+                    <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
+                    {fields._files && fields._files.length > 0 && (
+                      <div style={{marginBottom:8,display:"flex",flexWrap:"wrap",gap:4}}>
+                        {fields._files.map((f,i) => (
+                          <span key={i} style={{fontSize:11,padding:"3px 8px",borderRadius:6,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)",color:accent,display:"inline-flex",alignItems:"center",gap:4}}>
+                            {f.name}
+                            <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:12,padding:0,lineHeight:1}}>x</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
+                        onChange={async (e) => {
+                          const fileList = Array.from(e.target.files || []);
+                          if (!fileList.length) return;
+                          e.target.value = "";
+                          const maxSize = 10 * 1024 * 1024;
+                          const valid = fileList.filter(f => f.size <= maxSize);
+                          if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
+                          if (!valid.length) return;
+                          setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
+                          const prevFiles = fields._files || [];
+                          const newFiles = [...prevFiles];
+                          let allResults = "";
+                          for (const file of valid) {
+                            try {
+                              if (file.type.startsWith("image/")) {
+                                const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+                                const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
+                                allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
+                                newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
+                              } else {
+                                const text2 = await file.text().catch(() => "");
+                                const summary = text2.slice(0, 2000);
+                                allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
+                                newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
+                              }
+                            } catch(err) {
+                              allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
+                            }
+                          }
+                          if (!fields.keyword && allResults) {
+                            const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
+                            if (firstLine) setField("keyword", firstLine);
+                          }
+                          setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
+                          setField("_files", newFiles);
+                        }}/>
+                      <button onClick={() => document.getElementById("blog-file-input")?.click()}
+                        style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
+                        {t("fileSelect")}
+                      </button>
+                      <span style={{fontSize:11,color:muted}}>여러 파일 선택 가능 -- 10MB 이하</span>
                     </div>
                   </div>
                 )}
-                {fk==="keyword" && fields.keyword && fields.keyword.trim() && (
-                  <div style={{marginTop:8,display:"flex",gap:6}}>
-                    <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                      {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"⭐ AI 제목 추천"}
-                    </button>
-                    <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                      {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
-                    </button>
+
+                {/* Inline: Topic/keyword input */}
+                {sourceType==="topic" && (
+                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>주제 / 키워드 입력</div>
+                    <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
+                      placeholder="글의 주제나 키워드를 입력하세요"
+                      style={{...IS,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
+                    {fields.keyword && fields.keyword.trim() && (
+                      <div style={{marginTop:8,display:"flex",gap:6}}>
+                        <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                          {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
+                        </button>
+                        <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                          {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
+                        </button>
+                      </div>
+                    )}
+                    {titleSugg.length>0 && (
+                      <div style={{marginTop:10,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(99,102,241,0.15)"}}>
+                        <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
+                        {titleSugg.map(function(t,i){return(
+                          <div key={i} onClick={function(){setField("keyword",t);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t}</div>
+                        );})}
+                      </div>
+                    )}
+                    {seoKeys.length>0 && (
+                      <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
+                        <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {seoKeys.map(function(k,i){return(
+                            <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
+                          );})}
+                        </div>
+                      </div>
+                    )}
+                    <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
                   </div>
                 )}
-                {fk==="keyword" && titleSugg.length>0 && (
-                  <div style={{marginTop:10,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(99,102,241,0.15)"}}>
-                    <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>⭐ 추천 제목 (클릭 시 적용)</div>
-                    {titleSugg.map(function(t,i){return(
-                      <div key={i} onClick={function(){setField("keyword",t);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t}</div>
-                    );})}
+
+                {/* Next button */}
+                <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
+                  <button onClick={()=>setFormStep(2)} disabled={!sourceType}
+                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:!sourceType?"not-allowed":"pointer",
+                      background:sourceType?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                      color:sourceType?"#fff":muted,fontSize:14,fontWeight:700,opacity:sourceType?1:0.5,transition:"opacity 0.15s",minHeight:44}}>
+                    다음
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ══════ Step 2: Platform Selection ══════ */}
+            {formStep===2 && (
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>어떤 플랫폼에 올릴까요?</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>글을 게시할 SNS 플랫폼을 선택해주세요</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,marginBottom:18}}>
+                  {SNS_OPTIONS.map(p => {
+                    const isA=platformId===p.id;
+                    return (
+                      <button key={p.id} onClick={()=>setPlatformId(p.id)}
+                        style={{
+                          padding:"16px 14px",borderRadius:14,cursor:"pointer",textAlign:"center",
+                          border:isA?`2px solid ${accent}`:`2px solid ${border}`,
+                          background:isA?accentBg:inputBg,
+                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+                        }}>
+                        <img src={p.icon} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"contain"}}/>
+                        <div style={{fontSize:12,fontWeight:isA?700:500,color:isA?accent:text}}>{p.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                  <button onClick={()=>setFormStep(1)}
+                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
+                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    이전
+                  </button>
+                  <button onClick={()=>setFormStep(3)}
+                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",
+                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,minHeight:44}}>
+                    다음
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ══════ Step 3: Content Type + Prompt ══════ */}
+            {formStep===3 && (
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>글타입과 내용을 정해주세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>원하는 글의 유형을 선택하고 주제를 입력해주세요</div>
+
+                {/* Article type */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:10}}>{t("selectType")}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                    {cfg.subtypes.map(s=>{
+                      const isA=subtype===s.id;
+                      return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"12px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
+                        <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
+                        <div style={{fontSize:11,color:muted,marginTop:2}}>{s.desc}</div>
+                      </button>;
+                    })}
                   </div>
-                )}
-                {fk==="keyword" && seoKeys.length>0 && (
-                  <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
-                    <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {seoKeys.map(function(k,i){return(
-                        <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
+                </div>
+
+                {/* Keyword input */}
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>
+                    {FIELD_LABELS.keyword?.label || "키워드 / 주제"}<span style={{color:"#ef4444"}}> *</span>
+                  </div>
+                  <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
+                    placeholder={FIELD_LABELS.keyword?.placeholder || "글의 주제나 키워드를 입력하세요"}
+                    style={{...IS,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
+                  {fields.keyword && fields.keyword.trim() && (
+                    <div style={{marginTop:8,display:"flex",gap:6}}>
+                      <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                        {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
+                      </button>
+                      <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                        {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
+                      </button>
+                    </div>
+                  )}
+                  {titleSugg.length>0 && (
+                    <div style={{marginTop:10,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(99,102,241,0.15)"}}>
+                      <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
+                      {titleSugg.map(function(t,i){return(
+                        <div key={i} onClick={function(){setField("keyword",t);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t}</div>
                       );})}
                     </div>
-                  </div>
-                )}
-                {fk==="keyword"&&<KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>}
-              </div>;
-            })}
-            {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
-              {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
-              )}
-            </div>}
+                  )}
+                  {seoKeys.length>0 && (
+                    <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
+                      <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {seoKeys.map(function(k,i){return(
+                          <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
+                        );})}
+                      </div>
+                    </div>
+                  )}
+                  <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
+                </div>
 
-            {/* 글 톤 */}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
-              <div className="bl-tone-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                {/* Custom prompt (extra) */}
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>맞춤 요청</div>
+                  <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
+                    placeholder="원하는 내용, 스타일, 꼭 포함할 내용 등을 자유롭게 적어주세요 (선택)"
+                    style={{...IS,resize:"none",lineHeight:1.6}}/>
+                </div>
+
+                {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
+                  {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                  )}
+                </div>}
+
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                  <button onClick={()=>setFormStep(2)}
+                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
+                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    이전
+                  </button>
+                  <button onClick={()=>{if(!fields.keyword?.trim()){setError("키워드 / 주제를 입력해주세요.");return;}setError("");setFormStep(4);}} disabled={!fields.keyword?.trim()}
+                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:!fields.keyword?.trim()?"not-allowed":"pointer",
+                      background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                      color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:700,opacity:fields.keyword?.trim()?1:0.5,minHeight:44}}>
+                    다음
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* 말투 선택 */}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>말투 선택</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{s.label}</button>;})}
+            {/* ══════ Step 4: Style Settings ══════ */}
+            {formStep===4 && (
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>스타일을 선택해주세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>글의 톤, 말투, 분량을 정해주세요</div>
+
+                {/* Tone */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
+                  <div className="bl-tone-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                  </div>
+                </div>
+
+                {/* Speech style */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>말투 선택</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{s.label}</button>;})}
+                  </div>
+                </div>
+
+                {/* Word count / Length */}
+                <div style={{marginBottom:24}}>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>
+                    {t("selectLength")}
+                  </div>
+                  {initialType==="blog_insta" && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {cfg.wordCounts.map(w=>{
+                        const isA=wordCount===w.id;
+                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 14px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
+                          <span style={{fontSize:16,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
+                          <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
+                        </button>;
+                      })}
+                    </div>
+                  )}
+                  {initialType==="blog_youtube" && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {cfg.wordCounts.map(w=>{
+                        const isA=wordCount===w.id;
+                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 16px",borderRadius:20,cursor:"pointer",border:`2px solid ${isA?"#FF0000":border}`,background:isA?"rgba(255,0,0,0.1)":"transparent",whiteSpace:"nowrap"}}>
+                          <span style={{fontSize:13,fontWeight:isA?800:500,color:isA?"#FF0000":text}}>{w.label}</span>
+                        </button>;
+                      })}
+                    </div>
+                  )}
+                  {initialType==="blog_thread" && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {cfg.wordCounts.map(w=>{
+                        const isA=wordCount===w.id;
+                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 13px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
+                          <span style={{fontSize:14,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
+                          <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
+                        </button>;
+                      })}
+                    </div>
+                  )}
+                  {initialType!=="blog_insta" && initialType!=="blog_youtube" && initialType!=="blog_thread" && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {cfg.wordCounts.map(w=>{
+                        const isA=wordCount===w.id;
+                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 12px",borderRadius:12,cursor:"pointer",textAlign:"center",border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent"}}>
+                          <div style={{fontSize:13,fontWeight:isA?700:400,color:isA?accent:text}}>{w.label}</div>
+                          <div style={{fontSize:10,color:muted,marginTop:2}}>{w.desc}</div>
+                        </button>;
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
+                  {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                  )}
+                </div>}
+
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                  <button onClick={()=>setFormStep(3)}
+                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
+                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    이전
+                  </button>
+                  <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
+                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
+                      background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                      color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                      opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:48}}>
+                    {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>1회 생성해보기</span>)}
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* 분량 */}
-            <div style={{marginBottom:24}}>
-              <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>
-                {t("selectLength")}
-              </div>
-              {initialType==="blog_insta" && (
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {cfg.wordCounts.map(w=>{
-                    const isA=wordCount===w.id;
-                    return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 14px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
-                      <span style={{fontSize:16,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
-                      <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
-                    </button>;
-                  })}
-                </div>
-              )}
-              {initialType==="blog_youtube" && (
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {cfg.wordCounts.map(w=>{
-                    const isA=wordCount===w.id;
-                    return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 16px",borderRadius:20,cursor:"pointer",border:`2px solid ${isA?"#FF0000":border}`,background:isA?"rgba(255,0,0,0.1)":"transparent",whiteSpace:"nowrap"}}>
-                      <span style={{fontSize:13,fontWeight:isA?800:500,color:isA?"#FF0000":text}}>⏱ {w.label}</span>
-                    </button>;
-                  })}
-                </div>
-              )}
-              {initialType==="blog_thread" && (
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {cfg.wordCounts.map(w=>{
-                    const isA=wordCount===w.id;
-                    return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 13px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
-                      <span style={{fontSize:14,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
-                      <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
-                    </button>;
-                  })}
-                </div>
-              )}
-              {initialType!=="blog_insta" && initialType!=="blog_youtube" && initialType!=="blog_thread" && (
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {cfg.wordCounts.map(w=>{
-                    const isA=wordCount===w.id;
-                    return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 12px",borderRadius:12,cursor:"pointer",textAlign:"center",border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent"}}>
-                      <div style={{fontSize:13,fontWeight:isA?700:400,color:isA?accent:text}}>{w.label}</div>
-                      <div style={{fontSize:10,color:muted,marginTop:2}}>{w.desc}</div>
-                    </button>;
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* ── 세부 설정 (Expandable) ── */}
-            <div style={{marginBottom:20}}>
-              <button onClick={() => setShowAdvanced(!showAdvanced)}
-                style={{
-                  display:"flex",alignItems:"center",gap:8,width:"100%",padding:"12px 16px",borderRadius:12,cursor:"pointer",
-                  border:`1px solid ${showAdvanced ? (isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.25)") : border}`,
-                  background: showAdvanced ? (isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : "transparent",
-                  color: showAdvanced ? (isDark ? "#c4b5fd" : "#7c6aff") : muted,
-                  fontSize:13,fontWeight:700,textAlign:"left",
-                }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-                </svg>
-                세부 설정
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{marginLeft:"auto",transform:showAdvanced?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s ease"}}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-              {showAdvanced && (
-                <div style={{
-                  marginTop:8,padding:"18px 16px",borderRadius:12,
-                  border:`1px solid ${isDark ? "rgba(124,106,255,0.2)" : "rgba(124,106,255,0.15)"}`,
-                  background: isDark ? "rgba(124,106,255,0.04)" : "rgba(124,106,255,0.02)",
-                  display:"flex",flexDirection:"column",gap:16,
-                }}>
-                  {/* 글 분위기 */}
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>글 분위기</div>
-                    <select value={advTone} onChange={e => setAdvTone(e.target.value)}
-                      style={{...IS,cursor:"pointer",appearance:"auto"}}>
-                      <option value="">선택 안함</option>
-                      <option value="전문적">전문적</option>
-                      <option value="친근한">친근한</option>
-                      <option value="캐주얼">캐주얼</option>
-                      <option value="격식있는">격식있는</option>
-                      <option value="유머러스">유머러스</option>
-                    </select>
-                  </div>
-                  {/* 대상 독자 */}
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>대상 독자</div>
-                    <input type="text" value={advAudience} onChange={e => setAdvAudience(e.target.value)}
-                      placeholder="어떤 독자를 위한 글인지 입력하세요 (선택)"
-                      style={IS}/>
-                  </div>
-                  {/* 추가 지시사항 */}
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>추가 지시사항</div>
-                    <textarea value={advExtra} onChange={e => setAdvExtra(e.target.value)} rows={3}
-                      placeholder="꼭 다뤄야 할 내용, 피해야 할 내용 등 (선택)"
-                      style={{...IS,resize:"none",lineHeight:1.6}}/>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 생성 버튼 */}
-            <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:48}}>
-              {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>✨ 글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>✦ 1회 생성해보기</span>)}
-            </button>
+            )}
           </div>
         )}
         {/* 단계 2~3: 결과 */}
