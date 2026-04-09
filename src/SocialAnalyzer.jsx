@@ -154,12 +154,6 @@ ${data}
 | 약점 | (3가지) |
 | 타겟 | (구체적 오디언스) |
 
-## 참고할 유사 성공 계정
-같은 카테고리에서 성공한 ${c.plat?.label} 계정 5개를 언급하세요:
-- 채널명과 대략적인 규모 (팔로워/구독자)
-- 왜 참고해야 하는지 구체적 이유
-- URL은 생략하고 채널명만 정확히 기재
-
 ## 30일 콘텐츠 주제
 최근 1주일 트렌드와 관심도가 높은 키워드를 반영하여, 이 계정 분야에 맞는 한 달치 주제 30개:
 
@@ -401,17 +395,17 @@ JSON 형식으로 응답:
       const lines = sec.split("\n"); const title = lines[0]?.replace(/\*\*/g,"").trim();
       const body = lines.slice(1); const elements = []; let tbl = []; let k = 0;
       const flush = () => { if (tbl.length>=2) { const rows=tbl.map(l=>l.split("|").map(c=>c.trim()).filter(Boolean)); const hdr=rows[0]; const data=rows.filter((_,i)=>i>0&&!rows[i].every(c=>/^[-:]+$/.test(c)));
-        elements.push(<div key={`t${k++}`} style={{overflowX:"auto",marginBottom:12}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><thead><tr>{hdr.map((h,i)=><th key={i} style={{padding:"8px 12px",background:isDark?`${sColors[si%7]}10`:`${sColors[si%7]}08`,borderBottom:`2px solid ${sColors[si%7]}25`,textAlign:"left",fontWeight:800,color:text,fontSize:11,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead><tbody>{data.map((row,ri)=><tr key={ri} style={{background:ri%2?isDark?"rgba(255,255,255,0.01)":"rgba(0,0,0,0.01)":"transparent"}}>{row.map((cell,ci)=>{const gm=cell.match(/^([SABCD])등급?$/i); const dm=cell.match(/^(상|중|하)$/); return <td key={ci} style={{padding:"8px 12px",borderBottom:`1px solid ${bdr}`,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.5,verticalAlign:"top"}}>{gm?<Grade g={gm[1]}/>:dm?<span style={{padding:"2px 8px",borderRadius:4,background:dm[1]==="하"?"#22c55e15":dm[1]==="중"?"#f59e0b15":"#ef444415",color:dm[1]==="하"?"#22c55e":dm[1]==="중"?"#f59e0b":"#ef4444",fontSize:10,fontWeight:700}}>{cell}</span>:linkify(cell)}</td>;})}</tr>)}</tbody></table></div>);
+        elements.push(<div key={`t${k++}`} style={{overflowX:"auto",marginBottom:16}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:15}}><thead><tr>{hdr.map((h,i)=><th key={i} style={{padding:"12px 16px",background:isDark?`${sColors[si%7]}10`:`${sColors[si%7]}08`,borderBottom:`2px solid ${sColors[si%7]}25`,textAlign:"left",fontWeight:800,color:text,fontSize:14,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead><tbody>{data.map((row,ri)=><tr key={ri} style={{background:ri%2?isDark?"rgba(255,255,255,0.01)":"rgba(0,0,0,0.01)":"transparent"}}>{row.map((cell,ci)=>{const gm=cell.match(/^([SABCD])등급?$/i); const dm=cell.match(/^(상|중|하)$/); return <td key={ci} style={{padding:"12px 16px",borderBottom:`1px solid ${bdr}`,color:isDark?"rgba(255,255,255,0.8)":"#333",fontSize:15,lineHeight:1.7,verticalAlign:"top"}}>{gm?<Grade g={gm[1]}/>:dm?<span style={{padding:"2px 8px",borderRadius:4,background:dm[1]==="하"?"#22c55e15":dm[1]==="중"?"#f59e0b15":"#ef444415",color:dm[1]==="하"?"#22c55e":dm[1]==="중"?"#f59e0b":"#ef4444",fontSize:13,fontWeight:700}}>{cell}</span>:linkify(cell)}</td>;})}</tr>)}</tbody></table></div>);
       } tbl=[]; };
       const linkify = (s) => { if (!s) return s; const clean = s.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, ""); return clean.split(/(https?:\/\/[^\s|)]+)/g).map((p,i)=>/^https?:\/\//.test(p)?<a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{color:acc,fontWeight:700,textDecoration:"underline"}}>{p.replace(/https?:\/\/(www\.)?/,"").slice(0,35)}</a>:p.split(/(\*\*[^*]+\*\*)/g).map((q,j)=>q.startsWith("**")&&q.endsWith("**")?<strong key={j} style={{fontWeight:800,color:text}}>{q.slice(2,-2)}</strong>:q)); };
       body.forEach(line => { const t=line.trim(); if(t.startsWith("|")&&t.endsWith("|")){tbl.push(t);return;} if(tbl.length)flush();
         if(!t){elements.push(<div key={`s${k++}`} style={{height:4}}/>);return;}
-        if(t.startsWith("### ")){elements.push(<div key={`h${k++}`} style={{fontSize:13,fontWeight:800,color:text,marginTop:14,marginBottom:6}}>{t.replace(/^###\s*/,"").replace(/\*\*/g,"")}</div>);return;}
-        if(t.startsWith("- ")||t.startsWith("* ")){elements.push(<div key={`l${k++}`} style={{display:"flex",gap:6,marginBottom:4,paddingLeft:4}}><span style={{color:sColors[si%7],fontSize:6,marginTop:6}}>●</span><span style={{fontSize:14,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^[-*]\s*/,""))}</span></div>);return;}
-        if(/^\d+[\.\)]/.test(t)){const n=t.match(/^(\d+)/)[1];elements.push(<div key={`n${k++}`} style={{display:"flex",gap:8,marginBottom:6,padding:"8px 10px",borderRadius:8,background:isDark?"rgba(255,255,255,0.02)":"#f9fafb",border:`1px solid ${bdr}`}}><span style={{width:22,height:22,borderRadius:6,background:`${sColors[si%7]}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:sColors[si%7],flexShrink:0}}>{n}</span><span style={{fontSize:14,color:isDark?"rgba(255,255,255,0.8)":"#444",lineHeight:1.6}}>{linkify(t.replace(/^\d+[\.\)]\s*/,""))}</span></div>);return;}
-        elements.push(<div key={`p${k++}`} style={{fontSize:14,color:isDark?"rgba(255,255,255,0.7)":"#555",lineHeight:1.7,marginBottom:2}}>{linkify(t)}</div>);
+        if(t.startsWith("### ")){elements.push(<div key={`h${k++}`} style={{fontSize:16,fontWeight:800,color:text,marginTop:18,marginBottom:8}}>{t.replace(/^###\s*/,"").replace(/\*\*/g,"")}</div>);return;}
+        if(t.startsWith("- ")||t.startsWith("* ")){elements.push(<div key={`l${k++}`} style={{display:"flex",gap:8,marginBottom:6,paddingLeft:4}}><span style={{color:sColors[si%7],fontSize:7,marginTop:8}}>●</span><span style={{fontSize:15,color:isDark?"rgba(255,255,255,0.8)":"#333",lineHeight:1.7}}>{linkify(t.replace(/^[-*]\s*/,""))}</span></div>);return;}
+        if(/^\d+[\.\)]/.test(t)){const n=t.match(/^(\d+)/)[1];elements.push(<div key={`n${k++}`} style={{display:"flex",gap:10,marginBottom:8,padding:"10px 14px",borderRadius:10,background:isDark?"rgba(255,255,255,0.02)":"#f9fafb",border:`1px solid ${bdr}`}}><span style={{width:26,height:26,borderRadius:8,background:`${sColors[si%7]}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:sColors[si%7],flexShrink:0}}>{n}</span><span style={{fontSize:15,color:isDark?"rgba(255,255,255,0.8)":"#333",lineHeight:1.7}}>{linkify(t.replace(/^\d+[\.\)]\s*/,""))}</span></div>);return;}
+        elements.push(<div key={`p${k++}`} style={{fontSize:15,color:isDark?"rgba(255,255,255,0.7)":"#444",lineHeight:1.8,marginBottom:4}}>{linkify(t)}</div>);
       }); if(tbl.length)flush();
-      return <Card key={si} style={{marginBottom:14}}><div style={{fontSize:15,fontWeight:900,color:text,marginBottom:14,paddingBottom:10,borderBottom:`2px solid ${sColors[si%7]}25`,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:18,borderRadius:2,background:sColors[si%7]}}/>{title}</div>{elements}</Card>;
+      return <Card key={si} style={{marginBottom:18}}><div style={{fontSize:18,fontWeight:900,color:text,marginBottom:16,paddingBottom:12,borderBottom:`2px solid ${sColors[si%7]}25`,display:"flex",alignItems:"center",gap:10}}><div style={{width:4,height:22,borderRadius:2,background:sColors[si%7]}}/>{title}</div>{elements}</Card>;
     });
   };
 

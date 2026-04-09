@@ -96,7 +96,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
           if (Math.abs(snappedY) < snapThreshold) { snappedY = 0; guide = { ...guide, y: true }; }
           setSnapGuide(guide);
           setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
-            ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: snappedX, offsetY: snappedY }),
+            ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: snappedX, offsetY: snappedY }),
           }));
           setSelectedEl(prev => prev ? { ...prev, el: { ...prev.el, offsetX: snappedX, offsetY: snappedY } } : prev);
         }
@@ -118,7 +118,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
         e.preventDefault();
         if (selectedEl.elIdx >= 0) {
           setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
-            ...s, elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx),
+            ...s, elements: (s.elements || []).filter((_, ei) => ei !== selectedEl.elIdx),
           }));
         }
         setSelectedEl(null);
@@ -184,7 +184,7 @@ JSON배열만 출력.`;
           const updates = JSON.parse(cleaned);
           if (Array.isArray(updates)) {
             setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
-              ...s, elements: s.elements.map(el => {
+              ...s, elements: (s.elements || []).map(el => {
                 if (el.type !== "text") return el;
                 const upd = updates.find(u => u.role === el.role);
                 return upd ? { ...el, content: upd.content } : el;
@@ -1356,7 +1356,7 @@ JSON배열만 출력.`;
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                           {ei > 0 && (
                             <button onClick={() => {
-                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.map((e, idx) => idx === ei - 1 ? s.elements[ei] : idx === ei ? s.elements[ei - 1] : e) }));
+                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).map((e, idx) => idx === ei - 1 ? s.elements[ei] : idx === ei ? s.elements[ei - 1] : e) }));
                               if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei - 1 }));
                             }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="위로">
                               <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 2L2 6h6z" fill="currentColor"/></svg>
@@ -1364,14 +1364,14 @@ JSON배열만 출력.`;
                           )}
                           {ei < elCount - 1 && (
                             <button onClick={() => {
-                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.map((e, idx) => idx === ei ? s.elements[ei + 1] : idx === ei + 1 ? s.elements[ei] : e) }));
+                              setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).map((e, idx) => idx === ei ? s.elements[ei + 1] : idx === ei + 1 ? s.elements[ei] : e) }));
                               if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei + 1 }));
                             }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="아래로">
                               <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 8L2 4h6z" fill="currentColor"/></svg>
                             </button>
                           )}
                           <button onClick={() => {
-                            setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: s.elements.filter((_, idx) => idx !== ei) }));
+                            setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).filter((_, idx) => idx !== ei) }));
                             if (isActive) setSelectedEl(null);
                           }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer", padding: 0 }} title="삭제">
                             <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -1396,7 +1396,7 @@ JSON배열만 출력.`;
                   <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>폰트</div>
                   <select value={selectedEl.el.fontFamily || "Pretendard"} onChange={e => {
                     const val = e.target.value;
-                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontFamily: val }) }));
+                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontFamily: val }) }));
                     setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontFamily: val } }));
                   }} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 600, marginBottom: 14, cursor: "pointer" }}>
                     {[
@@ -1417,7 +1417,7 @@ JSON배열만 출력.`;
                     <input type="number" value={selectedEl.el.fontSize || 14} min={8} max={120}
                       onChange={e => {
                         const val = parseInt(e.target.value) || 14;
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontSize: val }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fontSize: val }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fontSize: val } }));
                       }}
                       style={{ width: 70, padding: "8px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 13, fontWeight: 700, textAlign: "center" }} />
@@ -1455,7 +1455,7 @@ JSON배열만 출력.`;
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <input type="color" value={selectedEl.el.color || "#000000"} onChange={e => {
                       const val = e.target.value;
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, color: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, color: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, color: val } }));
                     }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
                     <span style={{ fontSize: 12, color: muted, fontFamily: "monospace" }}>{selectedEl.el.color || "#000000"}</span>
@@ -1470,7 +1470,7 @@ JSON배열만 출력.`;
                       { align: "right", svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M6 6h8M2 9h12M8 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
                     ].map(a => (
                       <button key={a.align} onClick={() => {
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textAlign: a.align }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textAlign: a.align }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textAlign: a.align } }));
                       }} style={{
                         width: 36, height: 36, borderRadius: 8,
@@ -1488,7 +1488,7 @@ JSON배열만 출력.`;
                     <input type="range" min="1" max="3" step="0.1" value={selectedEl.el.lineHeight || 1.5}
                       onChange={e => {
                         const val = parseFloat(e.target.value);
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, lineHeight: val }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, lineHeight: val }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, lineHeight: val } }));
                       }} style={{ flex: 1, accentColor: "#2196F3" }} />
                     <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: "right" }}>{(selectedEl.el.lineHeight || 1.5).toFixed(1)}</span>
@@ -1500,7 +1500,7 @@ JSON배열만 출력.`;
                     <input type="range" min="-2" max="10" step="0.5" value={selectedEl.el.letterSpacing || 0}
                       onChange={e => {
                         const val = parseFloat(e.target.value);
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, letterSpacing: val }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, letterSpacing: val }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, letterSpacing: val } }));
                       }} style={{ flex: 1, accentColor: "#2196F3" }} />
                     <span style={{ fontSize: 11, color: muted, minWidth: 28, textAlign: "right" }}>{(selectedEl.el.letterSpacing || 0).toFixed(1)}</span>
@@ -1512,14 +1512,14 @@ JSON배열만 출력.`;
                   <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                     <button onClick={() => {
                       const val = selectedEl.el.textShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)";
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: val } }));
                     }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${selectedEl.el.textShadow ? "#2196F3" : bdr}`, background: selectedEl.el.textShadow ? "rgba(33,150,243,0.1)" : "transparent", color: selectedEl.el.textShadow ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       그림자
                     </button>
                     <button onClick={() => {
                       const val = !selectedEl.el.bgBox;
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBox: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBox: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBox: val } }));
                     }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${selectedEl.el.bgBox ? "#2196F3" : bdr}`, background: selectedEl.el.bgBox ? "rgba(33,150,243,0.1)" : "transparent", color: selectedEl.el.bgBox ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       배경 박스
@@ -1539,7 +1539,7 @@ JSON배열만 출력.`;
                           { label: "글로우", val: "0 0 20px rgba(255,255,255,0.5)" },
                         ].map((sh, si) => (
                           <button key={si} onClick={() => {
-                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: sh.val }) }));
+                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, textShadow: sh.val }) }));
                             setSelectedEl(prev => ({ ...prev, el: { ...prev.el, textShadow: sh.val } }));
                           }} style={{ padding: "6px 4px", borderRadius: 6, border: `1px solid ${selectedEl.el.textShadow === sh.val ? "#2196F3" : bdr}`, background: "transparent", color: text, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
                             {sh.label}
@@ -1564,7 +1564,7 @@ JSON배열만 출력.`;
                           { color: "rgba(255,255,255,0.25)", label: "화이트 진" },
                         ].map((bg, bi) => (
                           <button key={bi} onClick={() => {
-                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxColor: bg.color }) }));
+                            setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxColor: bg.color }) }));
                             setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBoxColor: bg.color } }));
                           }} style={{ width: 28, height: 28, borderRadius: 6, background: bg.color, border: `1.5px solid ${selectedEl.el.bgBoxColor === bg.color ? "#2196F3" : bdr}`, cursor: "pointer" }} title={bg.label} />
                         ))}
@@ -1573,7 +1573,7 @@ JSON배열만 출력.`;
                       <input type="range" min="0" max="24" value={selectedEl.el.bgBoxRadius || 8}
                         onChange={e => {
                           const val = parseInt(e.target.value);
-                          setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxRadius: val }) }));
+                          setSections(prev => prev.map((s, idx) => idx !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, bgBoxRadius: val }) }));
                           setSelectedEl(prev => ({ ...prev, el: { ...prev.el, bgBoxRadius: val } }));
                         }}
                         style={{ width: "100%", accentColor: acc }} />
@@ -1585,7 +1585,7 @@ JSON배열만 출력.`;
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 8 }}>
                     <button onClick={() => {
                       const val = (selectedEl.el.offsetY || 0) - 4;
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetY: val } }));
                     }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
                       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L2 7h8z" fill="currentColor"/></svg>
@@ -1593,20 +1593,20 @@ JSON배열만 출력.`;
                     <div style={{ display: "flex", gap: 4 }}>
                       <button onClick={() => {
                         const val = (selectedEl.el.offsetX || 0) - 4;
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: val } }));
                       }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l5-4v8z" fill="currentColor"/></svg>
                       </button>
                       <button onClick={() => {
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: 0, offsetY: 0 }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: 0, offsetY: 0 }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: 0, offsetY: 0 } }));
                       }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 9, cursor: "pointer", fontWeight: 700 }}>
                         0,0
                       </button>
                       <button onClick={() => {
                         const val = (selectedEl.el.offsetX || 0) + 4;
-                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
+                        setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetX: val }) }));
                         setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetX: val } }));
                       }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 12 12"><path d="M10 6l-5-4v8z" fill="currentColor"/></svg>
@@ -1614,7 +1614,7 @@ JSON배열만 출력.`;
                     </div>
                     <button onClick={() => {
                       const val = (selectedEl.el.offsetY || 0) + 4;
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, offsetY: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, offsetY: val } }));
                     }} style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
                       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 10l4-5H2z" fill="currentColor"/></svg>
@@ -1811,11 +1811,11 @@ JSON배열만 출력.`;
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <input type="color" value={(selectedEl.el.fill || "#7c6aff").replace(/[0-9a-f]{2}$/i, "")} onChange={e => {
                       const val = e.target.value + "33";
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fill: val } }));
                     }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
                     <button onClick={() => {
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: "transparent" }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, fill: "transparent" }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, fill: "transparent" } }));
                     }} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>투명</button>
                   </div>
@@ -1823,7 +1823,7 @@ JSON배열만 출력.`;
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <input type="color" value={selectedEl.el.stroke || "#7c6aff"} onChange={e => {
                       const val = e.target.value;
-                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, stroke: val }) }));
+                      setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, stroke: val }) }));
                       setSelectedEl(prev => ({ ...prev, el: { ...prev.el, stroke: val } }));
                     }} style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
                   </div>
@@ -1834,7 +1834,7 @@ JSON배열만 출력.`;
                       <input type="number" value={selectedEl.el.width || 120} min="20" max="800" step="10"
                         onChange={e => {
                           const val = parseInt(e.target.value) || 120;
-                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, width: val }) }));
+                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, width: val }) }));
                           setSelectedEl(prev => ({ ...prev, el: { ...prev.el, width: val } }));
                         }}
                         style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
@@ -1844,14 +1844,14 @@ JSON배열만 출력.`;
                       <input type="number" value={selectedEl.el.height || 80} min="20" max="800" step="10"
                         onChange={e => {
                           const val = parseInt(e.target.value) || 80;
-                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, height: val }) }));
+                          setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).map((el, ei) => ei !== selectedEl.elIdx ? el : { ...el, height: val }) }));
                           setSelectedEl(prev => ({ ...prev, el: { ...prev.el, height: val } }));
                         }}
                         style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
                     </div>
                   </div>
                   <button onClick={() => {
-                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx) }));
+                    setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).filter((_, ei) => ei !== selectedEl.elIdx) }));
                     setSelectedEl(null);
                   }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid #ef4444`, background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     도형 삭제
@@ -1871,7 +1871,7 @@ JSON배열만 출력.`;
                         onChange={e => {
                           const val = e.target.value;
                           setSections(prev => prev.map((s, si) => si !== activeSection ? s : {
-                            ...s, elements: s.elements.map((elem, j) => {
+                            ...s, elements: (s.elements || []).map((elem, j) => {
                               if (elem.type !== "text") return elem;
                               let count = 0;
                               for (let k = 0; k < s.elements.length; k++) {
@@ -2391,7 +2391,7 @@ JSON배열만 출력.`;
             const elIdx = selectedEl.elIdx;
             setSections(prev => prev.map((s, si) => si !== secIdx ? s : {
               ...s,
-              elements: s.elements.map((el, ei) => ei !== elIdx ? el : {
+              elements: (s.elements || []).map((el, ei) => ei !== elIdx ? el : {
                 ...el,
                 fontSize: (el.fontSize || 16) + delta
               })
@@ -2401,7 +2401,7 @@ JSON배열만 출력.`;
           const deleteSelectedElement = () => {
             setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : {
               ...s,
-              elements: s.elements.filter((_, ei) => ei !== selectedEl.elIdx)
+              elements: (s.elements || []).filter((_, ei) => ei !== selectedEl.elIdx)
             }));
             setSelectedEl(null);
           };
@@ -2419,7 +2419,7 @@ JSON배열만 출력.`;
                 const elIdx = selectedEl.elIdx;
                 setSections(prev => prev.map((s, si) => si !== secIdx ? s : {
                   ...s,
-                  elements: s.elements.map((el, ei) => ei !== elIdx ? el : {
+                  elements: (s.elements || []).map((el, ei) => ei !== elIdx ? el : {
                     ...el,
                     fontWeight: (el.fontWeight === "700" || el.fontWeight === 700 || el.fontWeight === "900" || el.fontWeight === 900) ? "400" : "700"
                   })

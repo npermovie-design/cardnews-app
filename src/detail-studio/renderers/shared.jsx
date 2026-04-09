@@ -33,7 +33,7 @@ export function createSectionHelpers({
     const idx = els.indexOf(elRef);
     if (idx < 0) return;
     setSections(prev => prev.map((s, si) => si !== i ? s : {
-      ...s, elements: s.elements.map((elem, j) => j === idx ? { ...elem, content: val } : elem),
+      ...s, elements: (s.elements || []).map((elem, j) => j === idx ? { ...elem, content: val } : elem),
     }));
   };
 
