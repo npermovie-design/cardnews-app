@@ -1,12 +1,8 @@
-import { useState } from "react";
-import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
 
-const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || "";
-
-// 토스페이먼츠 연동 완료 후 true로 변경
-const PAYMENT_ENABLED = false;
+const PAYMENT_ENABLED = true;
 
 const COMMON_FEATURES = [
   "AI 상세페이지 생성 (전환율 최적화형)",
@@ -37,6 +33,7 @@ const SUB_PLANS = [
     highlight: false, badge: null,
     features: ["매월 1,800P 충전", "상세페이지 생성 약 180회", "AI 글쓰기 약 180회", "이미지 생성 약 36회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
+    lsId: "3b6ec806-5a9b-4202-9892-200f105da896",
   },
   {
     id: "pro", name: "Pro", icon: "P",
@@ -46,6 +43,7 @@ const SUB_PLANS = [
     highlight: true, badge: "추천",
     features: ["매월 3,800P 충전", "상세페이지 생성 약 380회", "AI 글쓰기 약 380회", "이미지 생성 약 76회", "숏폼 편집 약 47회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
+    lsId: "70530971-234f-4f73-a6da-54616181454b",
   },
   {
     id: "premium", name: "Premium", icon: "P",
@@ -55,15 +53,16 @@ const SUB_PLANS = [
     highlight: false, badge: "최고 가성비",
     features: ["매월 7,000P 충전", "상세페이지 생성 약 700회", "AI 글쓰기 약 700회", "이미지 생성 약 140회", "숏폼 편집 약 87회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
     btnLabel: "시작하기",
+    lsId: "8ba35046-dc8b-4916-8cb5-57fc1c403c61",
   },
 ];
 
 const ONE_OFF_PLANS = [
-  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false, perPoint:"5.9" },
-  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false, perPoint:"5.95" },
-  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true,  perPoint:"5.69" },
-  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false, perPoint:"5.44" },
-  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false, perPoint:"5.25", bestValue:true },
+  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false, perPoint:"5.9",  lsId:"1e5bf013-565c-4022-9218-00259887ed5b" },
+  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false, perPoint:"5.95", lsId:"5e542965-183e-4232-9cc0-183be9bb790e" },
+  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true,  perPoint:"5.69", lsId:"46325b76-0e75-414d-b1ae-7f9f62d317e3" },
+  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false, perPoint:"5.44", lsId:"10cdc05b-b5b3-44f5-b161-7d1901f5c612" },
+  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false, perPoint:"5.25", bestValue:true, lsId:"eda8f9a2-a7e8-444e-84cf-0638a4d5398f" },
 ];
 
 // FAQ는 컴포넌트 안에서 번역 함수로 동적 생성
@@ -107,66 +106,46 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   ];
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+  const lsLoaded = useRef(false);
 
-  const handleBuy = async (plan, isYearly = false) => {
+  // Lemon Squeezy 스크립트 로드
+  useEffect(() => {
+    if (lsLoaded.current) return;
+    const script = document.createElement("script");
+    script.src = "https://app.lemonsqueezy.com/js/lemon.js";
+    script.defer = true;
+    script.onload = () => {
+      lsLoaded.current = true;
+      window.createLemonSqueezy?.();
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  const openCheckout = (lsId, planLabel) => {
     if (!user) { onLogin?.(); return; }
-    if (plan.free) return;
-    if (!PAYMENT_ENABLED) { showToast("결제 시스템 준비 중입니다. 포인트 충전은 관리자에게 문의해주세요."); return; }
-    setLoading(plan.id + (isYearly ? "_y" : ""));
-    try {
-      const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-      const payment = tossPayments.payment({ customerKey: `customer_${user.uid}` });
-      const amount  = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-      const orderId = `order_${user.uid}_${Date.now()}`;
-      const pts     = isYearly ? plan.points * 12 : plan.points;
-
-      localStorage.setItem("toss_order", JSON.stringify({
-        orderId, planId: plan.id + (isYearly ? "_yearly" : "_monthly"),
-        points: pts, amount, uid: user.uid,
-      }));
-
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: amount },
-        orderId,
-        orderName: `SNS메이킷 ${plan.name} ${isYearly ? "연구독" : "월구독"}`,
-        successUrl: window.location.origin + "/payment/success",
-        failUrl: window.location.origin + "/payment/fail",
-        customerEmail: user.email || "",
-        customerName: user.nick || "회원",
-      });
-    } catch(e) {
-      if (e.code !== "USER_CANCEL") alert("결제 중 오류: " + e.message);
-    } finally { setLoading(null); }
+    if (!lsId) return;
+    const params = new URLSearchParams();
+    params.set("embed", "1");
+    params.set("media", "0");
+    params.set("checkout[email]", user.email || "");
+    params.set("checkout[custom][user_id]", user.uid || "");
+    const url = `https://snsmakeit.lemonsqueezy.com/checkout/buy/${lsId}?${params.toString()}`;
+    if (window.LemonSqueezy?.Url) {
+      window.LemonSqueezy.Url.Open(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
-  const handleOneOff = async (plan) => {
+  const handleBuy = (plan, isYearly = false) => {
     if (!user) { onLogin?.(); return; }
-    if (!PAYMENT_ENABLED) { showToast("결제 시스템 준비 중입니다. 포인트 충전은 관리자에게 문의해주세요."); return; }
-    setLoading(plan.id);
-    try {
-      const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-      const payment = tossPayments.payment({ customerKey: `customer_${user.uid}` });
-      const orderId = `order_${user.uid}_${Date.now()}`;
+    if (plan.free) return;
+    openCheckout(plan.lsId, plan.name);
+  };
 
-      localStorage.setItem("toss_order", JSON.stringify({
-        orderId, planId: plan.id,
-        points: plan.points, amount: plan.amount, uid: user.uid,
-      }));
-
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: plan.amount },
-        orderId,
-        orderName: `SNS메이킷 ${plan.name} ${plan.points.toLocaleString()}P 충전`,
-        successUrl: window.location.origin + "/payment/success",
-        failUrl: window.location.origin + "/payment/fail",
-        customerEmail: user.email || "",
-        customerName: user.nick || "회원",
-      });
-    } catch(e) {
-      if (e.code !== "USER_CANCEL") alert("결제 중 오류: " + e.message);
-    } finally { setLoading(null); }
+  const handleOneOff = (plan) => {
+    if (!user) { onLogin?.(); return; }
+    openCheckout(plan.lsId, plan.name);
   };
 
   return (
