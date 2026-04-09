@@ -164,7 +164,7 @@ export default function AutoPublisher({ theme, user, onLoginRequest, embedded })
 JSON 형식으로 응답:
 {"title":"제목","intro":"도입부","sections":[{"subtitle":"소제목","content":"본문"}],"conclusion":"마무리","tags":["태그1","태그2","태그3","태그4","태그5"]}`;
 
-      const aiResult = await callAI([{ role: "user", content: prompt }], { model: "claude-haiku-4-5" });
+      const aiResult = await callAI("claude-haiku-4-5", [{ role: "user", content: prompt }], 4000);
       addLog("   글 생성 완료!");
 
       // 2단계: 자동발행 서버로 전송
