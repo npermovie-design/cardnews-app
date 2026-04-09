@@ -40,22 +40,22 @@ export const POINTS = {
   DAILY_LOGIN: 2,      // 일일 로그인
   POST_WRITE:  1,      // 게시글 작성 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
-  // ── AI 생성 (1P=5.25원 기준, 마진 70%+) ──────────────
-  AI_USE:      -15,    // Haiku 텍스트 — cost ~8원, rev 79원, margin 90%
-  AI_SONNET:   -65,    // Sonnet 텍스트 — cost ~50원, rev 341원, margin 85%
-  IMAGE_GEN:   -150,   // 이미지 생성 — cost ~150원, rev 788원, margin 81%
-  PPT_GEN:     -35,    // PPT 생성 — cost ~15원, rev 184원, margin 92%
-  VIDEO_ANALYZE: -50,  // 영상 분석 — cost ~35원, rev 263원, margin 87%
-  VIDEO_GEN:   -25,    // 영상 15초 — cost ~12원, rev 131원, margin 91%
-  VIDEO_GEN_30: -40,   // 영상 30초 — cost ~25원, rev 210원, margin 88%
-  VIDEO_GEN_60: -60,   // 영상 60초 — cost ~35원, rev 315원, margin 89%
+  // ── AI 생성 (글쓰기 20P 기준) ──────────────────────────
+  AI_USE:      -20,    // Haiku 텍스트
+  AI_SONNET:   -85,    // Sonnet 텍스트
+  IMAGE_GEN:   -200,   // 이미지 생성
+  PPT_GEN:     -45,    // PPT 생성
+  VIDEO_ANALYZE: -65,  // 영상 분석
+  VIDEO_GEN:   -35,    // 영상 15초
+  VIDEO_GEN_30: -55,   // 영상 30초
+  VIDEO_GEN_60: -80,   // 영상 60초
   // ── AI 채팅 ──────────────────────────────────────────
-  CHAT_HAIKU:    -8,   // Haiku 채팅 — cost ~4원, rev 42원, margin 90%
-  CHAT_SONNET:  -30,   // Sonnet 채팅 — cost ~20원, rev 158원, margin 87%
-  CHAT_GPT4O_MINI: -8, // GPT-4o Mini — cost ~5원, rev 42원, margin 88%
-  CHAT_GPT4O:   -45,   // GPT-4o — cost ~35원, rev 236원, margin 85%
-  CHAT_GEMINI_FLASH: -5, // Gemini Flash — cost ~2원, rev 26원, margin 92%
-  CHAT_GEMINI_PRO: -30, // Gemini Pro — cost ~20원, rev 158원, margin 87%
+  CHAT_HAIKU:    -10,  // Haiku 채팅
+  CHAT_SONNET:  -40,   // Sonnet 채팅
+  CHAT_GPT4O_MINI: -10, // GPT-4o Mini
+  CHAT_GPT4O:   -60,   // GPT-4o
+  CHAT_GEMINI_FLASH: -7, // Gemini Flash
+  CHAT_GEMINI_PRO: -40, // Gemini Pro
 };
 
 // 채팅 모델 → 포인트 매핑
