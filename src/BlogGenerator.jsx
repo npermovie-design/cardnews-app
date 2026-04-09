@@ -19,8 +19,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     { id: "blog_insta", label: "인스타그램", icon: "/icon-instagram.webp" },
     { id: "blog_thread", label: "스레드", icon: "/icon-threads.png" },
     { id: "blog_youtube", label: "유튜브", icon: "/icon-youtube.png" },
-    { id: "blog_link", label: "유튜브 → 블로그 변환", icon: "/icon-youtube.png" },
-    { id: "blog_news", label: "뉴스 → 블로그 변환", icon: "/icons3d/news.png" },
+    { id: "blog_x", label: "X (Twitter)", icon: "/icon-x.png" },
+    { id: "blog_facebook", label: "페이스북", icon: "/icon-facebook.png" },
+    { id: "blog_linkedin", label: "LinkedIn", icon: "/icon-linkedin.png" },
+    { id: "blog_medium", label: "Medium", icon: "/icon-medium.png" },
+    { id: "blog_reddit", label: "Reddit", icon: "/icon-reddit.png" },
+    { id: "blog_pinterest", label: "Pinterest", icon: "/icon-pinterest.png" },
   ];
   const [platformId, setPlatformId] = useState(initialType || "blog_naver");
   const [snsCat, setSnsCat] = useState("all");
@@ -1088,13 +1092,13 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 1: Source Selection ══════ */}
             {formStep===1 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>어떤 소스로 글을 쓸까요?</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>소스를 선택하면 해당 입력창이 나타납니다</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:18}}>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>글 작성 방식을 선택하세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>소스를 선택하면 해당 입력창이 나타납니다</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:18}}>
                   {[
-                    {id:"link",title:"링크로 글쓸래요?",desc:"뉴스 기사, 유튜브 링크를 넣으면 주제를 자동으로 채워줘요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="link"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
-                    {id:"file",title:"파일로 글쓸래요?",desc:"이미지, PDF, 문서 파일을 분석해서 글의 소재로 사용해요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="file"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
-                    {id:"topic",title:"주제를 입력할래요?",desc:"키워드나 주제를 직접 입력해서 글을 작성해요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="topic"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
+                    {id:"link",title:"링크로 작성",desc:"뉴스 기사, 유튜브 링크를 넣으면 주제를 자동으로 채워드려요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="link"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
+                    {id:"file",title:"파일로 작성",desc:"이미지, PDF, 문서 파일을 분석해서 글의 소재로 활용합니다",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="file"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
+                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 글을 작성합니다",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="topic"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
                   ].map(src => {
                     const isA=sourceType===src.id;
                     return (
@@ -1255,9 +1259,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 2: Platform Selection ══════ */}
             {formStep===2 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>어떤 플랫폼에 올릴까요?</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>글을 게시할 SNS 플랫폼을 선택해주세요</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8,marginBottom:18}}>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>게시할 플랫폼을 선택하세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>글을 게시할 SNS 플랫폼을 선택해주세요</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
                   {SNS_OPTIONS.map(p => {
                     const isA=platformId===p.id;
                     return (
@@ -1292,8 +1296,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 3: Content Type + Prompt ══════ */}
             {formStep===3 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>글타입과 내용을 정해주세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>원하는 글의 유형을 선택하고 주제를 입력해주세요</div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>글타입과 내용을 설정하세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>원하는 글의 유형을 선택하고 주제를 입력해주세요</div>
 
                 {/* Article type */}
                 <div style={{marginBottom:18}}>
@@ -1351,9 +1355,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
                 {/* Custom prompt (extra) */}
                 <div style={{marginBottom:14}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>맞춤 요청</div>
+                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>프롬프트 (선택)</div>
                   <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
-                    placeholder="원하는 내용, 스타일, 꼭 포함할 내용 등을 자유롭게 적어주세요 (선택)"
+                    placeholder="AI에게 전달할 추가 지시사항을 입력하세요. 예) 초보자도 이해할 수 있게 / 사례 중심으로 / 전문적인 톤으로"
                     style={{...IS,resize:"none",lineHeight:1.6}}/>
                 </div>
 
@@ -1382,8 +1386,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 4: Style Settings ══════ */}
             {formStep===4 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>스타일을 선택해주세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6}}>글의 톤, 말투, 분량을 정해주세요</div>
+                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>스타일을 선택하세요</div>
+                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>글의 톤, 말투, 분량을 설정합니다</div>
 
                 {/* Tone */}
                 <div style={{marginBottom:18}}>
