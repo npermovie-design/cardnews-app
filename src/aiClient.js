@@ -26,71 +26,97 @@ export async function callAI(model, messages, maxTokens = 2000, system = null) {
   const body = { model, max_tokens: maxTokens, messages: convertMessages(messages) };
   if (system) body.system = system;
 
-  const res = await fetch(PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => res.statusText);
-    throw new Error(`AI API 오류 ${res.status}: ${err}`);
+  // Web Lock으로 백그라운드 throttling 방지
+  const lockName = `ai-call-${Date.now()}`;
+  let lockRelease = null;
+  if (navigator.locks) {
+    navigator.locks.request(lockName, { mode: "exclusive" }, () => {
+      return new Promise((resolve) => { lockRelease = resolve; });
+    }).catch(() => {});
   }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      throw new Error(`AI API 오류 ${res.status}: ${err}`);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+  } finally {
+    if (lockRelease) lockRelease();
+  }
 }
 
 /**
  * Streaming AI call. Calls onChunk(text) for each chunk, returns full text.
+ * 탭 비활성화(백그라운드) 시에도 중단되지 않도록 처리.
  */
 export async function callAIStream(model, messages, maxTokens = 4000, onChunk, system = null) {
   const body = { model, max_tokens: maxTokens, stream: true, messages: convertMessages(messages) };
   if (system) body.system = system;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000); // 2분 타임아웃
-
-  const res = await fetch(PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: controller.signal,
-  });
-  if (!res.ok) {
-    clearTimeout(timeout);
-    const err = await res.text().catch(() => res.statusText);
-    throw new Error(`AI API 오류 ${res.status}: ${err}`);
+  // Web Lock으로 브라우저 탭 throttling 방지 (지원 시)
+  const lockName = `ai-stream-${Date.now()}`;
+  let lockRelease = null;
+  if (navigator.locks) {
+    navigator.locks.request(lockName, { mode: "exclusive" }, (lock) => {
+      return new Promise((resolve) => { lockRelease = resolve; });
+    }).catch(() => {});
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let full = "";
-  let lastChunkTime = Date.now();
+  const controller = new AbortController();
+  // 5분 전체 타임아웃 (백그라운드에서도 충분한 여유)
+  const timeout = setTimeout(() => controller.abort(), 300000);
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    lastChunkTime = Date.now();
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop();
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const d = line.slice(6).trim();
-        if (d === "[DONE]") continue;
-        try {
-          const p = JSON.parse(d);
-          const chunk = p.choices?.[0]?.delta?.content;
-          if (chunk) {
-            full += chunk;
-            onChunk(full, chunk);
-          }
-        } catch {}
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      keepalive: false,
+    });
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      throw new Error(`AI API 오류 ${res.status}: ${err}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let full = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const d = line.slice(6).trim();
+          if (d === "[DONE]") continue;
+          try {
+            const p = JSON.parse(d);
+            const chunk = p.choices?.[0]?.delta?.content;
+            if (chunk) {
+              full += chunk;
+              onChunk(full, chunk);
+            }
+          } catch {}
+        }
       }
     }
+    return full;
+  } finally {
+    clearTimeout(timeout);
+    if (lockRelease) lockRelease();
   }
-  clearTimeout(timeout);
-  return full;
 }
 
 /**

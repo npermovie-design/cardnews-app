@@ -174,7 +174,7 @@ image_prompt는 제품 실사진 스타일. 모든 섹션에 image_prompt 필수
 JSON배열만 출력.`;
 
     const abortCtrl = new AbortController();
-    const timeoutId = setTimeout(() => abortCtrl.abort(), 110000);
+    const timeoutId = setTimeout(() => abortCtrl.abort(), 300000); // 5분 (백그라운드 대응)
     let geminiRes;
     try {
       geminiRes = await fetch("/api/gemini-generate", {
