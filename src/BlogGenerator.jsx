@@ -475,53 +475,33 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
-  const fetchInlineImages = async (blogText) => {
-    if (!blogText) return;
-    // 1) 기존 [이미지: 키워드] 태그에서 추출
-    const imgTags = blogText.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
-    const tagKeywords = imgTags.map(tag => tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim());
+  const fetchInlineImages = async () => { /* suggestedImages useEffect에서 처리 */ };
 
-    // 2) 부제목(##, ###)에서 키워드 추출 → 이미지 태그가 없는 부제목에 자동 삽입
+  // 하단 추천 이미지가 로드되면 → 본문 부제목/[image:] 태그에 자동 분배
+  useEffect(() => {
+    if (!suggestedImages || suggestedImages.length === 0 || !result) return;
+    const imgUrls = suggestedImages.map(img => img.url || img.preview).filter(Boolean);
+    if (imgUrls.length === 0) return;
+
+    // 본문에서 부제목 + [image:] 태그 키워드 수집
+    const keys = [];
+    // [이미지: 키워드] 태그
+    const imgTags = result.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
+    imgTags.forEach(tag => { const k = tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim(); if (k) keys.push(k); });
+    // ## / ### 부제목
     const headingRegex = /^#{2,3}\s+(.+)$/gm;
-    let match;
-    const headings = [];
-    while ((match = headingRegex.exec(blogText)) !== null) {
-      const heading = match[1].replace(/\*\*/g, "").trim();
-      if (heading && heading.length > 1 && heading.length < 60) headings.push(heading);
+    let m;
+    while ((m = headingRegex.exec(result)) !== null) {
+      const h = m[1].replace(/\*\*/g, "").trim();
+      if (h && h.length > 1 && h.length < 60 && !keys.includes(h)) keys.push(h);
     }
-    // 부제목 뒤에 이미지 태그가 없는 경우, 부제목 키워드로 이미지 검색
-    const headingKeywords = headings.filter(h => !tagKeywords.some(tk => h.includes(tk) || tk.includes(h)));
+    if (keys.length === 0) return;
 
-    const allKeywords = [...tagKeywords, ...headingKeywords];
-    if (allKeywords.length === 0) return;
-    const uniqueKeywords = [...new Set(allKeywords)];
-
-    const mainKeyword = fields.keyword?.trim() || "";
-    const searchKeyword = mainKeyword || uniqueKeywords[0] || "";
-    if (!searchKeyword) return;
-
-    // 하단 추천과 동일한 방식: 메인 키워드로 이미지 풀을 한번에 가져온 뒤 분배
-    const allImages = [];
-    // 1) Pixabay 한국어 (하단 추천과 완전 동일)
-    try {
-      const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(searchKeyword)}&per_page=20&safesearch=true&image_type=photo&lang=ko`);
-      if (r.ok) { const d = await r.json(); (d.hits || []).forEach(h => allImages.push(h.webformatURL || h.largeImageURL)); }
-    } catch {}
-    // 2) Pexels 추가 (더 다양한 이미지)
-    try {
-      const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(searchKeyword)}&per_page=15`);
-      if (r.ok) { const d = await r.json(); (d.photos || []).forEach(p => allImages.push(p.src.large)); }
-    } catch {}
-
-    if (allImages.length === 0) return;
-
-    // 키워드별로 이미지 분배 (겹치지 않게)
+    // 이미지를 키워드에 순서대로 분배
     const imgMap = {};
-    uniqueKeywords.forEach((kw, i) => {
-      if (i < allImages.length) imgMap[kw] = allImages[i];
-    });
+    keys.forEach((kw, i) => { imgMap[kw] = imgUrls[i % imgUrls.length]; });
     setInlineImages(imgMap);
-  };
+  }, [suggestedImages, result]);
 
   /* ── 픽사베이·픽셀스 이미지 자동 추천 ── */
   const fetchImages = async (keyword) => {
