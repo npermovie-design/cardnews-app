@@ -253,6 +253,15 @@ export default function App() {
     const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1] : null;
     if (postId) setPendingPostId(postId);
 
+    // 404 리다이렉트: 기존 경로 → 신규 경로
+    const REDIRECTS = { board: "community/info", terms: "legal", news: "snsnews" };
+    if (REDIRECTS[mainSeg]) {
+      window.history.replaceState(null, "", "/" + REDIRECTS[mainSeg]);
+      const rSegs = REDIRECTS[mainSeg].split("/");
+      if (rSegs[0] === "community" && rSegs[1]) setBoardCat(rSegs[1]);
+      setPage(rSegs[0]);
+      return;
+    }
     // /payment/success, /payment/fail 처리
     if (mainSeg === "payment" && segments[1]) {
       setPage("payment/" + segments[1]);

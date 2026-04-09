@@ -201,18 +201,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 구독 탭 */}
       {tab === "subscription" && (
         <>
-          {/* 월간/연간 토글 */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 32 }}>
-            <span style={{ fontSize: 14, fontWeight: billing==="monthly"?700:400, color: billing==="monthly"?C.text:C.muted }}>{p("pricingMonthly")}</span>
-            <div onClick={() => setBilling(b => b==="monthly"?"yearly":"monthly")}
-              style={{ width: 52, height: 28, borderRadius: 14, background: billing==="yearly" ? "#7c6aff" : (isDark?"rgba(255,255,255,0.15)":"#ddd"), cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
-              <div style={{ position: "absolute", top: 4, left: billing==="yearly"?26:4, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
-            </div>
-            <span style={{ fontSize: 14, fontWeight: billing==="yearly"?700:400, color: billing==="yearly"?C.text:C.muted }}>{p("pricingYearly")}</span>
-            {billing === "yearly" && (
-              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff" }}>{p("pricingYearlyDiscount")}</span>
-            )}
-          </div>
+          {/* 월간/연간 토글 - 연간 플랜 미지원으로 숨김 처리 */}
 
           {/* 플랜 카드 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))", gap: 16, marginBottom: 56 }}>

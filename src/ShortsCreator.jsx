@@ -922,7 +922,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       {/* 프로 전환 예정 안내 팝업 */}
       {showProNotice && (
         <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setShowProNotice(false); sessionStorage.setItem("shorts_pro_notice_seen", "1"); }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: D ? "rgba(18,15,40,0.97)" : "#fff", borderRadius: 20, padding: "32px 28px", maxWidth: 400, width: "90%", textAlign: "center", border: `1px solid ${D ? "rgba(124,106,255,0.25)" : "rgba(99,102,241,0.15)"}`, boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: D ? "rgba(18,15,40,0.97)" : "#fff", borderRadius: 20, padding: "32px 28px", maxWidth: 400, width: "90%", textAlign: "center", border: `1px solid ${D ? "rgba(124,106,255,0.25)" : "rgba(99,102,241,0.15)"}`, boxShadow: "0 24px 64px rgba(0,0,0,0.3)", position: "relative" }}>
+            <button onClick={() => { setShowProNotice(false); sessionStorage.setItem("shorts_pro_notice_seen", "1"); }}
+              style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: D ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: D ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)", lineHeight: 1 }}
+              aria-label="닫기">&times;</button>
             <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg,#7c6aff,#ec4899)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
             </div>

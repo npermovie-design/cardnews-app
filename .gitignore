@@ -25,6 +25,7 @@ dist-ssr
 
 release/
 .env
+.env.*
 .vercel
 .env*.local
 .env.vercel
