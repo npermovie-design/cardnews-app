@@ -108,7 +108,8 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
 }
 
 /* ── 일반 텍스트 + 이미지 렌더러 ── */
-function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
+// 6번째 인자: suggestedImages 배열 [{url, preview}, ...] 직접 전달
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imagePool) {
   if (!text) return null;
   // 마크다운 기호 제거 → 순수 텍스트
   const cleaned = text
@@ -123,10 +124,11 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
     .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
     .replace(/!\[.*?\]\(.*?\)/g, "");                // ![image]() 제거
 
+  // 이미지 URL 목록 (suggestedImages에서 직접 추출)
+  const imgUrls = Array.isArray(imagePool) ? imagePool.map(img => img?.url || img?.preview).filter(Boolean) : [];
+
   const lines = cleaned.split("\n");
   const elements = [];
-  // inlineImages 키 목록 (이미지 삽입 순서용)
-  const imgKeys = inlineImages ? Object.keys(inlineImages) : [];
   let imgIdx = 0;
 
   for (let i = 0; i < lines.length; i++) {
@@ -138,24 +140,18 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
       continue;
     }
 
-    // 소제목 감지: 짧은 줄(5~50자) + 앞뒤로 빈 줄
+    // 소제목 감지: 짧은 줄(3~50자) + 앞에 빈 줄
     const prevEmpty = i === 0 || !lines[i-1]?.trim();
-    const nextEmpty = i === lines.length-1 || !lines[i+1]?.trim();
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
 
     if (isHeading) {
-      // 소제목 렌더링
       elements.push(<p key={i} style={{margin:"24px 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
-      // 이미지 삽입
-      if (inlineImages && imgIdx < imgKeys.length) {
-        const imgUrl = inlineImages[imgKeys[imgIdx]];
-        if (imgUrl) {
-          elements.push(<ReplaceableImage key={`img${i}`} src={imgUrl} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
-        }
+      // 하단 추천 이미지를 순서대로 삽입
+      if (imgUrls.length > 0 && imgIdx < imgUrls.length) {
+        elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
         imgIdx++;
       }
     } else {
-      // 일반 텍스트
       elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{trimmed}</p>);
     }
   }

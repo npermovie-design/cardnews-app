@@ -477,38 +477,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
   const fetchInlineImages = async () => { /* suggestedImages useEffect에서 처리 */ };
 
-  // 하단 추천 이미지가 로드되면 → 본문 부제목에 순서대로 분배
-  useEffect(() => {
-    if (!suggestedImages || suggestedImages.length === 0 || !result) return;
-    const imgUrls = suggestedImages.map(img => img.url || img.preview).filter(Boolean);
-    if (imgUrls.length === 0) return;
-
-    // 소제목 수집: 마크다운 제거 후, 짧은 줄 + 앞뒤 빈 줄인 경우
-    const cleaned = result
-      .replace(/\[(?:이미지|image):\s*[^\]]+\]/g, "")
-      .replace(/^#{1,6}\s*/gm, "")
-      .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
-      .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")
-      .replace(/`([^`]+)`/g, "$1")
-      .replace(/^>\s+/gm, "")
-      .replace(/^[-*]{3,}$/gm, "")
-      .replace(/!\[.*?\]\(.*?\)/g, "");
-    const lines = cleaned.split("\n");
-    const keys = [];
-    for (let li = 0; li < lines.length; li++) {
-      const trimmed = lines[li].trim();
-      if (!trimmed) continue;
-      const prevEmpty = li === 0 || !lines[li-1]?.trim();
-      const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
-      if (isHeading && !keys.includes(trimmed)) keys.push(trimmed);
-    }
-    if (keys.length === 0) return;
-
-    // 추천 이미지를 부제목에 순서대로 분배
-    const imgMap = {};
-    keys.forEach((kw, i) => { imgMap[kw] = imgUrls[i % imgUrls.length]; });
-    setInlineImages(imgMap);
-  }, [suggestedImages, result]);
+  // suggestedImages를 renderMarkdown에 직접 전달 — 별도 매핑 불필요
 
   /* ── 픽사베이·픽셀스 이미지 자동 추천 ── */
   const fetchImages = async (keyword) => {
@@ -858,7 +827,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               }
             }}
             style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
-            <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, inlineImages)}</div>
+            <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, suggestedImages)}</div>
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
