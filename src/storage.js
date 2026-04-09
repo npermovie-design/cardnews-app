@@ -36,25 +36,26 @@ export async function getAuthToken() {
 
 // ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
 export const POINTS = {
-  SIGNUP:      50,     // 회원가입 보너스 (100→50)
-  DAILY_LOGIN: 2,      // 일일 로그인 (3→2P)
-  POST_WRITE:  1,      // 게시글 작성 (2→1P, 하루 10회 제한)
+  SIGNUP:      50,     // 회원가입 보너스
+  DAILY_LOGIN: 2,      // 일일 로그인
+  POST_WRITE:  1,      // 게시글 작성 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
-  AI_USE:      -15,    // 기본 텍스트 생성 (Haiku) — cost ~7원, margin 55%
-  AI_SONNET:   -55,    // 고급 텍스트 생성 (Sonnet) — cost ~42원, margin 30%
-  IMAGE_GEN:   -120,   // 이미지 생성 (AI 이미지) — cost ~100원, margin 20%
-  PPT_GEN:     -30,    // PPT 1덱 생성 — cost ~15원, margin 50%
-  VIDEO_ANALYZE: -40,  // 영상 AI 분석 — cost ~30원, margin 33%
-  VIDEO_GEN:   -20,    // 영상 생성 기본 (15초 이하) — cost ~10원
-  VIDEO_GEN_30: -35,   // 영상 생성 (30초) — cost ~20원
-  VIDEO_GEN_60: -50,   // 영상 생성 (60초+) — cost ~30원
-  // AI 채팅 — 모델별 차감
-  CHAT_HAIKU:    -5,   // Claude Haiku 채팅 — cost ~3원
-  CHAT_SONNET:  -25,   // Claude Sonnet 채팅 — cost ~15원, margin 40%
-  CHAT_GPT4O_MINI: -5, // GPT-4o Mini — cost ~3원
-  CHAT_GPT4O:   -35,   // GPT-4o — cost ~25원, margin 40%
-  CHAT_GEMINI_FLASH: -3, // Gemini Flash — cost ~2원
-  CHAT_GEMINI_PRO: -25, // Gemini Pro — cost ~15원, margin 40%
+  // ── AI 생성 (1P=5.25원 기준, 마진 70%+) ──────────────
+  AI_USE:      -15,    // Haiku 텍스트 — cost ~8원, rev 79원, margin 90%
+  AI_SONNET:   -65,    // Sonnet 텍스트 — cost ~50원, rev 341원, margin 85%
+  IMAGE_GEN:   -150,   // 이미지 생성 — cost ~150원, rev 788원, margin 81%
+  PPT_GEN:     -35,    // PPT 생성 — cost ~15원, rev 184원, margin 92%
+  VIDEO_ANALYZE: -50,  // 영상 분석 — cost ~35원, rev 263원, margin 87%
+  VIDEO_GEN:   -25,    // 영상 15초 — cost ~12원, rev 131원, margin 91%
+  VIDEO_GEN_30: -40,   // 영상 30초 — cost ~25원, rev 210원, margin 88%
+  VIDEO_GEN_60: -60,   // 영상 60초 — cost ~35원, rev 315원, margin 89%
+  // ── AI 채팅 ──────────────────────────────────────────
+  CHAT_HAIKU:    -8,   // Haiku 채팅 — cost ~4원, rev 42원, margin 90%
+  CHAT_SONNET:  -30,   // Sonnet 채팅 — cost ~20원, rev 158원, margin 87%
+  CHAT_GPT4O_MINI: -8, // GPT-4o Mini — cost ~5원, rev 42원, margin 88%
+  CHAT_GPT4O:   -45,   // GPT-4o — cost ~35원, rev 236원, margin 85%
+  CHAT_GEMINI_FLASH: -5, // Gemini Flash — cost ~2원, rev 26원, margin 92%
+  CHAT_GEMINI_PRO: -30, // Gemini Pro — cost ~20원, rev 158원, margin 87%
 };
 
 // 채팅 모델 → 포인트 매핑
