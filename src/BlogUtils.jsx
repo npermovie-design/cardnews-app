@@ -115,16 +115,10 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    // [이미지: 설명] 태그를 실제 이미지로 렌더링
+    // [이미지: 설명] 태그는 숨김 (부제목 뒤 이미지로 대체)
     const imgMatch = line.match(/^\[(?:이미지|image):\s*([^\]]+)\]$/);
     if (imgMatch) {
-      const desc = imgMatch[1].trim();
-      const imgUrl = inlineImages && inlineImages[desc];
-      const fallbackSeed = encodeURIComponent(desc.slice(0, 20));
-      const src = imgUrl || `https://picsum.photos/seed/${fallbackSeed}/800/450`;
-      elements.push(
-        <ReplaceableImage key={i} src={src} desc={desc} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />
-      );
+      // 렌더링하지 않음 — 부제목 뒤 이미지가 대신 표시됨
     } else if (line.startsWith("### ")) {
       const headingText = line.slice(4).replace(/\*\*/g,"").trim();
       elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);

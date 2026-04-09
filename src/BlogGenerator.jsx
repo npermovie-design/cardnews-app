@@ -477,27 +477,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
   const fetchInlineImages = async () => { /* suggestedImages useEffect에서 처리 */ };
 
-  // 하단 추천 이미지가 로드되면 → 본문 부제목/[image:] 태그에 자동 분배
+  // 하단 추천 이미지가 로드되면 → 본문 부제목에 순서대로 분배
   useEffect(() => {
     if (!suggestedImages || suggestedImages.length === 0 || !result) return;
     const imgUrls = suggestedImages.map(img => img.url || img.preview).filter(Boolean);
     if (imgUrls.length === 0) return;
 
-    // 본문에서 부제목 + [image:] 태그 키워드 수집
+    // 부제목(##, ###)만 수집 — [image:] 태그는 무시
     const keys = [];
-    // [이미지: 키워드] 태그
-    const imgTags = result.match(/\[(?:이미지|image):\s*([^\]]+)\]/g) || [];
-    imgTags.forEach(tag => { const k = tag.replace(/\[(?:이미지|image):\s*/, "").replace(/\]$/, "").trim(); if (k) keys.push(k); });
-    // ## / ### 부제목
     const headingRegex = /^#{2,3}\s+(.+)$/gm;
     let m;
     while ((m = headingRegex.exec(result)) !== null) {
       const h = m[1].replace(/\*\*/g, "").trim();
-      if (h && h.length > 1 && h.length < 60 && !keys.includes(h)) keys.push(h);
+      if (h && h.length > 1 && h.length < 60) keys.push(h);
     }
     if (keys.length === 0) return;
 
-    // 이미지를 키워드에 순서대로 분배
+    // 추천 이미지를 부제목에 순서대로 분배
     const imgMap = {};
     keys.forEach((kw, i) => { imgMap[kw] = imgUrls[i % imgUrls.length]; });
     setInlineImages(imgMap);
