@@ -573,27 +573,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (withImages && suggestedImages.length > 0 && blogContentRef.current) {
       setCopyLoading(true);
       try {
-        // 본문 img 태그의 src를 base64로 변환하여 HTML 복사
+        // HTML 복제본 생성 — 원본 CDN URL 유지 (네이버 블로그 호환)
         const el = blogContentRef.current;
-        const imgs = el.querySelectorAll("img");
-        const base64Cache = {};
-
-        // 모든 이미지를 base64로 변환
-        await Promise.allSettled(Array.from(imgs).map(async (img) => {
-          const src = img.src;
-          if (!src || src.startsWith("data:")) return;
-          try {
-            const b64 = await imageUrlToBase64(src);
-            if (b64) base64Cache[src] = b64;
-          } catch {}
-        }));
-
-        // HTML 복제본 생성 후 img src를 base64로 교체
         const clone = el.cloneNode(true);
-        clone.querySelectorAll("img").forEach(img => {
-          const b64 = base64Cache[img.src];
-          if (b64) img.src = b64;
-        });
         // 이미지 래퍼에서 img만 남기고 캡션/버튼/메뉴 모두 제거
         clone.querySelectorAll("button, input").forEach(n => n.remove());
         clone.querySelectorAll("img").forEach(img => {
