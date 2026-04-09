@@ -1072,7 +1072,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <div>
                 <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>글 작성 방식을 선택하세요</div>
                 <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>소스를 선택하면 해당 입력창이 나타납니다</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:18}}>
+                <div className="ai-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:18}}>
                   {[
                     {id:"link",title:"링크로 작성",desc:"뉴스 기사, 유튜브 링크를 넣으면 주제를 자동으로 채워드려요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="link"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
                     {id:"file",title:"파일로 작성",desc:"이미지, PDF, 문서 파일을 분석해서 글의 소재로 활용합니다",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="file"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},

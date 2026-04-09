@@ -727,8 +727,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             ))}
           </div>
 
-          {/* 영상 제작 + 소셜 플래너 배너 (가로 2열) */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+          {/* 영상 제작 + 소셜 플래너 배너 (가로 2열, 모바일 1열) */}
+          <div className="ai-home-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
             <div onClick={() => setAiMenu("shorts_make")}
               style={{ padding:"18px 20px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:12, transition:"all 0.15s" }}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
