@@ -43,3 +43,4 @@ shorts-factory/*.pyc
 
 .vercel
 .env*.local
+preview_section_*.html
