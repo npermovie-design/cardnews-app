@@ -1,34 +1,34 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
-import { useGenColors, GenLoading, SelectGroup, BeforeAfterSlider, ModelGenerator, SkinRetouchGenerator, FaceSwapGenerator, OutfitSwapGenerator, OutpaintGenerator, TabbedGroup } from "./AiImageGenerators.jsx";
-import { TabHeader, DmInputField, InstaAutoReply, InstaAutoDM } from "./AiInstagram.jsx";
-import { LibraryPage } from "./AiLibrary.jsx";
-import { PromptStudioPage, SnsNewsFeed } from "./AiPromptStudio.jsx";
-import { useOnlineCount, AiSidebar, BLOG_MAP } from "./AiSidebar.jsx";
-import { RepurposePage, MENU_LABELS, MarketingHub, FileTranscriber, UnifiedBlogWriter, LinkBlogCombined } from "./AiTools.jsx";
-import { CardNewsApp, PlannerPanel } from "./CardNewsApp";
-import BlogGenerator from "./BlogGenerator";
-import NewsBlogGenerator from "./NewsBlogGenerator";
-import YtBlogGenerator from "./YtBlogGenerator";
-// ThumbnailGenerator 제거됨
-import SeoAnalyzer from "./SeoAnalyzer";
-import AnalyzerPage from "./AnalyzerPage";
-import ViralityAnalyzer from "./ViralityAnalyzer";
-import SimpleDetailPageGenerator from "./SimpleDetailPageGenerator";
-import DetailPageStudio from "./DetailPageStudio";
-// SimpleCardNewsGenerator 제거됨
-import LogoGenerator from "./LogoGenerator";
-import MockupGenerator from "./MockupGenerator";
-import ProductShotGenerator from "./ProductShotGenerator";
-// PptGenerator 제거됨
-import ShortsCreator from "./ShortsCreator";
-import SocialAnalyzer from "./SocialAnalyzer";
-import AutoPublisher from "./AutoPublisher";
+import { useOnlineCount, AiSidebar } from "./AiSidebar.jsx";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
-import SnsConnectionManager from "./SnsConnectionManager";
-import Footer from "./Footer.jsx";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
+
+// ── Lazy-loaded: 메뉴별 도구 (code-split) ──
+const ModelGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.ModelGenerator })));
+const SkinRetouchGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.SkinRetouchGenerator })));
+const FaceSwapGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.FaceSwapGenerator })));
+const OutfitSwapGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.OutfitSwapGenerator })));
+const OutpaintGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.OutpaintGenerator })));
+const LibraryPage = React.lazy(() => import("./AiLibrary.jsx").then(m => ({ default: m.LibraryPage })));
+const PromptStudioPage = React.lazy(() => import("./AiPromptStudio.jsx").then(m => ({ default: m.PromptStudioPage })));
+const SnsNewsFeed = React.lazy(() => import("./AiPromptStudio.jsx").then(m => ({ default: m.SnsNewsFeed })));
+const RepurposePage = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.RepurposePage })));
+const MarketingHub = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.MarketingHub })));
+const UnifiedBlogWriter = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.UnifiedBlogWriter })));
+const LinkBlogCombined = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.LinkBlogCombined })));
+const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.PlannerPanel })));
+const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
+const DetailPageStudio = React.lazy(() => import("./DetailPageStudio"));
+const LogoGenerator = React.lazy(() => import("./LogoGenerator"));
+const MockupGenerator = React.lazy(() => import("./MockupGenerator"));
+const ProductShotGenerator = React.lazy(() => import("./ProductShotGenerator"));
+const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
+const SocialAnalyzer = React.lazy(() => import("./SocialAnalyzer"));
+const AutoPublisher = React.lazy(() => import("./AutoPublisher"));
+const AnalyzerPage = React.lazy(() => import("./AnalyzerPage"));
+const SnsConnectionManager = React.lazy(() => import("./SnsConnectionManager"));
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -1687,7 +1687,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
           <div className="ai-content-fade" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-            <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
+            <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}>
+              <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
+            </React.Suspense>
           </div>
         </div>
       </div>
