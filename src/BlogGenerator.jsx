@@ -657,7 +657,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",maxWidth:900,margin:"0 auto",width:"100%"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 18px",borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:6}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",marginTop:16,borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:8,borderRadius:"12px 12px 0 0"}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             {isTistory && result && ["text","html","preview"].map(mode=>(
               <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:viewMode===mode?700:400,cursor:"pointer"}}>
@@ -683,7 +683,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             )}
             {result&&(
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>{setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType(null);}}
+                <button onClick={()=>{
+                  setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType("topic");
+                  setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
+                  setTitleSugg([]);setSeoKeys([]);setFields({});
+                  try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);}catch{}
+                }}
                   style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${border}`,
                     background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",
                     display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
@@ -1468,7 +1473,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         <div style={{maxWidth:620,margin:"0 auto"}}>
           <div style={{display:"inline-block",padding:"4px 12px",borderRadius:16,background:"rgba(124,106,255,0.1)",fontSize:11,fontWeight:700,color:"#7c6aff",marginBottom:12}}>AI 글쓰기</div>
           <div style={{fontSize:22,fontWeight:900,color:text,lineHeight:1.3,marginBottom:6}}>주제를 입력하면<br/>AI가 글을 작성해드려요</div>
-          <div style={{fontSize:13,color:isDark?"rgba(255,255,255,0.5)":"#999",marginBottom:16}}>원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.</div>
+          <div style={{fontSize:13,color:isDark?"rgba(255,255,255,0.5)":"#999",marginBottom:28}}>원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.</div>
           {/* SNS 플랫폼 선택 — 카테고리 탭 + 버튼 */}
           {(() => {
             const SNS_CATS = [
