@@ -145,7 +145,8 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
 
     if (isHeading) {
-      elements.push(<p key={i} style={{margin:"24px 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
+      elements.push(<div key={`br${i}`} style={{height:20}}/>);
+      elements.push(<p key={i} style={{margin:"0 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
       // 하단 추천 이미지를 순서대로 삽입
       if (imgUrls.length > 0 && imgIdx < imgUrls.length) {
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);

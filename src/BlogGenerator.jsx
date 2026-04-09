@@ -594,12 +594,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           const b64 = base64Cache[img.src];
           if (b64) img.src = b64;
         });
-        // 불필요한 UI 요소 제거 (캡션, 교체 메뉴, 버튼, 파일 입력)
+        // 이미지 래퍼에서 img만 남기고 캡션/버튼/메뉴 모두 제거
         clone.querySelectorAll("button, input").forEach(n => n.remove());
-        // 이미지 아래 캡션 div 제거 (📷 설명 + 클릭 또는 드래그로 교체)
-        clone.querySelectorAll("div").forEach(div => {
-          const txt = div.textContent || "";
-          if (txt.includes("클릭 또는 드래그로 교체") || txt.includes("📷")) div.remove();
+        clone.querySelectorAll("img").forEach(img => {
+          const wrapper = img.parentElement;
+          if (wrapper && wrapper.tagName === "DIV") {
+            // img만 남기고 나머지 자식 제거
+            Array.from(wrapper.children).forEach(child => {
+              if (child.tagName !== "IMG") child.remove();
+            });
+          }
+        });
+        // 소제목(fontWeight:800) 앞에 빈 줄 추가
+        clone.querySelectorAll("p").forEach(p => {
+          if (p.style.fontWeight === "800") {
+            const br = document.createElement("br");
+            p.parentElement.insertBefore(br, p);
+          }
         });
 
         const html = clone.innerHTML;
