@@ -42,6 +42,7 @@
     "@remotion/transitions": "^4.0.443",
     "@supabase/supabase-js": "^2.99.2",
     "fabric": "^7.2.0",
+    "micro": "^10.0.1",
     "pptxgenjs": "^4.0.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
