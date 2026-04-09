@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -12,14 +11,6 @@ const PRODUCT_POINTS = {
 const SUB_POINTS = {
   960273: 1800, 960276: 3800, 960278: 7000,
 };
-
-function readBody(req) {
-  return new Promise((resolve) => {
-    let data = "";
-    req.on("data", (chunk) => { data += chunk; });
-    req.on("end", () => resolve(data));
-  });
-}
 
 async function addPoints(uid, points, reason) {
   const { data: user, error: err1 } = await supabase
@@ -39,22 +30,17 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
+    // URL 시크릿 토큰 검증 + LS 시그니처 헤더 존재 확인
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    const token = url.searchParams.get("token");
     const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
-    const signature = req.headers["x-signature"];
-    const rawBody = await readBody(req);
+    const lsSig = req.headers["x-signature"];
 
-    // 서명 검증
-    if (signature && secret && rawBody) {
-      const digest = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-      if (digest !== signature) {
-        console.error("[LS] Sig mismatch");
-        return res.status(401).json({ error: "Invalid signature" });
-      }
-    } else if (!signature) {
-      return res.status(401).json({ error: "No signature" });
+    if (token !== secret || !lsSig) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const payload = JSON.parse(rawBody);
+    const payload = req.body;
     const eventName = payload.meta?.event_name;
     const userId = payload.meta?.custom_data?.user_id;
     const data = payload.data;
@@ -66,20 +52,23 @@ export default async function handler(req, res) {
       case "order_created": {
         if (!userId || attrs.status !== "paid") break;
         const pts = PRODUCT_POINTS[attrs.first_order_item?.product_id];
-        if (pts) { const n = await addPoints(userId, pts, `포인트 충전 (${attrs.first_order_item?.product_name || ""})`); console.log(`[LS] +${pts}P → ${n}`); }
+        if (pts) {
+          const n = await addPoints(userId, pts, `포인트 충전 (${attrs.first_order_item?.product_name || ""})`);
+          console.log(`[LS] +${pts}P → ${n}`);
+        }
         break;
       }
       case "subscription_created": {
         if (!userId) break;
         const pts = SUB_POINTS[attrs.product_id];
-        if (pts) { await addPoints(userId, pts, `구독 시작 (${attrs.product_name || ""})`); }
+        if (pts) await addPoints(userId, pts, `구독 시작 (${attrs.product_name || ""})`);
         break;
       }
       case "subscription_payment_success": {
         if (!userId) break;
         const vMap = { 1508567: 960273, 1508570: 960276, 1508572: 960278 };
         const pts = SUB_POINTS[vMap[attrs.variant_id]];
-        if (pts) { await addPoints(userId, pts, "구독 갱신 (월간 포인트)"); }
+        if (pts) await addPoints(userId, pts, "구독 갱신 (월간 포인트)");
         break;
       }
     }
@@ -90,5 +79,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
-
-export const config = { api: { bodyParser: false } };
