@@ -19,6 +19,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir --force-reinstall --upgrade pytubefix \
     && pip install --no-cache-dir --force-reinstall --upgrade "yt-dlp[default]" --pre \
+    && pip install --no-cache-dir playwright \
+    && playwright install chromium --with-deps \
     ; echo "yt-dlp version:" && yt-dlp --version
 
 COPY . .

@@ -181,6 +181,40 @@ async def index():
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+# ═══ 네이버 블로그 자동 발행 ═══════════════════════════════════
+@app.post("/naver-publish")
+async def naver_publish(request: Request):
+    """네이버 블로그에 글 자동 발행"""
+    try:
+        data = await request.json()
+        naver_id = data.get("naverId", "")
+        naver_pw = data.get("naverPw", "")
+        post = data.get("post", {})
+
+        if not naver_id or not naver_pw:
+            return {"success": False, "error": "네이버 ID/PW가 필요합니다"}
+        if not post.get("title"):
+            return {"success": False, "error": "글 제목이 필요합니다"}
+
+        from naver_publisher import publish_to_naver_blog, format_blog_html
+
+        html_content = format_blog_html(post)
+        tags = post.get("tags", [])
+
+        result = await publish_to_naver_blog(
+            naver_id=naver_id,
+            naver_pw=naver_pw,
+            title=post["title"],
+            html_content=html_content,
+            tags=tags,
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"[naver-publish] {e}")
+        return {"success": False, "error": str(e)[:200]}
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "shorts-factory"}
