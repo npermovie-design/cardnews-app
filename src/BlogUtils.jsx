@@ -167,6 +167,17 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inline
       elements.push(<div key={i} style={{height:8}}/>);
     } else if (line.trim().startsWith("#")&&line.includes(" #")) {
       elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.9,fontSize:14,color:accentColor}}>{line}</p>);
+    } else if (line.trim().match(/^\*\*(.+)\*\*$/) && line.trim().length < 80) {
+      // **볼드 제목** 줄 → 소제목 스타일 + 이미지 삽입
+      const boldText = line.trim().match(/^\*\*(.+)\*\*$/)[1].trim();
+      elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{boldText}</h3>);
+      if (inlineImages && boldText) {
+        const imgUrl = inlineImages[boldText] || Object.entries(inlineImages).find(([k]) => boldText.includes(k) || k.includes(boldText))?.[1];
+        if (imgUrl) {
+          const fallbackSeed = encodeURIComponent(boldText.slice(0, 20));
+          elements.push(<ReplaceableImage key={`bimg${i}`} src={imgUrl} desc={boldText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
+        }
+      }
     } else if (line.trim()) {
       elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{inlineFormat(line,accentColor)}</p>);
     }

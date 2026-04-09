@@ -483,13 +483,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const imgUrls = suggestedImages.map(img => img.url || img.preview).filter(Boolean);
     if (imgUrls.length === 0) return;
 
-    // 부제목(##, ###)만 수집 — [image:] 태그는 무시
+    // 부제목 수집: ## 헤딩 + **볼드 제목** 모두 감지
     const keys = [];
-    const headingRegex = /^#{2,3}\s+(.+)$/gm;
-    let m;
-    while ((m = headingRegex.exec(result)) !== null) {
-      const h = m[1].replace(/\*\*/g, "").trim();
-      if (h && h.length > 1 && h.length < 60) keys.push(h);
+    const lines = result.split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // ## 또는 ### 헤딩
+      const hMatch = trimmed.match(/^#{2,3}\s+(.+)$/);
+      if (hMatch) { const h = hMatch[1].replace(/\*\*/g, "").trim(); if (h.length > 1 && h.length < 60 && !keys.includes(h)) keys.push(h); continue; }
+      // **볼드 제목** (한 줄이 통째로 볼드인 경우)
+      const bMatch = trimmed.match(/^\*\*(.+)\*\*$/);
+      if (bMatch) { const h = bMatch[1].trim(); if (h.length > 3 && h.length < 60 && !keys.includes(h)) keys.push(h); continue; }
     }
     if (keys.length === 0) return;
 
