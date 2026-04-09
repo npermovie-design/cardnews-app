@@ -496,42 +496,47 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (allKeywords.length === 0) return;
     const uniqueKeywords = [...new Set(allKeywords)];
 
-    // 메인 키워드 (글 주제)를 검색어에 포함시켜 정확도 향상
     const mainKeyword = fields.keyword?.trim() || "";
+    // 영문인지 판별
+    const isEnglish = (s) => /^[a-zA-Z0-9\s.,!?'-]+$/.test(s.trim());
 
-    // 단일 키워드 이미지 검색: "메인키워드 + 부제목"으로 검색
     const searchOne = async (kw, idx) => {
-      // 메인 키워드 + 부제목 핵심어 조합 (긴 부제목은 앞 2단어만)
-      const shortKw = kw.split(/\s+/).slice(0, 3).join(" ");
-      const combinedKo = mainKeyword ? `${mainKeyword} ${shortKw}` : shortKw;
-      const q = encodeURIComponent(combinedKo.trim());
+      // 영문 키워드(AI [image:] 태그)는 그대로 사용, 한국어는 메인키워드 조합
+      let searchQuery;
+      if (isEnglish(kw)) {
+        searchQuery = kw.trim();
+      } else {
+        const shortKw = kw.split(/\s+/).slice(0, 3).join(" ");
+        searchQuery = mainKeyword ? `${mainKeyword} ${shortKw}` : shortKw;
+      }
+      const q = encodeURIComponent(searchQuery);
 
-      // 1) Pixabay 한국어 (하단 추천과 동일 — 가장 정확)
+      // 1) Pexels (영문 검색 정확도 최고)
       try {
-        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=12&safesearch=true&image_type=photo&lang=ko`);
-        if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[idx % d.hits.length].webformatURL; }
+        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${q}&per_page=10&orientation=landscape`);
+        if (r.ok) { const d = await r.json(); if (d.photos?.length > 0) return d.photos[idx % d.photos.length].src.large; }
       } catch {}
-      // 2) 메인 키워드만으로 Pixabay 재검색
+      // 2) Pixabay (영문이면 lang=en, 한국어면 lang=ko)
+      try {
+        const lang = isEnglish(kw) ? "en" : "ko";
+        const r = await fetch(`/api/proxy-pixabay?q=${q}&per_page=10&safesearch=true&image_type=photo&lang=${lang}`);
+        if (r.ok) { const d = await r.json(); if (d.hits?.length > 0) return d.hits[idx % d.hits.length].webformatURL; }
+      } catch {}
+      // 3) 메인 키워드만으로 Pixabay 한국어 재검색 (최소한 주제는 맞추기)
       if (mainKeyword) {
         try {
           const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(mainKeyword)}&per_page=20&safesearch=true&image_type=photo&lang=ko`);
-          if (r.ok) { const d = await r.json(); if (d.hits?.length) return d.hits[(idx * 3 + 1) % d.hits.length].webformatURL; }
+          if (r.ok) { const d = await r.json(); if (d.hits?.length > 0) return d.hits[(idx * 3 + 1) % d.hits.length].webformatURL; }
         } catch {}
       }
-      // 3) Pexels (영문 — 메인키워드 기반)
-      try {
-        const pexQ = encodeURIComponent(mainKeyword || shortKw);
-        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${pexQ}&per_page=12&orientation=landscape`);
-        if (r.ok) { const d = await r.json(); if (d.photos?.length) return d.photos[(idx * 2 + 1) % d.photos.length].src.large; }
-      } catch {}
       // 4) Picsum 최종 폴백
-      return `https://picsum.photos/seed/${encodeURIComponent(combinedKo.slice(0, 20))}/800/450`;
+      return null; // 이미지 없으면 삽입 안 함
     };
 
     // 병렬로 모든 키워드 검색
     const results = await Promise.all(uniqueKeywords.map((kw, i) => searchOne(kw, i)));
     const imgMap = {};
-    uniqueKeywords.forEach((kw, i) => { imgMap[kw] = results[i]; });
+    uniqueKeywords.forEach((kw, i) => { if (results[i]) imgMap[kw] = results[i]; });
     setInlineImages(imgMap);
   };
 
