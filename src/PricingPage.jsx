@@ -21,7 +21,7 @@ const SUB_PLANS = [
     points: 100, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 보너스 100P 지급", "상세페이지 생성 약 10회", ...COMMON_FEATURES],
+    features: ["가입 보너스 50P 지급", "상세페이지 생성 약 3회", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
@@ -31,7 +31,7 @@ const SUB_PLANS = [
     points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 1,800P 충전", "상세페이지 생성 약 180회", "AI 글쓰기 약 180회", "이미지 생성 약 36회", ...COMMON_FEATURES],
+    features: ["매월 1,800P 충전", "AI 글쓰기 약 120회", "상세페이지 생성 약 120회", "이미지 생성 약 15회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "3b6ec806-5a9b-4202-9892-200f105da896",
   },
@@ -41,7 +41,7 @@ const SUB_PLANS = [
     points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 3,800P 충전", "상세페이지 생성 약 380회", "AI 글쓰기 약 380회", "이미지 생성 약 76회", "숏폼 편집 약 47회", ...COMMON_FEATURES],
+    features: ["매월 3,800P 충전", "AI 글쓰기 약 250회", "상세페이지 생성 약 250회", "이미지 생성 약 31회", "숏폼 편집 약 19회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "70530971-234f-4f73-a6da-54616181454b",
   },
@@ -51,7 +51,7 @@ const SUB_PLANS = [
     points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
-    features: ["매월 7,000P 충전", "상세페이지 생성 약 700회", "AI 글쓰기 약 700회", "이미지 생성 약 140회", "숏폼 편집 약 87회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
+    features: ["매월 7,000P 충전", "AI 글쓰기 약 460회", "상세페이지 생성 약 460회", "이미지 생성 약 58회", "숏폼 편집 약 35회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "8ba35046-dc8b-4916-8cb5-57fc1c403c61",
   },
@@ -305,9 +305,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               </thead>
               <tbody>
                 {[
-                  { key: "compAiWrite", vals: ["5" + p("compUnitTimes"), "~100" + p("compUnitTimes"), "~350" + p("compUnitTimes"), "~950" + p("compUnitTimes")], types: ["num","num","num","num"] },
-                  { key: "compAiImage", vals: ["—", "~20" + p("compUnitTimes"), "~70" + p("compUnitTimes"), "~190" + p("compUnitTimes")], types: ["no","num","num","num"] },
-                  { key: "compVideoGen", vals: ["—", "—", "14" + p("compUnitTimes"), "47" + p("compUnitTimes")], types: ["no","no","num","num"] },
+                  { key: "compAiWrite", vals: ["3" + p("compUnitTimes"), "~120" + p("compUnitTimes"), "~250" + p("compUnitTimes"), "~460" + p("compUnitTimes")], types: ["num","num","num","num"] },
+                  { key: "compAiImage", vals: ["—", "~15" + p("compUnitTimes"), "~31" + p("compUnitTimes"), "~58" + p("compUnitTimes")], types: ["no","num","num","num"] },
+                  { key: "compVideoGen", vals: ["—", "—", "~19" + p("compUnitTimes"), "~35" + p("compUnitTimes")], types: ["no","no","num","num"] },
                   { key: "compAutoPublish", vals: ["—", "—", "check", "check"], types: ["no","no","yes","yes"] },
                   { key: "compCardNews", vals: ["check", "check", "check", "check"], types: ["yes","yes","yes","yes"] },
                   { key: "compDetailPage", vals: ["check", "check", "check", "check"], types: ["yes","yes","yes","yes"] },
@@ -387,7 +387,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 {plan.highlight && !plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
                 <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
-                <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/10)}{p("pricingUses")}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/15)}{p("pricingUses")}</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: plan.bestValue ? "#f59e0b" : "#7c6aff", marginTop: 4 }}>1P당 {plan.perPoint}원</div>
                 <div style={{ marginTop: 6, width: "100%" }}>
                   {PAYMENT_ENABLED === false && (
@@ -416,12 +416,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>{p("pointCostDesc")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
           {[
-            { label: p("ptTextHaiku"), cost: "10P", desc: p("ptTextHaikuD") },
-            { label: p("ptTextSonnet"), cost: "35P", desc: p("ptTextSonnetD") },
-            { label: p("ptImage"), cost: "80P", desc: p("ptImageD") },
-            { label: p("ptPpt"), cost: "25P", desc: p("ptPptD") },
-            { label: p("ptVideoAnalysis"), cost: "35P", desc: p("ptVideoAnalysisD") },
-            { label: p("ptVideoGen"), cost: "15~40P", desc: p("ptVideoGenD") },
+            { label: p("ptTextHaiku"), cost: "15P", desc: p("ptTextHaikuD") },
+            { label: p("ptTextSonnet"), cost: "55P", desc: p("ptTextSonnetD") },
+            { label: p("ptImage"), cost: "120P", desc: p("ptImageD") },
+            { label: p("ptPpt"), cost: "30P", desc: p("ptPptD") },
+            { label: p("ptVideoAnalysis"), cost: "40P", desc: p("ptVideoAnalysisD") },
+            { label: p("ptVideoGen"), cost: "20~50P", desc: p("ptVideoGenD") },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
               <div>

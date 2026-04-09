@@ -36,25 +36,25 @@ export async function getAuthToken() {
 
 // ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
 export const POINTS = {
-  SIGNUP:      100,    // 회원가입 보너스
-  DAILY_LOGIN: 3,      // 일일 로그인 (출석체크 +3P)
-  POST_WRITE:  2,      // 게시글 작성 (+2P)
+  SIGNUP:      50,     // 회원가입 보너스 (100→50)
+  DAILY_LOGIN: 2,      // 일일 로그인 (3→2P)
+  POST_WRITE:  1,      // 게시글 작성 (2→1P, 하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
-  AI_USE:      -10,    // 기본 텍스트 생성 (Haiku) — cost ~7원
-  AI_SONNET:   -35,    // 고급 텍스트 생성 (Sonnet) — cost ~42원
-  IMAGE_GEN:   -80,    // 이미지 생성 (AI 이미지) — cost ~100원
-  PPT_GEN:     -25,    // PPT 1덱 생성 — cost ~15원
-  VIDEO_ANALYZE: -35,  // 영상 AI 분석 — cost ~30원
-  VIDEO_GEN:   -15,    // 영상 생성 기본 (15초 이하) — cost ~10원
-  VIDEO_GEN_30: -25,   // 영상 생성 (30초) — cost ~20원
-  VIDEO_GEN_60: -40,   // 영상 생성 (60초+) — cost ~30원
+  AI_USE:      -15,    // 기본 텍스트 생성 (Haiku) — cost ~7원, margin 55%
+  AI_SONNET:   -55,    // 고급 텍스트 생성 (Sonnet) — cost ~42원, margin 30%
+  IMAGE_GEN:   -120,   // 이미지 생성 (AI 이미지) — cost ~100원, margin 20%
+  PPT_GEN:     -30,    // PPT 1덱 생성 — cost ~15원, margin 50%
+  VIDEO_ANALYZE: -40,  // 영상 AI 분석 — cost ~30원, margin 33%
+  VIDEO_GEN:   -20,    // 영상 생성 기본 (15초 이하) — cost ~10원
+  VIDEO_GEN_30: -35,   // 영상 생성 (30초) — cost ~20원
+  VIDEO_GEN_60: -50,   // 영상 생성 (60초+) — cost ~30원
   // AI 채팅 — 모델별 차감
   CHAT_HAIKU:    -5,   // Claude Haiku 채팅 — cost ~3원
-  CHAT_SONNET:  -15,   // Claude Sonnet 채팅 — cost ~15원
+  CHAT_SONNET:  -25,   // Claude Sonnet 채팅 — cost ~15원, margin 40%
   CHAT_GPT4O_MINI: -5, // GPT-4o Mini — cost ~3원
-  CHAT_GPT4O:   -20,   // GPT-4o — cost ~25원
+  CHAT_GPT4O:   -35,   // GPT-4o — cost ~25원, margin 40%
   CHAT_GEMINI_FLASH: -3, // Gemini Flash — cost ~2원
-  CHAT_GEMINI_PRO: -15, // Gemini Pro — cost ~15원
+  CHAT_GEMINI_PRO: -25, // Gemini Pro — cost ~15원, margin 40%
 };
 
 // 채팅 모델 → 포인트 매핑
