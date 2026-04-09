@@ -41,6 +41,36 @@ TEMPLATES = {
         "caption_size": 40, "caption_color": "#FFFFFF",
         "bg_color": "#0F1923", "title_bg": "#E53935",
     },
+    "cinematic": {
+        "title_size": 58, "title_color": "#E8D5B7", "title_bold": True,
+        "sub_size": 34, "sub_color": "#B8A080",
+        "caption_size": 44, "caption_color": "#E8D5B7",
+        "bg_color": "#1A0A0A", "title_bg": None,
+    },
+    "tech": {
+        "title_size": 56, "title_color": "#00D4FF", "title_bold": True,
+        "sub_size": 36, "sub_color": "#7EB8DA",
+        "caption_size": 44, "caption_color": "#00D4FF",
+        "bg_color": "#0A1628", "title_bg": "#0066CC",
+    },
+    "luxury": {
+        "title_size": 60, "title_color": "#D4AF37", "title_bold": True,
+        "sub_size": 34, "sub_color": "#C0C0C0",
+        "caption_size": 44, "caption_color": "#D4AF37",
+        "bg_color": "#121212", "title_bg": None,
+    },
+    "vlog": {
+        "title_size": 54, "title_color": "#FF6B6B", "title_bold": True,
+        "sub_size": 36, "sub_color": "#FFB8B8",
+        "caption_size": 42, "caption_color": "#FF6B6B",
+        "bg_color": "#2D1B2E", "title_bg": "#FF3366",
+    },
+    "edu": {
+        "title_size": 52, "title_color": "#4ECDC4", "title_bold": True,
+        "sub_size": 36, "sub_color": "#A8E6CF",
+        "caption_size": 42, "caption_color": "#4ECDC4",
+        "bg_color": "#1A2332", "title_bg": "#2E86AB",
+    },
 }
 
 

@@ -167,6 +167,11 @@ const TEMPLATES = [
   { id: "neon", name: "네온", titleColor: "#00FF88", captionColor: "#00FF88", bg: "#0D0D1A" },
   { id: "pastel", name: "파스텔", titleColor: "#FFB6C1", captionColor: "#FFB6C1", bg: "#1A1A2E" },
   { id: "news", name: "뉴스", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#0F1923" },
+  { id: "cinematic", name: "시네마틱", titleColor: "#E8D5B7", captionColor: "#E8D5B7", bg: "#1a0a0a" },
+  { id: "tech", name: "테크", titleColor: "#00D4FF", captionColor: "#00D4FF", bg: "#0a1628" },
+  { id: "luxury", name: "럭셔리", titleColor: "#D4AF37", captionColor: "#D4AF37", bg: "#121212" },
+  { id: "vlog", name: "브이로그", titleColor: "#FF6B6B", captionColor: "#FF6B6B", bg: "#2D1B2E" },
+  { id: "edu", name: "교육", titleColor: "#4ECDC4", captionColor: "#4ECDC4", bg: "#1A2332" },
 ];
 
 const LENGTHS = [
