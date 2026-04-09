@@ -107,85 +107,64 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
   );
 }
 
-/* ── 마크다운 → JSX 렌더러 ── */
+/* ── 일반 텍스트 + 이미지 렌더러 ── */
 function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, inlineImages) {
   if (!text) return null;
-  const lines = text.split("\n");
+  // 마크다운 기호 제거 → 순수 텍스트
+  const cleaned = text
+    .replace(/\[(?:이미지|image):\s*[^\]]+\]/g, "") // [image:] 태그 제거
+    .replace(/^#{1,6}\s*/gm, "")                    // # 헤딩 기호 제거
+    .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")        // **볼드**, *이탤릭* 제거
+    .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")           // __밑줄__ 제거
+    .replace(/~~([^~]+)~~/g, "$1")                   // ~~취소선~~ 제거
+    .replace(/`([^`]+)`/g, "$1")                     // `코드` 제거
+    .replace(/^>\s+/gm, "")                          // > 인용 제거
+    .replace(/^[-*]{3,}$/gm, "")                     // --- 구분선 제거
+    .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
+    .replace(/!\[.*?\]\(.*?\)/g, "");                // ![image]() 제거
+
+  const lines = cleaned.split("\n");
   const elements = [];
-  let i = 0;
-  while (i < lines.length) {
+  // inlineImages 키 목록 (이미지 삽입 순서용)
+  const imgKeys = inlineImages ? Object.keys(inlineImages) : [];
+  let imgIdx = 0;
+
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    // [이미지: 설명] 태그는 숨김 (부제목 뒤 이미지로 대체)
-    const imgMatch = line.match(/^\[(?:이미지|image):\s*([^\]]+)\]$/);
-    if (imgMatch) {
-      // 렌더링하지 않음 — 부제목 뒤 이미지가 대신 표시됨
-    } else if (line.startsWith("### ")) {
-      const headingText = line.slice(4).replace(/\*\*/g,"").trim();
-      elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{inlineFormat(line.slice(4),accentColor)}</h3>);
-      // 부제목 뒤에 매칭되는 이미지 자동 삽입
-      if (inlineImages && headingText) {
-        const imgUrl = inlineImages[headingText] || Object.entries(inlineImages).find(([k]) => headingText.includes(k) || k.includes(headingText))?.[1];
-        if (imgUrl) {
-          const fallbackSeed = encodeURIComponent(headingText.slice(0, 20));
-          elements.push(<ReplaceableImage key={`himg${i}`} src={imgUrl} desc={headingText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
-        }
-      }
-    } else if (line.startsWith("## ")) {
-      const headingText = line.slice(3).replace(/\*\*/g,"").trim();
-      elements.push(<h2 key={i} style={{fontSize:19,fontWeight:900,color:textColor,margin:"28px 0 10px",letterSpacing:-0.5,borderBottom:`2px solid ${accentColor}`,paddingBottom:6}}>{inlineFormat(line.slice(3),accentColor)}</h2>);
-      // 부제목 뒤에 매칭되는 이미지 자동 삽입
-      if (inlineImages && headingText) {
-        const imgUrl = inlineImages[headingText] || Object.entries(inlineImages).find(([k]) => headingText.includes(k) || k.includes(headingText))?.[1];
-        if (imgUrl) {
-          const fallbackSeed = encodeURIComponent(headingText.slice(0, 20));
-          elements.push(<ReplaceableImage key={`himg${i}`} src={imgUrl} desc={headingText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
-        }
-      }
-    } else if (line.startsWith("# ")) {
-      elements.push(<h1 key={i} style={{fontSize:22,fontWeight:900,color:textColor,margin:"32px 0 12px",letterSpacing:-0.8}}>{inlineFormat(line.slice(2),accentColor)}</h1>);
-    } else if (line.match(/^[-*]{3,}$/)) {
-      elements.push(<hr key={i} style={{border:"none",borderTop:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e9ecef"}`,margin:"20px 0"}}/>);
-    } else if (line.match(/^[-*] /)) {
-      const items = [];
-      while (i < lines.length && lines[i].match(/^[-*] /)) {
-        items.push(<li key={i} style={{marginBottom:5,lineHeight:1.8,color:textColor}}>{inlineFormat(lines[i].slice(2),accentColor)}</li>);
-        i++;
-      }
-      elements.push(<ul key={"ul"+i} style={{paddingLeft:20,margin:"8px 0 12px",listStyle:"disc"}}>{items}</ul>);
-      continue;
-    } else if (line.match(/^\d+\. /)) {
-      const items = [];
-      while (i < lines.length && lines[i].match(/^\d+\. /)) {
-        items.push(<li key={i} style={{marginBottom:5,lineHeight:1.8,color:textColor}}>{inlineFormat(lines[i].replace(/^\d+\. /,""),accentColor)}</li>);
-        i++;
-      }
-      elements.push(<ol key={"ol"+i} style={{paddingLeft:22,margin:"8px 0 12px"}}>{items}</ol>);
-      continue;
-    } else if (line.startsWith("> ")) {
-      elements.push(<blockquote key={i} style={{borderLeft:`4px solid ${accentColor}`,paddingLeft:14,margin:"12px 0",color:mutedColor,fontStyle:"italic",lineHeight:1.8}}>{inlineFormat(line.slice(2),accentColor)}</blockquote>);
-    } else if (line.trim()==="") {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
       elements.push(<div key={i} style={{height:8}}/>);
-    } else if (line.trim().startsWith("#")&&line.includes(" #")) {
-      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.9,fontSize:14,color:accentColor}}>{line}</p>);
-    } else if (line.trim().match(/^\*\*(.+)\*\*$/) && line.trim().length < 80) {
-      // **볼드 제목** 줄 → 소제목 스타일 + 이미지 삽입
-      const boldText = line.trim().match(/^\*\*(.+)\*\*$/)[1].trim();
-      elements.push(<h3 key={i} style={{fontSize:16,fontWeight:800,color:textColor,margin:"20px 0 8px",letterSpacing:-0.3}}>{boldText}</h3>);
-      if (inlineImages && boldText) {
-        const imgUrl = inlineImages[boldText] || Object.entries(inlineImages).find(([k]) => boldText.includes(k) || k.includes(boldText))?.[1];
-        if (imgUrl) {
-          const fallbackSeed = encodeURIComponent(boldText.slice(0, 20));
-          elements.push(<ReplaceableImage key={`bimg${i}`} src={imgUrl} desc={boldText} isDark={isDark} mutedColor={mutedColor} fallbackSeed={fallbackSeed} />);
-        }
-      }
-    } else if (line.trim()) {
-      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{inlineFormat(line,accentColor)}</p>);
+      continue;
     }
-    i++;
+
+    // 소제목 감지: 짧은 줄(5~50자) + 앞뒤로 빈 줄
+    const prevEmpty = i === 0 || !lines[i-1]?.trim();
+    const nextEmpty = i === lines.length-1 || !lines[i+1]?.trim();
+    const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
+
+    if (isHeading) {
+      // 소제목 렌더링
+      elements.push(<p key={i} style={{margin:"24px 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
+      // 이미지 삽입
+      if (inlineImages && imgIdx < imgKeys.length) {
+        const imgUrl = inlineImages[imgKeys[imgIdx]];
+        if (imgUrl) {
+          elements.push(<ReplaceableImage key={`img${i}`} src={imgUrl} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
+        }
+        imgIdx++;
+      }
+    } else {
+      // 일반 텍스트
+      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{trimmed}</p>);
+    }
   }
   return elements;
 }
 function inlineFormat(text, accentColor) {
+  return text; // 마크다운 포맷 제거 — 일반 텍스트 반환
+}
+function _inlineFormat_legacy(text, accentColor) {
   const parts=[]; const re=/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
   let last=0,m;
   while((m=re.exec(text))!==null){

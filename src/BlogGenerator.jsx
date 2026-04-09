@@ -483,17 +483,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const imgUrls = suggestedImages.map(img => img.url || img.preview).filter(Boolean);
     if (imgUrls.length === 0) return;
 
-    // 부제목 수집: ## 헤딩 + **볼드 제목** 모두 감지
+    // 소제목 수집: 마크다운 제거 후, 짧은 줄 + 앞뒤 빈 줄인 경우
+    const cleaned = result
+      .replace(/\[(?:이미지|image):\s*[^\]]+\]/g, "")
+      .replace(/^#{1,6}\s*/gm, "")
+      .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+      .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/^>\s+/gm, "")
+      .replace(/^[-*]{3,}$/gm, "")
+      .replace(/!\[.*?\]\(.*?\)/g, "");
+    const lines = cleaned.split("\n");
     const keys = [];
-    const lines = result.split("\n");
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // ## 또는 ### 헤딩
-      const hMatch = trimmed.match(/^#{2,3}\s+(.+)$/);
-      if (hMatch) { const h = hMatch[1].replace(/\*\*/g, "").trim(); if (h.length > 1 && h.length < 60 && !keys.includes(h)) keys.push(h); continue; }
-      // **볼드 제목** (한 줄이 통째로 볼드인 경우)
-      const bMatch = trimmed.match(/^\*\*(.+)\*\*$/);
-      if (bMatch) { const h = bMatch[1].trim(); if (h.length > 3 && h.length < 60 && !keys.includes(h)) keys.push(h); continue; }
+    for (let li = 0; li < lines.length; li++) {
+      const trimmed = lines[li].trim();
+      if (!trimmed) continue;
+      const prevEmpty = li === 0 || !lines[li-1]?.trim();
+      const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
+      if (isHeading && !keys.includes(trimmed)) keys.push(trimmed);
     }
     if (keys.length === 0) return;
 
