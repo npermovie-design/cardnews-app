@@ -1037,16 +1037,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           .bl-result-header{padding:6px 12px!important;gap:4px!important}
           .bl-result-header>div{flex-wrap:wrap!important}
           .bl-sns-platform-group{gap:6px!important}
-          .bl-sns-platform-group button{padding:6px 10px!important;font-size:11px!important}
+          .bl-sns-platform-group button{padding:11px 13px!important;font-size:13px!important}
         }
         @media(max-width:480px){
-          .bl-form-wrap{padding:12px 10px 20px!important}
+          .bl-form-wrap{padding:14px 12px 24px!important}
           .bl-form-wrap input,.bl-form-wrap textarea,.bl-form-wrap select{font-size:16px!important}
-          .bl-tone-group{gap:4px!important}
-          .bl-tone-group button{padding:5px 10px!important;font-size:11px!important;min-height:36px!important}
-          .bl-gen-btn{font-size:14px!important;padding:14px!important}
-          .bl-sns-platform-group{gap:4px!important}
-          .bl-sns-platform-group button{padding:5px 8px!important;font-size:10px!important}
+          .bl-tone-group{gap:6px!important}
+          .bl-tone-group button{padding:11px 18px!important;font-size:13px!important;min-height:44px!important}
+          .bl-gen-btn{font-size:16px!important;padding:16px!important}
+          .bl-sns-platform-group{gap:6px!important}
+          .bl-sns-platform-group button{padding:10px 12px!important;font-size:12px!important;min-height:46px!important}
         }
       `}</style>
       {/* 단계 없음 - 자동 전환 */}
@@ -1055,53 +1055,54 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         {/* 단계 1: 입력 폼 */}
         {wizStep===1 && (
           <div className="bl-form-wrap" style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
-            {/* ── Progress Bar ── */}
-            <div style={{marginBottom:24}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            {/* ── Progress Bar (큼지막한 노년층 친화 버전) ── */}
+            <div style={{marginBottom:32}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                 {[1,2,3,4].map(step => (
-                  <div key={step} style={{display:"flex",alignItems:"center",gap:6,cursor:step<formStep?"pointer":"default"}} onClick={()=>{if(step<formStep)setFormStep(step);}}>
+                  <div key={step} style={{display:"flex",alignItems:"center",gap:10,cursor:step<formStep?"pointer":"default",flex:step<4?1:"none"}} onClick={()=>{if(step<formStep)setFormStep(step);}}>
                     <div style={{
-                      width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
-                      fontSize:12,fontWeight:700,
+                      width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:16,fontWeight:800,flexShrink:0,
                       background:formStep===step?accent:formStep>step?accent:(isDark?"rgba(255,255,255,0.08)":"#e9ecef"),
                       color:formStep>=step?"#fff":muted,
                       transition:"all 0.2s ease",
-                    }}>{formStep>step?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:step}</div>
-                    <span style={{fontSize:11,fontWeight:formStep===step?700:400,color:formStep===step?accent:muted,display:window.innerWidth<480&&step!==formStep?"none":"inline"}}>
-                      {step===1?"소스 선택":step===2?"플랫폼":step===3?"글타입":"스타일"}
+                      boxShadow:formStep===step?`0 0 0 4px ${accent}25`:"none",
+                    }}>{formStep>step?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:step}</div>
+                    <span style={{fontSize:14,fontWeight:formStep===step?800:600,color:formStep===step?accent:(formStep>step?text:muted),display:window.innerWidth<480&&step!==formStep?"none":"inline",whiteSpace:"nowrap"}}>
+                      {step===1?"소스":step===2?"플랫폼":step===3?"글타입":"스타일"}
                     </span>
-                    {step<4&&<div style={{width:window.innerWidth<600?16:40,height:2,background:formStep>step?accent:(isDark?"rgba(255,255,255,0.1)":"#e0e0e0"),borderRadius:1,transition:"background 0.2s"}}/>}
+                    {step<4&&<div style={{flex:1,height:3,background:formStep>step?accent:(isDark?"rgba(255,255,255,0.1)":"#e0e0e0"),borderRadius:2,transition:"background 0.2s",minWidth:8}}/>}
                   </div>
                 ))}
               </div>
-              <div style={{height:3,borderRadius:2,background:isDark?"rgba(255,255,255,0.06)":"#e9ecef",overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:2,background:`linear-gradient(90deg,${accent},#8b5cf6)`,width:`${(formStep/4)*100}%`,transition:"width 0.3s ease"}}/>
-              </div>
+              <div style={{fontSize:12,color:muted,textAlign:"center",fontWeight:600}}>{formStep} / 4 단계</div>
             </div>
 
             {/* ══════ Step 1: Source Selection ══════ */}
             {formStep===1 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>글 작성 방식을 선택하세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>소스를 선택하면 해당 입력창이 나타납니다</div>
-                <div className="ai-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:18}}>
+                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어떻게 시작할까요?</div>
+                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>아래 3가지 중 편한 방법을 선택하세요</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))",gap:14,marginBottom:22}}>
                   {[
-                    {id:"link",title:"링크로 작성",desc:"뉴스 기사, 유튜브 링크를 넣으면 주제를 자동으로 채워드려요",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="link"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
-                    {id:"file",title:"파일로 작성",desc:"이미지, PDF, 문서 파일을 분석해서 글의 소재로 활용합니다",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="file"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
-                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 글을 작성합니다",iconSvg:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={sourceType==="topic"?accent:muted} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
+                    {id:"link",title:"링크로 작성",desc:"뉴스 기사나 유튜브 링크를 넣으면 주제를 자동으로 채워드려요",color:"#7c6aff",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
+                    {id:"file",title:"파일로 작성",desc:"이미지·PDF·문서 파일을 올리면 내용을 분석해서 글을 만듭니다",color:"#ec4899",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
+                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 원하는 글을 작성합니다",color:"#22c55e",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
                   ].map(src => {
                     const isA=sourceType===src.id;
                     return (
                       <button key={src.id} onClick={()=>setSourceType(src.id)}
                         style={{
-                          padding:"20px 18px",borderRadius:14,textAlign:"left",cursor:"pointer",
-                          border:isA?`2px solid ${accent}`:`2px solid ${border}`,
-                          background:isA?accentBg:inputBg,
-                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:8,
+                          padding:"24px 20px",borderRadius:16,textAlign:"left",cursor:"pointer",
+                          border:isA?`2.5px solid ${src.color}`:`2px solid ${border}`,
+                          background:isA?(`${src.color}0d`):inputBg,
+                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:12,
+                          minHeight:160, fontFamily:"inherit",
+                          boxShadow:isA?`0 6px 20px ${src.color}22`:"none",
                         }}>
-                        <div>{src.iconSvg}</div>
-                        <div style={{fontSize:14,fontWeight:700,color:isA?accent:text}}>{src.title}</div>
-                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>{src.desc}</div>
+                        <div style={{width:56,height:56,borderRadius:14,background:`${src.color}15`,color:src.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{src.iconSvg}</div>
+                        <div style={{fontSize:17,fontWeight:800,color:isA?src.color:text,letterSpacing:-0.3}}>{src.title}</div>
+                        <div style={{fontSize:13,color:muted,lineHeight:1.6}}>{src.desc}</div>
                       </button>
                     );
                   })}
@@ -1109,15 +1110,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
                 {/* Inline: Link input */}
                 {sourceType==="link" && (
-                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("urlImportLabel")}</div>
-                    <div style={{display:"flex",gap:8}}>
+                  <div style={{marginBottom:22,padding:"20px 22px",borderRadius:14,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+                    <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>{t("urlImportLabel")}</div>
+                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
                       <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
                         onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
-                        placeholder="https://... URL 붙여넣기"
-                        style={{flex:1,padding:"11px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+                        placeholder="https:// 로 시작하는 주소를 붙여넣기"
+                        style={{flex:1,minWidth:200,padding:"14px 16px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontFamily:"inherit",outline:"none",minHeight:48}}/>
                       <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                        style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap"}}>
+                        style={{padding:"12px 24px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:accent,color:"#fff",fontSize:14,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap",minHeight:48}}>
                         {urlLoading?"불러오는 중...":"불러오기"}
                       </button>
                     </div>
@@ -1187,21 +1188,21 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                           setField("_files", newFiles);
                         }}/>
                       <button onClick={() => document.getElementById("blog-file-input")?.click()}
-                        style={{padding:"8px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"rgba(99,102,241,0.18)",color:"#a5b4fc",fontSize:12,fontWeight:800,whiteSpace:"nowrap"}}>
+                        style={{padding:"12px 24px",borderRadius:12,border:"none",cursor:"pointer",background:accent,color:"#fff",fontSize:14,fontWeight:800,whiteSpace:"nowrap",minHeight:48}}>
                         {t("fileSelect")}
                       </button>
-                      <span style={{fontSize:11,color:muted}}>여러 파일 선택 가능 -- 10MB 이하</span>
+                      <span style={{fontSize:13,color:muted}}>여러 파일 선택 가능 · 10MB 이하</span>
                     </div>
                   </div>
                 )}
 
                 {/* Inline: Topic/keyword input */}
                 {sourceType==="topic" && (
-                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>주제 / 키워드 입력</div>
+                  <div style={{marginBottom:22,padding:"20px 22px",borderRadius:14,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
+                    <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>주제 또는 키워드</div>
                     <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
-                      placeholder="글의 주제나 키워드를 입력하세요"
-                      style={{...IS,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
+                      placeholder="예) 봄철 캠핑 준비물 추천"
+                      style={{...IS,fontSize:15,padding:"14px 16px",minHeight:48,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
                     {fields.keyword && fields.keyword.trim() && (
                       <div style={{marginTop:8,display:"flex",gap:6}}>
                         <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
@@ -1235,7 +1236,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 )}
 
                 {/* Next button */}
-                <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                   <button onClick={async ()=>{
                     // 링크 모드: URL 입력만 해두고 불러오기 안 눌렀으면 자동 실행
                     if (sourceType==="link" && urlInput.trim() && !urlResult) {
@@ -1248,10 +1249,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     }
                     setFormStep(2);
                   }} disabled={!sourceType || urlLoading}
-                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:(!sourceType||urlLoading)?"not-allowed":"pointer",
+                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:(!sourceType||urlLoading)?"not-allowed":"pointer",
                       background:sourceType?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:sourceType?"#fff":muted,fontSize:14,fontWeight:700,opacity:(sourceType&&!urlLoading)?1:0.5,transition:"opacity 0.15s",minHeight:44}}>
-                    {urlLoading ? "링크 불러오는 중..." : "다음"}
+                      color:sourceType?"#fff":muted,fontSize:16,fontWeight:800,opacity:(sourceType&&!urlLoading)?1:0.5,transition:"opacity 0.15s",minHeight:52,display:"flex",alignItems:"center",gap:8}}>
+                    {urlLoading ? "링크 불러오는 중..." : <>다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></>}
                   </button>
                 </div>
               </div>
@@ -1260,37 +1261,40 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 2: Platform Selection ══════ */}
             {formStep===2 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>게시할 플랫폼을 선택하세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>글을 게시할 SNS 플랫폼을 선택해주세요</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
+                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어디에 올릴까요?</div>
+                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글을 게시할 플랫폼을 선택해주세요</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(140px,100%),1fr))",gap:12,marginBottom:22}}>
                   {SNS_OPTIONS.map(p => {
                     const isA=platformId===p.id;
                     return (
                       <button key={p.id} onClick={()=>setPlatformId(p.id)}
                         style={{
-                          padding:"16px 14px",borderRadius:14,cursor:"pointer",textAlign:"center",
-                          border:isA?`2px solid ${accent}`:`2px solid ${border}`,
-                          background:isA?accentBg:inputBg,
-                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+                          padding:"22px 16px",borderRadius:14,cursor:"pointer",textAlign:"center",
+                          border:isA?`2.5px solid ${p.color||accent}`:`2px solid ${border}`,
+                          background:isA?(`${p.color||"#7c6aff"}0d`):inputBg,
+                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",alignItems:"center",gap:10,
+                          minHeight:108,fontFamily:"inherit",
+                          boxShadow:isA?`0 4px 14px ${p.color||"#7c6aff"}22`:"none",
                         }}>
-                        <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted}}>
-                          {p.svg ? p.svg : <img src={p.icon} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
+                        <div style={{width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted}}>
+                          {p.svg ? p.svg : <img src={p.icon} alt="" style={{width:40,height:40,borderRadius:8,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
                         </div>
-                        <div style={{fontSize:12,fontWeight:isA?700:500,color:isA?accent:text}}>{p.label}</div>
+                        <div style={{fontSize:14,fontWeight:isA?800:600,color:isA?(p.color||accent):text,letterSpacing:-0.2}}>{p.label}</div>
                       </button>
                     );
                   })}
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
                   <button onClick={()=>setFormStep(1)}
-                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
-                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
+                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:52,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
                   <button onClick={()=>setFormStep(3)}
-                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",
-                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,minHeight:44}}>
-                    다음
+                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:"pointer",
+                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:16,fontWeight:800,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
+                    다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 </div>
               </div>
@@ -1299,32 +1303,32 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 3: Content Type + Prompt ══════ */}
             {formStep===3 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>글타입과 내용을 설정하세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>원하는 글의 유형을 선택하고 주제를 입력해주세요</div>
+                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어떤 글을 쓸까요?</div>
+                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글의 유형을 고르고 주제를 입력해주세요</div>
 
                 {/* Article type */}
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:10}}>{t("selectType")}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                <div style={{marginBottom:22}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:12}}>{t("selectType")}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(170px,100%),1fr))",gap:10}}>
                     {cfg.subtypes.map(s=>{
                       const isA=subtype===s.id;
-                      return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"12px",borderRadius:12,textAlign:"left",cursor:"pointer",border:isA?`2px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg}}>
-                        <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
-                        <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{s.label}</div>
-                        <div style={{fontSize:11,color:muted,marginTop:2}}>{s.desc}</div>
+                      return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"18px 16px",borderRadius:14,textAlign:"left",cursor:"pointer",border:isA?`2.5px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg,fontFamily:"inherit",minHeight:96,display:"flex",flexDirection:"column",gap:6,boxShadow:isA?`0 4px 14px ${accent}22`:"none"}}>
+                        <div style={{fontSize:22,marginBottom:4,lineHeight:1}}>{s.icon}</div>
+                        <div style={{fontSize:15,fontWeight:800,color:isA?accent:text,letterSpacing:-0.3}}>{s.label}</div>
+                        <div style={{fontSize:12,color:muted,lineHeight:1.5}}>{s.desc}</div>
                       </button>;
                     })}
                   </div>
                 </div>
 
                 {/* Keyword input */}
-                <div style={{marginBottom:14}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:8}}>
                     {FIELD_LABELS.keyword?.label || "키워드 / 주제"}<span style={{color:"#ef4444"}}> *</span>
                   </div>
                   <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
-                    placeholder={FIELD_LABELS.keyword?.placeholder || "글의 주제나 키워드를 입력하세요"}
-                    style={{...IS,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
+                    placeholder={FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천"}
+                    style={{...IS,fontSize:15,padding:"14px 16px",minHeight:48,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
                   {fields.keyword && fields.keyword.trim() && (
                     <div style={{marginTop:8,display:"flex",gap:6}}>
                       <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
@@ -1357,30 +1361,31 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </div>
 
                 {/* Custom prompt (extra) */}
-                <div style={{marginBottom:14}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>프롬프트 (선택)</div>
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:8}}>추가 지시사항 <span style={{fontSize:12,fontWeight:500,color:muted}}>(선택)</span></div>
                   <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
-                    placeholder="AI에게 전달할 추가 지시사항을 입력하세요. 예) 초보자도 이해할 수 있게 / 사례 중심으로 / 전문적인 톤으로"
-                    style={{...IS,resize:"none",lineHeight:1.6}}/>
+                    placeholder="AI에게 전달할 내용을 자유롭게 적어주세요. 예) 초보자도 이해할 수 있게, 사례 중심으로"
+                    style={{...IS,fontSize:15,padding:"14px 16px",resize:"none",lineHeight:1.6}}/>
                 </div>
 
-                {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
+                {error&&<div style={{fontSize:14,color:"#ef4444",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"12px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
                   {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:40}}>충전하기</button>
                   )}
                 </div>}
 
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
                   <button onClick={()=>setFormStep(2)}
-                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
-                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
+                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:52,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
                   <button onClick={()=>{if(!fields.keyword?.trim()){setError("키워드 / 주제를 입력해주세요.");return;}setError("");setFormStep(4);}} disabled={!fields.keyword?.trim()}
-                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:!fields.keyword?.trim()?"not-allowed":"pointer",
+                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:!fields.keyword?.trim()?"not-allowed":"pointer",
                       background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:700,opacity:fields.keyword?.trim()?1:0.5,minHeight:44}}>
-                    다음
+                      color:fields.keyword?.trim()?"#fff":muted,fontSize:16,fontWeight:800,opacity:fields.keyword?.trim()?1:0.5,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
+                    다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 </div>
               </div>
@@ -1389,94 +1394,62 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ Step 4: Style Settings ══════ */}
             {formStep===4 && (
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4,textAlign:"center"}}>스타일을 선택하세요</div>
-                <div style={{fontSize:12,color:muted,marginBottom:18,lineHeight:1.6,textAlign:"center"}}>글의 톤, 말투, 분량을 설정합니다</div>
+                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>마지막! 스타일을 골라주세요</div>
+                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글의 톤, 말투, 분량을 정해주세요</div>
 
                 {/* Tone */}
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>{t("selectTone")}</div>
-                  <div className="bl-tone-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{t.label}</button>;})}
+                <div style={{marginBottom:22}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>{t("selectTone")}</div>
+                  <div className="bl-tone-group" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"12px 22px",borderRadius:24,border:`2px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:14,fontWeight:isA?800:600,cursor:"pointer",minHeight:44,fontFamily:"inherit"}}>{t.label}</button>;})}
                   </div>
                 </div>
 
                 {/* Speech style */}
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>말투 선택</div>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:muted,fontSize:12,fontWeight:isA?700:400,cursor:"pointer"}}>{s.label}</button>;})}
+                <div style={{marginBottom:22}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>말투</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"12px 22px",borderRadius:24,border:`2px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:14,fontWeight:isA?800:600,cursor:"pointer",minHeight:44,fontFamily:"inherit"}}>{s.label}</button>;})}
                   </div>
                 </div>
 
                 {/* Word count / Length */}
-                <div style={{marginBottom:24}}>
-                  <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.6,marginBottom:8}}>
+                <div style={{marginBottom:28}}>
+                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>
                     {t("selectLength")}
                   </div>
-                  {initialType==="blog_insta" && (
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {cfg.wordCounts.map(w=>{
-                        const isA=wordCount===w.id;
-                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 14px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
-                          <span style={{fontSize:16,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
-                          <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
-                        </button>;
-                      })}
-                    </div>
-                  )}
-                  {initialType==="blog_youtube" && (
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {cfg.wordCounts.map(w=>{
-                        const isA=wordCount===w.id;
-                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 16px",borderRadius:20,cursor:"pointer",border:`2px solid ${isA?"#FF0000":border}`,background:isA?"rgba(255,0,0,0.1)":"transparent",whiteSpace:"nowrap"}}>
-                          <span style={{fontSize:13,fontWeight:isA?800:500,color:isA?"#FF0000":text}}>{w.label}</span>
-                        </button>;
-                      })}
-                    </div>
-                  )}
-                  {initialType==="blog_thread" && (
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {cfg.wordCounts.map(w=>{
-                        const isA=wordCount===w.id;
-                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 13px",borderRadius:12,cursor:"pointer",border:`2px solid ${isA?accentRaw:border}`,background:isA?accentBg:"transparent",minWidth:64}}>
-                          <span style={{fontSize:14,fontWeight:800,color:isA?accent:text,lineHeight:1}}>{w.label}</span>
-                          <span style={{fontSize:10,color:muted,marginTop:3,whiteSpace:"nowrap"}}>{w.desc}</span>
-                        </button>;
-                      })}
-                    </div>
-                  )}
-                  {initialType!=="blog_insta" && initialType!=="blog_youtube" && initialType!=="blog_thread" && (
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {cfg.wordCounts.map(w=>{
-                        const isA=wordCount===w.id;
-                        return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"7px 12px",borderRadius:12,cursor:"pointer",textAlign:"center",border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent"}}>
-                          <div style={{fontSize:13,fontWeight:isA?700:400,color:isA?accent:text}}>{w.label}</div>
-                          <div style={{fontSize:10,color:muted,marginTop:2}}>{w.desc}</div>
-                        </button>;
-                      })}
-                    </div>
-                  )}
+                  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                    {cfg.wordCounts.map(w=>{
+                      const isA=wordCount===w.id;
+                      return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"14px 22px",borderRadius:14,cursor:"pointer",textAlign:"left",border:`2px solid ${isA?accent:border}`,background:isA?accentBg:inputBg,minHeight:64,minWidth:120,fontFamily:"inherit",display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
+                        <div style={{fontSize:15,fontWeight:800,color:isA?accent:text,letterSpacing:-0.2}}>{w.label}</div>
+                        {w.desc && <div style={{fontSize:12,color:muted}}>{w.desc}</div>}
+                      </button>;
+                    })}
+                  </div>
                 </div>
 
-                {error&&<div style={{fontSize:12,color:"#ef4444",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>{error}
+                {error&&<div style={{fontSize:14,color:"#ef4444",marginBottom:14,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"12px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
                   {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:40}}>충전하기</button>
                   )}
                 </div>}
 
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
                   <button onClick={()=>setFormStep(3)}
-                    style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",
-                      color:muted,fontSize:14,fontWeight:700,cursor:"pointer",minHeight:44}}>
+                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
+                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:56,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
                   <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
-                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
+                    style={{padding:"16px 36px",borderRadius:14,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
                       background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:fields.keyword?.trim()?"#fff":muted,fontSize:15,fontWeight:800,
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                      opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:48}}>
-                    {loading ? (<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<span>글 생성하기 <span style={{fontSize:12,opacity:0.8,fontWeight:600,marginLeft:4,background:"rgba(255,255,255,0.15)",padding:"1px 8px",borderRadius:8}}>10P</span></span>) : (<span>1회 생성해보기</span>)}
+                      color:fields.keyword?.trim()?"#fff":muted,fontSize:17,fontWeight:800,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+                      opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:56,
+                      boxShadow:fields.keyword?.trim()?"0 8px 24px rgba(124,106,255,0.35)":"none"}}>
+                    {loading ? (<><div style={{width:20,height:20,border:"2.5px solid rgba(255,255,255,0.3)",borderTop:"2.5px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>글 생성하기 <span style={{fontSize:13,opacity:0.85,fontWeight:700,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"3px 10px",borderRadius:10}}>20P</span></>) : (<>1회 생성해보기</>)}
                   </button>
                 </div>
               </div>
@@ -1549,24 +1522,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             ];
             const filtered = snsCat === "all" ? SNS_LIST : SNS_LIST.filter(p => p.cat === snsCat);
             const tabStyle = (active) => ({
-              padding:"5px 12px",borderRadius:16,border:"none",
-              background:active?(isDark?"rgba(124,106,255,0.15)":"#7c6aff"):"transparent",
-              color:active?"#fff":(isDark?"rgba(255,255,255,0.45)":"#888"),
-              fontSize:11,fontWeight:active?700:500,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",
+              padding:"10px 18px",borderRadius:24,border:"none",
+              background:active?(isDark?"rgba(124,106,255,0.2)":"#7c6aff"):"transparent",
+              color:active?"#fff":(isDark?"rgba(255,255,255,0.55)":"#666"),
+              fontSize:13,fontWeight:active?800:600,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",
+              minHeight:40,
             });
             return (
               <>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
                   {SNS_CATS.map(c => (
                     <button key={c.id} onClick={() => setSnsCat(c.id)} style={tabStyle(snsCat===c.id)}>{c.label}</button>
                   ))}
                 </div>
-                <div className="bl-sns-platform-group" style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <div className="bl-sns-platform-group" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(120px,100%),1fr))",gap:8}}>
                   {filtered.map(p => (
                     <button key={p.id} onClick={() => setPlatformId(p.id)}
-                      style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:platformId===p.id?700:500,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),transition:"all 0.15s"}}>
-                      <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:3,objectFit:"contain"}} />
-                      {p.label}
+                      style={{padding:"12px 14px",borderRadius:12,border:`2px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):(isDark?"rgba(255,255,255,0.03)":"#fff"),cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:13,fontWeight:platformId===p.id?800:600,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.75)":"#444"),transition:"all 0.15s",minHeight:48,fontFamily:"inherit"}}>
+                      <img src={p.icon} alt="" style={{width:22,height:22,borderRadius:5,objectFit:"contain",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>
+                      <span style={{textOverflow:"ellipsis",overflow:"hidden",whiteSpace:"nowrap"}}>{p.label}</span>
                     </button>
                   ))}
                 </div>

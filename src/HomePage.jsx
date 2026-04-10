@@ -83,6 +83,120 @@ function FaqItem({ q, a, C }) {
   );
 }
 
+/* ── 추상 SVG mockup: 실제 스크린샷 대용 (지금 서비스 형태 반영) ── */
+function MockupAiHome() {
+  // 큰 카드 그리드 형태 (현재 AI 홈)
+  const cards = [
+    { x: 30, y: 80, c: "#7c6aff" },
+    { x: 270, y: 80, c: "#8b5cf6" },
+    { x: 510, y: 80, c: "#ec4899" },
+    { x: 30, y: 200, c: "#ef4444" },
+    { x: 270, y: 200, c: "#22c55e" },
+    { x: 510, y: 200, c: "#f59e0b" },
+  ];
+  return (
+    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
+      <defs>
+        <linearGradient id="mh-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fafafa"/>
+          <stop offset="1" stopColor="#f4f3ff"/>
+        </linearGradient>
+      </defs>
+      <rect width="760" height="360" fill="url(#mh-bg)"/>
+      {/* 헤더 텍스트 */}
+      <rect x="240" y="22" width="280" height="14" rx="3" fill="#1a1a2e" opacity="0.85"/>
+      <rect x="290" y="46" width="180" height="9" rx="2" fill="#1a1a2e" opacity="0.35"/>
+      {/* 카드 6개 */}
+      {cards.map((card, i) => (
+        <g key={i}>
+          <rect x={card.x} y={card.y} width="220" height="100" rx="14" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
+          <rect x={card.x + 18} y={card.y + 22} width="56" height="56" rx="14" fill={card.c} fillOpacity="0.12"/>
+          <circle cx={card.x + 46} cy={card.y + 50} r="14" fill={card.c} fillOpacity="0.6"/>
+          <rect x={card.x + 88} y={card.y + 28} width="100" height="11" rx="2" fill="#1a1a2e" opacity="0.85"/>
+          <rect x={card.x + 88} y={card.y + 48} width="120" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
+          <rect x={card.x + 88} y={card.y + 60} width="80" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function MockupBlogWriter() {
+  // 글쓰기 wizard: 진행 바 + 글 입력 영역
+  return (
+    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
+      <defs>
+        <linearGradient id="bw-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f8f7ff"/>
+          <stop offset="1" stopColor="#fff"/>
+        </linearGradient>
+      </defs>
+      <rect width="760" height="360" fill="url(#bw-bg)"/>
+      {/* 진행 바 */}
+      <g transform="translate(60, 30)">
+        {[0, 1, 2, 3].map(i => (
+          <g key={i}>
+            <circle cx={i * 200 + 16} cy="16" r="16" fill={i <= 1 ? "#7c6aff" : "#e5e7eb"}/>
+            <text x={i * 200 + 16} y="21" fontSize="13" fontWeight="700" fill={i <= 1 ? "#fff" : "#999"} textAnchor="middle">{i + 1}</text>
+            {i < 3 && <rect x={i * 200 + 36} y="14" width="160" height="4" rx="2" fill={i < 1 ? "#7c6aff" : "#e5e7eb"}/>}
+          </g>
+        ))}
+      </g>
+      {/* 주제 입력 영역 */}
+      <rect x="60" y="100" width="640" height="46" rx="12" fill="#fff" stroke="#7c6aff" strokeWidth="1.5"/>
+      <rect x="80" y="118" width="180" height="11" rx="2" fill="#1a1a2e" opacity="0.65"/>
+      {/* 글타입 카드 4개 */}
+      {[0, 1, 2, 3].map(i => (
+        <g key={i}>
+          <rect x={60 + i * 165} y="170" width="150" height="84" rx="12" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
+          <rect x={75 + i * 165} y="186" width="32" height="32" rx="8" fill="#7c6aff" fillOpacity="0.12"/>
+          <rect x={75 + i * 165} y="228" width="100" height="9" rx="2" fill="#1a1a2e" opacity="0.7"/>
+          <rect x={75 + i * 165} y="240" width="70" height="7" rx="2" fill="#1a1a2e" opacity="0.3"/>
+        </g>
+      ))}
+      {/* 생성 버튼 */}
+      <rect x="280" y="290" width="200" height="44" rx="12" fill="#7c6aff"/>
+      <rect x="340" y="307" width="80" height="11" rx="2" fill="#fff"/>
+    </svg>
+  );
+}
+
+function MockupDetailPage() {
+  // 상세페이지 섹션 형태
+  return (
+    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
+      <defs>
+        <linearGradient id="dp-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff5f8"/>
+          <stop offset="1" stopColor="#fff"/>
+        </linearGradient>
+        <linearGradient id="dp-hero" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8b5cf6"/>
+          <stop offset="1" stopColor="#ec4899"/>
+        </linearGradient>
+      </defs>
+      <rect width="760" height="360" fill="url(#dp-bg)"/>
+      {/* 히어로 섹션 */}
+      <rect x="60" y="30" width="640" height="120" rx="14" fill="url(#dp-hero)"/>
+      <rect x="90" y="60" width="220" height="14" rx="3" fill="#fff" opacity="0.95"/>
+      <rect x="90" y="84" width="320" height="9" rx="2" fill="#fff" opacity="0.7"/>
+      <rect x="90" y="100" width="280" height="9" rx="2" fill="#fff" opacity="0.7"/>
+      <rect x="90" y="118" width="100" height="22" rx="11" fill="#fff"/>
+      {/* 콘텐츠 섹션 3개 */}
+      {[0, 1, 2].map(i => (
+        <g key={i}>
+          <rect x={60 + i * 220} y="170" width="200" height="160" rx="12" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
+          <rect x={76 + i * 220} y="188" width="168" height="80" rx="8" fill="#8b5cf6" fillOpacity={0.08 + i * 0.04}/>
+          <circle cx={160 + i * 220} cy="228" r="20" fill="#8b5cf6" fillOpacity="0.4"/>
+          <rect x={76 + i * 220} y="282" width="120" height="10" rx="2" fill="#1a1a2e" opacity="0.75"/>
+          <rect x={76 + i * 220} y="300" width="160" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
+          <rect x={76 + i * 220} y="312" width="100" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /* ── Before/After 비교 카드 ── */
 function BeforeAfterCard({ before, after, C, lang }) {
   return (
@@ -222,7 +336,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e" }} />
               <span style={{ flex: 1, textAlign: "center", fontSize: 10, color: C.muted, fontWeight: 600 }}>snsmakeit.com</span>
             </div>
-            <img src="/screenshots/ai-home.png" alt="SNS메이킷 AI 생성기" fetchpriority="high" loading="lazy" style={{ width: "100%", display: "block", marginTop: 32 }} />
+            <div style={{ marginTop: 32 }}><MockupAiHome /></div>
           </div>
         </div>
 
@@ -438,7 +552,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 </p>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <img src="/screenshots/blog-writer.png" alt="블로그 글쓰기 UI" loading="lazy" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
+                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
+                  <MockupBlogWriter />
+                </div>
               </div>
             </div>
           </FadeIn>
@@ -456,7 +572,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 </p>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <img src="/screenshots/cardnews.png" alt="상세페이지 제작 UI" loading="lazy" style={{ width: "100%", borderRadius: "12px 12px 0 0", display: "block", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }} />
+                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
+                  <MockupDetailPage />
+                </div>
               </div>
             </div>
           </FadeIn>
