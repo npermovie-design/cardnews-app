@@ -74,15 +74,15 @@ export default async function handler(req, res) {
   try {
     // URL 시크릿 토큰 검증 (LS signing secret 미사용 시 x-signature 체크 불가)
     const url = new URL(req.url, `https://${req.headers.host}`);
-    const token = url.searchParams.get("token");
-    const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    const token = (url.searchParams.get("token") || "").trim();
+    const secret = (process.env.LEMONSQUEEZY_WEBHOOK_SECRET || "").trim();
 
     if (!secret) {
       console.error("[LS] Auth failed — LEMONSQUEEZY_WEBHOOK_SECRET env var NOT SET on Vercel");
       return res.status(401).json({ error: "Server misconfigured" });
     }
     if (token !== secret) {
-      console.error(`[LS] Auth failed — token mismatch. token_len=${token?.length}, secret_len=${secret.length}, token_prefix=${token?.slice(0,6)}, secret_prefix=${secret.slice(0,6)}`);
+      console.error(`[LS] Auth failed — token mismatch (len ${token.length} vs ${secret.length})`);
       return res.status(401).json({ error: "Unauthorized" });
     }
 
