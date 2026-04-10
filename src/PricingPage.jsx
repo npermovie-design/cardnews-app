@@ -88,16 +88,34 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     p("pFeatCommunity"), p("pFeatPostPt"), p("pFeatLoginPt"),
   ];
   const PLANS = SUB_PLANS.map(pl => {
-    // 플랜별 차별화 기능만 (공통 기능 제외)
-    const unique = pl.features.filter(f => !COMMON_FEATURES.includes(f));
-    const translatedUnique = pl.free
-      ? [p("pFeatSignup200") || "가입 보너스 100P 지급"]
-      : [p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()), ...unique.filter(f => !f.startsWith("매월"))];
+    // 포인트 기반으로 사용 횟수 자동 계산 (i18n 지원)
+    // 단가: 글쓰기 20P, 상세페이지 45P, 이미지 200P, 쇼츠 180P
+    const writes = Math.floor(pl.points / 20);
+    const details = Math.floor(pl.points / 45);
+    const images = Math.floor(pl.points / 200);
+    const shorts = Math.floor(pl.points / 180);
+    let featList;
+    if (pl.free) {
+      featList = [p("pFeatSignup200") || "가입 시 100P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
+    } else {
+      featList = [
+        p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
+        p("pFeatWriteN").replace("{n}", writes.toLocaleString()),
+        p("pFeatDetailN").replace("{n}", details.toLocaleString()),
+        p("pFeatImageN").replace("{n}", images.toLocaleString()),
+      ];
+      if (pl.id === "pro" || pl.id === "premium") {
+        featList.push(p("pFeatShortsN").replace("{n}", shorts.toLocaleString()));
+      }
+      if (pl.id === "premium") {
+        featList.push(p("pFeatUnlimitedWrite") || "자동 글쓰기 무제한");
+      }
+    }
     return {
       ...pl,
-      badge: pl.id==="pro" ? p("recommend") : pl.badge,
+      badge: pl.id === "pro" ? p("recommend") : (pl.id === "premium" ? (lang === "ko" ? "최고 가성비" : "Best value") : pl.badge),
       btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
-      features: translatedUnique,
+      features: featList,
     };
   });
   const FAQ = [
