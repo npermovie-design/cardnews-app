@@ -96,7 +96,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     const shorts = Math.floor(pl.points / 180);
     let featList;
     if (pl.free) {
-      featList = [p("pFeatSignup200") || "가입 시 100P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
+      featList = [p("pFeatSignup200") || "가입 시 50P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
     } else {
       featList = [
         p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),

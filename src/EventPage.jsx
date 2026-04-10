@@ -31,8 +31,8 @@ export default function EventPage({ C, navigate }) {
             "After posting, submit your review link via Contact Us",
           ],
       howTo: ko
-        ? "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 카드뉴스, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 4,500P 지급!"
-        : "1. Sign up for SNS MakeIt\n2. Use AI features (blog, card news, images, etc.)\n3. Post a review on your social media\n4. Submit review link via Contact Us\n5. Get 4,500P after verification!",
+        ? "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 상세페이지, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 4,500P 지급!"
+        : "1. Sign up for SNS MakeIt\n2. Use AI features (blog, detail pages, images, etc.)\n3. Post a review on your social media\n4. Submit review link via Contact Us\n5. Get 4,500P after verification!",
     },
     {
       id: 2,

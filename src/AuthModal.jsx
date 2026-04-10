@@ -149,7 +149,7 @@ export default function AuthModal({ onClose, onAuth, C }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>{ko ? "SNS메이킷" : "SNS MakeIt"}</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 100P 지급 · AI 생성 비회원 5회 무료" : "Get 100P on signup · 5 free AI generations for guests"}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 50P 지급 · AI 생성 비회원 5회 무료" : "Get 50P on signup · 5 free AI generations for guests"}</div>
         </div>
 
         <div style={{ display: "flex", marginBottom: 24, background: C.toggleBg, borderRadius: 10, padding: 4 }}>
@@ -247,14 +247,14 @@ export default function AuthModal({ onClose, onAuth, C }) {
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>{ko ? "가입 혜택" : "Signup Benefits"}</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
-                  ·가입 즉시 <b style={{ color: C.text }}>100P</b> 지급 (AI 10회 분량)<br/>
-                  ·게시글 작성 시 <b style={{ color: C.text }}>2P</b> 적립<br/>
-                  ·출석체크 시 <b style={{ color: C.text }}>3P</b> 적립<br/>
-                  ·포인트 충전으로 AI 무제한 이용
+                  · 가입 즉시 <b style={{ color: C.text }}>50P</b> 지급<br/>
+                  · 게시글 작성 시 <b style={{ color: C.text }}>+1P</b> (하루 10회)<br/>
+                  · 매일 로그인 시 <b style={{ color: C.text }}>+2P</b><br/>
+                  · 포인트 충전으로 AI 무제한 이용
                 </> : <>
-                  · <b style={{ color: C.text }}>100P</b> on signup (10 AI uses)<br/>
-                  · <b style={{ color: C.text }}>2P</b> per post<br/>
-                  · <b style={{ color: C.text }}>3P</b> daily check-in<br/>
+                  · <b style={{ color: C.text }}>50P</b> on signup<br/>
+                  · <b style={{ color: C.text }}>+1P</b> per post (up to 10/day)<br/>
+                  · <b style={{ color: C.text }}>+2P</b> daily login<br/>
                   · Unlimited AI with point top-up
                 </>}
               </div>

@@ -124,7 +124,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
           {ko ? "SNS 콘텐츠 제작의 모든 것, 지금 바로 시작해보세요" : "All your SNS content creation starts now"}
         </div>
 
-        {/* 100P 카드 */}
+        {/* 50P 카드 */}
         <div style={{
           background: "linear-gradient(135deg, rgba(124,106,255,0.15), rgba(236,72,153,0.1))",
           border: "1px solid rgba(124,106,255,0.35)",
@@ -134,10 +134,10 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             {ko ? "가입 축하 보너스" : "Signup bonus"}
           </div>
           <div style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(135deg,#a5b4fc,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>
-            +100 P
+            +50 P
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-            {ko ? "AI 글쓰기 약 5회 · 이미지 생성 0.5회 가능" : "~5 AI writes · 0.5 image generations"}
+            {ko ? "AI 글쓰기 약 2~3회 분량" : "~2-3 AI writes"}
           </div>
         </div>
 
@@ -145,8 +145,8 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
             { icon: "1", text: ko ? "AI 글쓰기 20P · 이미지 200P부터" : "AI writing from 20P · Images from 200P" },
-            { icon: "2", text: ko ? "게시글 작성 시 +1P 자동 적립" : "Earn +1P for every post" },
-            { icon: "3", text: ko ? "출석체크로 매일 +2P 적립 가능" : "Daily check-in earns +2P" },
+            { icon: "2", text: ko ? "게시글 작성 시 +1P 자동 적립 (하루 10회)" : "Earn +1P per post (up to 10/day)" },
+            { icon: "3", text: ko ? "매일 로그인 +2P 적립" : "Daily login earns +2P" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
@@ -457,18 +457,18 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI 카드뉴스·블로그·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
+      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
       en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", snsnews:"SNS News" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", snsnews:"SNSニュース" },
     };
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료!",
+        home: "주제만 입력하면 AI가 블로그, 상세페이지, 쇼츠 영상을 자동으로 만들어드려요. 비회원 5회 무료!",
         pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
-        ai: "AI로 블로그, 카드뉴스, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
+        ai: "AI로 블로그, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
       },
@@ -1000,17 +1000,17 @@ export default function App() {
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "linear-gradient(90deg,#7c6aff,#8b5cf6)" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 1회=10P · {Math.floor((user.points||0)/10)}회 생성 가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 20P · 약 {Math.floor((user.points||0)/20)}회 가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "🔴", label: "출석체크", sub: "매일 +3P · 연속 보너스", action: () => { setShowAttendance(true); setProfileOpen(false); } },
+                      { icon: "L", label: "출석체크", sub: "매일 로그인 +2P", action: () => { setShowAttendance(true); setProfileOpen(false); } },
                       { icon: "P", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "📁", label: "내 보관함", sub: "생성한 글·카드뉴스", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
-                      { icon: "👤", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
-                      ...(user.role==="admin" ? [{ icon: "⚙️", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
+                      { icon: "F", label: "내 보관함", sub: "생성한 글·이미지", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
+                      { icon: "U", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
+                      ...(user.role==="admin" ? [{ icon: "A", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
                       <button key={i} onClick={m.action}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
