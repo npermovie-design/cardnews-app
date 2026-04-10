@@ -42,12 +42,22 @@ async function handleSitemap(req, res) {
     const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(2000);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
-      postUrls = posts.map(p => ({
-        url: `/community/${p.subCat || "info"}/post-${p.id}`,
-        priority: "0.5",
-        freq: "monthly",
-        lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
-      }));
+      const now = Date.now();
+      const D30 = 30 * 86400 * 1000;
+      const D180 = 180 * 86400 * 1000;
+      postUrls = posts.map(p => {
+        const ts = p.created_at ? new Date(p.created_at).getTime() : now;
+        const age = now - ts;
+        let priority = "0.4", freq = "monthly";
+        if (age < D30) { priority = "0.8"; freq = "weekly"; }
+        else if (age < D180) { priority = "0.6"; freq = "monthly"; }
+        return {
+          url: `/community/${p.subCat || "info"}/post-${p.id}`,
+          priority,
+          freq,
+          lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
+        };
+      });
     }
   } catch (e) { console.log("Sitemap error:", e.message); }
 

@@ -5,6 +5,62 @@ const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY;
 const SITE_URL = "https://snsmakeit.com";
 
+// HTML 태그 + 마크다운 문법 제거 → 평문
+function stripMdHtml(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s{0,3}[-*+]\s+/gm, "")
+    .replace(/^\s{0,3}\d+\.\s+/gm, "")
+    .replace(/^\s*[-*_]{3,}\s*$/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+function extractFirstImageUrl(content) {
+  if (!content) return "";
+  const html = String(content);
+  const imgTag = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgTag) return imgTag[1];
+  const mdImg = html.match(/!\[[^\]]*\]\(([^)\s]+)/);
+  if (mdImg) return mdImg[1];
+  return "";
+}
+
+function extractKeywords(title, plainBody, catName) {
+  const text = `${title || ""} ${plainBody || ""}`;
+  const tokens = (text.match(/[가-힣]{2,}|[A-Za-z]{3,}/g) || []);
+  const STOP = new Set(["그리고","그러나","하지만","때문","위해","대한","있는","있다","합니다","입니다","된다","이다","것은","이것","그것","오늘","어제","내일","through","about","which","their","there","would","could","should","https","http","www","com"]);
+  const freq = new Map();
+  for (const t of tokens) {
+    const k = t.toLowerCase();
+    if (STOP.has(k) || k.length < 2) continue;
+    freq.set(k, (freq.get(k) || 0) + 1);
+  }
+  const top = [...freq.entries()].sort((a,b) => b[1]-a[1]).slice(0, 8).map(([w]) => w);
+  const base = ["SNS메이킷"];
+  if (catName) base.push(catName);
+  return [...base, ...top].join(", ");
+}
+
 async function sbQuery(table, query) {
   if (!SB_URL || !SB_KEY) return null;
   try {
@@ -26,8 +82,9 @@ export default async function handler(req) {
   let description = "SNS메이킷 사용자들과 정보를 공유하고 소통하는 커뮤니티입니다.";
   let image = `${SITE_URL}/og-image.png`;
   let canonicalUrl = `${SITE_URL}${path}`;
+  let keywords = "SNS메이킷, 커뮤니티, AI 콘텐츠";
 
-  const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실" };
+  const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실", sns_briefing: "SNS 브리핑" };
   if (segments[1]) {
     title = `${catNames[segments[1]] || "커뮤니티"} - SNS메이킷 커뮤니티`;
   }
@@ -39,13 +96,16 @@ export default async function handler(req) {
     const post = await sbQuery("posts", `select=title,content,images,author,created_at&id=eq.${postId}`);
     canonicalUrl = `${SITE_URL}/community/${segments[1] || "info"}/post-${postId}`;
     if (post) {
-      const bodyText = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 300);
-      fullBody = (post.content || "").replace(/<[^>]*>/g, "").substring(0, 2000);
-      title = `${post.title} - SNS메이킷`;
-      description = bodyText || description;
+      const catName = catNames[segments[1]] || "커뮤니티";
+      const plainBody = stripMdHtml(post.content || "");
+      const titleClean = stripMdHtml(post.title || "").slice(0, 70);
+      fullBody = plainBody.slice(0, 2000);
+      title = `${titleClean} | ${catName} - SNS메이킷`;
+      description = (plainBody.replace(/\n/g, " ").slice(0, 155) + (plainBody.length > 155 ? "..." : "")) || description;
       const imgs = Array.isArray(post.images) ? post.images : [];
-      if (imgs.length > 0) image = imgs[0];
-      postData = post;
+      image = imgs[0] || extractFirstImageUrl(post.content) || image;
+      keywords = extractKeywords(titleClean, plainBody, catName);
+      postData = { ...post, title: titleClean };
     } else {
       // Supabase 실패 시에도 URL 기반 최소 정보 제공
       title = `게시글 #${postId} - SNS메이킷`;
@@ -97,6 +157,7 @@ export default async function handler(req) {
 <meta charset="UTF-8">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
+<meta name="keywords" content="${esc(keywords)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${esc(canonicalUrl)}">
 <meta property="og:type" content="article">
@@ -129,6 +190,7 @@ ${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
       const ogMeta = `
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
+<meta name="keywords" content="${esc(keywords)}">
 <link rel="canonical" href="${esc(canonicalUrl)}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="${esc(canonicalUrl)}">

@@ -98,6 +98,84 @@ const CRAWLERS = /Googlebot|bingbot|Yandex|Baiduspider|facebookexternalhit|Faceb
 const KAKAO_SCRAP = /kakaotalk-scrap|kakaostory-og-reader/i;
 const KAKAO_INAPP = /KAKAOTALK\s/i;
 
+// 카테고리별 폴백 OG 이미지 (post.images 비어있고 본문 이미지도 없을 때)
+const CAT_FALLBACK_IMG = {
+  info: `${SITE}/og-image.png`,
+  qna: `${SITE}/og-image.png`,
+  free: `${SITE}/og-image.png`,
+  review: `${SITE}/og-image.png`,
+  archive: `${SITE}/og-image.png`,
+  sns_briefing: `${SITE}/og-image.png`,
+};
+
+// HTML 태그 + 마크다운 문법 제거 → 검색엔진/SNS 스크래퍼가 읽기 좋은 평문
+function stripMdHtml(s) {
+  if (!s) return "";
+  return String(s)
+    // HTML 주석/스크립트/스타일 제거
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    // 코드블럭/인라인코드
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]*)`/g, "$1")
+    // 이미지 마크다운 ![alt](url) → alt
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // 링크 마크다운 [text](url) → text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    // 헤딩(##), 인용(>), 리스트 마커, 수평선
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s{0,3}[-*+]\s+/gm, "")
+    .replace(/^\s{0,3}\d+\.\s+/gm, "")
+    .replace(/^\s*[-*_]{3,}\s*$/gm, "")
+    // 강조 ** __ * _ ~~
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    // 남은 HTML 태그
+    .replace(/<[^>]+>/g, " ")
+    // HTML entity 일부
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    // 공백 정리
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+// 본문에서 첫 이미지 URL 추출 (HTML img + 마크다운 ![](url) 모두 지원)
+function extractFirstImageUrl(content) {
+  if (!content) return "";
+  const html = String(content);
+  const imgTag = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgTag) return imgTag[1];
+  const mdImg = html.match(/!\[[^\]]*\]\(([^)\s]+)/);
+  if (mdImg) return mdImg[1];
+  return "";
+}
+
+// 제목 + 본문에서 한글/영문 키워드 자동 추출 (2글자 이상 단어, 빈도 상위)
+function extractKeywords(title, plainBody, catName) {
+  const text = `${title || ""} ${plainBody || ""}`;
+  // 한글 2글자+ / 영문 3글자+
+  const tokens = (text.match(/[가-힣]{2,}|[A-Za-z]{3,}/g) || []);
+  const STOP = new Set(["그리고","그러나","하지만","때문","위해","대한","있는","있다","합니다","입니다","된다","이다","것은","이것","그것","오늘","어제","내일","through","about","which","their","there","would","could","should","https","http","www","com"]);
+  const freq = new Map();
+  for (const t of tokens) {
+    const k = t.toLowerCase();
+    if (STOP.has(k) || k.length < 2) continue;
+    freq.set(k, (freq.get(k) || 0) + 1);
+  }
+  const top = [...freq.entries()].sort((a,b) => b[1]-a[1]).slice(0, 8).map(([w]) => w);
+  const base = ["SNS메이킷"];
+  if (catName) base.push(catName);
+  return [...base, ...top].join(", ");
+}
+
 export default async function middleware(request) {
   const ua = request.headers.get("user-agent") || "";
 
@@ -120,18 +198,25 @@ export default async function middleware(request) {
     try {
       const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
       const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
-      const res = await fetch(`${sbUrl}/rest/v1/posts?id=eq.${postId}&select=title,content,images,author`, {
+      const res = await fetch(`${sbUrl}/rest/v1/posts?id=eq.${postId}&select=title,content,images,author,created_at`, {
         headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
       });
       const data = await res.json();
       const post = data?.[0];
       if (post) {
-        title = `${post.title} - SNS메이킷 ${catName}`;
-        const plainBody = (post.content || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
-        desc = plainBody.slice(0, 155) + (plainBody.length > 155 ? "..." : "");
-        image = post.images?.[0] || DEFAULT_OG.image;
-        keywords = `SNS메이킷, ${catName}, ${post.title}`;
-        bodyContent = `<article><h2>${post.title}</h2><p>${plainBody}</p>${post.author ? `<span>작성자: ${post.author}</span>` : ""}</article>`;
+        const plainBody = stripMdHtml(post.content || "");
+        const titleClean = stripMdHtml(post.title || "").slice(0, 70);
+        title = `${titleClean} | ${catName} - SNS메이킷`;
+        // 첫 의미 있는 문장(들) 우선, 없으면 앞부분 컷
+        const firstChunk = plainBody.replace(/\n/g, " ").slice(0, 155);
+        desc = firstChunk + (plainBody.length > 155 ? "..." : "");
+        // 이미지: post.images[0] → 본문에서 추출 → 카테고리 폴백
+        image = (Array.isArray(post.images) && post.images[0])
+          || extractFirstImageUrl(post.content)
+          || CAT_FALLBACK_IMG[catId]
+          || DEFAULT_OG.image;
+        keywords = extractKeywords(titleClean, plainBody, catName);
+        bodyContent = `<article><h2>${esc(titleClean)}</h2>${post.author ? `<p><strong>작성자:</strong> ${esc(post.author)}</p>` : ""}<p>${esc(plainBody.slice(0, 2000))}</p></article>`;
       }
     } catch {}
   }

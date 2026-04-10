@@ -16,17 +16,84 @@ const DEFAULT_CATS = [
 ];
 
 /* ─── SEO: 게시글 메타태그 업데이트 헬퍼 ──────────────────── */
+// HTML + 마크다운 문법 모두 제거 → 평문
+function stripMdHtml(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s{0,3}[-*+]\s+/gm, "")
+    .replace(/^\s{0,3}\d+\.\s+/gm, "")
+    .replace(/^\s*[-*_]{3,}\s*$/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\r/g, "")
+    .replace(/\n{2,}/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+function extractKeywordsBoard(title, plainBody, catName) {
+  const text = `${title || ""} ${plainBody || ""}`;
+  const tokens = (text.match(/[가-힣]{2,}|[A-Za-z]{3,}/g) || []);
+  const STOP = new Set(["그리고","그러나","하지만","때문","위해","대한","있는","있다","합니다","입니다","된다","이다","것은","이것","그것","오늘","어제","내일","through","about","which","their","there","would","could","should","https","http","www","com"]);
+  const freq = new Map();
+  for (const t of tokens) {
+    const k = t.toLowerCase();
+    if (STOP.has(k) || k.length < 2) continue;
+    freq.set(k, (freq.get(k) || 0) + 1);
+  }
+  const top = [...freq.entries()].sort((a,b) => b[1]-a[1]).slice(0, 8).map(([w]) => w);
+  const base = ["SNS메이킷"];
+  if (catName) base.push(catName);
+  return [...base, ...top].join(", ");
+}
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실", sns_briefing: "SNS 브리핑" };
+
 function updatePostSeoMeta(post, catId) {
   if (!post) return;
-  const plainBody = (post.body || "").replace(/<[^>]*>/g, "").slice(0, 155);
-  document.title = `${post.title} - SNS메이킷 커뮤니티`;
+  const catName = CAT_LABEL_MAP[catId] || "커뮤니티";
+  const titleClean = stripMdHtml(post.title || "").slice(0, 70);
+  const plainBody = stripMdHtml(post.body || post.content || "");
+  const desc = plainBody.replace(/\n/g, " ").slice(0, 155) + (plainBody.length > 155 ? "..." : "");
+  const fullTitle = `${titleClean} | ${catName} - SNS메이킷`;
+  document.title = fullTitle;
   const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.content = val; };
-  setMeta('meta[name="description"]', plainBody);
-  setMeta('meta[property="og:title"]', `${post.title} - SNS메이킷`);
-  setMeta('meta[property="og:description"]', plainBody);
+  const setOrCreateMeta = (name, attr, val) => {
+    let el = document.querySelector(`meta[${attr}="${name}"]`);
+    if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
+    el.content = val;
+  };
+  setMeta('meta[name="description"]', desc);
+  setOrCreateMeta("keywords", "name", extractKeywordsBoard(titleClean, plainBody, catName));
+  setMeta('meta[property="og:title"]', fullTitle);
+  setMeta('meta[property="og:description"]', desc);
   setMeta('meta[property="og:url"]', `https://snsmakeit.com/community/${catId}/post-${post.id}`);
-  const thumb = extractThumb(post.body || "") || (post.images && post.images[0]) || "";
-  if (thumb) setMeta('meta[property="og:image"]', thumb);
+  setMeta('meta[property="og:type"]', "article");
+  setMeta('meta[name="twitter:title"]', fullTitle);
+  setMeta('meta[name="twitter:description"]', desc);
+  // canonical
+  let canon = document.querySelector('link[rel="canonical"]');
+  if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
+  canon.href = `https://snsmakeit.com/community/${catId}/post-${post.id}`;
+  // 이미지: post.images[0] → 본문 첫 이미지 → 기존 og 유지
+  const thumb = (Array.isArray(post.images) && post.images[0]) || extractThumb(post.body || post.content || "") || "";
+  if (thumb) {
+    setMeta('meta[property="og:image"]', thumb);
+    setMeta('meta[name="twitter:image"]', thumb);
+  }
 }
 function resetBoardSeoMeta() {
   document.title = "SNS메이킷 - 커뮤니티";
