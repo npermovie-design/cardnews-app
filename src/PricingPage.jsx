@@ -131,6 +131,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               const item = orderAttrs?.first_order_item;
               const planName = item?.product_name || "";
               const receiptUrl = orderAttrs?.urls?.receipt || null;
+              // LS 기본 성공 모달 즉시 닫기 (우리 커스텀 모달 표시)
+              try { window.LemonSqueezy?.Url?.Close?.(); } catch(e) {}
               handleCheckoutSuccess(planName, receiptUrl);
             }
           },
