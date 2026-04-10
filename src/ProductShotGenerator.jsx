@@ -192,24 +192,39 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
     }
 
     setError(""); setResults([]); setGenProgress(0); setStep(2);
-    try {
-      const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset });
-      const imgs = [];
-      for (let i = 0; i < imgCount; i++) {
-        const img = await generateProductShot(prompt, productImg.b64, productImg.mime);
+    const prompt = buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, count, extraDesc, sizePreset });
+    const imgs = [];
+    let firstError = "";
+    // 이미지 요청 최대 2회 재시도 (탭 전환으로 끊기는 케이스 대응)
+    const genWithRetry = async (retries = 2) => {
+      let lastErr;
+      for (let a = 0; a <= retries; a++) {
+        try { return await generateProductShot(prompt, productImg.b64, productImg.mime); }
+        catch (e) { lastErr = e; if (a < retries) await new Promise(r => setTimeout(r, 800 * (a + 1))); }
+      }
+      throw lastErr;
+    };
+    for (let i = 0; i < imgCount; i++) {
+      try {
+        const img = await genWithRetry();
         imgs.push(img);
         setResults([...imgs]);
         setGenProgress(i + 1);
+      } catch(e) {
+        if (!firstError) firstError = e.message;
       }
-      if (user) {
-        const updated = await changePoints(user.uid, -cost, `제품컷 생성 (${imgCount}장)`);
-        if (updated !== null && onUserUpdate) onUserUpdate({ ...user, points: updated });
-      }
-      setStep(3);
-    } catch(e) {
-      setError("생성 실패: " + e.message);
-      setStep(1);
     }
+    if (imgs.length === 0) {
+      // 전부 실패: step 2 유지 + 에러 + 재시도 버튼
+      setError(firstError || "생성 실패. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    if (user) {
+      const successCost = Math.round(cost * (imgs.length / imgCount));
+      const updated = await changePoints(user.uid, -successCost, `제품컷 생성 (${imgs.length}장)`);
+      if (updated !== null && onUserUpdate) onUserUpdate({ ...user, points: updated });
+    }
+    setStep(3);
   };
 
   const handleDownload = (imgSrc, idx = 0) => {
@@ -314,6 +329,15 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
                   <img src={img} alt={`${i+1}`} className="pixel-reveal" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                 </div>
               ))}
+            </div>
+          )}
+          {error && (
+            <div style={{ marginTop:16, padding:"12px 14px", borderRadius:10, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", textAlign:"left" }}>
+              <div style={{ fontSize:12, color:"#f87171", fontWeight:700, marginBottom:6 }}>{error}</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => { setError(""); handleGenerate(); }} style={{ flex:1, padding:"9px 14px", borderRadius:8, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${accent},#ea580c)`, color:"#fff", fontSize:12, fontWeight:800 }}>다시 시도</button>
+                <button onClick={() => { setError(""); setStep(1); }} style={{ padding:"9px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>설정 변경</button>
+              </div>
             </div>
           )}
         </div>

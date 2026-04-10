@@ -110,10 +110,23 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
     const basePrompt = `Professional ${STYLE_GUIDES[selStyle] || "logo"}. Brand: "${name.trim()}". Industry: ${industry}.${desc ? ` Description: ${desc}.` : ""}${colorPref ? ` Colors: ${colorPref}.` : ""} Background: ${bgColor === "dark" ? "dark" : "white/light"}. High quality, centered, commercial use, no watermarks, square format, single logo only.`;
 
     const vers = new Array(genCount).fill(null);
+    let firstError = "";
+    // 각 요청 최대 2회 재시도 (탭 전환으로 일시 끊기는 경우 대응)
+    const callWithRetry = async (prompt, img, mime, retries = 2) => {
+      let lastErr;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try { return await callAPI(prompt, img, mime); }
+        catch (e) {
+          lastErr = e;
+          if (attempt < retries) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+        }
+      }
+      throw lastErr;
+    };
     for (let i = 0; i < genCount; i++) {
       setGenIdx(i);
       try {
-        const raw = await callAPI(
+        const raw = await callWithRetry(
           basePrompt + ` (variation ${i + 1})`,
           i === 0 ? refImage : null,
           i === 0 ? refMime : null
@@ -125,7 +138,8 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
       } catch (e) {
         vers[i] = null;
         setResults([...vers]);
-        if (i === 0) { setError(e.message); setStep(1); return; }
+        if (!firstError) firstError = e.message;
+        // 자동 리셋 제거: 첫 요청이 실패해도 step 유지하고 나머지도 시도
       }
     }
     setGenIdx(-1);
@@ -134,6 +148,11 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
       changePoints(user.uid, -(successCount * 10), `로고 생성 (${successCount}버전)`).then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(() => {});
+    }
+    if (successCount === 0) {
+      // 전부 실패: step 2에 머무르며 에러 + 재시도 버튼 표시
+      setError(firstError || "생성 실패. 잠시 후 다시 시도해주세요.");
+      return;
     }
     setSelResult(vers.findIndex(v => v !== null));
     setStep(3);
@@ -285,6 +304,15 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
             })}
           </div>
           <div style={{ fontSize:11, color:muted, lineHeight:1.7 }}>각 버전은 약 10~20초 소요됩니다.<br/>페이지를 닫지 말고 기다려주세요.</div>
+          {error && (
+            <div style={{ marginTop:16, padding:"12px 14px", borderRadius:10, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", textAlign:"left" }}>
+              <div style={{ fontSize:12, color:"#f87171", fontWeight:700, marginBottom:6 }}>생성 실패: {error}</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => { setError(""); generate(); }} style={{ flex:1, padding:"9px 14px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#06b6d4,#0891b2)", color:"#fff", fontSize:12, fontWeight:800 }}>다시 시도</button>
+                <button onClick={() => { setError(""); setStep(1); }} style={{ padding:"9px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>설정 변경</button>
+              </div>
+            </div>
+          )}
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pixelReveal{0%{filter:blur(20px) saturate(0.3);opacity:0.3}30%{filter:blur(10px) saturate(0.6);opacity:0.6}60%{filter:blur(4px) saturate(0.8);opacity:0.85}100%{filter:blur(0) saturate(1);opacity:1}}.pixel-reveal{animation:pixelReveal 1.2s ease-out forwards}`}</style>
       </div>

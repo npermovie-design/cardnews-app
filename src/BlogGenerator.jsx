@@ -355,7 +355,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   const generate = async () => {
-    if (!fields.keyword?.trim()) { setError("키워드 / 주제를 입력해주세요."); return; }
+    // 주제 자동 폴백: 링크면 urlResult.title, 파일이면 첫 파일명으로
+    if (!fields.keyword?.trim()) {
+      if (sourceType === "link" && urlResult?.title) {
+        setField("keyword", urlResult.title.slice(0, 80));
+        fields.keyword = urlResult.title.slice(0, 80);
+      } else if (sourceType === "file" && fields._files?.length) {
+        const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60) || "";
+        setField("keyword", fallback);
+        fields.keyword = fallback;
+      } else {
+        setError("주제를 입력해주세요."); return;
+      }
+    }
     if (!user && guestLimitExceeded()) return;
     if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage(); // 비회원: 즉시 사용 횟수 차감
@@ -1224,11 +1236,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
                 {/* Next button */}
                 <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-                  <button onClick={()=>setFormStep(2)} disabled={!sourceType}
-                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:!sourceType?"not-allowed":"pointer",
+                  <button onClick={async ()=>{
+                    // 링크 모드: URL 입력만 해두고 불러오기 안 눌렀으면 자동 실행
+                    if (sourceType==="link" && urlInput.trim() && !urlResult) {
+                      await fetchFromUrl();
+                    }
+                    // 파일 모드: 파일은 있는데 keyword가 비어있으면 첫 파일명으로 폴백
+                    if (sourceType==="file" && !fields.keyword?.trim() && fields._files?.length) {
+                      const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60);
+                      if (fallback) setField("keyword", fallback);
+                    }
+                    setFormStep(2);
+                  }} disabled={!sourceType || urlLoading}
+                    style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:(!sourceType||urlLoading)?"not-allowed":"pointer",
                       background:sourceType?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:sourceType?"#fff":muted,fontSize:14,fontWeight:700,opacity:sourceType?1:0.5,transition:"opacity 0.15s",minHeight:44}}>
-                    다음
+                      color:sourceType?"#fff":muted,fontSize:14,fontWeight:700,opacity:(sourceType&&!urlLoading)?1:0.5,transition:"opacity 0.15s",minHeight:44}}>
+                    {urlLoading ? "링크 불러오는 중..." : "다음"}
                   </button>
                 </div>
               </div>

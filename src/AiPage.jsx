@@ -673,7 +673,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {keywords:["편집","배경제거","보정"],menu:"image_edit",label:"이미지 편집"},
               {keywords:["모델","인물"],menu:"model_gen",label:"AI 모델"},
               {keywords:["얼굴","face"],menu:"face_swap",label:"얼굴 교체"},
-              {keywords:["발행","자동","auto"],menu:"auto_publish",label:"자동 발행"},
             ];
             const popularKeywords = ["블로그 글쓰기","상세페이지","이미지 생성","쇼츠 편집","인스타그램","로고 생성"];
             const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
@@ -713,46 +712,33 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           })()}
 
           {/* 기능 아이콘 */}
-          <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:20, margin:"32px 0 40px", flexWrap:"wrap" }}>
+          <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:16, margin:"32px 0 40px", flexWrap:"wrap" }}>
             {features_.map(f => (
-              <div key={f.menu} onClick={() => setAiMenu(f.menu)}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s", position:"relative" }}
+              <div key={f.menu} role="button" tabIndex={0} onClick={() => setAiMenu(f.menu)}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") setAiMenu(f.menu); }}
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s", position:"relative", padding:"8px 12px", borderRadius:14, minWidth:76, minHeight:88 }}
                 onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                <div style={{ width:52, height:52, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border: f.isNew ? "2px solid #7c6aff" : `1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow: f.isNew ? "0 4px 16px rgba(124,106,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <img src={f.icon} alt="" loading="lazy" decoding="async" style={{ width:28, height:28, objectFit:"contain" }} />
+                <div style={{ width:56, height:56, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border: f.isNew ? "2px solid #7c6aff" : `1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow: f.isNew ? "0 4px 16px rgba(124,106,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <img src={f.icon} alt="" loading="lazy" decoding="async" style={{ width:30, height:30, objectFit:"contain" }} />
                 </div>
-                {f.isNew && <span style={{ position:"absolute", top:-6, right:-6, fontSize:8, fontWeight:800, color:"#fff", background:"linear-gradient(135deg,#7c6aff,#ec4899)", padding:"2px 5px", borderRadius:6 }}>NEW</span>}
+                {f.isNew && <span style={{ position:"absolute", top:-2, right:-2, fontSize:8, fontWeight:800, color:"#fff", background:"linear-gradient(135deg,#7c6aff,#ec4899)", padding:"2px 5px", borderRadius:6 }}>NEW</span>}
                 <span style={{ fontSize:12, fontWeight:600, color: f.isNew ? "#7c6aff" : homeText }}>{f.title}</span>
               </div>
             ))}
           </div>
 
-          {/* 영상 제작 + 소셜 플래너 배너 (가로 2열, 모바일 1열) */}
-          <div className="ai-home-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
-            <div onClick={() => setAiMenu("shorts_make")}
-              style={{ padding:"18px 20px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:12, transition:"all 0.15s" }}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-              <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
-              </div>
-              <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video")}</div>
-                <div style={{ fontSize:11, color:homeMuted }}>{_s("유튜브 → 쇼츠 자동","YouTube → Auto Shorts")}</div>
-              </div>
-              <span style={{ fontSize:9, fontWeight:700, color:"#7c6aff", padding:"3px 6px", borderRadius:5, background:isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
+          {/* AI 자동 영상 제작 배너 (소셜 플래너 배너 제거됨 — 기능 철거) */}
+          <div onClick={() => setAiMenu("shorts_make")}
+            style={{ padding:"18px 20px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", marginBottom:20, minHeight:64 }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            <div style={{ width:44, height:44, borderRadius:12, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
             </div>
-            <button onClick={() => setAiMenu("social_planner")}
-              style={{ padding:"18px 20px", borderRadius:16, border:`1px solid ${cardBdr}`, background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.03)", cursor:"pointer", display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", textAlign:"left" }}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-              <div style={{ width:42, height:42, borderRadius:12, background:isDark?"rgba(124,106,255,0.15)":"rgba(124,106,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <span style={{ fontSize:20 }}>📅</span>
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:2 }}>소셜 플래너</div>
-                <div style={{ fontSize:11, color:homeMuted }}>업로드 일정 관리</div>
-              </div>
-              <span style={{ fontSize:14, color:"#7c6aff", fontWeight:700, flexShrink:0 }}>→</span>
-            </button>
+            <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
+              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video")}</div>
+              <div style={{ fontSize:12, color:homeMuted }}>{_s("유튜브 링크 → AI가 쇼츠 자동 편집","YouTube → Auto Shorts")}</div>
+            </div>
+            <span style={{ fontSize:10, fontWeight:700, color:"#7c6aff", padding:"3px 8px", borderRadius:6, background:isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
           </div>
 
         </div>

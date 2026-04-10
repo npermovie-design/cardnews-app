@@ -28,3 +28,45 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+/* ───── 모바일 터치 UX 글로벌 기본값 ─────
+   모바일에서 버튼/클릭 타겟이 작거나 간격이 좁아 누르기 어려운 문제 해결.
+   Apple HIG / Material Design 권장: 최소 44x44 (iOS) / 48x48 (Android).
+   기존 inline style이 있는 경우는 그대로 덮어쓰지 않고 최소값만 보장. */
+@media (max-width: 768px) {
+  /* 터치 반응 개선: 탭 딜레이 제거 */
+  html {
+    -webkit-tap-highlight-color: rgba(124, 106, 255, 0.15);
+    touch-action: manipulation;
+  }
+  /* 모든 클릭 가능 요소 최소 터치 영역 보장
+     (inline min-height/min-width가 있는 경우엔 그게 우선) */
+  button,
+  [role="button"],
+  a.btn,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 42px;
+    touch-action: manipulation;
+  }
+  /* input/textarea 모바일 iOS 줌인 방지 (16px 이하면 자동 줌) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+  /* 스크롤 영역 부드러운 관성 스크롤 */
+  .ai-scroll,
+  .board-scroll,
+  [data-scroll="smooth"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 작은 모바일 (360px 이하 — 갤럭시 A 시리즈 등) 추가 보정 */
+@media (max-width: 380px) {
+  /* 사이드바/드로어 버튼 간격 완화 */
+  .ai-sidebar-mobile button {
+    min-height: 44px;
+  }
+}

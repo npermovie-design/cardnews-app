@@ -197,15 +197,27 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
       ? `text logo "${logoText.trim()}", clean professional typography`
       : "the uploaded logo image (use as color/style reference, apply creatively to product)";
 
+    // 각 요청 최대 2회 재시도 (탭 전환으로 끊기는 경우 대응)
+    const genWithRetry = async (retries = 2) => {
+      let lastErr;
+      for (let a = 0; a <= retries; a++) {
+        try { return await generateMockup(logoDesc, typeId, logoB64, logoMime); }
+        catch (e) { lastErr = e; if (a < retries) await new Promise(r => setTimeout(r, 800 * (a + 1))); }
+      }
+      throw lastErr;
+    };
     let successCount = 0;
-    for (const typeId of selTypes) {
+    let firstError = "";
+    let typeId;
+    for (typeId of selTypes) {
       setCurGen(typeId);
       try {
-        const img = await generateMockup(logoDesc, typeId, logoB64, logoMime);
+        const img = await genWithRetry();
         setResults(prev => ({ ...prev, [typeId]: img }));
         successCount++;
       } catch (e) {
         setResults(prev => ({ ...prev, [typeId]: null }));
+        if (!firstError) firstError = e.message;
         console.error(typeId, e);
       }
       setGenQueue(prev => prev.filter(t => t !== typeId));
@@ -215,6 +227,11 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
       changePoints(user.uid, -(successCount * 10), `목업 생성 (${successCount}종)`).then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(() => {});
+    }
+    if (successCount === 0) {
+      // 전부 실패: step 2 유지 + 에러 + 재시도 버튼
+      setError(firstError || "생성 실패. 잠시 후 다시 시도해주세요.");
+      return;
     }
     setStep(3);
   };
@@ -410,6 +427,15 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
             <div style={{ height:"100%", borderRadius:4, background:`linear-gradient(90deg,${ACC},#6d28d9)`, width:`${pct}%`, transition:"width 0.6s ease" }}/>
           </div>
           <div style={{ fontSize:12, color:muted, marginBottom:14 }}>{done}/{total} 완료 · {Math.max(total-done,0)}개 남음</div>
+          {error && (
+            <div style={{ padding:"12px 14px", borderRadius:10, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", textAlign:"left", marginBottom:14 }}>
+              <div style={{ fontSize:12, color:"#f87171", fontWeight:700, marginBottom:6 }}>{error}</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => { setError(""); generate(); }} style={{ flex:1, padding:"9px 14px", borderRadius:8, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#6d28d9)`, color:"#fff", fontSize:12, fontWeight:800 }}>다시 시도</button>
+                <button onClick={() => { setError(""); setStep(1); }} style={{ padding:"9px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>설정 변경</button>
+              </div>
+            </div>
+          )}
 
           {/* 목록 */}
           <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:220, overflowY:"auto", textAlign:"left" }}>
