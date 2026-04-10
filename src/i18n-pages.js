@@ -158,7 +158,7 @@ export const PAGE_T = {
     // ── Pricing ──
     pricingBadge: "✦ 요금제",
     pricingTitle: "포인트로 자유롭게 사용하세요",
-    pricingSub: "AI 글쓰기 · 카드뉴스 = 10P · 상세페이지 슬라이드 1장 = 30P",
+    pricingSub: "AI 글쓰기 = 20P · 이미지 생성 = 200P · 상세페이지 = 45P",
     pricingMyPoints: "내 포인트",
     pricingSubTab: "월 구독", pricingOneoffTab: "단건구매",
     pricingMonthly: "월간", pricingYearly: "연간", pricingYearlyDiscount: "20% 할인",
@@ -171,8 +171,8 @@ export const PAGE_T = {
     pricingBuy: "구매하기",
     pricingFreeMethod: "💰 무료 포인트 적립 방법",
     pricingSignup: "회원가입", pricingSignupPts: "+100P", pricingSignupDesc: "가입 즉시",
-    pricingPost: "게시글 작성", pricingPostPts: "+2P", pricingPostDesc: "글 1개당",
-    pricingDaily: "출석체크", pricingDailyPts: "+3P", pricingDailyDesc: "하루 1회",
+    pricingPost: "게시글 작성", pricingPostPts: "+1P", pricingPostDesc: "글 1개당",
+    pricingDaily: "출석체크", pricingDailyPts: "+2P", pricingDailyDesc: "하루 1회",
     pricingFaqTitle: "자주 묻는 질문",
     pricingToast: "🔧 결제 서비스 준비 중입니다. 곧 오픈될 예정이에요!",
     // Pricing features & FAQ
@@ -372,7 +372,7 @@ export const PAGE_T = {
 
     // Pricing
     pricingBadge: "✦ Pricing", pricingTitle: "Use Freely with Points",
-    pricingSub: "AI Writing · Card News = 10P · Detail Page Slide = 30P",
+    pricingSub: "AI Writing = 20P · Image = 200P · Detail Page = 45P",
     pricingMyPoints: "My Points", pricingSubTab: "Subscription", pricingOneoffTab: "One-time",
     pricingMonthly: "Monthly", pricingYearly: "Yearly", pricingYearlyDiscount: "20% OFF",
     pricingFree: "Free", pricingPerMonth: "/mo", pricingPerMonthPts: "P/mo",
@@ -383,8 +383,8 @@ export const PAGE_T = {
     pricingBuy: "Buy Now",
     pricingFreeMethod: "💰 Free Points Methods",
     pricingSignup: "Sign Up", pricingSignupPts: "+100P", pricingSignupDesc: "Instant",
-    pricingPost: "Write Post", pricingPostPts: "+2P", pricingPostDesc: "Per post",
-    pricingDaily: "Daily Check-in", pricingDailyPts: "+3P", pricingDailyDesc: "Once/day",
+    pricingPost: "Write Post", pricingPostPts: "+1P", pricingPostDesc: "Per post",
+    pricingDaily: "Daily Check-in", pricingDailyPts: "+2P", pricingDailyDesc: "Once/day",
     pricingFaqTitle: "FAQ",
     pricingToast: "🔧 Payment service coming soon!",
     pFeatSns: "SNS Writing (Naver/Tistory/Instagram/YouTube/Threads)",
