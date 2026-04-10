@@ -1,7 +1,7 @@
 // NaverBot SaaS - 라이선스 검증
 // 클라이언트가 앱 시작 시 + 봇 실행 직전 호출
 
-import { setCors, safeError, validateLicenseKey, verifyLicense } from "./_lib.js";
+import { setCors, safeError, validateLicenseKey, verifyLicense } from "../../lib/naverbot/index.js";
 
 export default async function handler(req, res) {
   setCors(req, res);
