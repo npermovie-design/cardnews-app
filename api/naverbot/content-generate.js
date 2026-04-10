@@ -21,26 +21,41 @@ function lengthToMaxTokens(len) {
 }
 
 function buildPrompts({ topic, length, stylePrompt, autoTitle, autoHashtag }) {
-  const system = `당신은 네이버 블로그 글 작성 전문가입니다.
+  const system = `당신은 네이버 블로그 글 작성 + SEO 카피라이팅 전문가입니다.
 사용자의 글쓰기 스타일을 정확히 따라 자연스러운 블로그 글을 작성합니다.
 
 출력 형식 (반드시 준수):
 [TITLE]
-제목 한 줄 (30자 이내, 검색 친화적)
+제목 한 줄 (30~40자, 호기심 후킹형)
+
+[IMAGE_KEYWORDS]
+keyword1, keyword2, keyword3 (영어, 일반적인 사진 검색용 단어, 쉼표 구분)
 
 [BODY]
 본문 (목표 ${length}자 ±10%)
 ${autoHashtag ? "\n[TAGS]\n태그1, 태그2, 태그3 (5~10개, 쉼표 구분, # 없이)" : ""}
 
-규칙:
+== 제목 작성 규칙 (매우 중요) ==
+- 절대 주제를 그대로 반복하거나 비슷하게 쓰지 말 것
+- 숫자/구체수치/감정 트리거/궁금증 자극 활용
+- 좋은 예: "월 50만원 아끼는 사장님 비밀, 모르면 손해보는 절세 팁 5가지"
+- 나쁜 예: "1인 사업자 절세 팁" (주제 그대로)
+
+== 이미지 키워드 규칙 ==
+- 본문 내용과 직접 연관된 영어 단어 3개
+- Pexels/Unsplash 같은 사진 사이트에서 검색 잘 되는 일반 명사
+- 좋은 예: "small business owner, korean office, money calculator"
+- 나쁜 예: "절세, 1인사업자" (한글), "abstract concept" (추상)
+
+== 본문 규칙 ==
 - 이모지 사용 금지
-- 마크다운(##, **, -) 사용 금지 (네이버는 일반 텍스트만 받음)
-- 단락 사이는 빈 줄로 구분
-- 제목/소제목/본문 구분 명확하게`;
+- 마크다운(#, ##, **, -, *, 1.) 절대 사용 금지 — 네이버는 일반 텍스트만 받음
+- 소제목은 일반 텍스트로 한 줄, 빈 줄로 구분
+- 단락 사이는 빈 줄로 구분`;
 
   const user = `주제: ${topic}
 
-${stylePrompt ? `글쓰기 스타일/규칙:\n${stylePrompt}\n\n` : ""}위 주제로 ${length}자 분량의 네이버 블로그 글을 작성해주세요.`;
+${stylePrompt ? `글쓰기 스타일/규칙:\n${stylePrompt}\n\n` : ""}위 주제로 ${length}자 분량의 네이버 블로그 글을 작성해주세요. 제목은 호기심을 자극하는 후킹 문구로, 주제를 그대로 반복하지 마세요.`;
 
   return { system, user };
 }
@@ -71,6 +86,7 @@ function stripMarkdown(text) {
 
 function parseResponse(text, fallbackTopic, autoHashtag) {
   const titleMatch = text.match(/\[TITLE\]\s*\n([^\n]+)/);
+  const keywordsMatch = text.match(/\[IMAGE_KEYWORDS\]\s*\n([^\n]+)/);
   const bodyMatch = text.match(/\[BODY\]\s*\n([\s\S]+?)(?=\n\[TAGS\]|$)/);
   const tagsMatch = text.match(/\[TAGS\]\s*\n([^\n]+)/);
 
@@ -79,6 +95,14 @@ function parseResponse(text, fallbackTopic, autoHashtag) {
 
   const title = stripMarkdown(rawTitle).slice(0, 60);
   const body = stripMarkdown(rawBody);
+
+  const imageKeywords = keywordsMatch
+    ? keywordsMatch[1]
+        .split(/[,，]/)
+        .map((k) => k.trim())
+        .filter((k) => k && /^[\x00-\x7F\s]+$/.test(k)) // ASCII만 (영어 단어)
+        .slice(0, 3)
+    : [];
 
   const tags =
     autoHashtag && tagsMatch
@@ -89,7 +113,36 @@ function parseResponse(text, fallbackTopic, autoHashtag) {
           .slice(0, 10)
       : [];
 
-  return { title, body, tags };
+  return { title, body, tags, imageKeywords };
+}
+
+// ── Pexels 이미지 검색 ──
+async function searchImages(keywords) {
+  const PEXELS_KEY = process.env.PEXELS_KEY;
+  if (!PEXELS_KEY || !keywords.length) return [];
+
+  const results = [];
+  for (const kw of keywords) {
+    try {
+      const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(kw)}&per_page=1&orientation=landscape`;
+      const r = await fetch(url, {
+        headers: { Authorization: PEXELS_KEY.trim() },
+      });
+      if (!r.ok) continue;
+      const data = await r.json();
+      const photo = data?.photos?.[0];
+      if (photo?.src?.large) {
+        results.push({
+          url: photo.src.large,
+          alt: photo.alt || kw,
+          keyword: kw,
+        });
+      }
+    } catch (e) {
+      console.error("[naverbot] Pexels 검색 실패:", e.message);
+    }
+  }
+  return results;
 }
 
 export default async function handler(req, res) {
@@ -180,7 +233,10 @@ export default async function handler(req, res) {
 
   const post = parseResponse(aiText, topic, auto_hashtag === true);
 
-  // 5. 사용량 로깅 (실패해도 응답엔 영향 없음)
+  // 5. Pexels 이미지 검색 (실패해도 빈 배열 반환)
+  const images = await searchImages(post.imageKeywords);
+
+  // 6. 사용량 로깅 (실패해도 응답엔 영향 없음)
   supabase
     .from("naverbot_posts_log")
     .insert({
@@ -198,6 +254,7 @@ export default async function handler(req, res) {
     title: post.title,
     body: post.body,
     tags: post.tags,
+    images,
     quota: { used: quota.used + 1, limit: quota.limit },
   });
 }
