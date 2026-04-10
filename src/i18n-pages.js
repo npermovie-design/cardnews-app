@@ -71,8 +71,8 @@ export const PAGE_T = {
     priceBadge: "Pricing", priceTitle: "합리적인 포인트 시스템", priceSub: "비회원도 5회 무료! 포인트 충전으로 더 많이 사용하세요.",
     p1title: "비회원 무료", p1point: "10회", p1desc: "로그인 없이 AI 생성기 5회 무료 체험", p1btn: "무료 체험하기",
     p2title: "회원 가입", p2point: "100P 지급", p2desc: "가입 즉시 100P 지급 + 게시글·로그인 포인트 적립", p2btn: "무료 회원가입",
-    p3title: "Standard 충전", p3point: "3,500P", p3desc: "19,900원 · AI 350회 분량 · 유효기간 없음", p3btn: "충전하기",
-    p4title: "Pro 충전", p4point: "9,500P", p4desc: "49,900원 · AI 950회 분량 · 우선 고객지원", p4btn: "충전하기",
+    p3title: "Standard 충전", p3point: "3,500P", p3desc: "$19.90 · AI 350회 분량 · 유효기간 없음", p3btn: "충전하기",
+    p4title: "Pro 충전", p4point: "9,500P", p4desc: "$49.90 · AI 950회 분량 · 우선 고객지원", p4btn: "충전하기",
     recommend: "추천",
 
     // ── 차별점 ──

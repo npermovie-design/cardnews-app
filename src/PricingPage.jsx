@@ -27,42 +27,45 @@ const SUB_PLANS = [
   },
   {
     id: "basic", name: "Basic", icon: "B",
-    monthlyPrice: 9900, yearlyPrice: 95040,
+    monthlyPrice: 9.9, yearlyPrice: 99,
     points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
     features: ["매월 1,800P 충전", "AI 글쓰기 약 90회", "상세페이지 생성 약 90회", "이미지 생성 약 9회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
-    lsId: "3b6ec806-5a9b-4202-9892-200f105da896",
+    lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
+    lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
   },
   {
     id: "pro", name: "Pro", icon: "P",
-    monthlyPrice: 19900, yearlyPrice: 191040,
+    monthlyPrice: 19.9, yearlyPrice: 199,
     points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
     features: ["매월 3,800P 충전", "AI 글쓰기 약 190회", "상세페이지 생성 약 190회", "이미지 생성 약 19회", "숏폼 편집 약 11회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
-    lsId: "70530971-234f-4f73-a6da-54616181454b",
+    lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
+    lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
   },
   {
     id: "premium", name: "Premium", icon: "P",
-    monthlyPrice: 34900, yearlyPrice: 335040,
+    monthlyPrice: 34.9, yearlyPrice: 349,
     points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
     features: ["매월 7,000P 충전", "AI 글쓰기 약 350회", "상세페이지 생성 약 350회", "이미지 생성 약 35회", "숏폼 편집 약 20회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
     btnLabel: "시작하기",
-    lsId: "8ba35046-dc8b-4916-8cb5-57fc1c403c61",
+    lsId: "ff405644-34fc-415e-b003-e657030484b9",
+    lsIdYearly: "fbe69e26-a806-4c86-b36f-5b4e61a4f43d",
   },
 ];
 
 const ONE_OFF_PLANS = [
-  { id:"pack1", name:"Starter",  amount:5900,  points:1000,  highlight:false, perPoint:"5.9",  lsId:"1e5bf013-565c-4022-9218-00259887ed5b" },
-  { id:"pack2", name:"Basic",    amount:11900, points:2000,  highlight:false, perPoint:"5.95", lsId:"5e542965-183e-4232-9cc0-183be9bb790e" },
-  { id:"pack3", name:"Standard", amount:19900, points:3500,  highlight:true,  perPoint:"5.69", lsId:"46325b76-0e75-414d-b1ae-7f9f62d317e3" },
-  { id:"pack4", name:"Plus",     amount:29900, points:5500,  highlight:false, perPoint:"5.44", lsId:"10cdc05b-b5b3-44f5-b161-7d1901f5c612" },
-  { id:"pack5", name:"Pro",      amount:49900, points:9500,  highlight:false, perPoint:"5.25", bestValue:true, lsId:"eda8f9a2-a7e8-444e-84cf-0638a4d5398f" },
+  { id:"pack1", name:"Starter",  amount:5.9,  points:1000,  highlight:false, perPoint:"0.59", lsId:"6cd384b2-95a9-4fb6-87e4-2c2bf5dd3a9b" },
+  { id:"pack2", name:"Basic",    amount:11.9, points:2000,  highlight:false, perPoint:"0.60", lsId:"de7d098b-9ef7-4673-ba7e-cfe61858be66" },
+  { id:"pack3", name:"Standard", amount:19.9, points:3500,  highlight:true,  perPoint:"0.57", lsId:"7593e698-c3ca-4abf-b6a3-e2e50f645591" },
+  { id:"pack4", name:"Plus",     amount:29.9, points:5500,  highlight:false, perPoint:"0.54", lsId:"b302ef23-b9ec-450b-9ec8-958c3a587b30" },
+  { id:"pack5", name:"Pro",      amount:49.9, points:9500,  highlight:false, perPoint:"0.53", bestValue:true, lsId:"8c88e4c6-52c6-430f-87dd-c7de12d91e50" },
 ];
 
 // FAQ는 컴포넌트 안에서 번역 함수로 동적 생성
@@ -140,7 +143,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   const handleBuy = (plan, isYearly = false) => {
     if (!user) { onLogin?.(); return; }
     if (plan.free) return;
-    openCheckout(plan.lsId, plan.name);
+    const lsId = isYearly ? plan.lsIdYearly : plan.lsId;
+    if (!lsId) {
+      showToast(isYearly ? "연간 결제 준비 중입니다" : "결제 준비 중입니다");
+      return;
+    }
+    openCheckout(lsId, plan.name);
   };
 
   const handleOneOff = (plan) => {
@@ -201,13 +209,29 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 구독 탭 */}
       {tab === "subscription" && (
         <>
-          {/* 월간/연간 토글 - 연간 플랜 미지원으로 숨김 처리 */}
+          {/* 월간/연간 토글 */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+            <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
+              {[
+                ["monthly", lang === "ko" ? "월간" : "Monthly"],
+                ["yearly", lang === "ko" ? "연간 (2개월 무료)" : "Yearly (2 months free)"],
+              ].map(([id, label]) => (
+                <button key={id} onClick={() => setBilling(id)}
+                  style={{ padding: "9px 22px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+                    background: billing === id ? (isDark ? "#1e2a4a" : "#fff") : "transparent",
+                    color: billing === id ? C.purpleL : C.muted,
+                    boxShadow: billing === id ? "0 2px 8px rgba(0,0,0,0.12)" : "none" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 플랜 카드 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))", gap: 16, marginBottom: 56 }}>
             {PLANS.map(plan => {
               const isYearly = billing === "yearly";
-              const price = isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
+              const price = isYearly ? (plan.yearlyPrice / 12) : plan.monthlyPrice;
               const isLoading = loading === plan.id + (isYearly ? "_y" : "");
 
               return (
@@ -229,11 +253,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   ) : (
                     <>
                       <div style={{ fontSize: 32, fontWeight: 900, color: plan.color, lineHeight: 1, marginBottom: 2 }}>
-                        ₩{price.toLocaleString()}
+                        ${price.toFixed(2)}
                       </div>
                       <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
-                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{lang === "ko" ? `연 ₩${plan.yearlyPrice.toLocaleString()} 청구` : `₩${plan.yearlyPrice.toLocaleString()}/year`}</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{lang === "ko" ? `연 $${plan.yearlyPrice.toFixed(0)} 청구` : `$${plan.yearlyPrice.toFixed(0)}/year billed`}</div>
                       )}
                     </>
                   )}
@@ -374,10 +398,10 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 onMouseLeave={e => e.currentTarget.style.transform = "none"}>
                 {plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", marginBottom: 4 }}>{p("bestValue")}</div>}
                 {plan.highlight && !plan.bestValue && <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", marginBottom: 4 }}>{p("pricingPopular")}</div>}
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>₩{plan.amount.toLocaleString()}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff" }}>${plan.amount.toFixed(2)}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{plan.points.toLocaleString()} <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>P</span></div>
                 <div style={{ fontSize: 11, color: C.muted }}>{p("pricingApprox")}{Math.floor(plan.points/20)}{p("pricingUses")}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: plan.bestValue ? "#f59e0b" : "#7c6aff", marginTop: 4 }}>1P당 {plan.perPoint}원</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: plan.bestValue ? "#f59e0b" : "#7c6aff", marginTop: 4 }}>{plan.perPoint}¢ / P</div>
                 <div style={{ marginTop: 6, width: "100%" }}>
                   {PAYMENT_ENABLED === false && (
                     <div style={{ textAlign: "center", marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.3)" }}>

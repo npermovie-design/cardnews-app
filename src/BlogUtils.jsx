@@ -1028,7 +1028,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
             { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
           ] : [
             { icon:"💳", title:"포인트 충전" },
-            { icon:"🔥", title:"Deluxe 플랜", desc:"₩19,900 / 9,500P" },
+            { icon:"🔥", title:"Deluxe 플랜", desc:"$19.90 / 9,500P" },
             { icon:"P", title:"무료 적립", desc:"게시글 작성 1P" },
             { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
           ]).map((item, i) => (
