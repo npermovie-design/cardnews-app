@@ -207,7 +207,7 @@ async function handleIndexNow(req, res) {
     const r = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: [fullUrl] }),
+      body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `${SITE}/${KEY}.txt`, urlList: [fullUrl] }),
     });
     results.indexnow = { status: r.status, ok: r.ok };
   } catch (e) { results.indexnow = { error: e.message }; }
@@ -239,7 +239,7 @@ async function handleBulkIndex(req, res) {
       try {
         const r = await fetch("https://api.indexnow.org/indexnow", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: batch }),
+          body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `${SITE}/${KEY}.txt`, urlList: batch }),
         });
         results.push({ batch: Math.floor(i / batchSize) + 1, count: batch.length, status: r.status });
       } catch (e) { results.push({ batch: Math.floor(i / batchSize) + 1, error: e.message }); }
@@ -340,7 +340,7 @@ HEADLINE: [7개 중 검색량/관심도 가장 높은 핵심 이슈를 SEO 친�
       await fetch("https://api.indexnow.org/indexnow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ host: "snsmakeit.com", key: KEY, urlList: ["https://snsmakeit.com/snsnews"] }),
+        body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `https://snsmakeit.com/${KEY}.txt`, urlList: ["https://snsmakeit.com/snsnews"] }),
       });
     } catch {}
 

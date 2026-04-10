@@ -35,6 +35,14 @@ function stripMdHtml(s) {
     .trim();
 }
 
+function isUsableOgImage(url) {
+  if (!url) return false;
+  const u = String(url).split("?")[0].toLowerCase();
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|avif)$/i.test(u)) return true;
+  if (/\.(pdf|mp4|mov|avi|webm|mkv|m4v|mp3|wav|ogg|zip|hwp|docx?|pptx?|xlsx?)$/i.test(u)) return false;
+  return true;
+}
+
 function extractFirstImageUrl(content) {
   if (!content) return "";
   const html = String(content);
@@ -103,7 +111,9 @@ export default async function handler(req) {
       title = `${titleClean} | ${catName} - SNS메이킷`;
       description = (plainBody.replace(/\n/g, " ").slice(0, 155) + (plainBody.length > 155 ? "..." : "")) || description;
       const imgs = Array.isArray(post.images) ? post.images : [];
-      image = imgs[0] || extractFirstImageUrl(post.content) || image;
+      const firstUsable = imgs.find(isUsableOgImage);
+      const bodyImg = extractFirstImageUrl(post.content);
+      image = firstUsable || (isUsableOgImage(bodyImg) ? bodyImg : "") || image;
       keywords = extractKeywords(titleClean, plainBody, catName);
       postData = { ...post, title: titleClean };
     } else {

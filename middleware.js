@@ -147,6 +147,16 @@ function stripMdHtml(s) {
     .trim();
 }
 
+// URL이 og:image로 사용 가능한 이미지인지 (PDF/영상/오디오 제외)
+function isUsableOgImage(url) {
+  if (!url) return false;
+  const u = String(url).split("?")[0].toLowerCase();
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|avif)$/i.test(u)) return true;
+  if (/\.(pdf|mp4|mov|avi|webm|mkv|m4v|mp3|wav|ogg|zip|hwp|docx?|pptx?|xlsx?)$/i.test(u)) return false;
+  // 확장자 없는 CDN/storage URL은 일단 통과 (대부분 이미지)
+  return true;
+}
+
 // 본문에서 첫 이미지 URL 추출 (HTML img + 마크다운 ![](url) 모두 지원)
 function extractFirstImageUrl(content) {
   if (!content) return "";
@@ -210,9 +220,11 @@ export default async function middleware(request) {
         // 첫 의미 있는 문장(들) 우선, 없으면 앞부분 컷
         const firstChunk = plainBody.replace(/\n/g, " ").slice(0, 155);
         desc = firstChunk + (plainBody.length > 155 ? "..." : "");
-        // 이미지: post.images[0] → 본문에서 추출 → 카테고리 폴백
-        image = (Array.isArray(post.images) && post.images[0])
-          || extractFirstImageUrl(post.content)
+        // 이미지: post.images[] 중 사용 가능한 첫 이미지 → 본문에서 추출 → 카테고리 폴백
+        const firstUsable = (Array.isArray(post.images) ? post.images : []).find(isUsableOgImage);
+        const bodyImg = extractFirstImageUrl(post.content);
+        image = firstUsable
+          || (isUsableOgImage(bodyImg) ? bodyImg : "")
           || CAT_FALLBACK_IMG[catId]
           || DEFAULT_OG.image;
         keywords = extractKeywords(titleClean, plainBody, catName);
