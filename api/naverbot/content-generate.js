@@ -1,180 +1,158 @@
-// NaverBot SaaS - 블로그 글 생성
-// 사용자 주제 + 프롬프트 + 길이 → Claude로 생성 → 클라이언트로 전달
-// 인프라: OpenRouter 경유 (메이킷 기존 패턴)
+// NaverBot SaaS - 블로그 글 생성 (메이킷 BlogUtils 패턴 이식)
+// 글타입/톤/말투/분량/필드 + [image: keyword] 인라인 마커 → blocks 응답
 
 import {
   setCors,
   safeError,
   supabase,
   verifyLicense,
-  validateGenerateInput,
+  validateLicenseKey,
   checkDailyQuota,
 } from "../../lib/naverbot/index.js";
+import { buildBlogPrompt, splitBodyByImageMarkers } from "../../lib/naverbot/prompts.js";
 
 const OR_KEY = process.env.OPENROUTER_API_KEY;
+const PEXELS_KEY = process.env.PEXELS_KEY;
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "anthropic/claude-sonnet-4-5";
 
-// 글자수 → 토큰 변환 (대략 한국어 1자 ≈ 1.5 토큰, 여유 20%)
-function lengthToMaxTokens(len) {
-  return Math.min(8192, Math.ceil(len * 1.8 + 500));
+const VALID_SUBTYPES = ["info", "visit", "travel", "product", "column", "article"];
+const VALID_TONES = ["friendly", "diary", "review", "professional"];
+const VALID_SPEECH = ["polite_yo", "formal", "casual", "mixed"];
+const VALID_WORDCOUNTS = ["short", "medium", "long"];
+
+const WORDCOUNT_TO_TOKENS = {
+  short: 3000,
+  medium: 5500,
+  long: 8000,
+};
+
+// ── 입력 검증 ──
+function validateInput(b) {
+  if (!b || typeof b !== "object") return ["request body 누락"];
+  const errors = [];
+
+  if (!validateLicenseKey(b.license_key)) errors.push("license_key 형식 오류");
+  if (!b.machine_id || typeof b.machine_id !== "string" || b.machine_id.length > 128)
+    errors.push("machine_id 필수");
+
+  if (!b.fields || typeof b.fields !== "object") errors.push("fields 객체 필수");
+  else if (!b.fields.keyword || typeof b.fields.keyword !== "string")
+    errors.push("fields.keyword 필수");
+  else if (b.fields.keyword.length > 200) errors.push("keyword 200자 초과");
+
+  if (b.subtype && !VALID_SUBTYPES.includes(b.subtype))
+    errors.push("subtype invalid (info|visit|travel|product|column|article)");
+  if (b.tone && !VALID_TONES.includes(b.tone)) errors.push("tone invalid");
+  if (b.speech && !VALID_SPEECH.includes(b.speech)) errors.push("speech invalid");
+  if (b.word_count && !VALID_WORDCOUNTS.includes(b.word_count))
+    errors.push("word_count invalid (short|medium|long)");
+
+  // 자유 프롬프트 길이 제한
+  if (b.fields?.extra && b.fields.extra.length > 2000) errors.push("extra 2000자 초과");
+  if (b.user_prompt && b.user_prompt.length > 2000) errors.push("user_prompt 2000자 초과");
+
+  return errors;
 }
 
-function buildPrompts({ topic, length, stylePrompt, autoTitle, autoHashtag }) {
-  const system = `당신은 네이버 블로그 글 작성 + SEO 카피라이팅 전문가입니다.
-사용자의 글쓰기 스타일을 정확히 따라 자연스러운 블로그 글을 작성합니다.
-
-출력 형식 (반드시 준수):
-[TITLE]
-제목 한 줄 (30~40자, 호기심 후킹형)
-
-[IMAGE_KEYWORDS]
-keyword1, keyword2, keyword3 (영어, 일반적인 사진 검색용 단어, 쉼표 구분)
-
-[BODY]
-본문 (목표 ${length}자 ±10%)
-${autoHashtag ? "\n[TAGS]\n태그1, 태그2, 태그3 (5~10개, 쉼표 구분, # 없이)" : ""}
-
-== 제목 작성 규칙 (매우 중요) ==
-- 절대 주제를 그대로 반복하거나 비슷하게 쓰지 말 것
-- 숫자/구체수치/감정 트리거/궁금증 자극 활용
-- 좋은 예: "월 50만원 아끼는 사장님 비밀, 모르면 손해보는 절세 팁 5가지"
-- 나쁜 예: "1인 사업자 절세 팁" (주제 그대로)
-
-== 이미지 키워드 규칙 ==
-- 본문 내용과 직접 연관된 영어 단어 3개
-- Pexels/Unsplash 같은 사진 사이트에서 검색 잘 되는 일반 명사
-- 좋은 예: "small business owner, korean office, money calculator"
-- 나쁜 예: "절세, 1인사업자" (한글), "abstract concept" (추상)
-
-== 본문 규칙 ==
-- 이모지 사용 금지
-- 마크다운(#, ##, **, -, *, 1.) 절대 사용 금지 — 네이버는 일반 텍스트만 받음
-- 소제목은 일반 텍스트로 한 줄, 빈 줄로 구분
-- 단락 사이는 빈 줄로 구분`;
-
-  const user = `주제: ${topic}
-
-${stylePrompt ? `글쓰기 스타일/규칙:\n${stylePrompt}\n\n` : ""}위 주제로 ${length}자 분량의 네이버 블로그 글을 작성해주세요. 제목은 호기심을 자극하는 후킹 문구로, 주제를 그대로 반복하지 마세요.`;
-
-  return { system, user };
-}
-
-// 마크다운/이모지 강제 제거 (모델이 프롬프트 무시할 때 방어)
+// ── 마크다운/이모지 강제 제거 (방어) ──
 function stripMarkdown(text) {
   return text
-    // 헤딩 (# ## ### → 빈 prefix)
     .replace(/^#{1,6}\s+/gm, "")
-    // 굵게/기울임 (**word**, *word*, __word__, _word_)
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/(?<!\*)\*(?!\*)([^*\n]+)\*(?!\*)/g, "$1")
     .replace(/(?<!_)_(?!_)([^_\n]+)_(?!_)/g, "$1")
-    // 인라인 코드 `code`
     .replace(/`([^`\n]+)`/g, "$1")
-    // 리스트 마커 (- item, * item, 1. item) → 그대로 텍스트지만 마커만 제거
     .replace(/^[\s]*[-*+]\s+/gm, "")
     .replace(/^[\s]*\d+\.\s+/gm, "")
-    // 링크 [text](url) → text
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    // 코드블록 ```...```
     .replace(/```[\s\S]*?```/g, "")
-    // 이모지 (기본 BMP + 보충 평면 일부)
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu, "")
     .trim();
 }
 
-function parseResponse(text, fallbackTopic, autoHashtag) {
+// ── 응답 파싱 ──
+function parseResponse(text, fallbackKeyword) {
   const titleMatch = text.match(/\[TITLE\]\s*\n([^\n]+)/);
-  const keywordsMatch = text.match(/\[IMAGE_KEYWORDS\]\s*\n([^\n]+)/);
   const bodyMatch = text.match(/\[BODY\]\s*\n([\s\S]+?)(?=\n\[TAGS\]|$)/);
   const tagsMatch = text.match(/\[TAGS\]\s*\n([^\n]+)/);
 
-  const rawTitle = titleMatch ? titleMatch[1].trim() : fallbackTopic.slice(0, 30);
+  // 본문에서 마크다운 제거 (단, [image: ...] 마커는 보호)
   const rawBody = bodyMatch ? bodyMatch[1].trim() : text.trim();
 
-  const title = stripMarkdown(rawTitle).slice(0, 60);
-  const body = stripMarkdown(rawBody);
+  // 이미지 마커 임시 치환 → 마크다운 제거 → 복원
+  const placeholders = [];
+  const protectedBody = rawBody.replace(/\[image:\s*[^\]]+\]/gi, (m) => {
+    placeholders.push(m);
+    return `__IMG_PH_${placeholders.length - 1}__`;
+  });
+  let cleanBody = stripMarkdown(protectedBody);
+  cleanBody = cleanBody.replace(/__IMG_PH_(\d+)__/g, (_, i) => placeholders[Number(i)] || "");
 
-  const imageKeywords = keywordsMatch
-    ? keywordsMatch[1]
+  const title = stripMarkdown(titleMatch ? titleMatch[1].trim() : fallbackKeyword.slice(0, 30)).slice(0, 60);
+
+  const tags = tagsMatch
+    ? tagsMatch[1]
         .split(/[,，]/)
-        .map((k) => k.trim())
-        .filter((k) => k && /^[\x00-\x7F\s]+$/.test(k)) // ASCII만 (영어 단어)
-        .slice(0, 3)
+        .map((t) => t.trim().replace(/^#/, ""))
+        .filter(Boolean)
+        .slice(0, 10)
     : [];
 
-  const tags =
-    autoHashtag && tagsMatch
-      ? tagsMatch[1]
-          .split(/[,，]/)
-          .map((t) => t.trim().replace(/^#/, ""))
-          .filter(Boolean)
-          .slice(0, 10)
-      : [];
-
-  return { title, body, tags, imageKeywords };
+  return { title, body: cleanBody, tags };
 }
 
 // ── Pexels 이미지 검색 ──
-async function searchImages(keywords) {
-  const PEXELS_KEY = process.env.PEXELS_KEY;
-  if (!PEXELS_KEY || !keywords.length) return [];
-
-  const results = [];
-  for (const kw of keywords) {
-    try {
-      const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(kw)}&per_page=1&orientation=landscape`;
-      const r = await fetch(url, {
-        headers: { Authorization: PEXELS_KEY.trim() },
-      });
-      if (!r.ok) continue;
-      const data = await r.json();
-      const photo = data?.photos?.[0];
-      if (photo?.src?.large) {
-        results.push({
-          url: photo.src.large,
-          alt: photo.alt || kw,
-          keyword: kw,
-        });
-      }
-    } catch (e) {
-      console.error("[naverbot] Pexels 검색 실패:", e.message);
-    }
+async function searchImage(keyword) {
+  if (!PEXELS_KEY || !keyword) return null;
+  try {
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=1&orientation=landscape`;
+    const r = await fetch(url, { headers: { Authorization: PEXELS_KEY.trim() } });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const photo = data?.photos?.[0];
+    if (!photo?.src?.large) return null;
+    return { url: photo.src.large, alt: photo.alt || keyword, keyword };
+  } catch (e) {
+    console.error("[naverbot] Pexels:", e.message);
+    return null;
   }
-  return results;
 }
 
+// ── 메인 핸들러 ──
 export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return safeError(res, 405, "POST only");
-
   if (!OR_KEY) return safeError(res, 500, "서버 설정 오류");
 
   // 1. 입력 검증
-  const errors = validateGenerateInput(req.body);
+  const errors = validateInput(req.body);
   if (errors.length) return safeError(res, 400, errors[0]);
 
-  const { license_key, machine_id, topic, style_prompt, length, auto_title, auto_hashtag } = req.body;
+  const {
+    license_key,
+    machine_id,
+    subtype = "info",
+    tone = "friendly",
+    speech = "polite_yo",
+    word_count = "medium",
+    fields = {},
+    user_prompt = "",
+  } = req.body;
 
-  // 2. 라이선스 검증 (machine_id도 같이)
-  if (!machine_id || typeof machine_id !== "string") {
-    return safeError(res, 400, "잘못된 요청");
-  }
-
-  let licenseResult;
+  // 2. 라이선스
+  let licResult;
   try {
-    licenseResult = await verifyLicense({ licenseKey: license_key, machineId: machine_id });
+    licResult = await verifyLicense({ licenseKey: license_key, machineId: machine_id });
   } catch (e) {
     return safeError(res, 500, "라이선스 검증 실패", e);
   }
-  if (!licenseResult.ok) {
-    return res.status(403).json({ ok: false, error: licenseResult.reason });
-  }
+  if (!licResult.ok) return res.status(403).json({ ok: false, error: licResult.reason });
 
-  // 3. 일일 한도 체크
-  const quota = await checkDailyQuota(license_key, licenseResult.license.plan);
+  // 3. 일일 한도
+  const quota = await checkDailyQuota(license_key, licResult.license.plan);
   if (quota.exceeded) {
     return res.status(429).json({
       ok: false,
@@ -182,16 +160,17 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4. Claude 호출 (OpenRouter)
-  const safeLen = Math.min(Math.max(Number(length), 1000), 8000);
-  const { system, user } = buildPrompts({
-    topic,
-    length: safeLen,
-    stylePrompt: style_prompt || "",
-    autoTitle: auto_title !== false,
-    autoHashtag: auto_hashtag === true,
+  // 4. 프롬프트 빌드
+  const { system, user } = buildBlogPrompt({
+    subtype,
+    tone,
+    speech,
+    wordCount: word_count,
+    fields,
+    userPrompt: user_prompt,
   });
 
+  // 5. Claude 호출
   let aiText = "";
   let tokensUsed = 0;
   try {
@@ -199,13 +178,13 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OR_KEY}`,
+        Authorization: `Bearer ${OR_KEY}`,
         "HTTP-Referer": "https://snsmakeit.com",
         "X-Title": "NaverBot SaaS",
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: lengthToMaxTokens(safeLen),
+        max_tokens: WORDCOUNT_TO_TOKENS[word_count] || 5500,
         system,
         messages: [{ role: "user", content: user }],
       }),
@@ -217,44 +196,49 @@ export default async function handler(req, res) {
     }
 
     const data = await orRes.json();
-    aiText =
-      data?.choices?.[0]?.message?.content ||
-      data?.content?.[0]?.text ||
-      "";
-    tokensUsed =
-      (data?.usage?.total_tokens) ||
-      (data?.usage?.prompt_tokens || 0) + (data?.usage?.completion_tokens || 0) ||
-      0;
-
+    aiText = data?.choices?.[0]?.message?.content || data?.content?.[0]?.text || "";
+    tokensUsed = data?.usage?.total_tokens || 0;
     if (!aiText) return safeError(res, 502, "빈 응답");
   } catch (e) {
     return safeError(res, 502, "글 생성 실패", e);
   }
 
-  const post = parseResponse(aiText, topic, auto_hashtag === true);
+  // 6. 파싱 + 마커 분할
+  const parsed = parseResponse(aiText, fields.keyword || "글");
+  const rawBlocks = splitBodyByImageMarkers(parsed.body);
 
-  // 5. Pexels 이미지 검색 (실패해도 빈 배열 반환)
-  const images = await searchImages(post.imageKeywords);
+  // 7. 이미지 마커 → Pexels 조회 → 실제 URL 채우기
+  const blocks = [];
+  for (const blk of rawBlocks) {
+    if (blk.type === "text") {
+      blocks.push(blk);
+    } else if (blk.type === "image") {
+      const photo = await searchImage(blk.keyword);
+      if (photo) {
+        blocks.push({ type: "image", url: photo.url, alt: photo.alt, keyword: blk.keyword });
+      }
+      // 이미지 못 찾으면 그 블록은 그냥 스킵
+    }
+  }
 
-  // 6. 사용량 로깅 (실패해도 응답엔 영향 없음)
+  // 8. 사용량 로깅 (비동기, 응답에 영향 X)
   supabase
     .from("naverbot_posts_log")
     .insert({
       license_key,
-      topic: topic.slice(0, 200),
-      title: post.title.slice(0, 200),
+      topic: (fields.keyword || "").slice(0, 200),
+      title: parsed.title.slice(0, 200),
       tokens_used: tokensUsed,
     })
     .then(({ error }) => {
-      if (error) console.error("[naverbot] 로그 기록 실패:", error.message);
+      if (error) console.error("[naverbot] 로그 실패:", error.message);
     });
 
   return res.status(200).json({
     ok: true,
-    title: post.title,
-    body: post.body,
-    tags: post.tags,
-    images,
+    title: parsed.title,
+    blocks,
+    tags: parsed.tags,
     quota: { used: quota.used + 1, limit: quota.limit },
   });
 }
