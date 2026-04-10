@@ -634,111 +634,171 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 홈
   if (!aiMenu || aiMenu === "home") {
 
-    const features_ = [
-      { icon:"/icons3d/blog-write.png", title:_s("글쓰기","Writing"), menu:"blog_write" },
-      { icon:"/icons3d/palette.png", title:_s("콘텐츠 제작","Content"), menu:"content_create" },
-      { icon:"/icons3d/sns-app.png", title:_s("영상 제작","Video"), menu:"shorts_make", isNew:true },
-      { icon:"/icons3d/instagram-cam.png", title:_s("이미지","Image"), menu:"image_tools" },
+    // 6개 주요 기능 — 큰 카드 형식 (노년층 친화적 접근성)
+    const bigCards = [
+      {
+        menu: "blog_write",
+        title: _s("글쓰기", "Writing"),
+        desc: _s("블로그·인스타·유튜브 글을 AI가 작성", "AI writes blog/IG/YT posts"),
+        color: "#7c6aff", bg: "rgba(124,106,255,0.08)",
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+      },
+      {
+        menu: "content_create",
+        title: _s("상세페이지 제작", "Detail Page"),
+        desc: _s("상품 상세페이지를 AI가 자동 디자인", "AI auto-designs product pages"),
+        color: "#8b5cf6", bg: "rgba(139,92,246,0.08)",
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,
+      },
+      {
+        menu: "image_tools",
+        title: _s("이미지 생성", "AI Image"),
+        desc: _s("로고·제품컷·목업을 AI로 즉시 생성", "Logos, products, mockups"),
+        color: "#ec4899", bg: "rgba(236,72,153,0.08)",
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
+      },
+      {
+        menu: "shorts_make",
+        title: _s("쇼츠 영상 제작", "Shorts Video"),
+        desc: _s("유튜브 링크 → AI 쇼츠 자동 편집", "YouTube link → auto shorts"),
+        color: "#ef4444", bg: "rgba(239,68,68,0.08)",
+        isNew: true,
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 8 17 12 10 16 10 8" fill="currentColor"/></svg>,
+      },
+      {
+        menu: "social_analyzer",
+        title: _s("SNS 분석", "SNS Analyzer"),
+        desc: _s("실시간 검색어·인플루언서 랭킹", "Trends & rankings"),
+        color: "#22c55e", bg: "rgba(34,197,94,0.08)",
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+      },
+      {
+        menu: "library",
+        title: _s("내 보관함", "My Library"),
+        desc: _s("내가 만든 콘텐츠 모아보기", "All your creations"),
+        color: "#f59e0b", bg: "rgba(245,158,11,0.08)",
+        svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h18v4H3zM3 11h18v4H3zM3 19h18v2H3z"/></svg>,
+      },
     ];
 
-    // 홈 화면
+    // 검색 매핑 (검색은 보조용 — 큰 카드 위에 작게)
+    const searchMap = [
+      {keywords:["블로그","글쓰기","네이버","포스팅"],menu:"blog_write",label:"블로그 글쓰기"},
+      {keywords:["인스타","인스타그램","릴스"],menu:"blog_insta",label:"인스타그램 글쓰기"},
+      {keywords:["유튜브","youtube","영상"],menu:"blog_youtube",label:"유튜브 글쓰기"},
+      {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
+      {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
+      {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
+      {keywords:["로고","logo"],menu:"logo_gen",label:"로고 생성"},
+      {keywords:["목업","mockup"],menu:"mockup_gen",label:"목업 생성"},
+      {keywords:["제품","상품","촬영"],menu:"product_shot",label:"제품 사진"},
+      {keywords:["쇼츠","shorts","숏폼","영상편집"],menu:"shorts_make",label:"쇼츠 자동 편집"},
+      {keywords:["티스토리","tistory"],menu:"blog_tistory",label:"티스토리 글쓰기"},
+      {keywords:["카페","cafe"],menu:"blog_cafe",label:"카페 글쓰기"},
+      {keywords:["뉴스","기사","news"],menu:"blog_news",label:"뉴스 글쓰기"},
+      {keywords:["편집","배경제거","보정"],menu:"image_edit",label:"이미지 편집"},
+      {keywords:["모델","인물"],menu:"model_gen",label:"AI 모델"},
+      {keywords:["얼굴","face"],menu:"face_swap",label:"얼굴 교체"},
+    ];
+    const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
+
     return (
-      <div className="ai-home-container" style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
+      <div className="ai-home-container" style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"40px 20px 60px", background:isDark?"transparent":"#fafafa", overflow:"auto" }}>
         {showOnboarding && <OnboardingModal isDark={isDark} onClose={() => setShowOnboarding(false)} _s={_s} />}
 
-        <div style={{ maxWidth:640, width:"100%", textAlign:"center" }}>
-          <h1 className="ai-home-title" style={{ fontSize:30, fontWeight:900, color:homeText, marginBottom:16, letterSpacing:-0.8, lineHeight:1.3 }}>
-            {_s("SNS메이킷, AI 콘텐츠를 한 번에","SNS Makeit, All AI Content at Once")}
-          </h1>
-
-          {/* 검색 기능 */}
-          {(() => {
-            const searchMap = [
-              {keywords:["블로그","글쓰기","네이버","포스팅"],menu:"blog_write",label:"블로그 글쓰기"},
-              {keywords:["인스타","인스타그램","릴스"],menu:"blog_insta",label:"인스타그램 글쓰기"},
-              {keywords:["유튜브","youtube","영상"],menu:"blog_youtube",label:"유튜브 글쓰기"},
-              {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
-              // 카드뉴스 제거됨
-              {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
-              // 썸네일, PPT 제거됨
-              {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
-              {keywords:["로고","logo"],menu:"logo_gen",label:"로고 생성"},
-              {keywords:["목업","mockup"],menu:"mockup_gen",label:"목업 생성"},
-              {keywords:["제품","상품","촬영"],menu:"product_shot",label:"제품 사진"},
-              {keywords:["쇼츠","shorts","숏폼","영상편집"],menu:"shorts_make",label:"쇼츠 자동 편집"},
-              // 소셜 플래너 제거됨
-              {keywords:["티스토리","tistory"],menu:"blog_tistory",label:"티스토리 글쓰기"},
-              {keywords:["카페","cafe"],menu:"blog_cafe",label:"카페 글쓰기"},
-              {keywords:["뉴스","기사","news"],menu:"blog_news",label:"뉴스 글쓰기"},
-              {keywords:["편집","배경제거","보정"],menu:"image_edit",label:"이미지 편집"},
-              {keywords:["모델","인물"],menu:"model_gen",label:"AI 모델"},
-              {keywords:["얼굴","face"],menu:"face_swap",label:"얼굴 교체"},
-            ];
-            const popularKeywords = ["블로그 글쓰기","상세페이지","이미지 생성","쇼츠 편집","인스타그램","로고 생성"];
-            const searchResults = homeSearch.trim() ? searchMap.filter(s => s.keywords.some(k => k.includes(homeSearch.toLowerCase())) || s.label.toLowerCase().includes(homeSearch.toLowerCase())) : [];
-            return (
-              <div style={{ position:"relative", maxWidth:480, margin:"0 auto 24px", width:"100%" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderRadius:14, border:`1.5px solid ${searchFocused ? "#7c6aff" : cardBdr}`, background:isDark?"rgba(255,255,255,0.05)":"#fff", transition:"border-color 0.15s", boxShadow: searchFocused ? "0 4px 16px rgba(124,106,255,0.1)" : "0 2px 8px rgba(0,0,0,0.03)" }}>
-                  <span style={{ fontSize:16, opacity:0.5 }}>🔍</span>
-                  <input value={homeSearch} onChange={e=>setHomeSearch(e.target.value)}
-                    onFocus={()=>setSearchFocused(true)} onBlur={()=>setTimeout(()=>setSearchFocused(false),200)}
-                    placeholder={_s("어떤 콘텐츠를 만들까요?","What content do you want to create?")}
-                    style={{ flex:1, border:"none", background:"transparent", color:homeText, fontSize:14, outline:"none" }}/>
-                  {homeSearch && <button onClick={()=>setHomeSearch("")} style={{ border:"none", background:"transparent", color:homeMuted, cursor:"pointer", fontSize:14, padding:0 }}>✕</button>}
-                </div>
-                {!homeSearch && !searchFocused && (
-                  <div style={{ display:"flex", gap:6, marginTop:10, justifyContent:"center", flexWrap:"wrap" }}>
-                    {popularKeywords.map(k=>(
-                      <button key={k} onClick={()=>{const m=searchMap.find(s=>s.keywords.some(kw=>k.toLowerCase().includes(kw))||s.label.includes(k));if(m)setAiMenu(m.menu);}}
-                        style={{ padding:"5px 12px", borderRadius:20, border:`1px solid ${cardBdr}`, background:"transparent", color:homeMuted, fontSize:11, cursor:"pointer", fontWeight:500 }}>
-                        {k}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {searchResults.length > 0 && searchFocused && (
-                  <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:6, borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(26,23,48,0.98)":"#fff", boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:100, overflow:"hidden" }}>
-                    {searchResults.slice(0,6).map(s=>(
-                      <button key={s.menu} onClick={()=>{setAiMenu(s.menu);setHomeSearch("");}}
-                        style={{ width:"100%", padding:"12px 16px", border:"none", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f0f0f5"}`, background:"transparent", color:homeText, fontSize:13, fontWeight:600, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:8 }}
-                        onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.05)":"#f8f8fb"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                        <span style={{ fontSize:14, opacity:0.5 }}>→</span> {s.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* 기능 아이콘 */}
-          <div className="ai-home-features" style={{ display:"flex", justifyContent:"center", gap:16, margin:"32px 0 40px", flexWrap:"wrap" }}>
-            {features_.map(f => (
-              <div key={f.menu} role="button" tabIndex={0} onClick={() => setAiMenu(f.menu)}
-                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") setAiMenu(f.menu); }}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer", transition:"transform 0.15s", position:"relative", padding:"8px 12px", borderRadius:14, minWidth:76, minHeight:88 }}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                <div style={{ width:56, height:56, borderRadius:14, background:isDark?"rgba(255,255,255,0.06)":"#fff", border: f.isNew ? "2px solid #7c6aff" : `1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow: f.isNew ? "0 4px 16px rgba(124,106,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <img src={f.icon} alt="" loading="lazy" decoding="async" style={{ width:30, height:30, objectFit:"contain" }} />
-                </div>
-                {f.isNew && <span style={{ position:"absolute", top:-2, right:-2, fontSize:8, fontWeight:800, color:"#fff", background:"linear-gradient(135deg,#7c6aff,#ec4899)", padding:"2px 5px", borderRadius:6 }}>NEW</span>}
-                <span style={{ fontSize:12, fontWeight:600, color: f.isNew ? "#7c6aff" : homeText }}>{f.title}</span>
-              </div>
-            ))}
+        <div style={{ maxWidth:920, width:"100%" }}>
+          {/* 헤더 */}
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <h1 className="ai-home-title" style={{ fontSize:"clamp(24px,4vw,34px)", fontWeight:900, color:homeText, marginBottom:10, letterSpacing:-1, lineHeight:1.25 }}>
+              {_s("무엇을 만들어 볼까요?", "What would you like to create?")}
+            </h1>
+            <p style={{ fontSize:"clamp(13px,2vw,15px)", color:homeMuted, margin:0, lineHeight:1.6 }}>
+              {_s("아래에서 원하는 메뉴를 골라주세요", "Choose a tool below to get started")}
+            </p>
           </div>
 
-          {/* AI 자동 영상 제작 배너 (소셜 플래너 배너 제거됨 — 기능 철거) */}
-          <div onClick={() => setAiMenu("shorts_make")}
-            style={{ padding:"18px 20px", borderRadius:16, cursor:"pointer", background: isDark ? "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.1))" : "linear-gradient(135deg,rgba(124,106,255,0.08),rgba(236,72,153,0.05))", border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)"}`, display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", marginBottom:20, minHeight:64 }}
-            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-            <div style={{ width:44, height:44, borderRadius:12, background:"linear-gradient(135deg,#7c6aff,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
+          {/* 검색창 — 보조 (작게, 가운데) */}
+          <div style={{ position:"relative", maxWidth:460, margin:"0 auto 28px", width:"100%" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderRadius:14, border:`1.5px solid ${searchFocused ? "#7c6aff" : cardBdr}`, background:isDark?"rgba(255,255,255,0.05)":"#fff", transition:"border-color 0.15s", boxShadow: searchFocused ? "0 4px 16px rgba(124,106,255,0.1)" : "0 2px 8px rgba(0,0,0,0.03)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input value={homeSearch} onChange={e=>setHomeSearch(e.target.value)}
+                onFocus={()=>setSearchFocused(true)} onBlur={()=>setTimeout(()=>setSearchFocused(false),200)}
+                placeholder={_s("기능 이름으로 찾기 (예: 블로그, 로고)", "Search by name (e.g., blog, logo)")}
+                style={{ flex:1, border:"none", background:"transparent", color:homeText, fontSize:15, outline:"none", minHeight:24 }}/>
+              {homeSearch && (
+                <button onClick={()=>setHomeSearch("")} style={{ border:"none", background:"transparent", color:homeMuted, cursor:"pointer", padding:4, display:"flex", alignItems:"center" }} aria-label="지우기">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
             </div>
-            <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:2 }}>{_s("AI 자동 영상 제작","AI Auto Video")}</div>
-              <div style={{ fontSize:12, color:homeMuted }}>{_s("유튜브 링크 → AI가 쇼츠 자동 편집","YouTube → Auto Shorts")}</div>
-            </div>
-            <span style={{ fontSize:10, fontWeight:700, color:"#7c6aff", padding:"3px 8px", borderRadius:6, background:isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)", flexShrink:0 }}>NEW</span>
+            {searchResults.length > 0 && searchFocused && (
+              <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:6, borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(26,23,48,0.98)":"#fff", boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:100, overflow:"hidden" }}>
+                {searchResults.slice(0,6).map(s=>(
+                  <button key={s.menu} onClick={()=>{setAiMenu(s.menu);setHomeSearch("");}}
+                    style={{ width:"100%", padding:"14px 18px", border:"none", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f0f0f5"}`, background:"transparent", color:homeText, fontSize:14, fontWeight:600, cursor:"pointer", textAlign:"left", minHeight:48 }}
+                    onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.05)":"#f8f8fb"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── 큰 카드 그리드 — 모바일 1열, 태블릿 2열, 데스크탑 3열 ── */}
+          <div className="ai-home-bigcards" style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+            gap:16,
+          }}>
+            {bigCards.map(card => (
+              <button key={card.menu} onClick={() => setAiMenu(card.menu)}
+                className="ai-home-bigcard"
+                style={{
+                  position:"relative",
+                  display:"flex", alignItems:"center", gap:16,
+                  padding:"22px 22px",
+                  minHeight:108,
+                  borderRadius:18,
+                  border:`1.5px solid ${isDark?"rgba(255,255,255,0.08)":cardBdr}`,
+                  background:isDark?"rgba(255,255,255,0.04)":"#fff",
+                  cursor:"pointer", textAlign:"left",
+                  transition:"all 0.18s ease",
+                  fontFamily:"inherit",
+                  boxShadow: isDark?"none":"0 1px 3px rgba(0,0,0,0.04)",
+                }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.transform="translateY(-3px)";
+                  e.currentTarget.style.borderColor=card.color;
+                  e.currentTarget.style.boxShadow=`0 12px 28px ${card.color}22`;
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.transform="none";
+                  e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.08)":cardBdr;
+                  e.currentTarget.style.boxShadow=isDark?"none":"0 1px 3px rgba(0,0,0,0.04)";
+                }}>
+                {/* 좌측 컬러 아이콘 박스 */}
+                <div style={{
+                  width:64, height:64, borderRadius:16,
+                  background: card.bg, color: card.color,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  flexShrink:0,
+                }}>
+                  {card.svg}
+                </div>
+                {/* 우측 텍스트 */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                    <div style={{ fontSize:17, fontWeight:800, color:homeText, letterSpacing:-0.3 }}>{card.title}</div>
+                    {card.isNew && <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:"linear-gradient(135deg,#7c6aff,#ec4899)", padding:"2px 7px", borderRadius:6 }}>NEW</span>}
+                  </div>
+                  <div style={{ fontSize:13, color:homeMuted, lineHeight:1.55 }}>{card.desc}</div>
+                </div>
+                {/* 우측 화살표 */}
+                <div style={{ flexShrink:0, color:homeMuted, opacity:0.5 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </button>
+            ))}
           </div>
 
         </div>
