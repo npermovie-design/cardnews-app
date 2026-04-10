@@ -82,6 +82,110 @@ function useOnlineCount() {
 }
 
 
+/* ── 신규 가입자 환영 모달 ── */
+function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
+  const ko = lang === "ko";
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 100000,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
+      padding: 20, animation: "fadeIn 0.2s ease",
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        style={{
+          background: "linear-gradient(180deg, #1a1a3a 0%, #0f0f25 100%)",
+          border: "1px solid rgba(124,106,255,0.3)",
+          borderRadius: 24, padding: "44px 32px 28px",
+          maxWidth: 440, width: "100%", textAlign: "center",
+          position: "relative", boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(124,106,255,0.15)",
+        }}>
+        {/* 닫기 */}
+        <button onClick={onClose}
+          style={{ position: "absolute", top: 14, right: 14, width: 32, height: 32, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 18 }}
+          aria-label={ko ? "닫기" : "Close"}>×</button>
+
+        {/* 축하 아이콘 */}
+        <div style={{
+          width: 84, height: 84, borderRadius: "50%",
+          background: "linear-gradient(135deg, #7c6aff, #ec4899)",
+          margin: "0 auto 18px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 44, fontWeight: 900, color: "#fff",
+          boxShadow: "0 12px 32px rgba(124,106,255,0.4)",
+        }}>
+          ✨
+        </div>
+
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 6, letterSpacing: -0.5 }}>
+          {ko ? `${userName || "회원"}님, 환영해요!` : `Welcome${userName ? `, ${userName}` : ""}!`}
+        </div>
+        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: 22 }}>
+          {ko ? "SNS 콘텐츠 제작의 모든 것, 지금 바로 시작해보세요" : "All your SNS content creation starts now"}
+        </div>
+
+        {/* 100P 카드 */}
+        <div style={{
+          background: "linear-gradient(135deg, rgba(124,106,255,0.15), rgba(236,72,153,0.1))",
+          border: "1px solid rgba(124,106,255,0.35)",
+          borderRadius: 16, padding: "18px 20px", marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
+            {ko ? "가입 축하 보너스" : "Signup bonus"}
+          </div>
+          <div style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(135deg,#a5b4fc,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>
+            +100 P
+          </div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+            {ko ? "AI 글쓰기 약 5회 · 이미지 생성 0.5회 가능" : "~5 AI writes · 0.5 image generations"}
+          </div>
+        </div>
+
+        {/* 혜택 리스트 */}
+        <div style={{ textAlign: "left", marginBottom: 24 }}>
+          {[
+            { icon: "1", text: ko ? "AI 글쓰기 20P · 이미지 200P부터" : "AI writing from 20P · Images from 200P" },
+            { icon: "2", text: ko ? "게시글 작성 시 +1P 자동 적립" : "Earn +1P for every post" },
+            { icon: "3", text: ko ? "출석체크로 매일 +2P 적립 가능" : "Daily check-in earns +2P" },
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: 6,
+                background: "rgba(124,106,255,0.2)",
+                border: "1px solid rgba(124,106,255,0.35)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 800, color: "#a5b4fc", flexShrink: 0,
+              }}>{item.icon}</div>
+              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>{item.text}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA 버튼 */}
+        <button onClick={onGoAi}
+          style={{
+            width: "100%", padding: "14px",
+            background: "linear-gradient(135deg, #7c6aff, #ec4899)",
+            border: "none", borderRadius: 12,
+            color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer",
+            marginBottom: 8, boxShadow: "0 8px 24px rgba(124,106,255,0.3)",
+          }}>
+          {ko ? "AI 도구 시작하기 →" : "Start using AI tools →"}
+        </button>
+        <button onClick={onGoPricing}
+          style={{
+            width: "100%", padding: "11px",
+            background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12, color: "rgba(255,255,255,0.65)",
+            fontSize: 12, fontWeight: 700, cursor: "pointer",
+          }}>
+          {ko ? "요금제 살펴보기" : "View pricing plans"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── 생성 중 이탈 방지 커스텀 모달 ── */
 function GuardModal({ cost, onConfirm, onCancel, lang = "ko" }) {
   const ko = lang === "ko";
@@ -178,6 +282,7 @@ export default function App() {
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showAttendance, setShowAttendance] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
   const { t, lang, setLang } = useI18n();
@@ -392,7 +497,16 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  const handleAuth = u => { setLocalUser(u); setUserState(u); setShowAuth(false); };
+  const handleAuth = u => {
+    setLocalUser(u); setUserState(u); setShowAuth(false);
+    // 신규 가입자 환영 모달
+    try {
+      if (localStorage.getItem("nper_just_registered") === "1") {
+        localStorage.removeItem("nper_just_registered");
+        setShowWelcome(true);
+      }
+    } catch {}
+  };
   // AiPage에 전달하는 콜백 안정화 (인라인 함수 → useCallback)
   const stableOnLoginRequest = useCallback(() => setShowAuth(true), []);
   const stableOnUserUpdate = useCallback(u => { setLocalUser(u); setUserState(u); }, []);
@@ -683,6 +797,15 @@ export default function App() {
       {/* 생성 중 이탈 방지 모달 */}
       {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} lang={lang} />}
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
+      {showWelcome && (
+        <WelcomeModal
+          userName={user?.nick}
+          lang={lang}
+          onClose={() => setShowWelcome(false)}
+          onGoAi={() => { setShowWelcome(false); navigate("ai"); }}
+          onGoPricing={() => { setShowWelcome(false); navigate("pricing"); }}
+        />
+      )}
       {showAttendance && <Suspense fallback={null}><AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} /></Suspense>}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>

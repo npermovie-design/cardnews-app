@@ -109,6 +109,8 @@ export default function AuthModal({ onClose, onAuth, C }) {
     try {
       // Supabase: 이메일 인증 후 로그인 시도
       const user = await fbLogin(form.email, form.pw);
+      // 신규 가입 플래그 — App.jsx의 WelcomeModal 트리거용
+      try { localStorage.setItem("nper_just_registered", "1"); } catch {}
       onAuth(user);
     } catch(e) {
       // 인증 안 된 경우 Supabase가 에러 반환
