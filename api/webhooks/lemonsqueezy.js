@@ -46,13 +46,15 @@ async function addPoints(uid, points, reason) {
 }
 
 // 구독 생성 시 매핑 저장 (갱신 결제 시 조회용)
-async function saveSubscription(subId, uid, productName, interval, status) {
+async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {
   const { error } = await supabase.from("subscriptions").upsert({
     subscription_id: String(subId),
     uid,
     product_name: productName,
     interval,
     status,
+    renews_at: attrs.renews_at || null,
+    ends_at: attrs.ends_at || null,
     updated_at: new Date().toISOString(),
   }, { onConflict: "subscription_id" });
   if (error) console.error("[LS] saveSubscription fail:", error.message);
@@ -121,7 +123,7 @@ export default async function handler(req, res) {
         const label = interval === "yearly" ? "연간" : "월간";
 
         // 매핑 저장 (갱신 시 조회용)
-        await saveSubscription(data.id, userId, productName, interval, attrs.status || "active");
+        await saveSubscription(data.id, userId, productName, interval, attrs.status || "active", attrs);
 
         // 첫 결제 포인트 지급
         const n = await addPoints(userId, pts, `구독 시작 (${productName} ${label})`);
@@ -156,13 +158,37 @@ export default async function handler(req, res) {
         break;
       }
 
-      // ── 구독 해지 ──────────────────────────────
+      // ── 구독 업데이트 (갱신일 변경 등) ───────────
+      case "subscription_updated": {
+        const subId = data?.id;
+        if (subId) {
+          await supabase.from("subscriptions")
+            .update({
+              status: attrs.status || "active",
+              renews_at: attrs.renews_at || null,
+              ends_at: attrs.ends_at || null,
+              cancelled_at: attrs.cancelled ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("subscription_id", String(subId));
+          console.log(`[LS] Subscription ${subId} updated → status:${attrs.status}`);
+        }
+        break;
+      }
+
+      // ── 구독 해지/만료 ─────────────────────────
       case "subscription_cancelled":
       case "subscription_expired": {
         const subId = data?.id;
         if (subId) {
+          const isExpired = eventName === "subscription_expired";
           await supabase.from("subscriptions")
-            .update({ status: eventName === "subscription_expired" ? "expired" : "cancelled", updated_at: new Date().toISOString() })
+            .update({
+              status: isExpired ? "expired" : "cancelled",
+              ends_at: attrs?.ends_at || null,
+              cancelled_at: isExpired ? null : new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
             .eq("subscription_id", String(subId));
           console.log(`[LS] Subscription ${subId} → ${eventName}`);
         }

@@ -53,6 +53,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [history, setHistory] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const [userData, setUserData] = useState(user);
+  const [subscription, setSubscription] = useState(null);
 
   // user prop 변경 시 즉시 반영 (포인트 차감 등)
   useEffect(() => {
@@ -117,6 +118,19 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           .single();
         if (data) setUserData(prev => ({ ...prev, ...data }));
       } catch(e) {}
+
+      // 활성 구독 조회 (active 또는 cancelled but ends_at 미래인 것)
+      try {
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("uid", user.uid)
+          .in("status", ["active", "cancelled", "on_trial", "past_due", "paused"])
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) setSubscription(data[0]);
+        else setSubscription(null);
+      } catch(e) { setSubscription(null); }
     })();
   }, [user?.uid]);
 
@@ -322,6 +336,64 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
       {/* ── 계정 정보 탭 ── */}
       {tab === "info" && (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {/* 구독 상태 카드 */}
+          {subscription && (() => {
+            const statusColor = {
+              active: "#4ade80",
+              on_trial: "#4ade80",
+              cancelled: "#f59e0b",
+              past_due: "#f87171",
+              expired: "#94a3b8",
+              paused: "#94a3b8",
+            }[subscription.status] || "#94a3b8";
+            const statusLabel = ko ? {
+              active: "활성",
+              on_trial: "체험 중",
+              cancelled: "해지 예정",
+              past_due: "결제 지연",
+              expired: "만료됨",
+              paused: "일시 정지",
+            }[subscription.status] || subscription.status : subscription.status;
+            const intervalLabel = subscription.interval === "yearly" ? (ko?"연간":"Yearly") : (ko?"월간":"Monthly");
+            const nextDate = subscription.renews_at ? new Date(subscription.renews_at).toLocaleDateString(ko?"ko-KR":"en-US") : null;
+            const endsDate = subscription.ends_at ? new Date(subscription.ends_at).toLocaleDateString(ko?"ko-KR":"en-US") : null;
+            return (
+              <div style={{
+                background: `linear-gradient(135deg, ${statusColor}18, ${statusColor}08)`,
+                border: `1px solid ${statusColor}40`,
+                borderRadius: 14,
+                padding: "16px 18px",
+                marginBottom: 4,
+              }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, gap:10, flexWrap:"wrap" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ fontSize:11, fontWeight:800, color:muted, letterSpacing:0.5, textTransform:"uppercase" }}>{ko?"내 구독":"My Subscription"}</div>
+                    <div style={{ fontSize:10, fontWeight:800, color:statusColor, padding:"3px 10px", borderRadius:20, background:`${statusColor}22`, border:`1px solid ${statusColor}55` }}>
+                      {statusLabel}
+                    </div>
+                  </div>
+                  <button onClick={()=>navigate("pricing")}
+                    style={{ fontSize:11, fontWeight:700, padding:"6px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:text, cursor:"pointer" }}>
+                    {ko?"플랜 변경":"Change plan"}
+                  </button>
+                </div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:6 }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:text }}>{subscription.product_name}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:muted }}>{intervalLabel}</div>
+                </div>
+                {subscription.status === "cancelled" && endsDate ? (
+                  <div style={{ fontSize:12, color:"#f59e0b" }}>
+                    {ko?`${endsDate}에 종료`:`Ends on ${endsDate}`}
+                  </div>
+                ) : nextDate ? (
+                  <div style={{ fontSize:12, color:muted }}>
+                    {ko?`다음 결제일: ${nextDate}`:`Next billing: ${nextDate}`}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
+
           {[
             { label:ko?"닉네임":"Nickname",         value:userData?.nick || "-" },
             { label:ko?"이메일":"Email",         value:userData?.email || "-" },
