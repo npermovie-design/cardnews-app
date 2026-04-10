@@ -72,13 +72,13 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    // URL 시크릿 토큰 검증 + LS 시그니처 헤더 존재 확인
+    // URL 시크릿 토큰 검증 (LS signing secret 미사용 시 x-signature 체크 불가)
     const url = new URL(req.url, `https://${req.headers.host}`);
     const token = url.searchParams.get("token");
     const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
-    const lsSig = req.headers["x-signature"];
 
-    if (token !== secret || !lsSig) {
+    if (!secret || token !== secret) {
+      console.error("[LS] Auth failed — token mismatch or secret not set");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
