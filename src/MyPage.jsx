@@ -372,24 +372,40 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                       {statusLabel}
                     </div>
                   </div>
-                  <button onClick={()=>navigate("pricing")}
-                    style={{ fontSize:11, fontWeight:700, padding:"6px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:text, cursor:"pointer" }}>
-                    {ko?"플랜 변경":"Change plan"}
-                  </button>
                 </div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:6 }}>
                   <div style={{ fontSize:22, fontWeight:900, color:text }}>{subscription.product_name}</div>
                   <div style={{ fontSize:13, fontWeight:700, color:muted }}>{intervalLabel}</div>
                 </div>
                 {subscription.status === "cancelled" && endsDate ? (
-                  <div style={{ fontSize:12, color:"#f59e0b" }}>
-                    {ko?`${endsDate}에 종료`:`Ends on ${endsDate}`}
+                  <div style={{ fontSize:12, color:"#f59e0b", marginBottom:12 }}>
+                    {ko?`${endsDate}에 종료 (기한까지 이용 가능)`:`Ends on ${endsDate} (available until then)`}
                   </div>
                 ) : nextDate ? (
-                  <div style={{ fontSize:12, color:muted }}>
+                  <div style={{ fontSize:12, color:muted, marginBottom:12 }}>
                     {ko?`다음 결제일: ${nextDate}`:`Next billing: ${nextDate}`}
                   </div>
-                ) : null}
+                ) : <div style={{ marginBottom:12 }} />}
+
+                {/* 구독 관리 버튼들 */}
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  <button onClick={()=>navigate("pricing")}
+                    style={{ flex:"1 1 auto", fontSize:11, fontWeight:700, padding:"9px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:cardBg, color:text, cursor:"pointer", minWidth:100 }}>
+                    {ko?"플랜 변경":"Change plan"}
+                  </button>
+                  {subscription.update_payment_url && (
+                    <a href={subscription.update_payment_url} target="_blank" rel="noopener noreferrer"
+                      style={{ flex:"1 1 auto", fontSize:11, fontWeight:700, padding:"9px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:cardBg, color:text, cursor:"pointer", textDecoration:"none", textAlign:"center", minWidth:100 }}>
+                      {ko?"결제수단 변경":"Payment method"}
+                    </a>
+                  )}
+                  {subscription.customer_portal_url && subscription.status !== "cancelled" && subscription.status !== "expired" && (
+                    <a href={subscription.customer_portal_url} target="_blank" rel="noopener noreferrer"
+                      style={{ flex:"1 1 auto", fontSize:11, fontWeight:700, padding:"9px 12px", borderRadius:8, border:`1px solid #f8717140`, background:"transparent", color:"#f87171", cursor:"pointer", textDecoration:"none", textAlign:"center", minWidth:100 }}>
+                      {ko?"구독 해지":"Cancel"}
+                    </a>
+                  )}
+                </div>
               </div>
             );
           })()}

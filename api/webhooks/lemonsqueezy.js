@@ -55,6 +55,8 @@ async function saveSubscription(subId, uid, productName, interval, status, attrs
     status,
     renews_at: attrs.renews_at || null,
     ends_at: attrs.ends_at || null,
+    customer_portal_url: attrs.urls?.customer_portal || null,
+    update_payment_url: attrs.urls?.update_payment_method || null,
     updated_at: new Date().toISOString(),
   }, { onConflict: "subscription_id" });
   if (error) console.error("[LS] saveSubscription fail:", error.message);
@@ -168,6 +170,8 @@ export default async function handler(req, res) {
               renews_at: attrs.renews_at || null,
               ends_at: attrs.ends_at || null,
               cancelled_at: attrs.cancelled ? new Date().toISOString() : null,
+              customer_portal_url: attrs.urls?.customer_portal || null,
+              update_payment_url: attrs.urls?.update_payment_method || null,
               updated_at: new Date().toISOString(),
             })
             .eq("subscription_id", String(subId));
