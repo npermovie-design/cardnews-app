@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
+import { supabase } from "./storage";
 
 const PAYMENT_ENABLED = true;
 
@@ -78,6 +79,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   const [loading, setLoading] = useState(null);
   const [toast, setToast]     = useState("");
   const [openFaq, setOpenFaq] = useState(null);
+  const [successModal, setSuccessModal] = useState(null); // {planName, receiptUrl, newPoints, pointsDelta}
   const isDark = C?.border?.includes("255");
   const userPoints = user?.points || 0;
 
@@ -111,7 +113,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
   const lsLoaded = useRef(false);
 
-  // Lemon Squeezy 스크립트 로드
+  // Lemon Squeezy 스크립트 로드 + 결제 성공 이벤트 핸들러
   useEffect(() => {
     if (lsLoaded.current) return;
     const script = document.createElement("script");
@@ -120,9 +122,51 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     script.onload = () => {
       lsLoaded.current = true;
       window.createLemonSqueezy?.();
+      // 결제 성공 이벤트 구독
+      try {
+        window.LemonSqueezy?.Setup?.({
+          eventHandler: (event) => {
+            if (event?.event === "Checkout.Success") {
+              const orderAttrs = event?.data?.order?.data?.attributes;
+              const item = orderAttrs?.first_order_item;
+              const planName = item?.product_name || "";
+              const receiptUrl = orderAttrs?.urls?.receipt || null;
+              handleCheckoutSuccess(planName, receiptUrl);
+            }
+          },
+        });
+      } catch(e) { /* LS Setup unavailable */ }
     };
     document.head.appendChild(script);
   }, []);
+
+  // 결제 성공 핸들러: 포인트 갱신 폴링 + 성공 모달 표시
+  const handleCheckoutSuccess = async (planName, receiptUrl) => {
+    if (!user?.uid) return;
+    const prevPoints = user?.points || 0;
+
+    // 일단 모달 즉시 표시 (포인트는 로딩 상태)
+    setSuccessModal({ planName, receiptUrl, newPoints: null, pointsDelta: null });
+
+    // webhook 처리 대기 — 최대 15초 동안 1초마다 포인트 변화 확인
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const { data } = await supabase
+          .from("users")
+          .select("points")
+          .eq("uid", user.uid)
+          .single();
+        const newPoints = data?.points ?? prevPoints;
+        if (newPoints > prevPoints) {
+          setSuccessModal(s => s ? { ...s, newPoints, pointsDelta: newPoints - prevPoints } : null);
+          return;
+        }
+      } catch(e) { /* retry */ }
+    }
+    // 15초 후에도 반영 안 됐으면 일반 안내
+    setSuccessModal(s => s ? { ...s, newPoints: prevPoints, pointsDelta: 0 } : null);
+  };
 
   const openCheckout = (lsId, planLabel) => {
     if (!user) { onLogin?.(); return; }
@@ -158,6 +202,77 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
   return (
     <div style={{ maxWidth: 1060, margin: "0 auto", padding: "48px 20px 80px", overflowX: "hidden" }}>
+
+      {/* 결제 성공 모달 */}
+      {successModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)", zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => setSuccessModal(null)}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:isDark?"#181836":"#fff", borderRadius:20, padding:"40px 32px 28px", maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 24px 80px rgba(0,0,0,0.4)", position:"relative" }}>
+            {/* 체크 아이콘 */}
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#4ade80,#22c55e)", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, color:"#fff", fontWeight:900, boxShadow:"0 8px 24px rgba(74,222,128,0.35)" }}>
+              ✓
+            </div>
+
+            <div style={{ fontSize:22, fontWeight:900, color:C.text, marginBottom:8 }}>
+              {lang === "ko" ? "결제가 완료되었어요!" : "Payment successful!"}
+            </div>
+            <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>
+              {successModal.planName && <><strong style={{ color:C.text }}>{successModal.planName}</strong> </>}
+              {lang === "ko" ? "구매 감사합니다" : "Thank you for your purchase"}
+            </div>
+
+            {/* 포인트 지급 상태 */}
+            <div style={{ background: isDark?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.06)", border:"1px solid rgba(124,106,255,0.25)", borderRadius:14, padding:"16px 18px", marginBottom:20 }}>
+              {successModal.newPoints === null ? (
+                <div>
+                  <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>{lang === "ko" ? "포인트 지급 중..." : "Crediting points..."}</div>
+                  <div style={{ display:"flex", justifyContent:"center", gap:4 }}>
+                    {[0,1,2].map(i => (
+                      <span key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#7c6aff", opacity:0.5, animation:`lsdot 1.2s ${i*0.15}s infinite` }} />
+                    ))}
+                  </div>
+                  <style>{`@keyframes lsdot{0%,80%,100%{opacity:0.2;transform:scale(0.8)}40%{opacity:1;transform:scale(1)}}`}</style>
+                </div>
+              ) : successModal.pointsDelta > 0 ? (
+                <>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6, letterSpacing:0.3 }}>{lang === "ko" ? "충전된 포인트" : "Points credited"}</div>
+                  <div style={{ fontSize:28, fontWeight:900, color:"#7c6aff", marginBottom:4 }}>
+                    +{successModal.pointsDelta.toLocaleString()} P
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted }}>
+                    {lang === "ko" ? "현재 잔액" : "Current balance"}: <strong style={{ color:C.text }}>{successModal.newPoints.toLocaleString()} P</strong>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize:12, color:"#f59e0b" }}>
+                  {lang === "ko"
+                    ? "포인트 지급이 지연되고 있어요. 잠시 후 My Page에서 확인해주세요."
+                    : "Point credit is delayed. Please check My Page shortly."}
+                </div>
+              )}
+            </div>
+
+            {/* 액션 버튼 */}
+            <div style={{ display:"flex", gap:8, flexDirection:"column" }}>
+              <button onClick={() => { setSuccessModal(null); navigate("ai"); }}
+                style={{ padding:"13px", borderRadius:11, border:"none", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer" }}>
+                {lang === "ko" ? "AI 도구로 이동" : "Go to AI tools"}
+              </button>
+              {successModal.receiptUrl && (
+                <a href={successModal.receiptUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ padding:"11px", borderRadius:11, border:`1px solid ${C.border}`, background:"transparent", color:C.muted, fontSize:12, fontWeight:700, textDecoration:"none", display:"block" }}>
+                  {lang === "ko" ? "영수증 보기" : "View receipt"}
+                </a>
+              )}
+              <button onClick={() => setSuccessModal(null)}
+                style={{ padding:"9px", borderRadius:11, border:"none", background:"transparent", color:C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                {lang === "ko" ? "닫기" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 토스트 알림 */}
       {toast && (
