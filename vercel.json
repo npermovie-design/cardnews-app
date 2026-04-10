@@ -6,6 +6,9 @@
     "api/ai-ppt.js": {
       "maxDuration": 60
     },
+    "api/naverbot/content-generate.js": {
+      "maxDuration": 120
+    },
     "api/**/*.js": {
       "maxDuration": 30
     }
