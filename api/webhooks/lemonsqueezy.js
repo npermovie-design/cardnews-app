@@ -77,8 +77,12 @@ export default async function handler(req, res) {
     const token = url.searchParams.get("token");
     const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
 
-    if (!secret || token !== secret) {
-      console.error("[LS] Auth failed — token mismatch or secret not set");
+    if (!secret) {
+      console.error("[LS] Auth failed — LEMONSQUEEZY_WEBHOOK_SECRET env var NOT SET on Vercel");
+      return res.status(401).json({ error: "Server misconfigured" });
+    }
+    if (token !== secret) {
+      console.error(`[LS] Auth failed — token mismatch. token_len=${token?.length}, secret_len=${secret.length}, token_prefix=${token?.slice(0,6)}, secret_prefix=${secret.slice(0,6)}`);
       return res.status(401).json({ error: "Unauthorized" });
     }
 
