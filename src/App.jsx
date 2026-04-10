@@ -83,13 +83,14 @@ function useOnlineCount() {
 
 
 /* ── 생성 중 이탈 방지 커스텀 모달 ── */
-function GuardModal({ cost, onConfirm, onCancel }) {
+function GuardModal({ cost, onConfirm, onCancel, lang = "ko" }) {
+  const ko = lang === "ko";
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 99999,
       display: "flex", alignItems: "center", justifyContent: "center",
       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-    }} role="dialog" aria-modal="true" aria-label="생성 중 이탈 확인">
+    }} role="dialog" aria-modal="true" aria-label={ko ? "생성 중 이탈 확인" : "Leave while generating"}>
       <div style={{
         background: "#fff", border: "1px solid rgba(0,0,0,0.1)",
         borderRadius: 20, padding: "clamp(20px,5vw,32px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%",
@@ -100,26 +101,32 @@ function GuardModal({ cost, onConfirm, onCancel }) {
           &#9888;
         </div>
         <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>
-          생성 중입니다!
+          {ko ? "생성 중입니다!" : "Generating!"}
         </div>
         <div style={{ fontSize: 14, color: "rgba(26,23,48,0.6)", lineHeight: 1.8, marginBottom: 16 }}>
-          페이지를 나가면<br/>
-          <span style={{ color: "#ef4444", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
-          <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.
+          {ko ? (<>
+            페이지를 나가면<br/>
+            <span style={{ color: "#ef4444", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
+            <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.
+          </>) : (<>
+            Leaving this page will<br/>
+            <span style={{ color: "#ef4444", fontWeight: 700 }}>discard your result</span> and<br/>
+            <span style={{ color: "#f59e0b", fontWeight: 700 }}>consume {cost}P</span>.
+          </>)}
         </div>
         <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
-          소진된 포인트는 복구되지 않습니다
+          {ko ? "소진된 포인트는 복구되지 않습니다" : "Consumed points cannot be restored"}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel}
             style={{ flex: 1, padding: "12px", borderRadius: 11, border: "1px solid rgba(124,106,255,0.2)",
               background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            계속 생성하기
+            {ko ? "계속 생성하기" : "Keep generating"}
           </button>
           <button onClick={onConfirm}
             style={{ flex: 1, padding: "12px", borderRadius: 11, border: "none",
               background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            나가기
+            {ko ? "나가기" : "Leave"}
           </button>
         </div>
       </div>
@@ -509,11 +516,11 @@ export default function App() {
     if (page !== "home") return (
       <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 48, fontWeight: 900, color: C.muted, marginBottom: 16, opacity: 0.3 }}>404</div>
-        <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>페이지를 찾을 수 없습니다</div>
-        <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>요청하신 페이지가 존재하지 않거나 이동되었어요.</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>{lang === "ko" ? "페이지를 찾을 수 없습니다" : "Page not found"}</div>
+        <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>{lang === "ko" ? "요청하신 페이지가 존재하지 않거나 이동되었어요." : "The page you requested doesn't exist or has moved."}</div>
         <button onClick={() => navigate("home")}
           style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-          홈으로 돌아가기
+          {lang === "ko" ? "홈으로 돌아가기" : "Back to Home"}
         </button>
       </div>
     );
@@ -674,7 +681,7 @@ export default function App() {
       `}</style>
 
       {/* 생성 중 이탈 방지 모달 */}
-      {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} />}
+      {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} lang={lang} />}
       {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
       {showAttendance && <Suspense fallback={null}><AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} /></Suspense>}
       {showPointsModal && (

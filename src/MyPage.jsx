@@ -346,14 +346,21 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               expired: "#94a3b8",
               paused: "#94a3b8",
             }[subscription.status] || "#94a3b8";
-            const statusLabel = ko ? {
+            const statusLabel = (ko ? {
               active: "활성",
               on_trial: "체험 중",
               cancelled: "해지 예정",
               past_due: "결제 지연",
               expired: "만료됨",
               paused: "일시 정지",
-            }[subscription.status] || subscription.status : subscription.status;
+            } : {
+              active: "Active",
+              on_trial: "Trial",
+              cancelled: "Ending",
+              past_due: "Past due",
+              expired: "Expired",
+              paused: "Paused",
+            })[subscription.status] || subscription.status;
             const intervalLabel = subscription.interval === "yearly" ? (ko?"연간":"Yearly") : (ko?"월간":"Monthly");
             const nextDate = subscription.renews_at ? new Date(subscription.renews_at).toLocaleDateString(ko?"ko-KR":"en-US") : null;
             const endsDate = subscription.ends_at ? new Date(subscription.ends_at).toLocaleDateString(ko?"ko-KR":"en-US") : null;
