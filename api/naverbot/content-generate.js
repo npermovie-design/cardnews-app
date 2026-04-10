@@ -10,6 +10,7 @@ import {
   checkDailyQuota,
 } from "../../lib/naverbot/index.js";
 import { buildBlogPrompt, splitBodyByImageMarkers } from "../../lib/naverbot/prompts.js";
+import { fetchRecentTrends, trendsToPromptText } from "../../lib/naverbot/trends.js";
 
 const OR_KEY = process.env.OPENROUTER_API_KEY;
 const PEXELS_KEY = process.env.PEXELS_KEY;
@@ -160,7 +161,11 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4. 프롬프트 빌드
+  // 4. 최근 1주일 트렌드 수집 (실패해도 빈 배열 → 트렌드 없이 진행)
+  const trends = await fetchRecentTrends(fields.keyword, { days: 7, limit: 8 });
+  const trendsText = trendsToPromptText(trends);
+
+  // 5. 프롬프트 빌드
   const { system, user } = buildBlogPrompt({
     subtype,
     tone,
@@ -168,9 +173,10 @@ export default async function handler(req, res) {
     wordCount: word_count,
     fields,
     userPrompt: user_prompt,
+    trendsText,
   });
 
-  // 5. Claude 호출
+  // 6. Claude 호출
   let aiText = "";
   let tokensUsed = 0;
   try {
@@ -203,11 +209,11 @@ export default async function handler(req, res) {
     return safeError(res, 502, "글 생성 실패", e);
   }
 
-  // 6. 파싱 + 마커 분할
+  // 7. 파싱 + 마커 분할
   const parsed = parseResponse(aiText, fields.keyword || "글");
   const rawBlocks = splitBodyByImageMarkers(parsed.body);
 
-  // 7. 이미지 마커 → Pexels 조회 → 실제 URL 채우기
+  // 8. 이미지 마커 → Pexels 조회 → 실제 URL 채우기
   const blocks = [];
   for (const blk of rawBlocks) {
     if (blk.type === "text") {
@@ -221,7 +227,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 8. 사용량 로깅 (비동기, 응답에 영향 X)
+  // 9. 사용량 로깅 (비동기, 응답에 영향 X)
   supabase
     .from("naverbot_posts_log")
     .insert({
@@ -239,6 +245,7 @@ export default async function handler(req, res) {
     title: parsed.title,
     blocks,
     tags: parsed.tags,
+    trends_used: trends.length,
     quota: { used: quota.used + 1, limit: quota.limit },
   });
 }
