@@ -461,10 +461,33 @@ export default function App() {
       en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", snsnews:"SNS News" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", snsnews:"SNSニュース" },
     };
+    // 페이지별 meta description (SEO 최적화)
+    const descMap = {
+      ko: {
+        home: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료!",
+        pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
+        about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
+        howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
+        ai: "AI로 블로그, 카드뉴스, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
+        contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
+        community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
+      },
+      en: {
+        home: "Enter a topic and AI creates card news, detail pages, and blog posts automatically. 5 free uses without signup!",
+        pricing: "SNS Makeit pricing. Basic $9.90/mo, Pro $19.90/mo, Premium $34.90/mo. 2 months free with annual billing. One-off packs from $5.90.",
+        about: "SNS Makeit is an all-in-one platform automating SNS content creation with AI.",
+        howto: "SNS Makeit user guide. Step-by-step for AI writing, image generation, and shorts editing.",
+        ai: "Generate blogs, card news, detail pages, images, and shorts videos with AI. 5 free uses for guests.",
+        contact: "Contact SNS Makeit. 1:1 support for billing, features, and troubleshooting.",
+        community: "SNS Makeit Community. Info, Q&A, and resources for marketers and creators.",
+      },
+    };
     const titles = titleMap[lang] || titleMap.ko;
+    const descs = descMap[lang] || descMap.ko;
     const pageTitle = target === "home" ? titles.home : (titles[target] || target) + " - " + brand;
+    const pageDesc = descs[target] || descs.home;
     document.title = pageTitle;
-    updateOgMeta(pageTitle, null, target === "home" ? "/" : "/" + target);
+    updateOgMeta(pageTitle, pageDesc, target === "home" ? "/" : "/" + target);
     window.scrollTo(0, 0);
   };
 
