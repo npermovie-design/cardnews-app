@@ -214,7 +214,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
               {[
                 ["monthly", lang === "ko" ? "월간" : "Monthly"],
-                ["yearly", lang === "ko" ? "연간 (2개월 무료)" : "Yearly (2 months free)"],
+                ["yearly", lang === "ko" ? "연간" : "Yearly"],
               ].map(([id, label]) => (
                 <button key={id} onClick={() => setBilling(id)}
                   style={{ padding: "9px 22px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
