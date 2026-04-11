@@ -449,12 +449,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 문장 종결 확인 헬퍼 — 문장 부호·해시태그 없이 끊어진 경우 false
     const isFinished = (txt) => {
       if (!txt) return false;
-      const tail = txt.trim().slice(-150);
-      // 해시태그가 있으면 완료
+      const trimmed = txt.trim();
+      const tail = trimmed.slice(-250);
+      // 해시태그(# 있음)가 있으면 완료
       if (/#[\wㄱ-ㅎ가-힣]+/.test(tail)) return true;
+      // # 없이 해시태그 스타일 라인 (띄어쓰기 구분 키워드 여러 개)가 마지막에 있어도 완료로 인정
+      const lastLine = trimmed.split("\n").pop() || "";
+      if (lastLine.trim().length > 10 && /^[가-힣\s]+$/.test(lastLine.trim()) && lastLine.trim().split(/\s+/).length >= 5) {
+        return true;
+      }
       // 문장 부호로 끝나면서 이상한 중간 cut이 아니면 OK
       if (/[.!?。][\s"')\]]*$/.test(tail)) {
-        // 마지막 문장이 너무 짧으면 (잘린 것일 가능성) false
         const lastSentence = tail.split(/[.!?。]/).slice(-2, -1)[0] || "";
         if (lastSentence.trim().length > 8) return true;
       }
@@ -468,21 +473,32 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try {
       let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
 
-      // 이어쓰기 조건: 길이 부족 OR 문장 종결 없음 (최대 2회 재시도)
+      // 이어쓰기 조건: 길이 너무 부족 AND 문장 종결 없을 때만 (1회 제한, 중복 제거)
       const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
-      let contAttempts = 0;
-      while (fullText && fullText.length > 50 && contAttempts < 2 && (fullText.length < minLen || !isFinished(fullText))) {
-        contAttempts++;
+      // 해시태그 존재 여부로 완료 판단 (# 있거나 문장 부호 종결)
+      if (fullText && fullText.length > 50 && fullText.length < minLen * 0.7 && !isFinished(fullText)) {
         try {
-          const needHashtag = !/#[\wㄱ-ㅎ가-힣]+/.test(fullText.slice(-200));
-          const contPrompt = `아래 글을 끊기지 않고 자연스럽게 이어서 완성해주세요. ${needHashtag ? "마지막에 해시태그 10개로 마무리하세요." : "자연스럽게 문장을 끝맺으세요."} 같은 문장을 반복하지 말고 이어서만 쓰세요.\n\n${fullText.slice(-600)}`;
+          const tail = fullText.slice(-400);
+          const contPrompt = `아래 글이 중간에 끊겼습니다. 끊어진 지점부터 이어서만 작성해주세요. 반드시 지켜야 할 점:\n1. 앞 내용은 절대 반복 금지. 이어지는 새 내용만 출력.\n2. 글 마지막에 # 기호로 시작하는 해시태그 10개로 마무리.\n3. 본문에 # 기호 금지, 마지막 해시태그에만 사용.\n\n[끊긴 지점]\n${tail}\n\n[이어서 작성할 내용만]`;
           const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 3000, (acc) => { _savedFull = fullText + "\n" + acc; try { sessionStorage.setItem(_ssSavedFullKey, _savedFull); } catch {} });
           if (cont && cont.trim().length > 20) {
-            fullText = fullText + "\n" + cont;
-          } else {
-            break;
+            // 중복 제거: cont의 시작이 fullText의 끝과 겹치면 제거
+            let dedupedCont = cont.trim();
+            const tail200 = fullText.slice(-200).trim();
+            // cont 시작 150자 안에 원본 끝 60자 이상이 겹치면 중복으로 판단
+            for (let chunkLen = Math.min(200, tail200.length); chunkLen >= 30; chunkLen -= 10) {
+              const tailChunk = tail200.slice(-chunkLen);
+              const idx = dedupedCont.indexOf(tailChunk);
+              if (idx >= 0 && idx < 300) {
+                dedupedCont = dedupedCont.slice(idx + tailChunk.length).trim();
+                break;
+              }
+            }
+            if (dedupedCont.length > 20) {
+              fullText = fullText + "\n" + dedupedCont;
+            }
           }
-        } catch { break; }
+        } catch {}
       }
 
       if (fullText && fullText.length > 50) {
