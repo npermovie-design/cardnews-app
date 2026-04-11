@@ -517,9 +517,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
       // 본문 내 [이미지: ...] 태그에 실제 이미지 자동 삽입
+      // fetchInlineImages가 내부에서 키워드 폴백까지 처리하므로 fetchImages 중복 호출 제거
+      // (중복 호출 시 fetchImages의 setSuggestedImages([]) 초기화가 fetchInlineImages 결과를 지우는 경쟁 상태 발생)
       if (_savedFull) fetchInlineImages(_savedFull);
-      // 하단 이미지 추천
-      if (_savedFull && fields.keyword) fetchImages(fields.keyword);
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
         try {
@@ -539,16 +539,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const fetchInlineImages = async (fullText) => {
     if (!fullText) return;
     const matches = Array.from(fullText.matchAll(/\[(?:image|이미지):\s*([^\]]+)\]/gi));
-    if (!matches.length) {
-      // 태그가 없으면 기존 방식: 단일 키워드로 풀 가져오기
-      if (fields.keyword) await fetchImages(fields.keyword);
-      return;
-    }
     const keywords = Array.from(new Set(matches.map(m => m[1].trim()).filter(Boolean))).slice(0, 8);
     const results = [];
+
+    // 1) AI가 [image: keyword] 태그를 만들었으면 각 키워드별 개별 검색
     for (const kw of keywords) {
       try {
-        // Pixabay 우선
         const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(kw)}&per_page=3&safesearch=true&image_type=photo&orientation=horizontal`);
         const d = await r.json();
         const h = d.hits?.[0];
@@ -556,22 +552,42 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           results.push({ id: "px"+h.id, preview: h.webformatURL, url: h.largeImageURL||h.webformatURL, src: "Pixabay", keyword: kw });
           continue;
         }
-        // Pexels 폴백
         const rp = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(kw)}&per_page=3&orientation=landscape`);
         const dp = await rp.json();
         const pp = dp.photos?.[0];
         if (pp) results.push({ id: "pe"+pp.id, preview: pp.src.medium, url: pp.src.large2x||pp.src.large, src: "Pexels", keyword: kw });
       } catch {}
     }
-    // 이미지가 부족하면 keyword 기반 풀로 보충
-    if (results.length < Math.min(3, keywords.length) && fields.keyword) {
+
+    // 2) 이미지가 3개 미만이면 fields.keyword 영어 변환 후 풀 검색으로 보충
+    if (results.length < 3 && fields.keyword) {
       try {
-        await fetchImages(fields.keyword);
-        // fetchImages가 setSuggestedImages로 세팅하므로 덮어쓰지 않고 반환
-        return;
+        let enKw = fields.keyword;
+        if (/[가-힣]/.test(enKw)) {
+          try {
+            const txt = await callAI("claude-haiku-4-5", [{
+              role: "user",
+              content: `다음 한국어 주제를 이미지 검색용 영어 키워드 2단어로 바꿔주세요. 답변은 영어 단어만:\n"${fields.keyword}"`
+            }], 40);
+            const en = (txt || "").trim().replace(/[^A-Za-z\s-]/g, " ").replace(/\s+/g, " ").trim();
+            if (en.length >= 3 && en.length < 60) enKw = en;
+          } catch {}
+        }
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=10&safesearch=true&image_type=photo&orientation=horizontal`);
+        const d = await r.json();
+        (d.hits || []).slice(0, 8 - results.length).forEach(h => {
+          results.push({ id: "px"+h.id, preview: h.webformatURL, url: h.largeImageURL||h.webformatURL, src: "Pixabay" });
+        });
       } catch {}
     }
-    if (results.length > 0) setSuggestedImages(results);
+
+    // 3) 최종 폴백: 그래도 부족하면 Picsum 랜덤 이미지 5개 (최소한 이미지는 보이게)
+    if (results.length === 0) {
+      const seeds = Array.from({length: 5}, (_, i) => Date.now() + i);
+      seeds.forEach(s => results.push({ id: "ps"+s, preview: `https://picsum.photos/seed/${s}/640/400`, url: `https://picsum.photos/seed/${s}/1200/800`, src: "Picsum" }));
+    }
+
+    setSuggestedImages(results);
   };
 
   // suggestedImages를 renderMarkdown에 직접 전달 — 별도 매핑 불필요
