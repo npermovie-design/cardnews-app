@@ -1,4 +1,5 @@
 /* 공통 AI 생성중 로딩 애니메이션 — 기능별 아이콘 지원 */
+import { useState, useEffect } from "react";
 
 // 기능별 SVG 아이콘 + 색상 매핑
 const FEATURE_ICONS = {
@@ -45,13 +46,41 @@ export default function LoadingAnimation({
   isDark = true,
   featureType = "", // "blog_naver", "ppt_gen", "product_shot", "video_create", etc.
   progress = -1, // 0~3 step index, -1 for auto
+  startTime = 0, // ms epoch — 생성 시작 시각 (0이면 mount 시 자동 설정)
+  expectedMs = 30000, // 예상 소요 시간
 }) {
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#6c757d";
 
   const feat = FEATURE_ICONS[featureType] || FEATURE_ICONS.default;
   const stepsLabels = FEATURE_STEPS[featureType] || FEATURE_STEPS.default;
-  const activeStep = progress >= 0 ? progress : 2; // default: 3번째 단계 활성
+
+  // elapsed-time 기반 진행률 계산 — 탭 전환·remount 돼도 startTime 기준으로 정확히 복원
+  const effectiveStart = startTime || (typeof window !== "undefined" ? Date.now() : 0);
+  const [now, setNow] = useState(() => (typeof window !== "undefined" ? Date.now() : 0));
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    tick();
+    // visibility 돌아올 때 즉시 갱신
+    const onVis = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    const id = setInterval(tick, 500);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+  const elapsed = Math.max(0, now - effectiveStart);
+  // 0~90%까지 elapsed 비례, 그 이후는 천천히 95%에 수렴 (생성 완료 전까지 100% 안 가게)
+  let progressPct;
+  if (elapsed < expectedMs * 0.9) {
+    progressPct = (elapsed / expectedMs) * 90;
+  } else {
+    const over = elapsed - expectedMs * 0.9;
+    progressPct = 90 + Math.min(5, over / 2000);
+  }
+  progressPct = Math.min(95, progressPct);
+
+  // 4단계 step 진행도 elapsed 기반 (각 25%씩)
+  const autoStep = Math.min(3, Math.floor((progressPct / 95) * 4));
+  const activeStep = progress >= 0 ? progress : autoStep;
 
   const steps = stepsLabels.map((l, i) => ({
     l,
@@ -101,9 +130,9 @@ export default function LoadingAnimation({
         ))}
       </div>
       <div style={{ height: 4, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", overflow: "hidden", maxWidth: 260, margin: "0 auto 10px", width: "100%" }}>
-        <div style={{ height: "100%", borderRadius: 4, background: `linear-gradient(90deg,${feat.color},${feat.color}cc,#ec4899)`, animation: "ld-progress 15s ease-out forwards" }} />
+        <div style={{ height: "100%", borderRadius: 4, background: `linear-gradient(90deg,${feat.color},${feat.color}cc,#ec4899)`, width: `${progressPct}%`, transition: "width 0.5s ease-out" }} />
       </div>
-      <div style={{ fontSize: 12, color: muted }}>보통 20~60초 소요</div>
+      <div style={{ fontSize: 12, color: muted }}>{Math.floor(elapsed/1000)}초 경과 · 보통 20~60초 소요</div>
     </div>
   );
 }
