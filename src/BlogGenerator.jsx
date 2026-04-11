@@ -40,7 +40,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const { t } = useI18n();
 
   const [subtype,    setSubtype]    = useState(cfg.subtypes[0].id);
-  const [fields,     setFields]     = useState({});
+  // fields는 sessionStorage에서 lazy init — _ssFieldsKey는 아래에 정의되므로 직접 키 문자열 사용
+  const [fields,     setFields]     = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("_bg_fields_" + (initialType || "blog")) || "{}"); } catch { return {}; }
+  });
   const [tone,       setTone]       = useState(cfg.tones[0].id);
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
@@ -271,8 +274,28 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   }, [loading]);
 
   // 다시 생성하기 확인
-  const [formStep, setFormStep] = useState(1); // 1~4 wizard steps
-  const [sourceType, setSourceType] = useState("topic"); // "link" | "file" | "topic"
+  // ── sessionStorage 키 ──
+  const _ssFormStepKey = useRef("_bg_formStep_" + (initialType || "blog")).current;
+  const _ssSourceTypeKey = useRef("_bg_sourceType_" + (initialType || "blog")).current;
+  const _ssFieldsKey = useRef("_bg_fields_" + (initialType || "blog")).current;
+  const _ssPlatformKey = useRef("_bg_platform_" + (initialType || "blog")).current;
+  const _ssSubtypeKey = useRef("_bg_subtype_" + (initialType || "blog")).current;
+  const _ssUrlInputKey = useRef("_bg_urlInput_" + (initialType || "blog")).current;
+
+  const [formStep, setFormStep_raw] = useState(() => {
+    try { return parseInt(sessionStorage.getItem(_ssFormStepKey) || "1") || 1; } catch { return 1; }
+  }); // 1~4 wizard steps
+  const setFormStep = (v) => {
+    setFormStep_raw(v);
+    try { sessionStorage.setItem(_ssFormStepKey, String(v)); } catch {}
+  };
+  const [sourceType, setSourceType_raw] = useState(() => {
+    try { return sessionStorage.getItem(_ssSourceTypeKey) || "topic"; } catch { return "topic"; }
+  }); // "link" | "file" | "topic"
+  const setSourceType = (v) => {
+    setSourceType_raw(v);
+    try { sessionStorage.setItem(_ssSourceTypeKey, v); } catch {}
+  };
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
@@ -295,7 +318,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
-  const setField = (k,v) => setFields(p=>({...p,[k]:v}));
+  const setField = (k,v) => setFields(p => {
+    const next = {...p, [k]: v};
+    try { sessionStorage.setItem(_ssFieldsKey, JSON.stringify(next)); } catch {}
+    return next;
+  });
   const currentFields = cfg.fields[subtype] || ["keyword","extra"];
   const examples = cfg.examples?.[subtype] || [];
   const isTistory = initialType === "blog_tistory";
@@ -495,15 +522,30 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const fetchImages = async (keyword) => {
     if (!keyword) return;
     setImgSearching(true); setSuggestedImages([]);
+    // 한국어 keyword → 영어 이미지 검색어 변환 (Pixabay/Pexels는 영어 매칭이 훨씬 정확)
+    let enQuery = keyword;
+    const hasKorean = /[가-힣]/.test(keyword);
+    if (hasKorean) {
+      try {
+        const txt = await callAI("claude-haiku-4-5", [{
+          role: "user",
+          content: `다음 한국어 주제를 이미지 검색에 쓸 영어 키워드 2~3개로 바꿔주세요. 핵심 명사 위주로. 답변은 영어 단어만, 공백으로 구분, 다른 설명 없이:\n"${keyword}"`
+        }], 60);
+        const clean = (txt || "").trim().split("\n")[0].replace(/["'.,]/g, "").trim();
+        if (clean && clean.length > 0 && clean.length < 80 && /^[A-Za-z ]+$/.test(clean)) {
+          enQuery = clean;
+        }
+      } catch {}
+    }
     const imgs = [];
     try {
       {
-        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(keyword)}&per_page=10&safesearch=true&image_type=photo&lang=ko`);
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enQuery)}&per_page=12&safesearch=true&image_type=photo&orientation=horizontal`);
         const d = await r.json();
         (d.hits||[]).forEach(h => imgs.push({ id:"px"+h.id, preview:h.webformatURL, url:h.largeImageURL||h.webformatURL, src:"Pixabay" }));
       }
       {
-        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(keyword)}&per_page=10`);
+        const r = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(enQuery)}&per_page=12&orientation=landscape`);
         const d = await r.json();
         (d.photos||[]).forEach(p => imgs.push({ id:"pe"+p.id, preview:p.src.medium, url:p.src.large2x||p.src.large, src:"Pexels" }));
       }
@@ -582,23 +624,40 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const blogContentRef = useRef(null);
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    if (withImages && suggestedImages.length > 0 && blogContentRef.current) {
+    if (withImages && blogContentRef.current) {
       setCopyLoading(true);
       try {
-        // HTML 복제본 생성 — 원본 CDN URL 유지 (네이버 블로그 호환)
+        // HTML 복제본 생성
         const el = blogContentRef.current;
         const clone = el.cloneNode(true);
-        // 이미지 래퍼에서 img만 남기고 캡션/버튼/메뉴 모두 제거
+        // 버튼/입력 제거
         clone.querySelectorAll("button, input").forEach(n => n.remove());
         clone.querySelectorAll("img").forEach(img => {
           const wrapper = img.parentElement;
           if (wrapper && wrapper.tagName === "DIV") {
-            // img만 남기고 나머지 자식 제거
             Array.from(wrapper.children).forEach(child => {
               if (child.tagName !== "IMG") child.remove();
             });
           }
         });
+
+        // ★ 이미지 CDN URL → base64 data URI 변환 (모든 에디터 호환)
+        const imgEls = Array.from(clone.querySelectorAll("img"));
+        await Promise.all(imgEls.map(async (img) => {
+          const src = img.src;
+          if (!src || src.startsWith("data:")) return;
+          try {
+            const b64 = await imageUrlToBase64(src);
+            if (b64) {
+              img.src = b64;
+              img.removeAttribute("srcset");
+              img.removeAttribute("crossorigin");
+              img.style.maxWidth = "100%";
+              img.style.height = "auto";
+            }
+          } catch {}
+        }));
+
         // 소제목(fontWeight:800) 앞에 빈 줄 추가
         clone.querySelectorAll("p").forEach(p => {
           if (p.style.fontWeight === "800") {
@@ -699,8 +758,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <button onClick={()=>{
                 setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType("topic");
                 setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
-                setTitleSugg([]);setSeoKeys([]);setFields({});
-                try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);}catch{}
+                setTitleSugg([]);setSeoKeys([]);setFields({});setUrlInput("");setUrlResult(null);
+                try{
+                  sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);
+                  sessionStorage.removeItem(_ssFormStepKey);sessionStorage.removeItem(_ssSourceTypeKey);sessionStorage.removeItem(_ssFieldsKey);
+                  sessionStorage.removeItem(_ssPlatformKey);sessionStorage.removeItem(_ssSubtypeKey);sessionStorage.removeItem(_ssUrlInputKey);
+                }catch{}
               }}
                 style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${border}`,
                   background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",
