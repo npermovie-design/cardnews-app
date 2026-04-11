@@ -964,8 +964,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 로딩 */}
       {loading && (
         <div style={{textAlign:"center",padding:"80px 0",color:C.muted}}>
-          <div style={{fontSize:32,marginBottom:12,display:"inline-block",animation:"spin 1s linear infinite"}}>⏳</div>
-          <div style={{fontSize:14}}>{t("loadingPosts")}</div>
+          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:44,height:44,borderRadius:"50%",border:"3px solid "+(isDark?"rgba(255,255,255,0.08)":"#e9ecef"),borderTopColor:"#7c6aff",animation:"spin 1s linear infinite",marginBottom:16}}/>
+          <div style={{fontSize:15,fontWeight:600}}>{t("loadingPosts")}</div>
         </div>
       )}
 
@@ -974,19 +974,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
           {(subCat==="archive"?subCats.filter(s=>s.id==="archive"):subCats.filter(s=>s.id!=="archive")).map(s=>(
             <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);setFilterTag("");setArchiveView("posts");}}
-              style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"13px 18px",borderRadius:0,border:"none",cursor:"pointer",
-                fontSize:isMobile?13:14,fontWeight:subCat===s.id?700:500,whiteSpace:"nowrap",
+              style={{display:"flex",alignItems:"center",gap:8,padding:isMobile?"14px 16px":"16px 22px",borderRadius:0,border:"none",cursor:"pointer",
+                fontSize:isMobile?14:15,fontWeight:subCat===s.id?800:600,whiteSpace:"nowrap",minHeight:48,fontFamily:"inherit",
                 background:"transparent",color:subCat===s.id?s.color:C.muted,
                 borderBottom:subCat===s.id?"3px solid "+s.color:"3px solid transparent",
                 transition:"all 0.12s"}}>
-              {s.icon} {s.label}
-              <span style={{fontSize:11,opacity:0.6,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",padding:"1px 7px",borderRadius:10}}>{posts.filter(p=>p.cat===s.id||p.subCat===s.id).length}</span>
+              {s.label}
+              <span style={{fontSize:12,fontWeight:700,opacity:0.75,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",padding:"3px 9px",borderRadius:12}}>{posts.filter(p=>p.cat===s.id||p.subCat===s.id).length}</span>
             </button>
           ))}
           {user?.role==="admin" && (
             <button onClick={()=>setShowCatMgr(true)}
-              style={{marginLeft:"auto",flexShrink:0,padding:"8px 14px",borderRadius:8,border:"1px dashed "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
-              ⚙️ 카테고리 관리
+              style={{marginLeft:"auto",flexShrink:0,padding:"10px 16px",borderRadius:10,border:"1px dashed "+bdr,background:"transparent",color:C.muted,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              카테고리 관리
             </button>
           )}
         </div>
@@ -994,12 +995,14 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
       {!loading && <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
         {/* 포인트 안내 배너 */}
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",margin:"16px 0 0",borderRadius:12,
-          background:isDark?"rgba(74,222,128,0.06)":"rgba(74,222,128,0.05)",border:"1px solid rgba(74,222,128,0.15)"}}>
-          <span style={{fontSize:18}}>💎</span>
-          <span style={{fontSize:13,color:isDark?"#86efac":"#166534",lineHeight:1.6}}>
-            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#4ade80"}}>+2P</b> 적립됩니다.
-            댓글에는 포인트가 지급되지 않습니다. 적립된 포인트로 AI 생성기를 이용해보세요!
+        <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",margin:"18px 0 0",borderRadius:12,
+          background:isDark?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.18)"}}>
+          <div style={{width:36,height:36,borderRadius:10,background:"rgba(34,197,94,0.15)",color:"#22c55e",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <span style={{fontSize:14,color:isDark?"#86efac":"#166534",lineHeight:1.7}}>
+            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#22c55e"}}>+1P</b> 적립 (하루 최대 10회).
+            댓글에는 포인트가 지급되지 않으며, 매일 로그인 시 <b style={{color:"#22c55e"}}>+2P</b>가 추가로 적립됩니다.
           </span>
         </div>
 
@@ -1280,41 +1283,47 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {!(subCat==="archive" && archiveView==="search") && <>
 
             {/* 액션바 */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:15,fontWeight:800,color:C.text}}>{subInfo.icon} {subInfo.label}</span>
-                <span style={{fontSize:12,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"2px 8px",borderRadius:10}}>{t("totalN")} {activeFiltered.length}{t("itemsUnit")}{isArchivePostsView?" "+t("withAttach"):""}</span>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:17,fontWeight:900,color:C.text,letterSpacing:-0.3}}>{subInfo.label}</span>
+                <span style={{fontSize:12,fontWeight:700,color:C.muted,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f8",padding:"4px 10px",borderRadius:12}}>{t("totalN")} {activeFiltered.length}{t("itemsUnit")}{isArchivePostsView?" "+t("withAttach"):""}</span>
               </div>
-              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:9,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff"}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{display:"flex",border:"1.5px solid "+bdr,borderRadius:11,overflow:"hidden",background:isDark?"rgba(255,255,255,0.04)":"#fff",minHeight:42,alignItems:"center",paddingLeft:10}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder={t("search")}
-                    style={{padding:"7px 10px",border:"none",background:"transparent",color:C.text,fontSize:13,outline:"none",width:isMobile?80:150}}/>
-                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"7px 8px",border:"none",background:"transparent",color:C.muted,cursor:"pointer"}}>✕</button>}
+                    style={{padding:"10px 12px",border:"none",background:"transparent",color:C.text,fontSize:14,outline:"none",width:isMobile?100:170,minHeight:40}}/>
+                  {search&&<button onClick={()=>{setSearch("");setPage(1);}} style={{padding:"10px 12px",border:"none",background:"transparent",color:C.muted,cursor:"pointer",display:"flex",alignItems:"center"}} aria-label="지우기">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>}
                 </div>
                 <select value={sort} onChange={e=>setSort(e.target.value)}
-                  style={{padding:"7px 8px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:12,outline:"none",cursor:"pointer"}}>
+                  style={{padding:"10px 12px",borderRadius:11,border:"1.5px solid "+bdr,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:C.text,fontSize:14,fontWeight:600,outline:"none",cursor:"pointer",minHeight:42,fontFamily:"inherit"}}>
                   <option value="latest">{t("sortLatest")}</option>
                   <option value="views">{t("sortViews")}</option>
                   <option value="likes">{t("sortLikes")}</option>
                 </select>
                 {/* 뷰 모드 토글 */}
-                <div style={{display:"flex",border:"1px solid "+bdr,borderRadius:8,overflow:"hidden"}}>
-                  {[["list","☰",t("viewList")],["gallery","⊞",t("viewGallery")],["compact","▤",t("viewCompact")]].map(([vm,icon,label])=>(
+                <div style={{display:"flex",border:"1.5px solid "+bdr,borderRadius:11,overflow:"hidden"}}>
+                  {[
+                    ["list", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>, t("viewList")],
+                    ["gallery", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>, t("viewGallery")],
+                    ["compact", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>, t("viewCompact")],
+                  ].map(([vm,icon,label])=>(
                     <button key={vm} onClick={()=>setViewMode(vm)} title={label}
-                      style={{padding:"7px 9px",border:"none",cursor:"pointer",fontSize:14,lineHeight:1,
+                      style={{padding:"10px 12px",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",minHeight:42,minWidth:42,
                         background:viewMode===vm?(isDark?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.12)"):(isDark?"rgba(255,255,255,0.04)":"#fff"),
-                        color:viewMode===vm?"#7c6aff":C.muted}}>
+                        color:viewMode===vm?"#7c6aff":C.muted}} aria-label={label}>
                       {icon}
                     </button>
                   ))}
                 </div>
                 {/* 글쓰기/자료등록 버튼 */}
-                {(
-                  <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
-                    style={{padding:"10px 18px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(99,102,241,0.3)",minHeight:44}}>
-                    {subCat==="archive"?"자료 등록":t("writePost")}
-                  </button>
-                )}
+                <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest();}else setMode("write");}}
+                  style={{padding:"12px 22px",borderRadius:11,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 4px 14px rgba(99,102,241,0.35)",minHeight:46,display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  {subCat==="archive"?"자료 등록":t("writePost")}
+                </button>
               </div>
             </div>
 
@@ -1409,9 +1418,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* ── 리스트 뷰 ── */}
             {viewMode==="list" && pageItems.length>0 && <>
               {!isMobile && (
-                <div style={{background:head,border:"1px solid "+bdr,borderRadius:"10px 10px 0 0",padding:"9px 12px",
-                  display:"grid",gridTemplateColumns:"46px 1fr 90px 76px 50px 46px 36px",
-                  fontSize:11,fontWeight:700,color:C.muted,alignItems:"center"}}>
+                <div style={{background:head,border:"1px solid "+bdr,borderRadius:"12px 12px 0 0",padding:"12px 16px",
+                  display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px 42px",gap:6,
+                  fontSize:12,fontWeight:800,color:C.muted,alignItems:"center",letterSpacing:0.2}}>
                   <span style={{textAlign:"center"}}>{t("colImage")}</span>
                   <span style={{paddingLeft:6}}>{t("colTitle")}</span>
                   <span style={{textAlign:"center"}}>{t("colAuthor")}</span>
@@ -1452,7 +1461,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
                             <span>{p.date}</span><span>{p.views||0}</span>
                             {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>{p.likes}</span>}
-                            {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"2px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:10,cursor:"pointer",fontWeight:700}}>⬇ 다운</button>}
+                            {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:12,cursor:"pointer",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4,minHeight:34,fontFamily:"inherit"}}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                              다운
+                            </button>}
                           </div>
                         </div>
                         {/* 번호 제거 */}
@@ -1460,8 +1472,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     </div>
                   ) : (
                     <div key={p.id} onClick={()=>openPost(p)}
-                      style={{display:"grid",gridTemplateColumns:"46px 1fr 90px 76px 50px 46px 36px",
-                        padding:"8px 12px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center"}}
+                      style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px 42px",gap:6,
+                        padding:"14px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center",minHeight:56}}
                       onMouseEnter={e=>{
                         e.currentTarget.style.background=hover;
                         const x=e.clientX+18, y=e.clientY-10;
@@ -1483,24 +1495,26 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       onMouseMove={e=>{const x=e.clientX+18,y=e.clientY-10,popW=280,popH=thumb?220:100;const pos={x:x+popW>window.innerWidth?e.clientX-popW-10:x,y:y+popH>window.innerHeight?e.clientY-popH:y};setHoverPreview(prev=>prev?.post?.id===p.id?{...prev,...pos}:prev);}}
                       onMouseLeave={e=>{e.currentTarget.style.background="transparent";setHoverPreview(null);}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {thumb && <img src={toThumb(thumb,72,56)} alt="" loading="eager" style={{width:36,height:28,objectFit:"cover",borderRadius:5}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>}
+                        {thumb && <img src={toThumb(thumb,80,64)} alt="" loading="eager" style={{width:42,height:34,objectFit:"cover",borderRadius:7}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>}
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6,paddingLeft:6,minWidth:0}}>
-                        {p.tag&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
-                        <span style={{fontSize:14,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
-                        {hasDl&&<span style={{fontSize:10,color:"#3b82f6",flexShrink:0}} title={`첨부 ${p.images.length}개`}>+</span>}
-                        {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:700,flexShrink:0}}>[{p.comments.length}]</span>}
-                        {today&&<span style={{fontSize:9,background:"rgba(239,68,68,0.12)",color:"#ef4444",padding:"1px 5px",borderRadius:4,fontWeight:700,flexShrink:0}}>N</span>}
+                      <div style={{display:"flex",alignItems:"center",gap:8,paddingLeft:8,minWidth:0}}>
+                        {p.tag&&<span style={{fontSize:11,padding:"3px 9px",borderRadius:6,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:800,flexShrink:0,whiteSpace:"nowrap"}}>{p.tag}</span>}
+                        <span style={{fontSize:15,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</span>
+                        {hasDl&&<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>}
+                        {(p.comments||[]).length>0&&<span style={{fontSize:12,color:C.purpleL,fontWeight:800,flexShrink:0}}>[{p.comments.length}]</span>}
+                        {today&&<span style={{fontSize:10,background:"rgba(239,68,68,0.15)",color:"#ef4444",padding:"2px 7px",borderRadius:6,fontWeight:800,flexShrink:0}}>NEW</span>}
                       </div>
                       <div style={{textAlign:"center",minWidth:0}}>
-                        <span style={{fontSize:12,color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
+                        <span style={{fontSize:13,color:C.purpleL,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",padding:"0 4px"}}>{p.nick}</span>
                       </div>
-                      <span style={{textAlign:"center",fontSize:11,color:C.muted}}>{p.date}</span>
-                      <span style={{textAlign:"center",fontSize:12,color:C.muted}}>{p.views||0}</span>
-                      <span style={{textAlign:"center",fontSize:12,fontWeight:(p.likes||0)>0?700:400,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                      <span style={{textAlign:"center",fontSize:12,color:C.muted,fontWeight:500}}>{p.date}</span>
+                      <span style={{textAlign:"center",fontSize:13,color:C.muted,fontWeight:600}}>{p.views||0}</span>
+                      <span style={{textAlign:"center",fontSize:13,fontWeight:(p.likes||0)>0?800:500,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
                         {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} title="첫 번째 첨부 다운로드"
-                          style={{padding:"3px 6px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:11,cursor:"pointer",fontWeight:700,lineHeight:1}}>⬇</button>}
+                          style={{padding:"6px",borderRadius:7,border:"1.5px solid #3b82f6",background:"transparent",color:"#3b82f6",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",width:30,height:30}} aria-label="다운로드">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        </button>}
                       </div>
                     </div>
                   );
