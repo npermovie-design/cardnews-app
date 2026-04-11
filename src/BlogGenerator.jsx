@@ -442,10 +442,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
     const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
     const prompt = advPromptExtra ? basePrompt + advPromptExtra : basePrompt;
-    // 분량에 따른 max_tokens 설정
-    const tokenMap = { short: 2000, medium: 4000, long: 6000, xlong: 8000 };
-    const maxTok = tokenMap[wordCount] || 4000;
+    // 분량에 따른 max_tokens 설정 (여유 있게)
+    const tokenMap = { short: 3000, medium: 5500, long: 8000, xlong: 10000 };
+    const maxTok = tokenMap[wordCount] || 5500;
     let _savedFull = "";
+    // 문장 종결 확인 헬퍼 — 문장 부호·해시태그 없이 끊어진 경우 false
+    const isFinished = (txt) => {
+      if (!txt) return false;
+      const tail = txt.trim().slice(-150);
+      // 해시태그가 있으면 완료
+      if (/#[\wㄱ-ㅎ가-힣]+/.test(tail)) return true;
+      // 문장 부호로 끝나면서 이상한 중간 cut이 아니면 OK
+      if (/[.!?。][\s"')\]]*$/.test(tail)) {
+        // 마지막 문장이 너무 짧으면 (잘린 것일 가능성) false
+        const lastSentence = tail.split(/[.!?。]/).slice(-2, -1)[0] || "";
+        if (lastSentence.trim().length > 8) return true;
+      }
+      return false;
+    };
     // 최대 2회 시도 (실패 시 재시도)
     let lastErr = null;
     try {
@@ -454,14 +468,21 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try {
       let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
 
-      // 글이 짧거나 해시태그 없으면 이어쓰기 시도
+      // 이어쓰기 조건: 길이 부족 OR 문장 종결 없음 (최대 2회 재시도)
       const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
-      if (fullText && fullText.length < minLen && fullText.length > 50) {
+      let contAttempts = 0;
+      while (fullText && fullText.length > 50 && contAttempts < 2 && (fullText.length < minLen || !isFinished(fullText))) {
+        contAttempts++;
         try {
-          const contPrompt = `아래 글을 이어서 완성해주세요. 해시태그 10개로 마무리하세요.\n\n${fullText.slice(-500)}`;
-          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 2000, (acc) => { _savedFull = fullText + acc; try { sessionStorage.setItem(_ssSavedFullKey, _savedFull); } catch {} });
-          if (cont) fullText = fullText + "\n" + cont;
-        } catch {}
+          const needHashtag = !/#[\wㄱ-ㅎ가-힣]+/.test(fullText.slice(-200));
+          const contPrompt = `아래 글을 끊기지 않고 자연스럽게 이어서 완성해주세요. ${needHashtag ? "마지막에 해시태그 10개로 마무리하세요." : "자연스럽게 문장을 끝맺으세요."} 같은 문장을 반복하지 말고 이어서만 쓰세요.\n\n${fullText.slice(-600)}`;
+          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 3000, (acc) => { _savedFull = fullText + "\n" + acc; try { sessionStorage.setItem(_ssSavedFullKey, _savedFull); } catch {} });
+          if (cont && cont.trim().length > 20) {
+            fullText = fullText + "\n" + cont;
+          } else {
+            break;
+          }
+        } catch { break; }
       }
 
       if (fullText && fullText.length > 50) {
@@ -513,8 +534,45 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
-  /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체 ── */
-  const fetchInlineImages = async () => { /* suggestedImages useEffect에서 처리 */ };
+  /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체
+     AI가 글마다 작성한 영어 키워드를 각각 개별 검색 → 섹션별 정확한 이미지 매칭 ── */
+  const fetchInlineImages = async (fullText) => {
+    if (!fullText) return;
+    const matches = Array.from(fullText.matchAll(/\[(?:image|이미지):\s*([^\]]+)\]/gi));
+    if (!matches.length) {
+      // 태그가 없으면 기존 방식: 단일 키워드로 풀 가져오기
+      if (fields.keyword) await fetchImages(fields.keyword);
+      return;
+    }
+    const keywords = Array.from(new Set(matches.map(m => m[1].trim()).filter(Boolean))).slice(0, 8);
+    const results = [];
+    for (const kw of keywords) {
+      try {
+        // Pixabay 우선
+        const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(kw)}&per_page=3&safesearch=true&image_type=photo&orientation=horizontal`);
+        const d = await r.json();
+        const h = d.hits?.[0];
+        if (h) {
+          results.push({ id: "px"+h.id, preview: h.webformatURL, url: h.largeImageURL||h.webformatURL, src: "Pixabay", keyword: kw });
+          continue;
+        }
+        // Pexels 폴백
+        const rp = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(kw)}&per_page=3&orientation=landscape`);
+        const dp = await rp.json();
+        const pp = dp.photos?.[0];
+        if (pp) results.push({ id: "pe"+pp.id, preview: pp.src.medium, url: pp.src.large2x||pp.src.large, src: "Pexels", keyword: kw });
+      } catch {}
+    }
+    // 이미지가 부족하면 keyword 기반 풀로 보충
+    if (results.length < Math.min(3, keywords.length) && fields.keyword) {
+      try {
+        await fetchImages(fields.keyword);
+        // fetchImages가 setSuggestedImages로 세팅하므로 덮어쓰지 않고 반환
+        return;
+      } catch {}
+    }
+    if (results.length > 0) setSuggestedImages(results);
+  };
 
   // suggestedImages를 renderMarkdown에 직접 전달 — 별도 매핑 불필요
 
