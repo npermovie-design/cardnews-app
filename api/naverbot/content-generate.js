@@ -5,8 +5,7 @@ import {
   setCors,
   safeError,
   supabase,
-  verifyLicense,
-  validateLicenseKey,
+  verifyMakeitAccount,
   checkDailyQuota,
 } from "../../lib/naverbot/index.js";
 import { buildBlogPrompt, splitBodyByImageMarkers } from "../../lib/naverbot/prompts.js";
@@ -33,9 +32,11 @@ function validateInput(b) {
   if (!b || typeof b !== "object") return ["request body 누락"];
   const errors = [];
 
-  if (!validateLicenseKey(b.license_key)) errors.push("license_key 형식 오류");
-  if (!b.machine_id || typeof b.machine_id !== "string" || b.machine_id.length > 128)
-    errors.push("machine_id 필수");
+  // 메이킷 계정 이메일/비밀번호
+  if (!b.email || typeof b.email !== "string") errors.push("이메일 필수");
+  else if (b.email.length > 200) errors.push("이메일 형식 오류");
+  if (!b.password || typeof b.password !== "string") errors.push("비밀번호 필수");
+  else if (b.password.length > 200) errors.push("비밀번호 형식 오류");
 
   if (!b.fields || typeof b.fields !== "object") errors.push("fields 객체 필수");
   else if (!b.fields.keyword || typeof b.fields.keyword !== "string")
@@ -49,7 +50,6 @@ function validateInput(b) {
   if (b.word_count && !VALID_WORDCOUNTS.includes(b.word_count))
     errors.push("word_count invalid (short|medium|long)");
 
-  // 자유 프롬프트 길이 제한
   if (b.fields?.extra && b.fields.extra.length > 2000) errors.push("extra 2000자 초과");
   if (b.user_prompt && b.user_prompt.length > 2000) errors.push("user_prompt 2000자 초과");
 
@@ -134,8 +134,8 @@ export default async function handler(req, res) {
   if (errors.length) return safeError(res, 400, errors[0]);
 
   const {
-    license_key,
-    machine_id,
+    email,
+    password,
     subtype = "info",
     tone = "friendly",
     speech = "polite_yo",
@@ -144,17 +144,20 @@ export default async function handler(req, res) {
     user_prompt = "",
   } = req.body;
 
-  // 2. 라이선스
-  let licResult;
+  // 2. 메이킷 계정 + 구독 상태 확인
+  let authResult;
   try {
-    licResult = await verifyLicense({ licenseKey: license_key, machineId: machine_id });
+    authResult = await verifyMakeitAccount(email, password);
   } catch (e) {
-    return safeError(res, 500, "라이선스 검증 실패", e);
+    return safeError(res, 500, "계정 검증 실패", e);
   }
-  if (!licResult.ok) return res.status(403).json({ ok: false, error: licResult.reason });
+  if (!authResult.ok) return res.status(403).json({ ok: false, error: authResult.reason });
+
+  // 사용량 추적을 위해 uid를 internal key로 사용
+  const userKey = authResult.uid;
 
   // 3. 일일 한도
-  const quota = await checkDailyQuota(license_key, licResult.license.plan);
+  const quota = await checkDailyQuota(userKey, authResult.plan);
   if (quota.exceeded) {
     return res.status(429).json({
       ok: false,
@@ -228,11 +231,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // 9. 사용량 로깅 (비동기, 응답에 영향 X)
+  // 9. 사용량 로깅 (uid를 license_key 컬럼에 저장 — 기존 스키마 호환)
   supabase
     .from("naverbot_posts_log")
     .insert({
-      license_key,
+      license_key: userKey,
       topic: (fields.keyword || "").slice(0, 200),
       title: parsed.title.slice(0, 200),
       tokens_used: tokensUsed,
