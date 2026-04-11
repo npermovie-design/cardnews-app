@@ -30,6 +30,17 @@ export default async function handler(req, res) {
       .eq("uid", result.uid)
       .maybeSingle();
 
+    // trial 사용량 조회 (구독 없는 경우 5회 카운트)
+    let trialUsed = 0;
+    let trialLimit = 5;
+    if (result.trial) {
+      const { count } = await supabase
+        .from("naverbot_posts_log")
+        .select("id", { count: "exact", head: true })
+        .eq("license_key", result.uid);
+      trialUsed = count ?? 0;
+    }
+
     return res.status(200).json({
       valid: true,
       user: {
@@ -39,6 +50,9 @@ export default async function handler(req, res) {
         role: userRow?.role || "member",
       },
       plan: result.plan,
+      trial: result.trial || false,
+      trial_used: trialUsed,
+      trial_limit: trialLimit,
       expires_at: result.expires_at,
     });
   } catch (e) {
