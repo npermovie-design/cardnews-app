@@ -1104,182 +1104,45 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <div style={{fontSize:12,color:muted,textAlign:"center",fontWeight:600}}>{formStep} / 4 단계</div>
             </div>
 
-            {/* ══════ Step 1: Source Selection ══════ */}
+            {/* ══════ Step 1: Source Selection — 클릭 즉시 Step 2로 ══════ */}
             {formStep===1 && (
               <div>
                 <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어떻게 시작할까요?</div>
-                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>아래 3가지 중 편한 방법을 선택하세요</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))",gap:14,marginBottom:22}}>
+                <div style={{fontSize:14,color:muted,marginBottom:28,lineHeight:1.6,textAlign:"center"}}>원하는 방식을 고르면 바로 다음 단계로 넘어갑니다</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))",gap:14}}>
                   {[
-                    {id:"link",title:"링크로 작성",desc:"뉴스 기사나 유튜브 링크를 넣으면 주제를 자동으로 채워드려요",color:"#7c6aff",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
-                    {id:"file",title:"파일로 작성",desc:"이미지·PDF·문서 파일을 올리면 내용을 분석해서 글을 만듭니다",color:"#ec4899",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
-                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 원하는 글을 작성합니다",color:"#22c55e",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
-                  ].map(src => {
-                    const isA=sourceType===src.id;
-                    return (
-                      <button key={src.id} onClick={()=>setSourceType(src.id)}
-                        style={{
-                          padding:"24px 20px",borderRadius:16,textAlign:"left",cursor:"pointer",
-                          border:isA?`2.5px solid ${src.color}`:`2px solid ${border}`,
-                          background:isA?(`${src.color}0d`):inputBg,
-                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:12,
-                          minHeight:160, fontFamily:"inherit",
-                          boxShadow:isA?`0 6px 20px ${src.color}22`:"none",
-                        }}>
-                        <div style={{width:56,height:56,borderRadius:14,background:`${src.color}15`,color:src.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{src.iconSvg}</div>
-                        <div style={{fontSize:17,fontWeight:800,color:isA?src.color:text,letterSpacing:-0.3}}>{src.title}</div>
-                        <div style={{fontSize:13,color:muted,lineHeight:1.6}}>{src.desc}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Inline: Link input */}
-                {sourceType==="link" && (
-                  <div style={{marginBottom:22,padding:"20px 22px",borderRadius:14,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-                    <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>{t("urlImportLabel")}</div>
-                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
-                        onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
-                        placeholder="https:// 로 시작하는 주소를 붙여넣기"
-                        style={{flex:1,minWidth:200,padding:"14px 16px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontFamily:"inherit",outline:"none",minHeight:48}}/>
-                      <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                        style={{padding:"12px 24px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:accent,color:"#fff",fontSize:14,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap",minHeight:48}}>
-                        {urlLoading?"불러오는 중...":"불러오기"}
-                      </button>
-                    </div>
-                    {urlResult && (
-                      <div style={{marginTop:10,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:"1px solid rgba(99,102,241,0.2)",display:"flex",gap:10,alignItems:"center"}}>
-                        {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:40,height:28,objectFit:"cover",borderRadius:12,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
-                          <div style={{fontSize:11,color:muted,marginTop:1}}>{urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} -- 주제에 자동 입력됐어요</div>
-                        </div>
+                    {id:"link",title:"링크로 작성",desc:"뉴스 기사나 유튜브 링크 기반으로 작성",color:"#7c6aff",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
+                    {id:"file",title:"파일로 작성",desc:"이미지·PDF·문서 파일을 분석해서 작성",color:"#ec4899",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
+                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 작성",color:"#22c55e",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
+                  ].map(src => (
+                    <button key={src.id} onClick={()=>{setSourceType(src.id);setFormStep(2);}}
+                      style={{
+                        padding:"28px 22px",borderRadius:16,textAlign:"left",cursor:"pointer",
+                        border:`2px solid ${border}`,
+                        background:inputBg,
+                        transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:12,
+                        minHeight:180, fontFamily:"inherit",
+                      }}
+                      onMouseEnter={e=>{
+                        e.currentTarget.style.borderColor=src.color;
+                        e.currentTarget.style.background=`${src.color}0d`;
+                        e.currentTarget.style.transform="translateY(-3px)";
+                        e.currentTarget.style.boxShadow=`0 10px 28px ${src.color}22`;
+                      }}
+                      onMouseLeave={e=>{
+                        e.currentTarget.style.borderColor=border;
+                        e.currentTarget.style.background=inputBg;
+                        e.currentTarget.style.transform="none";
+                        e.currentTarget.style.boxShadow="none";
+                      }}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div style={{width:60,height:60,borderRadius:15,background:`${src.color}15`,color:src.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{src.iconSvg}</div>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.5}}><polyline points="9 18 15 12 9 6"/></svg>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Inline: File upload */}
-                {sourceType==="file" && (
-                  <div style={{marginBottom:18,padding:"14px 16px",borderRadius:12,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-                    <div style={{fontSize:12,fontWeight:700,color:muted,letterSpacing:0.5,marginBottom:6}}>{t("fileImport")}</div>
-                    <div style={{fontSize:11,color:muted,marginBottom:8,lineHeight:1.6}}>{t("fileImportDesc")}</div>
-                    {fields._files && fields._files.length > 0 && (
-                      <div style={{marginBottom:8,display:"flex",flexWrap:"wrap",gap:4}}>
-                        {fields._files.map((f,i) => (
-                          <span key={i} style={{fontSize:11,padding:"3px 8px",borderRadius:6,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)",color:accent,display:"inline-flex",alignItems:"center",gap:4}}>
-                            {f.name}
-                            <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:12,padding:0,lineHeight:1}}>x</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
-                        onChange={async (e) => {
-                          const fileList = Array.from(e.target.files || []);
-                          if (!fileList.length) return;
-                          e.target.value = "";
-                          const maxSize = 10 * 1024 * 1024;
-                          const valid = fileList.filter(f => f.size <= maxSize);
-                          if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
-                          if (!valid.length) return;
-                          setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
-                          const prevFiles = fields._files || [];
-                          const newFiles = [...prevFiles];
-                          let allResults = "";
-                          for (const file of valid) {
-                            try {
-                              if (file.type.startsWith("image/")) {
-                                const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-                                const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
-                                allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
-                                newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
-                              } else {
-                                const text2 = await file.text().catch(() => "");
-                                const summary = text2.slice(0, 2000);
-                                allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
-                                newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
-                              }
-                            } catch(err) {
-                              allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
-                            }
-                          }
-                          if (!fields.keyword && allResults) {
-                            const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
-                            if (firstLine) setField("keyword", firstLine);
-                          }
-                          setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
-                          setField("_files", newFiles);
-                        }}/>
-                      <button onClick={() => document.getElementById("blog-file-input")?.click()}
-                        style={{padding:"12px 24px",borderRadius:12,border:"none",cursor:"pointer",background:accent,color:"#fff",fontSize:14,fontWeight:800,whiteSpace:"nowrap",minHeight:48}}>
-                        {t("fileSelect")}
-                      </button>
-                      <span style={{fontSize:13,color:muted}}>여러 파일 선택 가능 · 10MB 이하</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Inline: Topic/keyword input */}
-                {sourceType==="topic" && (
-                  <div style={{marginBottom:22,padding:"20px 22px",borderRadius:14,background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",border:`1px solid ${border}`}}>
-                    <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>주제 또는 키워드</div>
-                    <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
-                      placeholder="예) 봄철 캠핑 준비물 추천"
-                      style={{...IS,fontSize:15,padding:"14px 16px",minHeight:48,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
-                    {fields.keyword && fields.keyword.trim() && (
-                      <div style={{marginTop:8,display:"flex",gap:6}}>
-                        <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                          {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
-                        </button>
-                        <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                          {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
-                        </button>
-                      </div>
-                    )}
-                    {titleSugg.length>0 && (
-                      <div style={{marginTop:10,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(99,102,241,0.15)"}}>
-                        <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
-                        {titleSugg.map(function(t,i){return(
-                          <div key={i} onClick={function(){setField("keyword",t);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t}</div>
-                        );})}
-                      </div>
-                    )}
-                    {seoKeys.length>0 && (
-                      <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
-                        <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                          {seoKeys.map(function(k,i){return(
-                            <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
-                          );})}
-                        </div>
-                      </div>
-                    )}
-                    <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
-                  </div>
-                )}
-
-                {/* Next button */}
-                <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-                  <button onClick={async ()=>{
-                    // 링크 모드: URL 입력만 해두고 불러오기 안 눌렀으면 자동 실행
-                    if (sourceType==="link" && urlInput.trim() && !urlResult) {
-                      await fetchFromUrl();
-                    }
-                    // 파일 모드: 파일은 있는데 keyword가 비어있으면 첫 파일명으로 폴백
-                    if (sourceType==="file" && !fields.keyword?.trim() && fields._files?.length) {
-                      const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60);
-                      if (fallback) setField("keyword", fallback);
-                    }
-                    setFormStep(2);
-                  }} disabled={!sourceType || urlLoading}
-                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:(!sourceType||urlLoading)?"not-allowed":"pointer",
-                      background:sourceType?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:sourceType?"#fff":muted,fontSize:16,fontWeight:800,opacity:(sourceType&&!urlLoading)?1:0.5,transition:"opacity 0.15s",minHeight:52,display:"flex",alignItems:"center",gap:8}}>
-                    {urlLoading ? "링크 불러오는 중..." : <>다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></>}
-                  </button>
+                      <div style={{fontSize:18,fontWeight:800,color:text,letterSpacing:-0.3,marginTop:2}}>{src.title}</div>
+                      <div style={{fontSize:13,color:muted,lineHeight:1.6}}>{src.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -1347,13 +1210,111 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   </div>
                 </div>
 
-                {/* Keyword input */}
+                {/* ── sourceType별 입력 블록 ── */}
+                {sourceType==="link" && (
+                  <div style={{marginBottom:22,padding:"22px 24px",borderRadius:14,background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.04)",border:`1.5px solid ${accent}33`}}>
+                    <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                      링크 붙여넣기
+                    </div>
+                    <div style={{fontSize:12,color:muted,marginBottom:12}}>뉴스 기사나 유튜브 주소를 넣으면 제목·본문을 자동으로 가져와요</div>
+                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                      <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
+                        placeholder="https:// 로 시작하는 주소를 붙여넣기"
+                        style={{flex:1,minWidth:200,padding:"14px 16px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontFamily:"inherit",outline:"none",minHeight:50}}/>
+                      <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                        style={{padding:"14px 26px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:accent,color:"#fff",fontSize:15,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap",minHeight:50,fontFamily:"inherit"}}>
+                        {urlLoading?"불러오는 중...":"불러오기"}
+                      </button>
+                    </div>
+                    {urlResult && (
+                      <div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,display:"flex",gap:12,alignItems:"center"}}>
+                        {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:56,height:42,objectFit:"cover",borderRadius:8,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
+                          <div style={{fontSize:12,color:"#22c55e",marginTop:3,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            {urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} · 주제 자동 입력됨
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {sourceType==="file" && (
+                  <div style={{marginBottom:22,padding:"22px 24px",borderRadius:14,background:isDark?"rgba(236,72,153,0.06)":"rgba(236,72,153,0.04)",border:`1.5px solid rgba(236,72,153,0.3)`}}>
+                    <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      파일 업로드
+                    </div>
+                    <div style={{fontSize:12,color:muted,marginBottom:12}}>이미지·PDF·문서 파일을 올리면 내용을 분석해서 글의 소재로 사용해요 (10MB 이하, 여러 개 가능)</div>
+                    {fields._files && fields._files.length > 0 && (
+                      <div style={{marginBottom:12,display:"flex",flexWrap:"wrap",gap:6}}>
+                        {fields._files.map((f,i) => (
+                          <span key={i} style={{fontSize:13,padding:"8px 14px",borderRadius:10,background:isDark?"rgba(236,72,153,0.15)":"rgba(236,72,153,0.1)",color:"#ec4899",display:"inline-flex",alignItems:"center",gap:8,fontWeight:700}}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            {f.name}
+                            <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",padding:0,display:"flex",alignItems:"center",opacity:0.7}} aria-label="제거">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
+                      onChange={async (e) => {
+                        const fileList = Array.from(e.target.files || []);
+                        if (!fileList.length) return;
+                        e.target.value = "";
+                        const maxSize = 10 * 1024 * 1024;
+                        const valid = fileList.filter(f => f.size <= maxSize);
+                        if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
+                        if (!valid.length) return;
+                        setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
+                        const prevFiles = fields._files || [];
+                        const newFiles = [...prevFiles];
+                        let allResults = "";
+                        for (const file of valid) {
+                          try {
+                            if (file.type.startsWith("image/")) {
+                              const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+                              const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
+                              allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
+                              newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
+                            } else {
+                              const text2 = await file.text().catch(() => "");
+                              const summary = text2.slice(0, 2000);
+                              allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
+                              newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
+                            }
+                          } catch(err) {
+                            allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
+                          }
+                        }
+                        if (!fields.keyword && allResults) {
+                          const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
+                          if (firstLine) setField("keyword", firstLine);
+                        }
+                        setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
+                        setField("_files", newFiles);
+                      }}/>
+                    <button onClick={() => document.getElementById("blog-file-input")?.click()}
+                      style={{width:"100%",padding:"16px",borderRadius:12,border:`2px dashed rgba(236,72,153,0.4)`,background:"transparent",color:"#ec4899",fontSize:14,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:56,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit"}}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                      {fields._files?.length ? "파일 더 추가하기" : "파일 선택 또는 드래그"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Keyword input (topic 모드일 땐 메인 입력, 링크/파일 모드일 땐 자동 채워진 주제 확인·편집) */}
                 <div style={{marginBottom:18}}>
                   <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:8}}>
-                    {FIELD_LABELS.keyword?.label || "키워드 / 주제"}<span style={{color:"#ef4444"}}> *</span>
+                    {sourceType==="topic" ? (FIELD_LABELS.keyword?.label || "주제 / 키워드") : "주제 (자동 입력 · 수정 가능)"}<span style={{color:"#ef4444"}}> *</span>
                   </div>
                   <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
-                    placeholder={FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천"}
+                    placeholder={sourceType==="link" ? "링크를 불러오면 자동으로 채워집니다" : sourceType==="file" ? "파일을 업로드하면 자동으로 채워집니다" : (FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천")}
                     style={{...IS,fontSize:15,padding:"14px 16px",minHeight:48,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
                   {fields.keyword && fields.keyword.trim() && (
                     <div style={{marginTop:8,display:"flex",gap:6}}>
@@ -1407,11 +1368,27 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
-                  <button onClick={()=>{if(!fields.keyword?.trim()){setError("키워드 / 주제를 입력해주세요.");return;}setError("");setFormStep(4);}} disabled={!fields.keyword?.trim()}
-                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:!fields.keyword?.trim()?"not-allowed":"pointer",
-                      background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:fields.keyword?.trim()?"#fff":muted,fontSize:16,fontWeight:800,opacity:fields.keyword?.trim()?1:0.5,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
-                    다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <button onClick={async ()=>{
+                    // 링크 모드: URL 입력만 해두고 불러오기 안 눌렀으면 자동 실행
+                    if (sourceType==="link" && urlInput.trim() && !urlResult) {
+                      await fetchFromUrl();
+                    }
+                    // 파일 모드: 파일은 있는데 keyword가 비어있으면 첫 파일명으로 폴백
+                    if (sourceType==="file" && !fields.keyword?.trim() && fields._files?.length) {
+                      const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60);
+                      if (fallback) setField("keyword", fallback);
+                    }
+                    if (!fields.keyword?.trim()) {
+                      setError(sourceType==="link" ? "링크를 먼저 불러와주세요." : sourceType==="file" ? "파일을 먼저 업로드해주세요." : "주제를 입력해주세요.");
+                      return;
+                    }
+                    setError("");
+                    setFormStep(4);
+                  }} disabled={urlLoading}
+                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:urlLoading?"not-allowed":"pointer",
+                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",
+                      color:"#fff",fontSize:16,fontWeight:800,opacity:urlLoading?0.5:1,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
+                    {urlLoading ? "링크 불러오는 중..." : <>다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></>}
                   </button>
                 </div>
               </div>
