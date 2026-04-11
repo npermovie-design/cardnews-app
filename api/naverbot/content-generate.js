@@ -83,13 +83,14 @@ function parseResponse(text, fallbackKeyword) {
   const rawBody = bodyMatch ? bodyMatch[1].trim() : text.trim();
 
   // 이미지 마커 임시 치환 → 마크다운 제거 → 복원
+  // PIXMARK / PIXEND 사용: 영문자만이라 markdown stripper에 안 잡힘
   const placeholders = [];
   const protectedBody = rawBody.replace(/\[image:\s*[^\]]+\]/gi, (m) => {
     placeholders.push(m);
-    return `__IMG_PH_${placeholders.length - 1}__`;
+    return `PIXMARK${placeholders.length - 1}PIXEND`;
   });
   let cleanBody = stripMarkdown(protectedBody);
-  cleanBody = cleanBody.replace(/__IMG_PH_(\d+)__/g, (_, i) => placeholders[Number(i)] || "");
+  cleanBody = cleanBody.replace(/PIXMARK(\d+)PIXEND/g, (_, i) => placeholders[Number(i)] || "");
 
   const title = stripMarkdown(titleMatch ? titleMatch[1].trim() : fallbackKeyword.slice(0, 30)).slice(0, 60);
 
