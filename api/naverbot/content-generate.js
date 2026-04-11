@@ -32,11 +32,13 @@ function validateInput(b) {
   if (!b || typeof b !== "object") return ["request body 누락"];
   const errors = [];
 
-  // 메이킷 계정 이메일/비밀번호
-  if (!b.email || typeof b.email !== "string") errors.push("이메일 필수");
-  else if (b.email.length > 200) errors.push("이메일 형식 오류");
-  if (!b.password || typeof b.password !== "string") errors.push("비밀번호 필수");
-  else if (b.password.length > 200) errors.push("비밀번호 형식 오류");
+  // 메이킷 인증: email+password 또는 access_token
+  const hasEmailPw = b.email && b.password;
+  const hasToken = b.access_token && typeof b.access_token === "string";
+  if (!hasEmailPw && !hasToken) errors.push("인증 정보 필요 (이메일/비번 또는 토큰)");
+  if (b.email && b.email.length > 200) errors.push("이메일 형식 오류");
+  if (b.password && b.password.length > 200) errors.push("비밀번호 형식 오류");
+  if (b.access_token && b.access_token.length > 4000) errors.push("토큰 형식 오류");
 
   if (!b.fields || typeof b.fields !== "object") errors.push("fields 객체 필수");
   else if (!b.fields.keyword || typeof b.fields.keyword !== "string")
@@ -136,6 +138,7 @@ export default async function handler(req, res) {
   const {
     email,
     password,
+    access_token,
     subtype = "info",
     tone = "friendly",
     speech = "polite_yo",
@@ -147,7 +150,7 @@ export default async function handler(req, res) {
   // 2. 메이킷 계정 + 구독 상태 확인
   let authResult;
   try {
-    authResult = await verifyMakeitAccount(email, password);
+    authResult = await verifyMakeitAccount({ email, password, accessToken: access_token });
   } catch (e) {
     return safeError(res, 500, "계정 검증 실패", e);
   }

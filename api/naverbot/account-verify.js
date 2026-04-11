@@ -8,17 +8,17 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return safeError(res, 405, "POST only");
 
-  const { email, password } = req.body || {};
+  const { email, password, access_token } = req.body || {};
 
-  if (!email || !password || typeof email !== "string" || typeof password !== "string") {
-    return safeError(res, 400, "이메일/비밀번호 필수");
+  if (!access_token && (!email || !password)) {
+    return safeError(res, 400, "인증 정보 필요");
   }
-  if (email.length > 200 || password.length > 200) {
+  if ((email && email.length > 200) || (password && password.length > 200) || (access_token && access_token.length > 4000)) {
     return safeError(res, 400, "잘못된 요청");
   }
 
   try {
-    const result = await verifyMakeitAccount(email, password);
+    const result = await verifyMakeitAccount({ email, password, accessToken: access_token });
     if (!result.ok) {
       return res.status(200).json({ valid: false, error: result.reason });
     }

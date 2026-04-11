@@ -82,7 +82,7 @@
     { "source": "/api/archive-auto-tag", "destination": "/api/seo?action=archive-auto-tag" },
     { "source": "/api/cron-briefing", "destination": "/api/seo?action=cron-briefing" },
 
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html).*)", "destination": "/index.html" }
   ],
   "crons": [
     {
