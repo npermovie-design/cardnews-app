@@ -71,10 +71,6 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
         onError={e => { e.target.onerror=null; e.target.src=`https://picsum.photos/seed/${fallbackSeed}/800/450`; }}
         style={{width:"100%",display:"block",height:320,objectFit:"cover",cursor:"pointer"}}
         onClick={() => setShowMenu(!showMenu)} />
-      <div style={{padding:"10px 16px",fontSize:11,color:mutedColor,background:isDark?"rgba(0,0,0,0.4)":"#f8f8fb",display:"flex",alignItems:"center",gap:6}}>
-        <span style={{opacity:0.5}}>&#128247;</span> {desc}
-        <span style={{marginLeft:"auto",fontSize:10,opacity:0.5}}>클릭 또는 드래그로 교체</span>
-      </div>
       {/* 교체 메뉴 */}
       {showMenu && (
         <div style={{position:"absolute",top:8,right:8,background:"#fff",borderRadius:10,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",padding:4,zIndex:10,minWidth:140}}
