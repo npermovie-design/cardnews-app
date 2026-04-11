@@ -111,9 +111,15 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
 // 6번째 인자: suggestedImages 배열 [{url, preview}, ...] 직접 전달
 function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imagePool) {
   if (!text) return null;
-  // 마크다운 기호 제거 → 순수 텍스트
+  // imagePool: suggestedImages 배열 — {url, preview, keyword?} 형태
+  const pool = Array.isArray(imagePool) ? imagePool : [];
+  const imgUrls = pool.map(img => img?.url || img?.preview).filter(Boolean);
+  // keyword → url 매핑 (fetchInlineImages가 채워주는 경우)
+  const imgByKeyword = {};
+  pool.forEach(img => { if (img?.keyword && (img.url || img.preview)) imgByKeyword[img.keyword.toLowerCase()] = img.url || img.preview; });
+
+  // 마크다운 기호 제거 — [image:] 태그는 별도 처리할 것이므로 여기선 유지
   const cleaned = text
-    .replace(/\[(?:이미지|image):\s*[^\]]+\]/g, "") // [image:] 태그 제거
     .replace(/^#{1,6}\s*/gm, "")                    // # 헤딩 기호 제거
     .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")        // **볼드**, *이탤릭* 제거
     .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")           // __밑줄__ 제거
@@ -124,12 +130,12 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
     .replace(/!\[.*?\]\(.*?\)/g, "");                // ![image]() 제거
 
-  // 이미지 URL 목록 (suggestedImages에서 직접 추출)
-  const imgUrls = Array.isArray(imagePool) ? imagePool.map(img => img?.url || img?.preview).filter(Boolean) : [];
-
   const lines = cleaned.split("\n");
   const elements = [];
   let imgIdx = 0;
+
+  // AI가 [image:] 태그를 만들었는지 체크 — 만들었으면 태그 위치 기반, 아니면 소제목 뒤
+  const hasInlineTags = /\[(?:image|이미지):\s*[^\]]+\]/i.test(text);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -140,6 +146,20 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
       continue;
     }
 
+    // [image: keyword] 태그 라인 감지 → 해당 위치에 이미지 삽입
+    const imgTagMatch = trimmed.match(/^\[(?:image|이미지):\s*([^\]]+)\]$/i);
+    if (imgTagMatch) {
+      const kw = imgTagMatch[1].trim();
+      // 1) 정확한 keyword 매칭 우선
+      let src = imgByKeyword[kw.toLowerCase()];
+      // 2) 없으면 풀에서 순서대로
+      if (!src && imgIdx < imgUrls.length) { src = imgUrls[imgIdx]; imgIdx++; }
+      if (src) {
+        elements.push(<ReplaceableImage key={`img${i}`} src={src} desc={kw} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(kw.slice(0,20))} />);
+      }
+      continue; // 태그 라인은 텍스트로 출력 안 함
+    }
+
     // 소제목 감지: 짧은 줄(3~50자) + 앞에 빈 줄
     const prevEmpty = i === 0 || !lines[i-1]?.trim();
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
@@ -147,8 +167,8 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     if (isHeading) {
       elements.push(<div key={`br${i}`} style={{height:20}}/>);
       elements.push(<p key={i} style={{margin:"0 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
-      // 하단 추천 이미지를 순서대로 삽입
-      if (imgUrls.length > 0 && imgIdx < imgUrls.length) {
+      // [image:] 태그가 글에 없으면 (예전 스타일) 소제목 뒤에 순서대로 삽입 (폴백)
+      if (!hasInlineTags && imgUrls.length > 0 && imgIdx < imgUrls.length) {
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
         imgIdx++;
       }
@@ -223,7 +243,7 @@ const PLATFORMS = {
       const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 3~5개 정도`;
       const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
-      const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)`;
+      const noSpecial = `\n\n[절대 금지] #, ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 (띄어쓰기 구분)\n\n[중요 예외] 이미지 삽입용 [image: english keyword] 태그만은 반드시 사용하세요. 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
       const tail = speechRule + noEnding + noSpecial;
       if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주${tail}`;

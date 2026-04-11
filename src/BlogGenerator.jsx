@@ -587,13 +587,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       try {
         const txt = await callAI("claude-haiku-4-5", [{
           role: "user",
-          content: `다음 한국어 주제를 이미지 검색에 쓸 영어 키워드 2~3개로 바꿔주세요. 핵심 명사 위주로. 답변은 영어 단어만, 공백으로 구분, 다른 설명 없이:\n"${keyword}"`
+          content: `다음 한국어 주제를 이미지 검색에 쓸 영어 키워드 2~3개로 바꿔주세요. 핵심 명사 위주로. 답변은 영어 단어만, 공백으로 구분, 따옴표나 콜론·다른 설명 없이 단어만:\n"${keyword}"`
         }], 60);
-        const clean = (txt || "").trim().split("\n")[0].replace(/["'.,]/g, "").trim();
-        if (clean && clean.length > 0 && clean.length < 80 && /^[A-Za-z ]+$/.test(clean)) {
-          enQuery = clean;
+        let raw = (txt || "").trim().split("\n")[0];
+        // 앞쪽 "keyword:", "english:" 등 제거
+        raw = raw.replace(/^(english keywords?|keywords?|answer|결과|답변|english)\s*[:：]?\s*/i, "");
+        raw = raw.replace(/["'.,;:()]/g, "").trim();
+        // 영어 부분만 추출 (한글이 섞여 있어도)
+        const englishOnly = raw.replace(/[^A-Za-z\s-]/g, " ").replace(/\s+/g, " ").trim();
+        if (englishOnly && englishOnly.length >= 3 && englishOnly.length < 80) {
+          enQuery = englishOnly;
         }
       } catch {}
+      // AI 변환이 완전히 실패하면 간단 명사 추출 시도 (마지막 fallback)
+      if (enQuery === keyword && /[가-힣]/.test(enQuery)) {
+        // 한국어 그대로 써봄 — Pixabay는 일부 한국어도 지원
+        enQuery = keyword;
+      }
     }
     const imgs = [];
     try {
