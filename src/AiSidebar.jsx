@@ -101,7 +101,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     return aiMenu === item.id || aiMenu.startsWith(baseId) || (item.ids && item.ids.some(x => aiMenu === x || aiMenu.startsWith(x)));
   };
 
-  const [sideW, setSideW] = useState(() => { try { return parseInt(localStorage.getItem("_sidebar_w")) || 180; } catch { return 180; } });
+  const [sideW, setSideW] = useState(() => { try { return parseInt(localStorage.getItem("_sidebar_w")) || 210; } catch { return 210; } });
   const dragRef = useRef(null);
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -128,60 +128,62 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     }}>
       {/* 카톡방 배너 */}
       <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-        style={{ display:"flex", alignItems:"center", gap:10, margin:"10px 8px 6px", padding:"14px 16px", borderRadius:12, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s", boxShadow:"0 2px 8px rgba(254,229,0,0.3)" }}
+        style={{ display:"flex", alignItems:"center", gap:10, margin:"12px 10px 8px", padding:"14px 16px", borderRadius:12, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s", boxShadow:"0 2px 8px rgba(254,229,0,0.3)", minHeight:52 }}
         onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-        <svg width="20" height="20" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
-        <span style={{ fontSize:13, fontWeight:800, color:"#191919", flex:1, lineHeight:1.3 }}>카톡방 소통하기</span>
-        <span style={{ fontSize:13, color:"#191919", fontWeight:800 }}>→</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
+        <span style={{ fontSize:14, fontWeight:800, color:"#191919", flex:1, lineHeight:1.3 }}>카톡방 소통하기</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#191919" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
 
       {/* 메뉴 */}
-      <div style={{ flex:1, overflowY:"auto", padding:"4px 8px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"8px 10px" }}>
         {menuItems.map((item, i) => {
-          if (item.sep) return <div key={`sep-${i}`} style={{ height:1, background:sideBdr, margin:"6px 4px" }} />;
+          if (item.sep) return <div key={`sep-${i}`} style={{ height:1, background:sideBdr, margin:"10px 6px" }} />;
           if (item.adminOnly && user?.role !== "admin") return null;
           const active = isActive(item);
           return (
             <button key={item.id} onClick={() => setAiMenu(item.id)}
               style={{
-                width:"100%", padding:"9px 10px", borderRadius:8, border:"none", cursor:"pointer",
-                textAlign:"left", display:"flex", alignItems:"center", gap:8, marginBottom:1,
+                width:"100%", padding:"13px 14px", borderRadius:11, border:"none", cursor:"pointer",
+                textAlign:"left", display:"flex", alignItems:"center", gap:12, marginBottom:4,
                 background: active ? itemActiveBg : "transparent",
                 color: active ? itemActive : itemText,
-                fontSize:13, fontWeight: active ? 700 : 500,
+                fontSize:15, fontWeight: active ? 800 : 600,
                 transition:"background 0.12s",
+                minHeight:50, fontFamily:"inherit",
+                borderLeft: active ? `3px solid ${itemActive}` : "3px solid transparent",
               }}
               onMouseEnter={e => { if(!active) e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(99,102,241,0.05)"; }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>
-              <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:26, height:26, objectFit:"contain", flexShrink:0, opacity:active?1:0.65 }} />
-              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{item.label}</span>
-              {item.badge && <span style={{ fontSize:9, fontWeight:700, color:"#fff", background:"#f59e0b", borderRadius:4, padding:"1px 6px", flexShrink:0 }}>{item.badge}</span>}
+              <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:30, height:30, objectFit:"contain", flexShrink:0, opacity:active?1:0.72 }} />
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, letterSpacing:-0.2 }}>{item.label}</span>
+              {item.badge && <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:"#f59e0b", borderRadius:6, padding:"2px 8px", flexShrink:0 }}>{item.badge}</span>}
             </button>
           );
         })}
       </div>
 
       {/* 하단 */}
-      <div style={{ padding:"8px", borderTop:`1px solid ${sideBdr}`, flexShrink:0 }}>
+      <div style={{ padding:"10px", borderTop:`1px solid ${sideBdr}`, flexShrink:0 }}>
         <button onClick={() => navigate && navigate("mypage")}
           style={{
-            width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer",
-            display:"flex", alignItems:"center", gap:8, background:"transparent",
-            color: isDark ? "#a5b4fc" : "#6366f1", fontSize:12, fontWeight:600,
-            transition:"background 0.12s",
+            width:"100%", padding:"12px 14px", borderRadius:10, border:"none", cursor:"pointer",
+            display:"flex", alignItems:"center", gap:10, background:"transparent",
+            color: isDark ? "#a5b4fc" : "#6366f1", fontSize:14, fontWeight:700,
+            transition:"background 0.12s", minHeight:44, fontFamily:"inherit",
           }}
           onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           마이페이지
         </button>
         {onCollapse && (
           <button onClick={onCollapse}
             style={{
-              width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer",
-              display:"flex", alignItems:"center", gap:8, background:"transparent",
-              color: itemText, fontSize:12, fontWeight:500, marginTop:4,
-              transition:"background 0.12s",
+              width:"100%", padding:"12px 14px", borderRadius:10, border:"none", cursor:"pointer",
+              display:"flex", alignItems:"center", gap:10, background:"transparent",
+              color: itemText, fontSize:13, fontWeight:600, marginTop:4,
+              transition:"background 0.12s", minHeight:44, fontFamily:"inherit",
             }}
             onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.03)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}>

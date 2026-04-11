@@ -669,61 +669,68 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",maxWidth:900,margin:"0 auto",width:"100%"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",marginTop:16,borderBottom:`1px solid ${border}`,background:headerBg,flexWrap:"wrap",gap:8,borderRadius:"12px 12px 0 0"}}>
-          <div style={{display:"flex",alignItems:"center",gap:4}}>
-            {isTistory && result && ["text","html","preview"].map(mode=>(
-              <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:viewMode===mode?700:400,cursor:"pointer"}}>
-                {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
-              </button>
-            ))}
-            {!isTistory&&result&&<span style={{fontSize:12,fontWeight:700,color:text}}>{t("genResult")}</span>}
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{display:"flex",flexDirection:"column",gap:10,padding:"16px 20px",marginTop:16,borderBottom:`1px solid ${border}`,background:headerBg,borderRadius:"14px 14px 0 0"}}>
+          {/* 상단 행: 결과 라벨 + 글자수 통계 */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {isTistory && result && ["text","html","preview"].map(mode=>(
+                <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:text,fontSize:13,fontWeight:viewMode===mode?800:600,cursor:"pointer",minHeight:36}}>
+                  {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
+                </button>
+              ))}
+              {!isTistory&&result&&<span style={{fontSize:15,fontWeight:800,color:text,letterSpacing:-0.3}}>{t("genResult")}</span>}
+            </div>
             {result&&(
-              <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:12,
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderRadius:12,
                 background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",
                 border:`1px solid ${border}`}}>
-                <span style={{fontSize:10,color:muted}}>{t("charTotal")}</span>
-                <span style={{fontSize:12,fontWeight:700,color:text}}>{result.length.toLocaleString()}</span>
-                <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
-                <span style={{fontSize:10,color:muted}}>{t("charNoSpace")}</span>
-                <span style={{fontSize:12,fontWeight:700,color:accent}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
-                <span style={{width:1,height:10,background:border,display:"inline-block"}}/>
-                <span style={{fontSize:10,color:muted}}>{t("charWithSpace")}</span>
-                <span style={{fontSize:12,fontWeight:700,color:muted}}>{result.replace(/\s/g," ").length.toLocaleString()}</span>
+                <span style={{fontSize:12,color:muted,fontWeight:600}}>총</span>
+                <span style={{fontSize:14,fontWeight:800,color:accent}}>{result.length.toLocaleString()}</span>
+                <span style={{fontSize:12,color:muted}}>자</span>
+                <span style={{width:1,height:14,background:border,display:"inline-block"}}/>
+                <span style={{fontSize:12,color:muted,fontWeight:600}}>공백 제외</span>
+                <span style={{fontSize:14,fontWeight:800,color:text}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
               </div>
             )}
-            {result&&(
-              <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>{
-                  setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType("topic");
-                  setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
-                  setTitleSugg([]);setSeoKeys([]);setFields({});
-                  try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);}catch{}
-                }}
-                  style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${border}`,
-                    background:"transparent",color:muted,fontSize:12,fontWeight:700,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-                  ← 새로 쓰기
-                </button>
-                <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
-                  disabled={copyLoading}
-                  style={{padding:"5px 14px",borderRadius:12,border:`1px solid ${copied?"rgba(74,222,128,0.4)":border}`,
-                    background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                    color:copied?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:copyLoading?"wait":"pointer",
-                    display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",opacity:copyLoading?0.6:1}}>
-                  {copyLoading?"이미지 변환 중...":copied?"복사됨":"복사 (이미지 포함)"}
-                </button>
-              </div>
-            )}
-            {result&&<button onClick={handleAiImage} disabled={aiImgLoading}
-              style={{padding:"5px 12px",borderRadius:12,border:`1px solid ${aiImgUrl?"rgba(74,222,128,0.4)":border}`,
-                background:aiImgUrl?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                color:aiImgUrl?"#4ade80":accent,fontSize:12,fontWeight:700,cursor:aiImgLoading?"wait":"pointer",whiteSpace:"nowrap"}}>
-              {aiImgLoading?"⏳ 생성 중...":aiImgUrl?"✓ 이미지 생성됨":"🎨 AI 이미지"}
-            </button>}
-            {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-            {result && (() => {
+          </div>
+          {/* 하단 행: 액션 버튼들 */}
+          {result && (
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>{
+                setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType("topic");
+                setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
+                setTitleSugg([]);setSeoKeys([]);setFields({});
+                try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);}catch{}
+              }}
+                style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${border}`,
+                  background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/></svg>
+                새로 쓰기
+              </button>
+              <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
+                disabled={copyLoading}
+                style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${copied?"rgba(74,222,128,0.5)":accent+"60"}`,
+                  background:copied?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):accentBg,
+                  color:copied?"#22c55e":accent,fontSize:13,fontWeight:800,cursor:copyLoading?"wait":"pointer",
+                  display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",opacity:copyLoading?0.6:1,minHeight:42,fontFamily:"inherit"}}>
+                {copied
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
+                {copyLoading?"이미지 변환 중":copied?"복사됨":"복사 (이미지 포함)"}
+              </button>
+              <button onClick={handleAiImage} disabled={aiImgLoading}
+                style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${aiImgUrl?"rgba(74,222,128,0.5)":border}`,
+                  background:aiImgUrl?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
+                  color:aiImgUrl?"#22c55e":text,fontSize:13,fontWeight:700,cursor:aiImgLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
+                {aiImgLoading
+                  ? <><div style={{width:13,height:13,border:`2px solid ${accent}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
+                  : aiImgUrl
+                    ? <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>이미지 생성됨</>
+                    : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>AI 대표 이미지</>}
+              </button>
+              {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
+              {result && (() => {
               const isThread = initialType === "blog_thread";
               const isInsta = initialType === "blog_insta";
               const threadConn = snsConns.find(c => c.platform === "threads");
@@ -767,46 +774,46 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       setTimeout(() => setPublishResult(null), 3000);
                     } else { handlePublish(b.p); }
                   }} disabled={isPub || b.soon}
-                    style={{ padding:"7px 14px", borderRadius:10, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"50"}`,
-                      background: done ? (isDark ? "rgba(74,222,128,0.12)" : "#f0fdf4") : (isDark ? b.c+"15" : b.c+"08"),
-                      color: done ? "#4ade80" : (isDark ? "#fff" : b.c),
-                      fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", opacity: isPub || b.soon ? 0.5 : 1 }}>
+                    style={{ padding:"10px 18px", borderRadius:11, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"60"}`,
+                      background: done ? (isDark ? "rgba(74,222,128,0.12)" : "#f0fdf4") : (isDark ? b.c+"15" : b.c+"0a"),
+                      color: done ? "#22c55e" : (isDark ? "#fff" : b.c),
+                      fontSize:13, fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:7, whiteSpace:"nowrap", opacity: isPub || b.soon ? 0.5 : 1, minHeight:42, fontFamily:"inherit" }}>
                     {isPub
-                      ? <div style={{ width:12, height:12, borderRadius:"50%", border:`2px solid ${b.c}`, borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }} />
-                      : <img src={b.i} alt="" style={{ width:18, height:18, objectFit:"contain", borderRadius:3 }} />
+                      ? <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${b.c}`, borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }} />
+                      : <img src={b.i} alt="" style={{ width:20, height:20, objectFit:"contain", borderRadius:4 }} />
                     }
-                    {isPub ? "발행 중..." : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.soon ? "준비중" : b.l}
+                    {isPub ? "발행 중" : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.soon ? "준비중" : b.l}
                   </button>
                 );
               });
             })()}
-            {result && initialType === "blog_thread" && (
-              <button onClick={()=>setShowSchedule(!showSchedule)}
-                style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${showSchedule?"#7c6aff50":isDark?"rgba(255,255,255,0.1)":"#ddd"}`,
-                  background:showSchedule?(isDark?"#7c6aff15":"#7c6aff08"):"transparent",color:showSchedule?"#7c6aff":(isDark?"rgba(255,255,255,0.5)":"#888"),
-                  fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                예약 발행
-              </button>
-            )}
-            {result&&isTistory&&["text","html","preview"].map(mode=>(
-              <button key={mode} onClick={()=>setViewMode(mode)}
-                style={{padding:"4px 10px",borderRadius:12,border:`1px solid ${viewMode===mode?accentRaw:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                {mode==="text"?"텍스트":mode==="html"?"HTML":"미리보기"}
-              </button>
-            ))}
-          </div>
+              {result && initialType === "blog_thread" && (
+                <button onClick={()=>setShowSchedule(!showSchedule)}
+                  style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${showSchedule?"#7c6aff60":border}`,
+                    background:showSchedule?(isDark?"#7c6aff15":"#7c6aff0a"):"transparent",color:showSchedule?accent:text,
+                    fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  예약 발행
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
           {/* AI 생성 이미지 */}
           {aiImgUrl && (
-            <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:`1px solid ${border}`,position:"relative"}}>
-              <img src={aiImgUrl} alt="AI 생성 이미지" style={{width:"100%",maxHeight:300,objectFit:"cover",display:"block"}}/>
-              <div style={{position:"absolute",top:8,right:8,display:"flex",gap:6}}>
+            <div style={{marginBottom:18,borderRadius:14,overflow:"hidden",border:`1px solid ${border}`,position:"relative"}}>
+              <img src={aiImgUrl} alt="AI 생성 이미지" style={{width:"100%",maxHeight:340,objectFit:"cover",display:"block"}}/>
+              <div style={{position:"absolute",top:10,right:10,display:"flex",gap:6}}>
                 <button onClick={()=>{const a=document.createElement("a");a.href=aiImgUrl;a.download="ai-image.png";a.click();}}
-                  style={{padding:"4px 10px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇ 다운로드</button>
+                  style={{padding:"8px 14px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",gap:6,minHeight:38,fontFamily:"inherit"}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  다운로드
+                </button>
                 <button onClick={()=>setAiImgUrl(null)}
-                  style={{padding:"4px 8px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.7)",color:"#fff",fontSize:13,cursor:"pointer"}}>✕</button>
+                  style={{padding:"8px 10px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",minHeight:38,minWidth:38}} aria-label="닫기">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
             </div>
           )}
@@ -871,20 +878,39 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 }
               }
             }}
-            style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"22px 24px",fontSize:15,color:text,minHeight:120,lineHeight:1.9,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
+            style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"26px 28px",fontSize:16,color:text,minHeight:140,lineHeight:1.95,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
             <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, suggestedImages)}</div>
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
 
-          {publishResult&&<div style={{marginTop:12,padding:"12px 16px",borderRadius:12,display:"flex",alignItems:"center",gap:10,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.2)":"rgba(245,158,11,0.2)"}`}}><span style={{fontSize:16}}>{publishResult.success?"✓":publishResult.clipboard?"📋":"✗"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:publishResult.success?"#4ade80":publishResult.clipboard?"#f59e0b":"#f87171"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>{publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:11,color:accent}}>게시글 확인 →</a>}{publishResult.message&&<div style={{fontSize:11,color:muted}}>{publishResult.message}</div>}{publishResult.error&&<div style={{fontSize:11,color:"#f87171"}}>{publishResult.error}</div>}</div><button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button></div>}
+          {publishResult&&<div style={{marginTop:14,padding:"16px 18px",borderRadius:14,display:"flex",alignItems:"center",gap:14,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.25)":"rgba(245,158,11,0.25)"}`}}>
+            <div style={{width:36,height:36,borderRadius:10,background:publishResult.success?"rgba(34,197,94,0.15)":publishResult.clipboard?"rgba(245,158,11,0.15)":"rgba(239,68,68,0.15)",color:publishResult.success?"#22c55e":publishResult.clipboard?"#f59e0b":"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {publishResult.success
+                ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : publishResult.clipboard
+                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:800,color:publishResult.success?"#22c55e":publishResult.clipboard?"#f59e0b":"#ef4444"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>
+              {publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:13,color:accent,fontWeight:600}}>게시글 확인 →</a>}
+              {publishResult.message&&<div style={{fontSize:13,color:muted,marginTop:2}}>{publishResult.message}</div>}
+              {publishResult.error&&<div style={{fontSize:13,color:"#ef4444",marginTop:2}}>{publishResult.error}</div>}
+            </div>
+            <button onClick={()=>setPublishResult(null)} style={{background:"none",border:"none",color:muted,cursor:"pointer",padding:8,display:"flex",alignItems:"center",justifyContent:"center",minHeight:36,minWidth:36,borderRadius:8}} aria-label="닫기">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>}
           {/* 예약 발행 UI */}
           {showSchedule && result && (
             <div style={{marginTop:12,padding:"16px",borderRadius:12,background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)",border:`1px solid ${isDark?"rgba(124,106,255,0.2)":"rgba(124,106,255,0.1)"}`}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <span style={{fontSize:13,fontWeight:700,color:text}}>스레드 예약 발행</span>
-                <button onClick={()=>setShowSchedule(false)} style={{background:"none",border:"none",color:muted,cursor:"pointer",fontSize:14}}>✕</button>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                <span style={{fontSize:15,fontWeight:800,color:text}}>스레드 예약 발행</span>
+                <button onClick={()=>setShowSchedule(false)} style={{background:"none",border:"none",color:muted,cursor:"pointer",padding:8,display:"flex",alignItems:"center",justifyContent:"center",minHeight:36,minWidth:36,borderRadius:8}} aria-label="닫기">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
               {!snsConns.some(c=>c.platform==="threads") ? (
                 <div style={{textAlign:"center",padding:"12px 0"}}>
