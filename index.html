@@ -7,6 +7,40 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- 메이킷 SNS 자동화 데스크톱 앱 OAuth 콜백 처리 -->
+    <!-- /naverbot-callback 경로로 리다이렉트되면 토큰 추출 후 makeit-sns:// 프로토콜로 앱 열기 -->
+    <script>
+    (function(){
+      try {
+        if (window.location.pathname === '/naverbot-callback') {
+          var hash = new URLSearchParams((window.location.hash || '').substring(1));
+          var at = hash.get('access_token');
+          if (at) {
+            var url = new URL('makeit-sns://auth');
+            url.searchParams.set('access_token', at);
+            url.searchParams.set('refresh_token', hash.get('refresh_token') || '');
+            url.searchParams.set('expires_at', hash.get('expires_at') || '');
+            document.documentElement.innerHTML =
+              '<body style="font-family:sans-serif;background:#fafafa;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px">' +
+              '<div style="max-width:420px;padding:40px 32px;background:#fff;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.06);text-align:center;border:1px solid #f0f1f4">' +
+              '<div style="width:64px;height:64px;border-radius:50%;background:#d1fae5;color:#10b981;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px">&#10003;</div>' +
+              '<h1 style="font-size:20px;margin-bottom:8px;color:#111827">로그인 완료!</h1>' +
+              '<p style="color:#6b7280;font-size:13px;line-height:1.6">메이킷 SNS 자동화 앱으로 돌아갑니다...<br>이 창은 닫아도 됩니다.</p>' +
+              '<button onclick="window.location.href=\'' + url.toString() + '\'" style="margin-top:16px;padding:12px 24px;background:#ef4f5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">앱으로 이동</button>' +
+              '</div></body>';
+            setTimeout(function(){ window.location.href = url.toString(); }, 600);
+            return; // 아래 카카오톡 코드 등 실행 중단
+          } else {
+            document.documentElement.innerHTML =
+              '<body style="font-family:sans-serif;background:#fafafa;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="padding:40px;background:#fff;border-radius:18px;text-align:center"><h1 style="color:#ef4444">로그인 실패</h1><p style="color:#6b7280">토큰을 받지 못했습니다.</p></div></body>';
+            return;
+          }
+        }
+      } catch (e) { /* 일반 경로는 무시 */ }
+    })();
+    </script>
+
     <!-- 카카오톡 인앱 브라우저 대응 — JS + meta 폴백 -->
     <script>
     (function(){
