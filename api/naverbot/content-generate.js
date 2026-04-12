@@ -235,17 +235,15 @@ export default async function handler(req, res) {
   }
 
   // 9. 사용량 로깅 (uid를 license_key 컬럼에 저장 — 기존 스키마 호환)
-  supabase
+  const { error: logError } = await supabase
     .from("naverbot_posts_log")
     .insert({
       license_key: userKey,
       topic: (fields.keyword || "").slice(0, 200),
       title: parsed.title.slice(0, 200),
       tokens_used: tokensUsed,
-    })
-    .then(({ error }) => {
-      if (error) console.error("[naverbot] 로그 실패:", error.message);
     });
+  if (logError) console.error("[naverbot] 로그 실패:", logError.message);
 
   return res.status(200).json({
     ok: true,
