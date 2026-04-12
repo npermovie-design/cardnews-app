@@ -1567,9 +1567,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,color:C.muted}}>
                           <span style={{color:C.purpleL,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"50%"}}>{p.nick}</span>
                           <div style={{display:"flex",gap:8,flexShrink:0}}>
-                            <span>👁{p.views||0}</span>
-                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>👍{p.likes}</span>}
-                            {(p.comments||[]).length>0&&<span style={{color:C.purpleL,fontWeight:700}}>💬{p.comments.length}</span>}
+                            <span>{p.views||0}</span>
+                            {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>+{p.likes}</span>}
+                            {(p.comments||[]).length>0&&<span style={{color:C.purpleL,fontWeight:700}}>{p.comments.length}댓글</span>}
                           </div>
                         </div>
                       </div>
@@ -1607,8 +1607,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       {!isMobile&&<>
                         <span style={{fontSize:11,color:C.purpleL,fontWeight:600,flexShrink:0,width:68,overflow:"hidden",textOverflow:"ellipsis",textAlign:"right"}}>{p.nick}</span>
                         <span style={{fontSize:11,color:C.muted,flexShrink:0,width:70,textAlign:"center"}}>{p.date}</span>
-                        <span style={{fontSize:11,color:C.muted,flexShrink:0,width:38,textAlign:"center"}}>👁{p.views||0}</span>
-                        {(p.likes||0)>0&&<span style={{fontSize:11,color:"#f59e0b",fontWeight:700,flexShrink:0}}>👍{p.likes}</span>}
+                        <span style={{fontSize:11,color:C.muted,flexShrink:0,width:38,textAlign:"center"}}>{p.views||0}</span>
+                        {(p.likes||0)>0&&<span style={{fontSize:11,color:"#f59e0b",fontWeight:700,flexShrink:0}}>+{p.likes}</span>}
                       </>}
                       {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
                         style={{flexShrink:0,padding:"3px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
@@ -1633,7 +1633,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 모바일 로그인 유도 */}
           {isMobile && !user && (
             <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:14,padding:"16px",textAlign:"center",width:"100%"}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>✍️ 커뮤니티 참여하기</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>커뮤니티 참여하기</div>
               <div style={{fontSize:12,color:C.muted,marginBottom:10,lineHeight:1.5}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
               <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
             </div>
@@ -1660,7 +1660,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {hotPostsAll.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(239,68,68,0.06)":"rgba(239,68,68,0.03)"}}>
-                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>🔥 전체 인기글 TOP10</span>
+                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>전체 인기글 TOP10</span>
                 </div>
                 {hotPostsAll.map((p,i)=>(
                   <div key={p.id} onClick={()=>openPost(p)} style={{padding:"10px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
@@ -1680,7 +1680,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {hotPosts.length>0&&(
               <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid "+bdr,background:isDark?"rgba(251,191,36,0.06)":"rgba(251,191,36,0.04)"}}>
-                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>⭐ {subInfo?.label||""} 인기글</span>
+                  <span style={{fontSize:13,fontWeight:800,color:C.text}}>{subInfo?.label||""} 인기글</span>
                 </div>
                 {hotPosts.slice(0,5).map((p,i)=>(
                   <div key={p.id} onClick={()=>openPost(p)} style={{padding:"10px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s"}}
@@ -1708,7 +1708,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             </div>
             {!user&&(
               <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:14,padding:"18px 16px",textAlign:"center"}}>
-                <div style={{fontSize:24,marginBottom:8}}>✍️</div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="1.5" style={{marginBottom:8}}><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>커뮤니티 참여하기</div>
                 <div style={{fontSize:12,color:C.muted,marginBottom:12,lineHeight:1.6}}>로그인하면 글쓰기와 댓글 기능을 사용할 수 있어요</div>
                 <button onClick={onLoginRequest} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>로그인 / 가입</button>
