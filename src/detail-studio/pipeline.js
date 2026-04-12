@@ -10,7 +10,7 @@ export async function runPipeline(ctx) {
     setColorPalette, setSections, setActiveSection,
   } = ctx;
 
-  if (!productName.trim() || !category) return;
+  if (!productName.trim()) return;
   if (!user && guestLimitExceeded()) return;
   if (showPointConfirm && user && !(await showPointConfirm(10))) return;
   if (!user) incrementGuestUsage();

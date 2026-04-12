@@ -1,15 +1,7 @@
 import React, { useState } from "react";
 import { CATEGORIES } from "../constants.js";
-
-/* ── 상세페이지 스타일 프리셋 (PicCopilot 참고) ── */
-const STYLE_PRESETS = [
-  { id: "minimal", name: "미니멀 클린", desc: "화이트 배경 + 심플 레이아웃", colors: ["#fff","#f8f8f8","#1a1a2e","#999"], preview: "깔끔하고 모던한 스타일" },
-  { id: "natural", name: "내추럴 크림", desc: "따뜻한 크림톤 + 자연 감성", colors: ["#f9f6f2","#8B7355","#2c2c2c","#A69279"], preview: "자연스럽고 고급스러운 톤" },
-  { id: "luxury", name: "럭셔리 다크", desc: "다크 배경 + 골드 포인트", colors: ["#1a1a2e","#c9a961","#111","#b8956a"], preview: "프리미엄 고급 느낌" },
-  { id: "vivid", name: "비비드 컬러", desc: "선명한 브랜드 컬러 중심", colors: ["#fff","#7c6aff","#1a1a2e","#ec4899"], preview: "활기차고 젊은 감성" },
-  { id: "soft", name: "소프트 파스텔", desc: "부드러운 파스텔 + 둥근 디자인", colors: ["#fef7f7","#e8a0bf","#2c2c2c","#a0c4e8"], preview: "부드럽고 귀여운 느낌" },
-  { id: "bold", name: "볼드 임팩트", desc: "강렬한 타이포 + 콘트라스트", colors: ["#111","#fff","#ef4444","#f59e0b"], preview: "눈에 확 들어오는 디자인" },
-];
+import { TEMPLATE_RECIPES, getRecommendedTemplates } from "../templateRecipes.js";
+import TemplateGalleryCard from "./TemplateGalleryCard.jsx";
 
 export default function InputPhase({
   D, text, muted, cardBg, bdr, inputBg, acc, isMobile,
@@ -21,7 +13,7 @@ export default function InputPhase({
   inputStyle, btnPrimary,
 }) {
   const [inputStep, setInputStep] = useState(1); // 1: 스타일+기본정보, 2: AI 분석 결과 확인
-  const [selectedStyle, setSelectedStyle] = useState("minimal");
+  const [selectedStyle, setSelectedStyle] = useState("minimal_clean");
   const [aiQuestions, setAiQuestions] = useState(null); // AI 추가 질문
   const [aiAnswers, setAiAnswers] = useState({});
 
@@ -84,10 +76,16 @@ type은 "select" 또는 "text"만 사용. 질문은 한국어로.`;
     if (extra) {
       setExtraInfo(prev => ({ ...prev, aiContext: extra }));
     }
-    // 선택한 스타일 정보도 전달
-    const style = STYLE_PRESETS.find(s => s.id === selectedStyle);
-    if (style) {
-      setExtraInfo(prev => ({ ...prev, designStyle: style.name, styleColors: style.colors.join(",") }));
+    // 선택한 템플릿 레시피 정보 전달
+    const recipe = TEMPLATE_RECIPES.find(r => r.id === selectedStyle);
+    if (recipe) {
+      setExtraInfo(prev => ({
+        ...prev,
+        designStyle: recipe.name,
+        styleColors: `${recipe.palette.main},${recipe.palette.gradient},${recipe.palette.light_bg},${recipe.palette.dark_bg}`,
+        templateSections: recipe.sections.join(","),
+        heroLayout: recipe.heroLayout,
+      }));
     }
     runPipeline();
   };
@@ -110,44 +108,24 @@ type은 "select" 또는 "text"만 사용. 질문은 한국어로.`;
               <p style={{ fontSize: 15, color: muted, lineHeight: 1.7 }}>스타일을 고르고, 상품 사진과 이름만 입력하세요. AI가 나머지를 채워드립니다.</p>
             </div>
 
-            {/* ── 1. 스타일 선택 갤러리 ── */}
+            {/* ── 1. 스타일 선택 갤러리 (PicCopilot 스타일) ── */}
             <div style={{ marginBottom: 32 }}>
-              <label style={{ fontSize: 15, fontWeight: 700, color: text, marginBottom: 14, display: "block" }}>
-                상세 페이지 스타일 선택
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 12 }}>
-                {STYLE_PRESETS.map(style => {
-                  const sel = selectedStyle === style.id;
-                  return (
-                    <button key={style.id} onClick={() => setSelectedStyle(style.id)}
-                      style={{
-                        padding: 0, border: `2.5px solid ${sel ? acc : bdr}`,
-                        borderRadius: 14, background: D ? cardBg : "#fff", cursor: "pointer",
-                        overflow: "hidden", textAlign: "left", transition: "border-color 0.2s, box-shadow 0.2s",
-                        boxShadow: sel ? `0 0 0 3px ${acc}25` : "none", fontFamily: "inherit",
-                      }}>
-                      {/* 스타일 미리보기 */}
-                      <div style={{ height: 80, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 4, background: style.colors[0], position: "relative", overflow: "hidden" }}>
-                        <div style={{ width: "70%", height: 6, borderRadius: 3, background: style.colors[2], opacity: 0.8 }} />
-                        <div style={{ width: "50%", height: 4, borderRadius: 2, background: style.colors[3], opacity: 0.5 }} />
-                        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                          {style.colors.map((c, i) => (
-                            <div key={i} style={{ width: 12, height: 12, borderRadius: "50%", background: c, border: "1px solid rgba(0,0,0,0.1)" }} />
-                          ))}
-                        </div>
-                        {sel && (
-                          <div style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: acc, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ padding: "10px 12px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: sel ? acc : text, marginBottom: 2 }}>{style.name}</div>
-                        <div style={{ fontSize: 11, color: muted, lineHeight: 1.4 }}>{style.desc}</div>
-                      </div>
-                    </button>
-                  );
-                })}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+                <label style={{ fontSize: 15, fontWeight: 700, color: text }}>
+                  상세 페이지 템플릿 선택
+                  <span style={{ fontSize: 12, color: muted, fontWeight: 500, marginLeft: 8 }}>원하는 스타일을 골라주세요</span>
+                </label>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 10 }}>
+                {getRecommendedTemplates(category).map(recipe => (
+                  <TemplateGalleryCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    selected={selectedStyle === recipe.id}
+                    onClick={() => setSelectedStyle(recipe.id)}
+                    isDark={D}
+                  />
+                ))}
               </div>
             </div>
 
