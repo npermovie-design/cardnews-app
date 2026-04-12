@@ -224,7 +224,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
       {/* 팝업 */}
       {open && (
         <div style={{
-          position:"fixed", bottom:68, left:8, width:220, zIndex:9999,
+          position:"fixed", bottom:68, left:8, width:"min(220px, 85vw)", zIndex:9999,
           background: isDark ? "rgba(18,15,40,0.97)" : "rgba(255,255,255,0.97)",
           border:`1px solid ${isDark?"rgba(124,106,255,0.25)":"rgba(124,106,255,0.18)"}`,
           borderRadius:16, overflow:"hidden",

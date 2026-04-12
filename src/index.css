@@ -46,7 +46,7 @@ img {
   a.btn,
   input[type="button"],
   input[type="submit"] {
-    min-height: 42px;
+    min-height: 44px;
     touch-action: manipulation;
   }
   /* input/textarea 모바일 iOS 줌인 방지 (16px 이하면 자동 줌) */

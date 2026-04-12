@@ -712,7 +712,12 @@ JSON만 반환: {"trends":[...]}`;
   const changeColor = (c) => c==="up"?"#ef4444":c==="down"?"#3b82f6":c==="new"?"#22c55e":muted;
   const fmtVol = (v) => { if (!v) return "-"; const n = Number(v); if (n >= 10000) return (n/10000).toFixed(1)+"만"; if (n >= 1000) return (n/1000).toFixed(1)+"천"; return String(n); };
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
     <div style={{ flex:1, overflowY:"auto", padding:isMobile?"16px 12px 60px":"24px 20px 60px" }}>

@@ -544,9 +544,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   /* 공유 */
   const sharePost = post => {
-    const url = window.location.origin + "/community/"+(p.subCat||p.cat||subCat)+"/post-"+p.id;
+    const url = window.location.origin + "/community/"+(post.subCat||post.cat||subCat)+"/post-"+post.id;
     if(navigator.share){ navigator.share({title:post.title,text:post.title,url}); }
-    else { navigator.clipboard.writeText(url); showToast("🔗 링크가 복사됐어요","info"); }
+    else { navigator.clipboard.writeText(url); showToast("링크가 복사됐어요","info"); }
   };
 
   /* 파일 다운로드 */
@@ -566,15 +566,20 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   /* 인쇄 */
   const printPost = post => {
     const w = window.open("","_blank","width=800,height=600");
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${post.title}</title>
+    if (!w) return;
+    const doc = w.document;
+    doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title></title>
       <style>body{font-family:sans-serif;padding:40px;line-height:1.8;max-width:750px;margin:0 auto}
       h1{font-size:22px;border-bottom:2px solid #333;padding-bottom:12px}
       .meta{color:#666;font-size:13px;margin-bottom:24px}
       img{max-width:100%}table{border-collapse:collapse;width:100%}td{border:1px solid #ccc;padding:8px}</style>
-    </head><body><h1>${post.title}</h1>
-    <div class="meta">${post.nick} · ${post.date} · 조회 ${post.views||0}</div>
-    <div>${post.body}</div></body></html>`);
-    w.document.close(); w.focus(); w.print();
+    </head><body><h1></h1><div class="meta"></div><div id="content"></div></body></html>`);
+    doc.close();
+    doc.title = post.title;
+    doc.querySelector("h1").textContent = post.title;
+    doc.querySelector(".meta").textContent = `${post.nick} \xb7 ${post.date} \xb7 조회 ${post.views||0}`;
+    doc.getElementById("content").innerHTML = post.body;
+    w.focus(); w.print();
   };
 
   if(mode==="write"||mode==="edit") return (
@@ -589,23 +594,25 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     <div style={{background:isDark?"transparent":"#f7f8fa",minHeight:"calc(100vh - 64px)"}}>
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#7c6aff",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
-      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 60px"}}>
-        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:0,fontWeight:600}}>← 목록으로</button>
+      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 16px 60px"}}>
+        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:"8px 0",fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"24px 28px 20px",borderBottom:"1px solid "+bdr}}>
+          <div style={{padding:"20px 20px 16px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
-            <h1 style={{fontSize:22,fontWeight:900,color:C.text,margin:"0 0 16px",lineHeight:1.4}}>{view.title}{view.edited&&<span style={{fontSize:11,color:C.muted,marginLeft:8,fontWeight:400}}>(수정됨)</span>}</h1>
+            <h1 style={{fontSize:20,fontWeight:900,color:C.text,margin:"0 0 16px",lineHeight:1.4,wordBreak:"keep-all"}}>{view.title}{view.edited&&<span style={{fontSize:11,color:C.muted,marginLeft:8,fontWeight:400}}>(수정됨)</span>}</h1>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:14,fontSize:13,color:C.muted}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,fontSize:13,color:C.muted,flexWrap:"wrap"}}>
                 <div style={{display:"flex",alignItems:"center",gap:7}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff"}}>{(view.nick||"?")[0].toUpperCase()}</div>
                   <span style={{fontWeight:700,color:C.text}}>{view.nick}</span>
                 </div>
-                <span>{view.date}</span><span>{view.views||0}</span><span>💬 {(view.comments||[]).length}</span>
+                <span>{view.date}</span>
+                <span>조회 {view.views||0}</span>
+                <span>댓글 {(view.comments||[]).length}</span>
               </div>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🔗 공유</button>
-                <button onClick={()=>printPost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>🖨 인쇄</button>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                <button onClick={()=>sharePost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>공유</button>
+                <button onClick={()=>printPost(view)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.muted,fontSize:12,cursor:"pointer"}}>인쇄</button>
                 <button onClick={translatePost} disabled={translating} style={{padding:"5px 12px",borderRadius:8,border:"1px solid "+bdr,background:translatedBody?"rgba(99,102,241,0.1)":"transparent",color:translatedBody?"#7c6aff":C.muted,fontSize:12,cursor:translating?"wait":"pointer"}}>
                   {translating?"번역중...":translatedBody?"번역됨":"번역"}
                 </button>
@@ -616,7 +623,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             </div>
           </div>
-          <div style={{padding:"28px 28px 24px"}}>
+          <div style={{padding:"20px 20px 20px"}}>
             <RichBody html={view.body} C={C}/>
             {translatedBody && (
               <div style={{marginTop:16,padding:"16px 20px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.04)",border:"1px solid rgba(99,102,241,0.2)"}}>
@@ -630,7 +637,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {/* 첨부 이미지/영상 */}
             {(view.images||[]).length > 0 && (
               <div style={{marginTop:24,borderTop:"1px solid "+bdr,paddingTop:20}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>+ 첨부 파일 {view.images.length}개</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.muted,marginBottom:12}}>첨부 파일 {view.images.length}개</div>
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {view.images.map((url,i)=>{
                     const isPdf = /\.pdf/i.test(url);
@@ -638,34 +645,34 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     return isVideoUrl(url) ? (
                       <div key={i}>
                         <video src={url} controls style={{width:"100%",maxWidth:640,borderRadius:10,border:"1px solid "+bdr,display:"block"}}/>
-                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>⬇ 영상 다운로드</a>
+                        <a href={url} download style={{display:"inline-block",marginTop:6,fontSize:12,color:C.purpleL||"#7c6aff",textDecoration:"none"}}>영상 다운로드</a>
                       </div>
                     ) : isImageUrl(url) ? (
                       <div key={i}>
                         <img src={toThumb(url,1200,900)} alt={`첨부${i+1}`} style={{maxWidth:"100%",borderRadius:10,border:"1px solid "+bdr,display:"block",cursor:"pointer"}}
                           onClick={()=>window.open(url,"_blank")} onError={e=>{e.target.style.opacity="0.3";}}/>
-                        <a href={url} download style={{display:"inline-block",marginTop:4,fontSize:11,color:C.muted,textDecoration:"none"}}>⬇ 이미지 다운로드</a>
+                        <a href={url} download style={{display:"inline-block",marginTop:4,fontSize:11,color:C.muted,textDecoration:"none"}}>이미지 다운로드</a>
                       </div>
                     ) : isPdf ? (
                       <div key={i} style={{borderRadius:12,border:"1px solid "+bdr,overflow:"hidden",background:isDark?"rgba(255,255,255,0.03)":"#fafafa"}}>
                         <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                          <span style={{fontSize:28}}>📄</span>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:14,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fname}</div>
                             <div style={{fontSize:11,color:C.muted}}>PDF 문서</div>
                           </div>
-                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>⬇ 다운로드</a>
+                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>다운로드</a>
                         </div>
                       </div>
                     ) : (
                       <div key={i} style={{borderRadius:12,border:"1px solid "+bdr,overflow:"hidden",background:isDark?"rgba(255,255,255,0.03)":"#fafafa"}}>
                         <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
-                          <span style={{fontSize:28}}>📎</span>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:14,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fname}</div>
                             <div style={{fontSize:11,color:C.muted}}>첨부 파일</div>
                           </div>
-                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>⬇ 다운로드</a>
+                          <a href={url} download style={{padding:"8px 16px",borderRadius:8,background:C.purpleL||"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",flexShrink:0}}>다운로드</a>
                         </div>
                       </div>
                     );
@@ -674,11 +681,11 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               </div>
             )}
           </div>
-          <div style={{padding:"12px 28px",borderTop:"1px solid "+bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{padding:"12px 20px",borderTop:"1px solid "+bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <span style={{fontSize:11,color:C.muted}}>SNS 공유</span>
             <ShareRow title={view.title} text={view.body?.replace(/<[^>]*>/g,"")?.slice(0,200)} isDark={isDark} compact />
           </div>
-          <div style={{padding:"16px 28px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
+          <div style={{padding:"16px 20px 24px",textAlign:"center",borderTop:"1px solid "+bdr}}>
             {(() => {
               const liked = isLiked(view);
               return (
@@ -728,10 +735,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         </div>
         {/* 댓글 */}
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden"}}>
-          <div style={{padding:"18px 24px",borderBottom:"1px solid "+bdr}}>
+          <div style={{padding:"16px 20px",borderBottom:"1px solid "+bdr}}>
             <span style={{fontSize:15,fontWeight:700,color:C.text}}>댓글 {(view.comments||[]).length}개</span>
           </div>
-          <div style={{padding:"0 24px"}}>
+          <div style={{padding:"0 20px"}}>
             {(view.comments||[]).map((cm,i)=>(
               <div key={cm.id||i} style={{padding:"14px 0",borderBottom:"1px solid "+bdr}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
@@ -749,16 +756,16 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 </div>
               </div>
             ))}
-            {(view.comments||[]).length===0&&<div style={{padding:"24px 0",textAlign:"center",color:C.muted,fontSize:14}}>첫 댓글을 남겨보세요 💬</div>}
+            {(view.comments||[]).length===0&&<div style={{padding:"24px 0",textAlign:"center",color:C.muted,fontSize:14}}>첫 댓글을 남겨보세요</div>}
           </div>
-          <div style={{padding:"16px 24px",borderTop:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
+          <div style={{padding:"14px 20px",borderTop:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
             {user?(
-              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0}}>{(user.nick||"?")[0].toUpperCase()}</div>
                 <input value={comment} onChange={e=>setComment(e.target.value)} placeholder="댓글을 입력하세요..."
                   onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(view.id);}}}
-                  style={{flex:1,padding:"11px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:14,outline:"none"}}/>
-                <button onClick={()=>addComment(view.id)} style={{padding:"11px 22px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>등록</button>
+                  style={{flex:1,minWidth:0,padding:"11px 14px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:14,outline:"none"}}/>
+                <button onClick={()=>addComment(view.id)} style={{padding:"11px 18px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>등록</button>
               </div>
             ):(
               <div onClick={onLoginRequest} style={{padding:"14px",textAlign:"center",borderRadius:10,border:"1px solid rgba(99,102,241,0.2)",background:"rgba(99,102,241,0.04)",color:C.muted,fontSize:14,cursor:"pointer"}}>

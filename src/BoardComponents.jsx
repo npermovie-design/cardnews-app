@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { supabase, uploadFileToStorage } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
@@ -329,20 +330,17 @@ function RichEditor({ value, onChange, isDark }) {
     onChange(editorRef.current.innerHTML);
   };
 
-  const insertTable = () => {
-    const rows = parseInt(prompt("행 수?", "3") || "3");
-    const cols = parseInt(prompt("열 수?", "3") || "3");
-    let html = '<table style="border-collapse:collapse;width:100%;margin:12px 0"><tbody>';
-    for (let r = 0; r < rows; r++) {
-      html += "<tr>";
-      for (let c = 0; c < cols; c++) {
-        html += '<td style="border:1px solid #555;padding:8px 12px;min-width:60px">&nbsp;</td>';
-      }
-      html += "</tr>";
-    }
-    html += "</tbody></table><br>";
-    exec("insertHTML", html);
-  };
+  // 인라인 모달 상태
+  const [modal, setModal] = useState(null); // null | {type, fields}
+  const [modalVals, setModalVals] = useState({});
+
+  const openModal = (type, fields) => { setModal({ type, fields }); setModalVals(Object.fromEntries(fields.map(f => [f.key, f.default || ""]))); };
+  const closeModal = () => { setModal(null); setModalVals({}); };
+
+  const insertTable = () => openModal("table", [
+    { key: "rows", label: "행 수", default: "3", type: "number" },
+    { key: "cols", label: "열 수", default: "3", type: "number" },
+  ]);
 
   // 이미지 직접 업로드 (파일 선택 or 드래그&드롭)
   const handleImageUpload = async (files) => {
@@ -388,26 +386,37 @@ function RichEditor({ value, onChange, isDark }) {
     imgInputRef.current?.click();
   };
 
-  const insertImageByUrl = () => {
-    const url = prompt("이미지 URL을 입력하세요:");
-    if (url) exec("insertHTML", `<img src="${url}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);
-  };
+  const insertImageByUrl = () => openModal("imageUrl", [
+    { key: "url", label: "이미지 URL", default: "", type: "url" },
+  ]);
 
-  const insertVideo = () => {
-    const url = prompt("유튜브 URL을 입력하세요:");
-    if (!url) return;
-    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-    if (m) {
-      exec("insertHTML", `<div style="margin:12px 0;border-radius:12px;overflow:hidden;max-width:560px"><iframe src="https://www.youtube.com/embed/${m[1]}" style="width:100%;height:315px;border:none" allowfullscreen></iframe></div>`);
-    } else {
-      alert("유효한 유튜브 URL이 아닙니다");
+  const insertVideo = () => openModal("video", [
+    { key: "url", label: "유튜브 URL", default: "", type: "url" },
+  ]);
+
+  const insertLink = () => openModal("link", [
+    { key: "url", label: "링크 URL", default: "", type: "url" },
+    { key: "text", label: "링크 텍스트", default: "", type: "text" },
+  ]);
+
+  const handleModalSubmit = () => {
+    if (!modal) return;
+    const v = modalVals;
+    if (modal.type === "table") {
+      const rows = parseInt(v.rows) || 3, cols = parseInt(v.cols) || 3;
+      let h = '<table style="border-collapse:collapse;width:100%;margin:12px 0"><tbody>';
+      for (let r = 0; r < rows; r++) { h += "<tr>"; for (let c = 0; c < cols; c++) h += '<td style="border:1px solid #555;padding:8px 12px;min-width:60px">&nbsp;</td>'; h += "</tr>"; }
+      h += "</tbody></table><br>";
+      exec("insertHTML", h);
+    } else if (modal.type === "imageUrl") {
+      if (v.url) exec("insertHTML", `<img src="${DOMPurify.sanitize(v.url)}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);
+    } else if (modal.type === "video") {
+      const m = v.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+      if (m) exec("insertHTML", `<div style="margin:12px 0;border-radius:12px;overflow:hidden;max-width:560px"><iframe src="https://www.youtube.com/embed/${m[1]}" style="width:100%;height:315px;border:none" allowfullscreen></iframe></div>`);
+    } else if (modal.type === "link") {
+      if (v.url) exec("insertHTML", `<a href="${DOMPurify.sanitize(v.url)}" target="_blank" rel="noopener noreferrer" style="color:#7c6aff">${DOMPurify.sanitize(v.text || v.url)}</a>`);
     }
-  };
-
-  const insertLink = () => {
-    const url = prompt("링크 URL:");
-    const text = prompt("링크 텍스트:", url);
-    if (url) exec("insertHTML", `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#7c6aff">${text||url}</a>`);
+    closeModal();
   };
 
   const EMOJIS = ["😀","😂","🥰","😎","🤔","😅","🔥","✅","❌","💡","📌","🎉","👍","👏","💯","🙏","⭐","💎","🚀","💬"];
@@ -436,8 +445,8 @@ function RichEditor({ value, onChange, isDark }) {
 
   return (
     <div style={{border:`1px solid ${edBdr}`,borderRadius:12,overflow:"visible",background:edBg}}>
-      {/* 툴바 */}
-      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:2,padding:"8px 10px",borderBottom:`1px solid ${tbBdr}`,background:tbBg}}>
+      {/* 툴바 — 모바일에서 가로 스크롤 */}
+      <div style={{display:"flex",flexWrap:"nowrap",alignItems:"center",gap:2,padding:"8px 10px",borderBottom:`1px solid ${tbBdr}`,background:tbBg,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
         {/* 텍스트 스타일 */}
         <ToolBtn onClick={()=>exec("bold")} title="굵게 (Ctrl+B)"><b>B</b></ToolBtn>
         <ToolBtn onClick={()=>exec("italic")} title="기울임 (Ctrl+I)"><i>I</i></ToolBtn>
@@ -516,6 +525,27 @@ function RichEditor({ value, onChange, isDark }) {
           wordBreak:"break-word",overflowY:"auto"}}
       />
 
+      {/* 인라인 모달 */}
+      {modal && (
+        <div style={{padding:"14px 16px",borderTop:`1px solid ${tbBdr}`,background:tbBg,display:"flex",flexWrap:"wrap",alignItems:"center",gap:8}}>
+          {modal.fields.map(f => (
+            <input key={f.key} type={f.type||"text"} placeholder={f.label} value={modalVals[f.key]||""}
+              onChange={e => setModalVals(p => ({...p,[f.key]:e.target.value}))}
+              onKeyDown={e => { if (e.key === "Enter") handleModalSubmit(); if (e.key === "Escape") closeModal(); }}
+              autoFocus={modal.fields[0].key===f.key}
+              style={{flex:1,minWidth:120,padding:"8px 12px",borderRadius:8,border:`1px solid ${edBdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:edTxt,fontSize:13,outline:"none"}}/>
+          ))}
+          <button type="button" onClick={handleModalSubmit}
+            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+            삽입
+          </button>
+          <button type="button" onClick={closeModal}
+            style={{padding:"8px 12px",borderRadius:8,border:`1px solid ${edBdr}`,background:"transparent",color:btnClr,fontSize:12,cursor:"pointer"}}>
+            취소
+          </button>
+        </div>
+      )}
+
       <style>{`
         [contenteditable]:empty:before { content: attr(data-placeholder); color: ${isDark?"rgba(255,255,255,0.25)":"rgba(0,0,0,0.3)"}; pointer-events:none; }
         [contenteditable] table td { border: 1px solid ${isDark?"#555":"#ccc"}; padding: 8px 12px; }
@@ -532,12 +562,8 @@ function RichEditor({ value, onChange, isDark }) {
 function RichBody({ html, C }) {
   if (!html) return null;
   const isDark = !!(C.bg?.includes("0a")||C.bg?.includes("#10")||C.bg?.includes("242"));
-  // XSS 방어: 사용자 HTML 삭독
-  let safeHtml = html;
-  try {
-    const DOMPurify = require("dompurify");
-    safeHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b","i","u","strong","em","br","p","div","span","a","img","ul","ol","li","h1","h2","h3","h4","blockquote","pre","code","hr","table","thead","tbody","tr","td","th"], ALLOWED_ATTR: ["href","src","alt","style","class","target","rel","width","height"] });
-  } catch {}
+  // XSS 방어
+  const safeHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b","i","u","strong","em","br","p","div","span","a","img","ul","ol","li","h1","h2","h3","h4","blockquote","pre","code","hr","table","thead","tbody","tr","td","th","iframe","video","source"], ALLOWED_ATTR: ["href","src","alt","style","class","target","rel","width","height","allowfullscreen","autoplay","muted","loop","playsinline","frameborder"] });
   return (
     <>
       <div style={{fontSize:15,color:C.text,lineHeight:1.85,wordBreak:"break-word"}}
@@ -617,20 +643,20 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
   };
 
   return (
-    <div style={{maxWidth:900,margin:"0 auto",padding:"28px 0 60px"}}>
+    <div style={{maxWidth:900,margin:"0 auto",padding:"20px 12px 60px"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
-        <button type="button" onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:18,padding:0}}>←</button>
-        <h2 style={{fontSize:20,fontWeight:900,color:C.text,margin:0}}>{initial?"글 수정":"새 글 작성"}</h2>
-        {!initial&&<span style={{fontSize:12,color:"#4ade80",marginLeft:"auto"}}>글 등록 시 1P 적립!</span>}
+        <button type="button" onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:18,padding:"8px",margin:"-8px"}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:900,color:C.text,margin:0}}>{initial?"글 수정":"새 글 작성"}</h2>
+        {!initial&&<span style={{fontSize:11,color:"#4ade80",marginLeft:"auto"}}>글 등록 시 1P 적립!</span>}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         {/* 카테고리 선택 */}
         <div>
           <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>카테고리 선택</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",flexWrap:"nowrap",gap:8,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
             {cats.map(s=>(
               <button key={s.id} type="button" onClick={()=>{ setPickedCat(s.id); setPickedTag(""); }} style={{
-                padding:"7px 16px", borderRadius:20, border:"2px solid "+(pickedCat===s.id ? s.color : bdr),
+                padding:"7px 16px", borderRadius:20, border:"2px solid "+(pickedCat===s.id ? s.color : bdr), whiteSpace:"nowrap", flexShrink:0,
                 background: pickedCat===s.id ? s.color+"22" : "transparent",
                 color: pickedCat===s.id ? s.color : C.muted,
                 fontSize:13, fontWeight: pickedCat===s.id ? 700 : 400, cursor:"pointer",
@@ -762,6 +788,8 @@ function extractText(html, maxLen = 120) { const t = html?.replace(/<[^>]*>/g, '
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
 const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "", color: "#3b82f6" };
+
+const DEFAULT_CATS = [ARCHIVE_CAT];
 
 async function fetchBoardCats() {
   try {
@@ -971,4 +999,4 @@ async function fetchWikimedia(q="nature", page=1) {
 
 
 
-export { buildSources, MediaCard, FreeMediaSearch, RichEditor, RichBody, WriteForm, extractThumb, extractText, toThumb, isVideoUrl, isImageUrl, safeName, ARCHIVE_CAT, fetchBoardCats, saveBoardCat, deleteBoardCat, fetchTagsByCat, fetchAllTags, saveTag, deleteTag, fetchGiphyData, fetchTenorData, fetchPixabayPhotos, fetchPixabayVideos, fetchPexelsPhotos, fetchPexelsVideos, fetchUnsplash, fetchPicsum, fetchOpenverse, fetchArtChicago, fetchNASA, fetchWikimedia };
+export { buildSources, MediaCard, FreeMediaSearch, RichEditor, RichBody, WriteForm, extractThumb, extractText, toThumb, isVideoUrl, isImageUrl, safeName, DEFAULT_CATS, ARCHIVE_CAT, fetchBoardCats, saveBoardCat, deleteBoardCat, fetchTagsByCat, fetchAllTags, saveTag, deleteTag, fetchGiphyData, fetchTenorData, fetchPixabayPhotos, fetchPixabayVideos, fetchPexelsPhotos, fetchPexelsVideos, fetchUnsplash, fetchPicsum, fetchOpenverse, fetchArtChicago, fetchNASA, fetchWikimedia };

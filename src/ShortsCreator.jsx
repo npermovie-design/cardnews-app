@@ -1279,7 +1279,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       )}
 
+      {/* 모바일 안내 */}
+      {typeof window !== "undefined" && window.innerWidth < 768 && (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f1a", padding: 40 }}>
+          <div style={{ textAlign: "center", maxWidth: 320 }}>
+            <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>PC에서 편집해주세요</div>
+            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>쇼츠 편집기는 타임라인, 미리보기, 속성 패널이 필요하여 데스크탑 환경에서 최적으로 작동합니다.</div>
+          </div>
+        </div>
+      )}
+
       {/* Top 3-panel area */}
+      {(typeof window === "undefined" || window.innerWidth >= 768) && (
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT: Clip list */}
@@ -1687,6 +1701,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </div>
         </div>
       </div>
+
+      )} {/* 3-panel 조건부 닫기 */}
 
       {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) — 높이 조절 가능 */}
       <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
