@@ -247,7 +247,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       const { data } = await supabase.from("sns_news").select("id,title,content,created_at").eq("category", "briefing").order("created_at", { ascending: false }).limit(30);
       if (data) {
         for (const item of data) {
-          const dateKey = item.id?.replace("briefing_", "") || "";
+          const dateKey = item.created_at ? item.created_at.slice(0, 10) : "";
           if (dateKey && !localItems.find(l => l.date === dateKey)) {
             localItems.push({ date: dateKey, title: item.title, content: item.content });
           }
@@ -259,7 +259,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
       const { data } = await supabase.from("posts").select("id,title,content,created_at").eq("cat", "sns_briefing").order("created_at", { ascending: false }).limit(60);
       if (data) {
         for (const item of data) {
-          const dateKey = item.id?.replace("briefing_", "") || "";
+          const dateKey = item.created_at ? item.created_at.slice(0, 10) : "";
           if (dateKey && !localItems.find(l => l.date === dateKey)) {
             localItems.push({ date: dateKey, title: item.title, content: item.content });
           }
@@ -291,7 +291,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
     // 2단계: Supabase에서 빠르게 로드 (0.5~2초)
     (async () => {
       try {
-        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").eq("id", `briefing_${todayKey}`).maybeSingle();
+        const { data } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").eq("category", "briefing").eq("title", `${todayLabel} SNS브리핑`).maybeSingle();
         if (!cancelled && data?.content) {
           const br = { title: data.title, content: data.content, date: todayKey };
           setBriefing(br); setBriefingLoading(false);
@@ -326,11 +326,17 @@ export default function SnsNewsPage({ C, user, navigate }) {
           const br = { title: `${todayLabel} SNS브리핑`, content, date: todayKey };
           localStorage.setItem(cacheKey, JSON.stringify(br));
           setBriefing(br);
-          supabase.from("sns_news").upsert({
-            id: `briefing_${todayKey}`, title: br.title, content, category: "briefing",
-            platforms: ["instagram","youtube","tiktok","naver"], author_uid: "system_ai", pinned: false, views: 0,
-            summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`, created_at: new Date().toISOString(),
-          }, { onConflict: "id" }).then(() => {}).catch(() => {});
+          // 기존 동일 날짜 브리핑 확인 후 insert 또는 update
+          const { data: existing } = await supabase.from("sns_news").select("id").eq("category", "briefing").eq("title", br.title).maybeSingle();
+          if (existing) {
+            supabase.from("sns_news").update({ content, summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`, updated_at: new Date().toISOString() }).eq("id", existing.id).then(() => {}).catch(() => {});
+          } else {
+            supabase.from("sns_news").insert({
+              title: br.title, content, category: "briefing",
+              platforms: ["instagram","youtube","tiktok","naver"], author_uid: "system_ai", pinned: false, views: 0,
+              summary: `AI가 자동 생성한 ${todayLabel} SNS 마케팅 브리핑입니다.`,
+            }).then(() => {}).catch(() => {});
+          }
           loadBriefingHistory();
         }
       } catch (e) { console.error("브리핑 생성 실패:", e); } finally {
