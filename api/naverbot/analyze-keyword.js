@@ -1,4 +1,4 @@
-// NaverBot SaaS - 키워드 분석 (네이버 상위글 크롤링 + Claude 분석)
+// NaverBot SaaS - 키워드 분석 (클라이언트 크롤링 데이터 + Claude 분석)
 import {
   setCors,
   safeError,
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return safeError(res, 405, "POST only");
   if (!OR_KEY) return safeError(res, 500, "서버 설정 오류");
 
-  const { email, password, access_token, keyword } = req.body || {};
+  const { email, password, access_token, keyword, crawled_titles, crawled_contents } = req.body || {};
   if (!keyword) return safeError(res, 400, "keyword 필수");
 
   // 인증
@@ -30,52 +30,12 @@ export default async function handler(req, res) {
   }
   if (!authResult.ok) return res.status(403).json({ ok: false, error: authResult.reason });
 
-  // 네이버 블로그 검색
-  const searchUrl = `https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=${encodeURIComponent(keyword)}`;
-  let searchHtml = "";
-  try {
-    const r = await fetch(searchUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36" },
-    });
-    searchHtml = await r.text();
-  } catch (e) {
-    return safeError(res, 502, "네이버 검색 실패", e);
-  }
+  // 클라이언트에서 보낸 크롤링 데이터 사용
+  const titles = Array.isArray(crawled_titles) ? crawled_titles.slice(0, 10) : [];
+  const topContents = Array.isArray(crawled_contents) ? crawled_contents.slice(0, 5) : [];
 
-  // 제목 추출
-  const titlePattern = /class="title_link[^"]*"[^>]*>(.+?)<\/a>/gs;
-  const titles = [];
-  let m;
-  while ((m = titlePattern.exec(searchHtml)) !== null && titles.length < 10) {
-    titles.push(m[1].replace(/<[^>]+>/g, "").trim());
-  }
-
-  // 상위 3개 본문 크롤링
-  const urlPattern = /href="(https?:\/\/blog\.naver\.com\/[^"]+)"/g;
-  const urls = [];
-  while ((m = urlPattern.exec(searchHtml)) !== null && urls.length < 5) {
-    if (!urls.includes(m[1])) urls.push(m[1]);
-  }
-
-  const topContents = [];
-  for (const url of urls.slice(0, 3)) {
-    try {
-      const mobileUrl = url.replace("blog.naver.com", "m.blog.naver.com");
-      const r = await fetch(mobileUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36" },
-      });
-      const html = await r.text();
-      const bodyMatch = html.match(/<div class="se-main-container">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/)
-        || html.match(/id="postViewArea"[^>]*>([\s\S]*?)<\/div>/);
-      if (bodyMatch) {
-        const bodyText = bodyMatch[1].replace(/<[^>]+>/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-        topContents.push({ title: titles[topContents.length] || "", body: bodyText.slice(0, 2000) });
-      }
-    } catch {}
-  }
-
-  if (!titles.length) {
-    return res.status(200).json({ ok: true, analysis: { suggested_titles: [], structure_summary: "검색 결과 없음", extra_prompt: "" } });
+  if (!titles.length && !topContents.length) {
+    return res.status(200).json({ ok: true, analysis: { suggested_titles: [], structure_summary: "크롤링 데이터 없음", extra_prompt: "" } });
   }
 
   // Claude 분석
@@ -85,7 +45,7 @@ export default async function handler(req, res) {
 ${titles.map((t, i) => `${i + 1}. ${t}`).join("\n")}
 
 상위 글 본문 샘플:
-${topContents.map((c, i) => `--- 글 ${i + 1}: ${c.title} ---\n${c.body.slice(0, 1500)}`).join("\n")}
+${topContents.map((c, i) => `--- 글 ${i + 1}: ${c.title || ""} ---\n${(c.body || "").slice(0, 1500)}`).join("\n")}
 
 위 분석을 바탕으로 다음을 JSON 형식으로 답해주세요:
 1. suggested_titles: 이 키워드로 네이버 상위 노출에 유리한 제목 5개 (배열). 상위 글들의 제목 패턴 분석 기반. 30~40자, 호기심 자극형, 숫자/감정 활용.
