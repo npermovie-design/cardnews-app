@@ -27,21 +27,21 @@ export function renderSection({
   const aiImgSrc = secImg?.url || null;
   const els = sec.elements || [];
 
-  const bgCol = normHex(sec.bg_color) || "#ffffff";
-  const { isDarkBg } = parseBgColor(bgCol);
+  // 그라데이션 배경 지원: linear-gradient로 시작하면 normHex 건너뜀
+  const rawBg = sec.bg_color || "#ffffff";
+  const bgCol = rawBg.startsWith("linear-gradient") ? rawBg : (normHex(rawBg) || "#ffffff");
+  const { isDarkBg } = parseBgColor(rawBg.startsWith("linear-gradient") ? (rawBg.includes("#0") || rawBg.includes("#1") || rawBg.includes("#2") ? "#111" : "#fff") : bgCol);
 
-  // 제품 이미지 자동 분배
+  // 제품 이미지 자동 분배 (features/point/cta에도 적극 분배)
   const imgLayouts = ["full_image", "text_over_image", "left_image_right_text", "right_image_left_text"];
-  const needsImage = imgLayouts.includes(layout) || secType === "hero" || secType === "before_after";
+  const imgSectionTypes = ["hero", "before_after", "features", "point", "cta", "review", "event"];
+  const needsImage = imgLayouts.includes(layout) || imgSectionTypes.includes(secType);
   let productImgForSection = null;
   if (needsImage && images.length > 0) {
     if (images.length >= 2) {
       productImgForSection = images[i % images.length]?.preview || null;
     } else {
-      const imgSectionCount = sections.filter((s, si) => si < i && (imgLayouts.includes(s.layout) || s.type === "hero")).length;
-      if (secType === "hero" || imgSectionCount < 1) {
-        productImgForSection = images[0]?.preview || null;
-      }
+      productImgForSection = images[0]?.preview || null;
     }
   }
   const mainColor = colorPalette?.main || acc;

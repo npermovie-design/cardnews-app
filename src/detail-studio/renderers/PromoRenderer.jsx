@@ -147,15 +147,23 @@ export function renderPromo(ctx) {
           {decoLine(mainColor, 40)}
         </div>
         <div style={{ maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
-          {hasFaqRoles ? questions.map((q, qi) => (
-            <div key={qi} style={{ borderRadius: 14, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, overflow: "hidden" }}>
-              <div style={{ padding: "16px 24px", background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", display: "flex", alignItems: "center", gap: 12 }}>
+          {hasFaqRoles ? questions.map((q, qi) => {
+            const faqOpen = sec._faqOpen || {};
+            const isOpen = faqOpen[qi] !== false; // 기본 첫 번째만 열림 -> 모두 열림 기본
+            const toggleFaq = (e) => {
+              e.stopPropagation();
+              setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _faqOpen: { ...faqOpen, [qi]: !isOpen } }));
+            };
+            return (
+            <div key={qi} style={{ borderRadius: 14, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, overflow: "hidden", transition: "all 0.2s" }}>
+              <div onClick={toggleFaq} style={{ padding: "16px 24px", background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", userSelect: "none" }}>
                 <span style={{ fontSize: 14, fontWeight: 900, color: mainColor }}>Q</span>
                 <div {...editable(q)} style={eS(q, { fontSize: 15, fontWeight: 700, color: isDarkBg ? "#fff" : "#1a1a2e", flex: 1 })}>
                   {q.content}
                 </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDarkBg ? "rgba(255,255,255,0.4)" : "#999"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {answers[qi] && (
+              {isOpen && answers[qi] && (
                 <div style={{ padding: "14px 24px 16px 52px", background: isDarkBg ? "rgba(255,255,255,0.02)" : "#fff" }}>
                   <div {...editable(answers[qi])} style={eS(answers[qi], { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.8 })}>
                     {answers[qi].content}
@@ -163,7 +171,7 @@ export function renderPromo(ctx) {
                 </div>
               )}
             </div>
-          )) : bodyEls.map((el, bi) => (
+          );}) : bodyEls.map((el, bi) => (
             <div key={bi} {...editable(el)} style={eS(el, { padding: "14px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", lineHeight: 1.8 })}>
               {el.content}
             </div>

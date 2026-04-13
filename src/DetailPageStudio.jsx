@@ -39,6 +39,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [phase, setPhase] = useState("input"); // input | generating | outline | editor
   const [mode, setMode] = useState("fast");
   const [pageCount, setPageCount] = useState(7);
+  const [designStyle, setDesignStyle] = useState(null);
 
   // 입력 폼
   const [productName, setProductName] = useState("");
@@ -83,7 +84,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── ctx 객체 (API 함수에 전달) ──────────────────────
   const getCtx = () => ({
     // data
-    productName, category, features, options, extraInfo, images, mode, pageCount,
+    productName, category, features, options, extraInfo, images, mode, pageCount, designStyle,
     sections, sectionImages, activeSection, selectedEl,
     user, showPointConfirm,
     // setters
@@ -210,6 +211,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       extraInfo={extraInfo} setExtraInfo={setExtraInfo}
       aiFilling={aiFilling} mode={mode} setMode={setMode}
       pageCount={pageCount} setPageCount={setPageCount}
+      designStyle={designStyle} setDesignStyle={setDesignStyle}
       fileInputRef={fileInputRef} handleImageUpload={handleImageUpload}
       removeImage={removeImage} autoFillWithAI={autoFillWithAI} runPipeline={runPipeline}
       inputStyle={inputStyle} btnPrimary={btnPrimary}

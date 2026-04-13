@@ -4,13 +4,13 @@ import { SECTION_TEMPLATES, SECTION_TYPE_LABELS } from "../detailTemplates.js";
 
 export async function runPipeline(ctx) {
   const {
-    productName, category, features, options, extraInfo, images, mode, pageCount,
+    productName, category, features, options, extraInfo, images, mode, pageCount, designStyle,
     user, showPointConfirm,
     setPhase, setPipeStep, setPipeResults, setPipeError,
     setColorPalette, setSections, setActiveSection,
   } = ctx;
 
-  if (!productName.trim()) return;
+  if (!productName.trim() || !category) return;
   if (!user && guestLimitExceeded()) return;
   if (showPointConfirm && user && !(await showPointConfirm(10))) return;
   if (!user) incrementGuestUsage();
@@ -110,7 +110,26 @@ JSON만 출력.`, maxTokens: 200 }),
       : ["패션","의류","가방","신발","주얼리"].some(k => catLabel.includes(k)) ? "패션"
       : ["가전","전자","IT","디지털"].some(k => catLabel.includes(k)) ? "가전"
       : ["건강","영양","비타민","운동"].some(k => catLabel.includes(k)) ? "건강" : "default";
-    const seed = categoryThemes[catKey];
+    let seed = categoryThemes[catKey];
+
+    // designStyle 선택 시 프리셋 오버라이드
+    const designStylePresets = {
+      "minimal_modern": { tone: "미니멀 모던", palette: `메인${mainColor}/화이트#fff/라이트#f5f5f5/다크#111 — 흑백+포인트 1색만`, layout: "여백 넉넉, 가는 산세리프, 좌우 분할, 이미지 중심" },
+      "premium_warm": { tone: "프리미엄 웜", palette: `메인${mainColor}/크림#f9f6f2/웜베이지#f5f0eb/다크#2c2218 — 따뜻한 어스톤만`, layout: "풀블리드 이미지, 세리프 포인트, 크림+다크 교차" },
+      "clean_beauty": { tone: "클린 뷰티", palette: `메인${mainColor}/화이트#fff/블러시#f8f5f2/소프트핑크#faf5f5 — 파스텔 소프트`, layout: "제품 클로즈업 중심, 깔끔한 여백, 라운드 코너" },
+      "magazine_editorial": { tone: "매거진 에디토리얼", palette: `메인${mainColor}/화이트#fff/라이트#f0f0f0/블랙#111 — 모노톤`, layout: "큰 이미지+작은 텍스트, 비대칭 그리드, 강한 타이포" },
+      "tech_pro": { tone: "테크 프로페셔널", palette: `메인${mainColor}/쿨그레이#f0f2f5/화이트#fff/다크네이비#0f0f1a — 차분한 중성톤`, layout: "다크 히어로, 정돈된 그리드, 정보형, 아이콘+텍스트" },
+      "natural_organic": { tone: "내추럴 오가닉", palette: `메인${mainColor}/베이지#f5f0eb/크림#faf7f3/다크브라운#3a3530 — 어스톤`, layout: "자연 질감, 부드러운 곡선, 그린/브라운 포인트" },
+      "bold_pop": { tone: "볼드 팝", palette: `메인${mainColor}/화이트#fff/라이트핑크#fff5f5/다크#1a1a2e — 강렬한 포인트`, layout: "큰 볼드 타이포, 에너지 넘치는 카피, 다이나믹 레이아웃" },
+      "luxury_dark": { tone: "럭셔리 다크", palette: `메인${mainColor}/다크#0a0a0a/차콜#1a1a1a/골드#c9a96e — 블랙+골드`, layout: "블랙 베이스 위주, 골드 포인트, 세리프 타이포, 고급 여백" },
+      "fresh_green": { tone: "프레시 그린", palette: `메인${mainColor}/밝은그린#f0f5ef/화이트#fff/라이트#f5f8f4 — 청량한 그린톤`, layout: "밝은 톤, 건강/신선 이미지 강조, 깨끗한 레이아웃" },
+      "soft_beige": { tone: "소프트 베이지", palette: `메인${mainColor}/베이지#f7f3ef/화이트#fff/웜크림#faf7f3 — 부드러운 톤`, layout: "베이지+화이트 교차, 편안한 가독성, 따뜻한 느낌" },
+      "monochrome": { tone: "모노크롬", palette: `블랙#000/화이트#fff/라이트그레이#f5f5f5 — 순수 흑백, 컬러 최소화`, layout: "그래픽적 레이아웃, 강한 대비, 타이포 중심" },
+      "playful_pastel": { tone: "플레이풀 파스텔", palette: `메인${mainColor}/라벤더#f8f5ff/핑크#fff5f8/화이트#fff — 밝은 파스텔`, layout: "밝은 파스텔 교차, 라운드 코너, 친근한 카피" },
+    };
+    if (designStyle && designStylePresets[designStyle]) {
+      seed = designStylePresets[designStyle];
+    }
 
     const longFlow = `순서(14섹션 — 전환율 최적화형):
 1. hero: 제품 대표 이미지 + 결과 중심 핵심 카피 1줄 + 서브 설명
@@ -273,7 +292,15 @@ JSON배열만 출력.`;
       cert: ["centered_text"],
       shipping: ["centered_text"],
     };
-    const bgPattern = ["#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb", "#f5f5f5", "#ffffff", "#f9f6f2", "#1a1a2e", "#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb"];
+    // designStyle별 bgPattern 커스터마이징
+    const bgPatternByStyle = {
+      "luxury_dark": ["#0a0a0a", "#1a1a1a", "#111111", "#0a0a0a", "#1a1a1a", "#0f0f0f", "#111111", "#0a0a0a", "#1a1a1a", "#111111", "#0a0a0a", "#1a1a1a", "#0f0f0f", "#111111"],
+      "tech_pro": ["#ffffff", "#f0f2f5", "#ffffff", "#0f0f1a", "#f0f2f5", "#ffffff", "#f5f5f5", "#ffffff", "#0f0f1a", "#f0f2f5", "#ffffff", "#f5f5f5", "#0f0f1a", "#ffffff"],
+      "premium_warm": ["#f9f6f2", "#ffffff", "#f5f0eb", "#2c2218", "#f9f6f2", "#ffffff", "#f5f0eb", "#f9f6f2", "#2c2218", "#ffffff", "#f5f0eb", "#f9f6f2", "#ffffff", "#f5f0eb"],
+      "fresh_green": ["#ffffff", "#f0f5ef", "#ffffff", "#f5f8f4", "#ffffff", "#f0f5ef", "#f5f8f4", "#ffffff", "#3a3530", "#f0f5ef", "#ffffff", "#f5f8f4", "#ffffff", "#f0f5ef"],
+      "clean_beauty": ["#ffffff", "#faf5f5", "#ffffff", "#f8f5f2", "#ffffff", "#faf5f5", "#f8f5f2", "#ffffff", "#1a1a2e", "#ffffff", "#faf5f5", "#f8f5f2", "#ffffff", "#faf5f5"],
+    };
+    const bgPattern = (designStyle && bgPatternByStyle[designStyle]) || ["#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb", "#f5f5f5", "#ffffff", "#f9f6f2", "#1a1a2e", "#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb"];
     let pointIdx = 0;
     const diversified = layoutData.map((s, i) => {
       const type = s.type || "point";
@@ -299,6 +326,16 @@ JSON배열만 출력.`;
         newLayout = variants[Math.floor(Math.random() * variants.length)];
       }
       let newBg = s.bg_color;
+      // designStyle에 따른 hero 레이아웃 고정
+      if (type === "hero" && designStyle) {
+        const heroLayoutMap = {
+          "magazine_editorial": "collection_intro", "minimal_modern": "full_image",
+          "tech_pro": "full_image", "luxury_dark": "full_image",
+          "clean_beauty": "left_image_right_text", "fresh_green": "left_image_right_text",
+          "playful_pastel": "left_image_right_text",
+        };
+        if (heroLayoutMap[designStyle]) newLayout = heroLayoutMap[designStyle];
+      }
       if (type === "hero") newBg = "#111";
       else if (type === "ai_notice") newBg = "#fafafa";
       else if (type === "shipping") newBg = "#f5f5f5";
