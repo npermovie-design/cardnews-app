@@ -474,7 +474,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try {
       let fullText;
       try {
-        fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
+        const _timeoutMs = wordCount === "xlong" ? 180000 : wordCount === "long" ? 150000 : 120000;
+        fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} }, null, _timeoutMs);
       } catch (streamErr) {
         // 타임아웃 등 에러 시 이미 받은 텍스트로 진행
         if (_savedFull && _savedFull.length > 100) {

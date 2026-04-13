@@ -56,7 +56,7 @@ export async function callAI(model, messages, maxTokens = 2000, system = null) {
  * Streaming AI call. Calls onChunk(text) for each chunk, returns full text.
  * 탭 비활성화(백그라운드) 시에도 중단되지 않도록 처리.
  */
-export async function callAIStream(model, messages, maxTokens = 4000, onChunk, system = null) {
+export async function callAIStream(model, messages, maxTokens = 4000, onChunk, system = null, timeoutMs = 120000) {
   const body = { model, max_tokens: maxTokens, stream: true, messages: convertMessages(messages) };
   if (system) body.system = system;
 
@@ -70,8 +70,7 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
   }
 
   const controller = new AbortController();
-  // 90초 전체 타임아웃 (보통 20~60초 소요, 90초면 넉넉)
-  const timeout = setTimeout(() => controller.abort(), 90000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(PROXY_URL, {

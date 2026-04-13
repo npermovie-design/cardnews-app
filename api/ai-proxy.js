@@ -1,5 +1,5 @@
 // AI 프록시 — Anthropic 직접 호출 (OpenRouter 대비 8배+ 빠름)
-export const config = { runtime: "edge", maxDuration: 60 };
+export const config = { runtime: "edge", maxDuration: 120 };
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
