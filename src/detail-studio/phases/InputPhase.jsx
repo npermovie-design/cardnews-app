@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { CATEGORIES } from "../constants.js";
 import DesignStylePicker from "./DesignStylePicker.jsx";
 
@@ -12,24 +12,34 @@ export default function InputPhase({
   fileInputRef, handleImageUpload, removeImage, autoFillWithAI, runPipeline,
   inputStyle, btnPrimary,
 }) {
-  return (
+  const [step, setStep] = useState(1); // 1: 제품 분석, 2: 디자인 선택
+  const canProceed = productName.trim() && category;
+
+  // ── Step 1: 제품 정보 입력 ──
+  if (step === 1) return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f5f5f5" }}>
       <div style={{ maxWidth: "min(680px, 100%)", margin: "0 auto", padding: isMobile ? "24px 14px 60px" : "48px 20px 80px" }}>
-        {/* 헤더 — 메이킷 스타일 */}
+        {/* 헤더 */}
         <div style={{ marginBottom: 40 }}>
+          {/* 스텝 인디케이터 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: acc, color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</div>
+            <div style={{ height: 2, width: 32, background: `${acc}30`, borderRadius: 1 }} />
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: D ? "rgba(255,255,255,0.08)" : "#e0e0e0", color: muted, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>2</div>
+          </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 16px", borderRadius: 20, background: acc + "15", color: acc, fontSize: 13, fontWeight: 800, marginBottom: 16 }}>
-            AI 상세페이지
+            STEP 1
           </div>
           <h1 style={{ fontSize: "clamp(24px, 5vw, 34px)", fontWeight: 900, color: text, lineHeight: 1.25, marginBottom: 10, letterSpacing: -0.8 }}>
-            제품 정보를 입력하면<br />AI가 상세페이지를 만들어드려요
+            제품 정보를 입력해주세요
           </h1>
-          <p style={{ fontSize: 15, color: muted, lineHeight: 1.7 }}>이미지와 제품 정보를 기반으로 톤앤매너를 분석하고, 섹션별 콘텐츠를 자동 생성합니다.</p>
+          <p style={{ fontSize: 15, color: muted, lineHeight: 1.7 }}>이미지와 제품 정보를 기반으로 AI가 톤앤매너를 분석합니다.</p>
         </div>
 
-        {/* 폼 — 카드 없이 플랫 스타일 */}
+        {/* 폼 카드 */}
         <div style={{ background: D ? cardBg : "#fff", borderRadius: 16, padding: isMobile ? "20px 14px" : "28px 24px", border: `1px solid ${bdr}` }}>
 
-          {/* ── 1. 상품 이미지 (최상단) ── */}
+          {/* ── 1. 상품 이미지 ── */}
           <div style={{ marginBottom: 26 }}>
             <label style={{ fontSize: 15, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
               제품 사진 <span style={{ color: "#ef4444" }}>*</span>
@@ -59,7 +69,6 @@ export default function InputPhase({
             </div>
           </div>
 
-          {/* ── 구분선 ── */}
           <div style={{ height: 1, background: bdr, margin: "4px 0 24px" }} />
 
           {/* AI 분석 중 배너 */}
@@ -73,9 +82,9 @@ export default function InputPhase({
             </div>
           )}
 
-          {/* ── 2. 상품명 + 카테고리 (한 줄 또는 모바일 세로) ── */}
+          {/* ── 2. 상품명 + 카테고리 ── */}
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 180px", gap: 14, marginBottom: 22 }}>
-            <div style={{ position: "relative" }}>
+            <div>
               <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 8 }}>
                 상품명 <span style={{ color: "#ef4444" }}>*</span>
                 {aiFilling && !productName && <span style={{ fontSize: 12, color: acc, fontWeight: 700, marginLeft: 8 }}>분석 중...</span>}
@@ -83,7 +92,7 @@ export default function InputPhase({
               <input value={productName} onChange={e => setProductName(e.target.value)}
                 placeholder="예) 제주 흑돼지 육포 선물세트" style={{ ...inputStyle, fontSize: 15, padding: "14px 16px", minHeight: 50, borderColor: aiFilling && !productName ? acc + "60" : undefined }} />
             </div>
-            <div style={{ position: "relative" }}>
+            <div>
               <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "block", marginBottom: 8 }}>
                 카테고리 <span style={{ color: "#ef4444" }}>*</span>
                 {aiFilling && !category && <span style={{ fontSize: 12, color: acc, fontWeight: 700, marginLeft: 4 }}>분석 중...</span>}
@@ -101,7 +110,7 @@ export default function InputPhase({
             </div>
           </div>
 
-          {/* ── 3. 제품 특징 + AI 채우기 ── */}
+          {/* ── 3. 제품 특징 ── */}
           <div style={{ marginBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
               <label style={{ fontSize: 14, fontWeight: 700, color: text }}>
@@ -121,19 +130,19 @@ export default function InputPhase({
               </button>
             </div>
             <textarea value={features} onChange={e => setFeatures(e.target.value)} rows={5}
-              placeholder={"예시)\n1. 제주 청정 환경에서 자란 흑돼지 100% 사용\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\n3. 무방부제·무색소 — 아이도 안심하고 먹는 건강 간식\n4. 고급 선물 포장으로 명절/기념일 선물에 적합\n5. 개별 소포장으로 휴대 간편, 언제 어디서나 간편하게"}
+              placeholder={"예시)\n1. 제주 청정 환경에서 자란 흑돼지 100% 사용\n2. 48시간 저온 숙성으로 부드럽고 깊은 풍미\n3. 무방부제, 무색소 -- 건강한 간식\n4. 고급 선물 포장\n5. 개별 소포장으로 휴대 간편"}
               style={{ ...inputStyle, fontSize: 15, padding: "14px 16px", resize: "vertical", lineHeight: 1.8, borderColor: aiFilling && !features ? acc + "60" : undefined }} />
           </div>
 
           {/* ── 4. 옵션 ── */}
           <div style={{ marginBottom: 22 }}>
             <label style={{ fontSize: 14, fontWeight: 700, color: text, display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              옵션/종류 <span style={{ fontSize: 12, color: muted, fontWeight: 500 }}>선택 · {options.length}/10</span>
+              옵션/종류 <span style={{ fontSize: 12, color: muted, fontWeight: 500 }}>선택 {options.length}/10</span>
             </label>
             <div style={{ display: "flex", gap: 10 }}>
               <input value={optionInput} onChange={e => setOptionInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && optionInput.trim() && options.length < 10) { setOptions(prev => [...prev, optionInput.trim()]); setOptionInput(""); } }}
-                placeholder="예) 오리지널 120g / 매운맛 120g / 선물세트 3종" style={{ ...inputStyle, fontSize: 15, padding: "14px 16px", minHeight: 50, flex: 1 }} />
+                placeholder="예) 오리지널 120g / 매운맛 120g" style={{ ...inputStyle, fontSize: 15, padding: "14px 16px", minHeight: 50, flex: 1 }} />
               <button onClick={() => { if (optionInput.trim() && options.length < 10) { setOptions(prev => [...prev, optionInput.trim()]); setOptionInput(""); } }}
                 style={{ padding: "12px 22px", borderRadius: 12, border: `1.5px solid ${bdr}`, background: inputBg, color: text, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0, minHeight: 50, fontFamily: "inherit" }}>추가</button>
             </div>
@@ -179,20 +188,87 @@ export default function InputPhase({
             )}
           </div>
 
+          {/* ── 다음 단계 버튼 ── */}
+          <button onClick={() => setStep(2)}
+            disabled={!canProceed}
+            style={{
+              ...btnPrimary,
+              padding: "18px 32px", fontSize: 17, borderRadius: 14, minHeight: 60,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              opacity: canProceed ? 1 : 0.35,
+              width: "100%", maxWidth: "100%",
+              boxShadow: canProceed ? "0 10px 28px rgba(124,106,255,0.35)" : "none",
+            }}>
+            <span>디자인 선택하기</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          {!canProceed && (
+            <p style={{ fontSize: 13, color: muted, marginTop: 12, textAlign: "center", fontWeight: 500 }}>
+              {!productName.trim() ? "상품명을 입력해주세요" : "카테고리를 선택해주세요"}
+            </p>
+          )}
+          {canProceed && images.length === 0 && (
+            <p style={{ fontSize: 13, color: "#f59e0b", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
+              사진 없이도 생성 가능해요. 스톡 이미지로 자동 채워집니다.
+            </p>
+          )}
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    </div>
+  );
 
-          {/* ── 구분선 ── */}
-          <div style={{ height: 1, background: bdr, margin: "0 0 24px" }} />
+  // ── Step 2: 디자인 스타일 선택 + 생성 ──
+  return (
+    <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f5f5f5" }}>
+      <div style={{ maxWidth: "min(720px, 100%)", margin: "0 auto", padding: isMobile ? "24px 14px 60px" : "48px 20px 80px" }}>
+        {/* 헤더 */}
+        <div style={{ marginBottom: 32 }}>
+          {/* 스텝 인디케이터 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style={{ height: 2, width: 32, background: acc, borderRadius: 1 }} />
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: acc, color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>2</div>
+          </div>
+          {/* 뒤로가기 */}
+          <button onClick={() => setStep(1)} style={{ background: "none", border: "none", color: muted, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, padding: "4px 0", marginBottom: 12, fontFamily: "inherit" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            제품 정보 수정
+          </button>
 
-          {/* ── 6. 디자인 스타일 선택 ── */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 16px", borderRadius: 20, background: acc + "15", color: acc, fontSize: 13, fontWeight: 800, marginBottom: 16 }}>
+            STEP 2
+          </div>
+          <h1 style={{ fontSize: "clamp(24px, 5vw, 34px)", fontWeight: 900, color: text, lineHeight: 1.25, marginBottom: 10, letterSpacing: -0.8 }}>
+            디자인 스타일을 선택하세요
+          </h1>
+          <p style={{ fontSize: 15, color: muted, lineHeight: 1.7 }}>선택한 스타일이 전체 상세페이지의 톤과 레이아웃을 결정합니다.</p>
+
+          {/* 제품 요약 카드 */}
+          <div style={{ marginTop: 20, padding: "14px 18px", borderRadius: 12, background: D ? "rgba(255,255,255,0.04)" : "#f8f8f8", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 14 }}>
+            {images.length > 0 && (
+              <img src={images[0].preview} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productName}</div>
+              <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>{CATEGORIES.find(c => c.key === category)?.label || category}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 디자인 스타일 선택 */}
+        <div style={{ background: D ? cardBg : "#fff", borderRadius: 16, padding: isMobile ? "20px 14px" : "28px 24px", border: `1px solid ${bdr}`, marginBottom: 20 }}>
           <DesignStylePicker
             designStyle={designStyle} setDesignStyle={setDesignStyle}
             category={category} acc={acc} text={text} muted={muted} bdr={bdr} D={D} isMobile={isMobile}
           />
+        </div>
 
-          {/* ── 구분선 ── */}
-          <div style={{ height: 1, background: bdr, margin: "0 0 24px" }} />
-
-          {/* ── 7. 생성 모드 + 버튼 ── */}
+        {/* 생성 모드 + 버튼 */}
+        <div style={{ background: D ? cardBg : "#fff", borderRadius: 16, padding: isMobile ? "20px 14px" : "28px 24px", border: `1px solid ${bdr}` }}>
+          <label style={{ fontSize: 15, fontWeight: 700, color: text, display: "block", marginBottom: 14 }}>생성 모드</label>
           <div style={{ display: "flex", gap: 0, marginBottom: 22, background: D ? "rgba(255,255,255,0.05)" : "#f0f0f0", borderRadius: 12, padding: 4 }}>
             {[
               { key: "fast", label: "빠른 생성", desc: "SNS/랜딩용", cnt: 7 },
@@ -211,38 +287,23 @@ export default function InputPhase({
               </button>
             ))}
           </div>
-          {/* ── 페이지 수 표시 (모드에 따라 자동 설정) ── */}
           <div style={{ marginBottom: 22, display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: muted }}>생성 페이지:</span>
             <span style={{ fontSize: 15, fontWeight: 800, color: acc }}>{pageCount}페이지</span>
           </div>
 
           <button onClick={runPipeline}
-            disabled={!productName.trim() || !category}
             style={{
               ...btnPrimary,
               padding: "18px 32px", fontSize: 17, borderRadius: 14, minHeight: 60,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              opacity: (!productName.trim() || !category) ? 0.35 : 1,
               width: "100%", maxWidth: "100%",
-              boxShadow: (productName.trim() && category) ? "0 10px 28px rgba(124,106,255,0.35)" : "none",
+              boxShadow: "0 10px 28px rgba(124,106,255,0.35)",
             }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.39 6.95L22 12l-7.61 3.05L12 22l-2.39-6.95L2 12l7.61-3.05L12 2z"/></svg>
             상세페이지 생성하기
           </button>
-          {(!productName.trim() || !category) && (
-            <p style={{ fontSize: 13, color: muted, marginTop: 12, textAlign: "center", fontWeight: 500 }}>
-              {!productName.trim() ? "상품명을 입력해주세요" : "카테고리를 선택해주세요"}
-            </p>
-          )}
-          {productName.trim() && category && images.length === 0 && (
-            <p style={{ fontSize: 13, color: "#f59e0b", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
-              사진 없이도 생성 가능해요. 스톡 이미지로 자동 채워집니다.
-            </p>
-          )}
         </div>
-
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );
