@@ -49,15 +49,11 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
 
-  // 편집 AI: 글씨 수정 가능한 에디터
-  const editAiTools = [
-    { id:"detail_simple", label:"상세페이지", img:"/icons3d/memo.png", desc:"텍스트 편집 가능 · 상품 설명", size:"860×1100" },
-  ];
+  // 편집 AI: 글씨 수정 가능한 에디터 (상세페이지 리뉴얼 전 비활성화)
+  const editAiTools = [];
 
-  // 이미지 AI: 같은 콘텐츠를 이미지로 바로 생성
-  const imageAiTools = [
-    { id:"detail_simple_img", img:"/icons3d/memo.png", label:"상세페이지", desc:"완성된 이미지로 바로 생성", size:"860×1100" },
-  ];
+  // 이미지 AI: 같은 콘텐츠를 이미지로 바로 생성 (상세페이지 리뉴얼 전 비활성화)
+  const imageAiTools = [];
 
   const renderToolCard = (t) => (
     <button key={t.id} onClick={() => setAiMenu(t.id)}
@@ -643,6 +639,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         color: "#7c6aff", bg: "rgba(124,106,255,0.08)",
         svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
       },
+      /* 상세페이지 - 리뉴얼 전 비활성화
       {
         menu: "content_create",
         title: _s("상세페이지 제작", "Detail Page"),
@@ -650,6 +647,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         color: "#8b5cf6", bg: "rgba(139,92,246,0.08)",
         svg: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,
       },
+      */
       {
         menu: "image_tools",
         title: _s("이미지 생성", "AI Image"),
@@ -687,7 +685,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       {keywords:["인스타","인스타그램","릴스"],menu:"blog_insta",label:"인스타그램 글쓰기"},
       {keywords:["유튜브","youtube","영상"],menu:"blog_youtube",label:"유튜브 글쓰기"},
       {keywords:["스레드","thread","threads"],menu:"blog_thread",label:"스레드 글쓰기"},
-      {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"},
+      // {keywords:["상세페이지","상세","랜딩"],menu:"detail_simple",label:"상세페이지 제작"}, // 리뉴얼 전 비활성화
       {keywords:["이미지","사진","생성"],menu:"image_create",label:"이미지 생성"},
       {keywords:["로고","logo"],menu:"logo_gen",label:"로고 생성"},
       {keywords:["목업","mockup"],menu:"mockup_gen",label:"목업 생성"},
@@ -1133,9 +1131,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 콘텐츠 제작: 선택 화면 (미리캔버스 스타일 - 탭+접이식) ──
+  // 상세페이지 리뉴얼 전 비활성화 — content_create 접근 시 홈으로
   if (aiMenu === "content_create") {
-    // 상세페이지로 바로 진입
-    setAiMenu("detail_simple"); return null;
+    setAiMenu("home"); return null;
   }
 
   // ── 이미지: 하위 도구 직접 진입 ──
