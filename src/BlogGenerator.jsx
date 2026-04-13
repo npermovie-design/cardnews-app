@@ -74,10 +74,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   }, []);
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
-  // loading + genStep도 sessionStorage로 복원 (unmount 시 로딩 화면 유지)
-  const [loading, setLoading_raw] = useState(() => {
-    try { return sessionStorage.getItem(_ssLoadKey) === "1"; } catch { return false; }
-  });
+  // loading은 항상 false로 시작 (sessionStorage 복원 안 함 — 메뉴 이동 시 깨짐 방지)
+  const [loading, setLoading_raw] = useState(false);
   const setLoading = (v) => {
     setLoading_raw(v);
     try { if (v) sessionStorage.setItem(_ssLoadKey, "1"); else sessionStorage.removeItem(_ssLoadKey); } catch {}
@@ -144,7 +142,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const _ssStartTimeKey = useRef("_bg_startTime_" + (initialType || "blog")).current;
   const _ssSavedFullKey = useRef("_bg_savedFull_" + (initialType || "blog")).current;
   const [genStep, setGenStep_raw] = useState(() => {
-    try { const v = parseInt(sessionStorage.getItem(_ssStepKey) || "0"); return isNaN(v) ? 0 : v; } catch { return 0; }
+    try {
+      const v = parseInt(sessionStorage.getItem(_ssStepKey) || "0");
+      // 5(완료)이고 result가 있으면 유지, 아니면 0으로 리셋
+      if (v === 5) {
+        const hasResult = sessionStorage.getItem("_bg_res_" + (initialType || "blog"));
+        return (hasResult && hasResult.length > 50) ? 5 : 0;
+      }
+      return 0; // 1~4(생성중)는 복원하지 않음 — 스트리밍 끊어진 상태이므로
+    } catch { return 0; }
   });
   const setGenStep = (v) => {
     setGenStep_raw(v);
