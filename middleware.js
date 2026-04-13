@@ -198,6 +198,19 @@ export default async function middleware(request) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  // 앱 UI 페이지는 크롤러에게 noindex 반환 (색인 불필요)
+  const NOINDEX_PATHS = ["/ai", "/analyzer", "/mypage"];
+  const isNoindex = NOINDEX_PATHS.some(p => path === p || path.startsWith(p + "/"));
+  if (isNoindex) {
+    return new Response("", {
+      status: 200,
+      headers: {
+        "X-Robots-Tag": "noindex, nofollow",
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
+  }
+
   let title, desc, image, keywords, bodyContent = "";
 
   // 게시글 URL 처리: /community/:cat/post-:id

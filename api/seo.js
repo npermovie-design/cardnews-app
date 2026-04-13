@@ -9,22 +9,21 @@ async function handleSitemap(req, res) {
   const today = new Date().toISOString().slice(0, 10);
 
   // 정적 페이지
+  // 실질적 콘텐츠가 있는 정적 페이지만 포함
+  // 앱 UI 페이지(/ai, /analyzer)와 콘텐츠 부족 페이지(/cases)는 제외
   const staticPages = [
     { url: "/", priority: "1.0", freq: "weekly", langs: true },
     { url: "/about", priority: "0.8", freq: "monthly", langs: true },
     { url: "/howto", priority: "0.7", freq: "monthly", langs: true },
-    { url: "/ai", priority: "0.9", freq: "weekly", langs: true },
     { url: "/pricing", priority: "0.8", freq: "monthly", langs: true },
     { url: "/snsnews", priority: "0.8", freq: "daily" },
     { url: "/community/info", priority: "0.7", freq: "daily" },
     { url: "/community/qna", priority: "0.7", freq: "daily" },
     { url: "/community/free", priority: "0.6", freq: "daily" },
-    { url: "/community/review", priority: "0.6", freq: "daily" },
     { url: "/community/archive", priority: "0.5", freq: "weekly" },
+    { url: "/community/sns_briefing", priority: "0.7", freq: "daily" },
     { url: "/contact", priority: "0.5", freq: "monthly" },
     { url: "/event", priority: "0.6", freq: "weekly" },
-    { url: "/analyzer", priority: "0.7", freq: "weekly", langs: true },
-    { url: "/cases", priority: "0.5", freq: "monthly" },
     { url: "/legal", priority: "0.3", freq: "yearly" },
   ];
 

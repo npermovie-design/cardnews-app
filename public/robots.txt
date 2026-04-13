@@ -3,6 +3,12 @@ Allow: /
 Disallow: /api/
 Disallow: /_vercel/
 Disallow: /xk9m2p4q7
+Disallow: /ai/
+Disallow: /ai
+Disallow: /analyzer/
+Disallow: /analyzer
+Disallow: /mypage/
+Disallow: /mypage
 
 # Sitemaps
 Sitemap: https://snsmakeit.com/sitemap.xml
