@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n.jsx";
 
@@ -136,6 +137,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imageResult, setImageResult] = useState(null);
   const [imageStyle, setImageStyle] = useState("realistic");
   const [imageAspect, setImageAspect] = useState("1:1");
+  const [shortsMode, setShortsMode] = useState(false); // 쇼츠 인라인 모드
+  const [shortsYtUrl, setShortsYtUrl] = useState("");
 
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
@@ -566,9 +569,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         body.productImageMime = fields._files[0].mime || "image/png";
       }
 
+      const token = await getAuthToken();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch("/api/generate-image", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -590,17 +596,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
   };
 
-  // ── 쇼츠 시작 (mode === "shorts") ──
+  // ── 쇼츠 시작 → 인라인 렌더링 ──
   const handleShortsStart = () => {
-    const url = fields.keyword?.trim();
+    const url = detectedYoutubeUrl || fields.keyword?.trim();
     if (!url) { setError("유튜브 링크를 입력해주세요."); return; }
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
     if (!ytMatch) { setError("올바른 유튜브 링크를 입력해주세요."); return; }
     try { sessionStorage.setItem('shorts_yt_url', url); } catch {}
-    if (typeof setAiMenu === 'function') setAiMenu("shorts_make");
-    else if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('aiMenuChange', { detail: { menu: 'shorts_make' } }));
-    }
+    setShortsYtUrl(url);
+    setShortsMode(true);
   };
 
   /* ── [image: ...] / [이미지: ...] 태그를 실제 이미지로 자동 교체
@@ -1226,7 +1230,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [mobileTab, setMobileTab] = useState("input");
   // 표시 모드: 입력(검색창) vs 생성중/결과
   const showResult = (mode === "write" && ((loading || (genStep > 0 && genStep < 5)) || (!loading && genStep === 5 && result)))
-    || (mode === "image" && (loading || imageResult));
+    || (mode === "image" && (loading || imageResult))
+    || shortsMode;
 
   // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
   const handleFileInput = async (fileList) => {
@@ -1745,7 +1750,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         )}
 
         {/* 결과 화면 */}
-        {showResult && (mode==="image" ? renderImageResult() : renderResult())}
+        {showResult && (
+          shortsMode ? (
+            <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+              <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:`1px solid ${border}`}}>
+                <button onClick={()=>{setShortsMode(false);setShortsYtUrl("");}}
+                  style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  돌아가기
+                </button>
+              </div>
+              <div style={{flex:1,overflow:"hidden"}}>
+                <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
+                  <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+                </Suspense>
+              </div>
+            </div>
+          ) : mode==="image" ? renderImageResult() : renderResult()
+        )}
       </div>
     </div>
   );
