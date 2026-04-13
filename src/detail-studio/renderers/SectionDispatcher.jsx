@@ -70,9 +70,8 @@ export function renderSection({
     setSections,
   };
 
-  // AI 이미지가 있으면 이미지+텍스트 오버레이 모드 우선
-  if (aiImgSrc && !aiImgSrc.startsWith("https://")) {
-    // base64 AI 생성 이미지인 경우에만 오버레이 모드 (스톡 이미지 URL은 기존 렌더러 사용)
+  // AI 생성 이미지가 있으면 이미지+텍스트 오버레이 모드 우선
+  if (aiImgSrc) {
     const overlayResult = renderImageTextOverlay(ctx);
     if (overlayResult) return overlayResult;
   }

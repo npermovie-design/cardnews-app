@@ -79,12 +79,19 @@ export function renderImageTextOverlay(ctx) {
       </div>
       <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
 
+      {/* 하단 그라데이션 오버레이 (텍스트 가독성) */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%",
+        background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 100%)",
+        pointerEvents: "none", zIndex: 1 }} />
+
       {/* 텍스트 오버레이 */}
       {textEls.map((el, elIdx) => {
         const pos = getTextPos(el, elIdx);
         const color = getTextColor(el);
         const offsetX = el.offsetX || 0;
         const offsetY = el.offsetY || 0;
+        const isTitle = el.role === "title";
+        const isSubtitle = el.role === "subtitle";
 
         return (
           <div
@@ -92,8 +99,12 @@ export function renderImageTextOverlay(ctx) {
             {...editable(el)}
             style={{
               ...eS(el, {
-                color,
-                textShadow: "0 2px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)",
+                color: "#ffffff",
+                fontSize: isTitle ? (isMobile ? 28 : 38) : isSubtitle ? (isMobile ? 12 : 14) : (isMobile ? 14 : 16),
+                fontWeight: isTitle ? "900" : isSubtitle ? "600" : (el.fontWeight || "400"),
+                textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 1px 4px rgba(0,0,0,0.5)",
+                lineHeight: isTitle ? 1.3 : 1.7,
+                letterSpacing: isSubtitle ? 2 : isTitle ? -0.5 : 0,
               }),
               position: "absolute",
               top: pos.top,
@@ -101,7 +112,7 @@ export function renderImageTextOverlay(ctx) {
               transform: `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px)`,
               textAlign: pos.textAlign,
               maxWidth: isMobile ? "85%" : "70%",
-              zIndex: 2,
+              zIndex: 3,
               pointerEvents: "auto",
             }}
           >

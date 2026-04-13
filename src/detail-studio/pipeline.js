@@ -187,12 +187,14 @@ type: hero, pain_points, features, point, stats_highlight, review, cta, event, h
 layout: hero=full_image, pain_points=centered_text, features=grid_2col/grid_3col, point=left_image_right_text/right_image_left_text/centered_text/full_image, stats=centered_text, review=card_list, cta=centered_text.
 role: subtitle, title, body, price, stat_number, stat_label, review_name, star, review_text, question, answer.
 - elements의 각 텍스트에 posY 필드 추가 (텍스트 세로 위치, "10%"~"90%" 범위). title은 보통 "35%"~"50%", subtitle은 title 위, body는 title 아래.
-- image_prompt는 이 섹션의 상세페이지 디자인 배경 이미지를 묘사. 제품 사진 배치, 배경 색상/질감/그라데이션, 장식 요소(라인/원/도형)를 포함. 텍스트는 이미지에 절대 포함하지 말 것 — 텍스트가 들어갈 영역은 비워두어야 함. 프리미엄 상세페이지 디자인 스타일. 80단어 영문.
-- hero: 제품 풀블리드 이미지 + 하단 어두운 그라데이션 오버레이 (텍스트 영역)
-- point: 한쪽에 제품 클로즈업, 반대쪽은 깨끗한 단색/그라데이션 배경 (텍스트 영역)
-- features: 상단 타이틀 영역 비우고 하단에 제품 이미지 그리드 배치
-- cta: 중앙에 제품 이미지, 상하에 텍스트 영역
-- review: 깔끔한 배경 + 별점 장식 요소
+- image_prompt: 이 제품 사진을 참조하여 프리미엄 상세페이지 섹션 디자인 이미지를 생성하기 위한 영문 프롬프트. 제품을 배치하고 배경/그라데이션/장식 요소를 포함. 텍스트는 이미지에 절대 포함하지 마세요. 텍스트 영역은 비워두세요. 80단어 영문.
+- image_prompt 스타일: "Create a premium e-commerce product detail page section design. Place the given product photo [위치]. Background: [배경]. Leave empty space for text overlay at [텍스트위치]. No text, no letters, no words in the image."
+- hero: "Place product centered, dark gradient overlay at bottom half for text. Dramatic studio lighting. Aspect 3:4."
+- point: "Product on left/right 60%, clean solid color background on opposite side for text. Minimalist."
+- features: "Product at center bottom, clean top area empty for title. Soft gradient background."
+- cta: "Product centered with subtle glow, generous padding around for text above and below."
+- pain_points: "Soft muted background, small product in corner, large empty area for text cards."
+- review: "Clean minimal background, subtle decorative elements, product small at top."
 모든 섹션에 image_prompt 필수.
 카피는 실제 쇼핑몰 수준, ${catLabel} 카테고리 전문 멘트. 구체적 수치/성분 포함.
 - 이모지(emoji), 이모티콘, 특수기호(❌, 🎊, 🎁, ✦, ★ 등)를 절대 사용하지 마세요. 텍스트만 작성하세요.
