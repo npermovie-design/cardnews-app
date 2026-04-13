@@ -157,23 +157,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // ── 마운트 시 stale loading 상태 정리 (다른 메뉴 갔다 돌아온 경우) ──
   useEffect(() => {
     if (!loading) return;
-    // 마운트 시점에 loading=true면 이전 세션의 잔여 상태 — 복구 시도
-    const savedFull = (() => { try { return sessionStorage.getItem(_ssSavedFullKey) || ""; } catch { return ""; } })();
-    const savedResult = (() => { try { return sessionStorage.getItem(_ssKey) || ""; } catch { return ""; } })();
-    if (savedResult && savedResult.length > 50) {
-      setResult(savedResult);
-      setGenStep(5);
-      setLoading(false);
-    } else if (savedFull && savedFull.length > 50) {
-      setResult(cleanBlogText(savedFull));
-      setGenStep(5);
-      setLoading(false);
-    } else {
-      // 텍스트도 없으면 완전 리셋
-      setGenStep(0);
-      setLoading(false);
-      try { sessionStorage.removeItem(_ssLoadKey); sessionStorage.removeItem(_ssStepKey); sessionStorage.removeItem(_ssStartTimeKey); sessionStorage.removeItem(_ssSavedFullKey); } catch {}
-    }
+    // 마운트 시점에 loading=true면 이전 세션의 잔여 상태 — 완전 리셋
+    setGenStep(0);
+    setLoading(false);
+    setResult_raw("");
+    try { sessionStorage.removeItem(_ssLoadKey); sessionStorage.removeItem(_ssStepKey); sessionStorage.removeItem(_ssStartTimeKey); sessionStorage.removeItem(_ssSavedFullKey); sessionStorage.removeItem(_ssKey); } catch {}
   }, []); // 마운트 시 1회만
 
   // ── 탭 전환 대응: elapsed-time 기반 step progression ──
@@ -332,7 +320,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
-    if (result && !loading) {
+    // wizStep 1(입력화면)에서는 바로 생성, wizStep 3(결과화면)에서만 재생성 확인
+    if (result && !loading && genStep === 5) {
       setShowRegenConfirm(true);
     } else {
       generate();
