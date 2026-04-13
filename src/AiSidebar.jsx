@@ -86,14 +86,13 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
   // 메뉴 정의
   const menuItems = [
-    { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png" },
+    { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
     { sep:true },
     { id:"social_analyzer", label:"SNS분석", icon:"/icons3d/sns-app.png", ids:["social_analyzer"] },
     // { id:"content_create", label:"상세페이지", icon:"/icons3d/palette.png", ids:["detail_simple","detail_simple_make","canvas_direct_"] }, // 리뉴얼 전 비활성화
-    { id:"blog_naver", label:"글쓰기", icon:"/icons3d/blog-write.png", ids:["blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
-    { id:"product_shot", label:"이미지", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
-    { id:"shorts_make", label:"숏폼 자동편집", icon:"/icons3d/sns-app.png", ids:["shorts_make","video_edit"] },
+    { id:"product_shot", label:"이미지 도구", icon:"/icons3d/instagram-cam.png", ids:["image_create","image_edit","product_shot","logo_gen","mockup_gen","model_gen","skin_retouch","face_swap","outfit_swap","outpaint"] },
+    { id:"shorts_make", label:"쇼츠 편집기", icon:"/icons3d/sns-app.png", ids:["shorts_make","video_edit"] },
   ];
 
   const isActive = (item) => {
