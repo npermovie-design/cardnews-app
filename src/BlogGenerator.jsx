@@ -1216,70 +1216,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               )}
             </div>
           )}
-          {/* 연관 이미지 추천 */}
-          {(imgSearching || suggestedImages.length > 0) && (
-            <div style={{marginTop:18}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,fontWeight:800,color:text}}>📷 {t("relatedImages")}</span>
-                <span style={{fontSize:11,color:muted,flex:1}}>Pixabay · Pexels</span>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <input value={imgInput} onChange={e=>setImgInput(e.target.value)}
-                    onKeyDown={e=>e.key==="Enter"&&fetchImages(imgInput||fields.keyword)}
-                    placeholder={t("searchKw")}
-                    style={{padding:"5px 10px",borderRadius:12,border:`1px solid ${border}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:12,outline:"none",width:150}}/>
-                  <button onClick={()=>fetchImages(imgInput||fields.keyword)} disabled={imgSearching}
-                    style={{padding:"5px 12px",borderRadius:12,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:imgSearching?"not-allowed":"pointer",opacity:imgSearching?0.6:1,whiteSpace:"nowrap"}}>
-                    {imgSearching?"검색중...":"검색"}
-                  </button>
-                </div>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,paddingBottom:8}}>
-                {imgSearching && Array.from({length:6}).map((_,i)=>(
-                  <div key={i} style={{aspectRatio:"4/3",borderRadius:12,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f6",border:`1px solid ${border}`,animation:"pulse 1.5s ease-in-out infinite"}}/>
-                ))}
-                {suggestedImages.map(img=>(
-                  <div key={img.id} style={{borderRadius:12,overflow:"hidden",border:`1px solid ${border}`,position:"relative",cursor:"pointer",aspectRatio:"4/3"}}
-                    title="클릭: URL 복사 / ⬇: 다운로드">
-                    <img src={img.preview} alt="" loading="lazy"
-                      style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
-                      onError={e=>e.target.parentElement.style.display="none"}/>
-                    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0)",transition:"background 0.15s"}}
-                      onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,0.5)"}
-                      onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0)"}>
-                      <div style={{position:"absolute",top:4,right:4,display:"flex",gap:3}}>
-                        <button onClick={(e)=>{ e.stopPropagation(); navigator.clipboard.writeText(img.url); setImgCopied(img.id); setTimeout(()=>setImgCopied(null),2000); }}
-                          style={{padding:"3px 7px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.9)",color:"#333",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                          {imgCopied===img.id?"✓":"📋"}
-                        </button>
-                        <button onClick={(e)=>{ e.stopPropagation();
-                          fetch(img.url).then(r=>r.blob()).then(b=>{
-                            const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="image.jpg";
-                            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
-                          }).catch(()=>window.open(img.url,"_blank"));
-                        }}
-                          style={{padding:"3px 7px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.9)",color:"#333",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                          ⬇
-                        </button>
-                      </div>
-                      <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 6px"}}>
-                        <span style={{fontSize:9,background:"rgba(0,0,0,0.6)",color:"#fff",padding:"1px 5px",borderRadius:12}}>{img.src}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginTop:10,padding:"10px 14px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}`}}>
-                <div style={{fontSize:12,fontWeight:700,color:accent,marginBottom:6}}>💡 복사한 이미지 URL 활용법</div>
-                <div style={{fontSize:11,color:muted,lineHeight:1.8}}>
-                  <b style={{color:text}}>① 네이버 블로그</b> → 글쓰기 → 사진 → URL로 삽입 → 붙여넣기<br/>
-                  <b style={{color:text}}>② 인스타그램</b> → 복사한 URL을 브라우저에서 열어 이미지 저장 후 업로드<br/>
-                  <b style={{color:text}}>③ 티스토리</b> → 글쓰기 → 이미지 → URL 삽입 → 붙여넣기<br/>
-                  <b style={{color:text}}>④ 직접 저장</b> → 이미지에 우클릭 → "이미지를 다른 이름으로 저장"
-                </div>
-                <div style={{fontSize:10,color:muted,marginTop:6,opacity:0.7}}>상업적 이용 시 Pixabay·Pexels 라이선스를 확인하세요. (대부분 무료 상업 이용 가능)</div>
-              </div>
-            </div>
-          )}
+          {/* 연관 이미지 추천 — 제거됨 (통합 UI 간소화) */}
         </div>
       </div>
     );
