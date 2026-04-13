@@ -15,6 +15,7 @@ import {
   fillStockImages as apiFillStockImages,
   handleImageUpload as apiHandleImageUpload,
   autoFillWithAI as apiAutoFillWithAI,
+  analyzeProduct as apiAnalyzeProduct,
 } from "./detail-studio/api.js";
 import { runPipeline as apiRunPipeline } from "./detail-studio/pipeline.js";
 
@@ -51,6 +52,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const [extraOpen, setExtraOpen] = useState(false);
   const [extraInfo, setExtraInfo] = useState({ price: "", origin: "", target: "", shipping: "", brand: "", usp: "" });
   const [aiFilling, setAiFilling] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
   const stockFilledRef = useRef(false);
 
   // AI 파이프라인
@@ -84,13 +86,13 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // ── ctx 객체 (API 함수에 전달) ──────────────────────
   const getCtx = () => ({
     // data
-    productName, category, features, options, extraInfo, images, mode, pageCount, designStyle,
+    productName, category, features, options, extraInfo, images, mode, pageCount, designStyle, analysisResult,
     sections, sectionImages, activeSection, selectedEl,
     user, showPointConfirm,
     // setters
     setPhase, setPipeStep, setPipeResults, setPipeError,
     setColorPalette, setSections, setActiveSection,
-    setAiFilling, setFeatures, setCategory, setProductName, setImages,
+    setAiFilling, setAnalysisResult, setFeatures, setCategory, setProductName, setImages,
     setAgentMessages, setAgentInput, setAgentLoading, setSectionImages,
     setStockImages,
   });
@@ -99,6 +101,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const handleImageUpload = (e) => apiHandleImageUpload(e, getCtx());
   const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
   const autoFillWithAI = () => apiAutoFillWithAI(getCtx());
+  const analyzeProduct = () => apiAnalyzeProduct(getCtx());
   const runPipeline = () => apiRunPipeline(getCtx());
   const generateSectionImage = (secId, prompt) => apiGenerateSectionImage(secId, prompt, getCtx());
   const generateAllImages = () => apiGenerateAllImages(getCtx());
@@ -212,6 +215,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       aiFilling={aiFilling} mode={mode} setMode={setMode}
       pageCount={pageCount} setPageCount={setPageCount}
       designStyle={designStyle} setDesignStyle={setDesignStyle}
+      analysisResult={analysisResult} analyzeProduct={analyzeProduct}
       fileInputRef={fileInputRef} handleImageUpload={handleImageUpload}
       removeImage={removeImage} autoFillWithAI={autoFillWithAI} runPipeline={runPipeline}
       inputStyle={inputStyle} btnPrimary={btnPrimary}

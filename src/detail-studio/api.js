@@ -176,6 +176,83 @@ export async function handleImageUpload(e, ctx) {
 }
 
 // AI로 내용 채우기 (이미지 비전 분석 포함)
+// 제품 분석 (색상 추출 + 톤앤매너 + 추천 구성)
+export async function analyzeProduct(ctx) {
+  const { productName, category, features, images, setAnalysisResult } = ctx;
+  const result = { colors: [], tone: null, sections: [], status: "analyzing" };
+  setAnalysisResult({ ...result });
+
+  try {
+    // 1) 색상 추출
+    let extractedColors = [];
+    if (images.length > 0) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise((resolve) => { img.onload = resolve; img.src = images[0].base64 || images[0].preview; });
+        const c = document.createElement("canvas");
+        c.width = 64; c.height = 64;
+        c.getContext("2d").drawImage(img, 0, 0, 64, 64);
+        const data = c.getContext("2d").getImageData(0, 0, 64, 64).data;
+        const buckets = {};
+        for (let k = 0; k < data.length; k += 4) {
+          const r = Math.round(data[k] / 32) * 32;
+          const g = Math.round(data[k+1] / 32) * 32;
+          const b = Math.round(data[k+2] / 32) * 32;
+          const key = `${r},${g},${b}`;
+          buckets[key] = (buckets[key] || 0) + 1;
+        }
+        extractedColors = Object.entries(buckets)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([k]) => {
+            const [r, g, b] = k.split(",").map(Number);
+            return "#" + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, "0")).join("");
+          });
+      } catch {}
+    }
+    result.colors = extractedColors;
+    setAnalysisResult({ ...result });
+
+    // 2) 톤앤매너 분석
+    const catLabel = CATEGORIES.find(c => c.key === category)?.label || category || "일반";
+    try {
+      const toneRes = await fetch("/api/gemini-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `제품:"${productName}" 카테고리:${catLabel} 특징:${(features || "").slice(0, 200)} 추출색상:${extractedColors.join(",")}
+이 제품에 어울리는 상세페이지 분석을 JSON으로 출력:
+{"tone":"톤(예:전문적/따뜻한/고급스러운/활기찬)","voice":"말투(예:~합니다/~해요)","mood":"분위기 한 줄","targetAge":"타겟 연령대","keyMessage":"핵심 메시지 한 줄","recommendSections":"추천 섹션 구성 설명 2줄"}
+JSON만 출력.`, maxTokens: 300
+        }),
+      });
+      const toneData = await toneRes.json();
+      const toneParsed = JSON.parse((toneData.text || "{}").replace(/```json?\s*/g, "").replace(/```/g, "").trim());
+      result.tone = toneParsed;
+    } catch {}
+    setAnalysisResult({ ...result });
+
+    // 3) 추천 섹션 구성
+    result.sections = [
+      "히어로 (제품 대표 이미지 + 핵심 카피)",
+      "고민/공감 (고객이 겪는 문제 제시)",
+      "핵심 기능 (셀링포인트 3~5개)",
+      "상세 설명 (기능별 깊이 있는 설명)",
+      "사용 후기 (실제 리뷰 + 별점)",
+      "구매 유도 (CTA + 가격 + 혜택)",
+    ];
+    result.status = "done";
+    setAnalysisResult({ ...result });
+    return result;
+  } catch (e) {
+    console.error("제품 분석 실패:", e);
+    result.status = "done";
+    setAnalysisResult({ ...result });
+    return result;
+  }
+}
+
 export async function autoFillWithAI(ctx) {
   const { productName, images, setAiFilling, setFeatures, setCategory, setProductName } = ctx;
   if (!productName.trim() && images.length === 0) return;
