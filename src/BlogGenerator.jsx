@@ -308,11 +308,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _u = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _k = user ? ("member_" + (user.uid || "u")) : "guest";
     const _used = _u[_k] || 0;
-    const _lim = user ? 20 : 5;
+    const _lim = user ? 0 : 5; // 회원: 무료 횟수 없음
     const _pts = user ? (user.points || 0) : 0;
     const isGuest = !user;
-    // 비회원: 5회 초과 시 차단 / 회원: 무료횟수 소진 + 포인트 부족 시 차단
-    const exhausted = isGuest ? (_used >= _lim) : (_pts < 10 && _used >= _lim);
+    // 비회원: 5회 초과 시 차단 / 회원: 포인트 부족 시 차단
+    const exhausted = isGuest ? (_used >= _lim) : (_pts < 10);
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
@@ -402,24 +402,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
     }
     if (!user && guestLimitExceeded()) return;
-    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     if (!user) incrementGuestUsage(); // 비회원: 즉시 사용 횟수 차감
-    // 사용 횟수 체크 (비회원 5회, 회원 20회)
+    // 비회원: 5회 무료 제한 / 회원: 항상 10P 차감 (무료 횟수 없음)
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
     const _aiUsed = _aiUsage[_aiKey] || 0;
-    const _aiLimit = user ? 20 : 5;
     const _aiPoints = user ? (user.points || 0) : 0;
-    // 회원: 무료 횟수 소진 + 포인트 부족 → 차단
-    if (user && _aiUsed >= _aiLimit && _aiPoints < 10) {
-      setError("무료 횟수를 모두 사용했어요. 포인트를 충전해주세요.");
-      return;
-    }
-    // 회원: 무료 횟수 남아있어도 포인트가 0이면 차단
-    if (user && _aiPoints <= 0 && _aiUsed >= _aiLimit) {
+    // 회원: 포인트 부족 시 차단
+    if (user && _aiPoints < 10) {
       setError("포인트가 부족합니다. 충전 후 이용해주세요.");
       return;
     }
+    // 회원: 포인트 차감 확인
+    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssSavedFullKey);}catch(e){} setHtmlResult(""); setCopied(false);
     abortRef.current = false;
     // elapsed-time 기반 step progression을 위해 시작 시각 기록
@@ -430,8 +425,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 백그라운드 작업 표시기 등록 (메뉴 이동 시 진행 상태 표시)
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 중..." } } }));
 
-    // 포인트 즉시 차감 (무료 횟수 소진 후에만)
-    if (user && user.uid && _aiUsed >= _aiLimit) {
+    // 회원: 항상 10P 즉시 차감
+    if (user && user.uid) {
       changePoints(user.uid, -10, "블로그 글 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
@@ -524,9 +519,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
       // 포인트 차감은 생성 시작 시점에 처리됨
       // 본문 내 [이미지: ...] 태그에 실제 이미지 자동 삽입
-      // fetchInlineImages가 내부에서 키워드 폴백까지 처리하므로 fetchImages 중복 호출 제거
-      // (중복 호출 시 fetchImages의 setSuggestedImages([]) 초기화가 fetchInlineImages 결과를 지우는 경쟁 상태 발생)
-      if (_savedFull) fetchInlineImages(_savedFull);
+      // 블로그/칼럼 등 긴 글 플랫폼에서만 이미지 삽입 (인스타·스레드·X 등 캡션형은 제외)
+      const _noImagePlatforms = ["blog_insta","blog_thread","blog_x","blog_tiktok","blog_bluesky","blog_tumblr"];
+      if (_savedFull && !_noImagePlatforms.includes(platformId)) fetchInlineImages(_savedFull);
       // 보관함 자동저장
       if (_savedFull && _savedFull.length > 50) {
         try {
