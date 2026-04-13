@@ -525,7 +525,7 @@ export function renderPoint(ctx) {
     // 50:50 — 왼쪽 제품 이미지(깔끔) + 오른쪽 Choice 넘버링 + 영문 타이틀 + 한글 설명
 
     const textBlock = (
-      <div style={{ flex: "0 0 50%", padding: isMobile ? "48px 24px" : "80px 48px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+      <div style={{ flex: "0 0 45%", padding: isMobile ? "48px 24px" : "100px 56px", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
         {/* Choice 넘버링 */}
         <div style={{ marginBottom: 20 }}>
           <span style={{ fontSize: 13, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.4)" : "#aaa", letterSpacing: 1, fontFamily: "'Georgia', serif" }}>
@@ -574,7 +574,7 @@ export function renderPoint(ctx) {
     const imgOverlay = "none";
 
     const imageBlock = displayImgSrc ? (
-      <div style={{ flex: "0 0 50%", minHeight: imgMinH, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: "0 0 55%", minHeight: imgMinH, position: "relative", overflow: "hidden", boxShadow: imgLeft ? "12px 0 40px rgba(0,0,0,0.06)" : "-12px 0 40px rgba(0,0,0,0.06)" }}>
         {hasImage ? renderPlaceholder(imgMinH, { borderRadius: 0 }) : (
           <img src={displayImgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
         )}
@@ -600,7 +600,7 @@ export function renderPoint(ctx) {
         <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
       </div>
     ) : (
-      <div style={{ flex: "0 0 50%", minHeight: 600, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ flex: "0 0 55%", minHeight: 600, position: "relative", overflow: "hidden", background: `linear-gradient(145deg, ${mainColor}12, ${mainColor}06)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: imgLeft ? "12px 0 40px rgba(0,0,0,0.06)" : "-12px 0 40px rgba(0,0,0,0.06)" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 120, fontWeight: 900, color: `${mainColor}12`, fontFamily: "'Georgia', serif", lineHeight: 1, letterSpacing: -6 }}>
             {String(pointNum).padStart(2, "0")}

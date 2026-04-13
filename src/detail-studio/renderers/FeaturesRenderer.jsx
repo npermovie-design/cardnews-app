@@ -219,9 +219,10 @@ export function renderFeatures(ctx) {
                 overflow: "hidden",
                 background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff",
                 borderRadius: cs.radius,
-                boxShadow: isDarkBg ? "0 2px 16px rgba(0,0,0,0.2)" : cs.shadow,
+                boxShadow: isDarkBg ? "0 2px 16px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.06)",
                 display: "flex", flexDirection: "column",
                 border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`,
+                borderTop: `3px solid ${mainColor}`,
               }}>
                 {cs.showImg && (
                   <div style={{ width: "100%", height: itemImg ? cs.imgH : 100, position: "relative", overflow: "hidden", cursor: "pointer", background: itemImg ? `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` : `${mainColor}06` }}

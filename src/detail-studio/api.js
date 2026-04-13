@@ -124,34 +124,65 @@ export async function generateAllImages(ctx) {
   }
 }
 
-// 스톡 이미지 자동 채우기
+// 스톡 이미지 자동 채우기 (섹션별 image_prompt 키워드 검색)
 export async function fillStockImages(ctx) {
   const { category, productName, images, sections, sectionImages, setSectionImages } = ctx;
   try {
     const catLabel = CATEGORIES.find(c => c.key === category)?.label || "";
     const shortName = (productName || "").split(/\s+/).slice(0, 2).join(" ");
-    const searchTerm = shortName || catLabel || "product";
-    let stockUrls = [];
+    const fallbackTerm = shortName || catLabel || "product";
+
+    // 범용 풀 (폴백용)
+    let genericPool = [];
     try {
-      const res = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(searchTerm)}&per_page=30&image_type=photo&lang=ko`);
+      const res = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(fallbackTerm)}&per_page=30&image_type=photo&lang=ko`);
       if (res.ok) {
         const data = await res.json();
-        stockUrls = (data.hits || []).map(h => h.webformatURL || h.largeImageURL).filter(Boolean);
+        genericPool = (data.hits || []).map(h => h.webformatURL || h.largeImageURL).filter(Boolean);
       }
     } catch {}
-    if (stockUrls.length === 0 && images.length > 0) {
-      stockUrls = images.map(img => img.preview).filter(Boolean);
+
+    // 유저 업로드 이미지 폴백
+    if (genericPool.length === 0 && images.length > 0) {
+      genericPool = images.map(img => img.preview).filter(Boolean);
     }
-    if (stockUrls.length > 0) {
-      const newImgs = {};
-      sections.forEach((sec, idx) => {
-        if (sec.type === "ai_notice" || sec.type === "shipping") return;
-        if (sectionImages[sec.id]?.url) return;
-        newImgs[sec.id] = { url: stockUrls[idx % stockUrls.length], loading: false, error: null };
-      });
-      if (Object.keys(newImgs).length > 0) {
-        setSectionImages(prev => ({ ...prev, ...newImgs }));
+
+    // 섹션별 image_prompt 키워드로 개별 검색
+    const searchCache = {};
+    const newImgs = {};
+    const needsImage = sections.filter(sec =>
+      sec.type !== "ai_notice" && sec.type !== "shipping" && !sectionImages[sec.id]?.url
+    );
+
+    for (let si = 0; si < needsImage.length; si++) {
+      const sec = needsImage[si];
+      const prompt = sec.image_prompt || "";
+      // image_prompt에서 영어 키워드 2-3개 추출
+      const keywords = prompt.replace(/[^a-zA-Z\s]/g, "").split(/\s+/).filter(w => w.length > 3).slice(0, 3).join(" ").trim();
+
+      if (keywords && !searchCache[keywords]) {
+        try {
+          // 최대 8개 고유 검색으로 제한
+          if (Object.keys(searchCache).length < 8) {
+            const res = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(keywords)}&per_page=5&image_type=photo`);
+            if (res.ok) {
+              const data = await res.json();
+              searchCache[keywords] = (data.hits || []).map(h => h.webformatURL || h.largeImageURL).filter(Boolean);
+            } else {
+              searchCache[keywords] = [];
+            }
+          }
+        } catch { searchCache[keywords] = []; }
       }
+
+      const sectionPool = (keywords && searchCache[keywords]?.length > 0) ? searchCache[keywords] : genericPool;
+      if (sectionPool.length > 0) {
+        newImgs[sec.id] = { url: sectionPool[si % sectionPool.length], loading: false, error: null };
+      }
+    }
+
+    if (Object.keys(newImgs).length > 0) {
+      setSectionImages(prev => ({ ...prev, ...newImgs }));
     }
   } catch (e) { /* stock fill failed */ }
 }

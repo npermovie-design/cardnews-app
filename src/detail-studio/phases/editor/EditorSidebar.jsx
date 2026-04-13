@@ -86,7 +86,7 @@ function PagesPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
             background: activeSection === i ? (D ? "rgba(124,106,255,0.1)" : "#f8f7ff") : "transparent",
           }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 10, color: muted, cursor: "grab" }}>{"\u2807"}</span>
+            <span style={{ fontSize: 10, color: muted, cursor: "grab" }}>{"⠇"}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: acc, fontWeight: 700 }}>
                 {SECTION_TYPES.find(t => t.id === sec.type)?.label || sec.type}
@@ -101,9 +101,9 @@ function PagesPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
 
       {/* 섹션 추가 */}
       <button onClick={() => {
-        const newSec = { id: `sec_new_${Date.now()}`, type: "point", label: "\uc0c8 \uc139\uc158", bg_color: colorPalette?.light_bg || "#ffffff", elements: [
-          { type: "text", role: "title", content: "\uc0c8 \uc139\uc158 \uc81c\ubaa9", x: 50, y: 200, w: 760, fontSize: 36, fontWeight: "900", color: colorPalette?.main || "#1a1a2e" },
-          { type: "text", role: "body", content: "\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694", x: 50, y: 300, w: 760, fontSize: 16, fontWeight: "400", color: "#666", lineHeight: 1.8 },
+        const newSec = { id: `sec_new_${Date.now()}`, type: "point", label: "새 섹션", bg_color: colorPalette?.light_bg || "#ffffff", elements: [
+          { type: "text", role: "title", content: "새 섹션 제목", x: 50, y: 200, w: 760, fontSize: 36, fontWeight: "900", color: colorPalette?.main || "#1a1a2e" },
+          { type: "text", role: "body", content: "내용을 입력하세요", x: 50, y: 300, w: 760, fontSize: 16, fontWeight: "400", color: "#666", lineHeight: 1.8 },
         ] };
         setSections(prev => [...prev, newSec]);
         setActiveSection(sections.length);
@@ -112,7 +112,7 @@ function PagesPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
           width: "100%", padding: "10px", borderRadius: 10, border: `1.5px dashed ${bdr}`,
           background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginTop: 4,
         }}>
-        + \uc139\uc158 \ucd94\uac00
+        + 섹션 추가
       </button>
 
       {/* 레이어 패널 */}
@@ -128,7 +128,7 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
   return (
     <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${bdr}` }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>
-        \ud398\uc774\uc9c0 {activeSection + 1} \ub808\uc774\uc5b4
+        페이지 {activeSection + 1} 레이어
       </div>
       {/* 배경 이미지 레이어 */}
       {sec?.bgImage && (
@@ -136,7 +136,7 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
           <div style={{ width: 20, height: 20, borderRadius: 4, overflow: "hidden", flexShrink: 0 }}>
             <img src={sec.bgImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
-          <span style={{ fontSize: 10, color: muted, flex: 1 }}>\ubc30\uacbd \uc774\ubbf8\uc9c0</span>
+          <span style={{ fontSize: 10, color: muted, flex: 1 }}>배경 이미지</span>
         </div>
       )}
       {/* 이미지 레이어 */}
@@ -146,7 +146,7 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
           <div style={{ width: 20, height: 20, borderRadius: 4, overflow: "hidden", flexShrink: 0 }}>
             <img src={sectionImages[sec.id].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
-          <span style={{ fontSize: 10, color: text, flex: 1 }}>\uc139\uc158 \uc774\ubbf8\uc9c0</span>
+          <span style={{ fontSize: 10, color: text, flex: 1 }}>섹션 이미지</span>
         </div>
       )}
       {/* 텍스트/배지/도형 요소 레이어 */}
@@ -157,7 +157,7 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
           <div key={ei} onClick={() => setSelectedEl({ secIdx: activeSection, elIdx: ei, el: { ...el, _type: el.type === "shape" ? "shape" : "text" } })}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 6, marginBottom: 3, cursor: "pointer", background: isActive ? `${acc}15` : "transparent", border: `1px solid ${isActive ? acc : "transparent"}` }}>
             <span style={{ fontSize: 9, color: acc, fontWeight: 700, width: 16, flexShrink: 0 }}>
-              {el.type === "badge" ? "B" : el.type === "divider" ? "\u2014" : el.type === "shape" ? "S" : "T"}
+              {el.type === "badge" ? "B" : el.type === "divider" ? "—" : el.type === "shape" ? "S" : "T"}
             </span>
             <span style={{ fontSize: 10, color: text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {el.content?.slice(0, 20) || el.shape || el.role || el.type}
@@ -168,7 +168,7 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
                 <button onClick={() => {
                   setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).map((e, idx) => idx === ei - 1 ? s.elements[ei] : idx === ei ? s.elements[ei - 1] : e) }));
                   if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei - 1 }));
-                }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="\uc704\ub85c">
+                }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="위로">
                   <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 2L2 6h6z" fill="currentColor"/></svg>
                 </button>
               )}
@@ -176,14 +176,14 @@ function LayerPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
                 <button onClick={() => {
                   setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).map((e, idx) => idx === ei ? s.elements[ei + 1] : idx === ei + 1 ? s.elements[ei] : e) }));
                   if (isActive) setSelectedEl(prev => ({ ...prev, elIdx: ei + 1 }));
-                }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="\uc544\ub798\ub85c">
+                }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: muted, fontSize: 10, cursor: "pointer", padding: 0 }} title="아래로">
                   <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 8L2 4h6z" fill="currentColor"/></svg>
                 </button>
               )}
               <button onClick={() => {
                 setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, elements: (s.elements || []).filter((_, idx) => idx !== ei) }));
                 if (isActive) setSelectedEl(null);
-              }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer", padding: 0 }} title="\uc0ad\uc81c">
+              }} style={{ width: 18, height: 18, border: "none", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer", padding: 0 }} title="삭제">
                 <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </button>
             </div>
@@ -211,12 +211,12 @@ function TextPanel({ D, text, muted, bdr, inputBg, acc, sections, setSections, a
   return (
     <>
       <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 12 }}>
-        \ud398\uc774\uc9c0 {activeSection + 1} \ud14d\uc2a4\ud2b8
+        페이지 {activeSection + 1} 텍스트
       </div>
-      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>\uce94\ubc84\uc2a4\uc5d0\uc11c \ud14d\uc2a4\ud2b8\ub97c \ud074\ub9ad\ud558\uba74 \uc18d\uc131\uc774 \uc5ec\uae30\uc5d0 \ud45c\uc2dc\ub429\ub2c8\ub2e4</div>
+      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>캔버스에서 텍스트를 클릭하면 속성이 여기에 표시됩니다</div>
       {(sections[activeSection]?.elements || []).filter(e => e.type === "text").map((el, ei) => (
         <div key={ei} style={{ marginBottom: 10 }}>
-          <label style={{ fontSize: 10, color: muted, marginBottom: 3, display: "block", fontWeight: 600 }}>{el.role === "title" ? "\uc81c\ubaa9" : el.role === "subtitle" ? "\uc18c\uc81c\ubaa9" : el.role}</label>
+          <label style={{ fontSize: 10, color: muted, marginBottom: 3, display: "block", fontWeight: 600 }}>{el.role === "title" ? "제목" : el.role === "subtitle" ? "소제목" : el.role}</label>
           <textarea value={el.content}
             onChange={e => {
               const val = e.target.value;
@@ -248,17 +248,17 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
 
   return (
     <>
-      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>\ud14d\uc2a4\ud2b8 \ud3b8\uc9d1</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>텍스트 편집</div>
 
       {/* 폰트 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud3f0\ud2b8</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>폰트</div>
       <select value={el.fontFamily || "Pretendard"} onChange={e => upd("fontFamily", e.target.value)}
         style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 600, marginBottom: 14, cursor: "pointer" }}>
         {FONT_LIST.map(f => <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>)}
       </select>
 
       {/* 크기 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud06c\uae30</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>크기</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="number" value={el.fontSize || 14} min={8} max={120}
           onChange={e => upd("fontSize", parseInt(e.target.value) || 14)}
@@ -267,7 +267,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       </div>
 
       {/* 스타일 B/I/U/S */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc2a4\ud0c0\uc77c</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>스타일</div>
       <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
         {[
           { key: "fontWeight", label: "B", values: ["900", "400"], style: { fontWeight: 900 } },
@@ -290,7 +290,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       </div>
 
       {/* 색상 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc0c9\uc0c1</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>색상</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="color" value={el.color || "#000000"} onChange={e => upd("color", e.target.value)}
           style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
@@ -298,7 +298,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       </div>
 
       {/* 정렬 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc815\ub82c</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>정렬</div>
       <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
         {[
           { align: "left", svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 6h8M2 9h12M2 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
@@ -317,7 +317,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       </div>
 
       {/* 행간 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud589\uac04</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>행간</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="range" min="1" max="3" step="0.1" value={el.lineHeight || 1.5}
           onChange={e => upd("lineHeight", parseFloat(e.target.value))}
@@ -326,7 +326,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       </div>
 
       {/* 자간 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc790\uac04</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>자간</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="range" min="-2" max="10" step="0.5" value={el.letterSpacing || 0}
           onChange={e => upd("letterSpacing", parseFloat(e.target.value))}
@@ -340,18 +340,18 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
         <button onClick={() => upd("textShadow", el.textShadow ? "" : "0 2px 8px rgba(0,0,0,0.3)")}
           style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${el.textShadow ? "#2196F3" : bdr}`, background: el.textShadow ? "rgba(33,150,243,0.1)" : "transparent", color: el.textShadow ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-          \uadf8\ub9bc\uc790
+          그림자
         </button>
         <button onClick={() => upd("bgBox", !el.bgBox)}
           style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${el.bgBox ? "#2196F3" : bdr}`, background: el.bgBox ? "rgba(33,150,243,0.1)" : "transparent", color: el.bgBox ? "#2196F3" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-          \ubc30\uacbd \ubc15\uc2a4
+          배경 박스
         </button>
       </div>
 
       {/* 그림자 세부 조정 */}
       {el.textShadow && (
         <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>\uadf8\ub9bc\uc790 \uc2a4\ud0c0\uc77c</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>그림자 스타일</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
             {SHADOW_PRESETS.map((sh, si) => {
               const val = sh.val || `0 0 12px ${acc}, 0 0 24px ${acc}60`;
@@ -369,7 +369,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       {/* 배경박스 세부 조정 */}
       {el.bgBox && (
         <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>\ubc30\uacbd \uc0c9\uc0c1</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 8 }}>배경 색상</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
             {BG_BOX_COLORS.map((bg, bi) => {
               const c = bg.color || (bi === 3 ? `${acc}15` : bi === 4 ? `${acc}30` : acc);
@@ -379,7 +379,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
               );
             })}
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 6 }}>\ub465\uae00\uae30</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 6 }}>둥글기</div>
           <input type="range" min="0" max="24" value={el.bgBoxRadius || 8}
             onChange={e => upd("bgBoxRadius", parseInt(e.target.value))}
             style={{ width: "100%", accentColor: acc }} />
@@ -387,7 +387,7 @@ function TextPropsEditor({ D, text, muted, bdr, inputBg, acc, sections, setSecti
       )}
 
       {/* 위치 미세 조정 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc704\uce58 \uc870\uc815</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>위치 조정</div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 8 }}>
         <button onClick={() => upd("offsetY", (el.offsetY || 0) - 4)}
           style={{ width: 32, height: 24, borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, cursor: "pointer" }}>
@@ -423,10 +423,10 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
 
   return (
     <>
-      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>\uc774\ubbf8\uc9c0 \ud3b8\uc9d1</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>이미지 편집</div>
 
       {/* 배경 색상 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ubc30\uacbd \uc0c9\uc0c1</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 색상</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="color" value={sec?.bg_color || "#ffffff"} onChange={e => {
           setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, bg_color: e.target.value }));
@@ -435,7 +435,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       </div>
 
       {/* 이미지 미리보기 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc774\ubbf8\uc9c0</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지</div>
       <div style={{ width: "100%", height: 140, borderRadius: 12, overflow: "hidden", background: D ? "rgba(255,255,255,0.04)" : "#f5f5f5", marginBottom: 14, position: "relative", cursor: "pointer" }}
         onClick={() => document.getElementById(`sidebar-img-upload-${selectedEl.secIdx}`)?.click()}>
         {(() => {
@@ -444,7 +444,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
           return imgUrl ? (
             <img src={imgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: muted, fontSize: 12 }}>\ud074\ub9ad\ud558\uc5ec \uc5c5\ub85c\ub4dc</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: muted, fontSize: 12 }}>클릭하여 업로드</div>
           );
         })()}
         <input id={`sidebar-img-upload-${selectedEl.secIdx}`} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
@@ -488,26 +488,26 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       }}
         style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M4 7h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-        {sectionImages[sec?.id]?.loading ? "\ucc98\ub9ac \uc911..." : "\ubc30\uacbd \uc81c\uac70"}
+        {sectionImages[sec?.id]?.loading ? "처리 중..." : "배경 제거"}
       </button>
 
       <div style={{ height: 1, background: bdr, margin: "4px 0 14px" }} />
 
       {/* 이미지 변형 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc774\ubbf8\uc9c0 \ubcc0\ud615</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지 변형</div>
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         <button onClick={() => imgUpd("scaleX", (sec?.imgProps?.scaleX ?? 1) * -1)}
           style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: (sec?.imgProps?.scaleX ?? 1) < 0 ? "rgba(33,150,243,0.1)" : "transparent", color: (sec?.imgProps?.scaleX ?? 1) < 0 ? "#2196F3" : text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          \uc88c\uc6b0 \ub4a4\uc9d1
+          좌우 뒤집
         </button>
         <button onClick={() => imgUpd("scaleY", (sec?.imgProps?.scaleY ?? 1) * -1)}
           style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: (sec?.imgProps?.scaleY ?? 1) < 0 ? "rgba(33,150,243,0.1)" : "transparent", color: (sec?.imgProps?.scaleY ?? 1) < 0 ? "#2196F3" : text, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          \uc0c1\ud558 \ub4a4\uc9d1
+          상하 뒤집
         </button>
       </div>
 
       {/* 이미지 크기 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uc774\ubbf8\uc9c0 \ud06c\uae30 (%)</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>이미지 크기 (%)</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="range" min="10" max="200" step="5" value={sec?.imgProps?.imgScale ?? 100}
           onChange={e => imgUpd("imgScale", parseInt(e.target.value))} style={{ flex: 1, accentColor: "#2196F3" }} />
@@ -515,7 +515,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       </div>
 
       {/* 둥근 모서리 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ub465\uadfc \ubaa8\uc11c\ub9ac</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>둥근 모서리</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="range" min="0" max="50" step="1" value={sec?.imgProps?.borderRadius ?? 14}
           onChange={e => imgUpd("borderRadius", parseInt(e.target.value))} style={{ flex: 1, accentColor: "#2196F3" }} />
@@ -523,7 +523,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       </div>
 
       {/* 투명도 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud22c\uba85\ub3c4</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>투명도</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="range" min="0" max="100" step="1" value={sec?.imgProps?.opacity ?? 100}
           onChange={e => imgUpd("opacity", parseInt(e.target.value))} style={{ flex: 1, accentColor: "#2196F3" }} />
@@ -534,14 +534,14 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         <button onClick={() => imgUpd("grayscale", !sec?.imgProps?.grayscale)}
           style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${sec?.imgProps?.grayscale ? "#2196F3" : bdr}`, background: sec?.imgProps?.grayscale ? "rgba(33,150,243,0.1)" : "transparent", color: sec?.imgProps?.grayscale ? "#2196F3" : text, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-          \ud751\ubc31 \ud6a8\uacfc
+          흑백 효과
         </button>
       </div>
 
       <div style={{ height: 1, background: bdr, margin: "4px 0 14px" }} />
 
       {/* 기존 이미지로 교체 */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\uae30\uc874 \uc774\ubbf8\uc9c0\ub85c \uad50\uccb4</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>기존 이미지로 교체</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
         <div onClick={() => document.getElementById(`sidebar-img-upload-${selectedEl.secIdx}`)?.click()}
           style={{ height: 60, borderRadius: 8, border: `1.5px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: muted }}>
@@ -563,7 +563,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
         <button onClick={() => {
           setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, imgProps: { ...s.imgProps, offsetX: 0, offsetY: 0 } }));
         }} style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
-          \uc704\uce58 \ucd08\uae30\ud654
+          위치 초기화
         </button>
       ) : null}
 
@@ -571,7 +571,7 @@ function ImagePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
       {sec?.image_prompt && (
         <button onClick={() => generateSectionImage(sec.id, sec.image_prompt)}
           style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #2196F3, #7c6aff)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-          AI \uc774\ubbf8\uc9c0 \uc0dd\uc131
+          AI 이미지 생성
         </button>
       )}
     </>
@@ -585,29 +585,29 @@ function ShapePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
 
   return (
     <>
-      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>\ub3c4\ud615 \ud3b8\uc9d1</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ucc44\uc6b0\uae30 \uc0c9\uc0c1</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 16 }}>도형 편집</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>채우기 색상</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="color" value={(el.fill || "#7c6aff").replace(/[0-9a-f]{2}$/i, "")} onChange={e => upd("fill", e.target.value + "33")}
           style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
         <button onClick={() => upd("fill", "transparent")}
-          style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>\ud22c\uba85</button>
+          style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>투명</button>
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud14c\ub450\ub9ac \uc0c9\uc0c1</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>테두리 색상</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="color" value={el.stroke || "#7c6aff"} onChange={e => upd("stroke", e.target.value)}
           style={{ width: 36, height: 36, border: `2px solid ${bdr}`, borderRadius: 8, cursor: "pointer", padding: 0 }} />
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ud06c\uae30</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>크기</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <div>
-          <span style={{ fontSize: 9, color: muted }}>\ub108\ube44</span>
+          <span style={{ fontSize: 9, color: muted }}>너비</span>
           <input type="number" value={el.width || 120} min="20" max="800" step="10"
             onChange={e => upd("width", parseInt(e.target.value) || 120)}
             style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
         </div>
         <div>
-          <span style={{ fontSize: 9, color: muted }}>\ub192\uc774</span>
+          <span style={{ fontSize: 9, color: muted }}>높이</span>
           <input type="number" value={el.height || 80} min="20" max="800" step="10"
             onChange={e => upd("height", parseInt(e.target.value) || 80)}
             style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 12 }} />
@@ -617,7 +617,7 @@ function ShapePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
         setSections(prev => prev.map((s, si) => si !== selectedEl.secIdx ? s : { ...s, elements: (s.elements || []).filter((_, ei) => ei !== selectedEl.elIdx) }));
         setSelectedEl(null);
       }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid #ef4444`, background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-        \ub3c4\ud615 \uc0ad\uc81c
+        도형 삭제
       </button>
     </>
   );
@@ -629,12 +629,12 @@ function ShapePropsEditor({ D, text, muted, bdr, acc, sections, setSections, sel
 function TemplatesPanel({ D, text, muted, bdr, inputBg, acc, sections, setSections, activeSection, setActiveSection, templateTypeFilter, setTemplateTypeFilter }) {
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>\uc139\uc158 \ud15c\ud50c\ub9bf</div>
-      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>\ud0c0\uc785\uc744 \uc120\ud0dd\ud558\uace0 \ud15c\ud50c\ub9bf\uc744 \ud074\ub9ad\ud558\uba74 \ud604\uc7ac \uc139\uc158\uc774 \uad50\uccb4\ub429\ub2c8\ub2e4</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>섹션 템플릿</div>
+      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>타입을 선택하고 템플릿을 클릭하면 현재 섹션이 교체됩니다</div>
       <select value={templateTypeFilter} onChange={e => setTemplateTypeFilter(e.target.value)}
         style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: text, fontSize: 12, fontWeight: 700, marginBottom: 12, cursor: "pointer" }}>
         {Object.entries(SECTION_TEMPLATES).map(([type, tmpls]) => (
-          <option key={type} value={type}>{SECTION_TYPE_LABELS?.[type] || type} ({tmpls.length}\uc885)</option>
+          <option key={type} value={type}>{SECTION_TYPE_LABELS?.[type] || type} ({tmpls.length}종)</option>
         ))}
       </select>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -651,7 +651,7 @@ function TemplatesPanel({ D, text, muted, bdr, inputBg, acc, sections, setSectio
         }
       }}
         style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${bdr}`, background: "transparent", color: acc, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-        + \uc0c8 \uc139\uc158 \ucd94\uac00
+        + 새 섹션 추가
       </button>
     </div>
   );
@@ -744,8 +744,8 @@ function ShapesPanel({ D, text, muted, bdr, acc, sections, setSections, activeSe
   const shapeDefs = getShapeDefs(acc);
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>\ub3c4\ud615 \uc0bd\uc785</div>
-      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>\uc120\ud0dd\ud55c \uc139\uc158\uc5d0 \ub3c4\ud615\uc744 \ucd94\uac00\ud569\ub2c8\ub2e4</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 12 }}>도형 삽입</div>
+      <div style={{ fontSize: 11, color: muted, marginBottom: 12 }}>선택한 섹션에 도형을 추가합니다</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
         {shapeDefs.map((s, si) => (
           <button key={si} title={s.label}
@@ -763,11 +763,11 @@ function ShapesPanel({ D, text, muted, bdr, acc, sections, setSections, activeSe
       </div>
 
       <div style={{ height: 1, background: bdr, margin: "16px 0" }} />
-      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>\ube60\ub978 \uc0bd\uc785</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 8 }}>빠른 삽입</div>
       {[
-        { label: "\uad6c\ubd84\uc120 \ucd94\uac00", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "divider", color: acc }] })) },
-        { label: "\ubc30\uc9c0 \ucd94\uac00", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "badge", content: "NEW", bg: acc, color: "#fff" }] })) },
-        { label: "\ud14d\uc2a4\ud2b8 \ucd94\uac00", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "text", role: "body", content: "\uc0c8 \ud14d\uc2a4\ud2b8\ub97c \uc785\ub825\ud558\uc138\uc694", fontSize: 14, fontWeight: "400", color: "#333" }] })) },
+        { label: "구분선 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "divider", color: acc }] })) },
+        { label: "배지 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "badge", content: "NEW", bg: acc, color: "#fff" }] })) },
+        { label: "텍스트 추가", action: () => setSections(prev => prev.map((s, idx) => idx !== activeSection ? s : { ...s, elements: [...s.elements, { type: "text", role: "body", content: "새 텍스트를 입력하세요", fontSize: 14, fontWeight: "400", color: "#333" }] })) },
       ].map((item, ii) => (
         <button key={ii} onClick={item.action}
           style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 6, textAlign: "left" }}>
@@ -785,7 +785,7 @@ function MediaPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
   return (
     <div>
       <div style={{ display: "flex", gap: 0, marginBottom: 14, borderRadius: 8, overflow: "hidden", border: `1px solid ${bdr}` }}>
-        {[{ key: "photo", label: "\uc0ac\uc9c4" }, { key: "video", label: "\ub3d9\uc601\uc0c1" }].map(tab => (
+        {[{ key: "photo", label: "사진" }, { key: "video", label: "동영상" }].map(tab => (
           <button key={tab.key} onClick={() => setMediaSubTab(tab.key)}
             style={{ flex: 1, padding: "8px", border: "none", background: (mediaSubTab || "photo") === tab.key ? acc : "transparent", color: (mediaSubTab || "photo") === tab.key ? "#fff" : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {tab.label}
@@ -807,9 +807,9 @@ function MediaPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
 function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, activeSection, stockImages, setStockImages }) {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>\ubb34\ub8cc \uc601\uc0c1 \uac80\uc0c9</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>무료 영상 검색</div>
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        <input placeholder="\uc601\uc0c1 \uac80\uc0c9 (\uc608: nature, food)" id="stock-video-search"
+        <input placeholder="영상 검색 (예: nature, food)" id="stock-video-search"
           onKeyDown={e => { if (e.key === "Enter") document.getElementById("stock-video-btn")?.click(); }}
           style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
         <button id="stock-video-btn" onClick={async () => {
@@ -824,7 +824,7 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
           } catch {}
         }}
           style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-          \uac80\uc0c9
+          검색
         </button>
       </div>
       {stockImages.length > 0 && stockImages[0]?.url?.includes("video") && (
@@ -839,7 +839,7 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
               {v.thumb && <img src={v.thumb} alt="" style={{ width: "100%", height: 60, objectFit: "cover" }} />}
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ color: "#fff", fontSize: 10 }}>{"\u25b6"}</span>
+                  <span style={{ color: "#fff", fontSize: 10 }}>{"▶"}</span>
                 </div>
               </div>
             </div>
@@ -847,7 +847,7 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
         </div>
       )}
       <div style={{ height: 1, background: bdr, margin: "8px 0 12px" }} />
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>\uc9c1\uc811 \ucd94\uac00</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>직접 추가</div>
       <button onClick={() => {
         const input = document.createElement("input");
         input.type = "file"; input.accept = "video/*";
@@ -861,10 +861,10 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
         input.click();
       }}
         style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1.5px dashed ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer", marginBottom: 10 }}>
-        + \ub3d9\uc601\uc0c1 \ud30c\uc77c \uc5c5\ub85c\ub4dc
+        + 동영상 파일 업로드
       </button>
       <div style={{ display: "flex", gap: 6 }}>
-        <input placeholder="\uc720\ud29c\ube0c/\uc601\uc0c1 URL" id="video-url-input"
+        <input placeholder="유튜브/영상 URL" id="video-url-input"
           style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
         <button onClick={() => {
           const url = document.getElementById("video-url-input")?.value;
@@ -873,16 +873,16 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
           }
         }}
           style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-          \uc801\uc6a9
+          적용
         </button>
       </div>
       {sections[activeSection]?.videoUrl && (
         <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f8f8f8", border: `1px solid ${bdr}` }}>
-          <div style={{ fontSize: 11, color: text, fontWeight: 600, marginBottom: 4 }}>\ud604\uc7ac \uc139\uc158 \ub3d9\uc601\uc0c1</div>
+          <div style={{ fontSize: 11, color: text, fontWeight: 600, marginBottom: 4 }}>현재 섹션 동영상</div>
           <div style={{ fontSize: 10, color: muted, wordBreak: "break-all" }}>{sections[activeSection].videoUrl.slice(0, 60)}...</div>
           <button onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, videoUrl: null }))}
             style={{ marginTop: 6, padding: "4px 10px", borderRadius: 6, border: `1px solid #ef4444`, background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer" }}>
-            \uc81c\uac70
+            제거
           </button>
         </div>
       )}
@@ -893,7 +893,7 @@ function VideoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
 function PhotoSubPanel({ D, text, muted, bdr, acc, sections, setSections, activeSection, sectionImages, setSectionImages, images, setImages, stockImages, fetchStockImages }) {
   return (
     <>
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>\uc5c5\ub85c\ub4dc \uc774\ubbf8\uc9c0</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>업로드 이미지</div>
       {images.length > 0 ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 16 }}>
           {images.map((img, ii) => (
@@ -909,7 +909,7 @@ function PhotoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
         </div>
       ) : (
         <div style={{ padding: "16px", borderRadius: 10, border: `1px dashed ${bdr}`, textAlign: "center", color: muted, fontSize: 11, marginBottom: 16 }}>
-          \uc5c5\ub85c\ub4dc\ub41c \uc774\ubbf8\uc9c0 \uc5c6\uc74c
+          업로드된 이미지 없음
         </div>
       )}
 
@@ -928,19 +928,19 @@ function PhotoSubPanel({ D, text, muted, bdr, acc, sections, setSections, active
         input.click();
       }}
         style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: acc, fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
-        + \uc774\ubbf8\uc9c0 \ucd94\uac00 \uc5c5\ub85c\ub4dc
+        + 이미지 추가 업로드
       </button>
 
       <div style={{ height: 1, background: bdr, margin: "0 0 16px" }} />
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>\ubb34\ub8cc \uc2a4\ud1a1 \uc774\ubbf8\uc9c0</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 8 }}>무료 스톡 이미지</div>
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        <input placeholder="\ud0a4\uc6cc\ub4dc \uac80\uc0c9..." id="stock-search-input"
+        <input placeholder="키워드 검색..." id="stock-search-input"
           onKeyDown={e => { if (e.key === "Enter") { const q = e.target.value; if (q) fetchStockImages(q); } }}
           style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: D ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 11, outline: "none" }} />
         <button onClick={() => { const q = document.getElementById("stock-search-input")?.value; if (q) fetchStockImages(q); }}
           style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: acc, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-          \uac80\uc0c9
+          검색
         </button>
       </div>
       {stockImages.length > 0 && (
@@ -969,10 +969,10 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
   return (
     <div>
       <div style={{ fontSize: 13, fontWeight: 800, color: text, marginBottom: 14 }}>
-        \ud398\uc774\uc9c0 {activeSection + 1} \ubc30\uacbd
+        페이지 {activeSection + 1} 배경
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ubc30\uacbd \uc0c9\uc0c1</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 색상</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <input type="color" value={sections[activeSection]?.bg_color || "#ffffff"} onChange={e => {
           setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bg_color: e.target.value }));
@@ -990,7 +990,7 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
         ))}
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ubc30\uacbd \uc774\ubbf8\uc9c0</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 이미지</div>
       {sections[activeSection]?.bgImage ? (
         <div style={{ position: "relative", marginBottom: 14 }}>
           <img src={sections[activeSection].bgImage} alt="" style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10, border: `1px solid ${bdr}` }} />
@@ -999,7 +999,7 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
         </div>
       ) : (
         <label style={{ display: "block", padding: "14px", borderRadius: 10, border: `1.5px dashed ${bdr}`, textAlign: "center", cursor: "pointer", marginBottom: 14, fontSize: 12, color: muted }}>
-          + \ubc30\uacbd \uc774\ubbf8\uc9c0 \ucd94\uac00
+          + 배경 이미지 추가
           <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
             const file = e.target.files?.[0];
             if (file) {
@@ -1011,7 +1011,7 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
       )}
       {sections[activeSection]?.bgImage && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>\ubc30\uacbd \ud22c\uba85\ub3c4</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>배경 투명도</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input type="range" min="10" max="100" step="5" value={sections[activeSection]?.bgImageOpacity ?? 30}
               onChange={e => {
@@ -1024,7 +1024,7 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
 
       <div style={{ height: 1, background: bdr, margin: "14px 0" }} />
 
-      <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>\uc774\ub7f0 \ud14c\ub9c8\ub97c \ucd94\ucc9c\ub4dc\ub9bd\ub2c8\ub2e4</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: text, marginBottom: 8 }}>이런 테마를 추천드립니다</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {themes.map((theme, ti) => (
           <button key={ti} onClick={() => {
@@ -1057,13 +1057,13 @@ function ColorPanel({ D, text, muted, bdr, acc, sections, setSections, activeSec
 
       {colorPalette && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>\ud604\uc7ac \ud314\ub808\ud2b8</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>현재 팔레트</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
             {[
-              { label: "\uba54\uc778", color: colorPalette.main },
-              { label: "\uc11c\ube0c", color: colorPalette.gradient },
-              { label: "\ubc1d\uc740", color: colorPalette.light_bg },
-              { label: "\uc5b4\ub450\uc6b4", color: colorPalette.dark_bg },
+              { label: "메인", color: colorPalette.main },
+              { label: "서브", color: colorPalette.gradient },
+              { label: "밝은", color: colorPalette.light_bg },
+              { label: "어두운", color: colorPalette.dark_bg },
             ].map(c => (
               <div key={c.label} onClick={() => setSections(prev => prev.map((s, si) => si !== activeSection ? s : { ...s, bg_color: c.color }))}
                 style={{ textAlign: "center", cursor: "pointer", padding: 6, borderRadius: 8, border: `1px solid ${bdr}` }}>

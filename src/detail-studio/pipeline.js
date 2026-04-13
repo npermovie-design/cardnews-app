@@ -300,7 +300,22 @@ JSON배열만 출력.`;
       "fresh_green": ["#ffffff", "#f0f5ef", "#ffffff", "#f5f8f4", "#ffffff", "#f0f5ef", "#f5f8f4", "#ffffff", "#3a3530", "#f0f5ef", "#ffffff", "#f5f8f4", "#ffffff", "#f0f5ef"],
       "clean_beauty": ["#ffffff", "#faf5f5", "#ffffff", "#f8f5f2", "#ffffff", "#faf5f5", "#f8f5f2", "#ffffff", "#1a1a2e", "#ffffff", "#faf5f5", "#f8f5f2", "#ffffff", "#faf5f5"],
     };
-    const bgPattern = (designStyle && bgPatternByStyle[designStyle]) || ["#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb", "#f5f5f5", "#ffffff", "#f9f6f2", "#1a1a2e", "#ffffff", "#f5f5f5", "#f9f6f2", "#ffffff", "#f5f0eb"];
+    const bgPattern = (designStyle && bgPatternByStyle[designStyle]) || [
+      "#ffffff",
+      "linear-gradient(180deg, #f8f8f8, #f0f0f0)",
+      "linear-gradient(180deg, #faf7f3, #f5f0eb)",
+      "#ffffff",
+      "linear-gradient(180deg, #f7f5f2, #f0ece6)",
+      "linear-gradient(180deg, #f5f5f5, #eeeeee)",
+      "#ffffff",
+      "linear-gradient(180deg, #faf7f3, #f5f0eb)",
+      "#1a1a2e",
+      "#ffffff",
+      "linear-gradient(180deg, #f8f8f8, #f2f2f2)",
+      "linear-gradient(180deg, #faf7f3, #f5f0eb)",
+      "#ffffff",
+      "linear-gradient(180deg, #f7f5f2, #eeebe6)",
+    ];
     let pointIdx = 0;
     const diversified = layoutData.map((s, i) => {
       const type = s.type || "point";
@@ -336,7 +351,7 @@ JSON배열만 출력.`;
         };
         if (heroLayoutMap[designStyle]) newLayout = heroLayoutMap[designStyle];
       }
-      if (type === "hero") newBg = "#111";
+      if (type === "hero") newBg = `linear-gradient(180deg, #0a0a0a, ${mainColor}25)`;
       else if (type === "ai_notice") newBg = "#fafafa";
       else if (type === "shipping") newBg = "#f5f5f5";
       else {

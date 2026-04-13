@@ -16,23 +16,23 @@ export default function EditorCanvas({
     <div style={{ flex: 1, overflowY: "auto", background: D ? "rgba(0,0,0,0.15)" : "#e5e5e5", padding: "20px", position: "relative" }}>
       {/* 사이드바 토글 */}
       {sidebarCollapsed && (
-        <button onClick={() => setSidebarCollapsed(false)} title="\ud328\ub110 \uc5f4\uae30"
+        <button onClick={() => setSidebarCollapsed(false)} title="패널 열기"
           style={{ position: "fixed", left: 8, top: "50%", transform: "translateY(-50%)", zIndex: 30, width: 44, height: 44, borderRadius: "50%", border: `1px solid ${bdr}`, background: D ? "#1a1a2e" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", fontSize: 14, color: muted }}>
-          {"\u2630"}
+          {"☰"}
         </button>
       )}
 
       {/* 상단 정보 바 */}
       <div style={{ maxWidth: 891, margin: "0 auto 12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-        <span style={{ fontSize: isMobile ? 11 : 12, color: muted }}>{sections.length}\uac1c \uc139\uc158 \xb7 {Object.values(sectionImages).filter(v => v?.url).length}\uac1c \uc774\ubbf8\uc9c0 \uc0dd\uc131\ub428</span>
+        <span style={{ fontSize: isMobile ? 11 : 12, color: muted }}>{sections.length}개 섹션 \xb7 {Object.values(sectionImages).filter(v => v?.url).length}개 이미지 생성됨</span>
         <div style={{ display: "flex", gap: isMobile ? 4 : 8 }}>
           <button onClick={generateAllImages}
             style={{ padding: isMobile ? "5px 10px" : "7px 16px", borderRadius: 8, background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", border: "none", fontSize: isMobile ? 10 : 11, fontWeight: 700, cursor: "pointer" }}>
-            {"\u2726"} \uc804\uccb4 AI \uc774\ubbf8\uc9c0 \uc0dd\uc131
+            {"✦"} 전체 AI 이미지 생성
           </button>
           <button onClick={() => setPhase("input")}
             style={{ padding: isMobile ? "5px 10px" : "7px 16px", borderRadius: 8, background: "transparent", color: muted, border: `1px solid ${bdr}`, fontSize: isMobile ? 10 : 11, cursor: "pointer" }}>
-            {"\u2190"} \ub2e4\uc2dc \uc785\ub825
+            {"←"} 다시 입력
           </button>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function EditorCanvas({
           <span style={{ fontSize: 11, fontWeight: 700, color: text, minWidth: 36, textAlign: "center" }}>{canvasZoom}%</span>
           <button onClick={() => setCanvasZoom(z => Math.min(150, z + 10))} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", color: text, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
           <div style={{ width: 1, height: 16, background: bdr, margin: "0 4px" }} />
-          <button onClick={() => setCanvasZoom(100)} style={{ padding: "2px 8px", borderRadius: 6, border: "none", background: canvasZoom === 100 ? `${acc}20` : "transparent", color: canvasZoom === 100 ? acc : muted, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>\ub9de\ucda4</button>
+          <button onClick={() => setCanvasZoom(100)} style={{ padding: "2px 8px", borderRadius: 6, border: "none", background: canvasZoom === 100 ? `${acc}20` : "transparent", color: canvasZoom === 100 ? acc : muted, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>맞춤</button>
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@ function FloatingTextToolbar({ D, text, acc, selectedEl, setSections, setSelecte
 
   return (
     <div style={{ maxWidth: 891, margin: "0 auto 8px", display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: D ? "#1a1a2e" : "#2a2a3e", borderRadius: 8 }}>
-      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginRight: 4 }}>\ud14d\uc2a4\ud2b8</span>
+      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginRight: 4 }}>텍스트</span>
       <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.15)" }} />
       <button onClick={() => changeFontSize(-2)} style={toolBtnStyle} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>A-</button>
       <span style={{ color: "#fff", fontSize: 12, minWidth: 32, textAlign: "center" }}>{currentSize}px</span>
@@ -128,7 +128,7 @@ function FloatingTextToolbar({ D, text, acc, selectedEl, setSections, setSelecte
         }));
       }} style={{ ...toolBtnStyle, fontWeight: 700 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>B</button>
       <div style={{ flex: 1 }} />
-      <button onClick={deleteSelectedElement} style={{ ...toolBtnStyle, color: "#ff6b6b" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,107,107,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>\uc0ad\uc81c</button>
+      <button onClick={deleteSelectedElement} style={{ ...toolBtnStyle, color: "#ff6b6b" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,107,107,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>삭제</button>
     </div>
   );
 }
@@ -174,11 +174,11 @@ function SectionActions({ i, sec, sections, setSections, setActiveSection, D, te
       position: "absolute", top: 8, right: 8, display: "flex", flexDirection: "column", gap: 4, zIndex: 20,
     }}>
       {[
-        { icon: "\u25b2", label: "\uc704\ub85c", action: () => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1], a[i]] = [a[i], a[i-1]]; return a; }); setActiveSection(i-1); } },
-        { icon: "\u25bc", label: "\uc544\ub798\ub85c", action: () => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; }); setActiveSection(i+1); } },
-        { icon: "\u29c9", label: "\ubcf5\uc81c", action: () => { setSections(prev => [...prev.slice(0,i+1), { ...sec, id: `sec_dup_${Date.now()}` }, ...prev.slice(i+1)]); setActiveSection(i+1); } },
-        { icon: "+", label: "\ucd94\uac00", action: () => { const n = { id:`sec_add_${Date.now()}`, type:"point", bg_color:"#ffffff", elements:[{type:"text",role:"title",content:"\uc0c8 \uc139\uc158",fontSize:36,fontWeight:"900",color:"#1a1a2e"}] }; setSections(prev=>[...prev.slice(0,i+1),n,...prev.slice(i+1)]); setActiveSection(i+1); } },
-        { icon: "\u00d7", label: "\uc0ad\uc81c", action: () => { if (sections.length <= 1) return; setSections(prev => prev.filter((_,j) => j !== i)); setActiveSection(Math.max(0, i-1)); } },
+        { icon: "▲", label: "위로", action: () => { if (i > 0) setSections(prev => { const a = [...prev]; [a[i-1], a[i]] = [a[i], a[i-1]]; return a; }); setActiveSection(i-1); } },
+        { icon: "▼", label: "아래로", action: () => { if (i < sections.length-1) setSections(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; }); setActiveSection(i+1); } },
+        { icon: "⧉", label: "복제", action: () => { setSections(prev => [...prev.slice(0,i+1), { ...sec, id: `sec_dup_${Date.now()}` }, ...prev.slice(i+1)]); setActiveSection(i+1); } },
+        { icon: "+", label: "추가", action: () => { const n = { id:`sec_add_${Date.now()}`, type:"point", bg_color:"#ffffff", elements:[{type:"text",role:"title",content:"새 섹션",fontSize:36,fontWeight:"900",color:"#1a1a2e"}] }; setSections(prev=>[...prev.slice(0,i+1),n,...prev.slice(i+1)]); setActiveSection(i+1); } },
+        { icon: "×", label: "삭제", action: () => { if (sections.length <= 1) return; setSections(prev => prev.filter((_,j) => j !== i)); setActiveSection(Math.max(0, i-1)); } },
       ].map((ctrl, ci) => (
         <button key={ci} onClick={e => { e.stopPropagation(); ctrl.action(); }}
           title={ctrl.label}

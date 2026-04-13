@@ -380,6 +380,8 @@ export function renderHero(ctx) {
         {renderHeroImage()}
         {/* 그라디언트 오버레이 */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.02) 25%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.88) 100%)" }} />
+        {/* 비네팅 오버레이 */}
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 100%)", pointerEvents: "none" }} />
         {/* 상단 브랜드 로고 */}
         {extraInfo?.brand && (
           <div style={{ position: "absolute", top: 28, left: 32, zIndex: 2, display: "flex", alignItems: "center", gap: 12 }}>

@@ -101,8 +101,29 @@ export function createSectionHelpers({
     };
   };
 
+  // role 기반 타이포그래피 기본값
+  const TYPO_DEFAULTS = {
+    title: { fontSize: 28, fontWeight: "900", lineHeight: 1.3 },
+    subtitle: { fontSize: 13, fontWeight: "600", lineHeight: 1.6, letterSpacing: 1 },
+    body: { fontSize: 15, lineHeight: 1.8 },
+    price: { fontSize: 24, fontWeight: "900", lineHeight: 1.2 },
+    stat_number: { fontSize: 48, fontWeight: "900", lineHeight: 1 },
+    stat_label: { fontSize: 13, fontWeight: "600", lineHeight: 1.4 },
+    review_text: { fontSize: 14, lineHeight: 1.7, fontStyle: "italic" },
+    review_name: { fontSize: 12, fontWeight: "700" },
+  };
+
   const eS = (el, defaults) => {
-    const merged = { wordBreak: "keep-all", ...defaults, ...editable(el).style };
+    // role 기반 기본값 적용 (명시적 값이 없을 때만)
+    const typoBase = TYPO_DEFAULTS[el.role] || {};
+    const roleDefaults = {};
+    if (typoBase.fontSize && !el.fontSize) roleDefaults.fontSize = typoBase.fontSize;
+    if (typoBase.fontWeight && !el.fontWeight) roleDefaults.fontWeight = typoBase.fontWeight;
+    if (typoBase.lineHeight && !el.lineHeight) roleDefaults.lineHeight = typoBase.lineHeight;
+    if (typoBase.letterSpacing && !el.letterSpacing) roleDefaults.letterSpacing = `${typoBase.letterSpacing}px`;
+    if (typoBase.fontStyle && !el.fontStyle) roleDefaults.fontStyle = typoBase.fontStyle;
+
+    const merged = { wordBreak: "keep-all", ...roleDefaults, ...defaults, ...editable(el).style };
     const c = (merged.color || "").toLowerCase();
     if (!isDarkBg && (c === "#fff" || c === "#ffffff" || c === "white")) {
       merged.color = (merged.fontWeight === "900" || merged.fontWeight === 900) ? "#1a1a1a" : "#333";
@@ -254,20 +275,55 @@ export function createSectionHelpers({
         </button>
       </div>
     );
+    // 섹션 타입별 장식 패턴
+    const patternBg = sec.type === "hero"
+      ? `repeating-linear-gradient(135deg, ${mainColor}08 0px, ${mainColor}08 2px, transparent 2px, transparent 12px)`
+      : sec.type === "features" || sec.type === "point"
+      ? `radial-gradient(circle at 50% 50%, ${mainColor}12 0%, transparent 70%)`
+      : `linear-gradient(145deg, ${mainColor}10, ${mainColor}04)`;
+    const shimmerAnim = `@keyframes ph-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`;
     return (
       <div style={{ width: "100%", height: h, borderRadius: 16, position: "relative", overflow: "hidden",
-        background: `linear-gradient(145deg, ${mainColor}15, ${mainColor}08)`,
-        border: `1px solid ${mainColor}20`, ...style }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        background: `linear-gradient(145deg, ${mainColor}12, ${mainColor}06)`,
+        border: `1px dashed ${mainColor}30`, ...style }}>
+        {/* 장식 패턴 */}
+        <div style={{ position: "absolute", inset: 0, background: patternBg, pointerEvents: "none" }} />
+        {/* shimmer 애니메이션 */}
+        <style>{shimmerAnim}</style>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, width: "50%", height: "100%",
+            background: `linear-gradient(90deg, transparent, ${mainColor}08, transparent)`,
+            animation: "ph-shimmer 2.5s ease-in-out infinite" }} />
+        </div>
+        {/* 중앙 컨텐츠 */}
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 1 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${mainColor}15`, display: "flex", alignItems: "center", justifyContent: "center",
+            border: `1.5px solid ${mainColor}25` }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={mainColor} strokeWidth="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+            </svg>
+          </div>
           <label htmlFor={sectionImgInputId} onClick={e => e.stopPropagation()}
-            style={{ padding: "8px 16px", borderRadius: 10, background: isDarkBg ? "rgba(255,255,255,0.1)" : "#f0f0f0", color: isDarkBg ? "#fff" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${bdr}` }}>
+            style={{ padding: "8px 20px", borderRadius: 10, background: isDarkBg ? "rgba(255,255,255,0.12)" : "#f5f5f5",
+              color: isDarkBg ? "#fff" : "#555", fontSize: 12, fontWeight: 700, cursor: "pointer",
+              border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)"}`,
+              transition: "background 0.15s" }}>
             + 이미지 추가
           </label>
           {sec.image_prompt && (
             <button onClick={e => { e.stopPropagation(); generateSectionImage(sec.id, sec.image_prompt); }}
-              style={{ padding: "8px 16px", borderRadius: 10, background: acc, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              style={{ padding: "8px 20px", borderRadius: 10, background: `linear-gradient(135deg, ${acc}, ${acc}dd)`,
+                color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                boxShadow: `0 2px 8px ${acc}40`, transition: "transform 0.15s" }}>
               AI 이미지 생성
             </button>
+          )}
+          {sec.image_prompt && (
+            <div style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.25)",
+              maxWidth: 200, textAlign: "center", lineHeight: 1.4, marginTop: 2 }}>
+              {sec.image_prompt.length > 60 ? sec.image_prompt.slice(0, 60) + "..." : sec.image_prompt}
+            </div>
           )}
         </div>
         <input id={sectionImgInputId} type="file" accept="image/*" style={{ display: "none" }} onChange={handleSectionImageChange} />
