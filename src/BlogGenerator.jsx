@@ -500,7 +500,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
       if (fullText && fullText.length > 50) {
         setGenStep(5);
-        setResult(cleanBlogText(fullText));
+        const cleaned = cleanBlogText(fullText);
+        // 첨부 이미지가 있으면 본문 중간에 균등 배치
+        const userImages = (fields._files || []).filter(f => f.type === "image" && f.b64);
+        setResult(userImages.length > 0 ? insertUserImages(cleaned, userImages) : cleaned);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
       } else {
         setError("글 생성에 실패했습니다. 다시 시도해주세요.");
@@ -508,7 +511,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     } catch(e) {
       if (_savedFull && _savedFull.length > 50) {
         setGenStep(5);
-        setResult(cleanBlogText(_savedFull));
+        const cleaned2 = cleanBlogText(_savedFull);
+        const userImages2 = (fields._files || []).filter(f => f.type === "image" && f.b64);
+        setResult(userImages2.length > 0 ? insertUserImages(cleaned2, userImages2) : cleaned2);
         if (isTistory) setHtmlResult(mdToHtml(_savedFull));
       } else {
         setError((e.message || "생성 중 오류") + " 다시 시도해주세요.");
@@ -725,6 +730,30 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     } catch(e) {}
     setSuggestedImages(imgs);
     setImgSearching(false);
+  };
+
+  // 사용자 첨부 이미지를 본문 단락 사이에 균등 배치
+  const insertUserImages = (text, images) => {
+    if (!images || !images.length || !text) return text;
+    const paragraphs = text.split("\n\n");
+    if (paragraphs.length <= 1) return text + "\n\n" + images.map(img => `![${img.name}](${img.b64})`).join("\n\n");
+    // 이미지를 단락 사이에 균등 배치
+    const interval = Math.max(2, Math.floor(paragraphs.length / (images.length + 1)));
+    const result = [];
+    let imgIdx = 0;
+    for (let i = 0; i < paragraphs.length; i++) {
+      result.push(paragraphs[i]);
+      if (imgIdx < images.length && (i + 1) % interval === 0 && i < paragraphs.length - 1) {
+        result.push(`![${images[imgIdx].name}](${images[imgIdx].b64})`);
+        imgIdx++;
+      }
+    }
+    // 남은 이미지 끝에 추가
+    while (imgIdx < images.length) {
+      result.push(`![${images[imgIdx].name}](${images[imgIdx].b64})`);
+      imgIdx++;
+    }
+    return result.join("\n\n");
   };
 
   const cleanText = (text) => {
@@ -1234,23 +1263,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     || shortsMode;
 
   // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileLoadMsg, setFileLoadMsg] = useState("");
+
   const handleFileInput = async (fileList) => {
     if (!fileList.length) return;
     const maxSize = 10 * 1024 * 1024;
     const valid = fileList.filter(f => f.size <= maxSize);
     if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
     if (!valid.length) return;
-    setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
+    setFileLoading(true);
+    setFileLoadMsg(`${valid.length}개 파일을 불러오는 중입니다. 잠시만 기다려주세요...`);
     const prevFiles = fields._files || [];
     const newFiles = [...prevFiles];
     let allResults = "";
-    for (const file of valid) {
+    for (let fi = 0; fi < valid.length; fi++) {
+      const file = valid[fi];
+      setFileLoadMsg(`파일 분석 중... (${fi + 1}/${valid.length}) ${file.name}`);
       try {
         if (file.type.startsWith("image/")) {
           const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
           const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
           allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
-          newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
+          newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200), b64: base64, mime: file.type });
         } else {
           const text2 = await file.text().catch(() => "");
           const summary = text2.slice(0, 2000);
@@ -1267,6 +1302,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
     setField("_files", newFiles);
+    setFileLoading(false);
+    setFileLoadMsg("");
   };
 
   // URL 자동 감지
@@ -1496,6 +1533,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </div>
               )}
 
+              {/* 파일 로딩 메시지 */}
+              {fileLoading && (
+                <div style={{marginTop:10,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:isDark?"rgba(236,72,153,0.08)":"rgba(236,72,153,0.05)",border:`1px solid rgba(236,72,153,0.2)`}}>
+                  <div style={{width:16,height:16,borderRadius:"50%",border:"2.5px solid #ec4899",borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0}}/>
+                  <span style={{fontSize:13,color:"#ec4899",fontWeight:600}}>{fileLoadMsg}</span>
+                </div>
+              )}
+
               {/* 첨부 파일 표시 */}
               {fields._files && fields._files.length > 0 && (
                 <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6}}>
@@ -1551,7 +1596,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   )}
                 </div>
                 {/* 생성 버튼 */}
-                <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
+                <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||fileLoading||!fields.keyword?.trim()}
                   style={{
                     padding:"8px 22px",borderRadius:14,border:"none",
                     cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
