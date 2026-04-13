@@ -3,7 +3,7 @@ import { SECTION_TYPES } from "../constants.js";
 
 export default function OutlinePhase({
   D, text, muted, bdr, acc, isMobile,
-  sections, setSections, setPhase, setActiveSection, stockFilledRef,
+  sections, setSections, setPhase, setActiveSection, stockFilledRef, user,
 }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: D ? "transparent" : "#f5f5f5", overflow: "hidden" }}>
@@ -107,11 +107,12 @@ export default function OutlinePhase({
           <button onClick={() => {
             const enabledSecs = sections.filter(s => s.enabled !== false);
             setSections(enabledSecs);
-            stockFilledRef.current = false; // 에디터 진입 시 스톡 이미지 자동 채우기 트리거
-            setPhase("editor");
+            stockFilledRef.current = false;
+            // 로그인 유저: AI 이미지 생성 후 에디터 / 비로그인: 바로 에디터
+            setPhase(user ? "generating_images" : "editor");
           }}
             style={{ flex: 2, padding: "16px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${acc}, #9b6dff)`, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: `0 8px 20px ${acc}44`, minHeight: 54, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit" }}>
-            편집 시작 ({sections.filter(s => s.enabled !== false).length}개 섹션)
+            {user ? "AI 디자인 생성 시작" : "편집 시작"} ({sections.filter(s => s.enabled !== false).length}개 섹션)
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>

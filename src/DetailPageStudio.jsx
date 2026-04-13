@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import InputPhase from "./detail-studio/phases/InputPhase.jsx";
 import GeneratingPhase from "./detail-studio/phases/GeneratingPhase.jsx";
 import OutlinePhase from "./detail-studio/phases/OutlinePhase.jsx";
+import ImageGeneratingPhase from "./detail-studio/phases/ImageGeneratingPhase.jsx";
 import EditorPhase from "./detail-studio/phases/EditorPhase.jsx";
 
 // API & Pipeline
@@ -37,7 +38,8 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const acc = "#7c6aff";
 
   // ── 상태 ──────────────────────────────────────────────
-  const [phase, setPhase] = useState("input"); // input | generating | outline | editor
+  const [phase, setPhase] = useState("input"); // input | generating | outline | generating_images | editor
+  const [genProgress, setGenProgress] = useState({ completed: 0, total: 0, currentSecId: "" });
   const [mode, setMode] = useState("fast");
   const [pageCount, setPageCount] = useState(7);
   const [designStyle, setDesignStyle] = useState(null);
@@ -104,7 +106,7 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   const analyzeProduct = () => apiAnalyzeProduct(getCtx());
   const runPipeline = () => apiRunPipeline(getCtx());
   const generateSectionImage = (secId, prompt) => apiGenerateSectionImage(secId, prompt, getCtx());
-  const generateAllImages = () => apiGenerateAllImages(getCtx());
+  const generateAllImages = (onProgress) => apiGenerateAllImages(getCtx(), onProgress);
   const fillStockImages = () => apiFillStockImages(getCtx());
   const fetchStockImages = (query) => apiFetchStockImages(query, getCtx());
   const handleAgentSend = (msg) => apiHandleAgentSend(msg, getCtx());
@@ -169,13 +171,27 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
     }
   }, [selectedEl]);
 
-  // 에디터 진입 시 스톡 이미지 자동 채우기
+  // 이미지 생성 페이즈: AI 이미지 자동 생성 후 에디터로 전환
+  useEffect(() => {
+    if (phase === "generating_images" && sections.length > 0) {
+      setGenProgress({ completed: 0, total: 0, currentSecId: "" });
+      const onProgress = (completed, total, secId) => {
+        setGenProgress({ completed, total, currentSecId: secId });
+        if (secId === "done") {
+          setTimeout(() => setPhase("editor"), 1500);
+        }
+      };
+      generateAllImages(onProgress);
+    }
+  }, [phase]);
+
+  // 에디터 진입 시 스톡 이미지 자동 채우기 (AI 이미지 없는 섹션용 폴백)
   useEffect(() => {
     if (phase === "editor" && sections.length > 0 && !stockFilledRef.current) {
       stockFilledRef.current = true;
       fillStockImages();
     }
-    if (phase !== "editor") stockFilledRef.current = false;
+    if (phase !== "editor" && phase !== "generating_images") stockFilledRef.current = false;
   }, [phase]);
 
   // 이미지 업로드 후 자동 분석 트리거
@@ -237,6 +253,14 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
       sections={sections} setSections={setSections}
       setPhase={setPhase} setActiveSection={setActiveSection}
       stockFilledRef={stockFilledRef}
+      user={user}
+    />
+  );
+
+  if (phase === "generating_images") return (
+    <ImageGeneratingPhase
+      sections={sections} sectionImages={sectionImages} genProgress={genProgress}
+      D={D} text={text} muted={muted} acc={acc} bdr={bdr} isMobile={isMobile}
     />
   );
 

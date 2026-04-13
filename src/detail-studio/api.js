@@ -86,17 +86,22 @@ export async function fetchStockImages(query, ctx) {
 }
 
 // 섹션별 AI 이미지 생성
-export async function generateSectionImage(secId, prompt, ctx) {
+export async function generateSectionImage(secId, prompt, ctx, productImageB64) {
   const { user, setSectionImages } = ctx;
   if (!prompt) return;
   if (!user) { alert("이미지 생성은 로그인 후 이용 가능합니다."); return; }
   setSectionImages(prev => ({ ...prev, [secId]: { loading: true, url: null, error: null } }));
   try {
     const token = await getAuthToken() || "";
+    const body = { prompt, aspectRatio: "3:4" };
+    if (productImageB64) {
+      body.productImageB64 = productImageB64;
+      body.productImageMime = "image/jpeg";
+    }
     const res = await fetch("/api/image?action=generate", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ prompt, aspectRatio: "3:4" }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (data.image) {
@@ -109,19 +114,40 @@ export async function generateSectionImage(secId, prompt, ctx) {
   }
 }
 
-// 전체 섹션 이미지 일괄 생성
-export async function generateAllImages(ctx) {
-  const { user, sections, sectionImages } = ctx;
-  if (user) {
-    for (const sec of sections) {
-      if (sec.image_prompt && !sectionImages[sec.id]?.url) {
-        await generateSectionImage(sec.id, sec.image_prompt, ctx);
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
-  } else {
+// 전체 섹션 이미지 일괄 생성 (진행률 콜백 지원)
+export async function generateAllImages(ctx, onProgress) {
+  const { user, sections, sectionImages, images } = ctx;
+  if (!user) {
     await fillStockImages(ctx);
+    if (onProgress) onProgress(sections.length, sections.length, "done");
+    return;
   }
+  const needGen = sections.filter(sec => sec.image_prompt && !sectionImages[sec.id]?.url);
+  const total = needGen.length;
+  // 제품 이미지 base64 (첫 번째 업로드 이미지)
+  const productB64 = images?.[0]?.base64 || null;
+  for (let i = 0; i < needGen.length; i++) {
+    const sec = needGen[i];
+    if (onProgress) onProgress(i, total, sec.id);
+    try {
+      await generateSectionImage(sec.id, sec.image_prompt, ctx, productB64);
+    } catch (e) {
+      // 실패 시 스톡 이미지 폴백 (해당 섹션만)
+      try {
+        const keywords = (sec.image_prompt || "").replace(/[^a-zA-Z\s]/g, "").split(/\s+/).filter(w => w.length > 3).slice(0, 3).join(" ");
+        if (keywords) {
+          const res = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(keywords)}&per_page=3&image_type=photo`);
+          if (res.ok) {
+            const data = await res.json();
+            const url = data.hits?.[0]?.webformatURL;
+            if (url) ctx.setSectionImages(prev => ({ ...prev, [sec.id]: { url, loading: false, error: null } }));
+          }
+        }
+      } catch {}
+    }
+    if (i < needGen.length - 1) await new Promise(r => setTimeout(r, 1200));
+  }
+  if (onProgress) onProgress(total, total, "done");
 }
 
 // 스톡 이미지 자동 채우기 (섹션별 image_prompt 키워드 검색)

@@ -1,4 +1,5 @@
 import { createSectionHelpers } from "./shared.jsx";
+import { renderImageTextOverlay } from "./ImageOverlayRenderer.jsx";
 import { renderHero } from "./HeroRenderers.jsx";
 import { renderPainPoints } from "./PainPointsRenderer.jsx";
 import { renderFeatures } from "./FeaturesRenderer.jsx";
@@ -69,7 +70,14 @@ export function renderSection({
     setSections,
   };
 
-  // 디스패치 순서: layout 먼저 → secType
+  // AI 이미지가 있으면 이미지+텍스트 오버레이 모드 우선
+  if (aiImgSrc && !aiImgSrc.startsWith("https://")) {
+    // base64 AI 생성 이미지인 경우에만 오버레이 모드 (스톡 이미지 URL은 기존 렌더러 사용)
+    const overlayResult = renderImageTextOverlay(ctx);
+    if (overlayResult) return overlayResult;
+  }
+
+  // 폴백: 기존 렌더러
   let result;
 
   // Hero 계열
