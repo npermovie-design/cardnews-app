@@ -26,6 +26,7 @@ const EventPage = lazy(() => import("./EventPage.jsx"));
 const CasePage = lazy(() => import("./CasePage.jsx"));
 const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
 const SnsNewsPage = lazy(() => import("./SnsNewsPage.jsx"));
+const AutomationPage = lazy(() => import("./AutomationPage.jsx"));
 
 // 로딩 폴백
 const PageLoader = () => (
@@ -638,6 +639,7 @@ export default function App() {
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
+    if (page === "automation") return <AutomationPage C={C} navigate={navigate} />;
     if (page === "snsnews")  return <SnsNewsPage C={C} user={user} navigate={navigate} />;
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
@@ -880,6 +882,7 @@ export default function App() {
           <NavBtn id="home" label={t("home")} />
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
+          <NavBtn id="automation" label="자동화 도구" />
           <NavBtn id="snsnews" label="SNS뉴스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
@@ -1123,6 +1126,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
+            { id: "automation", label: "자동화 도구",  onClick: () => { navigate("automation"); setMobileOpen(false); }, active: page==="automation" },
             { id: "snsnews",  label: "SNS뉴스",       onClick: () => { navigate("snsnews"); setMobileOpen(false); }, active: page==="snsnews" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
