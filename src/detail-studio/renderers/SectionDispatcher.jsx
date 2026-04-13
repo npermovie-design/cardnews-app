@@ -58,7 +58,7 @@ export function renderSection({
   // ctx에 추가 값 병합
   const ctx = {
     ...helpers,
-    layout, secType, isMobile, productName, extraInfo,
+    layout, secType, isMobile, productName, extraInfo, sections,
     sectionImgInputId: `sec-img-${sec.id}`,
     handleSectionImageChange: async (e) => {
       const file = e.target.files?.[0];
