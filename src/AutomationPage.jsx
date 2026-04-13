@@ -1,6 +1,8 @@
 import React from "react";
 
 const WIN_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.Setup.0.1.0.exe";
+const MAC_ARM_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.-0.1.0-arm64.dmg";
+const MAC_INTEL_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.-0.1.0.dmg";
 const BRAND = "#7c6aff";
 const BRAND2 = "#ec4899";
 const GRAD = "linear-gradient(135deg, #7c6aff, #ec4899)";
@@ -143,10 +145,10 @@ export default function AutomationPage({ C, navigate }) {
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>macOS</div>
             <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 20 }}>macOS 12.0 이상</div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button style={{ padding: "8px 16px", borderRadius: 8, background: "#e5e7eb", color: "#9ca3af", border: "none", fontSize: 12, cursor: "not-allowed" }} disabled>Apple Silicon</button>
-              <button style={{ padding: "8px 16px", borderRadius: 8, background: "#e5e7eb", color: "#9ca3af", border: "none", fontSize: 12, cursor: "not-allowed" }} disabled>Intel</button>
+              <a href={MAC_ARM_URL} style={{ padding: "8px 16px", borderRadius: 8, background: GRAD, color: "#fff", border: "none", fontSize: 12, textDecoration: "none", fontWeight: 600 }}>Apple Silicon</a>
+              <a href={MAC_INTEL_URL} style={{ padding: "8px 16px", borderRadius: 8, background: "#e5e7eb", color: "#374151", border: "none", fontSize: 12, textDecoration: "none", fontWeight: 500 }}>Intel</a>
             </div>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>준비 중</div>
+            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>v0.1.0</div>
           </div>
           <div style={{ background: "#f9fafb", borderRadius: 16, padding: "40px 30px", textAlign: "center", border: "1px solid #e5e7eb" }}>
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}></div>
