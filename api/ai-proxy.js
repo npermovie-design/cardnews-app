@@ -102,34 +102,40 @@ export default async function handler(req) {
       }
 
       if (stream) {
-        // Anthropic SSE → OpenAI SSE 변환
-        const reader = res.body.getReader();
+        // Anthropic SSE → OpenAI SSE 변환 (TransformStream 사용)
+        const { readable, writable } = new TransformStream();
+        const writer = writable.getWriter();
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();
-        const readable = new ReadableStream({
-          async pull(controller) {
-            let buf = "";
+        (async () => {
+          const reader = res.body.getReader();
+          let buf = "";
+          let currentEvent = "";
+          try {
             while (true) {
               const { done, value } = await reader.read();
-              if (done) { controller.enqueue(encoder.encode("data: [DONE]\n\n")); controller.close(); return; }
+              if (done) break;
               buf += decoder.decode(value, { stream: true });
               const lines = buf.split("\n");
               buf = lines.pop();
-              let currentEvent = "";
               for (const line of lines) {
                 if (line.startsWith("event: ")) {
                   currentEvent = line.slice(7).trim();
                 } else if (line.startsWith("data: ")) {
                   try {
                     const data = JSON.parse(line.slice(6));
-                    const converted = anthropicToOpenAI(currentEvent, data);
-                    if (converted) controller.enqueue(encoder.encode(converted));
+                    if (currentEvent === "content_block_delta" && data.delta?.text) {
+                      await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: data.delta.text } }] })}\n\n`));
+                    }
                   } catch {}
                 }
               }
             }
+          } catch {} finally {
+            await writer.write(encoder.encode("data: [DONE]\n\n"));
+            await writer.close();
           }
-        });
+        })();
         return new Response(readable, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", ...corsHeaders() } });
       } else {
         // 비스트리밍
