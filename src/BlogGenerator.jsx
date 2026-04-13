@@ -1259,7 +1259,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [mobileTab, setMobileTab] = useState("input");
   // 표시 모드: 입력(검색창) vs 생성중/결과
   const showResult = (mode === "write" && ((loading || (genStep > 0 && genStep < 5)) || (!loading && genStep === 5 && result)))
-    || (mode === "image" && (loading || imageResult))
     || shortsMode;
 
   // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
@@ -1412,10 +1411,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* 타이틀 */}
             <div style={{textAlign:"center",marginBottom:32}}>
               <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>
-                {mode==="image"?"어떤 이미지를 만들까요?":"무엇을 만들어볼까요?"}
+                무엇을 만들어볼까요?
               </div>
               <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>
-                {mode==="image"?"원하는 이미지를 설명해주세요":"주제, 링크, 파일을 자유롭게 입력하세요. 유튜브 링크로 쇼츠도 만들 수 있어요"}
+                주제, 링크, 파일을 자유롭게 입력하세요. 유튜브 링크로 쇼츠도 만들 수 있어요
               </div>
             </div>
 
@@ -1423,7 +1422,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
               {[
                 {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
-                {id:"image", label:"이미지 생성", color:"#ec4899", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>},
                 {id:"shorts", label:"영상 생성", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
               ].map(m => (
                 <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setShortsYtUrl("");}else{setShortsMode(false);setMode(m.id);}}} style={{
@@ -1473,7 +1471,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     if(fields.keyword?.trim())handleGenerateClick();
                   }
                 }}
-                placeholder={mode==="image"?"어떤 이미지를 만들까요? 예) 깔끔한 로고 디자인, 제품 사진...":(FIELD_LABELS.keyword?.placeholder || "주제, 링크, 또는 유튜브 URL을 입력하세요")}
+                placeholder={FIELD_LABELS.keyword?.placeholder || "주제, 링크, 또는 유튜브 URL을 입력하세요"}
                 rows={1}
                 style={{
                   width:"100%",border:"none",background:"transparent",color:text,
@@ -1586,7 +1584,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {/* 설정 버튼 (쇼츠 모드에서 숨김) */}
                   {true && (
                   <button onClick={()=>setShowSettings(!showSettings)}
-                    title={mode==="image"?"이미지 설정":"글 설정"}
+                    title="글 설정"
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
                     onMouseEnter={e=>{if(!showSettings){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
                     onMouseLeave={e=>{if(!showSettings){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
@@ -1610,7 +1608,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
@@ -1657,33 +1655,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ 설정 패널 (토글) ══════ */}
             {showSettings && (
               <div className="bl-settings-panel" style={{maxWidth:720,margin:"16px auto 0",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"20px 22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
-                {/* 이미지 모드 설정 */}
-                {mode==="image" && (<>
-                <div style={{marginBottom:20}}>
-                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                    이미지 스타일
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {[{id:"realistic",label:"사실적"},{id:"illustration",label:"일러스트"},{id:"3d",label:"3D"},{id:"minimal",label:"미니멀"}].map(s=>{
-                      const isA=imageStyle===s.id;
-                      return <button key={s.id} onClick={()=>setImageStyle(s.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?"#ec4899":border}`,background:isA?(isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.06)"):"transparent",color:isA?"#ec4899":text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{s.label}</button>;
-                    })}
-                  </div>
-                </div>
-                <div style={{marginBottom:12}}>
-                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-                    비율
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {[{id:"1:1",label:"1:1 (정사각)"},{id:"16:9",label:"16:9 (가로)"},{id:"9:16",label:"9:16 (세로)"},{id:"4:3",label:"4:3"}].map(r=>{
-                      const isA=imageAspect===r.id;
-                      return <button key={r.id} onClick={()=>setImageAspect(r.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?"#ec4899":border}`,background:isA?(isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.06)"):"transparent",color:isA?"#ec4899":text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{r.label}</button>;
-                    })}
-                  </div>
-                </div>
-                </>)}
                 {/* 글쓰기 모드 설정 */}
                 {mode==="write" && (<>
                 {/* 플랫폼 선택 */}
@@ -1792,25 +1763,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 + 더보기
               </button>
             </div>}
-            {/* 이미지 모드 도구 칩 */}
-            {mode==="image" && <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
-              {[
-                {id:"logo_gen",label:"로고 생성",color:"#8b5cf6",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>},
-                {id:"product_shot",label:"제품 사진",color:"#ec4899",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>},
-                {id:"mockup_gen",label:"목업 생성",color:"#06b6d4",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>},
-                {id:"model_gen",label:"AI 모델",color:"#f59e0b",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>},
-                {id:"face_swap",label:"얼굴 교체",color:"#ef4444",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>},
-                {id:"outpaint",label:"이미지 확장",color:"#22c55e",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>},
-              ].map(tool => (
-                <button key={tool.id} className="bl-platform-chip" onClick={()=>{if(setAiMenu)setAiMenu(tool.id);}}
-                  style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:600,color:muted,transition:"all 0.15s",fontFamily:"inherit"}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=tool.color;e.currentTarget.style.color=tool.color;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
-                  <span style={{display:"flex",alignItems:"center",color:"inherit"}}>{tool.icon}</span>
-                  {tool.label}
-                </button>
-              ))}
-            </div>}
+            {/* 이미지 모드 도구 칩 — 제거됨 */}
           </div>
         )}
 
@@ -1843,7 +1796,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </Suspense>
               </div>
             </div>
-          ) : mode==="image" ? renderImageResult() : renderResult()
+          ) : renderResult()
         )}
       </div>
     </div>
