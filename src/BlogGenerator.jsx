@@ -10,7 +10,7 @@ import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
 import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS, SPEECH_STYLES } from "./BlogUtils.jsx";
 
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm, setAiMenu }) {
   // SNS 플랫폼 드롭다운 (폼 내에서 선택)
   const SNS_OPTIONS = [
     { id: "blog_naver", label: "네이버 블로그", icon: "/icon-naver-blog.png", color: "#03C75A" },
@@ -131,6 +131,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   // ── 세부 설정 상태 ──
+  // ── 모드 상태 (write / image / shorts) ──
+  const [mode, setMode] = useState("write");
+  const [imageResult, setImageResult] = useState(null);
+  const [imageStyle, setImageStyle] = useState("realistic");
+  const [imageAspect, setImageAspect] = useState("1:1");
+
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
   const [advAudience,  setAdvAudience]  = useState(""); // 대상 독자
@@ -259,6 +265,13 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     } catch(e) {}
   }, []);
 
+  // 모드 전환 시 에러/결과 초기화
+  useEffect(() => {
+    setError("");
+    if (mode !== "write") { setResult(""); setHtmlResult(""); }
+    if (mode !== "image") { setImageResult(null); }
+  }, [mode]);
+
   // 트렌드 키워드에서 진입 시 키워드 자동 입력
   useEffect(() => {
     try {
@@ -305,10 +318,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
-    if (result && !loading) {
-      setShowRegenConfirm(true);
-    } else {
-      generate();
+    if (mode === "write") {
+      if (result && !loading) {
+        setShowRegenConfirm(true);
+      } else {
+        generate();
+      }
+    } else if (mode === "image") {
+      generateImage();
+    } else if (mode === "shorts") {
+      handleShortsStart();
     }
   };
 
@@ -524,6 +543,65 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_saves.slice(0, 100)));
         } catch(e) {}
       }
+    }
+  };
+
+  // ── 이미지 생성 (mode === "image") ──
+  const generateImage = async () => {
+    if (!fields.keyword?.trim()) { setError("프롬프트를 입력해주세요."); return; }
+    if (!user) { if (onLoginRequest) onLoginRequest(); return; }
+    if (showPointConfirm && !(await showPointConfirm(50))) return;
+
+    const _aiPoints = user ? (user.points || 0) : 0;
+    if (_aiPoints < 50) { setError("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+
+    setError(""); setLoading(true); setImageResult(null);
+    genStartTimeRef.current = Date.now();
+
+    try {
+      const body = {
+        prompt: fields.keyword,
+        aspectRatio: imageAspect,
+      };
+      if (fields._files?.[0]?.b64) {
+        body.productImageB64 = fields._files[0].b64;
+        body.productImageMime = fields._files[0].mime || "image/png";
+      }
+
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const imgUrl = data.image || data.imageUrl || data.url || (data.base64 ? `data:image/png;base64,${data.base64}` : null);
+
+      if (imgUrl) {
+        setImageResult(imgUrl);
+        changePoints(user.uid, -50, "AI 이미지 생성").then(newPts => {
+          if (onUserUpdate) onUserUpdate({...user, points: newPts});
+        });
+      } else {
+        setError("이미지 생성에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch(e) {
+      setError("이미지 생성 중 오류: " + (e.message || "다시 시도해주세요."));
+    } finally {
+      setLoading(false);
+      genStartTimeRef.current = 0;
+    }
+  };
+
+  // ── 쇼츠 시작 (mode === "shorts") ──
+  const handleShortsStart = () => {
+    const url = fields.keyword?.trim();
+    if (!url) { setError("유튜브 링크를 입력해주세요."); return; }
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (!ytMatch) { setError("올바른 유튜브 링크를 입력해주세요."); return; }
+    try { sessionStorage.setItem('shorts_yt_url', url); } catch {}
+    if (typeof setAiMenu === 'function') setAiMenu("shorts_make");
+    else if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aiMenuChange', { detail: { menu: 'shorts_make' } }));
     }
   };
 
@@ -787,6 +865,53 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     setCopied(true);
     setTimeout(()=>setCopied(false),2000);
+  };
+
+  // ── 이미지 결과 패널 ──
+  const renderImageResult = () => {
+    if (loading) {
+      return <LoadingAnimation featureType="image_gen" title="AI가 이미지를 생성하고 있어요" subtitle={fields.keyword || "이미지 생성"} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={30000} />;
+    }
+    if (!imageResult) return null;
+    const imgActionBtn = {padding:"10px 20px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit",transition:"all 0.15s"};
+    return (
+      <div style={{maxWidth:900,margin:"0 auto",width:"100%",padding:"20px"}}>
+        <div style={{borderRadius:16,overflow:"hidden",border:`1px solid ${border}`,position:"relative"}}>
+          <img src={imageResult} alt="생성된 이미지" style={{width:"100%",display:"block"}} />
+          <div style={{position:"absolute",top:12,right:12,display:"flex",gap:8}}>
+            <button onClick={()=>{const a=document.createElement("a");a.href=imageResult;a.download="ai-generated-image.png";a.click();}}
+              style={{padding:"8px 14px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",gap:6,minHeight:38,fontFamily:"inherit"}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              다운로드
+            </button>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>{setImageResult(null);}} style={imgActionBtn}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/></svg>
+            새로 만들기
+          </button>
+          <button onClick={()=>{const a=document.createElement("a");a.href=imageResult;a.download="ai-generated-image.png";a.click();}} style={imgActionBtn}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            다운로드
+          </button>
+          <button onClick={async()=>{
+            try{
+              const resp=await fetch(imageResult);const blob=await resp.blob();
+              await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+              setCopied(true);setTimeout(()=>setCopied(false),2000);
+            }catch{
+              try{await navigator.clipboard.writeText(imageResult);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch{}
+            }
+          }} style={{...imgActionBtn,border:`1.5px solid ${copied?"rgba(74,222,128,0.5)":border}`,color:copied?"#22c55e":text}}>
+            {copied
+              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
+            {copied?"복사됨":"복사"}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // ── 결과 패널 ──
@@ -1165,7 +1290,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // eslint-disable-next-line no-unused-vars
   const [mobileTab, setMobileTab] = useState("input");
   // 표시 모드: 입력(검색창) vs 생성중/결과
-  const showResult = loading || (genStep > 0 && genStep < 5) || (!loading && genStep === 5 && result);
+  const showResult = (mode === "write" && ((loading || (genStep > 0 && genStep < 5)) || (!loading && genStep === 5 && result)))
+    || (mode === "image" && (loading || imageResult));
 
   // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
   const handleFileInput = async (fileList) => {
@@ -1304,11 +1430,37 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%"}}>
             {/* 타이틀 */}
             <div style={{textAlign:"center",marginBottom:32}}>
-              <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>무엇을 작성해볼까요?</div>
-              <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>주제를 입력하거나, 링크를 붙여넣거나, 파일을 드래그하세요</div>
+              <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>
+                {mode==="write"?"무엇을 작성해볼까요?":mode==="image"?"어떤 이미지를 만들까요?":"어떤 영상을 만들까요?"}
+              </div>
+              <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>
+                {mode==="write"?"주제를 입력하거나, 링크를 붙여넣거나, 파일을 드래그하세요":mode==="image"?"원하는 이미지를 설명해주세요":"유튜브 링크를 붙여넣으면 AI가 쇼츠를 만들어드려요"}
+              </div>
             </div>
 
-            {/* 현재 선택된 플랫폼 표시 */}
+            {/* 모드 선택 칩 */}
+            <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+              {[
+                {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
+                {id:"image", label:"이미지 생성", color:"#ec4899", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>},
+                {id:"shorts", label:"쇼츠 영상", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+              ].map(m => (
+                <button key={m.id} onClick={()=>setMode(m.id)} style={{
+                  padding:"10px 20px", borderRadius:20,
+                  border: mode===m.id ? `2px solid ${m.color}` : `1.5px solid ${border}`,
+                  background: mode===m.id ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
+                  color: mode===m.id ? m.color : muted,
+                  fontSize:14, fontWeight: mode===m.id?800:600,
+                  cursor:"pointer", display:"flex", alignItems:"center", gap:6,
+                  fontFamily:"inherit", transition:"all 0.15s",
+                }}>
+                  {m.icon} {m.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
+            {mode==="write" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
               <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:20,background:isDark?"rgba(255,255,255,0.06)":"#f5f5f5",fontSize:13,color:text,fontWeight:700}}>
                 <div style={{width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:currentPlatform.color||muted}}>
@@ -1318,6 +1470,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <span style={{fontSize:11,color:muted,fontWeight:500}}>/ {cfg.subtypes.find(s=>s.id===subtype)?.label||cfg.subtypes[0].label}</span>
               </div>
             </div>
+            )}
 
             {/* 메인 검색창 */}
             <div className="bl-search-box" style={{
@@ -1339,7 +1492,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     if(fields.keyword?.trim())handleGenerateClick();
                   }
                 }}
-                placeholder={FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천"}
+                placeholder={mode==="image"?"어떤 이미지를 만들까요? 예) 깔끔한 로고 디자인, 제품 사진...":mode==="shorts"?"유튜브 링크를 붙여넣으세요":(FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천")}
                 rows={1}
                 style={{
                   width:"100%",border:"none",background:"transparent",color:text,
@@ -1411,7 +1564,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               {/* 하단 툴바 */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {/* 파일 추가 버튼 */}
+                  {/* 파일 추가 버튼 (글쓰기/이미지 모드) */}
+                  {mode!=="shorts" && (<>
                   <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
                     onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value="";if(files.length)handleFileInput(files);}}/>
                   <button onClick={()=>document.getElementById("blog-file-input")?.click()}
@@ -1422,7 +1576,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     파일
                   </button>
-                  {/* 링크 버튼 */}
+                  </>)}
+                  {/* 링크 버튼 (글쓰기 모드만) */}
+                  {mode==="write" && (
                   <button onClick={()=>setShowLinkInput(!showLinkInput)}
                     title="링크 붙여넣기"
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showLinkInput?accent:border}`,background:showLinkInput?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showLinkInput?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
@@ -1431,22 +1587,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                     링크
                   </button>
-                  {/* 설정 버튼 */}
+                  )}
+                  {/* 설정 버튼 (쇼츠 모드에서 숨김) */}
+                  {mode!=="shorts" && (
                   <button onClick={()=>setShowSettings(!showSettings)}
-                    title="글 설정"
+                    title={mode==="image"?"이미지 설정":"글 설정"}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
                     onMouseEnter={e=>{if(!showSettings){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
                     onMouseLeave={e=>{if(!showSettings){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     설정
                   </button>
+                  )}
                 </div>
                 {/* 생성 버튼 */}
                 <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
                   style={{
                     padding:"8px 22px",borderRadius:14,border:"none",
                     cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                    background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                    background:fields.keyword?.trim()?(mode==="shorts"?"linear-gradient(135deg,#ef4444,#f97316)":"linear-gradient(135deg,#7c6aff,#8b5cf6)"):(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
                     color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
                     display:"flex",alignItems:"center",gap:6,
                     opacity:loading||!fields.keyword?.trim()?0.5:1,
@@ -1456,14 +1615,14 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10P</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="shorts"?"쇼츠 만들기":"생성"}{user && mode!=="shorts" && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}</>
                   )}
                 </button>
               </div>
             </div>
 
-            {/* AI 제목/SEO 추천 */}
-            {fields.keyword && fields.keyword.trim() && (
+            {/* AI 제목/SEO 추천 (글쓰기 모드만) */}
+            {mode==="write" && fields.keyword && fields.keyword.trim() && (
               <div style={{maxWidth:720,margin:"10px auto 0",display:"flex",gap:6,justifyContent:"center"}}>
                 <button onClick={suggestTitle} disabled={titleLoading} style={{padding:"6px 14px",borderRadius:12,border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}`,background:"transparent",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
                   {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
@@ -1473,7 +1632,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </button>
               </div>
             )}
-            {titleSugg.length>0 && (
+            {mode==="write" && titleSugg.length>0 && (
               <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(99,102,241,0.15)"}}>
                 <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
                 {titleSugg.map(function(t2,i){return(
@@ -1481,7 +1640,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 );})}
               </div>
             )}
-            {seoKeys.length>0 && (
+            {mode==="write" && seoKeys.length>0 && (
               <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(16,185,129,0.15)"}}>
                 <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -1491,7 +1650,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </div>
               </div>
             )}
-            <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
+            {mode==="write" && <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>}
 
             {/* 에러 메시지 */}
             {error&&<div style={{maxWidth:720,margin:"12px auto 0",fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
@@ -1503,6 +1662,35 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* ══════ 설정 패널 (토글) ══════ */}
             {showSettings && (
               <div className="bl-settings-panel" style={{maxWidth:720,margin:"16px auto 0",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"20px 22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
+                {/* 이미지 모드 설정 */}
+                {mode==="image" && (<>
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    이미지 스타일
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {[{id:"realistic",label:"사실적"},{id:"illustration",label:"일러스트"},{id:"3d",label:"3D"},{id:"minimal",label:"미니멀"}].map(s=>{
+                      const isA=imageStyle===s.id;
+                      return <button key={s.id} onClick={()=>setImageStyle(s.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?"#ec4899":border}`,background:isA?(isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.06)"):"transparent",color:isA?"#ec4899":text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{s.label}</button>;
+                    })}
+                  </div>
+                </div>
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                    비율
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {[{id:"1:1",label:"1:1 (정사각)"},{id:"16:9",label:"16:9 (가로)"},{id:"9:16",label:"9:16 (세로)"},{id:"4:3",label:"4:3"}].map(r=>{
+                      const isA=imageAspect===r.id;
+                      return <button key={r.id} onClick={()=>setImageAspect(r.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?"#ec4899":border}`,background:isA?(isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.06)"):"transparent",color:isA?"#ec4899":text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{r.label}</button>;
+                    })}
+                  </div>
+                </div>
+                </>)}
+                {/* 글쓰기 모드 설정 */}
+                {mode==="write" && (<>
                 {/* 플랫폼 선택 */}
                 <div style={{marginBottom:20}}>
                   <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
@@ -1586,11 +1774,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     placeholder="AI에게 전달할 내용을 자유롭게 적어주세요. 예) 초보자도 이해할 수 있게, 사례 중심으로"
                     style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"none",lineHeight:1.6}}/>
                 </div>
+                </>)}
               </div>
             )}
 
-            {/* 플랫폼 칩 (검색창 아래) */}
-            <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
+            {/* 플랫폼 칩 (검색창 아래, 글쓰기 모드만) */}
+            {mode==="write" && <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
               {SNS_OPTIONS.slice(0,8).map(p=>{
                 const isA=platformId===p.id;
                 return <button key={p.id} className="bl-platform-chip" onClick={()=>setPlatformId(p.id)}
@@ -1607,12 +1796,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
                 + 더보기
               </button>
-            </div>
+            </div>}
           </div>
         )}
 
         {/* 결과 화면 */}
-        {showResult && renderResult()}
+        {showResult && (mode==="image" ? renderImageResult() : renderResult())}
       </div>
     </div>
   );
