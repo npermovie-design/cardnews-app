@@ -1,6 +1,6 @@
 import React from "react";
 
-const WIN_URL = "https://github.com/npermovie-design/cardnews-app/releases/latest/download/makeit-sns-automation-setup.exe";
+const WIN_URL = "https://github.com/npermovie-design/cardnews-app/releases/download/v0.1.0/SNS.Setup.0.1.0.exe";
 const MAC_URL = null; // Mac 빌드 준비 후 추가
 
 export default function AutomationPage({ C, navigate }) {
