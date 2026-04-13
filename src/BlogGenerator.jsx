@@ -483,33 +483,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         }
       }
 
-      // 이어쓰기 조건: 길이 너무 부족 AND 문장 종결 없을 때만 (1회 제한, 중복 제거)
-      const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
-      // 해시태그 존재 여부로 완료 판단 (# 있거나 문장 부호 종결)
-      if (fullText && fullText.length > 50 && fullText.length < minLen * 0.7 && !isFinished(fullText)) {
-        try {
-          const tail = fullText.slice(-400);
-          const contPrompt = `아래 글이 중간에 끊겼습니다. 끊어진 지점부터 이어서만 작성해주세요. 반드시 지켜야 할 점:\n1. 앞 내용은 절대 반복 금지. 이어지는 새 내용만 출력.\n2. 글 마지막에 # 기호로 시작하는 해시태그 10개로 마무리.\n3. 본문에 # 기호 금지, 마지막 해시태그에만 사용.\n\n[끊긴 지점]\n${tail}\n\n[이어서 작성할 내용만]`;
-          const cont = await callAIStream("claude-haiku-4-5", [{role:"user",content:contPrompt}], 3000, (acc) => { _savedFull = fullText + "\n" + acc; try { sessionStorage.setItem(_ssSavedFullKey, _savedFull); } catch {} });
-          if (cont && cont.trim().length > 20) {
-            // 중복 제거: cont의 시작이 fullText의 끝과 겹치면 제거
-            let dedupedCont = cont.trim();
-            const tail200 = fullText.slice(-200).trim();
-            // cont 시작 150자 안에 원본 끝 60자 이상이 겹치면 중복으로 판단
-            for (let chunkLen = Math.min(200, tail200.length); chunkLen >= 30; chunkLen -= 10) {
-              const tailChunk = tail200.slice(-chunkLen);
-              const idx = dedupedCont.indexOf(tailChunk);
-              if (idx >= 0 && idx < 300) {
-                dedupedCont = dedupedCont.slice(idx + tailChunk.length).trim();
-                break;
-              }
-            }
-            if (dedupedCont.length > 20) {
-              fullText = fullText + "\n" + dedupedCont;
-            }
-          }
-        } catch {}
-      }
+      // 이어쓰기 제거 — 1회 생성으로 완결 (이어쓰기가 시간을 2배로 늘리는 주범)
+      // 프롬프트에서 충분한 분량을 요청하고, max_tokens도 넉넉하게 설정하여 1회로 완성
 
       if (fullText && fullText.length > 50) {
         setGenStep(5);
