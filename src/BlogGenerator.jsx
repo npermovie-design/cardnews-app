@@ -131,7 +131,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   // ── 세부 설정 상태 ──
-  // ── 모드 상태 (write / image / shorts) ──
+  // ── 모드 상태 (write / image) ── 쇼츠는 유튜브 URL 감지 시 자동 제안
   const [mode, setMode] = useState("write");
   const [imageResult, setImageResult] = useState(null);
   const [imageStyle, setImageStyle] = useState("realistic");
@@ -326,8 +326,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
     } else if (mode === "image") {
       generateImage();
-    } else if (mode === "shorts") {
-      handleShortsStart();
     }
   };
 
@@ -1330,6 +1328,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   // URL 자동 감지
+  // 유튜브 URL 감지 헬퍼
+  const isYoutubeUrl = (url) => /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/.test(url);
+  const detectedYoutubeUrl = fields.keyword ? fields.keyword.match(/https?:\/\/[^\s]*(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)[^\s]*/)?.[0] : null;
+
   const handleMainInput = (val) => {
     setField("keyword", val);
     const urlMatch = val.match(/https?:\/\/[^\s]+/);
@@ -1431,10 +1433,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {/* 타이틀 */}
             <div style={{textAlign:"center",marginBottom:32}}>
               <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>
-                {mode==="write"?"무엇을 작성해볼까요?":mode==="image"?"어떤 이미지를 만들까요?":"어떤 영상을 만들까요?"}
+                {mode==="image"?"어떤 이미지를 만들까요?":"무엇을 만들어볼까요?"}
               </div>
               <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>
-                {mode==="write"?"주제를 입력하거나, 링크를 붙여넣거나, 파일을 드래그하세요":mode==="image"?"원하는 이미지를 설명해주세요":"유튜브 링크를 붙여넣으면 AI가 쇼츠를 만들어드려요"}
+                {mode==="image"?"원하는 이미지를 설명해주세요":"주제, 링크, 파일을 자유롭게 입력하세요. 유튜브 링크로 쇼츠도 만들 수 있어요"}
               </div>
             </div>
 
@@ -1443,7 +1445,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               {[
                 {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"image", label:"이미지 생성", color:"#ec4899", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>},
-                {id:"shorts", label:"쇼츠 영상", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
               ].map(m => (
                 <button key={m.id} onClick={()=>setMode(m.id)} style={{
                   padding:"10px 20px", borderRadius:20,
@@ -1492,7 +1493,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     if(fields.keyword?.trim())handleGenerateClick();
                   }
                 }}
-                placeholder={mode==="image"?"어떤 이미지를 만들까요? 예) 깔끔한 로고 디자인, 제품 사진...":mode==="shorts"?"유튜브 링크를 붙여넣으세요":(FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천")}
+                placeholder={mode==="image"?"어떤 이미지를 만들까요? 예) 깔끔한 로고 디자인, 제품 사진...":(FIELD_LABELS.keyword?.placeholder || "주제, 링크, 또는 유튜브 URL을 입력하세요")}
                 rows={1}
                 style={{
                   width:"100%",border:"none",background:"transparent",color:text,
@@ -1516,12 +1517,18 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 </div>
               )}
 
-              {/* URL 감지 알림 */}
+              {/* URL 감지 알림 + 유튜브면 쇼츠 버튼도 표시 */}
               {!showLinkInput && urlInput && !urlResult && !urlLoading && (
-                <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${accent}22`}}>
+                <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${accent}22`,flexWrap:"wrap"}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                  <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>링크가 감지되었습니다</span>
-                  <button onClick={fetchFromUrl} style={{padding:"4px 12px",borderRadius:8,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>불러오기</button>
+                  <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>{detectedYoutubeUrl?"유튜브 링크가 감지되었습니다":"링크가 감지되었습니다"}</span>
+                  <button onClick={fetchFromUrl} style={{padding:"4px 12px",borderRadius:8,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>글로 작성하기</button>
+                  {detectedYoutubeUrl && (
+                    <button onClick={handleShortsStart} style={{padding:"4px 12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#ef4444,#f97316)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      쇼츠 만들기
+                    </button>
+                  )}
                 </div>
               )}
               {urlLoading && (
@@ -1565,7 +1572,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   {/* 파일 추가 버튼 (글쓰기/이미지 모드) */}
-                  {mode!=="shorts" && (<>
+                  {true && (<>
                   <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
                     onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value="";if(files.length)handleFileInput(files);}}/>
                   <button onClick={()=>document.getElementById("blog-file-input")?.click()}
@@ -1589,7 +1596,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   </button>
                   )}
                   {/* 설정 버튼 (쇼츠 모드에서 숨김) */}
-                  {mode!=="shorts" && (
+                  {true && (
                   <button onClick={()=>setShowSettings(!showSettings)}
                     title={mode==="image"?"이미지 설정":"글 설정"}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
@@ -1605,7 +1612,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   style={{
                     padding:"8px 22px",borderRadius:14,border:"none",
                     cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                    background:fields.keyword?.trim()?(mode==="shorts"?"linear-gradient(135deg,#ef4444,#f97316)":"linear-gradient(135deg,#7c6aff,#8b5cf6)"):(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                    background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
                     color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
                     display:"flex",alignItems:"center",gap:6,
                     opacity:loading||!fields.keyword?.trim()?0.5:1,
@@ -1615,7 +1622,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="shorts"?"쇼츠 만들기":"생성"}{user && mode!=="shorts" && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}</>
                   )}
                 </button>
               </div>
