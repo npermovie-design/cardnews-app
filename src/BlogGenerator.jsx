@@ -154,6 +154,31 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try { return parseInt(sessionStorage.getItem(_ssStartTimeKey) || "0") || 0; } catch { return 0; }
   })());
 
+  // ── 마운트 시 stale loading 상태 정리 (다른 메뉴 갔다 돌아온 경우) ──
+  useEffect(() => {
+    if (loading && genStartTimeRef.current) {
+      const elapsed = Date.now() - genStartTimeRef.current;
+      // 90초 이상 경과한 로딩은 stale — 이미 받은 텍스트로 복구하거나 리셋
+      if (elapsed > 90000) {
+        const savedFull = (() => { try { return sessionStorage.getItem(_ssSavedFullKey) || ""; } catch { return ""; } })();
+        const savedResult = (() => { try { return sessionStorage.getItem(_ssKey) || ""; } catch { return ""; } })();
+        if (savedResult && savedResult.length > 50) {
+          setResult(savedResult);
+          setGenStep(5);
+          setLoading(false);
+        } else if (savedFull && savedFull.length > 50) {
+          setResult(cleanBlogText(savedFull));
+          setGenStep(5);
+          setLoading(false);
+        } else {
+          // 텍스트도 없으면 그냥 리셋
+          setGenStep(0);
+          setLoading(false);
+        }
+      }
+    }
+  }, []); // 마운트 시 1회만
+
   // ── 탭 전환 대응: elapsed-time 기반 step progression ──
   useEffect(() => {
     if (!loading) return;
