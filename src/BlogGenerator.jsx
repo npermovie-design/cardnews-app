@@ -471,7 +471,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 글 생성 (부족하면 이어쓰기)
     _savedFull = "";
     try {
-      let fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
+      let fullText;
+      try {
+        fullText = await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], maxTok, (acc) => { _savedFull = acc; try { if (acc.length > 20) sessionStorage.setItem(_ssSavedFullKey, acc); } catch {} });
+      } catch (streamErr) {
+        // 타임아웃 등 에러 시 이미 받은 텍스트로 진행
+        if (_savedFull && _savedFull.length > 100) {
+          fullText = _savedFull;
+        } else {
+          throw streamErr;
+        }
+      }
 
       // 이어쓰기 조건: 길이 너무 부족 AND 문장 종결 없을 때만 (1회 제한, 중복 제거)
       const minLen = wordCount === "short" ? 800 : wordCount === "long" ? 2500 : wordCount === "xlong" ? 3500 : 1500;
@@ -824,7 +834,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (loading) {
       return (
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative"}}>
-          <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword} · ${cfg.title}`} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={wordCount==="xlong"?60000:wordCount==="long"?45000:30000} />
+          <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword || "글 생성"} · ${cfg.title}`} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={wordCount==="xlong"?60000:wordCount==="long"?45000:30000} />
           <button onClick={handleCancelGenerate}
             style={{position:"fixed",bottom:40,left:"50%",transform:"translateX(-50%)",zIndex:10000,padding:"12px 32px",borderRadius:12,border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)"}`,background:isDark?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.9)",color:isDark?"#fff":"#333",fontSize:14,fontWeight:700,cursor:"pointer",backdropFilter:"blur(8px)",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
             취소

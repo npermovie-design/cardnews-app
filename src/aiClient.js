@@ -70,8 +70,8 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
   }
 
   const controller = new AbortController();
-  // 5분 전체 타임아웃 (백그라운드에서도 충분한 여유)
-  const timeout = setTimeout(() => controller.abort(), 300000);
+  // 2분 전체 타임아웃 (일반적으로 20~60초면 충분, 2분이면 넉넉)
+  const timeout = setTimeout(() => controller.abort(), 120000);
 
   try {
     const res = await fetch(PROXY_URL, {
