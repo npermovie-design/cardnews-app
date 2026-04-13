@@ -231,18 +231,21 @@ JSON 형식 (반드시 이 형식만 출력):
 팔로워 메시지는 친근하고 감사한 톤으로, 비팔로워 메시지는 흥미를 유발하면서 팔로우를 유도하는 톤으로 작성해주세요.
 이모지를 적절히 활용하고, 각 메시지는 300자 이내로 작성해주세요.`;
 
+  const INSTA_ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!INSTA_ANTHROPIC_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY 미설정" });
+
   const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
+    "https://api.anthropic.com/v1/messages",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "x-api-key": INSTA_ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-sonnet-4-5",
+        model: "claude-haiku-4-5-20251001",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
         max_tokens: 1024,
       }),
     }
@@ -250,12 +253,12 @@ JSON 형식 (반드시 이 형식만 출력):
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("OpenRouter error:", errText);
+    console.error("Anthropic error:", errText);
     return res.status(502).json({ error: "AI 메시지 생성 실패" });
   }
 
   const result = await response.json();
-  const content = result.choices?.[0]?.message?.content || "";
+  const content = result.content?.[0]?.text || "";
 
   // JSON 파싱 (코드블록 제거 후)
   const jsonStr = content.replace(/```json?\s*/g, "").replace(/```/g, "").trim();

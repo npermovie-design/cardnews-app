@@ -274,8 +274,8 @@ export default async function handler(req, res) {
 
 // ── 매일 오전 7시 자동 SNS 브리핑 ──
 async function handleCronBriefing(req, res) {
-  const OPENROUTER_KEY = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
-  if (!OPENROUTER_KEY) return res.status(500).json({ error: "OPENROUTER_API_KEY 미설정" });
+  const SEO_ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!SEO_ANTHROPIC_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY 미설정" });
 
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -305,13 +305,13 @@ async function handleCronBriefing(req, res) {
 HEADLINE: [7개 중 검색량/관심도 가장 높은 핵심 이슈를 SEO 친화적으로 가다듬어 30자 이내 제목]`;
 
   try {
-    const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_KEY}`, "HTTP-Referer": "https://snsmakeit.com" },
-      body: JSON.stringify({ model: "anthropic/claude-haiku-4-5", max_tokens: 3000, messages: [{ role: "user", content: prompt }] }),
+      headers: { "Content-Type": "application/json", "x-api-key": SEO_ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 3000, messages: [{ role: "user", content: prompt }] }),
     });
     const aiData = await aiRes.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
+    const content = aiData.content?.[0]?.text || "";
     if (!content || content.length < 100) throw new Error("AI 응답 부족");
 
     // AI가 생성한 대표 제목 추출 (HEADLINE: 패턴)

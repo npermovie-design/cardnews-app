@@ -39,8 +39,8 @@ function mdToHtml(md) {
 // ── fetch-sns-feed 용 서버 메모리 캐시 (5분) ─────────────────────
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
-const OR_KEY = process.env.OPENROUTER_API_KEY;
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 // ══════════════════════════════════════════════════════════════════
 // ACTION: publish — SNS 발행
@@ -509,17 +509,17 @@ async function handleFeed(req, res) {
   const platLabel = platform === "instagram" ? "인스타그램" : "틱톡";
 
   try {
-    const r = await fetch(OR_URL, {
+    const r = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OR_KEY}`,
-        "HTTP-Referer": "https://snsmakeit.com",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5",
+        model: "claude-haiku-4-5-20251001",
+        system: `한국 ${platLabel} 트렌드 분석 전문가. 2025-2026년 현재 활동 중인 실제 크리에이터 기반. 실제 계정명 사용. JSON만 출력.`,
         messages: [
-          { role: "system", content: `한국 ${platLabel} 트렌드 분석 전문가. 2025-2026년 현재 활동 중인 실제 크리에이터 기반. 실제 계정명 사용. JSON만 출력.` },
           { role: "user", content: `한국 ${platLabel} "${category}" 분야 인기 크리에이터+바이럴 콘텐츠 10개.
 키워드: ${keywords.join(", ")}
 
@@ -527,19 +527,18 @@ JSON배열:
 [{"id":"고유ID","platform":"${platform}","username":"@실제계정","displayName":"이름","followers":"팔로워(예:125K)","title":"인기콘텐츠 요약","contentType":"${platform === "instagram" ? "릴스/카루셀/피드" : "숏폼/듀엣"}","views":"조회수(예:850K)","likes":"좋아요(예:45K)","comments":"댓글(예:1.2K)","engagementRate":"참여율(예:4.8%)","hashtags":["태그1","태그2","태그3"],"whyViral":"인기이유 한줄","published":"시기(예:3일 전)","mood":"분위기(감성적/유머/정보성/트렌디 등)","visualStyle":"스타일 한줄","colorGradient":"CSS gradient(예:linear-gradient(135deg,#ff6b9d,#c44569))"}]` }
         ],
         max_tokens: 3000,
-        temperature: 0.7,
       }),
       signal: AbortSignal.timeout(15000),
     });
 
     if (!r.ok) {
       const errText = await r.text().catch(() => "");
-      console.error("OpenRouter error:", r.status, errText);
+      console.error("Anthropic error:", r.status, errText);
       return res.status(502).json({ error: "AI 호출 실패" });
     }
 
     const data = await r.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const content = data.content?.[0]?.text || "";
     const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const videos = JSON.parse(cleaned);
 

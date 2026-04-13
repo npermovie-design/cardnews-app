@@ -1,4 +1,4 @@
-// api/whisper.js — 음성 파일 → 텍스트 변환 (OpenAI Whisper via OpenRouter 또는 직접)
+// api/whisper.js — 음성 파일 → 텍스트 변환 (OpenAI Whisper / Groq Whisper)
 // Vercel Serverless Function: bodyParser 비활성화로 대용량 파일 처리
 
 export const config = {
@@ -65,7 +65,6 @@ export default async function handler(req, res) {
     }
 
     const OPENAI_KEY = process.env.OPENAI_API_KEY;
-    const OR_KEY = process.env.OPENROUTER_API_KEY;
 
     // 방법 1: OpenAI API 직접 호출 (OPENAI_API_KEY가 있을 때)
     if (OPENAI_KEY) {

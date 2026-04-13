@@ -1,10 +1,8 @@
-// AI 프록시 — Anthropic 직접 호출 (OpenRouter 대비 8배+ 빠름)
+// AI 프록시 — Anthropic 직접 호출
 export const config = { runtime: "edge", maxDuration: 120 };
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const OR_KEY = process.env.OPENROUTER_API_KEY;
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Anthropic 모델 매핑
 const ANTHROPIC_MODEL_MAP = {
@@ -13,15 +11,11 @@ const ANTHROPIC_MODEL_MAP = {
   "claude-sonnet-4-5": "claude-sonnet-4-5-20250514",
   "claude-sonnet-4-20250514": "claude-sonnet-4-5-20250514",
   "claude-3-5-sonnet-20241022": "claude-sonnet-4-5-20250514",
-};
-
-// Anthropic 미지원 모델은 OpenRouter 폴백
-const OR_MODEL_MAP = {
-  "gpt-4o": "openai/gpt-4o",
-  "gpt-4o-mini": "openai/gpt-4o-mini",
-  "gemini-2.5-flash": "google/gemini-2.5-flash-preview:thinking",
-  "gemini-2.5-pro": "google/gemini-2.5-pro-preview-03-25",
-  "gemini-2.0-flash": "google/gemini-2.0-flash-001",
+  "gpt-4o": "claude-haiku-4-5-20251001",
+  "gpt-4o-mini": "claude-haiku-4-5-20251001",
+  "gemini-2.5-flash": "claude-haiku-4-5-20251001",
+  "gemini-2.5-pro": "claude-sonnet-4-5-20250514",
+  "gemini-2.0-flash": "claude-haiku-4-5-20251001",
 };
 
 function corsHeaders() {
@@ -71,10 +65,10 @@ export default async function handler(req) {
     const { model, messages, max_tokens, system, stream } = await req.json();
     if (!model || !messages) return new Response(JSON.stringify({ error: "model, messages 필수" }), { status: 400, headers: corsHeaders() });
 
-    const anthropicModel = ANTHROPIC_MODEL_MAP[model];
+    const anthropicModel = ANTHROPIC_MODEL_MAP[model] || "claude-haiku-4-5-20251001";
 
     // Anthropic 직접 호출
-    if (anthropicModel && ANTHROPIC_KEY) {
+    if (ANTHROPIC_KEY) {
       const anthropicMessages = toAnthropicMessages(messages);
       const body = {
         model: anthropicModel,
@@ -96,8 +90,6 @@ export default async function handler(req) {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
-        // Anthropic 실패 시 OpenRouter 폴백
-        if (OR_KEY) return fallbackToOpenRouter(model, messages, max_tokens, system, stream);
         return new Response(JSON.stringify({ error: `Anthropic 오류: ${errText.slice(0, 200)}` }), { status: res.status, headers: corsHeaders() });
       }
 
@@ -148,29 +140,9 @@ export default async function handler(req) {
       }
     }
 
-    // OpenRouter 폴백
-    return fallbackToOpenRouter(model, messages, max_tokens, system, stream);
+    // API key 미설정
+    return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }), { status: 500, headers: corsHeaders() });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message || "서버 오류" }), { status: 500, headers: corsHeaders() });
   }
-}
-
-async function fallbackToOpenRouter(model, messages, max_tokens, system, stream) {
-  if (!OR_KEY) return new Response(JSON.stringify({ error: "API key not configured" }), { status: 500, headers: corsHeaders() });
-  const orModel = OR_MODEL_MAP[model] || (model.includes("/") ? model : `anthropic/${model}`);
-  const body = { model: orModel, max_tokens: max_tokens || 2000, messages };
-  if (system) body.system = system;
-  if (stream) body.stream = true;
-  const orRes = await fetch(OR_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OR_KEY}`, "HTTP-Referer": "https://snsmakeit.com", "X-Title": "SNS Makeit" },
-    body: JSON.stringify(body),
-  });
-  if (!orRes.ok) {
-    const errText = await orRes.text().catch(() => "");
-    return new Response(JSON.stringify({ error: `AI API 오류: ${errText.slice(0, 200)}` }), { status: orRes.status, headers: corsHeaders() });
-  }
-  if (stream) return new Response(orRes.body, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", ...corsHeaders() } });
-  const data = await orRes.json();
-  return new Response(JSON.stringify(data), { headers: { "Content-Type": "application/json", ...corsHeaders() } });
 }
