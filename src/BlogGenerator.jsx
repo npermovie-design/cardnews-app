@@ -289,6 +289,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const dragCounter = useRef(0);
+  const [showLinkInput, setShowLinkInput] = useState(false);
   const textareaRef = useRef(null);
   // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
@@ -344,6 +346,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       const data = await r.json();
       if (data.error) { alert(data.error); setUrlLoading(false); return; }
       setUrlResult(data);
+      setShowLinkInput(false);
       // keyword = title, extra = description + content
       if (data.title) setField("keyword", data.title.slice(0, 80));
       const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
@@ -1222,9 +1225,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   const content = (
     <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}
-      onDragOver={e=>{e.preventDefault();e.stopPropagation();setDragOver(true);}}
-      onDragLeave={e=>{e.preventDefault();e.stopPropagation();setDragOver(false);}}
-      onDrop={e=>{e.preventDefault();e.stopPropagation();setDragOver(false);const files=Array.from(e.dataTransfer.files||[]);if(files.length)handleFileInput(files);}}>
+      onDragEnter={e=>{e.preventDefault();e.stopPropagation();dragCounter.current++;setDragOver(true);}}
+      onDragOver={e=>{e.preventDefault();e.stopPropagation();}}
+      onDragLeave={e=>{e.preventDefault();e.stopPropagation();dragCounter.current--;if(dragCounter.current<=0){dragCounter.current=0;setDragOver(false);}}}
+      onDrop={e=>{e.preventDefault();e.stopPropagation();dragCounter.current=0;setDragOver(false);const files=Array.from(e.dataTransfer.files||[]);if(files.length)handleFileInput(files);}}>
       {/* 다시 생성 확인 모달 */}
       {showRegenConfirm && (
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
@@ -1345,8 +1349,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 }}
               />
 
+              {/* 링크 입력 필드 */}
+              {showLinkInput && !urlResult && (
+                <div style={{marginTop:10,display:"flex",gap:8,alignItems:"center"}}>
+                  <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
+                    onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();fetchFromUrl();}}}
+                    placeholder="https:// 로 시작하는 주소를 붙여넣기"
+                    style={{flex:1,padding:"10px 14px",borderRadius:12,border:`1px solid ${inputBdr}`,background:isDark?"rgba(255,255,255,0.04)":"#f9f9fb",color:text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+                  <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
+                    style={{padding:"10px 18px",borderRadius:12,border:"none",background:accent,color:"#fff",fontSize:13,fontWeight:700,cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",opacity:urlLoading||!urlInput.trim()?0.5:1,whiteSpace:"nowrap",flexShrink:0}}>
+                    {urlLoading?"불러오는 중...":"불러오기"}
+                  </button>
+                </div>
+              )}
+
               {/* URL 감지 알림 */}
-              {urlInput && !urlResult && !urlLoading && (
+              {!showLinkInput && urlInput && !urlResult && !urlLoading && (
                 <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${accent}22`}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                   <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>링크가 감지되었습니다</span>
@@ -1403,6 +1421,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     파일
+                  </button>
+                  {/* 링크 버튼 */}
+                  <button onClick={()=>setShowLinkInput(!showLinkInput)}
+                    title="링크 붙여넣기"
+                    style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showLinkInput?accent:border}`,background:showLinkInput?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showLinkInput?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
+                    onMouseEnter={e=>{if(!showLinkInput){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
+                    onMouseLeave={e=>{if(!showLinkInput){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    링크
                   </button>
                   {/* 설정 버튼 */}
                   <button onClick={()=>setShowSettings(!showSettings)}
