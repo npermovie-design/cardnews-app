@@ -1641,7 +1641,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       display:"flex",alignItems:"center",justifyContent:"center",gap:10,
                       opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:56,
                       boxShadow:fields.keyword?.trim()?"0 8px 24px rgba(124,106,255,0.35)":"none"}}>
-                    {loading ? (<><div style={{width:20,height:20,border:"2.5px solid rgba(255,255,255,0.3)",borderTop:"2.5px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>글 생성하기 <span style={{fontSize:13,opacity:0.85,fontWeight:700,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"3px 10px",borderRadius:10}}>20P</span></>) : (<>1회 생성해보기</>)}
+                    {loading ? (<><div style={{width:20,height:20,border:"2.5px solid rgba(255,255,255,0.3)",borderTop:"2.5px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>글 생성하기 <span style={{fontSize:13,opacity:0.85,fontWeight:700,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"3px 10px",borderRadius:10}}>10P</span></>) : (<>1회 생성해보기</>)}
                   </button>
                 </div>
               </div>
