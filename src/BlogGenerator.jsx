@@ -156,26 +156,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 마운트 시 stale loading 상태 정리 (다른 메뉴 갔다 돌아온 경우) ──
   useEffect(() => {
-    if (loading && genStartTimeRef.current) {
-      const elapsed = Date.now() - genStartTimeRef.current;
-      // 90초 이상 경과한 로딩은 stale — 이미 받은 텍스트로 복구하거나 리셋
-      if (elapsed > 90000) {
-        const savedFull = (() => { try { return sessionStorage.getItem(_ssSavedFullKey) || ""; } catch { return ""; } })();
-        const savedResult = (() => { try { return sessionStorage.getItem(_ssKey) || ""; } catch { return ""; } })();
-        if (savedResult && savedResult.length > 50) {
-          setResult(savedResult);
-          setGenStep(5);
-          setLoading(false);
-        } else if (savedFull && savedFull.length > 50) {
-          setResult(cleanBlogText(savedFull));
-          setGenStep(5);
-          setLoading(false);
-        } else {
-          // 텍스트도 없으면 그냥 리셋
-          setGenStep(0);
-          setLoading(false);
-        }
-      }
+    if (!loading) return;
+    // 마운트 시점에 loading=true면 이전 세션의 잔여 상태 — 복구 시도
+    const savedFull = (() => { try { return sessionStorage.getItem(_ssSavedFullKey) || ""; } catch { return ""; } })();
+    const savedResult = (() => { try { return sessionStorage.getItem(_ssKey) || ""; } catch { return ""; } })();
+    if (savedResult && savedResult.length > 50) {
+      setResult(savedResult);
+      setGenStep(5);
+      setLoading(false);
+    } else if (savedFull && savedFull.length > 50) {
+      setResult(cleanBlogText(savedFull));
+      setGenStep(5);
+      setLoading(false);
+    } else {
+      // 텍스트도 없으면 완전 리셋
+      setGenStep(0);
+      setLoading(false);
+      try { sessionStorage.removeItem(_ssLoadKey); sessionStorage.removeItem(_ssStepKey); sessionStorage.removeItem(_ssStartTimeKey); sessionStorage.removeItem(_ssSavedFullKey); } catch {}
     }
   }, []); // 마운트 시 1회만
 
